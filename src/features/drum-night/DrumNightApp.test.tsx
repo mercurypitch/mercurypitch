@@ -4177,11 +4177,16 @@ describe('Drum Night feel controls', () => {
     renderRoom()
     fireEvent.click(screen.getByRole('button', { name: 'Feel: off' }))
     const drawer = await openGrooveDrawer()
+    // The pattern library carries its own style rail, so scope to Feel's group.
+    const feelStyles = within(
+      within(drawer).getByRole('group', { name: 'Feel style' }),
+    )
 
-    fireEvent.click(within(drawer).getByRole('button', { name: 'Funk' }))
-    expect(
-      within(drawer).getByRole('button', { name: 'Funk' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(feelStyles.getByRole('button', { name: 'Funk' }))
+    expect(feelStyles.getByRole('button', { name: 'Funk' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
 
     const slider = within(drawer).getByRole('slider', { name: /Intensity/ })
     fireEvent.input(slider, { target: { value: '25' } })
@@ -4195,7 +4200,11 @@ describe('Drum Night feel controls', () => {
   it('keeps the style controls inert until feel is switched on', async () => {
     renderRoom()
     const drawer = await openGrooveDrawer()
-    expect(within(drawer).getByRole('button', { name: 'Jazz' })).toBeDisabled()
+    expect(
+      within(
+        within(drawer).getByRole('group', { name: 'Feel style' }),
+      ).getByRole('button', { name: 'Jazz' }),
+    ).toBeDisabled()
     expect(
       within(drawer).getByRole('slider', { name: /Intensity/ }),
     ).toBeDisabled()
@@ -4208,5 +4217,49 @@ describe('Drum Night feel controls', () => {
     renderRoom()
     fireEvent.click(screen.getByRole('button', { name: 'Feel: off' }))
     expect(readDrumFeelSettings(localStorage).applyToImported).toBe(false)
+  })
+})
+
+describe('Drum Night pattern library', () => {
+  it('replaces the open variation with a library groove and can undo it', async () => {
+    renderRoom()
+    const drawer = await openGrooveDrawer()
+    const picker = await within(drawer).findByTestId('drum-pattern-picker')
+
+    fireEvent.click(within(picker).getByRole('button', { name: 'Latin' }))
+    const bossa = within(picker)
+      .getByText('Bossa Nova')
+      .closest('li') as HTMLElement
+    fireEvent.click(
+      within(bossa).getByRole('button', { name: 'Start from this' }),
+    )
+    fireEvent.click(within(bossa).getByRole('button', { name: 'Replace hits' }))
+
+    const editor = within(drawer).getByTestId('drum-groove-editor')
+    await waitFor(() => {
+      expect(within(picker).getByText('Loaded')).toBeVisible()
+      expect(editor).toHaveAttribute('data-dirty', 'true')
+    })
+
+    const undo = within(drawer).getByRole('button', { name: /^Undo/ })
+    expect(undo).toBeEnabled()
+    fireEvent.click(undo)
+
+    // One undo restores the whole groove; the "Loaded" mark is a session-local
+    // note about where the draft came from, so it deliberately stays put.
+    await waitFor(() => expect(editor).toHaveAttribute('data-dirty', 'false'))
+    expect(within(picker).getByText('Loaded')).toBeVisible()
+  })
+
+  it('offers the library beside the editor in the groove workspace', async () => {
+    renderRoom()
+    const drawer = await openGrooveDrawer()
+
+    expect(
+      within(drawer).getByRole('group', { name: 'Pattern style' }),
+    ).toBeVisible()
+    expect(
+      within(drawer).getByRole('heading', { name: 'Start from a pattern' }),
+    ).toBeVisible()
   })
 })

@@ -102,6 +102,14 @@ export interface EditableDrumGrooveState {
   readonly undoHistory: readonly DrumGrooveUndoSnapshot[]
 }
 
+export interface DrumGroovePatternHit {
+  readonly gmKey: number
+  readonly stepIndex: number
+  readonly velocity: number
+  /** Held value in beats; falls back to one grid cell when absent. */
+  readonly writtenDuration?: number
+}
+
 export type DrumGrooveEditCommand =
   | {
       readonly type: 'add-hit'
@@ -116,6 +124,15 @@ export type DrumGrooveEditCommand =
       readonly stepIndex: number
     }
   | { readonly type: 'remove-hit'; readonly hitId: string }
+  | {
+      /**
+       * Replaces every hit in one step, as editor-origin events. Patterns are
+       * loaded this way rather than by swapping `sourceDocument` so a saved
+       * project restores from the First Pocket catalogue exactly as before.
+       */
+      readonly type: 'load-pattern'
+      readonly hits: readonly DrumGroovePatternHit[]
+    }
   | { readonly type: 'set-swing'; readonly amount: number }
   | { readonly type: 'set-density'; readonly amount: number }
   | { readonly type: 'undo' }
@@ -407,6 +424,78 @@ function occupied(
   )
 }
 
+/**
+ * Atomic whole-grid replacement. Everything is validated before a single hit is
+ * built, so a malformed pattern leaves the draft exactly as it was and costs
+ * one undo entry rather than dozens.
+ */
+function loadPattern(
+  state: EditableDrumGrooveState,
+  patternHits: readonly DrumGroovePatternHit[],
+): DrumGrooveEditOutcome {
+  if (patternHits.length === 0) return unchanged(state, 'invalid-value')
+  if (patternHits.length > MAX_DRUM_GROOVE_HITS) {
+    return unchanged(state, 'at-capacity')
+  }
+  const trackId = state.trackIds[0]
+  if (trackId === undefined) return unchanged(state, 'track-not-found')
+
+  const seen = new Set<string>()
+  for (const patternHit of patternHits) {
+    if (normalizeGeneralMidiPercussionKey(patternHit.gmKey) === null) {
+      return unchanged(state, 'invalid-gm-key')
+    }
+    if (!validStep(state, patternHit.stepIndex)) {
+      return unchanged(state, 'invalid-step')
+    }
+    if (
+      !Number.isFinite(patternHit.velocity) ||
+      patternHit.velocity < 1 ||
+      patternHit.velocity > 127
+    ) {
+      return unchanged(state, 'invalid-value')
+    }
+    if (
+      patternHit.writtenDuration !== undefined &&
+      (!Number.isFinite(patternHit.writtenDuration) ||
+        patternHit.writtenDuration <= 0)
+    ) {
+      return unchanged(state, 'invalid-value')
+    }
+    const cell = `${patternHit.gmKey}\u0000${patternHit.stepIndex}`
+    if (seen.has(cell)) return unchanged(state, 'occupied')
+    seen.add(cell)
+  }
+
+  let createdOrdinal = state.nextCreatedOrdinal
+  const hits = patternHits.map((patternHit) => {
+    const hit = freezeEditableHit({
+      id: `editor:${String(createdOrdinal).padStart(4, '0')}`,
+      trackId,
+      gmKey: patternHit.gmKey,
+      family: drumScoreVoiceForGmKey(patternHit.gmKey).family,
+      velocity: Math.round(patternHit.velocity),
+      writtenDuration:
+        patternHit.writtenDuration ?? DRUM_GROOVE_SUBDIVISION_BEATS,
+      stepIndex: patternHit.stepIndex,
+      offsetBeats: 0,
+      origin: Object.freeze({
+        kind: 'editor' as const,
+        createdOrdinal,
+      }),
+    })
+    createdOrdinal += 1
+    return hit
+  })
+
+  return changed(
+    nextState(state, {
+      hits: orderedHits(hits),
+      nextCreatedOrdinal: createdOrdinal,
+    }),
+  )
+}
+
 function normalizedAmount(value: number): number | null {
   if (!Number.isFinite(value)) return null
   return Math.min(1, Math.max(0, value))
@@ -504,6 +593,10 @@ export function applyDrumGrooveCommand(
         hits: orderedHits(state.hits.filter((hit) => hit.id !== command.hitId)),
       }),
     )
+  }
+
+  if (command.type === 'load-pattern') {
+    return loadPattern(state, command.hits)
   }
 
   if (!validStep(state, command.stepIndex)) {
