@@ -48,10 +48,10 @@ describe('AppNavTabs group collapse', () => {
     expect(label?.getAttribute('aria-expanded')).toBe('true')
   })
 
-  it('keeps the standalone Drum Night door inside the Play group', () => {
+  it('keeps the standalone Drum Night door inside the Practice group', () => {
     const { container } = renderBar()
-    const play = groupEl(container, 'play')
-    const roomLink = play.querySelector<HTMLAnchorElement>(
+    const practice = groupEl(container, 'practice')
+    const roomLink = practice.querySelector<HTMLAnchorElement>(
       '[data-testid="nav-drum-night"]',
     )
 
@@ -60,6 +60,29 @@ describe('AppNavTabs group collapse', () => {
       'Drums — open Drum Night room',
     )
     expect(roomLink?.textContent).toContain('Drums')
+  })
+
+  it('orders Practice as Singing, Piano, Guitar, Drums, then the drills', () => {
+    const { container } = renderBar()
+    const practice = groupEl(container, 'practice')
+    const items = [...practice.querySelectorAll<HTMLElement>('.app-tab')]
+    const labels = items.map((item) => item.textContent?.trim() ?? '')
+
+    // The harness renders raw tab ids as labels; the Drums door carries its
+    // own literal copy.
+    const positions = ['singing', 'piano', 'guitar', 'Drums'].map((name) =>
+      labels.findIndex((label) => label.includes(name)),
+    )
+    expect(positions.every((index) => index >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+    // Exercises lives past the Drums door — inline or via the More menu.
+    const drums = positions[3]!
+    const drills = items.findIndex(
+      (item) =>
+        item.classList.contains('tab-overflow-trigger') ||
+        (item.textContent?.includes('exercises') ?? false),
+    )
+    expect(drills).toBeGreaterThan(drums)
   })
 
   it('collapses the group on click and remembers it', () => {

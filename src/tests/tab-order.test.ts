@@ -17,11 +17,11 @@ describe('tab order', () => {
     expect(new Set(TAB_ORDER).size).toBe(TAB_ORDER.length)
   })
 
-  it('keeps Guitar immediately before Piano (the instrument selector order)', () => {
+  it('keeps Piano immediately before Guitar (the instrument selector order)', () => {
     const guitar = TAB_ORDER.indexOf(TAB_GUITAR)
     const piano = TAB_ORDER.indexOf(TAB_PIANO)
-    expect(guitar).toBeGreaterThanOrEqual(0)
-    expect(piano).toBe(guitar + 1)
+    expect(piano).toBeGreaterThanOrEqual(0)
+    expect(guitar).toBe(piano + 1)
   })
 
   it('includes every tab the swipe gesture steps through', () => {
@@ -79,8 +79,8 @@ describe('tab groups', () => {
     const practice = TAB_GROUPS.find((g) => g.id === 'practice')
     expect(practice?.tabs).toEqual([
       TAB_SINGING,
-      TAB_GUITAR,
       TAB_PIANO,
+      TAB_GUITAR,
       TAB_EXERCISES,
       TAB_EAR_LAB,
     ])
