@@ -32,7 +32,7 @@ import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest, MAX_PART_BYTES, PortablePartCorruptError, } from '@/lib/portable/portable-bundle'
 import type { UvrSession } from '@/stores/uvr-store'
-import { deleteAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
+import { deleteAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, uvrSessionsWipeSettled, } from '@/stores/uvr-store'
 
 // Real uvr-service, with one seam: sessionStemPresence stays the real
 // implementation until a test forces the answer the real database will
@@ -101,8 +101,11 @@ async function seedSourceSong(over: Partial<UvrSession> = {}): Promise<void> {
 }
 
 describe('portable bundle round trip', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     deleteAllUvrSessions()
+    // The store wipes IndexedDB in the background; without this fence the
+    // wipe can land after the seed below and delete what it just wrote.
+    await uvrSessionsWipeSettled()
     encodeStemToAac.mockClear()
   })
 
@@ -127,6 +130,9 @@ describe('portable bundle round trip', () => {
 
     // The receiving device: nothing in the library.
     deleteAllUvrSessions()
+    // The store wipes IndexedDB in the background; without this fence the
+    // wipe can land after the seed below and delete what it just wrote.
+    await uvrSessionsWipeSettled()
 
     const pulled: string[] = []
     const result = await importPortableBundle(built.manifest, (info) => {
@@ -197,6 +203,9 @@ describe('portable bundle round trip', () => {
     await seedSourceSong()
     const built = await buildPortableBundle(SOURCE_ID)
     deleteAllUvrSessions()
+    // The store wipes IndexedDB in the background; without this fence the
+    // wipe can land after the seed below and delete what it just wrote.
+    await uvrSessionsWipeSettled()
 
     await expect(
       importPortableBundle(built.manifest, (info) => {
@@ -250,8 +259,11 @@ describe('portable bundle round trip', () => {
 })
 
 describe('a device with no room left', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     deleteAllUvrSessions()
+    // The store wipes IndexedDB in the background; without this fence the
+    // wipe can land after the seed below and delete what it just wrote.
+    await uvrSessionsWipeSettled()
     vi.restoreAllMocks()
   })
 
@@ -259,6 +271,9 @@ describe('a device with no room left', () => {
     await seedSourceSong()
     const built = await buildPortableBundle(SOURCE_ID)
     deleteAllUvrSessions()
+    // The store wipes IndexedDB in the background; without this fence the
+    // wipe can land after the seed below and delete what it just wrote.
+    await uvrSessionsWipeSettled()
 
     // What a full device does: the first stem lands, the second does not.
     // Reported from a real TV, where the message was only "the

@@ -258,6 +258,8 @@ function createBackingSource<TTarget extends PlayAlongTargetStemKind>(
           {
             kind: asset.kind,
             url: asset.url,
+            blob: asset.blob,
+            mimeType: asset.mimeType,
             sizeBytes: asset.sizeBytes,
             durationSeconds:
               asset.durationSeconds ??

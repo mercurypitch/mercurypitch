@@ -1,0 +1,179 @@
+/* Stem storage bench — instrument-panel styling on the Lab palette. */
+
+.bench {
+  display: grid;
+  gap: 18px;
+  color: var(--lab-ink);
+}
+
+.head {
+  display: grid;
+  max-width: 76ch;
+  gap: 6px;
+}
+
+.head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+}
+
+.head p {
+  margin: 0;
+  color: var(--lab-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.memoryNote {
+  padding: 8px 11px;
+  border: 1px solid var(--lab-line);
+  border-radius: 9px;
+  background: var(--lab-panel);
+}
+
+.memoryNote[data-ok='true'] {
+  border-color: color-mix(in srgb, var(--lab-signal) 42%, transparent);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+
+.controls label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.controls label > span {
+  color: var(--lab-muted);
+  font-weight: 640;
+  letter-spacing: 0.04em;
+}
+
+.controls input[type='number'] {
+  width: 110px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  color: var(--lab-ink);
+  background: var(--lab-panel);
+  font: inherit;
+}
+
+.toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--lab-signal);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--lab-line);
+  border-radius: 9px;
+  color: var(--lab-ink);
+  background: var(--lab-panel);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 640;
+}
+
+.actions button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--lab-signal) 55%, var(--lab-line));
+}
+
+.actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actions .primary {
+  border-color: color-mix(in srgb, var(--lab-signal) 60%, transparent);
+  background: color-mix(in srgb, var(--lab-signal) 16%, var(--lab-panel));
+}
+
+.progress {
+  margin: 0;
+  color: var(--lab-signal);
+  font-size: 12px;
+}
+
+.error {
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, red 40%, var(--lab-line));
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.run {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--lab-line);
+  border-radius: 12px;
+  background: var(--lab-panel);
+}
+
+.run h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 660;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.run table {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.run th,
+.run td {
+  padding: 5px 12px 5px 0;
+  border-bottom: 1px solid var(--lab-line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.run th {
+  color: var(--lab-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.run td {
+  color: var(--lab-measured, var(--lab-ink));
+}
+
+.run tr[data-corrupt='true'] td {
+  color: color-mix(in srgb, red 60%, var(--lab-ink));
+  font-weight: 700;
+}

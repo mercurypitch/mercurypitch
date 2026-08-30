@@ -3,11 +3,14 @@
 
 import type { UvrSessionRecord, UvrStemBlob, UvrStemType } from '@/db/entities'
 import { getLocalDatabase } from '@/db/local-database'
+import { queueStemRowBlobMigration } from '@/db/services/uvr-stem-migration'
 
 export interface UvrStemSnapshotEntry {
   kind: UvrStemType
   mimeType: string
-  data: ArrayBuffer
+  /** ArrayBuffer for legacy rows, Blob for migrated ones — read via
+   *  src/db/stem-blob-data.ts. */
+  data: ArrayBuffer | Blob
   sizeBytes: number
 }
 
@@ -62,12 +65,15 @@ export async function readUvrStemSnapshot(
   return Object.freeze(
     [...latestByKind.values()]
       .filter((row) => row.stemType !== 'original')
-      .map((row) => ({
-        kind: row.stemType,
-        mimeType: row.mimeType,
-        data: row.data,
-        sizeBytes: row.size,
-      })),
+      .map((row) => {
+        queueStemRowBlobMigration(row)
+        return {
+          kind: row.stemType,
+          mimeType: row.mimeType,
+          data: row.data,
+          sizeBytes: row.size,
+        }
+      }),
   )
 }
 
@@ -116,6 +122,7 @@ export async function readUvrStemSelection(
     rowsByKind.flatMap((newest) => {
       if (newest === null) return []
       if (newest === undefined) return []
+      queueStemRowBlobMigration(newest)
       return [
         {
           kind: newest.stemType,
@@ -174,6 +181,7 @@ export async function readUvrStemSelectionWithinBudget(
       return { ok: false, requiredBytes, budgetBytes }
     }
     totalBytes = requiredBytes
+    queueStemRowBlobMigration(newest)
     snapshot.push({
       kind: newest.stemType,
       mimeType: newest.mimeType,

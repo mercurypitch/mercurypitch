@@ -11,6 +11,69 @@
 // MissingAPIError and logging noisy caught errors to stderr.
 import 'fake-indexeddb/auto'
 
+// fake-indexeddb clones stored values with the global structuredClone. Node's
+// structuredClone does not recognize jsdom's Blob class and silently clones it
+// to an empty plain object, corrupting Blob-carrying rows (uvrStemBlobs.data).
+// Real IndexedDB stores Blobs correctly (measured by the lab's storage bench),
+// so tests must too: lift Blobs out before the clone and reinsert them after.
+// Blobs are immutable, which makes pass-through-by-reference observably
+// identical to a true clone.
+const nativeStructuredClone = globalThis.structuredClone.bind(globalThis)
+const BLOB_TOKEN = '__mp_test_blob_token__:'
+globalThis.structuredClone = (<T>(
+  value: T,
+  options?: StructuredSerializeOptions,
+): T => {
+  const blobs: Blob[] = []
+  const stripped = new Map<object, unknown>()
+  const strip = (input: unknown): unknown => {
+    if (input instanceof Blob) {
+      blobs.push(input)
+      return `${BLOB_TOKEN}${blobs.length - 1}`
+    }
+    if (input === null || typeof input !== 'object') return input
+    const existing = stripped.get(input)
+    if (existing !== undefined) return existing
+    if (Array.isArray(input)) {
+      const out: unknown[] = []
+      stripped.set(input, out)
+      for (const item of input) out.push(strip(item))
+      return out
+    }
+    const proto: unknown = Object.getPrototypeOf(input)
+    if (proto !== Object.prototype && proto !== null) return input
+    const out: Record<string, unknown> = {}
+    stripped.set(input, out)
+    for (const [key, item] of Object.entries(input)) out[key] = strip(item)
+    return out
+  }
+  const prepared = strip(value)
+  if (blobs.length === 0) return nativeStructuredClone(value, options)
+  const cloned: unknown = nativeStructuredClone(prepared, options)
+  const restored = new WeakSet<object>()
+  const restore = (input: unknown): unknown => {
+    if (typeof input === 'string' && input.startsWith(BLOB_TOKEN)) {
+      return blobs[Number(input.slice(BLOB_TOKEN.length))]
+    }
+    if (input === null || typeof input !== 'object' || restored.has(input)) {
+      return input
+    }
+    restored.add(input)
+    if (Array.isArray(input)) {
+      for (let index = 0; index < input.length; index++) {
+        input[index] = restore(input[index])
+      }
+      return input
+    }
+    if (Object.getPrototypeOf(input) === Object.prototype) {
+      const record = input as Record<string, unknown>
+      for (const key of Object.keys(record)) record[key] = restore(record[key])
+    }
+    return input
+  }
+  return restore(cloned) as T
+}) as typeof structuredClone
+
 // Mock Web Audio API for tests
 class MockAudioContext {
   sampleRate = 44100
