@@ -60,6 +60,12 @@ export const TWINKLE_TWINKLE: LevelDef = {
     'The lullaby as a road: the famous leap from do up to sol, repeat notes to steady your voice, and the slow walk back down.',
   done: 'Twinkle Twinkle, sung whole. The leap up to sol is yours now.',
   control: 'flow',
+  // The lullaby is the first song most players will try: wider pitch
+  // band, longer sink grace — easy to pass, hard to fail.
+  feel: {
+    land: { bandSemis: 0.8, dwellMs: 600 },
+    fall: { sinkGraceMs: 2200 },
+  },
   segments: [
     { type: 'melody', melody: VERSE },
     { type: 'melody', melody: MIDDLE },

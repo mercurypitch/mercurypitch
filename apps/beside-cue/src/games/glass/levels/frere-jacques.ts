@@ -59,6 +59,14 @@ export const FRERE_JACQUES: LevelDef = {
     'The round, phrase by phrase. The matines run moves quickly, and the bells at the end dip BELOW your ground note — the first road that goes under the start.',
   done: 'Frère Jacques rung through — quick run, low bell and all.',
   control: 'flow',
+  // The quick round asks for quicker, truer notes: a tighter band and a
+  // shorter dwell keep the matines run moving; less sink grace, and a
+  // narrower tap window in rhythm play.
+  feel: {
+    land: { bandSemis: 0.5, dwellMs: 550 },
+    fall: { sinkGraceMs: 1100 },
+    tap: { windowMs: 170 },
+  },
   segments: [
     { type: 'melody', melody: P1 },
     { type: 'melody', melody: P2 },

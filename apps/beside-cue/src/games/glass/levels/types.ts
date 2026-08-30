@@ -12,7 +12,12 @@
 //      `compileLevel(level, { mode })` is the bridge (the analogue of a
 //      beatmap converter in rhythm games: one chart, many rulesets).
 //   3. DRIVER: where the input comes from — voice, taps, answers.
+//
+// The one config-shaped hook is `feel` — a level's difficulty profile,
+// still plain data (numbers in the JOURNEY_CONFIG tree shape).
 // ============================================================
+
+import type { FeelOverlay } from './feel'
 
 export interface MelodyDef {
   id: string
@@ -48,8 +53,8 @@ export interface LevelDef {
   done?: string
   /** Default play mode; the player can still pick another one. */
   control?: 'flow' | 'platformer' | 'rhythm'
-  /** Deep-partial JOURNEY_CONFIG overlay — the difficulty profile.
-   * Declared now, applied by a later pass (V1 plays on defaults). */
-  feel?: Record<string, unknown>
+  /** Deep-partial JOURNEY_CONFIG overlay — the difficulty profile,
+   * merged over the defaults when the stage builds (applyFeel). */
+  feel?: FeelOverlay
   segments: Segment[]
 }

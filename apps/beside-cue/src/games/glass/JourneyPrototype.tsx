@@ -21,8 +21,10 @@ import './journey.css'
 import { createSingDriver } from './drivers/sing'
 import { createTapDriver } from './drivers/tap'
 import type { InteractionDriver } from './drivers/types'
-import { JOURNEY_CONFIG as C } from './journey-config'
+import { JOURNEY_CONFIG } from './journey-config'
 import { compileLevel } from './levels/compile'
+import type { GameFeel } from './levels/feel'
+import { applyFeel } from './levels/feel'
 import type { LevelDef } from './levels/types'
 import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
 
@@ -62,6 +64,9 @@ export const JourneyPrototype: Component<{
   /** The controller: today always the sing driver (voice pitch). Tap and
    * listen drivers slot in behind the same interface. */
   let driver: InteractionDriver | null = null
+  /** Per-stage game feel: buildStage merges this level's `feel` overlay
+   * over the defaults — every C.* read below is a per-level tunable. */
+  let C: GameFeel = JOURNEY_CONFIG
 
   // --- world state ---
   let groundMidi = 0
@@ -96,7 +101,7 @@ export const JourneyPrototype: Component<{
   // rhythm (tap) state: the road scrolls at tempo after the count-in
   let rhythmStartAt = 0
   let rhythmSpeed = 2 // world units / s
-  let rhythmBpm = C.tap.bpmDefault as number
+  let rhythmBpm = C.tap.bpmDefault
 
   /** Ground note persistence: sing calibration writes it; tap play (no
    * mic) reads it back so songs sit where this voice last sang. */
@@ -500,6 +505,7 @@ export const JourneyPrototype: Component<{
       mode: mode(),
       groundMidi,
       rangeBias: props.rangeBias ?? 0,
+      feel: C,
     })
     const firstMelody = level.segments.find((s) => s.type === 'melody')
     rhythmBpm =
@@ -534,6 +540,7 @@ export const JourneyPrototype: Component<{
   }
 
   const buildStage = (): void => {
+    C = applyFeel(props.level?.feel)
     winLo = C.view.windowLoOffset
     winHi = C.view.windowHiOffset
     if (props.level !== undefined) buildLevelStage(props.level)

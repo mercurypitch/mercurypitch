@@ -21,6 +21,7 @@
 import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import { JOURNEY_CONFIG } from '../journey-config'
 import type { Node, Pane, Platform } from '../world-types'
+import type { GameFeel } from './feel'
 import type { LevelDef, MelodyDef } from './types'
 
 export type PlayMode = 'flow' | 'platformer' | 'rhythm'
@@ -31,6 +32,9 @@ export interface CompileOpts {
   /** Extra semitones to shift the whole song (the range setting):
    * negative sits the song lower, positive higher. Default 0. */
   rangeBias?: number
+  /** Merged per-level config (applyFeel) — pacing geometry can differ
+   * per level too. Defaults to JOURNEY_CONFIG when omitted. */
+  feel?: GameFeel
 }
 
 export interface CompiledStage {
@@ -48,8 +52,6 @@ export interface CompiledStage {
    * (range centering + bias) — for debugging and future range tools. */
   shift: number
 }
-
-const M = JOURNEY_CONFIG.melody
 
 const platform = (
   midi: number,
@@ -89,6 +91,7 @@ export const compileLevel = (
   opts: CompileOpts,
 ): CompiledStage => {
   const { mode, groundMidi } = opts
+  const M = (opts.feel ?? JOURNEY_CONFIG).melody
 
   // range fit: center the song on the hummed note, then apply the bias
   const range = levelRange(level)
