@@ -149,6 +149,37 @@ Rename `src/components/__tests__/Foo.test.tsx` → `src/components/Foo.test.tsx`
 - Worker SQL integration: stays in `workers/db-worker/node-tests/*.test.ts` (different runtime — `node:sqlite`).
 - E2E: `src/e2e/<feature>.spec.ts`. One feature per file. No `debug*`, no `test-*`, no `*-test.spec.ts`.
 
+### 3.2b Which environment a test runs in
+
+`vitest.config.ts` defines two projects. A test lands in one or the other; it
+never runs in both, and the include/exclude sets are exact complements, so
+`--project node` and `--project jsdom` must sum to the full file count.
+
+- **`jsdom`** — the default, and where a new test goes unless someone moves it.
+  Setup is `src/tests/setup.ts` (the shared doubles plus
+  `@testing-library/jest-dom`).
+- **`node`** — the files listed in `vitest.node-tests.json`. Setup is
+  `src/tests/setup-node.ts` (shared doubles only). No document, no DOM matchers.
+
+Both load `src/tests/setup-common.ts`, which is where a new global double
+belongs unless it genuinely needs a document.
+
+Why bother: a single-project run reported `environment 555.82s` against
+`tests 212.28s` — over half the CPU spent building a document per file, most of
+them for suites that never touch one.
+
+Moving a file into the `node` list is an optimisation, not a requirement, and
+it has to be **verified by running it**, not by reading it. A static scan for
+DOM globals put 470 files on the list; 26 of them reached `Audio`, `window` or
+a canvas _through their imports_ and failed. Add the path, run
+`pnpm run test:run -- --project node`, and check both the exit code and that no
+"Errors" line appears — an unhandled rejection does not fail the file on its
+own.
+
+Every way this can be wrong is safe: a new file is absent from the list and
+gets jsdom (the superset); a listed file that grows a DOM dependency fails
+loudly under `node`; a deleted file leaves a glob matching nothing.
+
 ### 3.3 Test naming — a behaviour sentence, not a label
 
 `it(...)` completes the sentence "it ...". The name must state an outcome that could be false.
