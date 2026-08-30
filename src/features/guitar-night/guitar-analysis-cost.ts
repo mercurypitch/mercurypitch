@@ -49,7 +49,10 @@ export const guitarAnalysisCost = cost
 const GATED_MS = 0.05
 
 const durations: number[] = []
-let windowStartedAt = 0
+// Null rather than 0 for "no window yet": 0 is a legal timestamp, and using it
+// as the sentinel meant a first reading at exactly 0 re-seeded the window on
+// every call and never published.
+let windowStartedAt: number | null = null
 let completed = 0
 let gated = 0
 let lastPublishedAt = 0
@@ -67,7 +70,7 @@ export function recordGuitarDetectCost(
     durations.push(durationMs)
     if (durations.length > WINDOW) durations.shift()
   }
-  if (windowStartedAt === 0) {
+  if (windowStartedAt === null) {
     windowStartedAt = nowMs
     lastPublishedAt = nowMs
     return
@@ -100,7 +103,7 @@ export function recordGuitarDetectCost(
 
 export function resetGuitarAnalysisCost(): void {
   durations.length = 0
-  windowStartedAt = 0
+  windowStartedAt = null
   lastPublishedAt = 0
   completed = 0
   gated = 0
