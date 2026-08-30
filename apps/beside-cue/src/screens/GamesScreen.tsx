@@ -5,6 +5,8 @@ import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
+import type { RangeFit } from '@/games/glass/range-finder'
+import { RangeFinder } from './RangeFinder'
 
 interface GamesScreenProps {
   onBack: () => void
@@ -19,14 +21,17 @@ type PlayPick =
   | null
 
 /** The range setting: songs sit lower / centered / higher around the
- * hummed note. Persisted per device; a later guided range-finder (sing
- * your lowest and highest) will set this automatically. */
+ * hummed note. Persisted per device. The presets write ±rangeBiasSemis;
+ * the guided range-finder ("Find it by singing") writes the exact
+ * measured bias, shown as a "fitted" chip. */
 const BIAS_KEY = 'beside-cue:games:range-bias'
+const RANGE_KEY = 'beside-cue:games:vocal-range'
 const BIAS_STEP = JOURNEY_CONFIG.melody.rangeBiasSemis
+const BIAS_MAX = JOURNEY_CONFIG.rangeFinder.clampSemis
 const readBias = (): number => {
   try {
     const v = Number(window.localStorage.getItem(BIAS_KEY))
-    return v === -BIAS_STEP || v === BIAS_STEP ? v : 0
+    return Number.isInteger(v) && Math.abs(v) <= BIAS_MAX ? v : 0
   } catch {
     return 0
   }
@@ -37,6 +42,7 @@ const readBias = (): number => {
 export function GamesScreen(props: GamesScreenProps) {
   const [playing, setPlaying] = createSignal<PlayPick>(null)
   const [rangeBias, setRangeBias] = createSignal(readBias())
+  const [finding, setFinding] = createSignal(false)
   const pickBias = (b: number): void => {
     setRangeBias(b)
     try {
@@ -45,6 +51,17 @@ export function GamesScreen(props: GamesScreenProps) {
       // preference just lives for the session when storage is denied
     }
   }
+  const applyFit = (fit: RangeFit): void => {
+    pickBias(fit.biasSemis)
+    try {
+      window.localStorage.setItem(RANGE_KEY, JSON.stringify(fit))
+    } catch {
+      // the bias is the part that matters; losing the raw range is fine
+    }
+    setFinding(false)
+  }
+  const fitted = (): boolean =>
+    rangeBias() !== 0 && Math.abs(rangeBias()) !== BIAS_STEP
   const levelPick = (): {
     level: LevelDef
     control: LevelControl
@@ -168,7 +185,25 @@ export function GamesScreen(props: GamesScreenProps) {
           >
             Higher
           </button>
+          <Show when={fitted()}>
+            <span class="games-range__fit">
+              fitted {rangeBias() > 0 ? '+' : ''}
+              {rangeBias()}
+            </span>
+          </Show>
+          <button
+            class="games-range__pick games-range__find"
+            type="button"
+            aria-expanded={finding()}
+            onClick={() => setFinding(!finding())}
+          >
+            Find it by singing
+          </button>
         </div>
+
+        <Show when={finding()}>
+          <RangeFinder onFit={applyFit} onClose={() => setFinding(false)} />
+        </Show>
 
         <For each={SONGBOOK}>
           {(level) => (

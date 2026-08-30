@@ -137,14 +137,29 @@ interface LevelDef {
   −5..+4 around the voice. A persistent "Songs sit: Lower / Centered /
   Higher" setting on the games list biases the shift by
   `melody.rangeBiasSemis` either way. The pitch window derives from the
-  shifted range (always still containing the ground note). Planned next:
-  a guided range-finder — sing your lowest and highest comfortable note
-  at calibration — which computes the bias from the measured range
-  instead of a preference (same `rangeBias` seam in `compileLevel`).
+  shifted range (always still containing the ground note). The guided
+  range-finder (shipped 2026-08-30) sets the bias from a MEASURED range:
+  "Find it by singing" on the games list asks for a comfortable note,
+  then the lowest, then the highest — a steady-note detector locks each
+  (hold `rangeFinder.holdMs` within `tolSemis`; silence between steps so
+  one held note cannot lock twice; logic in `range-finder.ts`, pure and
+  unit-tested) — and the bias becomes where the measured range's center
+  sits relative to the comfortable hum (`computeRangeFit`, clamped to
+  `rangeFinder.clampSemis`), through the same `rangeBias` seam. The fit
+  persists with the raw range and shows as a "fitted +N" chip; the three
+  presets still override it.
   The STARTING slab sits at the song's first note (not the hummed note),
   ready-lit and captioned "start" — Merc begins standing on the melody's
   opening pitch and steps forward into it; the hummed note anchors only
   the transposition.
+- **Feel overlays (shipped 2026-08-30):** `applyFeel` (`levels/feel.ts`)
+  merges `LevelDef.feel` — a deep-partial `JOURNEY_CONFIG` in widened
+  types — over the defaults when the stage builds; untouched sections
+  are shared by reference, arrays replace wholesale, and the defaults
+  are never mutated. `compileLevel` takes the merged config too, so
+  pacing geometry is per-level. In the songbook: Twinkle plays forgiving
+  (wider band, longer sink grace), Frère tighter (quicker dwell, shorter
+  grace, narrower tap window), Ode on plain defaults.
 - Bundled in `src/games/glass/levels/`; JSON-serializable so a remote
   (Cloudflare) songbook later is a fetch, not a refactor. This data
   format IS the level editor for V1.

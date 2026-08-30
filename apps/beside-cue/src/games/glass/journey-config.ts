@@ -262,6 +262,24 @@ export const JOURNEY_CONFIG = {
     vibrateMs: 15,
   },
 
+  /** The guided range-finder on the games list: hum a comfortable note,
+   * then your lowest, then your highest — the range setting is computed
+   * from the measured range instead of picked as a preference. */
+  rangeFinder: {
+    /** A note must hold this long inside tolSemis to lock. */
+    holdMs: 700,
+    /** Wobble tolerance around the emerging note, semitones. */
+    tolSemis: 0.75,
+    /** Silence required between steps, ms — so a held note cannot lock
+     * two steps in a row. */
+    stepSilenceMs: 350,
+    /** Locked-note confirmation hum, seconds. */
+    humSeconds: 0.7,
+    /** Largest computed bias the finder will apply, semitones either
+     * way (a wild measurement never flings songs off the ruler). */
+    clampSemis: 12,
+  },
+
   /** Game-emitted audio (all of it gated by the corner toggles too). */
   sound: {
     /** Hum every new objective's note as it activates (hidden door and
