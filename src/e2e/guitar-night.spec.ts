@@ -435,10 +435,14 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
 
   const actions = page.getByTestId('guitar-night-entry-actions')
   const buttons = actions.getByRole('button')
-  await expect(buttons).toHaveCount(3)
+  // Two entries, not three: the way to the Guitar workspace is a return
+  // control on the eyebrow rather than a third choice of equal weight.
+  await expect(buttons).toHaveCount(2)
   await expect(buttons.nth(0)).toHaveAccessibleName('Start')
   await expect(buttons.nth(1)).toHaveAccessibleName('Load a song')
-  await expect(buttons.nth(2)).toHaveAccessibleName('I know my way around')
+  await expect(
+    page.getByRole('button', { name: 'Open the Guitar workspace' }),
+  ).toBeVisible()
 
   await buttons.nth(0).focus()
   await page.keyboard.press('Tab')
@@ -1561,7 +1565,7 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -1730,7 +1734,7 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2120,7 +2124,7 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2269,7 +2273,7 @@ test('moves and widens the other-part preview without covering stage controls wi
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2457,7 +2461,7 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
     })
     await page.getByRole('button', { name: 'Load a song', exact: true }).click()
     await page
-      .getByRole('button', { name: 'Rehearse the tab', exact: true })
+      .getByRole('button', { name: 'Practice with tab', exact: true })
       .click()
     await page.evaluate(() => {
       document.documentElement.style.setProperty(

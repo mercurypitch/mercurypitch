@@ -286,7 +286,7 @@ describe('GuitarNightApp prepared songs', () => {
     ))
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
     fireEvent.click(
-      await screen.findByRole('button', { name: /Quiet Room\.wav/ }),
+      await screen.findByRole('button', { name: /^Quiet Room\.wav/ }),
     )
 
     const enterRoom = await screen.findByRole('button', {
@@ -322,7 +322,7 @@ describe('GuitarNightApp prepared songs', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back to Songs' }))
     expect(backingTransport.transport.pause).toHaveBeenCalledOnce()
     const resumeSong = await screen.findByRole('button', {
-      name: /Quiet Room\.wav/,
+      name: /^Quiet Room\.wav/,
     })
     expect(resumeSong).toHaveTextContent('Resume')
     fireEvent.click(resumeSong)

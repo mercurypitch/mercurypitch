@@ -1130,6 +1130,9 @@
 }
 
 .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 0.75rem;
   color: var(--amber-bright);
   font-size: 0.72rem;
@@ -1539,7 +1542,12 @@
   pointer-events: none;
 }
 
+/* The brief is `pointer-events: none` so the highway behind it can still be
+   dragged. That is right for the prose and wrong for the one control in it:
+   without this the button could not be clicked at all, and the cursor stayed
+   the highway's grab hand over it. */
 .firstWinBack {
+  pointer-events: auto;
   display: inline-flex;
   gap: 0.3rem;
   align-items: center;
@@ -2263,47 +2271,43 @@
   }
 }
 
-/* The song view is a chooser on the left and what you chose on the right.
-   Everything else in this panel is a single narrow column, so the width is
-   widened only here rather than for every view. */
-.entryPanelSong {
-  width: min(64rem, 100%);
-}
-
-.songLayout {
-  display: grid;
-  gap: clamp(1rem, 2.4vw, 2rem);
-  align-items: start;
-}
-
-@media (min-width: 60rem) {
-  .songLayout {
-    grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
-  }
-
-  /* Sticks beside the galleries so the actions stay reachable however far the
-     reader scrolls through them. */
-  .songAside {
-    position: sticky;
-    top: 1rem;
-  }
-}
-
-.songMain {
-  min-width: 0;
-}
-
+/* A panel in its own right, beside the chooser rather than inside it, and
+   pinned to the top of it however tall the chooser grows. */
 .songAside {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.8rem;
   align-content: start;
-  padding: clamp(0.9rem, 1.6vw, 1.15rem);
-  border: 1px solid rgba(224, 164, 93, 0.18);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.028);
+  align-self: flex-start;
+  width: min(21rem, 100%);
+  padding: clamp(1rem, 1.8vw, 1.35rem);
+  border: 1px solid rgba(224, 164, 93, 0.26);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%),
+    var(--faceplate);
+  box-shadow:
+    0 1.4rem 4rem rgba(0, 0, 0, 0.42),
+    inset 0 1px rgba(255, 255, 255, 0.045);
+  -webkit-backdrop-filter: blur(calc(18px * var(--gn-blur-scale)))
+    saturate(1.08);
+  backdrop-filter: blur(calc(18px * var(--gn-blur-scale))) saturate(1.08);
+}
+
+/* Beside the chooser where the two fit, below it where they do not -- the
+   wrap does that on its own from the two declared widths, so there is no
+   breakpoint to keep in step with them. Hiding it under a min-width was the
+   bug: on a phone the staged song and every action on it disappeared. */
+.main:has(.songAside) {
+  flex-wrap: wrap;
+  gap: clamp(1rem, 2vw, 1.75rem);
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .songAsideTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   margin: 0;
   color: var(--muted);
   font-family: inherit;
@@ -2311,6 +2315,33 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.songAsideBack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Pulled back so the chevron reads as sitting before the word rather than
+     as an indent on it, while keeping a full-size hit area. */
+  margin-inline-start: -0.55rem;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.songAsideBack:hover,
+.songAsideBack:focus-visible {
+  color: var(--ivory);
+}
+
+.songAsideBack svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .songAsideEmpty {
@@ -2359,6 +2390,24 @@
 .songAsideMeta li + li::before {
   margin-inline-end: 0.55rem;
   content: '·';
+}
+
+/* Two rooms of equal standing, so they share a row. */
+.songAsidePrimary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.songAsidePrimary .completionAction {
+  gap: 0.35rem;
+  padding-inline: 0.5rem;
+  text-align: center;
+}
+
+.songAsidePrimary svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 /* Inside the aside the actions are a stack, not the space-between row they
@@ -2597,10 +2646,144 @@
   background: var(--teal);
 }
 
+/* Smaller than the other entry headings on purpose. This is the one view
+   with a chooser, two galleries and a score card under it, so the display
+   size that sets the tone elsewhere was pushing the rest off the screen. The
+   wider measure also lets it fall on two short lines instead of three. */
+/* The eyebrow carries the way out of this screen, so it is a row now. */
+.eyebrowReturn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  /* Pulled back so the chevron sits before the words rather than indenting
+     them, while keeping a full hit area. */
+  margin-inline-start: -0.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.eyebrowReturn:hover,
+.eyebrowReturn:focus-visible {
+  opacity: 1;
+}
+
+.eyebrowReturn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.songHeading {
+  max-width: 18ch;
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+}
+
+/* Row-level actions, under the choice they act on. */
+.songChoiceActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.3rem 0 0.1rem;
+  padding-inline-start: 0.65rem;
+}
+
+/* A pill, not a bar. These sit under the row they belong to and should read
+   as a small affordance on it, not as another choice competing with it. The
+   touch target is met by the padding box rather than by a min-height that
+   would stretch the pill into a slab. */
+.songChoiceAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid rgba(224, 164, 93, 0.3);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.82);
+  background: rgba(224, 164, 93, 0.07);
+  font-size: 0.66rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.songChoiceAction:hover,
+.songChoiceAction:focus-visible {
+  background: rgba(224, 164, 93, 0.16);
+}
+
+.songChoiceAction svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.songChoiceUnstage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.5);
+  background: transparent;
+  cursor: pointer;
+}
+
+.songChoiceUnstage:hover,
+.songChoiceUnstage:focus-visible {
+  color: var(--ivory);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.songChoiceUnstage {
+  border-radius: 999px;
+}
+
+.songChoiceUnstage svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* Coarse pointers still get the full target, without the pills growing on a
+   mouse where 24px is plenty. */
+@media (pointer: coarse) {
+  .songChoiceAction,
+  .songChoiceUnstage {
+    min-height: var(--touch-target);
+  }
+
+  .songChoiceUnstage {
+    width: var(--touch-target);
+  }
+}
+
 .songLibrary {
   margin-top: 1rem;
   padding-top: 0.9rem;
-  border-top: 1px solid var(--line);
+}
+
+/* A flat rule across the panel read as a seam. This fades out at both ends
+   in the room's own amber rather than the app's blue line. */
+.songLibrary::before {
+  display: block;
+  height: 1px;
+  margin-bottom: 0.9rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(224, 164, 93, 0.34) 22%,
+    rgba(224, 164, 93, 0.34) 78%,
+    transparent
+  );
+  content: '';
 }
 
 .songLibraryHeader {
@@ -2810,7 +2993,16 @@
   gap: 0.3rem;
 }
 
+.referencePlaceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .referenceOnRecordingButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   min-height: var(--touch-target);
   padding: 0.35rem 0.6rem;
   border: 1px solid rgba(224, 164, 93, 0.4);
@@ -2819,6 +3011,37 @@
   background: rgba(224, 164, 93, 0.1);
   cursor: pointer;
   font-size: 0.68rem;
+}
+
+.referenceOnRecordingButton svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* The long explanation this replaced lives in its title. Full touch target,
+   so it is reachable without a pointer even though it only carries help. */
+.referencePlaceHelp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.55);
+  background: transparent;
+  cursor: help;
+}
+
+.referencePlaceHelp:hover,
+.referencePlaceHelp:focus-visible {
+  color: var(--ivory);
+}
+
+.referencePlaceHelp svg {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .referenceOnRecordingBack {
@@ -3346,13 +3569,21 @@
   gap: 0.55rem;
 }
 
-.scoreSessionVolume {
+/* Both class names are on the same element and `.masterVolume` is declared
+   further down this file, so at equal specificity IT won: the pill inherited
+   a two-column track and the percent readout was pushed onto a second row,
+   outside the rounded border. Qualified so the three columns this control
+   actually has cannot be undone by source order. */
+.masterVolume.scoreSessionVolume {
   grid-template-columns: var(--touch-target) minmax(3.5rem, 1fr) 2.35rem;
   justify-self: stretch;
+  gap: 0.25rem;
+}
+
+.scoreSessionVolume {
   width: 100%;
   min-width: 0;
   min-height: var(--touch-target);
-  gap: 0.25rem;
   padding-right: 0.45rem;
   border: 1px solid rgba(244, 234, 219, 0.1);
   border-radius: 999px;
@@ -4534,7 +4765,7 @@
   background: rgba(244, 234, 219, 0.1);
 }
 
-/* Room-supplied way out of the note — "Rehearse the tab" when one is
+/* Room-supplied way out of the note — "Practice with tab" when one is
    attached, "Attach a tab" when none is. */
 .stageInvitationAction {
   margin-top: 0.4rem;

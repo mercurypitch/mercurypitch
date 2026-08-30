@@ -265,6 +265,38 @@ describe('GuitarNightListeningCycle', () => {
       return event
     }
 
+    it('marks the configured route even while Listening is off', () => {
+      // The Session panel writes the same `inputProfile` signal this control
+      // reads, and it can be changed with Listening off. Keying the picker on
+      // the LIVE route showed no chip as current then, so the two surfaces
+      // looked out of sync while reading one value.
+      const [status] = createSignal<GuitarListeningStatus>('off')
+      const [profile, setProfile] =
+        createSignal<GuitarInputProfileKind>('microphone')
+      render(() => (
+        <GuitarNightListeningCycle
+          status={status}
+          profile={profile}
+          onSelect={() => {}}
+        />
+      ))
+
+      setProfile('midi')
+      expect(
+        screen.getByTestId('guitar-night-listening-cycle'),
+      ).toHaveAttribute('data-route', 'midi')
+
+      openViaRightClick()
+      const chip = screen.getByRole('menuitemradio', {
+        name: 'Listen with MIDI (selected)',
+      })
+      expect(chip).toHaveAttribute('aria-checked', 'true')
+      expect(chip).toHaveAttribute('data-current', 'true')
+      expect(
+        screen.getByRole('menuitemradio', { name: 'Listen with Room mic' }),
+      ).toHaveAttribute('aria-checked', 'false')
+    })
+
     it('reaches direct input without ever opening the microphone', () => {
       // The whole point: cycling can only get here through Room mic, which
       // costs a browser consent prompt a plugged-in player never wanted.

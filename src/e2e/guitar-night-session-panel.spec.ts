@@ -73,7 +73,7 @@ test('changes the scored part from inside the tab room @smoke', async ({
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -118,7 +118,7 @@ test('returns focus to the room when the panel is dismissed @smoke', async ({
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const trigger = page.getByTestId('guitar-night-session-trigger')
