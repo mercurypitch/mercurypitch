@@ -7,6 +7,13 @@
 // intervals stay the path. Rhythm-game precedent: one beatmap, many
 // rulesets, converted per ruleset (osu!lazer's IBeatmapConverter).
 //
+// Range fit: with melody.centerRange the song's midpoint lands ON the
+// hummed note (a 0..+9 tune becomes −5..+4 around the voice), and
+// rangeBias shifts the whole song lower/higher — the "Songs sit"
+// setting. A later guided range-finder (sing your lowest, sing your
+// highest) plugs into the same shift: it just computes the bias from a
+// measured range instead of a preference.
+//
 // Purity matters: no engine, no DOM, no audio — unit-testable, and the
 // output shape is plain data so a remote songbook stays a fetch away.
 // ============================================================
@@ -21,6 +28,9 @@ export type PlayMode = 'flow' | 'platformer'
 export interface CompileOpts {
   mode: PlayMode
   groundMidi: number
+  /** Extra semitones to shift the whole song (the range setting):
+   * negative sits the song lower, positive higher. Default 0. */
+  rangeBias?: number
 }
 
 export interface CompiledStage {
@@ -34,6 +44,9 @@ export interface CompiledStage {
   windowHi: number
   /** Merc's starting world x (on the lit ground slab). */
   startX: number
+  /** Semitones the song was shifted relative to a ground-note tonic
+   * (range centering + bias) — for debugging and future range tools. */
+  shift: number
 }
 
 const M = JOURNEY_CONFIG.melody
@@ -56,12 +69,17 @@ const platform = (
   ...extra,
 })
 
-const melodyRange = (m: MelodyDef): { lo: number; hi: number } => {
+/** Degree range across every segment (melody notes and pane notes). */
+const levelRange = (level: LevelDef): { lo: number; hi: number } => {
   let lo = 0
   let hi = 0
-  for (const d of m.degrees) {
+  const eat = (d: number): void => {
     if (d < lo) lo = d
     if (d > hi) hi = d
+  }
+  for (const seg of level.segments) {
+    if (seg.type === 'encounter') eat(seg.at)
+    else if (seg.type === 'melody') for (const d of seg.melody.degrees) eat(d)
   }
   return { lo, hi }
 }
@@ -71,7 +89,14 @@ export const compileLevel = (
   opts: CompileOpts,
 ): CompiledStage => {
   const { mode, groundMidi } = opts
-  const name = (deg: number): string => midiToNoteNameOctave(groundMidi + deg)
+
+  // range fit: center the song on the hummed note, then apply the bias
+  const range = levelRange(level)
+  const shift =
+    (M.centerRange ? -Math.round((range.lo + range.hi) / 2) : 0) +
+    (opts.rangeBias ?? 0)
+  const midiFor = (deg: number): number => groundMidi + shift + deg
+  const name = (deg: number): string => midiToNoteNameOctave(midiFor(deg))
 
   const platforms: Platform[] = []
   const panes: Pane[] = []
@@ -84,8 +109,6 @@ export const compileLevel = (
   platforms.push(ground)
   let cursor = ground.x1
 
-  let lo = 0
-  let hi = 0
   let melodiesSeen = 0
   let afterBoundary = false // wider first gap after a segment boundary
 
@@ -100,7 +123,7 @@ export const compileLevel = (
       const wx = cursor + M.paneGap[mode]
       const pane: Pane = {
         wx,
-        midi: groundMidi + seg.at,
+        midi: midiFor(seg.at),
         kind: seg.kind,
         res: 0,
         burstT: -1,
@@ -117,25 +140,20 @@ export const compileLevel = (
             ? `A glass wall rings at ${name(seg.at)} — press close and sing it open.`
             : `The ${seg.kind} rings at ${name(seg.at)}. Hold its note.`),
       })
-      if (seg.at < lo) lo = seg.at
-      if (seg.at > hi) hi = seg.at
       cursor = wx + M.paneAfter
       afterBoundary = true
       continue
     }
 
     // melody segment: one platform per note, width from duration
-    const m = seg.melody
-    const r = melodyRange(m)
-    if (r.lo < lo) lo = r.lo
-    if (r.hi > hi) hi = r.hi
+    const m: MelodyDef = seg.melody
     melodiesSeen += 1
     for (let i = 0; i < m.degrees.length; i++) {
       const deg = m.degrees[i]
       const gap = i === 0 && afterBoundary ? M.phraseGap[mode] : M.noteGap[mode]
       const x0 = cursor + gap
       const width = Math.max(M.minWidth, m.durations[i] * M.unitsPerBeat[mode])
-      const p = platform(groundMidi + deg, x0, x0 + width, {
+      const p = platform(midiFor(deg), x0, x0 + width, {
         syllable: m.syllables?.[i],
       })
       platforms.push(p)
@@ -156,13 +174,18 @@ export const compileLevel = (
     afterBoundary = true
   }
 
+  // the window covers the shifted song AND the ground note (offset 0)
+  const winLo = Math.min(range.lo + shift, 0) - M.windowLoPad
+  const winHi = Math.max(range.hi + shift, 0) + M.windowHiPad
+
   return {
     platforms,
     panes,
     nodes,
     worldMax: cursor + M.endPad,
-    windowLo: lo - M.windowLoPad,
-    windowHi: hi + M.windowHiPad,
+    windowLo: winLo,
+    windowHi: winHi,
     startX: ground.x0 + 0.9,
+    shift,
   }
 }

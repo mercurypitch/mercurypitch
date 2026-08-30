@@ -38,6 +38,8 @@ export const JourneyPrototype: Component<{
   level?: LevelDef
   /** Play mode for `level` — overrides the level's own default. */
   control?: 'flow' | 'platformer'
+  /** Range setting: semitones to sit the song lower/higher (levels only). */
+  rangeBias?: number
 }> = (props) => {
   const mode = (): 'flow' | 'platformer' =>
     props.level !== undefined
@@ -476,7 +478,11 @@ export const JourneyPrototype: Component<{
   }
 
   const buildLevelStage = (level: LevelDef): void => {
-    const cs = compileLevel(level, { mode: mode(), groundMidi })
+    const cs = compileLevel(level, {
+      mode: mode(),
+      groundMidi,
+      rangeBias: props.rangeBias ?? 0,
+    })
     platforms = cs.platforms
     panes = cs.panes
     nodes = cs.nodes

@@ -1,6 +1,7 @@
 import { createSignal, For, Show } from 'solid-js'
 import './games.css'
 import { AppHeader } from '@/components/AppHeader'
+import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
@@ -15,10 +16,33 @@ type PlayPick =
   | { level: LevelDef; control: 'flow' | 'platformer' }
   | null
 
+/** The range setting: songs sit lower / centered / higher around the
+ * hummed note. Persisted per device; a later guided range-finder (sing
+ * your lowest and highest) will set this automatically. */
+const BIAS_KEY = 'beside-cue:games:range-bias'
+const BIAS_STEP = JOURNEY_CONFIG.melody.rangeBiasSemis
+const readBias = (): number => {
+  try {
+    const v = Number(window.localStorage.getItem(BIAS_KEY))
+    return v === -BIAS_STEP || v === BIAS_STEP ? v : 0
+  } catch {
+    return 0
+  }
+}
+
 /** B-side games: small sung games, unscored and ungated. The list stays in
  * the paper world; entering a game flips the record to its own stage. */
 export function GamesScreen(props: GamesScreenProps) {
   const [playing, setPlaying] = createSignal<PlayPick>(null)
+  const [rangeBias, setRangeBias] = createSignal(readBias())
+  const pickBias = (b: number): void => {
+    setRangeBias(b)
+    try {
+      window.localStorage.setItem(BIAS_KEY, String(b))
+    } catch {
+      // preference just lives for the session when storage is denied
+    }
+  }
   const levelPick = (): {
     level: LevelDef
     control: 'flow' | 'platformer'
@@ -36,6 +60,7 @@ export function GamesScreen(props: GamesScreenProps) {
             variant={playing() === 'trials' ? 'trials' : 'journey'}
             level={levelPick()?.level}
             control={levelPick()?.control}
+            rangeBias={rangeBias()}
           />
           <button
             class="games-leave"
@@ -114,6 +139,34 @@ export function GamesScreen(props: GamesScreenProps) {
             <path d="m9 5 7 7-7 7" />
           </svg>
         </button>
+
+        <div class="games-range" role="group" aria-label="Song range">
+          <span class="games-range__label">Songs sit</span>
+          <button
+            class="games-range__pick"
+            type="button"
+            aria-pressed={rangeBias() === -BIAS_STEP}
+            onClick={() => pickBias(-BIAS_STEP)}
+          >
+            Lower
+          </button>
+          <button
+            class="games-range__pick"
+            type="button"
+            aria-pressed={rangeBias() === 0}
+            onClick={() => pickBias(0)}
+          >
+            Centered
+          </button>
+          <button
+            class="games-range__pick"
+            type="button"
+            aria-pressed={rangeBias() === BIAS_STEP}
+            onClick={() => pickBias(BIAS_STEP)}
+          >
+            Higher
+          </button>
+        </div>
 
         <For each={SONGBOOK}>
           {(level) => (

@@ -28,11 +28,30 @@ describe('compileLevel', () => {
     }
   })
 
-  it('transposes degrees onto the calibrated ground note', () => {
+  it('centers the song range on the calibrated ground note', () => {
     const cs = flow(ODE_TO_JOY)
-    // first melody platform is mi (+4), last is do (0)
-    expect(cs.platforms[1].midi).toBe(G + 4)
-    expect(cs.platforms.at(-1)!.midi).toBe(G + 0)
+    // range 0..7 → midpoint 3.5 → shift −4: the tune wraps the voice
+    expect(cs.shift).toBe(-4)
+    expect(cs.platforms[1].midi).toBe(G + 4 + cs.shift) // first mi
+    expect(cs.platforms.at(-1)!.midi).toBe(G + 0 + cs.shift) // last do
+    expect(cs.platforms[0].midi).toBe(G) // the ground stays the hummed note
+  })
+
+  it('applies the range bias on top of centering', () => {
+    const base = flow(ODE_TO_JOY)
+    const hi = compileLevel(ODE_TO_JOY, {
+      mode: 'flow',
+      groundMidi: G,
+      rangeBias: 3,
+    })
+    expect(hi.shift).toBe(base.shift + 3)
+    for (let i = 1; i < base.platforms.length; i++) {
+      expect(hi.platforms[i].midi).toBe(base.platforms[i].midi + 3)
+    }
+    expect(hi.platforms[0].midi).toBe(G)
+    // the window always still contains the ground note
+    expect(hi.windowLo).toBeLessThanOrEqual(0)
+    expect(hi.windowHi).toBeGreaterThanOrEqual(0)
   })
 
   it('sizes platform width from note duration', () => {
@@ -49,17 +68,17 @@ describe('compileLevel', () => {
     )
   })
 
-  it('derives the pitch window from the melody range', () => {
-    const cs = flow(ODE_TO_JOY) // range 0..7
-    expect(cs.windowLo).toBe(0 - M.windowLoPad)
-    expect(cs.windowHi).toBe(7 + M.windowHiPad)
+  it('derives the pitch window from the shifted melody range', () => {
+    const cs = flow(ODE_TO_JOY) // range 0..7 shifted by −4 → −4..3
+    expect(cs.windowLo).toBe(-4 - M.windowLoPad)
+    expect(cs.windowHi).toBe(3 + M.windowHiPad)
   })
 
   it('places the gate reachable in both modes', () => {
     const f = flow(ODE_TO_JOY)
     const p = plat(ODE_TO_JOY)
     expect(f.panes).toHaveLength(1)
-    expect(f.panes[0].midi).toBe(G + 7)
+    expect(f.panes[0].midi).toBe(G + 7 + f.shift)
     // flow: the approach spot must hover over the previous platform
     const prevF = f.platforms.filter((pl) => pl.x1 <= f.panes[0].wx).at(-1)!
     const approach = f.panes[0].wx - JOURNEY_CONFIG.pane.approachBack

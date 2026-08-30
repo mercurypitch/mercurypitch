@@ -225,6 +225,13 @@ export const JOURNEY_CONFIG = {
     paneGap: { flow: 0.6, platformer: 1.2 },
     /** Road resuming after a pane. */
     paneAfter: 0.8,
+    /** Center each song's range on the calibrated ground note (the
+     * melody's midpoint lands on the hummed note instead of the tonic,
+     * so a 0..+9 tune no longer sits entirely above the voice). */
+    centerRange: true,
+    /** Semitones the range setting shifts songs by ("Lower"/"Higher"
+     * on the games list move every song down/up this much). */
+    rangeBiasSemis: 3,
     /** Pitch window padding around the melody's range, semitones. */
     windowLoPad: 3,
     windowHiPad: 2,

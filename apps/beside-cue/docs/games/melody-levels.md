@@ -131,9 +131,16 @@ interface LevelDef {
   layout: melody notes become land-platforms at degree heights (width
   from duration), syllables render under slabs, encounters map to the
   existing pane/zone/boss primitives, checkpoints at phrase boundaries.
-- **Transposition:** tonic = the player's calibrated ground note, shifted
-  so the melody's range fits; the pitch window derives from the melody's
-  min/max instead of the fixed −3..+9.
+- **Transposition (range fit, shipped 2026-08-30):** the song's range is
+  CENTERED on the calibrated ground note (`melody.centerRange`): the
+  melody's midpoint lands on the hummed note, so a 0..+9 tune becomes
+  −5..+4 around the voice. A persistent "Songs sit: Lower / Centered /
+  Higher" setting on the games list biases the shift by
+  `melody.rangeBiasSemis` either way. The pitch window derives from the
+  shifted range (always still containing the ground note). Planned next:
+  a guided range-finder — sing your lowest and highest comfortable note
+  at calibration — which computes the bias from the measured range
+  instead of a preference (same `rangeBias` seam in `compileLevel`).
 - Bundled in `src/games/glass/levels/`; JSON-serializable so a remote
   (Cloudflare) songbook later is a fetch, not a refactor. This data
   format IS the level editor for V1.
