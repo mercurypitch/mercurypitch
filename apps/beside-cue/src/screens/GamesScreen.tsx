@@ -6,7 +6,9 @@ import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
 import type { RangeFit } from '@/games/glass/range-finder'
+import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { RangeFinder } from './RangeFinder'
+import { TapTuner } from './TapTuner'
 
 interface GamesScreenProps {
   onBack: () => void
@@ -62,6 +64,20 @@ export function GamesScreen(props: GamesScreenProps) {
   }
   const fitted = (): boolean =>
     rangeBias() !== 0 && Math.abs(rangeBias()) !== BIAS_STEP
+
+  const [tuning, setTuning] = createSignal(false)
+  const [tapLatency, setTapLatency] = createSignal<number | null>(
+    readStoredTapLatency(JOURNEY_CONFIG.tap.calClampMs),
+  )
+  const saveTapLatency = (ms: number): void => {
+    setTapLatency(ms)
+    try {
+      window.localStorage.setItem(TAP_LATENCY_KEY, String(ms))
+    } catch {
+      // the tuner still helped this session; nothing else to do
+    }
+    setTuning(false)
+  }
   const levelPick = (): {
     level: LevelDef
     control: LevelControl
@@ -203,6 +219,28 @@ export function GamesScreen(props: GamesScreenProps) {
 
         <Show when={finding()}>
           <RangeFinder onFit={applyFit} onClose={() => setFinding(false)} />
+        </Show>
+
+        <div class="games-range" role="group" aria-label="Tap timing">
+          <span class="games-range__label">Tap timing</span>
+          <Show when={tapLatency() !== null}>
+            <span class="games-range__fit">
+              {(tapLatency() ?? 0) > 0 ? '+' : ''}
+              {tapLatency()} ms
+            </span>
+          </Show>
+          <button
+            class="games-range__pick"
+            type="button"
+            aria-expanded={tuning()}
+            onClick={() => setTuning(!tuning())}
+          >
+            Tune it by tapping
+          </button>
+        </div>
+
+        <Show when={tuning()}>
+          <TapTuner onSaved={saveTapLatency} onClose={() => setTuning(false)} />
         </Show>
 
         <For each={SONGBOOK}>

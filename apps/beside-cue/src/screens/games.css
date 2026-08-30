@@ -208,6 +208,13 @@
   margin-top: 0.8rem;
 }
 
+/* the tap tuner card is itself the tap target */
+.tap-tuner {
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
 /* songbook card: not itself a button — the mode buttons inside are */
 .game-card--song {
   cursor: default;

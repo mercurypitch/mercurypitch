@@ -251,9 +251,20 @@ export const JOURNEY_CONFIG = {
     /** Hit window around a slab, ms of travel (also never smaller than
      * the slab itself — tapping anywhere over it counts). */
     windowMs: 200,
-    /** Fixed input-latency compensation, ms (a guided tap-along
-     * calibration screen sets this later). */
+    /** Input-latency compensation default, ms — the tap tuner on the
+     * games list measures and stores the real per-device offset
+     * (localStorage), which overrides this when present. */
     inputLatencyMs: 0,
+    /** The tap tuner: metronome ticks to tap along with. */
+    calBpm: 90,
+    calBeats: 16,
+    /** Fewest on-grid taps that make a trustworthy measurement. */
+    calMinTaps: 8,
+    /** Taps further than this fraction of a beat from the nearest tick
+     * are wild — dropped, not averaged. */
+    calMaxOffFrac: 0.45,
+    /** Largest offset the tuner will save, ms either way. */
+    calClampMs: 400,
     /** Metronome count-in beats before the road starts moving. */
     countInBeats: 4,
     /** Merc's glide toward each note's height, lerp per frame. */

@@ -98,9 +98,14 @@ scoring — all shared. Stars unify as accuracy% per mode.
   x-window judgment, hit hums the note + haptic tick, missed slabs light
   late so the song never stalls), approach-ring pulse rendering, "Tap
   the line" on every songbook card. The ground note comes from the last
-  sing calibration (persisted). Still open from B: the guided tap-along
-  latency screen (config `tap.inputLatencyMs` holds the offset), and
-  fail states for harder tiers.
+  sing calibration (persisted). The tap tuner SHIPPED (2026-08-30):
+  "Tap timing — Tune it by tapping" on the games list plays
+  `tap.calBeats` metronome ticks on the audio clock; taps anywhere on
+  the card are stamped with `AudioContext.currentTime`, and the median
+  signed tap-vs-nearest-tick offset (wild taps dropped, minimum-count
+  guard, clamped — `tap-latency.ts`, pure + tested) persists per device
+  and overrides `tap.inputLatencyMs` in the rhythm judge. Still open
+  from B: fail states for harder tiers.
 - **C. Listen driver:** question engine + gesture recognizer + answer UI.
 - **D. Mode select on level entry** + per-mode bests; Merc VO lines per
   mode (extend the voiceover manifest with tap/listen guide lines).

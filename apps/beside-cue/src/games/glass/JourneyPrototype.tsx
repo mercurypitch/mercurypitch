@@ -26,6 +26,7 @@ import { compileLevel } from './levels/compile'
 import type { GameFeel } from './levels/feel'
 import { applyFeel } from './levels/feel'
 import type { LevelDef } from './levels/types'
+import { readStoredTapLatency } from './tap-latency'
 import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
 
 const MIC_ID = 'journey-proto'
@@ -102,6 +103,9 @@ export const JourneyPrototype: Component<{
   let rhythmStartAt = 0
   let rhythmSpeed = 2 // world units / s
   let rhythmBpm = C.tap.bpmDefault
+  /** Input-latency compensation, ms: the tap tuner's stored per-device
+   * measurement when present, else the config default. */
+  let tapLatencyMs = 0
 
   /** Ground note persistence: sing calibration writes it; tap play (no
    * mic) reads it back so songs sit where this voice last sang. */
@@ -512,6 +516,7 @@ export const JourneyPrototype: Component<{
       (firstMelody?.type === 'melody' ? firstMelody.melody.bpm : undefined) ??
       C.tap.bpmDefault
     rhythmSpeed = C.melody.unitsPerBeat.rhythm * (rhythmBpm / 60)
+    tapLatencyMs = readStoredTapLatency(C.tap.calClampMs) ?? C.tap.inputLatencyMs
     platforms = cs.platforms
     panes = cs.panes
     nodes = cs.nodes
@@ -1022,7 +1027,7 @@ export const JourneyPrototype: Component<{
           const n = nodes[activeIdx]
           if (n.t === 'land') {
             const center = (n.p.x0 + n.p.x1) / 2
-            const latency = (C.tap.inputLatencyMs / 1000) * rhythmSpeed
+            const latency = (tapLatencyMs / 1000) * rhythmSpeed
             const win = Math.max(
               (C.tap.windowMs / 1000) * rhythmSpeed,
               (n.p.x1 - n.p.x0) / 2,
@@ -2050,6 +2055,7 @@ export const JourneyPrototype: Component<{
         winLo,
         winHi,
         worldMax,
+        tapLatencyMs,
       })
     }
     window.addEventListener('keydown', keyDown)
