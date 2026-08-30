@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 27.7k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 26.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
+| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 27.1k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.3k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
@@ -91,9 +91,9 @@ These are the rules that break things when ignored.
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 3.6k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.5k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
+| `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 3.1k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.9k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
-| `play-along` | [useBandPreparationController.ts](../../src/features/play-along/useBandPreparationController.ts) | 2.9k | Shared band preparation controller owns preflight, cancellation, progress, and restaging. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 2.7k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
@@ -370,12 +370,12 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
+| [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.4k |
 | [src/features/progress/ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 1.4k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
-| [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.3k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.2k |
