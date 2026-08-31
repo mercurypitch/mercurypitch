@@ -18,6 +18,7 @@
 import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
+import { forgetSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 import type { GrantFlushCredentials } from './grant-flush'
 import { authVersion, getAuthHeaders, getAuthToken, getDeviceSecret, getUserId, resetUserId, setAuthToken, } from './user-service'
@@ -283,6 +284,13 @@ async function postSignIn(
     )
   }
   const outcome = (await res.json()) as SignInOutcome
+  // How this device gets in, for the returning-visitor affordance. Recorded on
+  // the FIRST factor rather than on the session: an account that owes a code
+  // still signs in this way next time, and the hint is about what to offer.
+  // Anonymous provisioning is not a sign-in and must never leave one.
+  if (route === 'login' || route === 'register') {
+    rememberSignInMethod('password')
+  }
   if (isTwofaChallenge(outcome)) {
     // Deliberately no token to store and no authChanged(): the password was
     // right, and that alone buys nothing. The caller shows the code pane.
@@ -609,7 +617,10 @@ export function consumeGoogleRedirect(): void {
   // reason: a fragment never reaches a server. Stashed for the UI to pick up
   // and open the code pane with — nothing is signed in yet.
   const twofa = params.get('gauth_2fa')
-  if (twofa != null && twofa !== '') pendingGoogleTwofa = twofa
+  if (twofa != null && twofa !== '') {
+    pendingGoogleTwofa = twofa
+    rememberSignInMethod('google')
+  }
 
   // Read outside the sign-in branch: the Drive outcome has to survive both
   // shapes of return — the standalone connect pass, which is the only one
@@ -629,6 +640,7 @@ export function consumeGoogleRedirect(): void {
     setRequiresLogin(false)
     tokenServerVerified = true // freshly issued by the worker
     googleRedirectResult = { ok: true }
+    rememberSignInMethod('google')
     authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
     if (params.get('gauth_new') === '1') {
@@ -1199,6 +1211,10 @@ export async function deleteAccount(): Promise<void> {
   tearingDown = true
   setRequiresLogin(false)
   setAuthToken(null)
+  // Erasing an account must not leave the next visitor a note about how its
+  // owner used to sign in. Signing OUT keeps the hint on purpose; this is the
+  // one place it goes.
+  forgetSignInMethod()
   resetUserId()
   tokenServerVerified = false
   authChanged()
