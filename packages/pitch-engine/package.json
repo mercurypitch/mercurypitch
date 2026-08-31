@@ -13,9 +13,15 @@
     }
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "onnxruntime-web": "^1.25.1"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vitest": "^4.1.5"
   }
 }
