@@ -5,7 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
-import { analysisFps, presentationFps, recordAnimationFrame, } from '@/lib/device-tier'
+import { analysisFps, classifyDevice, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
 import type { DownloadProgress } from '@/lib/fetch-progress'
 import { aggregateProgress, fetchArrayBufferWithProgress, } from '@/lib/fetch-progress'
 import { rmsOfTimeData } from '@/lib/mic-level'
@@ -27,6 +27,7 @@ import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import type { PitchNote } from './types'
 
@@ -699,12 +700,75 @@ export const useStemMixerAudioController = (
       }
 
       // Extra tracks (instrument parts) — same load path, keyed by label.
+      //
+      // This is where a phone died. `decodeAudioData` returns uncompressed
+      // Float32 audio, so a 3.5-minute stereo stem is ~74 MB resident, and
+      // the play-along part presets select vocal plus EVERY isolated band
+      // stem — six of them for a full-band song, ~440 MB, held at once
+      // because they all have to play together. Loading them in parallel
+      // doubled the peak again: each in-flight stem holds its compressed
+      // download AND its decoded buffer at the same moment. iOS kills the
+      // content process for that, which no catch block can see; WebKit
+      // reloads, and after a few rounds shows its own "a problem repeatedly
+      // occurred" page. It dies during the decode, which is exactly when
+      // this mixer is showing "Decoding audio".
       if (extraTracks.length > 0) {
-        const settled = await Promise.allSettled(
-          extraTracks.map((t) => loadOne(t.url)),
+        const probe = readDeviceProbe()
+        const klass = classifyDevice(probe)
+        const budgetBytes = decodedBudgetBytes({
+          deviceClass: klass,
+          deviceMemoryGb: probe.deviceMemoryGb,
+        })
+        // Measured, not guessed: the named stems have decoded by now, so
+        // their real duration and the context's real sample rate are known,
+        // and every stem of one song is the same length.
+        const perStemBytes = decodedStemBytes(
+          duration(),
+          ctx.sampleRate,
+          deps.vocal().buffer?.numberOfChannels ??
+            deps.instrumental().buffer?.numberOfChannels ??
+            2,
         )
+        const fit = fitStems({
+          loaded: loadedCount,
+          pending: extraTracks.length,
+          perStemBytes,
+          budgetBytes,
+        })
+        // Findable in Safari's Web Inspector when this is attached to a
+        // phone, which is the only place the failure happens.
+        console.info(
+          `[stem-mixer] ${klass} budget ${mb(budgetBytes)}MB · ${mb(perStemBytes)}MB per stem · ` +
+            `${loadedCount} loaded + ${extraTracks.length} pending = ${mb(fit.projectedBytes)}MB projected · ` +
+            `loading ${fit.allowed}, skipping ${fit.skipped}`,
+        )
+
+        if (fit.skipped > 0) {
+          const msg =
+            `This device cannot hold all ${loadedCount + extraTracks.length} stems of this song in memory ` +
+            `(about ${mb(fit.projectedBytes)}MB decoded), so ${fit.skipped} were left out. ` +
+            `Pick fewer stems for a full mix.`
+          deps.showNotification(msg, 'warning')
+        }
+
+        // Serial on anything but a desktop. Concurrency here is a memory
+        // decision, not a speed one -- it multiplies the peak by the number
+        // of stems in flight -- and the wall-clock it costs is the price of
+        // the tab surviving.
+        const limit = stemLoadConcurrency(klass)
+        const wanted = extraTracks.slice(0, fit.allowed)
+        const settled: Array<PromiseSettledResult<AudioBuffer>> = []
+        for (let start = 0; start < wanted.length; start += limit) {
+          const batchTracks = wanted.slice(start, start + limit)
+          settled.push(
+            ...(await Promise.allSettled(
+              batchTracks.map((t) => loadOne(t.url)),
+            )),
+          )
+          if (disposed) break
+        }
         settled.forEach((res, i) => {
-          const label = extraTracks[i].label
+          const label = wanted[i].label
           if (res.status === 'fulfilled') {
             deps.setExtras((list) =>
               list.map((t) =>

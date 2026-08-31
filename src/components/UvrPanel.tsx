@@ -1743,6 +1743,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const partKeys = [...selected].filter(
       (key): key is StemSplitPart => key in PART_STEM_DISPLAY,
     )
+    // The other half of the stem-mixer memory trace. This is the sidebar's
+    // way into the mixer, and the count it prints here is what the mixer
+    // then has to hold decoded — a part preset selects vocal plus EVERY
+    // isolated band stem, which is where a phone runs out. Pair it with the
+    // `[stem-mixer] … projected` line in the same console.
+    console.info(
+      `[uvr-panel] open mixer ${sessionId} · stems ${[...selected].join(',') || 'none'} · ${partKeys.length} part blob(s)`,
+    )
     setMixerPreparation({
       token,
       songTitle: extractTitle(raw.originalFile?.name ?? 'this song'),
