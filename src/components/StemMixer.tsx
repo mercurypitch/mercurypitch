@@ -5,7 +5,6 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
-import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useMelodyAuditionSynth } from '@/features/stem-mixer/melody-synth'
@@ -21,7 +20,7 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { useStemMixerStemControls } from '@/features/stem-mixer/useStemMixerStemControls'
-import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
+import { useStemMixerTransportController } from '@/features/stem-mixer/useStemMixerTransportController'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { formatBytes } from '@/lib/fetch-progress'
@@ -32,20 +31,17 @@ import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { createPersistedSignal } from '@/lib/storage'
 import { useConfirm } from '@/lib/use-confirm'
-import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { activeStemSplits } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
+import { karaokeFocus, setKaraokeFocus, setKaraokeZen } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
-import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
-import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
@@ -508,237 +504,57 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }),
   )
 
-  // ── Karaoke playlist integration ─────────────────────────────
-  const [playlistSidebarOpen, setPlaylistSidebarOpen] = createPersistedSignal(
-    'sm-karaoke-playlist-sidebar',
-    false,
-  )
-  // Mount lazily on first use, then retain the drawer so closing/reopening it
-  // keeps the per-song stem inventories and editor state already loaded.
-  // Destroying it on every close re-ran every IndexedDB role query.
-  const [playlistSidebarMounted, setPlaylistSidebarMounted] = createSignal(
-    playlistSidebarOpen(),
-  )
-  // Zen-mode autoplay: when on, the next library song plays automatically at
-  // end-of-song. Playlists run their own advance flow (scoring/summary), so
-  // this governs free-library listening. Persisted as a per-user preference.
-  const [autoplayEnabled, setAutoplayEnabled] = createPersistedSignal(
-    'sm-zen-autoplay',
-    false,
-  )
-  // True between a natural song end and the score modal being dismissed, so we
-  // advance the playlist only after the user has seen their score.
-  let pendingAdvance = false
-  let playStarted = false
-
-  // `preset` is fixed for the lifetime of a StemMixer instance (the studio
-  // mounts without it; the karaoke page remounts per song via a keyed <Show>),
-  // and the controller options derived from it below are init-time-only by
-  // design — they seed initial signal values and storage keys that the
-  // controllers read exactly once. So this is an intentional static read, not
-  // a missed reactive dependency. JSX/effect uses keep reading props.preset.
+  // ── Karaoke playlist & Zen transport controller ──────────────
   // eslint-disable-next-line solid/reactivity
   const isPerformancePreset = props.preset === 'performance'
 
-  // Phone-width viewports get the zen Apple-Music-style stage instead of the
-  // desktop mixer — same controllers, different presentation. Width-based
-  // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
-  // mixer. Reactive, so a rotation or resize swaps the presentation without
-  // losing playback (the audio engine lives in setup, not in either JSX tree).
-  // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
-  // tab gets the same zen stage on phones as the standalone karaoke-night
-  // page — the studio mixer is a desktop surface (decision D4).
-  // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
-  // same clean lyrics stage the phone gets automatically.
-  const zenStage = () => isNarrow() || karaokeZen()
-
-  // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
-  // (keeping the song staged); otherwise it's the normal page-level back.
-  const handleZenBack = (): void => {
-    if (karaokeZen() && !isNarrow()) {
-      setKaraokeZen(false)
-    } else {
-      props.onBack?.()
-    }
-  }
-
-  // True when this StemMixer instance is the playlist's current song (guards
-  // the brief window where a new song is loading and a stale instance lingers).
-  const isCurrentPlaylistSong = () =>
-    playlist.isPlaylistActive() &&
-    playlist.currentSong()?.sessionId === props.sessionId
-
-  /** Called by the audio controller when the track ends naturally. */
-  const handlePlaylistSongEnded = () => {
-    if (!isCurrentPlaylistSong() || playlist.phase() !== 'playing') return
-    const action = playlistEndAction(
-      zenStage(),
-      mic.micActive(),
-      mic.comparisonData().length,
-    )
-    if (action === 'defer-to-score-modal') {
-      // Desktop mixer: handleStop() will show the score modal — advance when
-      // it closes.
-      pendingAdvance = true
-    } else {
-      // The zen stage mounts no score modal, so score (comparison data is
-      // still intact — handleStop() clears it after this callback) and
-      // advance right away; the result surfaces on the next song's overlay
-      // and the summary instead.
-      playlist.reportSongScore(
-        action === 'advance-with-score' ? mic.computeScore() : null,
-      )
-      playlist.advance()
-    }
-  }
-
-  // Safety net: an advance must never wait on a score modal that is not
-  // mounted. If the zen stage is up (it renders no StemMixerScoreModal) while
-  // the end-of-song score signal is showing — e.g. zen was toggled while the
-  // modal was open — consume it here exactly like the modal's close would.
-  createEffect(() => {
-    if (!zenStage() || !mic.showScore()) return
-    mic.setShowScore(false)
-    if (playlist.isPlaylistActive() && pendingAdvance) {
-      pendingAdvance = false
-      playlist.reportSongScore(mic.score())
-      playlist.advance()
-    }
+  const transport = useStemMixerTransportController({
+    getSessionId: () => props.sessionId,
+    getSongTitle: () => props.songTitle,
+    onPickSession: (id) => props.onPickSession?.(id),
+    onBack: () => props.onBack?.(),
+    mic: {
+      micActive: mic.micActive,
+      toggleMic: mic.toggleMic,
+      showScore: mic.showScore,
+      setShowScore: mic.setShowScore,
+      score: mic.score,
+      computeScore: mic.computeScore,
+      comparisonData: mic.comparisonData,
+    },
+    audio: {
+      playing: audio.playing,
+      loading: audio.loading,
+      loadError: audio.loadError,
+      duration: audio.duration,
+      handlePlay: audio.handlePlay,
+      handlePause: audio.handlePause,
+    },
+    setTrackVolume: (track, vol) => setTrackVolume(track, vol),
   })
 
-  /** Overlay "Start": request the mic (user gesture) then run the countdown. */
-  const handlePlaylistStart = () => {
-    if (!mic.micActive()) {
-      void mic.toggleMic().finally(() => playlist.beginCountdown())
-    } else {
-      playlist.beginCountdown()
-    }
-  }
-
-  // Manual playlist transport (header controls). Pause first — without scoring —
-  // so audio stops even when the action doesn't remount the mixer (skipping the
-  // last song into the summary, or stopping the playlist).
-  const handlePlaylistPrev = () => {
-    audio.handlePause()
-    playlist.prev()
-  }
-  const handlePlaylistNext = () => {
-    audio.handlePause()
-    playlist.advance()
-  }
-  const handlePlaylistStopAll = () => {
-    audio.handlePause()
-    playlist.stopPlaylist()
-  }
-
-  // ── Zen transport: unified song navigation ───────────────────
-  // The zen stage's back/next controls span whichever context is active: an
-  // in-progress playlist/group (playlist store), or free browsing of the whole
-  // library (step by createdAt order via onPickSession). Ordering matches the
-  // zen song sheet so the controls track the visible list. Nav decisions are
-  // the pure helpers in zen-navigation.ts (unit-tested).
-  const orderedLibrary = () =>
-    orderedLibrarySessions(getAllUvrSessionsReactive(), DEMO_SESSION_ID)
-  const orderedLibraryIds = (): string[] =>
-    orderedLibrary().map((session) => session.sessionId)
-  const libraryDrawerSongs = (): KaraokeLibrarySong[] =>
-    orderedLibrary().map((session) => ({
-      sessionId: session.sessionId,
-      title: extractTitle(session.originalFile?.name ?? session.sessionId),
-      availableStems: [
-        ...(session.outputs?.vocal !== undefined ||
-        session.stemMeta?.vocal !== undefined
-          ? (['vocal'] as const)
-          : []),
-        ...(session.outputs?.instrumental !== undefined ||
-        session.stemMeta?.instrumental !== undefined
-          ? (['instrumental'] as const)
-          : []),
-      ],
-    }))
-  const canLibraryNav = (): boolean => props.onPickSession !== undefined
-
-  const hasPrevItem = (): boolean =>
-    playlist.isPlaylistActive()
-      ? playlist.currentIndex() > 0
-      : canLibraryNav() &&
-        prevSessionId(orderedLibraryIds(), props.sessionId) !== null
-
-  const hasNextItem = (): boolean =>
-    playlist.isPlaylistActive()
-      ? playlist.nextSong() !== null
-      : canLibraryNav() &&
-        nextSessionId(orderedLibraryIds(), props.sessionId) !== null
-
-  const goPrevItem = (): void => {
-    if (playlist.isPlaylistActive()) {
-      handlePlaylistPrev()
-      return
-    }
-    const id = prevSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
-  }
-
-  const goNextItem = (): void => {
-    if (playlist.isPlaylistActive()) {
-      handlePlaylistNext()
-      return
-    }
-    const id = nextSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
-  }
-
-  // End-of-song: a running playlist advances through its own flow (scoring,
-  // summary); free-library listening auto-advances only when autoplay is on.
-  const handleSongEnded = (): void => {
-    if (playlist.isPlaylistActive()) {
-      handlePlaylistSongEnded()
-      return
-    }
-    const target = autoAdvanceTarget(
-      autoplayEnabled(),
-      orderedLibraryIds(),
-      props.sessionId,
-    )
-    if (target !== null) props.onPickSession?.(target)
-  }
-
-  // Start playback once the countdown flips the phase to 'playing'. Wait for a
-  // real duration too: if the countdown ends before this song's stems finish
-  // decoding, starting at duration 0 makes the end-detector fire on the first
-  // frame and the song is skipped instantly. The effect re-runs when duration
-  // arrives, so a slow-loading song just starts a beat later.
-  createEffect(() => {
-    if (
-      isCurrentPlaylistSong() &&
-      playlist.phase() === 'playing' &&
-      !playStarted &&
-      !audio.loading() &&
-      !audio.loadError() &&
-      audio.duration() > 0
-    ) {
-      playStarted = true
-      // This singer's preferred backing-vocal level, saved on the playlist
-      // entry — applied before play so the sources start at the right gain.
-      const vocalPref = playlist.currentSong()?.vocalVolume
-      if (vocalPref !== undefined) setTrackVolume('Vocal', vocalPref)
-      audio.handlePlay()
-      // Get the playlist builder out of the way once the song is playing.
-      setPlaylistSidebarOpen(false)
-    }
-  })
-
-  // Reflect the playing song in the browser tab title.
-  const baseDocTitle = typeof document !== 'undefined' ? document.title : ''
-  createEffect(() => {
-    if (typeof document === 'undefined') return
-    const songName = (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim()
-    document.title =
-      audio.playing() && songName ? `MercuryPitch — ${songName}` : baseDocTitle
-  })
-  onCleanup(() => {
-    if (typeof document !== 'undefined') document.title = baseDocTitle
-  })
+  const {
+    playlistSidebarOpen,
+    setPlaylistSidebarOpen,
+    playlistSidebarMounted,
+    setPlaylistSidebarMounted,
+    autoplayEnabled,
+    setAutoplayEnabled,
+    zenStage,
+    handleZenBack,
+    isCurrentPlaylistSong,
+    handlePlaylistStart,
+    handlePlaylistPrev,
+    handlePlaylistNext,
+    handlePlaylistStopAll,
+    handleScoreModalClose,
+    libraryDrawerSongs,
+    hasPrevItem,
+    hasNextItem,
+    goPrevItem,
+    goNextItem,
+    handleSongEnded,
+  } = transport
 
   // Engagement milestone: ~30s of cumulative listening (wall-clock while
   // playing, so seeking around can't fake it). Effect-scoped so the prop is
@@ -2431,14 +2247,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showScore={mic.showScore}
           score={mic.score}
           onViewed={(score) => props.onScorecardViewed?.(score)}
-          onClose={() => {
-            mic.setShowScore(false)
-            if (playlist.isPlaylistActive() && pendingAdvance) {
-              pendingAdvance = false
-              playlist.reportSongScore(mic.score())
-              playlist.advance()
-            }
-          }}
+          onClose={handleScoreModalClose}
         />
 
         {/* Pitch Studio elevates the existing canvas instead of mounting a
