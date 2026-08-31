@@ -1095,6 +1095,8 @@ export function saveAllUvrSessions(sessions: UvrSession[]): void {
   updateCacheAndPersist(sessions)
 }
 
+let lastMintedSessionMillis = 0
+
 /** Start a new UVR session */
 export function startUvrSession(
   fileName: string,
@@ -1109,8 +1111,13 @@ export function startUvrSession(
   focus = true,
   bandSplit = false,
 ): string {
-  const sessionId = `uvr-session-${Date.now()}`
+  // Monotonic, not just Date.now(): two sessions minted inside the same
+  // millisecond (a multi-file upload loop) collided on one id and the second
+  // upsert silently swallowed the first file's session.
   const now = Date.now()
+  lastMintedSessionMillis =
+    now > lastMintedSessionMillis ? now : lastMintedSessionMillis + 1
+  const sessionId = `uvr-session-${lastMintedSessionMillis}`
 
   const newSession: UvrSession = {
     sessionId,
