@@ -54,7 +54,15 @@ export function writeToneWav(hz: number = TONE_HZ, seconds = 5): string {
     buf.writeInt16LE(s, 44 + i * 2)
   }
 
-  const file = path.join(os.tmpdir(), `mercurypitch-e2e-tone-${hz}.wav`)
+  // The length is part of the name. Callers ask for four different lengths at
+  // 220 Hz, all at module load, and Playwright loads spec files across four
+  // parallel workers — keying on frequency alone let a 1-second spec truncate
+  // the 20-second file `guided-voice-check` had already pinned, so its capture
+  // ran out of microphone mid-take and failed the task-completion gate.
+  const file = path.join(
+    os.tmpdir(),
+    `mercurypitch-e2e-tone-${hz}-${seconds}s.wav`,
+  )
   fs.writeFileSync(file, buf)
   return file
 }
