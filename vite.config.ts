@@ -15,6 +15,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 // Only use SSL in dev mode - production builds don't need it
 const isDev = process.env.NODE_ENV !== 'production'
 
+// A self-signed certificate costs a human one click and an agent a wall: an
+// automated browser cannot accept the warning, so it sees a blank page. The
+// `app-http` launch entry sets this to serve dev over plain http instead.
+const wantsPlainHttp = process.env.MP_DEV_HTTP === '1'
+
 let commitSha = 'unknown'
 try {
   const { execSync } = await import('node:child_process')
@@ -178,7 +183,7 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
-      isDev ? ssl() : [],
+      isDev && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's

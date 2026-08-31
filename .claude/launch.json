@@ -15,6 +15,19 @@
       "autoPort": true
     },
     {
+      "name": "app-http",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "cross-env",
+        "MP_DEV_HTTP=1",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "app-host",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
