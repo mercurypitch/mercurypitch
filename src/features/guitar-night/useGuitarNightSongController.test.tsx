@@ -28,12 +28,8 @@ describe('useGuitarNightSongController', () => {
     window.history.replaceState(null, '', '/guitar-night')
   })
 
-  it('restores the accepted backing route when history moves during Keep', async () => {
-    window.history.replaceState(
-      null,
-      '',
-      '/guitar-night?session=session-kept&song=score-kept',
-    )
+  it('returns to the accepted backing entry when Back moves during Keep', async () => {
+    window.history.replaceState(null, '', '/guitar-night?song=score-kept')
     const openSession = vi.fn<GuitarNightSongPort['openSession']>(
       async (sessionId) => ({ ok: true, lease: lease(sessionId) }),
     )
@@ -50,29 +46,53 @@ describe('useGuitarNightSongController', () => {
       return null
     }
     render(() => <Harness />)
-    await waitFor(() =>
+    await controller.stageSession('session-other')
+    await controller.stageSession('session-kept')
+    expect(controller.selectionState()).toMatchObject({
+      kind: 'ready',
+      lease: { sessionId: 'session-kept' },
+    })
+
+    const visited: string[] = []
+    const recordPop = (): void => {
+      visited.push(window.location.search)
+    }
+    window.addEventListener('popstate', recordPop)
+    const releaseLock = acquireLocalSaveNavigationLock('guitar route test')
+
+    try {
+      window.history.back()
+      await waitFor(() =>
+        expect(visited).toEqual([
+          '?song=score-kept&session=session-other',
+          '?song=score-kept&session=session-kept',
+        ]),
+      )
+
       expect(controller.selectionState()).toMatchObject({
         kind: 'ready',
         lease: { sessionId: 'session-kept' },
-      }),
-    )
-
-    const releaseLock = acquireLocalSaveNavigationLock('guitar route test')
-    try {
-      window.history.replaceState(
-        null,
-        '',
-        '/guitar-night?session=session-other&song=score-other',
-      )
-      window.dispatchEvent(new PopStateEvent('popstate'))
-
+      })
       expect(window.location.search).toBe(
-        '?session=session-kept&song=score-other',
+        '?song=score-kept&session=session-kept',
       )
       expect(controller.routeSessionId()).toBe('session-kept')
-      expect(openSession).toHaveBeenCalledTimes(1)
+      expect(openSession).toHaveBeenCalledTimes(2)
     } finally {
       releaseLock()
+      window.removeEventListener('popstate', recordPop)
     }
+
+    window.history.back()
+    await waitFor(() =>
+      expect(controller.selectionState()).toMatchObject({
+        kind: 'ready',
+        lease: { sessionId: 'session-other' },
+      }),
+    )
+    expect(window.location.search).toBe(
+      '?song=score-kept&session=session-other',
+    )
+    expect(openSession).toHaveBeenCalledTimes(3)
   })
 })

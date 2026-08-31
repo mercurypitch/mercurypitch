@@ -22,6 +22,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { barIndexAtBeat } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
+import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import { createPersistedSignal } from '@/lib/storage'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -457,12 +458,8 @@ function PocketStage(props: PocketStageProps): JSX.Element {
 
 export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   useBeforeUnloadGuard(isLocalSaveNavigationLocked)
-  const currentRouteLocation = (): string =>
-    `${window.location.pathname}${window.location.search}${window.location.hash}`
-  let acceptedRouteLocation = currentRouteLocation()
-  const acceptCurrentRouteLocation = (): void => {
-    acceptedRouteLocation = currentRouteLocation()
-  }
+  const routeHistory = acquireStandaloneRouteHistory('drum-night')
+  onCleanup(routeHistory.release)
   const [view, setView] = createSignal<StageView>('pocket')
   const [workspace, setWorkspace] = createSignal<Workspace>('groove')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -660,12 +657,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         window.location.href,
         sessionId,
       )
-      if (mode === 'replace') {
-        window.history.replaceState({ drumNight: true }, '', nextLocation)
-      } else {
-        window.history.pushState({ drumNight: true }, '', nextLocation)
-      }
-      acceptCurrentRouteLocation()
+      routeHistory.write(nextLocation, mode)
     },
     onBackingWillRelease: () => stemPlayAlong.configure(null),
   })
@@ -1438,12 +1430,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const nextLocation = `${url.pathname}${url.search}${url.hash}`
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
     if (nextLocation === currentLocation) return
-    if (mode === 'replace') {
-      window.history.replaceState({ drumNight: true }, '', nextLocation)
-    } else {
-      window.history.pushState({ drumNight: true }, '', nextLocation)
-    }
-    acceptCurrentRouteLocation()
+    routeHistory.write(nextLocation, mode)
   }
 
   const invalidateSourceIntent = (): number => {
@@ -1564,16 +1551,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     startBandSeparation(pending.sessionId)
   }
 
-  const restoreCurrentUrl = (): void => {
-    window.history.replaceState({ drumNight: true }, '', acceptedRouteLocation)
-  }
-
   const syncStateFromUrl = (event?: PopStateEvent): void => {
-    if (event !== undefined && isLocalSaveNavigationLocked()) {
-      restoreCurrentUrl()
-      return
-    }
-    acceptCurrentRouteLocation()
+    if (event !== undefined && routeHistory.vetoLockedPopState(event)) return
     const params = new URLSearchParams(window.location.search)
     const nextSongSessionId = readDrumPlayAlongSession()
     const requestedView = params.get('view')
@@ -1624,6 +1603,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     ) {
       selectPreparedSession(nextSongSessionId, 'none')
     }
+    routeHistory.acceptCurrent()
   }
 
   const showToast = (message: string): void => {

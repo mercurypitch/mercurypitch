@@ -50,6 +50,7 @@ import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreRoomStatus, } from './useGuitarNightScoreRoomController'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 import { useGuitarNightTakeCapture } from './useGuitarNightTakeCapture'
+import { useGuitarNightTakeKeepPrompt } from './useGuitarNightTakeKeepPrompt'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
 interface GuitarNightScoreRoomProps {
@@ -1072,6 +1073,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     setScoreOpen(true)
     return true
   }
+
+  useGuitarNightTakeKeepPrompt({
+    state: () => scoreTakeKeep()?.state ?? 'idle',
+    boundaryId: () =>
+      scoreTakeKeep() === null ? null : scoreTakeCapture.boundaryId(),
+    scoreOpen,
+    onKeep: scoreTakeCapture.keep,
+    onOpenScore: () => {
+      openScore(false)
+    },
+  })
 
   const playScoreAgain = async (): Promise<void> => {
     const replay = scoreReplay()
