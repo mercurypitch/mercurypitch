@@ -30,11 +30,11 @@
 // assembler, so a take recorded either way is the same shape.
 // ============================================================
 
-import { createFrameAssembler } from './f0-frames'
+import workletUrl from './f0-capture.worklet.ts?worker&url'
 import type { PitchFrame } from './f0-frames'
+import { createFrameAssembler } from './f0-frames'
 import type { F0CaptureMessage, F0WorkerResult } from './f0-worklet-contract'
 import { F0_CAPTURE_PROCESSOR, F0_HOP, F0_WINDOW } from './f0-worklet-contract'
-import workletUrl from './f0-capture.worklet.ts?worker&url'
 import { publishMicLevel, resetMicLevel } from './mic-level'
 import { PitchDetector } from './pitch-detector'
 

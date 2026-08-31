@@ -313,7 +313,7 @@ export default defineConfig(
   },
   // Web Workers legitimately use self, postMessage, and other worker globals
   {
-    files: ['src/workers/**/*.ts'],
+    files: ['src/workers/**/*.ts', 'packages/*/src/**/*.worker.ts'],
     rules: {
       'no-restricted-globals': 'off',
     },
