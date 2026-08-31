@@ -95,6 +95,30 @@ function corruptGuidedTake(id: string): VoiceTakeRecord {
   }
 }
 
+function instrumentTake(
+  id: string,
+  source: 'guitar-night' | 'piano-night' | 'drum-night',
+): VoiceTakeRecord {
+  return {
+    id,
+    createdAt: '2026-08-31T12:00:00.000Z',
+    updatedAt: '2026-08-31T12:00:00.000Z',
+    source,
+    comparisonKey: `${source}:fixture:v1`,
+    contextVersion: 1,
+    capturedAt: '2026-08-31T12:00:00.000Z',
+    durationMs: 4_000,
+    mimeType: 'audio/wav',
+    sizeBytes: 128,
+    peaks: [0.2, 0.8],
+    title: 'Night take',
+    favorite: false,
+    contextJson: JSON.stringify({ threadTitle: 'Night take' }),
+    metricsJson: JSON.stringify({ score: 90 }),
+    metricsVersion: 1,
+  }
+}
+
 describe('voice history playback requests', () => {
   it('lets only the latest asynchronous playback request commit', async () => {
     let resolveEarlier: (() => void) | undefined
@@ -213,5 +237,24 @@ describe('voice history guided comparison groups', () => {
     expect(
       findSavedGuidedFocus(buildVoiceThreads([corrupt])[0]!, corrupt.id),
     ).toBeNull()
+  })
+})
+
+describe('voice history instrument performance groups', () => {
+  it('keeps replayable Night takes in All Takes and out of vocal comparison', () => {
+    for (const source of [
+      'guitar-night',
+      'piano-night',
+      'drum-night',
+    ] as const) {
+      const records = [
+        instrumentTake(`${source}-a`, source),
+        instrumentTake(`${source}-b`, source),
+      ]
+      const [thread] = buildVoiceThreads(records)
+
+      expect(thread?.takes).toEqual(records)
+      expect(thread?.comparisonTakes).toEqual([])
+    }
   })
 })

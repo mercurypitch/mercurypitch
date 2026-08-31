@@ -19,6 +19,7 @@ import { loadGuitarScoreHistory, saveGuitarScoreTake, summarizeGuitarScoreTake, 
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { nextGuitarNightScoreCountIn } from './guitar-night-score-count-in'
@@ -48,6 +49,7 @@ import { useGuitarNightLiveScoreController } from './useGuitarNightLiveScoreCont
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreRoomStatus, } from './useGuitarNightScoreRoomController'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { useGuitarNightTakeCapture } from './useGuitarNightTakeCapture'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
 interface GuitarNightScoreRoomProps {
@@ -362,6 +364,14 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     activateAudio: room.activateAudio,
     getAudioGraph: room.getAudioGraph,
   })
+  const scoreTakeCapture = useGuitarNightTakeCapture({
+    getStream: listening.recordableStream,
+    getAudioContext: listening.recordableAudioContext,
+  })
+  useLocalSaveNavigationLock(
+    () => scoreTakeCapture.state() === 'saving',
+    'guitar-night take keep',
+  )
   const selectedLiveScoreRange = createMemo(() =>
     scoreLiveRange(
       loop.span(),
@@ -385,6 +395,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     armTakeAt: listening.armTakeAt,
     completeTakeAt: listening.completeTakeAt,
     completeTakeNow: listening.completeTakeNow,
+    beginReplayCapture: scoreTakeCapture.begin,
+    finishReplayCapture: scoreTakeCapture.finish,
+    discardReplayCapture: scoreTakeCapture.discard,
   })
   const tunerTuning = createMemo(
     () => props.tuning?.() ?? displayedReference().tuning,
@@ -591,6 +604,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     if (summary === null) return
     setCurrentScoreSummary(summary)
     setCurrentScoreBoundaryId(boundary.id)
+    if (status === 'completed') {
+      scoreTakeCapture.attachCompletedSummary(boundary.id, summary)
+    }
     if (status !== 'completed' || savedScoreRunId === boundary.id) return
     savedScoreRunId = boundary.id
     try {
@@ -669,7 +685,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       roomMicConsentOpen() ||
       doctorRecoveryActive() ||
       inputTransitionPending() ||
-      scoreResultSettling(),
+      scoreResultSettling() ||
+      scoreTakeCapture.state() === 'saving',
   )
   const loopEditBlocked = createMemo(
     () =>
@@ -738,6 +755,25 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       } satisfies LoopSpan,
     }
   })
+  const scoreTakeKeep = createMemo(() => {
+    const replay = scoreReplay()
+    const state = scoreTakeCapture.state()
+    if (
+      replay === null ||
+      replay.summary.status !== 'completed' ||
+      scoreTakeCapture.boundaryId() !== currentScoreBoundaryId() ||
+      state === 'idle'
+    ) {
+      return null
+    }
+    return { state, message: scoreTakeCapture.message() }
+  })
+  const discardTemporaryScoreTakeAndCloseResult = (): boolean => {
+    if (scoreTakeCapture.state() === 'saving') return false
+    scoreTakeCapture.discard(currentScoreBoundaryId())
+    setScoreOpen(false)
+    return true
+  }
   const isListening = createMemo(
     () =>
       listening.status() === 'listening' ||
@@ -1040,6 +1076,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const playScoreAgain = async (): Promise<void> => {
     const replay = scoreReplay()
     if (replay === null) return
+    if (!discardTemporaryScoreTakeAndCloseResult()) return
     const operation = ++scoreReplayGeneration
     const stillCurrent = (): boolean =>
       operation === scoreReplayGeneration &&
@@ -1048,7 +1085,6 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       props.reference().songId === replay.referenceId &&
       props.reference().trackId === replay.trackId
     setScoreReplayPending(true)
-    setScoreOpen(false)
     parkForConfiguration()
     try {
       if (listening.inputProfile() !== replay.inputKind) {
@@ -1113,7 +1149,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   }
 
   const reviewFromScore = (): void => {
-    setScoreOpen(false)
+    if (!discardTemporaryScoreTakeAndCloseResult()) return
     if (doctorView() !== null) {
       setDoctorRecoveryActive(false)
       setDoctorOpen(true)
@@ -1346,6 +1382,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   }
 
   const leaveRoom = (): void => {
+    if (scoreTakeCapture.state() === 'saving') return
     invalidateScoreReplay()
     invalidateScoreResume()
     closeRoomMicConsent(false)
@@ -1442,7 +1479,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     invalidateScoreReplay()
     invalidateScoreResume()
     setTunerOpen(false)
-    setScoreOpen(false)
+    discardTemporaryScoreTakeAndCloseResult()
     setSessionPanelOpen(false)
     closeRoomMicConsent(false)
     if (sessionDetails !== undefined) sessionDetails.open = false
@@ -1498,6 +1535,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             type="button"
             class={styles.roomBack}
             aria-label="Back to Songs"
+            disabled={scoreTakeCapture.state() === 'saving'}
             onClick={leaveRoom}
           >
             <span aria-hidden="true">
@@ -2580,7 +2618,11 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         current={scoreReplay()?.summary ?? null}
         history={scoreHistory()}
         returnFocus={() => (doctorOpen() ? null : (scoreTrigger ?? null))}
-        onClose={() => setScoreOpen(false)}
+        onClose={discardTemporaryScoreTakeAndCloseResult}
+        keepState={scoreTakeKeep()?.state}
+        keepMessage={scoreTakeKeep()?.message}
+        onKeepTake={() => void scoreTakeCapture.keep()}
+        onDiscardTake={discardTemporaryScoreTakeAndCloseResult}
         {...(scoreReplay() === null
           ? {}
           : { onPlayAgain: () => void playScoreAgain() })}

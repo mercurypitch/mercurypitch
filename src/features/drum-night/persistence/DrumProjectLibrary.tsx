@@ -624,10 +624,11 @@ export function DrumProjectLibrary(
         <section class={styles.eraseSection}>
           <div>
             <span>LOCAL PRIVACY</span>
-            <strong>Drum projects and take history</strong>
+            <strong>Drum projects and summary history</strong>
             <small>
               Erasing this library leaves kits, rooms, input mappings, and other
-              MercuryPitch data untouched.
+              MercuryPitch data untouched. Replays kept in Hear Yourself are
+              managed there.
             </small>
           </div>
           <Show
@@ -656,11 +657,11 @@ export function DrumProjectLibrary(
               <div class={styles.formCopy}>
                 <span>THIS DEVICE ONLY</span>
                 <h3 id={eraseHeadingId}>
-                  Erase Drum projects and take history?
+                  Erase Drum projects and summary history?
                 </h3>
                 <p>
                   Every saved Drum groove and compact take summary will be
-                  removed from this device.
+                  removed from this device. Hear Yourself replays stay there.
                 </p>
               </div>
               <div class={styles.formActions}>
@@ -696,7 +697,7 @@ export function DrumProjectLibrary(
 
       <footer class={styles.privacyNote}>
         Projects stay on this device. Audio and device setup are never part of a
-        drum project.
+        drum project; explicitly kept replays live separately in Hear Yourself.
       </footer>
     </section>
   )

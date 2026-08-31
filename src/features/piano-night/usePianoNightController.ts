@@ -22,7 +22,9 @@ import { pianoTempoBeatToSeconds } from '@/features/piano/runtime/piano-tempo-ma
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { createPersistedSignal } from '@/lib/storage'
+import { usePerformanceTakeKeep } from '@/lib/use-performance-take-keep'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { createPianoNightArrangement } from './piano-night-arrangement'
 import type { PianoNightStageMotion } from './piano-night-fall-geometry'
@@ -31,6 +33,8 @@ import type { PianoNightPracticeLoopState, PianoNightPracticeRange, } from './pi
 import { clampPianoNightMasterVolume, clampPianoNightRepeatCount, INITIAL_PIANO_NIGHT_PRACTICE_LOOP, isBeatInPianoNightPracticeRange, isPianoNightPracticeSpeed, normalizePianoNightPracticeRange, PIANO_NIGHT_DEFAULT_MASTER_VOLUME, } from './piano-night-practice-loop'
 import type { PianoNightSource } from './piano-night-source'
 import { PIANO_NIGHT_INCLUDED_SOURCE } from './piano-night-source'
+import { createPianoPerformanceTakeRecorder } from './piano-performance-take'
+import { createPianoPerformanceTakeMetadata } from './piano-performance-take-metadata'
 
 const MINIMUM_TEMPO_BPM = 40
 const MAXIMUM_TEMPO_BPM = 280
@@ -42,6 +46,7 @@ const INSTRUMENT_STORAGE_KEY = 'pitchperfect_piano_night_instrument'
 const SOUND_CHARACTER_STORAGE_KEY = 'pitchperfect_piano_night_character'
 const SOUND_AMBIENCE_STORAGE_KEY = 'pitchperfect_piano_night_ambience'
 const STAGE_MOTION_STORAGE_KEY = 'pitchperfect_piano_night_stage_motion'
+const PERFORMANCE_TAKE_START_BEAT_EPSILON = 0.001
 
 export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type PianoNightSoundCharacter = 'soft' | 'balanced' | 'bright'
@@ -329,6 +334,12 @@ export function usePianoNightController() {
     `${stage().title} is ready. Audio and input are off.`,
   )
   const [practiceRunComplete, setPracticeRunComplete] = createSignal(false)
+  const performanceTake = usePerformanceTakeKeep()
+  const performanceTakeRecorder = createPianoPerformanceTakeRecorder()
+  useLocalSaveNavigationLock(
+    () => performanceTake.state() === 'saving',
+    'piano-night take keep',
+  )
 
   const pendingPointers = new Map<number, number>()
   const keyboardReleaseTimers = new Map<number, number>()
@@ -337,6 +348,7 @@ export function usePianoNightController() {
   let commandGeneration = 0
   let completionSettled = false
   let settlingPracticeBoundary = false
+  let performanceTakeGeneration = 0
   let disposed = false
   let sampledInstrument:
     | (PianoNightSampledInstrument &
@@ -361,6 +373,112 @@ export function usePianoNightController() {
     touch.releaseAll()
     input.apply({ type: 'panic', timestampMs: performance.now() })
     instrument.panic()
+  }
+
+  const invalidatePerformanceTake = (): void => {
+    performanceTakeGeneration += 1
+    performanceTakeRecorder.discard()
+    if (performanceTake.state() !== 'saving') performanceTake.dismiss()
+  }
+
+  const beginPerformanceTakePass = (passNumber: number): void => {
+    performanceTakeGeneration += 1
+    performanceTakeRecorder.begin(performance.now())
+    const loop = practiceLoop()
+    performanceTake.beginCapture(
+      loop.enabled
+        ? `Capturing player notes for pass ${passNumber} of ${loop.repeatCount}.`
+        : 'Capturing your player-only Piano Night take.',
+    )
+  }
+
+  const preparePerformanceTake = (
+    score: PianoPerformanceScoringState,
+    completedLoop: PianoNightPracticeLoopState,
+  ): void => {
+    const finished = performanceTakeRecorder.finish(performance.now())
+    const generation = ++performanceTakeGeneration
+    if (!finished.ok) {
+      if (finished.reason === 'empty') {
+        performanceTake.unsupported(
+          'No player notes were heard in this pass, so there is no replay to keep.',
+        )
+      } else if (finished.reason === 'duration-limit') {
+        performanceTake.unsupported(
+          'This pass is longer than the five-minute local replay limit. Choose a shorter A/B range.',
+        )
+      } else if (finished.reason === 'note-limit') {
+        performanceTake.unsupported(
+          'This pass contains too many player notes for a reliable local replay.',
+        )
+      } else {
+        performanceTake.dismiss()
+      }
+      return
+    }
+
+    const sourceSnapshot = source()
+    const range = completedLoop.enabled ? completedLoop.range : null
+    const metadata = createPianoPerformanceTakeMetadata({
+      source: sourceSnapshot,
+      score,
+      capture: finished.capture,
+      rangeStartBeat: range?.startBeat ?? 0,
+      rangeEndBeat: range?.endBeat ?? sourceSnapshot.stage.totalBeats,
+      rangeKind: range === null ? 'full' : 'loop',
+      finalPassNumber: range === null ? 1 : completedLoop.currentPass,
+      repeatCount: range === null ? 1 : completedLoop.repeatCount,
+      practiceSpeed: practiceSpeed(),
+    })
+    const capturedAt = new Date().toISOString()
+    performanceTake.beginProcessing()
+
+    void import('./piano-performance-take-renderer')
+      .then((module) =>
+        module.renderPianoPerformanceTake(finished.capture, capturedAt),
+      )
+      .then((audio) => {
+        if (disposed || generation !== performanceTakeGeneration) return
+        if (audio === null) {
+          performanceTake.unsupported(
+            'A private replay could not be prepared for this pass. Your score is still available.',
+          )
+          return
+        }
+        performanceTake.ready(async () => {
+          const { keepInstrumentNightTake } =
+            await import('@/lib/domain/performance-take')
+          return keepInstrumentNightTake({
+            source: 'piano-night',
+            comparisonKey: metadata.comparisonKey,
+            title: metadata.title,
+            audio,
+            context: metadata.context,
+            metrics: metadata.metrics,
+          })
+        }, 'Player-only Mercury Felt Synth replay ready. Nothing is saved until you keep it.')
+      })
+      .catch(() => {
+        if (disposed || generation !== performanceTakeGeneration) return
+        performanceTake.fail(
+          'The replay could not be prepared. Your Piano Night score is still available.',
+        )
+      })
+  }
+
+  const keepPerformanceTake = async (): Promise<boolean> => {
+    const kept = await performanceTake.keep()
+    if (kept && !disposed) {
+      setStatusMessage('Take kept in Hear Yourself on this device.')
+    }
+    return kept
+  }
+
+  const discardPerformanceTake = (): boolean => {
+    if (!performanceTake.dismiss()) return false
+    performanceTakeGeneration += 1
+    performanceTakeRecorder.discard()
+    return true
   }
 
   const activeMidis = createMemo<ReadonlySet<number>>(
@@ -394,16 +512,16 @@ export function usePianoNightController() {
     snapshot: PianoInputSnapshot,
     beat: number,
     phase = transport.phase(),
-  ): void => {
-    applyScoringUpdate(
-      scoring.sample({
-        phase,
-        playheadBeat: beat,
-        sampledAtMs: performance.now(),
-        playbackRate: scoringPlaybackRate(beat),
-        input: snapshot,
-      }),
-    )
+  ): PianoPerformanceScoringUpdate => {
+    const update = scoring.sample({
+      phase,
+      playheadBeat: beat,
+      sampledAtMs: performance.now(),
+      playbackRate: scoringPlaybackRate(beat),
+      input: snapshot,
+    })
+    applyScoringUpdate(update)
+    return update
   }
 
   const cancelFrame = (): void => {
@@ -415,9 +533,10 @@ export function usePianoNightController() {
   const settleCompletion = (beat: number): void => {
     if (completionSettled) return
     completionSettled = true
-    sampleScoring(input.snapshot(), beat, 'complete')
+    const finished = sampleScoring(input.snapshot(), beat, 'complete')
     scheduler.stop()
     releaseLiveVoices()
+    preparePerformanceTake(finished.state, practiceLoop())
     setStatusMessage(`${stage().title} complete. Ready to play again.`)
   }
 
@@ -463,6 +582,7 @@ export function usePianoNightController() {
         const nextPass = loop.currentPass + 1
         const rebased = transport.rebasePlayingBeat(range.startBeat)
         if (!rebased) {
+          invalidatePerformanceTake()
           setStatusMessage('The practice loop could not restart. Press Play.')
           return true
         }
@@ -480,6 +600,7 @@ export function usePianoNightController() {
         completionSettled = false
         setPracticeRunComplete(false)
         prepareCurrentSampleWindow(range.startBeat)
+        beginPerformanceTakePass(nextPass)
         scheduler.start()
         setStatusMessage(
           `Pass ${loop.currentPass} finished at ${finished.state.accuracyPercent}%. Pass ${nextPass} of ${loop.repeatCount}.`,
@@ -492,6 +613,7 @@ export function usePianoNightController() {
       if (phase === 'playing') transport.pause()
       transport.seekToBeat(range.endBeat)
       setPlayheadBeat(range.endBeat)
+      preparePerformanceTake(finished.state, loop)
       setStatusMessage(
         `Practice complete — ${loop.repeatCount} passes. Final pass ${finished.state.accuracyPercent}%.`,
       )
@@ -1000,6 +1122,7 @@ export function usePianoNightController() {
         releaseVelocity: voice.releaseVelocity,
       })
     }
+    performanceTakeRecorder.record(update)
     setInputSnapshot(update.snapshot)
     sampleScoring(
       update.snapshot,
@@ -1027,6 +1150,7 @@ export function usePianoNightController() {
       return false
     }
 
+    invalidatePerformanceTake()
     cancelPendingPlayForPracticeMutation()
     cancelSamplePreparation(true)
     scheduler.stop()
@@ -1081,6 +1205,7 @@ export function usePianoNightController() {
     }
     if (loop.enabled === enabled) return true
 
+    invalidatePerformanceTake()
     cancelPendingPlayForPracticeMutation()
     scheduler.stop()
     releaseLiveVoices()
@@ -1115,6 +1240,7 @@ export function usePianoNightController() {
   const clearPracticeLoop = (): void => {
     const loop = practiceLoop()
     const beat = transport.timeline.playheadBeat()
+    invalidatePerformanceTake()
     cancelPendingPlayForPracticeMutation()
     scheduler.stop()
     releaseLiveVoices()
@@ -1145,6 +1271,7 @@ export function usePianoNightController() {
 
   const setPracticeSpeed = (speed: number): boolean => {
     if (!isPianoNightPracticeSpeed(speed)) return false
+    invalidatePerformanceTake()
     const beat = transport.timeline.playheadBeat()
     applyScoringUpdate(
       scoring.discontinue({
@@ -1172,6 +1299,10 @@ export function usePianoNightController() {
   }
 
   const play = async (): Promise<boolean> => {
+    if (performanceTake.state() === 'saving') {
+      setStatusMessage('Wait for this take to finish saving before replaying.')
+      return false
+    }
     const loop = practiceLoop()
     const range = loop.enabled ? loop.range : null
     if (practiceRunComplete() && range !== null) {
@@ -1190,6 +1321,12 @@ export function usePianoNightController() {
     }
     const generation = commandGeneration
     const previousPhase = transport.phase()
+    const resumePerformanceTake = performanceTakeRecorder.phase() === 'paused'
+    const expectedStartBeat = range?.startBeat ?? 0
+    const beginsAtTakeBoundary =
+      previousPhase === 'complete' ||
+      Math.abs(transport.timeline.playheadBeat() - expectedStartBeat) <=
+        PERFORMANCE_TAKE_START_BEAT_EPSILON
     if (previousPhase === 'complete') {
       // Playback restarts at beat zero, whose samples may have been evicted by
       // later rolling batches.
@@ -1217,6 +1354,11 @@ export function usePianoNightController() {
         ? scoring.reset(resumedPosition, range ?? undefined)
         : scoring.discontinue({ reason: 'resume', ...resumedPosition }),
     )
+    if (resumePerformanceTake) {
+      performanceTakeRecorder.resume(performance.now())
+    } else if (beginsAtTakeBoundary) {
+      beginPerformanceTakePass(practiceLoop().currentPass)
+    }
     scheduler.start()
     startFrame()
     const effectiveInstrument = instrument.descriptor()
@@ -1238,6 +1380,7 @@ export function usePianoNightController() {
       }),
     )
     releaseLiveVoices()
+    performanceTakeRecorder.pause(performance.now())
     syncTransport()
     setStatusMessage('Playback paused.')
   }
@@ -1248,6 +1391,7 @@ export function usePianoNightController() {
   }
 
   const stop = (): void => {
+    invalidatePerformanceTake()
     commandGeneration += 1
     cancelSamplePreparation(true)
     scheduler.stop()
@@ -1280,6 +1424,7 @@ export function usePianoNightController() {
     const targetBeat = Number.isFinite(beat)
       ? Math.min(stage().totalBeats, Math.max(0, beat))
       : 0
+    invalidatePerformanceTake()
     cancelPendingPlayForPracticeMutation()
     cancelSamplePreparation(true)
     const loop = practiceLoop()
@@ -1316,6 +1461,7 @@ export function usePianoNightController() {
   }
 
   const setTempoBpm = (tempoBpm: number): void => {
+    invalidatePerformanceTake()
     applyScoringUpdate(
       scoring.discontinue({
         reason: 'rate-change',
@@ -1340,6 +1486,7 @@ export function usePianoNightController() {
       return false
     }
 
+    invalidatePerformanceTake()
     commandGeneration += 1
     cancelSamplePreparation(true)
     scheduler.stop()
@@ -1522,6 +1669,8 @@ export function usePianoNightController() {
   onCleanup(() => {
     flushMasterVolumePersistence()
     disposed = true
+    performanceTakeGeneration += 1
+    performanceTakeRecorder.discard()
     commandGeneration += 1
     cancelSamplePreparation()
     pendingPointers.clear()
@@ -1575,6 +1724,10 @@ export function usePianoNightController() {
     setStageMotion,
     statusMessage,
     scoringState,
+    performanceTakeState: performanceTake.state,
+    performanceTakeMessage: performanceTake.message,
+    keepPerformanceTake,
+    discardPerformanceTake,
     play,
     pause,
     stop,

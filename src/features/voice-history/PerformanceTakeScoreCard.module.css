@@ -1,0 +1,90 @@
+.card {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.85rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 24%, transparent);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-primary) 11%, transparent),
+      transparent 68%
+    ),
+    color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.heading > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 0.15rem 0.55rem;
+}
+
+.heading span {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heading strong {
+  color: var(--text-primary);
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  line-height: 1;
+}
+
+.heading small {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.grade {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 36%, transparent);
+  border-radius: 50%;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.stats > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--bg-primary) 36%, transparent);
+}
+
+.stats dt {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+
+.stats dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+}

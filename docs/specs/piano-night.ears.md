@@ -849,3 +849,53 @@ aggregate multi-pass analytics, custom soundbanks, or a second transport.
 | `PN-LOOP-007`–`010`     | Pause/seek/stop/source-replacement tests, silent-configuration assertion, and one-owner review                                              |
 | `PN-CONTROLS-001`–`005` | Component selected-state/compact-strip tests, real-pointer seek smoke, transport speed continuity, and fallback/router/sampled volume tests |
 | `PN-CONTROLS-006`–`009` | Coach-entry regression, desktop/phone/coarse-tablet overflow and reachability smoke, keyboard names/focus, persistence, and target checks   |
+
+## Slice 8 — Player-only takes in Hear Yourself
+
+- **REQ-PN-TAKE-001 — Player evidence only:** WHILE an eligible full-piece or
+  A/B pass is running, Piano Night shall capture normalized player
+  `soundingStarted` and `soundingStopped` lifetimes from touch and MIDI input;
+  Score-lane notes, Hear-lane accompaniment, and mixed destination audio shall
+  not enter the take.
+- **REQ-PN-TAKE-002 — Pedal-resolved active time:** The captured note lifetime
+  shall retain strike velocity, soft-pedal value, release velocity, and the
+  normalized input owner's sustain/sostenuto-resolved end. WHEN playback is
+  paused and resumed, paused wall-clock time shall not extend the replay.
+- **REQ-PN-TAKE-003 — One final result:** WHEN a full piece completes, Piano
+  Night shall pair the completed player capture with the scoring engine's exact
+  finalized state. WHEN repeated A/B practice completes, it shall discard each
+  earlier pass and prepare only the final pass with that pass's finalized
+  score.
+- **REQ-PN-TAKE-004 — Discontinuity safety:** Stop, manual seek, tempo or speed
+  change, A/B mutation, and source replacement shall invalidate the in-progress
+  replay. Pause/resume shall preserve it. A run begun away from beat zero or A
+  shall remain playable and scored but shall not claim a replayable take.
+- **REQ-PN-TAKE-005 — Deterministic bounded replay:** AFTER an eligible pass
+  completes, Piano Night shall lazily render only captured player events as a
+  bounded mono Mercury Felt Synth WAV. Rendering shall create no live audio
+  owner, shall enforce a five-minute and 10,000-note ceiling before allocating
+  output, shall bound aggregate note-rendering work, and shall leave the visible
+  score intact if preparation fails.
+- **REQ-PN-TAKE-006 — Explicit local Keep:** A prepared replay shall remain
+  temporary until the user explicitly chooses **Keep in Hear Yourself** from
+  Session results. The saving state shall hold the shared local-save navigation
+  lock; failure or quota exhaustion shall preserve the temporary replay for a
+  retry, and dismissing it shall save nothing.
+- **REQ-PN-TAKE-007 — Comparable score identity:** A kept take shall store a
+  versioned Piano Night context and metrics payload containing the stable source
+  and score-track identity, normalized half-open range, final pass, repeat
+  count, practice speed, non-identifying input kinds, player-note count, and
+  the exact finalized score counts. Comparison identity shall include source,
+  score lane, and range but shall not split attempts by practice speed.
+- **REQ-PN-TAKE-008 — Non-vocal history:** Hear Yourself shall label the source
+  **Piano Night**, retain generic replay/export/favourite/delete behavior, show
+  the stored Piano score summary, and shall not admit the take to Voice Atlas or
+  vocal Pattern analysis.
+
+### Slice 8 verification map
+
+| Requirement area    | Minimum evidence                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `PN-TAKE-001`–`003` | Pure recorder polyphony/pedal/pause fixtures plus controller full-completion and repeated-final-pass lifecycle tests      |
+| `PN-TAKE-004`–`005` | Controller discontinuity tests plus deterministic renderer bounds, player-only note fixtures, WAV header, and peak checks |
+| `PN-TAKE-006`–`008` | Session Keep-state tests, local-save navigation-lock coverage, stable metadata fixtures, and non-vocal History tests      |

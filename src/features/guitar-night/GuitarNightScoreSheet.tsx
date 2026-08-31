@@ -9,9 +9,11 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, For, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { Ear, History, Play, X } from '@/components/icons'
+import { Ear, Headphones, History, Play, X } from '@/components/icons'
 import type { GuitarScoreRecentOutcome, GuitarScoreTakeSummary, } from '@/lib/guitar/guitar-score-history'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import type { PerformanceTakeKeepState } from '@/lib/use-performance-take-keep'
+import { performanceTakeKeepLabel } from '@/lib/use-performance-take-keep'
 import styles from './GuitarNightScoreSheet.module.css'
 
 export interface GuitarNightScoreSheetProps {
@@ -26,6 +28,11 @@ export interface GuitarNightScoreSheetProps {
   onPlayAgain?(): void
   /** Phrase diagnosis stays optional and separate from objective scoring. */
   onReviewPhrase?(): void
+  /** Present only for the completed run whose temporary replay is in memory. */
+  keepState?: PerformanceTakeKeepState
+  keepMessage?: string
+  onKeepTake?(): void
+  onDiscardTake?(): void
 }
 
 function sameTake(
@@ -100,6 +107,14 @@ function latestHeading(summary: GuitarScoreTakeSummary): string {
   return 'Take complete'
 }
 
+function keepActionLabel(state: PerformanceTakeKeepState): string {
+  if (state === 'capturing') return 'Capturing take'
+  if (state === 'unsupported' || state === 'error') {
+    return 'Replay unavailable'
+  }
+  return performanceTakeKeepLabel(state)
+}
+
 export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
   let panel: HTMLElement | undefined
   const generatedId = createUniqueId()
@@ -121,10 +136,20 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
       .filter((summary) => current === null || !sameTake(summary, current))
       .slice(0, 6)
   })
+  const showKeepAction = createMemo(
+    () =>
+      props.current?.status === 'completed' &&
+      props.keepState !== undefined &&
+      props.keepState !== 'idle',
+  )
+  const keepSaving = createMemo(() => props.keepState === 'saving')
+  const requestClose = (): void => {
+    if (!keepSaving()) props.onClose()
+  }
 
   useFocusTrap(() => panel, {
     isOpen: () => props.open,
-    onClose: () => props.onClose(),
+    onClose: requestClose,
     initialFocus: () => panel,
   })
 
@@ -155,7 +180,7 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
           class={styles.backdrop}
           data-testid="guitar-night-score-backdrop"
           onClick={(event) => {
-            if (event.target === event.currentTarget) props.onClose()
+            if (event.target === event.currentTarget) requestClose()
           }}
         >
           <aside
@@ -176,7 +201,8 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
                 class={styles.close}
                 type="button"
                 aria-label="Close Score"
-                onClick={() => props.onClose()}
+                disabled={keepSaving()}
+                onClick={requestClose}
               >
                 <X />
               </button>
@@ -350,8 +376,9 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
 
               <Show when={latest()}>
                 <p class={styles.privacy}>
-                  Only note outcomes and summary counts are kept here. Audio and
-                  input device identities are not saved.
+                  Score summaries are kept automatically without audio or input
+                  identities. A replay stays temporary unless you choose Keep in
+                  Hear Yourself; then its audio is stored only on this device.
                 </p>
               </Show>
             </div>
@@ -360,7 +387,8 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
               when={
                 latest() !== null &&
                 (props.onPlayAgain !== undefined ||
-                  props.onReviewPhrase !== undefined)
+                  props.onReviewPhrase !== undefined ||
+                  showKeepAction())
               }
             >
               <div class={styles.actions}>
@@ -368,6 +396,7 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
                   <button
                     class={styles.playAgain}
                     type="button"
+                    disabled={keepSaving()}
                     onClick={() => props.onPlayAgain?.()}
                   >
                     <span aria-hidden="true">
@@ -376,10 +405,56 @@ export function GuitarNightScoreSheet(props: GuitarNightScoreSheetProps) {
                     Play again
                   </button>
                 </Show>
+                <Show when={showKeepAction() && props.keepState !== undefined}>
+                  <div class={styles.keepAction}>
+                    <button
+                      class={styles.keep}
+                      type="button"
+                      disabled={
+                        props.keepState !== 'ready' ||
+                        props.onKeepTake === undefined
+                      }
+                      onClick={() => props.onKeepTake?.()}
+                    >
+                      <span aria-hidden="true">
+                        <Headphones />
+                      </span>
+                      {keepActionLabel(props.keepState ?? 'idle')}
+                    </button>
+                    <Show
+                      when={
+                        props.onDiscardTake !== undefined &&
+                        props.keepState !== 'saved'
+                      }
+                    >
+                      <button
+                        class={styles.notNow}
+                        type="button"
+                        disabled={keepSaving()}
+                        onClick={() => props.onDiscardTake?.()}
+                      >
+                        Not now
+                      </button>
+                    </Show>
+                    <Show when={props.keepMessage}>
+                      {(message) => (
+                        <small
+                          role={
+                            props.keepState === 'error' ? 'alert' : 'status'
+                          }
+                          aria-live="polite"
+                        >
+                          {message()}
+                        </small>
+                      )}
+                    </Show>
+                  </div>
+                </Show>
                 <Show when={props.onReviewPhrase}>
                   <button
                     class={styles.review}
                     type="button"
+                    disabled={keepSaving()}
                     onClick={() => props.onReviewPhrase?.()}
                   >
                     <span aria-hidden="true">

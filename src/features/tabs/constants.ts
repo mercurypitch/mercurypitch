@@ -197,7 +197,8 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   // The Ear Lab measures hearing, which every instrument shares.
   [TAB_EAR_LAB]: ['singing', 'guitar', 'piano'],
   [TAB_KARAOKE]: ['singing'],
-  [TAB_VOICE_HISTORY]: ['singing'],
+  // Hear Yourself owns explicitly kept voice and instrument Night replays.
+  [TAB_VOICE_HISTORY]: ['singing', 'guitar', 'piano'],
   [TAB_JAM]: ['singing'],
   [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
   [TAB_LEADERBOARD]: ['singing', 'guitar', 'piano'],

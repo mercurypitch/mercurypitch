@@ -42,6 +42,7 @@ function defaultView(
     capturedHitCount: 18,
     canFinish: true,
     finish: { kind: 'idle' },
+    replay: { state: 'idle', message: '' },
     history: {
       kind: 'ready',
       takes: [take(2), take(1)],
@@ -62,6 +63,8 @@ function mountHistory(
     onFinishTake: vi.fn(),
     onRetryFinish: vi.fn(),
     onDiscardFailedTake: vi.fn(),
+    onKeepReplay: vi.fn(),
+    onDismissReplay: vi.fn(),
     onLoadHistory: vi.fn(),
     onRetryHistory: vi.fn(),
     ...overrides,
@@ -106,7 +109,7 @@ describe('DrumTakeHistory', () => {
       }),
       { mode: 'compact' },
     )
-    expect(screen.getByText('Take saved on this device.')).toBeVisible()
+    expect(screen.getByText('Take summary saved on this device.')).toBeVisible()
     saved.unmount()
 
     const unavailable = mountHistory(
@@ -151,6 +154,32 @@ describe('DrumTakeHistory', () => {
     expect(onDiscardFailedTake).toHaveBeenCalledOnce()
   })
 
+  it('offers explicit Keep and Not now actions only after the summary succeeds', () => {
+    const onKeepReplay = vi.fn()
+    const onDismissReplay = vi.fn()
+    mountHistory(
+      defaultView({
+        capturedHitCount: 0,
+        finish: { kind: 'saved' },
+        replay: {
+          state: 'ready',
+          message: 'Live-kit replay ready. Nothing is saved until you keep it.',
+        },
+      }),
+      { mode: 'compact', onKeepReplay, onDismissReplay },
+    )
+
+    expect(
+      screen.getByText(/nothing is saved until you keep it/i),
+    ).toBeVisible()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Keep in Hear Yourself' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+    expect(onKeepReplay).toHaveBeenCalledOnce()
+    expect(onDismissReplay).toHaveBeenCalledOnce()
+  })
+
   it('loads history only when the expanded lazy surface mounts', () => {
     const onLoadHistory = vi.fn()
     mountHistory(defaultView({ history: { kind: 'idle' } }), { onLoadHistory })
@@ -183,7 +212,7 @@ describe('DrumTakeHistory', () => {
       within(rows[0]!).getByText('3 early · 9 centred · 2 late'),
     ).toBeVisible()
     expect(
-      screen.getByText(/Audio, raw MIDI, and device identity are not saved/i),
+      screen.getByText(/authored audio.*raw MIDI.*device identity stay out/i),
     ).toBeVisible()
   })
 

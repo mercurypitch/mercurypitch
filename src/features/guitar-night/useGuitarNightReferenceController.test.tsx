@@ -4,6 +4,7 @@
 import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { GuitarNightReferencePort, GuitarNightReferenceSource, GuitarNightTranscriptionPort, } from './reference-port'
 import { openGuitarNightReference, suggestReferenceInstrument, } from './reference-port'
 import { useGuitarNightReferenceController } from './useGuitarNightReferenceController'
@@ -280,6 +281,34 @@ describe('useGuitarNightReferenceController', () => {
     await waitFor(() =>
       expect(controller.reference()?.songId).toBe('gsong-velvet'),
     )
+  })
+
+  it('restores the accepted score route when history moves during Keep', async () => {
+    const openReference = vi.fn((_songId, trackId, tuning) =>
+      openGuitarNightReference(VELVET_RIFF, trackId, tuning),
+    )
+    const { port } = fakePort({ openReference })
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id)
+    const openedBeforePop = openReference.mock.calls.length
+
+    const releaseLock = acquireLocalSaveNavigationLock('guitar route test')
+    try {
+      window.history.replaceState(
+        null,
+        '',
+        '/guitar-night?session=session-other&song=score-other',
+      )
+      window.dispatchEvent(new PopStateEvent('popstate'))
+
+      expect(window.location.search).toBe(
+        '?session=session-other&song=gsong-velvet',
+      )
+      expect(controller.reference()?.songId).toBe('gsong-velvet')
+      expect(openReference).toHaveBeenCalledTimes(openedBeforePop)
+    } finally {
+      releaseLock()
+    }
   })
 
   it('surfaces an unreadable file without attaching anything', async () => {

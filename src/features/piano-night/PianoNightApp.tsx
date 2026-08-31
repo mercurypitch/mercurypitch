@@ -12,8 +12,11 @@ import { ChevronLeft, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repe
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { performanceTakeKeepLabel } from '@/lib/use-performance-take-keep'
 import { createPianoKeyWindowController } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
@@ -342,6 +345,7 @@ function formatClock(elapsedSeconds: number): string {
 
 export function PianoNightApp(): JSX.Element {
   const controller = usePianoNightController()
+  useBeforeUnloadGuard(isLocalSaveNavigationLocked)
   // Owned here so the keybed and the fall stage cannot disagree about which
   // keys are on screen — the bug that put every falling note a key to the
   // left of its own key on a phone.
@@ -1564,6 +1568,72 @@ export function PianoNightApp(): JSX.Element {
                 )}
               </Show>
             </dl>
+
+            <Show when={controller.performanceTakeState() !== 'idle'}>
+              <section
+                class={styles.performanceTakeCard}
+                aria-labelledby="piano-night-performance-take-heading"
+                aria-live="polite"
+                aria-busy={
+                  controller.performanceTakeState() === 'processing' ||
+                  controller.performanceTakeState() === 'saving'
+                }
+              >
+                <span>Hear Yourself</span>
+                <h3 id="piano-night-performance-take-heading">
+                  {controller.performanceTakeState() === 'capturing'
+                    ? 'Player-only take in progress'
+                    : controller.performanceTakeState() === 'saved'
+                      ? 'Take kept'
+                      : 'Keep this Piano Night take?'}
+                </h3>
+                <p>{controller.performanceTakeMessage()}</p>
+                <Show
+                  when={
+                    controller.performanceTakeState() === 'ready' ||
+                    controller.performanceTakeState() === 'saving'
+                  }
+                >
+                  <div class={styles.performanceTakeActions}>
+                    <button
+                      class={styles.actionButton}
+                      type="button"
+                      disabled={controller.performanceTakeState() === 'saving'}
+                      onClick={() => void controller.keepPerformanceTake()}
+                    >
+                      {performanceTakeKeepLabel(
+                        controller.performanceTakeState(),
+                      )}
+                    </button>
+                    <button
+                      class={styles.textButton}
+                      type="button"
+                      disabled={controller.performanceTakeState() === 'saving'}
+                      onClick={controller.discardPerformanceTake}
+                    >
+                      Not now
+                    </button>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    controller.performanceTakeState() === 'saved' ||
+                    controller.performanceTakeState() === 'unsupported' ||
+                    controller.performanceTakeState() === 'error'
+                  }
+                >
+                  <button
+                    class={styles.textButton}
+                    type="button"
+                    onClick={controller.discardPerformanceTake}
+                  >
+                    {controller.performanceTakeState() === 'saved'
+                      ? 'Done'
+                      : 'Dismiss'}
+                  </button>
+                </Show>
+              </section>
+            </Show>
 
             <h3 class={styles.drawerSubheading}>Input</h3>
             <div class={styles.midiActions}>

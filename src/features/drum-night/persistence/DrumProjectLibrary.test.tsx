@@ -368,7 +368,7 @@ describe('DrumProjectLibrary', () => {
       screen.getByRole('button', { name: 'Erase Drum projects and takes' }),
     )
     let dialog = screen.getByRole('alertdialog', {
-      name: 'Erase Drum projects and take history?',
+      name: 'Erase Drum projects and summary history?',
     })
     expect(
       screen.getByText(/leaves kits, rooms, input mappings/i),
@@ -382,7 +382,7 @@ describe('DrumProjectLibrary', () => {
       screen.getByRole('button', { name: 'Erase Drum projects and takes' }),
     )
     dialog = screen.getByRole('alertdialog', {
-      name: 'Erase Drum projects and take history?',
+      name: 'Erase Drum projects and summary history?',
     })
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Erase Drum data' }),
@@ -425,7 +425,7 @@ describe('DrumProjectLibrary', () => {
       screen.getByRole('button', { name: 'Erase Drum projects and takes' }),
     )
     const dialog = screen.getByRole('alertdialog', {
-      name: 'Erase Drum projects and take history?',
+      name: 'Erase Drum projects and summary history?',
     })
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Erase Drum data' }),
