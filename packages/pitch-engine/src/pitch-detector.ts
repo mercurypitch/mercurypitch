@@ -3,13 +3,13 @@
 // ============================================================
 
 import type ort from 'onnxruntime-web'
-import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from './types'
-import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { pitchEngineModelPath } from './assets'
 import { freqToNote } from './freq-note'
+import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { publishDetectionFrame } from './signal-quality'
 import type { MockOnnxModule } from './swift-f0-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
+import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from './types'
 
 /** Supported pitch detection algorithms */
 export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'

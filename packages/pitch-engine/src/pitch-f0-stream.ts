@@ -14,8 +14,8 @@
 // Lives in src/lib/ so it rides the `pitch-core` manualChunk.
 // ============================================================
 
-import { publishMicLevel, resetMicLevel } from './mic-level'
 import type { F0Frame } from './measurements'
+import { publishMicLevel, resetMicLevel } from './mic-level'
 import { PitchDetector } from './pitch-detector'
 
 const FFT_SIZE = 2048
