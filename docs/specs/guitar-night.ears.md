@@ -278,6 +278,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   second count-in. Scrubbing before Play shall remain silent. WHEN the reference
   changes or the player clears the range, the percussion room shall release its
   owned A/B marks and active scheduler loop together.
+- **REQ-GN-RUNTIME-026 — Summed electric amp path:** WHEN synthesized electric
+  score notes sound together, their voices shall meet at one shared nonlinear
+  drive, presence, and asset-free cabinet-filter stage before entering the
+  guide bus. Acoustic references, tuner tones, bass voices, backing stems,
+  drums, and monitor audio shall bypass that electric stage. Creating more
+  electric voices shall not create more amp stages, and disposing the route
+  graph shall disconnect the shared stage without fetching an external asset.
 
 ## Tuner — `GN-TUNER-*`
 

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { NOTE_NAMES } from '@/lib/note-utils'
+import { createGuitarElectricAmpStage } from './guitar-electric-amp'
 import type { GuitarNoteNotation } from './guitar-notation'
 
 /**
@@ -12,6 +13,9 @@ import type { GuitarNoteNotation } from './guitar-notation'
  * - `bass`: dark pluck, thumpy low end
  */
 export type GuitarVariant = 'acoustic' | 'electric' | 'bass'
+
+/** Whether an electric voice owns its amp stage or feeds a route-owned one. */
+export type GuitarElectricAmpRouting = 'per-voice' | 'shared'
 
 export interface GuitarVoice {
   /** The output gain node — connect this to the main signal chain */
@@ -189,28 +193,12 @@ export function clearPluckCache(): void {
 
 // ── Voice factories ─────────────────────────────────────────────
 
-/** Soft-clipping curve for the electric overdrive WaveShaper. */
-function makeDriveCurve(drive: number): Float32Array<ArrayBuffer> {
-  const n = 1024
-  const curve = new Float32Array(n)
-  for (let i = 0; i < n; i++) {
-    const x = (i / (n - 1)) * 2 - 1
-    curve[i] = Math.tanh(x * drive) / Math.tanh(drive)
-  }
-  return curve
-}
-
-// Dense electric passages can schedule dozens of voices in one lookahead
-// burst. The curve is immutable and identical for every voice, so building
-// 1,024 tanh samples per note only adds avoidable CPU and garbage-collection
-// pressure on the devices that need the guide most.
-const ELECTRIC_DRIVE_CURVE = makeDriveCurve(2.5)
-
 function createPluckVoice(
   ctx: BaseAudioContext,
   freq: number,
   variant: GuitarVariant,
   startAt?: number,
+  electricAmpRouting: GuitarElectricAmpRouting = 'per-voice',
 ): GuitarVoice {
   // Filter settings are constants, so setting them at `now` is fine whenever
   // the string is struck; only the source needs the scheduled time.
@@ -243,29 +231,14 @@ function createPluckVoice(
     body.connect(air)
     chainHead = air
     allNodes.push(body, air)
-  } else if (variant === 'electric') {
-    // Overdrive → presence boost → cabinet lowpass
-    const drive = ctx.createWaveShaper()
-    drive.curve = ELECTRIC_DRIVE_CURVE
-    drive.oversample = '2x'
-
-    const presence = ctx.createBiquadFilter()
-    presence.type = 'peaking'
-    presence.frequency.setValueAtTime(2800, now)
-    presence.Q.setValueAtTime(0.9, now)
-    presence.gain.setValueAtTime(4, now)
-
-    const cab = ctx.createBiquadFilter()
-    cab.type = 'lowpass'
-    cab.frequency.setValueAtTime(5000, now)
-    cab.Q.setValueAtTime(0.7, now)
-
-    chainHead.connect(drive)
-    drive.connect(presence)
-    presence.connect(cab)
-    chainHead = cab
-    allNodes.push(drive, presence, cab)
-  } else {
+  } else if (variant === 'electric' && electricAmpRouting === 'per-voice') {
+    // Standalone callers retain the established electric colour. Guitar Night
+    // opts into a route-owned stage so simultaneous strings meet before drive.
+    const amp = createGuitarElectricAmpStage(ctx)
+    chainHead.connect(amp.input)
+    chainHead = amp.output
+    allNodes.push(...amp.nodes)
+  } else if (variant === 'bass') {
     // Bass: keep it dark and round
     const tone = ctx.createBiquadFilter()
     tone.type = 'lowpass'
@@ -321,8 +294,10 @@ export function createGuitarVoice(
   variant: Exclude<GuitarVariant, 'bass'> = 'acoustic',
   /** Audio-clock time to strike at. Defaults to now, as it always did. */
   startAt?: number,
+  /** Guitar Night supplies `shared`; other callers stay self-contained. */
+  electricAmpRouting: GuitarElectricAmpRouting = 'per-voice',
 ): GuitarVoice {
-  return createPluckVoice(ctx, freq, variant, startAt)
+  return createPluckVoice(ctx, freq, variant, startAt, electricAmpRouting)
 }
 
 /**

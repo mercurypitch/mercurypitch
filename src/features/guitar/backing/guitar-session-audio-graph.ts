@@ -1,6 +1,8 @@
 // Guitar session audio graph gives every room source one reusable, route-owned output path.
+// Electric guide voices meet at one amp stage; clean guide audio bypasses it.
 // ============================================================
 
+import { createGuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 
 export type GuitarSessionAudioBus =
@@ -10,9 +12,12 @@ export type GuitarSessionAudioBus =
   | 'stems'
   | 'monitor'
 
+export type GuitarGuideInput = 'clean' | 'electric'
+
 export interface GuitarSessionAudioGraph {
   readonly context: AudioContext
   readonly buses: Readonly<Record<GuitarSessionAudioBus, GainNode>>
+  readonly guideInputs: Readonly<Record<GuitarGuideInput, AudioNode>>
   readonly master: GainNode
   readonly limiter: DynamicsCompressorNode
   setBusLevel(bus: GuitarSessionAudioBus, position: number): void
@@ -75,6 +80,17 @@ export function createGuitarSessionAudioGraph(
     monitor: context.createGain(),
   } satisfies Record<GuitarSessionAudioBus, GainNode>
 
+  // A normal guitar pickup combines its strings before the amplifier. Keep
+  // that non-linearity on a dedicated electric input: the clean guide path is
+  // also used by tuner/reference tones and must not inherit amp colour.
+  const electricAmp = createGuitarElectricAmpStage(context)
+  electricAmp.output.connect(buses.guide)
+
+  const guideInputs = {
+    clean: buses.guide,
+    electric: electricAmp.input,
+  } satisfies Record<GuitarGuideInput, AudioNode>
+
   for (const bus of Object.keys(buses) as GuitarSessionAudioBus[]) {
     const level = options.busLevels?.[bus] ?? DEFAULT_BUS_LEVELS[bus]
     buses[bus].gain.value = sliderToGain(clamp(level))
@@ -95,6 +111,7 @@ export function createGuitarSessionAudioGraph(
   return {
     context,
     buses,
+    guideInputs,
     master,
     limiter,
     setBusLevel(bus, position) {
@@ -114,6 +131,7 @@ export function createGuitarSessionAudioGraph(
       if (disposed) return
       disposed = true
       for (const bus of Object.values(buses)) bus.disconnect()
+      for (const node of electricAmp.nodes) node.disconnect()
       master.disconnect()
       limiter.disconnect()
     },

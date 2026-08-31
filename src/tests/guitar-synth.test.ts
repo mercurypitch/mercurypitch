@@ -236,22 +236,28 @@ describe('createGuitarVoice', () => {
     expect(ctx.createWaveShaper).not.toHaveBeenCalled()
   })
 
-  it('electric variant creates overdrive waveshaper and cab filter', () => {
+  it('retains the established amp colour for standalone electric voices', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
     createGuitarVoice(ctx, 220, 500, 'electric')
-    expect(ctx.createWaveShaper).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(ctx.createBiquadFilter).mock.calls.length).toBe(2)
+    expect(ctx.createWaveShaper).toHaveBeenCalledOnce()
+    expect(ctx.createBiquadFilter).toHaveBeenCalledTimes(2)
   })
 
-  it('reuses the immutable overdrive curve across dense electric voices', () => {
+  it('can leave electric amp colour to a shared route-owned stage', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
-    createGuitarVoice(ctx, 220, 500, 'electric')
-    createGuitarVoice(ctx, 246.94, 500, 'electric')
+    createGuitarVoice(ctx, 220, 500, 'electric', undefined, 'shared')
 
-    const createWaveShaper = vi.mocked(ctx.createWaveShaper)
-    const first = createWaveShaper.mock.results[0]?.value as WaveShaperNode
-    const second = createWaveShaper.mock.results[1]?.value as WaveShaperNode
-    expect(first.curve).toBe(second.curve)
+    expect(ctx.createWaveShaper).not.toHaveBeenCalled()
+    expect(ctx.createBiquadFilter).not.toHaveBeenCalled()
+  })
+
+  it('does not multiply amp nodes across shared electric voices', () => {
+    const ctx = mockAudioContext() as unknown as BaseAudioContext
+    createGuitarVoice(ctx, 220, 500, 'electric', undefined, 'shared')
+    createGuitarVoice(ctx, 246.94, 500, 'electric', undefined, 'shared')
+
+    expect(ctx.createWaveShaper).not.toHaveBeenCalled()
+    expect(ctx.createBiquadFilter).not.toHaveBeenCalled()
   })
 
   it('dispose stops the source and disconnects nodes', () => {

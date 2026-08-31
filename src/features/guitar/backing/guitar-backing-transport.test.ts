@@ -164,6 +164,26 @@ class FakeAudioContext {
     } as unknown as DynamicsCompressorNode
   }
 
+  createWaveShaper(): WaveShaperNode {
+    return {
+      curve: null,
+      oversample: 'none',
+      connect: vi.fn((destination: unknown) => destination),
+      disconnect: vi.fn(),
+    } as unknown as WaveShaperNode
+  }
+
+  createBiquadFilter(): BiquadFilterNode {
+    return {
+      type: 'lowpass',
+      frequency: new FakeAudioParameter(),
+      Q: new FakeAudioParameter(),
+      gain: new FakeAudioParameter(),
+      connect: vi.fn((destination: unknown) => destination),
+      disconnect: vi.fn(),
+    } as unknown as BiquadFilterNode
+  }
+
   createBufferSource(): AudioBufferSourceNode {
     const source = new FakeBufferSourceNode()
     this.sources.push(source)

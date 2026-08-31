@@ -13,7 +13,7 @@ import { createBeatClock } from '@/lib/midi-song'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomRhythmPreset } from './guitar-room-rhythm'
 import { guitarRoomRhythmHitsForBeat } from './guitar-room-rhythm'
-import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
+import type { GuitarGuideInput, GuitarSessionAudioGraph, } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph, setGuitarSessionGainTarget, } from './guitar-session-audio-graph'
 
 export type GuitarRoomBandBeatPhase = 'count-in' | 'exercise'
@@ -349,6 +349,7 @@ function soundNote(
           audibleDurationSeconds * 1000,
           variant,
           at,
+          variant === 'electric' ? 'shared' : 'per-voice',
         )
 
   const releaseAt = at + audibleDurationSeconds
@@ -391,9 +392,9 @@ export function createGuitarRoomBand(
     { output: GainNode; player: DrumKitPlayerPort }
   >()
   let runOutput: {
-    guide: GainNode
+    guide: Record<GuitarGuideInput, GainNode>
     drums: GainNode
-    melodyChannels: Map<string, GainNode>
+    melodyChannels: Map<string, Partial<Record<GuitarGuideInput, GainNode>>>
     percussionTracks: Map<string, GainNode>
   } | null = null
   const callbackTimers = new Set<number>()
@@ -454,9 +455,11 @@ export function createGuitarRoomBand(
     // without introducing a discontinuity click at the output.
     const now = context?.currentTime ?? 0
     const outputs = [
-      output.guide,
+      ...Object.values(output.guide),
       output.drums,
-      ...output.melodyChannels.values(),
+      ...[...output.melodyChannels.values()].flatMap((channel) =>
+        Object.values(channel),
+      ),
     ]
     for (const node of outputs) {
       setGuitarSessionGainTarget(node.gain, 0, now)
@@ -512,10 +515,12 @@ export function createGuitarRoomBand(
       const level = Math.min(1, Math.max(0, position))
       melodyChannelLevels.set(channelId, level)
       if (disposed) return
-      const channel = runOutput?.melodyChannels.get(channelId)
-      if (channel === undefined || context === null) return
+      const channels = runOutput?.melodyChannels.get(channelId)
+      if (channels === undefined || context === null) return
       const now = context.currentTime
-      setGuitarSessionGainTarget(channel.gain, sliderToGain(level), now)
+      for (const channel of Object.values(channels)) {
+        setGuitarSessionGainTarget(channel.gain, sliderToGain(level), now)
+      }
     },
 
     async start(startOptions) {
@@ -538,13 +543,21 @@ export function createGuitarRoomBand(
         }
       }
 
-      const guideOutput = currentGraph.context.createGain()
+      const guideOutput = {
+        clean: currentGraph.context.createGain(),
+        electric: currentGraph.context.createGain(),
+      } satisfies Record<GuitarGuideInput, GainNode>
       const drumsOutput = currentGraph.context.createGain()
-      guideOutput.gain.value = 1
+      guideOutput.clean.gain.value = 1
+      guideOutput.electric.gain.value = 1
       drumsOutput.gain.value = 1
-      guideOutput.connect(currentGraph.buses.guide)
+      guideOutput.clean.connect(currentGraph.guideInputs.clean)
+      guideOutput.electric.connect(currentGraph.guideInputs.electric)
       drumsOutput.connect(currentGraph.buses.drums)
-      const melodyChannels = new Map<string, GainNode>()
+      const melodyChannels = new Map<
+        string,
+        Partial<Record<GuitarGuideInput, GainNode>>
+      >()
       const percussionTrackOutputs = new Map<string, GainNode>()
       const runPercussionPlayers = new Map<string, DrumKitPlayerPort>()
       const initiallyAudibleTracks = startOptions.audiblePercussionTrackIds
@@ -718,14 +731,22 @@ export function createGuitarRoomBand(
             beatToSeconds(note.startBeat + note.durationBeats) -
             beatToSeconds(note.startBeat)
           const channelId = note.channelId ?? 'score'
-          let channelOutput = melodyChannels.get(channelId)
+          const variant = note.variant ?? melodyVariant
+          const guideInput: GuitarGuideInput =
+            variant === 'electric' ? 'electric' : 'clean'
+          let channelOutputs = melodyChannels.get(channelId)
+          if (channelOutputs === undefined) {
+            channelOutputs = {}
+            melodyChannels.set(channelId, channelOutputs)
+          }
+          let channelOutput = channelOutputs[guideInput]
           if (channelOutput === undefined) {
             channelOutput = currentGraph.context.createGain()
             channelOutput.gain.value = sliderToGain(
               melodyChannelLevels.get(channelId) ?? 1,
             )
-            channelOutput.connect(guideOutput)
-            melodyChannels.set(channelId, channelOutput)
+            channelOutput.connect(guideOutput[guideInput])
+            channelOutputs[guideInput] = channelOutput
           }
           soundNote(
             currentGraph,
@@ -733,7 +754,7 @@ export function createGuitarRoomBand(
             note,
             noteAt,
             noteDurationSeconds,
-            note.variant ?? melodyVariant,
+            variant,
           )
         }
       }
