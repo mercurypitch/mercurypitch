@@ -182,11 +182,12 @@
 
 @container (max-width: 860px) {
   .bench {
-    gap: 18px;
-    padding: 18px 16px 24px;
+    gap: 14px;
+    padding: 14px 14px 20px;
   }
 
   .title {
+    margin: 2px 0 6px;
     font-size: 1.5rem;
     max-width: 22ch;
   }
@@ -201,15 +202,23 @@
       'regulator'
       'dials'
       'regulation';
-    gap: 18px;
+    gap: 14px;
   }
 
   .regulatorCell {
     justify-content: center;
   }
 
+  /* One line, as the strip is meant to be. Seven fixed columns wrapped the
+     nineteen instruments into three rows *and* overflowed sideways: a
+     two-axis slab four hundred pixels tall, in a bench that is a porthole
+     three hundred tall on a phone. Laid out by column it is the single
+     scrolling line the desk shows, an eighth of the height. The rack behind
+     the Instruments button still lists every one of them. */
   .strip {
-    grid-template-columns: repeat(7, minmax(132px, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(132px, 1fr);
+    grid-template-columns: none;
     overflow-x: auto;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
@@ -218,6 +227,13 @@
   .instrument {
     scroll-snap-align: start;
     min-height: 96px;
+  }
+
+  /* The bench's own gap already parts these; the extra margin was a second
+     helping of the same space, and two of them cost half a phone screen. */
+  .path,
+  .fieldBook {
+    margin-top: 0;
   }
 }
 

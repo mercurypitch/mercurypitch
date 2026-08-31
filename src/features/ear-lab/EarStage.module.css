@@ -1180,10 +1180,18 @@
     gap: 6px;
   }
 
-  /* The reserve above matches the trimmed chrome; left at 380 the figure
-     would clamp to its 140px floor and hand the slack back to the console. */
+  /* 100cqh is the ROOM's height, not the drill's: the shell is the size
+     container, and between it and the stage sit the session bar and the
+     space kept for the app's tab bar — 109px on a phone that neither the
+     bar nor the console below can see. The reserve has to carry all of it:
+     109 for the room, 61 for the drill bar, 12 for the body's padding, and
+     ~200 for the console at its tallest, with the verdict block under the
+     pads. Measured upright at 375x553 — the smallest screen the app still
+     targets — the drill came to 452 in a 394 porthole at a reserve of 250,
+     and the answer pads went under a scroll. In true landscape the figure
+     is on its 96px floor either way, so nothing there moves. */
   .figure > svg {
-    max-height: clamp(96px, calc(100cqh - 250px), 240px);
+    max-height: clamp(96px, calc(100cqh - 390px), 240px);
   }
 
   .console {

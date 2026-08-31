@@ -1,0 +1,171 @@
+// ============================================================
+// The bench and a drill on a phone held upright
+// ============================================================
+//
+// 375x553 is an iPhone SE inside Safari's chrome — the smallest screen the
+// app still targets, and the one the Ear Lab was worst on. The room fixes
+// its own furniture at both ends of a stage that scrolls between them, so
+// the app header, the session bar, the bridge and the tab bar left the
+// bench a porthole 321px tall, and everything inside it was laid out for a
+// desk.
+//
+// Two measurements, because the two halves fail differently:
+//
+//   * The instrument strip. Its stylesheet calls it "one unbroken line"
+//     and gave it seven fixed columns; the Lab has nineteen instruments.
+//     Seven columns of 132px in a 358px bench wrapped them into three rows
+//     AND overflowed sideways — a two-axis slab 407px tall, taller than the
+//     porthole it lived in, in which you could never see which row you were
+//     on. Asserting one row rather than a height: a strip that got shorter
+//     by shrinking its buttons under the touch target would pass a height
+//     check and still be wrong.
+//
+//   * A drill mid-run. The stage is a three-row grid — bar, body, console —
+//     and the instrument between them clamps to the height the chrome
+//     leaves. The reserve that clamp subtracts was measured for a phone on
+//     its side; upright inside Safari it was two dozen pixels short, and
+//     the answer pads went under a scroll in the one screen a singer taps
+//     at without looking.
+
+import { expect, test } from '@playwright/test'
+import { dismissOverlays, openNavTab } from './helpers/ui'
+
+/** An iPhone SE with Safari's chrome around it. */
+test.use({ viewport: { width: 375, height: 553 } })
+
+test('keeps the instrument strip to one line on a phone @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+  })
+  // Through the tab bar rather than /ear-lab: the built site has a real
+  // dist/ear-lab/ directory of room art, and the static server answers that
+  // path with its listing instead of the app.
+  await page.goto('/')
+  await dismissOverlays(page)
+  await openNavTab(page, 'tab-ear-lab')
+
+  const strip = page.locator('[data-tour="ear.drills"]')
+  await expect(strip).toBeVisible()
+
+  const layout = await page.evaluate(() => {
+    const element = document.querySelector('[data-tour="ear.drills"]')
+    if (element === null) return null
+    const buttons = [...element.querySelectorAll(':scope > button')]
+    if (buttons.length === 0) return null
+    const boxes = buttons.map((button) => button.getBoundingClientRect())
+    return {
+      count: buttons.length,
+      rows: new Set(boxes.map((box) => Math.round(box.top))).size,
+      stripHeight: element.getBoundingClientRect().height,
+      tallestButton: Math.max(...boxes.map((box) => box.height)),
+      shortestButton: Math.min(...boxes.map((box) => box.height)),
+      // A line you can reach the end of: it has to scroll sideways, since
+      // nineteen instruments do not fit a phone at a readable size.
+      scrollsSideways: element.scrollWidth > element.clientWidth + 1,
+    }
+  })
+
+  expect(layout, 'could not measure the instrument strip').not.toBe(null)
+  if (layout === null) return
+
+  // Guards the walk: an empty strip would satisfy every check below.
+  expect(layout.count, 'the strip listed no instruments').toBeGreaterThan(8)
+
+  expect(
+    layout.rows,
+    'the instrument strip wraps into more than one row on a phone',
+  ).toBe(1)
+  expect(
+    layout.scrollsSideways,
+    'the strip does not scroll, so the instruments past the screen edge cannot be reached',
+  ).toBe(true)
+  // And it is one row because the buttons sit side by side, not because they
+  // were squeezed under the touch target.
+  expect(
+    layout.shortestButton,
+    'the strip fits one row by shrinking its buttons below the touch target',
+  ).toBeGreaterThanOrEqual(44)
+  expect(
+    layout.stripHeight,
+    'the strip is taller than the single row of buttons it holds',
+  ).toBeLessThanOrEqual(layout.tallestButton + 2)
+})
+
+test('fits a running drill on an upright phone without a scroll @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+  })
+  // Through the tab bar rather than /ear-lab: the built site has a real
+  // dist/ear-lab/ directory of room art, and the static server answers that
+  // path with its listing instead of the app.
+  await page.goto('/')
+  await dismissOverlays(page)
+  await openNavTab(page, 'tab-ear-lab')
+
+  await page
+    .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+    .first()
+    .click()
+  await expect(page.getByTestId('ear-stage')).toBeVisible()
+
+  await page.getByText('Practice run').click()
+  const firstPad = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+    { hasText: 'The first' },
+  )
+  await expect(firstPad).toBeVisible({ timeout: 10_000 })
+
+  // Mid-run, with the verdict block under the pads: the console at its
+  // tallest is the state the whole drill is spent in.
+  await firstPad.click()
+  await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
+    timeout: 10_000,
+  })
+
+  const layout = await page.evaluate(() => {
+    const stage = document.querySelector('[data-testid="ear-stage"]')
+    const pads = document.querySelector('[data-testid="ear-stage-pads"]')
+    const figure = stage?.querySelector('[class*="figure"] > svg') ?? null
+    if (stage === null || pads === null || figure === null) return null
+    // The drill does not scroll itself — it is `min-height: 100%` inside the
+    // room's one scrolling surface, so its own scrollHeight always equals its
+    // height and says nothing. The porthole is the ancestor that scrolls.
+    let porthole: Element | null = stage.parentElement
+    while (
+      porthole !== null &&
+      getComputedStyle(porthole).overflowY !== 'auto'
+    ) {
+      porthole = porthole.parentElement
+    }
+    if (porthole === null) return null
+    return {
+      stageHeight: stage.getBoundingClientRect().height,
+      portholeHeight: porthole.clientHeight,
+      portholeScroll: porthole.scrollHeight,
+      padsBottom: pads.getBoundingClientRect().bottom,
+      portholeBottom: porthole.getBoundingClientRect().bottom,
+      figureHeight: figure.getBoundingClientRect().height,
+    }
+  })
+
+  expect(layout, 'could not measure the stage').not.toBe(null)
+  if (layout === null) return
+
+  expect(
+    layout.portholeScroll,
+    'the drill overflows an upright phone, so the answer pads sit under a scroll',
+  ).toBeLessThanOrEqual(layout.portholeHeight + 1)
+  expect(
+    layout.padsBottom,
+    'the answer pads end below the visible stage',
+  ).toBeLessThanOrEqual(layout.portholeBottom + 1)
+  // The fit has to come from somewhere other than the instrument vanishing.
+  expect(
+    layout.figureHeight,
+    'the instrument has been squeezed to nothing',
+  ).toBeGreaterThanOrEqual(80)
+})
