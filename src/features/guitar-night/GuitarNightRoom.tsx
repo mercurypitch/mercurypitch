@@ -137,6 +137,7 @@ function statusCopy(status: GuitarBackingTransportStatus): string {
 export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
   let bandSummary!: HTMLElement
+  let bandDetails!: HTMLDetailsElement
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
@@ -444,6 +445,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               <strong>Tune</strong>
             </button>
             <details
+              ref={bandDetails}
               class={styles.scoreSession}
               onKeyDown={(event) => {
                 if (event.key !== 'Escape') return
@@ -515,6 +517,23 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     onCalibrate={() => void listening.calibrate()}
                   />
                 </Show>
+                <button
+                  class={styles.bandUpgrade}
+                  type="button"
+                  aria-label="Open the Jam Doctor for the last take"
+                  disabled={doctorView() === null}
+                  onClick={() => {
+                    bandDetails.open = false
+                    setDoctorOpen(true)
+                  }}
+                >
+                  <strong>Jam Doctor</strong>
+                  <small>
+                    {doctorView() === null
+                      ? 'Finish a listening take and its review opens from here.'
+                      : 'What this device heard in your last take.'}
+                  </small>
+                </button>
                 <Show
                   when={
                     props.backing.defaultMix.kind === 'mixed-instrumental' &&

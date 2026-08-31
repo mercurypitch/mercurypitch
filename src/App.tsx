@@ -648,6 +648,11 @@ const AppShell: Component<AppProps> = (props) => {
       }
       mountExercise(drill.exercise)
       setPendingDrill(null)
+      // Same reason the deep-link slug clears it: a drill lands on its setup
+      // screen. setActiveTab only fires the tab-transition disarm on a real
+      // change, so a Practice pressed from inside this tab would otherwise
+      // remount over a flag armed by an earlier quick start and run at once.
+      setAutoStartExercise(false)
     }
   })
 
@@ -1737,6 +1742,15 @@ const AppShell: Component<AppProps> = (props) => {
     if (prevTab === TAB_EXERCISES && currentGuidedPracticeLaunch() !== null) {
       returnFromGuidedPractice()
       resetExerciseLaunchState()
+    }
+
+    // Auto-start is a one-shot launch intent, and the mounted exercise
+    // already consumed it. The selection may survive the round trip — coming
+    // back should land on that exercise's setup screen — but an armed flag
+    // would start a fresh run over it (every exercise re-reads the prop in
+    // onMount against freshly-idle state).
+    if (prevTab === TAB_EXERCISES) {
+      setAutoStartExercise(false)
     }
 
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the

@@ -7,7 +7,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Ear, Headphones, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
+import { ChevronLeft, Ear, Headphones, History, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
 import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
@@ -1726,6 +1726,30 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                       {loop.span() === null
                         ? 'Count in, then play the next written range without the guide.'
                         : 'Count in, then play your A/B range once without the guide.'}
+                    </small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class={styles.scoreAssessmentAction}
+                  aria-label="Open the Jam Doctor for the last take"
+                  disabled={doctorView() === null}
+                  onClick={() => {
+                    sessionDetails.open = false
+                    setDoctorRecoveryActive(false)
+                    setDoctorOpen(true)
+                  }}
+                >
+                  <span aria-hidden="true">
+                    <History />
+                  </span>
+                  <span>
+                    <strong>Jam Doctor</strong>
+                    <small>
+                      {doctorView() === null
+                        ? 'Finish a scored take and its review opens from here.'
+                        : 'Timing verdict and recovery for your last take.'}
                     </small>
                   </span>
                 </button>

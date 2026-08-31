@@ -3,7 +3,8 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import type { UvrStemType } from '@/db/entities'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
@@ -47,7 +48,7 @@ import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
-import { activeStemSplits, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
+import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
@@ -1874,14 +1875,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // separation only), so the metadata read always returned nothing and
   // the pills never appeared. Metadata-only query, refreshed when a
   // background split lands.
-  const [deviceStems, { refetch: refetchDeviceStems }] = createResource(
-    () => props.sessionId,
-    listStemTypes,
-  )
+  // A signal fed by an effect, NOT a createResource: the mixer mounts under
+  // KaraokePage's Suspense boundary, and a resource read here suspends that
+  // whole boundary — every song open flashed the entire Karaoke tab to the
+  // skeleton, which reads as the app crashing and reloading. The pills can
+  // simply appear when the metadata query lands.
+  const [deviceStems, setDeviceStems] = createSignal<readonly UvrStemType[]>([])
+  let deviceStemsLoad = 0
+  onCleanup(() => {
+    deviceStemsLoad += 1
+  })
+  // Tracked as a boolean, not as the registry itself: that record is replaced
+  // on every progress tick of every session, and depending on it re-ran the
+  // query below once per tick — a full read of this session's stem-blob rows
+  // (whose legacy `data` is an ArrayBuffer, cloned out of IndexedDB whole)
+  // just to look at a type string. Two runs is all the pills need: one on
+  // open, one when a split for THIS session finishes.
+  const splitRunning = createMemo(() => isStemSplitActive(props.sessionId))
   createEffect(() => {
     // A full-band split finishing mid-session adds parts under us.
-    activeStemSplits()
-    void refetchDeviceStems()
+    splitRunning()
+    const sessionId = props.sessionId
+    const load = (deviceStemsLoad += 1)
+    void listStemTypes(sessionId).then((stems) => {
+      if (load === deviceStemsLoad) setDeviceStems(stems)
+    })
   })
 
   const addableStems = (): Array<{

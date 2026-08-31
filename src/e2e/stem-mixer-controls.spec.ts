@@ -178,32 +178,56 @@ test.beforeEach(async ({ page }) => {
       })
       const transaction = db.transaction('uvrStemBlobs', 'readwrite')
       const blobStore = transaction.objectStore('uvrStemBlobs')
-      const existing = await new Promise<Array<{ stemType: string }>>(
-        (resolve, reject) => {
-          const request = blobStore.index('sessionId').getAll(sessionId)
-          request.onsuccess = () =>
-            resolve(request.result as Array<{ stemType: string }>)
-          request.onerror = () => reject(request.error)
-        },
-      )
-      const storedTypes = new Set(existing.map((record) => record.stemType))
       const now = new Date().toISOString()
-      for (const part of extraStems) {
-        if (storedTypes.has(part.key)) continue
-        blobStore.add({
-          id: crypto.randomUUID(),
-          sessionId,
-          stemType: part.key,
-          derivedFrom: 'instrumental',
-          producedBy: 'e2e-full-band',
-          mimeType: 'audio/wav',
-          data: audioData,
-          size: audioData.byteLength,
-          fileName: `${part.key}.wav`,
-          createdAt: now,
-          updatedAt: now,
-        })
-      }
+      // 'vocal' and 'instrumental' are not decoration. A completed session
+      // whose stem blobs are missing is a ghost from the pre-durable-write
+      // data loss, and `pruneOrphanedCompletedSessions` deletes it at boot —
+      // it asks `sessionStemPresence`, which counts ONLY those two types, so
+      // a fixture carrying just the full-band extras reads as 'absent'. The
+      // prune is fired-and-forget, so it raced every cold page load: whichever
+      // won decided whether a deep link found its session or bounced to the
+      // upload view. Seeding what a real completed session always has on disk
+      // makes the fixture legal instead of leaving the race to chance.
+      const wanted: Array<[string, readonly string[]]> = [
+        [sessionId, ['vocal', 'instrumental', ...extraStems.map((p) => p.key)]],
+        [nextSessionId, ['vocal', 'instrumental']],
+      ]
+      // Both reads are issued and awaited together, and every write is queued
+      // synchronously afterwards: an `await` that does not settle from inside
+      // an IndexedDB event handler lets the transaction go inactive, and the
+      // next `add` on it throws TransactionInactiveError.
+      const existingPerSession = await Promise.all(
+        wanted.map(
+          ([forSession]) =>
+            new Promise<Array<{ stemType: string }>>((resolve, reject) => {
+              const request = blobStore.index('sessionId').getAll(forSession)
+              request.onsuccess = () =>
+                resolve(request.result as Array<{ stemType: string }>)
+              request.onerror = () => reject(request.error)
+            }),
+        ),
+      )
+      wanted.forEach(([forSession, parts], index) => {
+        const storedTypes = new Set(
+          (existingPerSession[index] ?? []).map((record) => record.stemType),
+        )
+        for (const key of parts) {
+          if (storedTypes.has(key)) continue
+          blobStore.add({
+            id: crypto.randomUUID(),
+            sessionId: forSession,
+            stemType: key,
+            derivedFrom: 'instrumental',
+            producedBy: 'e2e-full-band',
+            mimeType: 'audio/wav',
+            data: audioData,
+            size: audioData.byteLength,
+            fileName: `${key}.wav`,
+            createdAt: now,
+            updatedAt: now,
+          })
+        }
+      })
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve()
         transaction.onerror = () => reject(transaction.error)
@@ -1122,9 +1146,19 @@ test('lines the level up with the mic, and the header up with its column @smoke'
     await page.setViewportSize({ width: layout.width, height: layout.height })
     if (layout.zenToggle) {
       const zen = page.getByRole('button', { name: 'Zen' })
-      if ((await zen.count()) > 0 && (await zen.isVisible())) await zen.click()
+      // An auto-retrying wait, not the `count() > 0 && isVisible()` snapshot
+      // this replaces. Both of those answer for the instant they are asked,
+      // and they are asked immediately after the viewport change above
+      // remounts this bar — so for a frame or two the button is legitimately
+      // absent and the click was silently skipped. The stage then stayed out
+      // of zen, where the level this test measures does not exist at all,
+      // and the next line failed with "element(s) not found".
+      await expect(zen).toBeVisible({ timeout: 15_000 })
+      await zen.click()
     }
-    await expect(page.getByTestId('mobile-music-level')).toBeVisible()
+    await expect(page.getByTestId('mobile-music-level')).toBeVisible({
+      timeout: 15_000,
+    })
 
     const readGeometry = async () =>
       page.evaluate(() => {
@@ -1161,10 +1195,43 @@ test('lines the level up with the mic, and the header up with its column @smoke'
         }
       })
 
-    // The zen stage eases its bottom bar into place, so the first read after
+    // The zen stage eases its bottom bar into place, so a read taken after
     // the toggle can land mid-transition -- where the pair has not spread yet
-    // and the gap between the mic and the level reads 0. Sample until two
-    // consecutive reads agree, then measure that settled layout.
+    // and the gap between the mic and the level reads 0.
+    //
+    // Waiting for the transitions themselves, not only for two reads to
+    // agree: `toBeVisible` resolves as the bar starts easing, and the two
+    // sample reads that follow can both land before the first animated frame
+    // has painted. They agree — on the pre-transition geometry — and the
+    // "settled" layout measured from them is the one the eased bar is about
+    // to leave. That is the whole flake; the sample loop below stays as the
+    // backstop for anything that moves without an animation.
+    await page
+      .locator('[class*="bottomBar"]')
+      .evaluate(async (element) => {
+        const easing = element.getAnimations({ subtree: true }).filter(
+          (animation) =>
+            // A looping animation — a pulse, a spinner — never reaches
+            // `finished`, so awaiting one hangs until the test's own timeout.
+            // Only the one-shot transitions that move the bar are of interest.
+            animation.effect?.getComputedTiming().iterations !== Infinity,
+        )
+        await Promise.race([
+          Promise.all(
+            // A cancelled animation rejects `finished`, and a transition
+            // superseded by the next one is cancelled, not finished — which
+            // would fail the test for the one reason that is not a bug.
+            easing.map((animation) =>
+              animation.finished.catch(() => undefined),
+            ),
+          ),
+          // Never trade one timing assumption for a hang: the sample loop
+          // below is still the backstop if something outlasts this.
+          new Promise((resolve) => setTimeout(resolve, 2000)),
+        ])
+      })
+      .catch(() => undefined)
+
     let previous = await readGeometry()
     await expect
       .poll(

@@ -180,6 +180,29 @@ describe('GuitarNightScoreRoom', () => {
     expect(countIn).toHaveClass(styles.scoreRailToggleActive)
   })
 
+  it('offers the Jam Doctor from Session controls, waiting until a take exists', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const summary = screen.getByLabelText('Session controls')
+    fireEvent.click(summary)
+    const details = summary.closest('details')
+    expect(details).toBeTruthy()
+    if (details === null) return
+
+    // The drawer used to open only on its own (the take-ready cue, or a
+    // failed recovery reopening it) — a deliberate way in has to exist, and
+    // it has to say what will make it available.
+    const doctor = within(details).getByRole('button', {
+      name: 'Open the Jam Doctor for the last take',
+    })
+    expect(doctor).toBeDisabled()
+    expect(doctor).toHaveTextContent(
+      'Finish a scored take and its review opens from here.',
+    )
+  })
+
   it('keeps mobile Session tempo and volume on the same rehearsal controls', () => {
     render(() => (
       <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />

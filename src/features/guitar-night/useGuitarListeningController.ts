@@ -1403,15 +1403,39 @@ export function useGuitarListeningController(
    * this says so rather than saving a made-up number.
    */
   const calibrate = async (): Promise<boolean> => {
-    if (
-      status() !== 'listening' ||
-      tap === null ||
-      inputProfile() !== 'microphone'
-    ) {
+    // Every refusal says why. A silent `false` here reads as a button that
+    // does nothing — the drawer that offered it just closes and reopens.
+    if (inputProfile() !== 'microphone') {
+      setNotice(
+        'Timing calibration measures the speaker-to-microphone round trip. ' +
+          'This input route feeds the signal directly, so there is nothing to measure.',
+      )
+      return false
+    }
+    if (status() !== 'listening') {
+      setNotice(
+        'Turn Listening on first — calibration times the live microphone.',
+      )
+      return false
+    }
+    // Split from the check above rather than folded into it: this is the
+    // no-AudioWorklet fallback, which runs WHILE listening is on. Telling
+    // that player to turn listening on sent them round the same loop for
+    // ever, because it already was.
+    if (tap === null) {
+      setNotice(
+        'This browser cannot timestamp audio precisely enough to calibrate. ' +
+          'Timing is measured against the animation clock instead.',
+      )
       return false
     }
     const graph = options.getAudioGraph()
-    if (graph === null) return false
+    if (graph === null) {
+      setNotice(
+        'No audio is running to play the calibration clicks through yet.',
+      )
+      return false
+    }
 
     const currentGeneration = generation
     const context = graph.context
