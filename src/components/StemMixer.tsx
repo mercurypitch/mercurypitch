@@ -3164,7 +3164,15 @@ const LoopMetricsBar: Component<{
 export const StemMixerStyles: string = `
 .stem-mixer {
   --sm-stage-alpha: ${KARAOKE_STAGE_ALPHA.defaultValue};
-  --sm-canvas-bg: #0d1117;
+  /* The analysis canvas stays a dark plate in every theme — the waveform and
+     pitch ink are drawn for it — but it is still stage glass, so it follows
+     the slider a step behind the panels. */
+  --sm-canvas-bg: rgba(
+    13,
+    17,
+    23,
+    min(1, calc(var(--sm-stage-alpha) + 0.12))
+  );
   /* The lane names (Vocal, Instrumental, …) and the MONITORING badge are
      painted onto the canvas, so CSS cannot fade them — the canvas controller
      reads this variable on each redraw instead. It belongs to the base block,
@@ -3184,6 +3192,31 @@ export const StemMixerStyles: string = `
     var(--bg-secondary, #161b22) calc(var(--sm-stage-alpha) * 100%),
     transparent
   );
+
+  /* Stage glass, derived rather than hardcoded: the studio fades the active
+     app theme, the performance preset fades the dark stage it already sits
+     on. Each depth keeps the step the stage has always had, so the slider
+     never flattens the panels into one sheet. */
+  --sm-glass-primary: color-mix(
+    in srgb,
+    var(--bg-primary) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+  --sm-glass-secondary: color-mix(
+    in srgb,
+    var(--bg-secondary) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+  --sm-glass-tertiary: color-mix(
+    in srgb,
+    var(--bg-tertiary) min(100%, calc((var(--sm-stage-alpha) + 0.08) * 100%)),
+    transparent
+  );
+  --sm-glass-card: color-mix(
+    in srgb,
+    var(--bg-card) min(100%, calc((var(--sm-stage-alpha) + 0.12) * 100%)),
+    transparent
+  );
   position: relative;
   display: flex;
   flex-direction: column;
@@ -3195,30 +3228,24 @@ export const StemMixerStyles: string = `
   overflow: hidden;
 }
 
+/* The surfaces reach the panels here and not on .stem-mixer itself: a custom
+   property cannot read the value it shadows on its own element, and the root
+   is where the un-faded palette has to stay readable for the derivations
+   above and for the backdrop's own base layer. */
+.stem-mixer > * {
+  --bg-primary: var(--sm-glass-primary);
+  --bg-secondary: var(--sm-glass-secondary);
+  --bg-tertiary: var(--sm-glass-tertiary);
+  --bg-card: var(--sm-glass-card);
+}
+
 /* The standalone stage keeps translucent theatre glass. Studio mode never
    shadows app theme tokens: its header, panels and controls inherit the
    selected app palette, while only .sm-canvas remains deliberately dark. */
 .stem-mixer--performance {
-  --bg-primary: rgba(13, 17, 23, var(--sm-stage-alpha));
-  --bg-secondary: rgba(22, 27, 34, var(--sm-stage-alpha));
-  --bg-tertiary: rgba(
-    33,
-    38,
-    45,
-    min(1, calc(var(--sm-stage-alpha) + 0.08))
-  );
-  --bg-card: rgba(
-    28,
-    33,
-    40,
-    min(1, calc(var(--sm-stage-alpha) + 0.12))
-  );
-  --sm-canvas-bg: rgba(
-    13,
-    17,
-    23,
-    min(1, calc(var(--sm-stage-alpha) + 0.12))
-  );
+  /* Surfaces are not re-declared here. .mp-dark-stage already supplies this
+     preset's palette and the base block fades it, so shadowing them again
+     would run the glass through the slider twice. */
   background:
     linear-gradient(
       rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.08))),
