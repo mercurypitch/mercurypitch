@@ -350,12 +350,11 @@
    rounded corners. Tokens: --safe-* in app.css.
    ============================================================ */
 @media (max-width: 768px) {
-  /* App header now extends under the status bar — pad it clear. */
-  header {
-    padding-top: calc(6px + var(--safe-top));
-    padding-left: max(8px, var(--safe-left));
-    padding-right: max(8px, var(--safe-right));
-  }
+  /* The app header's safe-area padding is NOT here. It lived here and never
+     applied: AppHeader.css loads after this file and sets the `padding`
+     shorthand on `header` at the same specificity, which resets the longhands
+     this rule set. It now sits on those shorthands, where it cannot be
+     silently dropped again — see the comments there. */
 
   /* The floating BottomTabBar overlays the content's bottom edge — every
      page needs clearance for it (bar height + its 8px float gap + safe
