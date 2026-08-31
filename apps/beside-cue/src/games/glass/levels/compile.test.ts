@@ -265,5 +265,13 @@ describe('glass notes (MelodyDef.glassAt)', () => {
         expect(cs.panes.some((p) => p.kind === 'ring')).toBe(true)
       }
     })
+
+    it('leaves no unchargeable pane where there is no microphone', () => {
+      for (const mode of ['rhythm', 'listen'] as const) {
+        const cs = compileLevel(THE_GLASSWORKS, { mode, groundMidi: G })
+        expect(cs.panes).toHaveLength(0)
+        expect(cs.beams).toHaveLength(0)
+      }
+    })
   })
 })
