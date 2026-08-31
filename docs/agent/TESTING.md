@@ -279,6 +279,38 @@ Guard with `vi.setConfig({ testTimeout: N })` at the top of the file when the
 whole file is slow, or `it(name, { timeout: N }, fn)` for a single case. Both
 carry a comment naming the work being paid for — a bare number is unreviewable.
 
+### 3.8 Browser specs on a machine that is running more than one checkout
+
+Several agents test in parallel here, each in its own worktree. Two things
+about `pnpm test:e2e` are worth knowing before you trust a red result.
+
+**The server it talks to may not be yours.** `webServer.reuseExistingServer` is
+true, and it decides by asking whether the port answers — not whose build is
+behind it. The default port is now derived from the checkout path
+(`checkoutPort()` in `playwright.config.ts`), so each worktree gets its own and
+this cannot happen silently. Before that fix a sibling worktree's leftover
+`serve dist` answered first and the suite reported **71 failures across specs
+the branch had never touched**; every "page" in the traces was a directory
+listing. If you ever see failures clustered in unrelated specs, look at one
+trace's page snapshot before reading a line of source.
+
+**A red spec may just be the machine.** Playwright's local worker default is
+half the logical cores, chosen per run and blind to the other runs. Specs with
+real deadlines in them — mic capture, decode, animation — fail on contention
+first. Two rules keep this cheap:
+
+- Before calling anything a regression, re-run the spec alone. Compare
+  like with like: an isolated pass against a full-suite failure proves nothing.
+- If it passes alone and fails in the suite, dial the run down further rather
+  than chasing it. The local default is already a quarter of the cores;
+  `VITE_E2E_WORKERS=2 pnpm test:e2e` goes lower, and the same variable raises it
+  again when you are the only one testing.
+
+The control that settles it is the same suite on `origin/main`, run the same
+way. CI runners are not shared and retry twice, so a contention flake here is
+usually green there — but confirm it, do not assume it (see
+[MISTAKES.md](MISTAKES.md), "A CI-only test timeout is a measurement").
+
 ### 3.6 When a mock is allowed, and when it is banned
 
 **Allowed — the true edge only:**
