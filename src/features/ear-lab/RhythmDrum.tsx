@@ -29,7 +29,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { beamGroups, gridFractions, readRhythm, tupletSpans, } from '@/lib/ear/rhythm-notation'
 import type { Subdivision } from '@/lib/ear/rhythm-take'
 import styles from './EarInstruments.module.css'
-import { RhythmScore } from './RhythmScore'
+import { RhythmScore, ScorePreface } from './RhythmScore'
 
 export type DrumBar = 'count' | 'call' | 'response' | null
 
@@ -60,7 +60,9 @@ interface RhythmDrumProps {
   grid?: Subdivision | null
   /** The player's taps so far, in beats, while the take runs. */
   liveTaps?: readonly number[] | null
-  /** The upper row's caption; 'call' unless said. */
+  /** What the written row is called, for the spoken label; 'call'
+   *  unless said. The paper itself carries a clef and a metre rather
+   *  than a word for it. */
   upperWord?: string
   /** The player's bar, once their first tap has started it: where in
    *  the bar the anchor stood and how long is left to run. The fill is
@@ -73,8 +75,13 @@ interface RhythmDrumProps {
 
 const BAR_LEFT = 132
 const BAR_RIGHT = 436
-const PAPER_LEFT = 124
-const PAPER_RIGHT = 444
+/** The staff runs from behind the clef to the final barline, the way
+ *  a printed one does — the preface stands on it, not beside it. */
+const PAPER_LEFT = 83
+const PAPER_RIGHT = 443
+/** A barline stands just before the beat it opens, so the downbeat's
+ *  note has air after it instead of sitting on the line. */
+const BARLINE_LEAD = 9
 const LAMP_Y = 40
 const STAFF_Y = 112
 const TAKE_Y = 172
@@ -93,6 +100,10 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
   const scale = () => (beats() === 8 ? 0.82 : 1)
   const beatX = (beat: number): number =>
     BAR_LEFT + (beat / beats()) * (BAR_RIGHT - BAR_LEFT)
+  /** Barlines lead their beat; the one that closes the bar does not,
+   *  because nothing is written after it. */
+  const barlineX = (beat: number): number =>
+    beat === beats() ? beatX(beat) : beatX(beat) - BARLINE_LEAD
 
   /** The pattern as a score: the reveal's if there is one, else what
    *  the drill wrote for the player to read. */
@@ -144,6 +155,18 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         class={styles.drum}
         data-part="drum"
       />
+      {/* The player's own lane, washed in the colour their taps land
+          in. It says whose row it is without a word for it, and it is
+          there before the first tap so they know where to look. */}
+      <rect
+        x={PAPER_LEFT}
+        y={TAKE_Y - 21}
+        width={PAPER_RIGHT - PAPER_LEFT}
+        height="42"
+        rx="12"
+        class={styles.takeLane}
+        data-part="take-lane"
+      />
       {/* the rhythm staff, and the row the player's take lands on */}
       <line
         x1={PAPER_LEFT}
@@ -161,6 +184,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         class={styles.drumRule}
         data-part="take-rule"
       />
+      <ScorePreface staffY={STAFF_Y} takeY={TAKE_Y} beatsPerBar={4} />
       {/* the grid inside each beat: where a gallop's second note goes */}
       <For each={guides()}>
         {(at) => (
@@ -174,19 +198,32 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
           />
         )}
       </For>
-      {/* beat divisions; the barline of a two-bar pattern is solid */}
+      {/* Beat divisions are dashed and barlines are solid, through
+          both rows the way a system's are; the last is the score's
+          final barline, thin then thick. */}
       <For each={Array.from({ length: beats() + 1 }, (_, i) => i)}>
         {(beat) => (
-          <line
-            x1={beatX(beat)}
-            y1={DIV_TOP}
-            x2={beatX(beat)}
-            y2={DIV_BOTTOM}
-            class={styles.drumRule}
-            stroke-dasharray={
-              beat % 4 === 0 && beat > 0 && beat < beats() ? undefined : '2 5'
-            }
-          />
+          <>
+            <line
+              x1={barlineX(beat)}
+              y1={DIV_TOP}
+              x2={barlineX(beat)}
+              y2={DIV_BOTTOM}
+              class={beat % 4 === 0 ? styles.barline : styles.drumRule}
+              stroke-dasharray={beat % 4 === 0 ? undefined : '2 5'}
+              data-part={beat % 4 === 0 ? 'barline' : 'beat-division'}
+            />
+            <Show when={beat === beats()}>
+              <rect
+                x={barlineX(beat) + 3.4}
+                y={DIV_TOP}
+                width="3.4"
+                height={DIV_BOTTOM - DIV_TOP}
+                class={styles.barlineThick}
+                data-part="final-barline"
+              />
+            </Show>
+          </>
         )}
       </For>
       {/* The take's progress rail: a line through the lamps that fills
@@ -268,14 +305,6 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
               run={props.reveal ? null : props.run}
               notePart={props.reveal ? 'onset' : 'score-onset'}
             />
-            <text
-              x={BAR_LEFT - 10}
-              y={STAFF_Y + 4}
-              class={styles.caption}
-              text-anchor="end"
-            >
-              {props.upperWord ?? 'call'}
-            </text>
           </>
         )}
       </Show>
@@ -294,14 +323,6 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
             />
           )}
         </For>
-        <text
-          x={BAR_LEFT - 10}
-          y={TAKE_Y + 4}
-          class={styles.caption}
-          text-anchor="end"
-        >
-          yours
-        </text>
       </Show>
 
       <Show when={props.reveal}>
@@ -331,14 +352,6 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
                 />
               )}
             </For>
-            <text
-              x={BAR_LEFT - 10}
-              y={TAKE_Y + 4}
-              class={styles.caption}
-              text-anchor="end"
-            >
-              yours
-            </text>
             <text
               x="260"
               y="244"

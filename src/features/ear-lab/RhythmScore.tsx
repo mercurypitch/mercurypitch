@@ -339,3 +339,67 @@ function bracketPath(from: number, to: number, y: number, s: number): string {
   const drop = 4 * s
   return `M ${from} ${y + drop} L ${from} ${y} L ${to} ${y} L ${to} ${y + drop}`
 }
+
+/** What a score puts before its first bar: the bracket that binds the
+ *  system, the neutral clef a staff of no pitch carries, and the
+ *  metre. It says "this is a score" where a word would only name the
+ *  drill, and it is the same furniture on the page a player will meet
+ *  away from the app. */
+export function ScorePreface(props: {
+  /** The staff the notation sits on, and the row the take lands on. */
+  staffY: number
+  takeY: number
+  /** Beats in a written bar; the metre is that over a quarter. */
+  beatsPerBar: number
+}): JSX.Element {
+  const BRACKET_X = 76
+  const CLEF_X = 88
+  const METRE_X = 110
+  return (
+    <g data-part="preface">
+      {/* the system: the score and the player's row are one */}
+      <path
+        d={
+          `M ${BRACKET_X + 5} ${props.staffY - 18}` +
+          ` L ${BRACKET_X} ${props.staffY - 18}` +
+          ` L ${BRACKET_X} ${props.takeY + 18}` +
+          ` L ${BRACKET_X + 5} ${props.takeY + 18}`
+        }
+        class={styles.systemBracket}
+        data-part="system-bracket"
+      />
+      {/* the neutral clef: two strokes, for a staff with no pitch */}
+      <For each={[0, 5.8]}>
+        {(offset) => (
+          <rect
+            x={CLEF_X + offset}
+            y={props.staffY - 11}
+            width="3"
+            height="22"
+            rx="1"
+            class={styles.clefStroke}
+            data-part="clef"
+          />
+        )}
+      </For>
+      {/* the metre, straddling the line the way a score writes it */}
+      <text
+        x={METRE_X}
+        y={props.staffY - 2}
+        class={styles.timeSignature}
+        text-anchor="middle"
+        data-part="metre"
+      >
+        {props.beatsPerBar}
+      </text>
+      <text
+        x={METRE_X}
+        y={props.staffY + 15}
+        class={styles.timeSignature}
+        text-anchor="middle"
+      >
+        4
+      </text>
+    </g>
+  )
+}

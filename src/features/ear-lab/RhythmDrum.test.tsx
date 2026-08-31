@@ -113,7 +113,29 @@ describe('RhythmDrum', () => {
     // 0 → 1.5 is a dotted quarter, so one dot and no rests
     expect(parts('dot')).toHaveLength(1)
     expect(parts('rest')).toHaveLength(0)
-    expect(drum().textContent).toContain('the chart')
+    // the paper says what it is with a clef and a metre; the drill's
+    // name is left to the spoken label
+    expect(drum().textContent).not.toContain('the chart')
+    expect(drum().getAttribute('aria-label')).toContain('count-in')
+  })
+
+  it('prefaces the staff with a clef and the metre, written or not', () => {
+    render(() => <RhythmDrum bar={null} beat={0} reveal={null} />)
+    // two strokes for a staff of no pitch, and 4 over 4
+    expect(parts('clef')).toHaveLength(2)
+    expect(parts('metre')[0].textContent).toBe('4')
+    expect(parts('system-bracket')).toHaveLength(1)
+    // the bar opens and closes on a barline, and the last one is thick
+    expect(parts('barline')).toHaveLength(2)
+    expect(parts('final-barline')).toHaveLength(1)
+    expect(parts('beat-division')).toHaveLength(3)
+  })
+
+  it('carries a barline into the middle of a two-bar pattern', () => {
+    render(() => <RhythmDrum bar={null} beat={0} beats={8} reveal={null} />)
+    expect(parts('barline')).toHaveLength(3)
+    expect(parts('final-barline')).toHaveLength(1)
+    expect(parts('beat-division')).toHaveLength(6)
   })
 
   it('beams a gallop and stubs its sixteenth back at the dotted eighth', () => {
@@ -184,7 +206,9 @@ describe('RhythmDrum', () => {
       />
     ))
     expect(parts('live-tap')).toHaveLength(3)
-    expect(drum().textContent).toContain('yours')
+    // the lane says whose row it is, so no word has to
+    expect(parts('take-lane')).toHaveLength(1)
+    expect(drum().textContent).not.toContain('yours')
   })
 
   it('writes the call as notation at the reveal and marks the misses', () => {

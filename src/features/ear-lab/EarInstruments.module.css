@@ -611,11 +611,11 @@
   fill: currentcolor;
 }
 
-/* Rests are the paper's marks rather than the player's, so they sit
-   back and the eye reads the notes first. */
+/* Rests are the same ink as the notes, as a printed score's are —
+   set back a little, so the eye still reads the onsets first. */
 .restMark {
-  color: var(--inst-muted);
-  opacity: 0.75;
+  color: var(--inst-brass);
+  opacity: 0.8;
 }
 
 .restBlock,
@@ -660,6 +660,46 @@
 
 .tapMarkLive {
   animation: drumTapIn 200ms ease-out;
+}
+
+/* ── The score's own furniture ────────────────────────────────── */
+
+/* The bracket binding the written row to the player's, the two
+   strokes a staff of no pitch carries for a clef, and the metre. */
+.systemBracket {
+  fill: none;
+  stroke: var(--inst-brass-line);
+  stroke-width: 1.4;
+}
+
+.clefStroke {
+  fill: var(--inst-brass);
+  opacity: 0.9;
+}
+
+.timeSignature {
+  font-family: var(--inst-serif);
+  font-size: 14px;
+  fill: var(--inst-brass);
+  opacity: 0.9;
+}
+
+/* Barlines run through the whole system; the beat divisions between
+   them stay dashed (`drumRule`). */
+.barline {
+  stroke: var(--inst-brass-line);
+  stroke-width: 1.2;
+}
+
+.barlineThick {
+  fill: var(--inst-brass-line);
+}
+
+/* The player's lane, washed in the colour their taps land in — whose
+   row it is, said without a word for it. */
+.takeLane {
+  fill: var(--inst-signal);
+  opacity: 0.05;
 }
 
 /* ── The track pendulums ─────────────────────────────────────── */
