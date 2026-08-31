@@ -1,0 +1,332 @@
+/* B-side games list (paper world) + the full-screen stage wrapper. */
+
+.games-screen__intro {
+  margin-top: 0.6rem;
+}
+
+.games-screen__sub {
+  margin: 0.6rem 0 0;
+  max-width: 42ch;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  margin-top: 1.6rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: 15px;
+  background: var(--paper-light);
+  color: var(--ink);
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+.game-card__art {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  object-fit: cover;
+  background: #0b0b16;
+}
+
+.game-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.game-card__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.game-card__chip {
+  padding: 0.05rem 0.4rem;
+  border: 1.5px solid var(--turquoise);
+  border-radius: 7px;
+  color: var(--turquoise-dark);
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.game-card__blurb {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+/* range setting: where songs sit around the hummed note */
+.games-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.6rem;
+}
+
+.games-range__label {
+  color: var(--ink-soft);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.games-range__pick {
+  padding: 0.3rem 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper-light);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.games-range__pick[aria-pressed='true'] {
+  border-color: var(--turquoise);
+  background: var(--turquoise);
+  color: var(--paper-light);
+}
+
+.games-range__pick:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 55%);
+}
+
+.games-range__pick:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+/* the measured-bias chip: shown when the range-finder set a value the
+ * three presets cannot express */
+.games-range__fit {
+  padding: 0.3rem 0.6rem;
+  border: 2px solid var(--turquoise);
+  border-radius: 10px;
+  color: var(--turquoise);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* The guided range-finder panel (RangeFinder.tsx) */
+.range-finder {
+  margin-top: 0.8rem;
+  max-width: 46ch;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper-light);
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.range-finder__title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.range-finder__sub {
+  margin: 0.25rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.range-finder__meter {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.7rem;
+}
+
+.range-finder__note {
+  min-width: 3.4ch;
+  color: var(--turquoise);
+  font-family: var(--font-label);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.range-finder__bar {
+  display: block;
+  flex: 1;
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.range-finder__bar span {
+  display: block;
+  height: 100%;
+  background: var(--turquoise);
+  transition: width 80ms linear;
+}
+
+.range-finder__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+/* the tap tuner card is itself the tap target */
+.tap-tuner {
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* songbook card: not itself a button — the mode buttons inside are */
+.game-card--song {
+  cursor: default;
+}
+
+.game-card__modes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.game-card__mode {
+  padding: 0.35rem 0.8rem;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card__best {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.7rem;
+}
+
+.game-card__mode:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card__mode:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+.game-card__go {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-screen__note {
+  margin: 1.4rem 0 0;
+  max-width: 46ch;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Full-screen stage: the game owns the viewport; one paper chip leads back. */
+.games-stage {
+  position: fixed;
+  inset: 0;
+}
+
+.games-leave {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.games-leave svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-leave:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 55%);
+}
+
+.games-leave:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card:active,
+  .games-leave:active {
+    transform: none;
+  }
+}

@@ -10,7 +10,7 @@ Standalone SolidJS application and Android/iOS Capacitor shells for Beside Cue.
   that schedule cues can separately opt into `/capacitor/local-notifications`.
 - `@irchiinnuss/beside-cue-app`: Beside Cue content, persistence composition, UI, assets, and native project.
 
-MercuryPitch remains at the repository root during the incremental monorepo transition. Break Glass can later adopt `@irchiinnuss/mobile-runtime`, but every shipped app keeps its own Capacitor config, Android/iOS project, application ID, signing, assets, permissions, and store lifecycle.
+MercuryPitch remains at the repository root during the incremental monorepo transition. Break Glass ships inside this app as the B-side games (see [docs/games/mini-games.md](docs/games/mini-games.md)), built on `@irchiinnuss/pitch-engine`; every shipped app still keeps its own Capacitor config, Android/iOS project, application ID, signing, assets, permissions, and store lifecycle.
 
 The app stores one portable daily target time. Web previews deliver it only
 while the tab is open; Android delegates the same recurring wall-clock intent
@@ -105,6 +105,24 @@ This proves the interface and the entitlement state machine. It proves nothing
 about RevenueCat — only a device does that. It cannot switch on outside a
 development build: the check requires `import.meta.env.DEV`, and the fake store
 is absent from a production bundle.
+
+### Skipping the intro while developing
+
+The cinematic first run and the setup walk stand between a fresh profile and
+every screen behind them, which makes browser testing slow and makes an empty
+profile (a new browser, cleared site data) a five-minute detour:
+
+```sh
+pnpm beside-cue:dev
+# then open http://localhost:5199/?devSeed
+```
+
+`VITE_DEV_SEED=1` does the same without the query parameter. It writes what a
+finished first run would have written — one active cue with obviously
+placeholder text, and the onboarding marked seen — so the app boots straight to
+HOME. A device that already has a plan is left untouched. Same guard as the
+fake store: the check requires `import.meta.env.DEV`, and the seeder is absent
+from a production bundle.
 
 ### Verifying on a device
 

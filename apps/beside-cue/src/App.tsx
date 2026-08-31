@@ -35,6 +35,7 @@ import { ChooseCueContextScreen } from './screens/ChooseCueContextScreen'
 import type { PullChoicePresentation, PullPreviewVoiceState, } from './screens/ChoosePullScreen'
 import { ChoosePullScreen } from './screens/ChoosePullScreen'
 import { CueMomentScreen } from './screens/CueMomentScreen'
+import { GamesScreen } from './screens/GamesScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { QuietScreen } from './screens/QuietScreen'
 import type { ReflectionDay } from './screens/ReflectionScreen'
@@ -56,6 +57,7 @@ type AppScreen =
   | 'quiet'
   | 'reflection'
   | 'settings'
+  | 'games'
 
 type SetupMode = 'create' | 'replace'
 
@@ -1933,7 +1935,12 @@ export function App(props: AppProps) {
           onCueNow={showManualCue}
           onPauseToggle={togglePause}
           onOpenSettings={openSettings}
+          onOpenGames={() => setScreen('games')}
         />
+      ) : null}
+
+      {screen() === 'games' ? (
+        <GamesScreen onBack={() => setScreen('home')} />
       ) : null}
 
       {screen() === 'cue-moment' && cue() !== undefined ? (

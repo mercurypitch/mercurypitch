@@ -17,6 +17,7 @@ interface HomeScreenProps {
   onCueNow: () => void
   onPauseToggle: () => void
   onOpenSettings: () => void
+  onOpenGames: () => void
 }
 
 export function HomeScreen(props: HomeScreenProps) {
@@ -95,6 +96,21 @@ export function HomeScreen(props: HomeScreenProps) {
           <small>No score to defend</small>
         </div>
       </section>
+
+      <button
+        class="games-entry"
+        type="button"
+        onClick={() => props.onOpenGames()}
+      >
+        <img src="games/merc.webp" alt="" width="34" height="34" />
+        <span>
+          <strong>B-side games</strong>
+          <small>Sing a few quiet minutes with Merc</small>
+        </span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m9 5 7 7-7 7" />
+        </svg>
+      </button>
 
       <div class="home-screen__quiet-controls">
         <button

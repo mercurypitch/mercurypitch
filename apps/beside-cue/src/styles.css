@@ -3341,3 +3341,76 @@ svg {
     margin: 0 0.75rem calc(max(0.5rem, var(--safe-bottom)) + 0.25rem);
   }
 }
+
+/* Discreet B-side games entry on Home */
+
+.games-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--ink);
+  border-radius: 13px;
+  background: var(--paper-light);
+  color: var(--ink);
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 45%);
+}
+
+.games-entry img {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1.5px solid var(--ink);
+  object-fit: cover;
+  background: #0b0b16;
+}
+
+.games-entry span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.games-entry strong {
+  font-size: 0.95rem;
+}
+
+.games-entry small {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.games-entry svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-entry:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 45%);
+}
+
+.games-entry:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .games-entry:active {
+    transform: none;
+  }
+}

@@ -213,6 +213,9 @@ importers:
       '@irchiinnuss/mobile-runtime':
         specifier: workspace:*
         version: link:../../packages/mobile-runtime
+      '@irchiinnuss/pitch-engine':
+        specifier: workspace:*
+        version: link:../../packages/pitch-engine
       '@revenuecat/purchases-capacitor':
         specifier: ^13.4.0
         version: 13.4.0(@capacitor/core@8.5.0)
@@ -241,6 +244,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
+      '@vitejs/plugin-basic-ssl':
+        specifier: ^2.3.0
+        version: 2.3.0(vite@6.4.2(@types/node@22.19.19)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
       eslint:
         specifier: 9.39.1
         version: 9.39.1
@@ -304,6 +310,12 @@ importers:
       vitest:
         specifier: ^4.1.5
         version: 4.1.6(@types/node@22.19.19)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.6)(jsdom@25.0.1)(vite@6.4.2(@types/node@22.19.19)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
+
+  packages/pitch-engine:
+    dependencies:
+      onnxruntime-web:
+        specifier: ^1.25.1
+        version: 1.26.0
 
 packages:
 

@@ -1,0 +1,21 @@
+{
+  "name": "@irchiinnuss/pitch-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "description": "Microphone lifecycle and SwiftF0 pitch detection stream shared by MercuryPitch products. Source of truth for game/runtime pitch input; the root app migrates onto it incrementally.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "onnxruntime-web": "^1.25.1"
+  }
+}
