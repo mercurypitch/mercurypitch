@@ -3,7 +3,7 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
 import type { SheetLane } from './sheet-model'
 import type { SheetMetrics, SheetRenderer } from './sheet-render'
-import { DEFAULT_SHEET_METRICS, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
+import { DEFAULT_SHEET_METRICS, followScrollTop, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
 import { tabSheetRenderer } from './sheet-tab-renderer'
 
 const metrics: SheetMetrics = { ...DEFAULT_SHEET_METRICS, width: 800 }
@@ -166,5 +166,59 @@ describe('readSheetTheme', () => {
     expect(theme.scoredAccent).toBe('#ff0000')
     // Anything the stylesheet leaves unset keeps the built-in value.
     expect(theme.noteText).toBe('#f6ecdc')
+  })
+})
+
+describe('followScrollTop', () => {
+  // A four-lane system at 300%: far taller than the viewport, the shape the
+  // follow guard used to break on ("keep the scored part in view" report).
+  const layout = {
+    lanes: [
+      { top: 40, height: 240, scored: false },
+      { top: 300, height: 240, scored: true },
+      { top: 560, height: 240, scored: false },
+      { top: 820, height: 240, scored: false },
+    ],
+    height: 1100,
+  }
+  const base = {
+    layout,
+    systemIndex: 2,
+    systemHeight: 1100,
+    focusedInset: 0,
+    viewportHeight: 500,
+    maxScrollTop: 10_000,
+    contentInsetTop: 0,
+  }
+
+  it('holds the scored lane in the middle of the view, not the system top', () => {
+    // Scored lane centre: 2*1100 + 300 + 120 = 2620; minus half a viewport.
+    expect(followScrollTop(base)).toBe(2620 - 250)
+  })
+
+  it('follows the middle of the whole system when no part is scored', () => {
+    const unscored = {
+      ...layout,
+      lanes: layout.lanes.map((entry) => ({ ...entry, scored: false })),
+    }
+    expect(followScrollTop({ ...base, layout: unscored })).toBe(
+      2 * 1100 + 1100 / 2 - 250,
+    )
+  })
+
+  it('never scrolls above the top of the page', () => {
+    expect(
+      followScrollTop({ ...base, systemIndex: 0, viewportHeight: 4000 }),
+    ).toBe(0)
+  })
+
+  it('rests at the end of the song instead of overshooting past it', () => {
+    expect(followScrollTop({ ...base, maxScrollTop: 1800 })).toBe(1800)
+  })
+
+  it('carries the scroller inset so centring is exact, not off by the padding', () => {
+    expect(followScrollTop({ ...base, contentInsetTop: 12 })).toBe(
+      2620 - 250 + 12,
+    )
   })
 })

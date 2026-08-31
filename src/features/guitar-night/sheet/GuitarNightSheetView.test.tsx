@@ -5,6 +5,8 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
 import { GuitarNightSheetView } from './GuitarNightSheetView'
 import type { SheetLane } from './sheet-model'
+import { DEFAULT_SHEET_METRICS, layoutSystemLanes } from './sheet-render'
+import { tabSheetRenderer } from './sheet-tab-renderer'
 
 function note(startBeat: number, fret = 3): GuitarNote {
   return {
@@ -519,6 +521,68 @@ describe('GuitarNightSheetView', () => {
         />
       ))
       expect(scrollTop).toBeGreaterThan(0)
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollTop', original)
+      }
+      restore()
+    }
+  })
+
+  it('rests the scored part in the middle of the view, not at its bottom edge', () => {
+    // A short viewport against a four-part system: the shape the follow used
+    // to fail in at high magnification, leaving the scored row on the bottom
+    // edge with nothing readable after it.
+    const restore = sizeThePage(800, 120)
+    let scrollTop = 0
+    const original = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollTop',
+    )
+    Object.defineProperty(HTMLElement.prototype, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = value
+      },
+    })
+
+    try {
+      render(() => (
+        <GuitarNightSheetView
+          lanes={() => [
+            lane({ notes: [note(0), note(236)] }),
+            lane({ trackId: 'track-2', notes: [note(0), note(236)] }),
+            lane({ trackId: 'track-3', notes: [note(0), note(236)] }),
+            lane({ trackId: 'track-4', notes: [note(0), note(236)] }),
+          ]}
+          scoredTrackId={() => 'track-2'}
+          playheadBeat={() => 200}
+        />
+      ))
+      expect(scrollTop).toBeGreaterThan(0)
+      // Recover the geometry the component derived (equal lanes, so height
+      // divides evenly) and hold the scored lane's centre to the viewport's.
+      const layout = layoutSystemLanes(
+        [
+          lane(),
+          lane({ trackId: 'track-2' }),
+          lane({ trackId: 'track-3' }),
+          lane({ trackId: 'track-4' }),
+        ],
+        { ...DEFAULT_SHEET_METRICS, width: 800 },
+        tabSheetRenderer,
+        'track-2',
+      )
+      const scored = layout.lanes.find((entry) => entry.scored)
+      const systemHeight = layout.height
+      const systemIndex = Math.floor(scrollTop / systemHeight)
+      const laneCentreWithinView =
+        systemIndex * systemHeight +
+        (scored?.top ?? 0) +
+        (scored?.height ?? 0) / 2 -
+        scrollTop
+      expect(Math.abs(laneCentreWithinView - 120 / 2)).toBeLessThanOrEqual(1)
     } finally {
       if (original !== undefined) {
         Object.defineProperty(HTMLElement.prototype, 'scrollTop', original)
