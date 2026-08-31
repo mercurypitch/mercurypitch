@@ -198,6 +198,48 @@ export function drainPitchStream(stream: F0Stream | null): PitchFrame[] {
   return frames
 }
 
+/**
+ * Place the captured segments on the encoded take clock they claim to index.
+ *
+ * A paused recorder writes no audio, so the segments partition the decoded
+ * take exactly. Their spans are measured with `Date.now()`, which does not:
+ * every pause and resume is awaited through a queued recorder transition that
+ * the wall clock counts and the recording does not. The error is small per
+ * segment and cumulative across them, so the later offsets drift past the end
+ * of the audio they address — a three-landing guided check overran its own
+ * recording by ~100ms on an idle machine and more under load, which then read
+ * as a short take rather than as clock drift.
+ *
+ * Rescaling onto the decoded duration restores the invariant that the offsets
+ * sum to the take. Only overruns are corrected: when the decoded take is
+ * already the longer of the two, the measured spans address real audio and
+ * container-duration rounding is not a reason to stretch them.
+ */
+function alignSegmentsToEncodedClock(
+  captured: readonly DryVoiceCaptureSegment[],
+  encodedDurationMs: number,
+): DryVoiceCaptureSegment[] {
+  const measuredDurationMs = captured.reduce(
+    (total, segment) => total + segment.durationMs,
+    0,
+  )
+  if (
+    !Number.isFinite(encodedDurationMs) ||
+    encodedDurationMs <= 0 ||
+    measuredDurationMs <= encodedDurationMs
+  ) {
+    return [...captured]
+  }
+  const scale = encodedDurationMs / measuredDurationMs
+  let measuredOffsetMs = 0
+  return captured.map((segment) => {
+    const startMs = Math.round(measuredOffsetMs * scale)
+    measuredOffsetMs += segment.durationMs
+    const endMs = Math.round(measuredOffsetMs * scale)
+    return { ...segment, audioOffsetMs: startMs, durationMs: endMs - startMs }
+  })
+}
+
 export function useDryVoiceCapture(
   options: DryVoiceCaptureOptions,
 ): DryVoiceCaptureController {
@@ -553,7 +595,7 @@ export function useDryVoiceCapture(
     recorder = null
     clearTimers()
     if (wasRecording) finishSegment()
-    const takeSegments = segments
+    const capturedSegments = segments
     const fallbackDurationMs = completedDurationMs
     setState('processing')
     releaseMic()
@@ -608,6 +650,10 @@ export function useDryVoiceCapture(
           : false
       if (!decodedPreviewReady) closeCaptureContext(context)
 
+      const takeSegments = alignSegmentsToEncodedClock(
+        capturedSegments,
+        inspectedDurationMs,
+      )
       const frames = takeSegments.flatMap((segment) =>
         segment.frames.map((frame) => ({
           ...frame,

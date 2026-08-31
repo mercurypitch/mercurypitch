@@ -260,6 +260,46 @@ describe('useDryVoiceCapture', () => {
     expect(frameWindows).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps segment offsets inside a take the recorder encoded shorter than the wall clock', async () => {
+    // Every awaited pause and resume costs wall-clock time the recorder writes
+    // no audio for, so the measured spans outrun the encoded take. Left
+    // uncorrected the later offsets address audio past its end, and a guided
+    // landing window derived from one reads as a take that stopped early.
+    inspectMock.mockResolvedValue({
+      durationMs: 3800,
+      peaks: new Float32Array([0.2, 0.8]),
+    })
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    await controller.start()
+    vi.advanceTimersByTime(2000)
+    expect(await controller.pauseSegment()).toMatchObject({ index: 0 })
+    vi.advanceTimersByTime(4000)
+    expect(await controller.resumeSegment()).toBe(true)
+    vi.advanceTimersByTime(2000)
+    const result = await controller.stop()
+
+    expect(result?.segments).toEqual([
+      expect.objectContaining({
+        index: 0,
+        audioOffsetMs: 0,
+        durationMs: 1900,
+      }),
+      expect.objectContaining({
+        index: 1,
+        audioOffsetMs: 1900,
+        durationMs: 1900,
+      }),
+    ])
+    const last = result!.segments[result!.segments.length - 1]!
+    expect(last.audioOffsetMs + last.durationMs).toBe(result?.durationMs)
+    expect(result?.frames.map((frame) => frame.t)).toEqual([0.1, 2.1])
+  })
+
   it('permanently marks a take when its microphone track is interrupted', async () => {
     let controller!: ReturnType<typeof useDryVoiceCapture>
     createRoot((rootDispose) => {
