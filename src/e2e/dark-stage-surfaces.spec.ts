@@ -107,13 +107,17 @@ test('performance confirmations keep their stage skin outside the stage @smoke',
     '.sm-lyrics-edit-btn[aria-label="Remove lyrics"]:visible',
   )
   await expect(removeLyrics).toBeVisible({ timeout: 15_000 })
+  // Read the reference off the trigger, not off the stage root. The bridge
+  // copies the *caller's* resolved cascade, and the caller sits inside a
+  // panel, where the stage has already faded its surfaces into glass. The
+  // root still holds the un-faded source those panels are derived from.
+  const callerPrimary = await removeLyrics.evaluate((element) =>
+    getComputedStyle(element).getPropertyValue('--bg-primary').trim(),
+  )
   await removeLyrics.click()
   const dialog = page.getByRole('alertdialog', { name: 'Remove lyrics?' })
   await expect(dialog).toBeVisible()
   await expect(dialog).toHaveCSS('color-scheme', 'dark')
-  const stagePrimary = await mixer.evaluate((element) =>
-    getComputedStyle(element).getPropertyValue('--bg-primary').trim(),
-  )
   const dialogPalette = await dialog.evaluate((element) => {
     const style = getComputedStyle(element)
     const body = element.querySelector('p')
@@ -135,7 +139,7 @@ test('performance confirmations keep their stage skin outside the stage @smoke',
     }
   })
   expect(dialogPalette.outsideStage).toBe(true)
-  expect(dialogPalette.primary).toBe(stagePrimary)
+  expect(dialogPalette.primary).toBe(callerPrimary)
   expect(
     contrast(dialogPalette.bodyColor, dialogPalette.background),
   ).toBeGreaterThanOrEqual(4.5)

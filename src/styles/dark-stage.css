@@ -2,11 +2,12 @@
    Dark stage contract — complete theme ownership for immersive surfaces
    ============================================================
 
-   Performance worlds opt into this class at their own root. Keeping the
-   contract scoped prevents a light app theme from leaking dark ink into a
-   stage, while ordinary app pages and the studio mixer continue to inherit
-   the active theme. Local art-direction tokens may refine this palette, but
-   native controls and shared components always receive a complete base. */
+   Performance worlds opt into this class at their own root — every surface
+   that sits on a photographic backdrop, the Stem Mixer included. Keeping the
+   contract scoped prevents a light app theme from leaking into a stage, while
+   ordinary app pages continue to inherit the active theme. Local
+   art-direction tokens may refine this palette, but native controls and
+   shared components always receive a complete base. */
 
 .mp-dark-stage {
   color-scheme: dark;

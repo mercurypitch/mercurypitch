@@ -360,86 +360,86 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   ).toBeVisible()
 })
 
+// Hoisted to module scope so the stage-ownership test can measure the same
+// way. A translucent panel is only as readable as what composites behind it.
+const readMetrics = (target: import('@playwright/test').Locator) =>
+  target.evaluate((element) => {
+    // Colours reach us in whatever form the engine prefers to serialise --
+    // `color(srgb 0.1 0.13 0.16 / 0.57)` for a color-mix() result, plain
+    // `rgb()` for a hex. A canvas context normalises every one of them, so
+    // this cannot silently read a fractional channel as if it were 0-255.
+    const canvas = document.createElement('canvas').getContext('2d')
+    if (canvas === null) throw new Error('No 2D context for colour parsing')
+    const parse = (value: string): [number, number, number, number] => {
+      canvas.fillStyle = '#000000'
+      canvas.fillStyle = value
+      const resolved = canvas.fillStyle as string
+      if (resolved.startsWith('#')) {
+        return [
+          Number.parseInt(resolved.slice(1, 3), 16),
+          Number.parseInt(resolved.slice(3, 5), 16),
+          Number.parseInt(resolved.slice(5, 7), 16),
+          1,
+        ]
+      }
+      const channels = resolved.match(/[\d.]+/g)?.map(Number)
+      if (channels === undefined || channels.length < 3) {
+        throw new Error(`Expected a colour, received ${value}`)
+      }
+      return [channels[0], channels[1], channels[2], channels[3] ?? 1]
+    }
+    // A translucent panel is only as readable as what ends up behind it, so
+    // flatten the ancestor chain instead of measuring the panel's own colour
+    // as though it were opaque.
+    const composite = (node: Element): [number, number, number, number] => {
+      const layers: [number, number, number, number][] = []
+      for (
+        let cursor: Element | null = node;
+        cursor !== null;
+        cursor = cursor.parentElement
+      ) {
+        layers.push(parse(getComputedStyle(cursor).backgroundColor))
+      }
+      let result: [number, number, number, number] = [255, 255, 255, 1]
+      for (let index = layers.length - 1; index >= 0; index -= 1) {
+        const layer = layers[index]
+        result = [
+          Math.round(layer[0] * layer[3] + result[0] * (1 - layer[3])),
+          Math.round(layer[1] * layer[3] + result[1] * (1 - layer[3])),
+          Math.round(layer[2] * layer[3] + result[2] * (1 - layer[3])),
+          1,
+        ]
+      }
+      return result
+    }
+    const luminance = (colour: [number, number, number, number]) => {
+      const channels = colour.slice(0, 3).map((channel) => {
+        const value = channel / 255
+        return value <= 0.04045
+          ? value / 12.92
+          : Math.pow((value + 0.055) / 1.055, 2.4)
+      })
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+    }
+    const style = getComputedStyle(element)
+    const behind = composite(element)
+    const foreground = luminance(parse(style.color))
+    const background = luminance(behind)
+
+    return {
+      background: style.backgroundColor,
+      compositedBackground: `rgb(${behind.slice(0, 3).join(', ')})`,
+      color: style.color,
+      colorScheme: style.getPropertyValue('color-scheme'),
+      contrast:
+        (Math.max(foreground, background) + 0.05) /
+        (Math.min(foreground, background) + 0.05),
+    }
+  })
+
 test('keeps the play-along role picker readable in dark and light themes @smoke', async ({
   page,
 }) => {
-  const readMetrics = (target: import('@playwright/test').Locator) =>
-    target.evaluate((element) => {
-      // Colours reach us in whatever form the engine prefers to serialise --
-      // `color(srgb 0.1 0.13 0.16 / 0.57)` for a color-mix() result, plain
-      // `rgb()` for a hex. A canvas context normalises every one of them, so
-      // this cannot silently read a fractional channel as if it were 0-255.
-      const canvas = document.createElement('canvas').getContext('2d')
-      if (canvas === null) throw new Error('No 2D context for colour parsing')
-      const parse = (value: string): [number, number, number, number] => {
-        canvas.fillStyle = '#000000'
-        canvas.fillStyle = value
-        const resolved = canvas.fillStyle as string
-        if (resolved.startsWith('#')) {
-          return [
-            Number.parseInt(resolved.slice(1, 3), 16),
-            Number.parseInt(resolved.slice(3, 5), 16),
-            Number.parseInt(resolved.slice(5, 7), 16),
-            1,
-          ]
-        }
-        const channels = resolved.match(/[\d.]+/g)?.map(Number)
-        if (channels === undefined || channels.length < 3) {
-          throw new Error(`Expected a colour, received ${value}`)
-        }
-        return [channels[0], channels[1], channels[2], channels[3] ?? 1]
-      }
-      // A translucent panel is only as readable as what ends up behind it, so
-      // flatten the ancestor chain instead of measuring the panel's own colour
-      // as though it were opaque.
-      const composite = (node: Element): [number, number, number, number] => {
-        const layers: [number, number, number, number][] = []
-        for (
-          let cursor: Element | null = node;
-          cursor !== null;
-          cursor = cursor.parentElement
-        ) {
-          layers.push(parse(getComputedStyle(cursor).backgroundColor))
-        }
-        let result: [number, number, number, number] = [255, 255, 255, 1]
-        for (let index = layers.length - 1; index >= 0; index -= 1) {
-          const layer = layers[index]
-          result = [
-            Math.round(layer[0] * layer[3] + result[0] * (1 - layer[3])),
-            Math.round(layer[1] * layer[3] + result[1] * (1 - layer[3])),
-            Math.round(layer[2] * layer[3] + result[2] * (1 - layer[3])),
-            1,
-          ]
-        }
-        return result
-      }
-      const luminance = (colour: [number, number, number, number]) => {
-        const channels = colour.slice(0, 3).map((channel) => {
-          const value = channel / 255
-          return value <= 0.04045
-            ? value / 12.92
-            : Math.pow((value + 0.055) / 1.055, 2.4)
-        })
-        return (
-          0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
-        )
-      }
-      const style = getComputedStyle(element)
-      const behind = composite(element)
-      const foreground = luminance(parse(style.color))
-      const background = luminance(behind)
-
-      return {
-        background: style.backgroundColor,
-        compositedBackground: `rgb(${behind.slice(0, 3).join(', ')})`,
-        color: style.color,
-        colorScheme: style.getPropertyValue('color-scheme'),
-        contrast:
-          (Math.max(foreground, background) + 0.05) /
-          (Math.min(foreground, background) + 0.05),
-      }
-    })
-
   const assertReadablePalette = async (
     role: import('@playwright/test').Locator,
     expectedScheme: 'dark' | 'light',
@@ -464,15 +464,19 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
     }
   }
 
+  // The app theme and the rendered scheme are separate answers: a picker
+  // inside the mixer stays on the stage's dark skin whatever the app does,
+  // while one outside it follows the app. Both must stay readable.
   const assertReadableTheme = async (
     role: import('@playwright/test').Locator,
     theme: 'dark' | 'light',
+    expectedScheme: 'dark' | 'light' = theme,
   ): Promise<void> => {
     await page.evaluate((nextTheme) => {
       const store = window.__pp?.appStore as unknown as MixerE2EStore
       store.setTheme(nextTheme)
     }, theme)
-    await assertReadablePalette(role, theme)
+    await assertReadablePalette(role, expectedScheme)
   }
 
   await page.getByRole('button', { name: 'Songs' }).click()
@@ -481,7 +485,7 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
   })
   await expect(drawerRole).toBeEnabled()
   await assertReadableTheme(drawerRole, 'dark')
-  await assertReadableTheme(drawerRole, 'light')
+  await assertReadableTheme(drawerRole, 'light', 'dark')
   await page.getByTitle('Karaoke focus mode').click()
   await expect(page.locator('.stem-mixer')).toHaveClass(/stem-mixer--focus/)
   await expect(drawerRole).toHaveCSS('background-color', 'rgb(28, 33, 40)')
@@ -497,7 +501,7 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
   await assertReadableTheme(sessionRole, 'light')
 })
 
-test('inherits studio chrome from the app theme and owns focus mode from light @smoke', async ({
+test('owns a dark stage skin in every app theme and fades its chrome to glass @smoke', async ({
   page,
 }) => {
   const mixer = page.locator('.stem-mixer')
@@ -525,10 +529,13 @@ test('inherits studio chrome from the app theme and owns focus mode from light @
         throw new Error('Representative Stem Mixer chrome is missing')
       }
 
+      // Probe inside the header rather than on the stage root. The root holds
+      // the un-faded source palette; `.stem-mixer > *` is where it turns into
+      // glass, so only a descendant sees what the chrome actually paints.
       const resolveColor = (token: string): string => {
         const probe = document.createElement('span')
         probe.style.color = `var(${token})`
-        element.append(probe)
+        headerElement.append(probe)
         const color = getComputedStyle(probe).color
         probe.remove()
         return color
@@ -542,7 +549,8 @@ test('inherits studio chrome from the app theme and owns focus mode from light @
         resolvedPrimary: resolveColor('--bg-primary'),
         resolvedText: resolveColor('--text-primary'),
         rootPrimary: rootStyle.getPropertyValue('--bg-primary').trim(),
-        mixerPrimary: mixerStyle.getPropertyValue('--bg-primary').trim(),
+        stagePrimary: mixerStyle.getPropertyValue('--bg-primary').trim(),
+        stageText: mixerStyle.getPropertyValue('--text-primary').trim(),
         titleColor: getComputedStyle(titleElement).color,
       }
     })
@@ -554,27 +562,53 @@ test('inherits studio chrome from the app theme and owns focus mode from light @
     await expect(title).toBeVisible()
     await expect(panel).toBeVisible()
     await expect(canvas).toBeVisible()
-    await expect
-      .poll(async () => (await readStudioPalette()).colorScheme)
-      .toBe(theme)
+    // The mixer always sits on a photographic backdrop, so it owns a dark
+    // palette in every app theme instead of inheriting one. A light palette
+    // faded over that photo composites to mid grey and drops its own ink to
+    // under 3:1.
+    await expect(mixer).toHaveClass(/mp-dark-stage/)
+    await expect(mixer).toHaveCSS('color-scheme', 'dark')
 
     const palette = await readStudioPalette()
-    expect(palette.mixerPrimary).toBe(palette.rootPrimary)
+    expect(palette.stagePrimary).toBe('#0d1117')
+    expect(palette.stageText).toBe('#e6edf3')
+    expect(palette.colorScheme).toBe('dark')
+    // The chrome paints the faded value, never the opaque source it came
+    // from -- this is the stage-transparency slider actually reaching the
+    // panels rather than only the backdrop behind them.
     expect(palette.headerBackground).toBe(palette.resolvedPrimary)
     expect(palette.panelBackground).toBe(palette.resolvedPrimary)
+    expect(palette.headerBackground).not.toBe('rgb(13, 17, 23)')
     expect(palette.titleColor).toBe(palette.resolvedText)
-    expect(palette.canvasBackground).toBe('rgb(13, 17, 23)')
+    // The canvas draws light-on-dark ink, so it keeps the same dark plate in
+    // every theme -- a step more opaque than the panels, still glass.
+    expect(palette.canvasBackground).toMatch(/^rgba?\(13, 17, 23(, [\d.]+)?\)$/)
+    // Whatever that glass composites to, the header ink has to survive it.
+    const titleMetrics = await readMetrics(title)
+    expect(
+      titleMetrics.contrast,
+      JSON.stringify(titleMetrics),
+    ).toBeGreaterThanOrEqual(4.5)
   }
 
   await setAppTheme(page, 'light')
+  // Ownership only means something while the app disagrees.
+  expect((await readStudioPalette()).rootPrimary).toBe('#f3f4f6')
 
   const versionTrigger = mixer.locator('.sm-lyrics-version-btn').first()
   await expect(versionTrigger).toBeVisible()
+  const readCallerPrimary = () =>
+    versionTrigger.evaluate((element) =>
+      getComputedStyle(element).getPropertyValue('--bg-primary').trim(),
+    )
+
   await versionTrigger.click()
+  // A portal leaves the stage's subtree, so it has to carry the stage skin
+  // out with it -- a light app theme must not leak into a menu opened here.
   await expectPortalledMenuSkin(
     page.locator('.sm-lyrics-version-menu'),
-    'light',
-    '#f3f4f6',
+    'dark',
+    await readCallerPrimary(),
   )
   await page
     .locator('.sm-lyrics-version-backdrop')
@@ -605,7 +639,7 @@ test('inherits studio chrome from the app theme and owns focus mode from light @
   await expectPortalledMenuSkin(
     page.locator('.sm-lyrics-version-menu'),
     'dark',
-    '#0d1117',
+    await readCallerPrimary(),
   )
 })
 
@@ -1092,36 +1126,58 @@ test('lines the level up with the mic, and the header up with its column @smoke'
     }
     await expect(page.getByTestId('mobile-music-level')).toBeVisible()
 
-    const geometry = await page.evaluate(() => {
-      const rect = (selector: string): DOMRect | null =>
-        document.querySelector(selector)?.getBoundingClientRect() ?? null
-      const mic = rect('[aria-label="Toggle your microphone"]')
-      const play = rect('[aria-label="Play"], [aria-label="Pause"]')
-      const level = rect('[data-testid="mobile-music-level"]')
-      const bar = rect('[class*="bottomBar"]')
-      const actionsElement = document.querySelector('[class*="headerActions"]')
-      const actions = actionsElement?.getBoundingClientRect() ?? null
-      const header =
-        actionsElement?.parentElement?.getBoundingClientRect() ?? null
-      const headerPadding =
-        actionsElement?.parentElement === undefined ||
-        actionsElement?.parentElement === null
-          ? 0
-          : Number.parseFloat(
-              getComputedStyle(actionsElement.parentElement).paddingRight,
-            )
-      return {
-        micCentreY: mic === null ? -1 : mic.y + mic.height / 2,
-        playCentreY: play === null ? -1 : play.y + play.height / 2,
-        levelCentreY: level === null ? -1 : level.y + level.height / 2,
-        micRight: mic?.right ?? -1,
-        levelLeft: level?.x ?? -1,
-        playCentreX: play === null ? -1 : play.x + play.width / 2,
-        barCentreX: bar === null ? -1 : bar.x + bar.width / 2,
-        actionsRight: actions?.right ?? -1,
-        headerContentRight: header === null ? -1 : header.right - headerPadding,
-      }
-    })
+    const readGeometry = async () =>
+      page.evaluate(() => {
+        const rect = (selector: string): DOMRect | null =>
+          document.querySelector(selector)?.getBoundingClientRect() ?? null
+        const mic = rect('[aria-label="Toggle your microphone"]')
+        const play = rect('[aria-label="Play"], [aria-label="Pause"]')
+        const level = rect('[data-testid="mobile-music-level"]')
+        const bar = rect('[class*="bottomBar"]')
+        const actionsElement = document.querySelector(
+          '[class*="headerActions"]',
+        )
+        const actions = actionsElement?.getBoundingClientRect() ?? null
+        const header =
+          actionsElement?.parentElement?.getBoundingClientRect() ?? null
+        const headerPadding =
+          actionsElement?.parentElement === undefined ||
+          actionsElement?.parentElement === null
+            ? 0
+            : Number.parseFloat(
+                getComputedStyle(actionsElement.parentElement).paddingRight,
+              )
+        return {
+          micCentreY: mic === null ? -1 : mic.y + mic.height / 2,
+          playCentreY: play === null ? -1 : play.y + play.height / 2,
+          levelCentreY: level === null ? -1 : level.y + level.height / 2,
+          micRight: mic?.right ?? -1,
+          levelLeft: level?.x ?? -1,
+          playCentreX: play === null ? -1 : play.x + play.width / 2,
+          barCentreX: bar === null ? -1 : bar.x + bar.width / 2,
+          actionsRight: actions?.right ?? -1,
+          headerContentRight:
+            header === null ? -1 : header.right - headerPadding,
+        }
+      })
+
+    // The zen stage eases its bottom bar into place, so the first read after
+    // the toggle can land mid-transition -- where the pair has not spread yet
+    // and the gap between the mic and the level reads 0. Sample until two
+    // consecutive reads agree, then measure that settled layout.
+    let previous = await readGeometry()
+    await expect
+      .poll(
+        async () => {
+          const next = await readGeometry()
+          const settled = JSON.stringify(next) === JSON.stringify(previous)
+          previous = next
+          return settled
+        },
+        { timeout: 5000 },
+      )
+      .toBe(true)
+    const geometry = previous
 
     // One row: the mic, the level and the play button share a centre line.
     expect(

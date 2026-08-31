@@ -103,7 +103,7 @@ const scoreGradePalette = (
 }
 
 const DARK_SURFACE_ROOTS = [
-  ['Stem Mixer performance and focus', 'src/components/StemMixer.tsx'],
+  ['Stem Mixer', 'src/components/StemMixer.tsx'],
   ['Karaoke mobile Zen stage', 'src/components/KaraokeMobileStage.tsx'],
   ['Karaoke Night', 'src/features/karaoke-night/KaraokeNightApp.tsx'],
   ['Singing Zen', 'src/features/zen/ZenPitchStage.tsx'],
@@ -133,11 +133,19 @@ describe('dark stage theme contract', () => {
     expect(source(path)).toContain('mp-dark-stage')
   })
 
-  it('does not make the default Stem Mixer an unconditional dark surface', () => {
+  it('makes the Stem Mixer a stage in every app theme without double-fading', () => {
     const mixer = source('src/components/StemMixer.tsx')
+    // The mixer always sits on a photographic backdrop and its panels are
+    // glass over that photo. Inheriting a light app palette and fading it to
+    // 57% over a dark photograph composites to mid grey and takes the
+    // panel's own ink to 2.9:1, so the stage owns the palette instead.
+    expect(mixer).toContain('class="stem-mixer mp-dark-stage"')
     expect(mixer).toContain(
       "'stem-mixer--performance': props.preset === 'performance'",
     )
+    // The base block derives the glass from that palette. Re-declaring the
+    // surfaces there would ask a custom property to read the value it
+    // shadows, which is a cycle -- the handoff happens on `.stem-mixer > *`.
     expect(mixer).not.toMatch(/\.stem-mixer\s*\{[^}]*--bg-primary:/s)
   })
 
