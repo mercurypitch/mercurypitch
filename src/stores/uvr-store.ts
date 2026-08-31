@@ -767,7 +767,18 @@ function persistAllSessionsToDb(sessions: UvrSession[]): void {
         const recs = existingByAppId.get(session.sessionId)
         if (recs && recs.length > 0) {
           // Update the first one
-          await repo.update(recs[0].id, sessionToDbRecord(session))
+          try {
+            await repo.update(recs[0].id, sessionToDbRecord(session))
+          } catch (error) {
+            // The snapshot above goes stale while this loop awaits: a delete
+            // or prune cascade can remove the row mid-persist, and updating a
+            // row that is gone throws. Leave it deleted — re-creating here
+            // would resurrect a session the user just removed, and one that
+            // is still live is written by the create branch on the next
+            // persist. Any other failure is real and belongs to the caller.
+            if ((await repo.findById(recs[0].id)) !== null) throw error
+            continue
+          }
           // Delete any duplicates
           for (let i = 1; i < recs.length; i++) {
             await repo.delete(recs[i].id)
@@ -1004,12 +1015,14 @@ export async function pruneOrphanedCompletedSessions(): Promise<number> {
       // pruned ghost must not leave its lyrics, transcriptions and pitch
       // rows behind as permanent orphans keyed to a session that no
       // longer exists.
-      try {
-        await deleteImportedUvrSessionDataStrict(s.sessionId)
+      // deleteUvrSession, not the raw cascade: it tombstones the id and
+      // drains that session's write chain first. Deleting underneath a
+      // whole-list persist that snapshotted the row leaves it updating an
+      // id that no longer exists, and a queued per-session write landing
+      // after the cascade would resurrect the ghost this prune just cleared.
+      if (await deleteUvrSession(s.sessionId)) {
         removeUvrSessionFromCache(s.sessionId)
         pruned++
-      } catch (error) {
-        console.error('[SessionStore] prune could not delete:', error)
       }
     }
   }
