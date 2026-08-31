@@ -33,6 +33,12 @@ import { verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
 
 export interface Env {
+  /**
+   * The domain passkeys are minted FOR — mercurypitch.com, dev.mercurypitch.com,
+   * localhost. A `vars` entry per environment, never derived from the request:
+   * see rpIdFor in passkeys.ts. Unset means the passkey routes answer 503.
+   */
+  PASSKEY_RP_ID?: string
   /** Where emailed links land when the request Origin is not a first-party
    *  app origin (e.g. a PR preview on workers.dev). Set per environment in
    *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
@@ -630,6 +636,14 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'email-code/request': { max: 5, windowMs: 600_000 }, // 5/10min per IP
   'email-code-address': { max: 5, windowMs: 3_600_000 }, // 5/h per address
   'email-code/verify': { max: 30, windowMs: 900_000 }, // 30/15min per IP
+  // Passkeys. Adding and removing one is ordinary settings traffic; the
+  // sign-in ceremony is not, and its two halves are budgeted apart. Conditional
+  // UI fires one /login/options per sign-in screen LOAD, so an office behind a
+  // single address burns those with nobody having clicked anything — which is
+  // why it gets far more room than the verify that follows a real gesture.
+  passkey: { max: 30, windowMs: 300_000 }, // 30/5min per account
+  'passkey-options': { max: 120, windowMs: 300_000 }, // 120/5min per IP
+  'passkey-verify': { max: 20, windowMs: 300_000 }, // 20/5min per IP
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
@@ -2954,6 +2968,9 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'passwordResets', column: 'userId' },
   // So do sign-in codes: the row names the address they were mailed to.
   { table: 'loginCodes', column: 'userId' },
+  // Public keys, but they name the account's devices; nothing about a deleted
+  // account should survive as a list of what it signed in from.
+  { table: 'webauthnCredentials', column: 'userId' },
   { table: 'challengeProgress', column: 'userId' },
   { table: 'userBadges', column: 'userId' },
   { table: 'userAchievements', column: 'userId' },

@@ -19,6 +19,7 @@ import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
+import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
@@ -1869,6 +1870,14 @@ async function handleRequest(
     respond,
   )
   if (twofaResponse) return twofaResponse
+
+  const passkeyResponse = await handlePasskeyRoute(
+    request,
+    env,
+    url.pathname,
+    respond,
+  )
+  if (passkeyResponse) return passkeyResponse
 
   const authResponse = await handleAuth(
     request,

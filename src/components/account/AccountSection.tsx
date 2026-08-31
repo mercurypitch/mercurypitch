@@ -28,6 +28,7 @@ import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
+import { PasskeySettings } from './PasskeySettings'
 import { SessionList } from './SessionList'
 import { TwoFactorSettings } from './TwoFactorSettings'
 import { VoiceSection } from './VoiceSection'
@@ -426,6 +427,15 @@ export const AccountSection: Component = () => {
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <TwoFactorSettings />
+          </div>
+        </Show>
+
+        {/* Passkeys. The component hides itself where the deployment has no
+            relying-party id or the browser has no authenticator, so this gate
+            only has to say "a real account". */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <PasskeySettings />
           </div>
         </Show>
 

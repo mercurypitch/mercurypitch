@@ -10,17 +10,19 @@
 // itself through the authVersion/authStamp signals.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
-import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
+import { createEffect, createSignal, createUniqueId, Match, onMount, Show, Switch, untrack, } from 'solid-js'
+import { CheckCircle, Eye, EyeOff, Key, Smartphone, X, } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
+import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
 import { showNotification } from '@/stores/notifications-store'
 import { armOnboardingResume } from '@/stores/onboarding-store'
 import { authModalMode, closeAuthModal } from '@/stores/ui-store'
@@ -91,6 +93,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   // same moment for different purposes.
   const [codeCeremony, setCodeCeremony] = createSignal('')
   const [mailedCode, setMailedCode] = createSignal('')
+  // Both halves have to be true before the passkey button exists: an RP id in
+  // this deployment (PR previews on workers.dev never have one) and an
+  // authenticator in this browser. A button that opens a dialog saying no
+  // reads as the site being broken.
+  const [passkeyReady, setPasskeyReady] = createSignal(false)
 
   /**
    * Has anything been typed into this form?
@@ -184,6 +191,43 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       const firstInput = dialogRef?.querySelector<HTMLInputElement>('input')
       ;(firstInput ?? titleRef)?.focus({ preventScroll: true })
     })
+  }
+
+  onMount(() => {
+    void (async () => {
+      const [serverSide, browserSide] = await Promise.all([
+        passkeysAvailable(),
+        platformAuthenticatorAvailable(),
+      ])
+      setPasskeyReady(serverSide && browserSide)
+    })()
+  })
+
+  /**
+   * Sign in with a passkey, from nothing typed.
+   *
+   * Deliberately does not go on to ask for a second factor: a user-verified
+   * passkey is possession and inherence in one gesture, so it already is
+   * multi-factor. Cancelling the system dialog is not an error worth shouting
+   * about, which is what describeWebAuthnError is for.
+   */
+  async function onPasskeySignIn(): Promise<void> {
+    if (busy()) return
+    const request = ++requestGeneration
+    setError('')
+    setBusy(true)
+    try {
+      await signInWithPasskey()
+      if (request !== requestGeneration) return
+      showNotification('Signed in', 'info')
+      props.onAuthenticated?.()
+      close()
+    } catch (err) {
+      if (request !== requestGeneration) return
+      setError(describeWebAuthnError(err))
+    } finally {
+      if (request === requestGeneration) setBusy(false)
+    }
   }
 
   useFocusTrap(() => dialogRef, {
@@ -561,6 +605,18 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     {googleSignInPending()
                       ? 'Opening Google\u2026'
                       : 'Continue with Google'}
+                  </button>
+                </Show>
+                <Show when={pane() === 'login' && passkeyReady()}>
+                  <button
+                    type="button"
+                    class={styles.googleButton}
+                    onClick={() => void onPasskeySignIn()}
+                    disabled={busy()}
+                    data-testid="auth-passkey"
+                  >
+                    <Key />
+                    Sign in with a passkey
                   </button>
                 </Show>
                 <Show when={pane() === 'login'}>

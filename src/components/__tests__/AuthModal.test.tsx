@@ -27,6 +27,14 @@ const codeMocks = vi.hoisted(() => ({
   verifyLoginCode: vi.fn(),
 }))
 
+const passkeyMocks = vi.hoisted(() => ({
+  // Off by default: jsdom has no authenticator, and every pre-existing test
+  // in this file describes a browser without one.
+  passkeysAvailable: vi.fn(async () => false),
+  platformAuthenticatorAvailable: vi.fn(async () => false),
+  signInWithPasskey: vi.fn(),
+}))
+
 vi.mock('@/db/services/auth-service', () => mocks)
 
 vi.mock('@/db/services/auth-mfa-service', () => ({
@@ -36,6 +44,18 @@ vi.mock('@/db/services/auth-mfa-service', () => ({
 vi.mock('@/db/services/auth-email-code-service', () => ({
   requestLoginCode: (...a: unknown[]) => codeMocks.requestLoginCode(...a),
   verifyLoginCode: (...a: unknown[]) => codeMocks.verifyLoginCode(...a),
+}))
+
+vi.mock('@/db/services/auth-passkey-service', () => ({
+  passkeysAvailable: () => passkeyMocks.passkeysAvailable(),
+  signInWithPasskey: (...a: unknown[]) => passkeyMocks.signInWithPasskey(...a),
+}))
+
+vi.mock('@/lib/webauthn', () => ({
+  platformAuthenticatorAvailable: () =>
+    passkeyMocks.platformAuthenticatorAvailable(),
+  describeWebAuthnError: (err: unknown) =>
+    err instanceof Error ? err.message : 'That did not work.',
 }))
 
 vi.mock('../account/PhoneSignIn', () => ({
@@ -57,6 +77,8 @@ beforeEach(() => {
   resetGoogleSignInPending()
   vi.clearAllMocks()
   mocks.takeGoogleTwofaChallenge.mockReturnValue(null)
+  passkeyMocks.passkeysAvailable.mockResolvedValue(false)
+  passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(false)
   closeAuthModal()
 })
 
@@ -621,5 +643,72 @@ describe('signing in with a mailed code', () => {
       'auth-email-code-input',
     )) as HTMLInputElement
     expect(field.value).toBe('')
+  })
+})
+
+// ── Signing in with a passkey ────────────────────────────────────────
+//
+// The button must not exist unless BOTH the deployment and the browser can do
+// it — a control that opens a dialog saying no reads as the site being broken.
+
+describe('passkey sign-in', () => {
+  function armPasskeys(): void {
+    passkeyMocks.passkeysAvailable.mockResolvedValue(true)
+    passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(true)
+  }
+
+  it('offers nothing where the deployment has no relying-party id', async () => {
+    // A PR preview on workers.dev. The browser is willing; the domain cannot.
+    passkeyMocks.passkeysAvailable.mockResolvedValue(false)
+    passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(true)
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await screen.findByTestId('auth-email')
+    expect(screen.queryByTestId('auth-passkey')).not.toBeInTheDocument()
+  })
+
+  it('offers nothing where the browser has no authenticator', async () => {
+    passkeyMocks.passkeysAvailable.mockResolvedValue(true)
+    passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(false)
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await screen.findByTestId('auth-email')
+    expect(screen.queryByTestId('auth-passkey')).not.toBeInTheDocument()
+  })
+
+  it('signs in without asking for a second factor', async () => {
+    // A user-verified passkey is possession and inherence in one gesture, so
+    // the 2FA pane must NOT appear after one. This is the assertion that
+    // catches somebody "helpfully" routing it through the same fork.
+    armPasskeys()
+    passkeyMocks.signInWithPasskey.mockResolvedValue({ token: 'jwt' })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-passkey'))
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+    expect(screen.queryByTestId('auth-twofa-form')).not.toBeInTheDocument()
+  })
+
+  it('shows a cancelled dialog inline and stays open', async () => {
+    armPasskeys()
+    passkeyMocks.signInWithPasskey.mockRejectedValue(
+      new Error('That was cancelled.'),
+    )
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-passkey'))
+
+    await waitFor(() =>
+      expect(screen.getByText('That was cancelled.')).toBeTruthy(),
+    )
+    expect(onAuthenticated).not.toHaveBeenCalled()
+    expect(screen.getByTestId('auth-modal-overlay')).toBeTruthy()
   })
 })

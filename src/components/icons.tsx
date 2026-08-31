@@ -1740,3 +1740,24 @@ export const Smartphone: Component<{ size?: number }> = (p) => (
     <path d="M10.5 18.5h3" />
   </svg>
 )
+
+// Key — a passkey. A key rather than a fingerprint on purpose: the credential
+// is the thing being listed, and which gesture unlocks it differs per device.
+export const Key: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <circle cx="7.5" cy="12" r="3.5" />
+    <path d="M11 12h10" />
+    <path d="M17.5 12v3.5" />
+    <path d="M20.5 12v2.5" />
+  </svg>
+)

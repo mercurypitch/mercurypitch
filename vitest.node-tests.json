@@ -418,6 +418,7 @@
   "workers/db-worker/node-tests/auth-sessions-integration.test.ts",
   "workers/db-worker/node-tests/authorize-device-secret.test.ts",
   "workers/db-worker/node-tests/login-codes-integration.test.ts",
+  "workers/db-worker/node-tests/passkey-integration.test.ts",
   "workers/db-worker/node-tests/premium-background-migration.test.ts",
   "workers/db-worker/node-tests/query-oracle-integration.test.ts",
   "workers/db-worker/node-tests/score-visibility-integration.test.ts",
