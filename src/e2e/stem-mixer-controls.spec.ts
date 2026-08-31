@@ -365,15 +365,56 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
 }) => {
   const readMetrics = (target: import('@playwright/test').Locator) =>
     target.evaluate((element) => {
-      const parse = (value: string): [number, number, number] => {
-        const channels = value.match(/[\d.]+/g)?.map(Number)
-        if (channels === undefined || channels.length < 3) {
-          throw new Error(`Expected an RGB color, received ${value}`)
+      // Colours reach us in whatever form the engine prefers to serialise --
+      // `color(srgb 0.1 0.13 0.16 / 0.57)` for a color-mix() result, plain
+      // `rgb()` for a hex. A canvas context normalises every one of them, so
+      // this cannot silently read a fractional channel as if it were 0-255.
+      const canvas = document.createElement('canvas').getContext('2d')
+      if (canvas === null) throw new Error('No 2D context for colour parsing')
+      const parse = (value: string): [number, number, number, number] => {
+        canvas.fillStyle = '#000000'
+        canvas.fillStyle = value
+        const resolved = canvas.fillStyle as string
+        if (resolved.startsWith('#')) {
+          return [
+            Number.parseInt(resolved.slice(1, 3), 16),
+            Number.parseInt(resolved.slice(3, 5), 16),
+            Number.parseInt(resolved.slice(5, 7), 16),
+            1,
+          ]
         }
-        return [channels[0], channels[1], channels[2]]
+        const channels = resolved.match(/[\d.]+/g)?.map(Number)
+        if (channels === undefined || channels.length < 3) {
+          throw new Error(`Expected a colour, received ${value}`)
+        }
+        return [channels[0], channels[1], channels[2], channels[3] ?? 1]
       }
-      const luminance = ([red, green, blue]: [number, number, number]) => {
-        const channels = [red, green, blue].map((channel) => {
+      // A translucent panel is only as readable as what ends up behind it, so
+      // flatten the ancestor chain instead of measuring the panel's own colour
+      // as though it were opaque.
+      const composite = (node: Element): [number, number, number, number] => {
+        const layers: [number, number, number, number][] = []
+        for (
+          let cursor: Element | null = node;
+          cursor !== null;
+          cursor = cursor.parentElement
+        ) {
+          layers.push(parse(getComputedStyle(cursor).backgroundColor))
+        }
+        let result: [number, number, number, number] = [255, 255, 255, 1]
+        for (let index = layers.length - 1; index >= 0; index -= 1) {
+          const layer = layers[index]
+          result = [
+            Math.round(layer[0] * layer[3] + result[0] * (1 - layer[3])),
+            Math.round(layer[1] * layer[3] + result[1] * (1 - layer[3])),
+            Math.round(layer[2] * layer[3] + result[2] * (1 - layer[3])),
+            1,
+          ]
+        }
+        return result
+      }
+      const luminance = (colour: [number, number, number, number]) => {
+        const channels = colour.slice(0, 3).map((channel) => {
           const value = channel / 255
           return value <= 0.04045
             ? value / 12.92
@@ -384,11 +425,13 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
         )
       }
       const style = getComputedStyle(element)
+      const behind = composite(element)
       const foreground = luminance(parse(style.color))
-      const background = luminance(parse(style.backgroundColor))
+      const background = luminance(behind)
 
       return {
         background: style.backgroundColor,
+        compositedBackground: `rgb(${behind.slice(0, 3).join(', ')})`,
         color: style.color,
         colorScheme: style.getPropertyValue('color-scheme'),
         contrast:
