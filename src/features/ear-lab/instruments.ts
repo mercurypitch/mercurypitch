@@ -30,6 +30,7 @@ export type InstrumentView =
   | 'cadence'
   | 'bassline'
   | 'pulse'
+  | 'chart'
   | 'subdivide'
   | 'calibration'
 
@@ -181,7 +182,15 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Pulse',
     faculty: 'time',
     measures: 'Time · rhythm',
-    answer: 'A bar of onsets — tap it back on the beat',
+    answer: 'A bar of onsets — your first tap starts yours',
+  },
+  {
+    view: 'chart',
+    drillId: 'chart',
+    name: 'The Chart',
+    faculty: 'time',
+    measures: 'Time · reading',
+    answer: 'A written bar over the click — tap it at sight',
   },
   {
     view: 'subdivide',
@@ -257,10 +266,12 @@ export function instrumentReading(
     case 'bassline':
     case 'subdivide':
       return ratingReading(instrument.drillId ?? '')
-    case 'pulse': {
-      const rating = ratingReading('pulse')
+    case 'pulse':
+    case 'chart': {
+      const id = instrument.drillId ?? 'pulse'
+      const rating = ratingReading(id)
       if (rating === null) return null
-      const cleared = clearedSubdivision(earPlayerRating('pulse').rating)
+      const cleared = clearedSubdivision(earPlayerRating(id).rating)
       return cleared ? { ...rating, unit: `· ${cleared}` } : rating
     }
     case 'calibration': {

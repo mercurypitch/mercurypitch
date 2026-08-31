@@ -35,6 +35,7 @@ export type EarLabView =
   | 'contour'
   | 'grid'
   | 'pulse'
+  | 'chart'
   | 'echo'
   | 'span'
   | 'beat-hunt'

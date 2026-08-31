@@ -1,8 +1,10 @@
 // ============================================================
 // rhythm-take — a rhythm tapped back, judged against its call.
 //
-// Pulse's call is a bar of onsets; the player taps it back over
-// the next bar. Each onset must be met by a tap inside the item's
+// Pulse's call is a bar of onsets (two, when the pattern crosses the
+// barline); the player taps it back whenever they are ready — the
+// first tap anchors the take (`anchorTaps`) and stands for the first
+// onset. Each remaining onset must be met by a tap inside the item's
 // tolerance, in order — a tap can serve one onset only — and any tap
 // that serves none is an extra. The tolerance follows the finest
 // subdivision in the pattern: the grid a sixteenth sits on is finer
@@ -23,12 +25,15 @@ const SUBDIVISIONS: readonly Subdivision[] = [
   'sixteenths',
 ]
 
-/** The window either side of an onset that still counts as met. */
+/** The window either side of an onset that still counts as met.
+ *  Sized for a pointer or the space bar, not a drum pad: each stays
+ *  under half the subdivision's spacing at the drill tempo, so a tap
+ *  can never be credited to two neighbouring onsets. */
 export const TOLERANCE_MS: Record<Subdivision, number> = {
-  quarters: 100,
-  eighths: 80,
-  triplets: 65,
-  sixteenths: 50,
+  quarters: 120,
+  eighths: 100,
+  triplets: 85,
+  sixteenths: 65,
 }
 
 const EPSILON = 1e-6
@@ -48,6 +53,26 @@ export function finestSubdivision(onsetsBeats: readonly number[]): Subdivision {
 
 export function toleranceFor(item: Pick<EarBankItem, 'payload'>): number {
   return TOLERANCE_MS[finestSubdivision(item.payload)]
+}
+
+/** How many beats a pattern spans: one bar of four, or two when any
+ *  onset crosses the barline. */
+export function barBeats(onsetsBeats: readonly number[]): number {
+  return onsetsBeats.some((b) => b >= 4) ? 8 : 4
+}
+
+/** Re-base a take onto its own first tap: the tap becomes the first
+ *  onset, exactly on time, and every later tap keeps its distance
+ *  from it. This is what lets the player start whenever they are
+ *  ready — the bar is theirs from the first touch, and a constant
+ *  input delay cancels out entirely. Empty in, empty out. */
+export function anchorTaps(
+  tapsMs: readonly number[],
+  firstOnsetMs: number,
+): number[] {
+  const anchor = tapsMs[0]
+  if (anchor === undefined) return []
+  return tapsMs.map((t) => t - anchor + firstOnsetMs)
 }
 
 export interface TakeVerdict {

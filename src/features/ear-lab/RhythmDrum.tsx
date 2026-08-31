@@ -1,14 +1,17 @@
 // ============================================================
-// RhythmDrum — Pulse's instrument.
+// RhythmDrum — the rhythm drills' instrument.
 //
-// Contour's drum, turned to time: one bar across the paper, four
-// beat lamps along the top that step with the click. During the
-// call the paper stays blank — an onset drawn as it sounds would
-// hand the eye what the ear is meant to hold — and the reveal
-// writes both bars at once: the call's onsets as brass ticks on the
-// upper rule, the player's taps under them on the lower, signal
-// where an onset was met, garnet where it was missed, muted for a
-// tap that served no onset.
+// Contour's drum, turned to time: a bar (or two, when the pattern
+// crosses the barline) across the paper, a beat lamp per beat along
+// the top that steps with the click. For Pulse the paper stays blank
+// during the call — an onset drawn as it sounds would hand the eye
+// what the ear is meant to hold; The Chart is the opposite drill, so
+// it writes the pattern on the upper rule from the start (`score`)
+// and the player taps what they read. The reveal writes both rows:
+// the pattern's onsets as brass ticks on the upper rule, the
+// player's taps under them on the lower, signal where an onset was
+// met, garnet where it was missed, muted for a tap that served no
+// onset.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -33,18 +36,20 @@ interface RhythmDrumProps {
   /** 1-based beat of the bar sounding now; 0 for none. */
   beat: number
   reveal: DrumReveal | null
+  /** Beats across the paper; 4 unless the pattern spans two bars. */
+  beats?: number
+  /** Onsets shown on the upper rule during the take — The Chart's
+   *  notation. Pulse leaves it unset and the paper stays blank. */
+  score?: readonly number[] | null
+  /** The upper row's caption at the reveal; 'call' unless said. */
+  upperWord?: string
 }
 
-const BEATS = 4
 const BAR_LEFT = 100
 const BAR_RIGHT = 420
 const CALL_Y = 100
 const RESPONSE_Y = 160
 const RULES = [70, 100, 130, 160, 190]
-
-function beatX(beat: number): number {
-  return BAR_LEFT + (beat / BEATS) * (BAR_RIGHT - BAR_LEFT)
-}
 
 const BAR_WORD: Record<Exclude<DrumBar, null>, string> = {
   count: 'Count-in',
@@ -53,16 +58,19 @@ const BAR_WORD: Record<Exclude<DrumBar, null>, string> = {
 }
 
 export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
+  const beats = () => props.beats ?? 4
+  const beatX = (beat: number): number =>
+    BAR_LEFT + (beat / beats()) * (BAR_RIGHT - BAR_LEFT)
   const label = () => {
     if (props.reveal) {
       const missed = props.reveal.met.filter((m) => !m).length
       return props.reveal.correct
-        ? `Rhythm drum: every onset of the call met`
+        ? `Rhythm drum: every onset of the ${props.upperWord ?? 'call'} met`
         : `Rhythm drum: ${missed} onset${missed === 1 ? '' : 's'} missed, ${props.reveal.extras.length} extra tap${props.reveal.extras.length === 1 ? '' : 's'}`
     }
     return props.bar
       ? `Rhythm drum, ${BAR_WORD[props.bar].toLowerCase()}, beat ${props.beat}`
-      : 'Rhythm drum, one bar of four beats, nothing written yet'
+      : `Rhythm drum, ${beats() === 8 ? 'two bars' : 'one bar'} of four beats, nothing written yet`
   }
 
   return (
@@ -85,8 +93,8 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
       <For each={RULES}>
         {(y) => <line x1="80" y1={y} x2="440" y2={y} class={styles.drumRule} />}
       </For>
-      {/* beat divisions */}
-      <For each={[0, 1, 2, 3, 4]}>
+      {/* beat divisions; the barline of a two-bar pattern is solid */}
+      <For each={Array.from({ length: beats() + 1 }, (_, i) => i)}>
         {(beat) => (
           <line
             x1={beatX(beat)}
@@ -94,12 +102,14 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
             x2={beatX(beat)}
             y2="198"
             class={styles.drumRule}
-            stroke-dasharray="2 5"
+            stroke-dasharray={
+              beat % 4 === 0 && beat > 0 && beat < beats() ? undefined : '2 5'
+            }
           />
         )}
       </For>
       {/* the beat lamps */}
-      <For each={[1, 2, 3, 4]}>
+      <For each={Array.from({ length: beats() }, (_, i) => i + 1)}>
         {(beat) => (
           <circle
             cx={beatX(beat - 1) + 4}
@@ -114,6 +124,28 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
           />
         )}
       </For>
+
+      <Show when={!props.reveal && props.score}>
+        {(score) => (
+          <>
+            <For each={score()}>
+              {(onset) => (
+                <line
+                  x1={beatX(onset)}
+                  y1={CALL_Y - 14}
+                  x2={beatX(onset)}
+                  y2={CALL_Y + 14}
+                  class={styles.onset}
+                  data-part="score-onset"
+                />
+              )}
+            </For>
+            <text x="84" y={CALL_Y - 20} class={styles.caption}>
+              {props.upperWord ?? 'call'}
+            </text>
+          </>
+        )}
+      </Show>
 
       <Show when={props.reveal}>
         {(reveal) => (
@@ -157,7 +189,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
               )}
             </For>
             <text x="84" y={CALL_Y - 20} class={styles.caption}>
-              call
+              {props.upperWord ?? 'call'}
             </text>
             <text x="84" y={RESPONSE_Y + 30} class={styles.caption}>
               yours

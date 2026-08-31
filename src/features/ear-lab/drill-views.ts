@@ -19,6 +19,7 @@ export const VIEW_FOR_DRILL: Readonly<Record<string, EarLabView>> = {
   stack: 'stack',
   contour: 'contour',
   pulse: 'pulse',
+  chart: 'chart',
   echo: 'echo',
   span: 'span',
   'beat-hunt': 'beat-hunt',

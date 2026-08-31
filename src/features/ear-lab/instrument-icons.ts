@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { VIEW_FOR_DRILL } from './drill-views'
-import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconDesk, IconEar, IconFork, IconGears, IconLattice, IconLoupe, IconMetre, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
+import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconChart, IconDesk, IconEar, IconFork, IconGears, IconLattice, IconLoupe, IconMetre, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
 import type { InstrumentView } from './instruments'
 
 export type InstrumentIcon = (p: {
@@ -25,6 +25,7 @@ export const INSTRUMENT_ICON: Record<InstrumentView, InstrumentIcon> = {
   desk: IconDesk,
   contour: IconStylus,
   pulse: IconTap,
+  chart: IconChart,
   echo: IconChain,
   span: IconSpan,
   'beat-hunt': IconBeats,

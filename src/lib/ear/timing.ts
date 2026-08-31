@@ -85,16 +85,22 @@ export const REVEAL_HOLD = {
   defaultMs: 1500,
 } as const
 
-/** Pulse — a call of onsets over one bar, tapped back over the next. */
+/** Pulse and The Chart — a bar of onsets, tapped on an anchored
+ *  take: the player's first tap starts their bar. */
 export const PULSE_TIMING = {
-  /** Beats per bar; the count-in, the call and the response each
-   *  take one. */
+  /** Beats in the count-in, and in a one-bar pattern. */
   beats: 4,
   periodMs: 600,
   /** Lead before the count-in, so the first click is never late. */
   leadS: 0.6,
-  /** Grace after the response bar before the take is judged. */
+  /** Grace after the anchored bar before the take is judged. */
   tailMs: 350,
+  /** Beats the soft rail keeps ticking while the take waits for its
+   *  first tap; after them the take is judged as never begun. */
+  waitBeats: 8,
+  /** The pads arm this early, so an eager first tap is the anchor
+   *  and not a tap into a dead pad. */
+  armEarlyMs: 120,
 } as const
 
 /** Echo — melodic dictation: a cadence, the phrase, the ladder. */

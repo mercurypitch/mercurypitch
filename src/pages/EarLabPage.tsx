@@ -13,6 +13,7 @@ import { createEffect, createSignal, Show } from 'solid-js'
 import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
+import { ChartDrill } from '@/features/ear-lab/ChartDrill'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
 import { DeskView } from '@/features/ear-lab/DeskView'
 import { DriftDrill } from '@/features/ear-lab/DriftDrill'
@@ -79,6 +80,9 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'pulse'}>
           <PulseDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'chart'}>
+          <ChartDrill onBack={back} />
         </Show>
         <Show when={view() === 'echo'}>
           <EchoDrill onBack={back} />
