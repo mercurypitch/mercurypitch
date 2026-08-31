@@ -254,6 +254,26 @@ each, every one a candidate answer to "what is Merc when he becomes an
 object" — then a pick, and the pick drives T10. Credit costs are
 stated and confirmed before each batch.
 
+**Round 1 — run 2026-09-01, nano-banana-pro, 54 credits (approved).**
+References for every frame: `apps/beside-cue/public/games/merc.webp` +
+the quicksilver three-quarter still from showcase-gallery. All six
+staged identically per §2: ink void, one warm spotlight from upper
+left, colorless tulip glass on a matte dark plinth. Outputs in
+`~/agent-out/mercurypitch/2026-09-01/`:
+
+| # | Direction | File | Meshy task |
+| - | --------- | ---- | ---------- |
+| 1 | Quicksilver toon — Rayman-style floating hands, liquid-mercury body, toon shading | `merc-1-quicksilver-toon.png` | `01a059e0-b521-76f8-842e-1b5484c19307` |
+| 2 | Liquid chrome — mirror-polished droplet, room reflected in him | `merc-2-liquid-chrome.png` | `01a059e0-c170-74a5-8660-143aef89e67a` |
+| 3 | Vinyl designer toy — matte two-tone orange/ink, mold seams | `merc-3-vinyl-toy.png` | `01a059e0-cea8-723f-b085-0a5c791abc5c` |
+| 4 | Claymation — fingerprints, squash-and-stretch, miniature set | `merc-4-claymation.png` | `01a059e0-dced-74d2-851d-b840886b5f1d` |
+| 5 | Glassblown — translucent, faint orange tint, caustics on the plinth | `merc-5-glassblown.png` | `01a059e0-e777-7012-bd9f-e67534201519` |
+| 6 | Low-poly gem — flat-shaded facets echoing the shards | `merc-6-lowpoly-gem.png` | `01a059e0-f33e-77ff-9b57-6b64eda4086a` |
+
+Pick pending — maff chooses the direction; the chosen frame becomes
+the T10 `image_to_3d` input (worth pairing with the reference stills
+via `multi_image_to_3d` if the pick keeps the current face).
+
 ---
 
 ## 6. Deliberately not now
