@@ -3,6 +3,7 @@ import { JOURNEY_CONFIG } from '../journey-config'
 import { compileLevel } from './compile'
 import { SONGBOOK } from './index'
 import { ODE_TO_JOY } from './ode-to-joy'
+import { THE_GLASSWORKS } from './the-glassworks'
 import type { LevelDef } from './types'
 
 const G = 57 // A3 as the calibrated ground note
@@ -224,5 +225,45 @@ describe('glass notes (MelodyDef.glassAt)', () => {
   it('compiles everything stone in rhythm mode', () => {
     const cs = compileLevel(FRERE, { mode: 'rhythm', groundMidi: G })
     expect(cs.platforms.every((p) => p.kind === 'stone')).toBe(true)
+  })
+
+  describe('the workshop verbs, per mode', () => {
+    it('gives flow the beam and the atrium as zones', () => {
+      const cs = flow(THE_GLASSWORKS)
+      expect(cs.beams).toHaveLength(1)
+      expect(cs.atriums).toHaveLength(1)
+      const a = cs.atriums[0]
+      expect(a.x1).toBeGreaterThan(a.x0)
+      // the room offers the whole major scale over its tonic
+      expect(a.scaleMidis).toHaveLength(
+        JOURNEY_CONFIG.atrium.scaleDegrees.length,
+      )
+      expect(a.scaleMidis).toContain(a.tonicMidi)
+      expect(cs.nodes.some((n) => n.t === 'beam')).toBe(true)
+      expect(cs.nodes.some((n) => n.t === 'atrium')).toBe(true)
+    })
+
+    it('freezes the beam into a walkable bridge for the platformer', () => {
+      const cs = plat(THE_GLASSWORKS)
+      expect(cs.beams).toHaveLength(0)
+      const beamNode = cs.nodes.find(
+        (n) => n.t === 'land' && n.p.kind === 'stone' && n.p.x1 - n.p.x0 > 2,
+      )
+      expect(beamNode).toBeDefined()
+    })
+
+    it('drops the atrium outside flow — every other mode has a floor', () => {
+      for (const mode of ['platformer', 'rhythm', 'listen'] as const) {
+        const cs = compileLevel(THE_GLASSWORKS, { mode, groundMidi: G })
+        expect(cs.atriums).toHaveLength(0)
+        expect(cs.nodes.some((n) => n.t === 'atrium')).toBe(false)
+      }
+    })
+
+    it('keeps the ring pane a pane in every sung mode', () => {
+      for (const cs of [flow(THE_GLASSWORKS), plat(THE_GLASSWORKS)]) {
+        expect(cs.panes.some((p) => p.kind === 'ring')).toBe(true)
+      }
+    })
   })
 })

@@ -206,7 +206,10 @@ export const compileLevel = (
 
     if (seg.type === 'atrium') {
       const beats = seg.beats ?? 8
-      if (mode === 'rhythm' || mode === 'listen') {
+      // Flow only. The room's verb is "your in-key notes are the floor",
+      // and only flow has no floor of its own — the platformer walks its
+      // own ground across, so there the room would be a tinted lie.
+      if (mode !== 'flow') {
         cursor += beats * M.restUnit[mode]
         afterBoundary = true
         continue

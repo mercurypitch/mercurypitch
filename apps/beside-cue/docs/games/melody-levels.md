@@ -341,7 +341,8 @@ verbs into one short do-mi-sol melody so each is met once:
   labels itself, so it reads as a keyboard rather than empty dashed
   space. Crossing scores as the in-key share of voiced time
   (`inKeyFullRatio` 0.7 already earns full marks — improv means some
-  searching is free). Rhythm/listen compile it to a rest.
+  searching is free). Flow only — every other mode has a floor of its
+  own and compiles the room to a rest.
 
 All knobs in `journey-config` (`ring`, `beam`, `atrium`, `vibrato`).
 The vibrato detector (`vibrato.ts`, pure + tested) needs fractional
