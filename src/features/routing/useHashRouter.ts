@@ -12,7 +12,7 @@
 // which is why the deps object is wider than "which tab".
 
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { batch, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from '@/features/tabs/constants'
@@ -168,15 +168,22 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.setInitialUvrView('shazam-listen')
       deps.setActiveUvrSessionId(null)
     } else if (route.type === 'uvr-session') {
-      deps.setActiveTab(TAB_KARAOKE)
-      deps.setInitialUvrSessionId(route.sessionId)
-      deps.setInitialUvrView('results')
-      deps.setActiveUvrSessionId(route.sessionId)
+      // One batch: UvrPanel's deep-link effect keys on the session id, and an
+      // unbatched write sequence runs it against whichever view value is still
+      // standing — the mixer request would be read as the previous view.
+      batch(() => {
+        deps.setActiveTab(TAB_KARAOKE)
+        deps.setInitialUvrSessionId(route.sessionId)
+        deps.setInitialUvrView('results')
+        deps.setActiveUvrSessionId(route.sessionId)
+      })
     } else if (route.type === 'uvr-session-mixer') {
-      deps.setActiveTab(TAB_KARAOKE)
-      deps.setInitialUvrSessionId(route.sessionId)
-      deps.setInitialUvrView('mixer')
-      deps.setActiveUvrSessionId(route.sessionId)
+      batch(() => {
+        deps.setActiveTab(TAB_KARAOKE)
+        deps.setInitialUvrSessionId(route.sessionId)
+        deps.setInitialUvrView('mixer')
+        deps.setActiveUvrSessionId(route.sessionId)
+      })
     } else if (route.type === 'share-load') {
       if (route.shareType === 'melody') deps.handleShareMelody(route.payload)
       else if (route.shareType === 'exercise')

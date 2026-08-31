@@ -755,10 +755,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   let lastInitialView: UvrView | null = null
   createEffect(() => {
     const v = props.initialView
-    console.log('[UvrPanel] initialView effect:', v, 'last:', lastInitialView)
     if (v && v !== lastInitialView && v !== 'mixer') {
       lastInitialView = v
-      console.log('[UvrPanel] initialView -> setCurrentView:', v)
       setCurrentView(v)
     }
   })
@@ -782,14 +780,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   createEffect(() => {
     const sid = props.initialSessionId
     const ready = isSessionStoreReady()
-    console.log(
-      '[UvrPanel] session deep-link effect: sid=',
-      sid,
-      'ready=',
-      ready,
-      'last=',
-      lastLoadedSessionId,
-    )
     if (!ready) return
     // While a karaoke playlist drives the mixer it owns the session + view.
     // Each song updates the URL hash (via onSessionChange), which feeds back
@@ -801,7 +791,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
-      console.log('[UvrPanel] calling handleSessionView for:', sid)
       handleSessionView(sid)
     }
   })
@@ -1574,29 +1563,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleSessionView = async (sessionId: string) => {
-    console.log(
-      '[UvrPanel] handleSessionView called for:',
-      sessionId,
-      'initialView:',
-      props.initialView,
-    )
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
     const session = getUvrSession(sessionId)
-    console.log(
-      '[UvrPanel] getUvrSession result:',
-      session ? 'found' : 'NOT FOUND',
-      'status:',
-      session?.status,
-      'outputs:',
-      session?.outputs ? Object.keys(session.outputs) : 'none',
-    )
     if (!session) {
       // A deep-link to a session that isn't here (deleted, another device, or
       // the Karaoke Night demo, which is never a real session). Land on the
       // upload home — an empty 'results' view just looks broken.
-      console.log('[UvrPanel] session not found, falling back to upload')
       setCurrentView('upload')
       return
     }
@@ -1604,17 +1578,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (session.apiSessionId !== undefined && session.status === 'completed') {
       refreshSessionOutputs(session)
     }
+    // A song row can be tapped again before the last tap's hydration lands.
+    // The token makes the newest choice the only one allowed to stage the
+    // mixer — without it, whichever hydration finished last won, which is how
+    // rapid sidebar picks ended up one song behind.
+    const token = supersedeMixerSelection()
     // Hydrate blob URLs from IndexedDB before showing results
     // (blob: URLs from localStorage are dead after page reload)
     const hydrated = await ensureHydrated(session)
-    console.log(
-      '[UvrPanel] hydrated outputs:',
-      hydrated.outputs ? Object.keys(hydrated.outputs) : 'none',
-      'vocal:',
-      hydrated.outputs?.vocal?.substring(0, 40),
-      'inst:',
-      hydrated.outputs?.instrumental?.substring(0, 40),
-    )
+    if (token !== mixerSelectionToken) return
     setCurrentUvrSession(hydrated)
     // Persist the hydrated URLs to localStorage
     if (hydrated !== session) {
@@ -1632,19 +1604,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (hydrated.status === 'processing') {
       setCurrentView('processing')
     } else {
-      // Respect the initial view from the URL hash (e.g. /mixer deep link)
-      const targetView = props.initialView === 'mixer' ? 'mixer' : 'results'
-      console.log(
-        '[UvrPanel] targetView:',
-        targetView,
-        'outputs != null:',
-        hydrated.outputs != null,
-      )
+      // Respect the initial view from the URL hash (e.g. /mixer deep link) —
+      // but only when THIS session's stems can be staged. Entering the mixer
+      // without staging used to leave the previous song's audio running under
+      // the new song's chrome; a session with nothing to play lands on its
+      // results view, which can say so.
+      const targetView =
+        props.initialView === 'mixer' && hydrated.outputs != null
+          ? 'mixer'
+          : 'results'
 
       // When deep-linking directly to mixer, populate the mixer state
       // just like handlePracticeStart does for 'full' mode
-      if (targetView === 'mixer' && hydrated.outputs != null) {
-        console.log('[UvrPanel] populating mixer stems for deep-link')
+      if (targetView === 'mixer') {
         // One batch, because the session id is the mixer's remount key and
         // the mixer reads `stems` once, at mount. Setting the id on its own
         // line remounts immediately against the stems still sitting in the
@@ -1659,11 +1631,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           setMixerExtraStems([])
           setMixerRequestedStems({ vocal: true, instrumental: true })
           setMixerInitialMutedStems([])
+          setMixerInitialSeekSec(undefined)
+          setMixerAutoPlay(false)
           setMixerSessionId(hydrated.sessionId)
         })
       }
 
-      console.log('[UvrPanel] setCurrentView:', targetView)
       setCurrentView(targetView)
     }
   }
