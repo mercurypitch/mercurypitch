@@ -55,6 +55,12 @@ export interface VoiceControlController {
   isSupported: boolean
   enabled: Accessor<boolean>
   toggle: () => void
+  /**
+   * Unconditionally off, for the HUD's dismiss. Not `toggle()`: from a
+   * stopped listener that now means "start again", so the one control a
+   * person reaches for to put the pill away would have re-opened the mic.
+   */
+  turnOff: () => void
   listenerState: Accessor<VoiceListenerState>
   /** Live interim transcript while a phrase is still being spoken. */
   interim: Accessor<string>
@@ -363,6 +369,14 @@ export function useVoiceControlController(
     startListening()
   }
 
+  const turnOff = () => {
+    setEnabled(false)
+    // An explicit turn-off outranks the pause: forget it, so ending the
+    // song does not quietly switch the recognizer back on.
+    suspendedForSinging = false
+    stopListening()
+  }
+
   const toggle = () => {
     const listener = listenerFor(voiceControlEngine())
     if (!listener.isSupported) {
@@ -372,17 +386,24 @@ export function useVoiceControlController(
       )
       return
     }
-    const next = !enabled()
-    setEnabled(next)
-    if (next) {
+    // On, but not listening: the listener stopped under us — the mic sentinel
+    // killing a dead stream, or a backgrounded tab losing its hold. Toggling
+    // OFF from there spends a press to silence something already silent, and
+    // that is the only reason the pill had to ask for two of them. A phone
+    // has no key to press twice, so the second press was simply unavailable.
+    // One activation, from any input, means "start listening again".
+    if (enabled() && listenerState() === 'idle') {
       setLastLatencyMs(null)
       startUnlessSinging()
-    } else {
-      // An explicit turn-off outranks the pause: forget it, so ending the
-      // song does not quietly switch the recognizer back on.
-      suspendedForSinging = false
-      stopListening()
+      return
     }
+    if (enabled()) {
+      turnOff()
+      return
+    }
+    setEnabled(true)
+    setLastLatencyMs(null)
+    startUnlessSinging()
   }
 
   createEffect(() => {
@@ -459,6 +480,7 @@ export function useVoiceControlController(
     isSupported: true,
     enabled,
     toggle,
+    turnOff,
     listenerState,
     interim,
     feedback,
