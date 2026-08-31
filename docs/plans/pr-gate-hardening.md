@@ -1194,3 +1194,97 @@ Ruled out: Node version (fails under 22 and 25), `--ignore-scripts`, the
 TypeScript and `@types/node` versions (both match the lockfile pins), and the
 added `serve` dependency (purely additive to the lockfile, zero version
 changes).
+
+## Second pre-existing breakage found, and fixed here
+
+Running the full browser suite on pull requests — Task 8 — is what surfaced
+this. `src/e2e/exercise-idle-layout.spec.ts` failed on two of its four
+viewports, on `main` as much as on this branch, and neither failure was caused
+by anything in this branch.
+
+### Why `main` looked green
+
+It was never running the spec. Run `33326451351` (push to `main`,
+`a7f1dc93`, reported success) is 77KB of log containing zero Playwright output:
+the old serial gate ran the unit projects and stopped. The first `main` run to
+fail on this spec, `33327129497`, differs from it by two beside-cue commits that
+touch nothing outside `apps/beside-cue/**` and one script. The layout was
+already broken at both; only the second run looked.
+
+That is the same class of blind spot Task 8 set out to close, arriving as
+evidence for it rather than against it.
+
+### Failure 1 — 21px at 1400x806 (tablet-landscape)
+
+`Dynamic Swell`, `Chord Stacker` and `Staccato Precision` overflowed their card
+by 21px, putting Start under the fold — the exact regression the spec was
+written to catch, on the exact device the original report came from.
+
+Cause: PR #364 ("feat: add Hear Yourself voice history and guided analysis")
+added `.exercise-capture-note` to `.exercise-idle-launch`. Measured, the note is
+35px and its gap 14px, so it costs a stacked panel 49px:
+
+|                                 | before #364 | after #364 |
+| ------------------------------- | ----------- | ---------- |
+| `.exercise-idle-launch`         | 36          | 85         |
+| `.exercise-idle-body` (stacked) | 451         | 500        |
+| `.exercise-idle-center`         | 580         | 629        |
+| card `clientHeight`             | 608         | 608        |
+
+The stack existed because `exercises.css` gated the side-by-side split on
+`:has(.exercise-timer-field)`. That gate's stated reasoning was two-part: a
+timerless launch column holds one button, so a row looks unbalanced, _and_ the
+stack is "already short". #364 falsified the second half without touching the
+first, and the drills that carry no timer are exactly the ones that stack.
+
+The timer was only ever a proxy for "is this column worth a row of its own".
+`short-viewport.css` had already rejected that proxy for screens under 720px
+tall — "the split happens whether or not there is a timer" — but a landscape
+tablet at 806px sits above that line and reached none of it.
+
+**Fixed in the code, not the test.** The split is now unconditional at
+`min-width: 700px`; the timer decides only how the row divides, exactly as
+`short-viewport.css` already had it. Beside the dial the same content costs the
+taller column rather than the sum: 401px, and the card closes at 530 of 608 —
+78px of headroom, not a shaved pixel. The two breakpoints now agree instead of
+one overriding the other.
+
+### Failure 2 — 7px at 1024x560 (short-laptop)
+
+A separate mechanism on the same four drills, and this one is about width.
+
+Here the row split was already in place via `short-viewport.css`, and the tall
+column is the dial, not launch. With a timer, launch takes a fixed
+`min(260px, 30vw)`. Without one it is content-sized, and its widest child is the
+capture note, whose `max-width: 46ch` resolves to 344px — so the column with
+_less_ in it claimed _more_ room than the column with more:
+
+|                               | Long Note (timer) | Chord Stacker (none) |
+| ----------------------------- | ----------------- | -------------------- |
+| `.exercise-idle-launch` width | 260               | 344                  |
+| `.exercise-idle-setup` width  | 368               | 284                  |
+| dial max-content width        | 303               | 303                  |
+| `.readout` height             | 19 (one line)     | 38 (two)             |
+| `.exercise-idle-setup` height | 291               | 310                  |
+
+The row's available width is 650px. 284 + 22 + 344 = 650: the dial absorbed the
+entire 19px shortfall, dropping below its 303px max-content, which wrapped
+`NoteDial`'s readout onto a second line. Nineteen pixels of width bought
+nineteen pixels of height, and the panel finished 7px over.
+
+**Fixed in the code.** `.exercise-idle-launch` now carries a `max-width` equal
+to the width the timer version gets — 330px wide, 260px short — so it can never
+out-claim the dial. The note is prose and wraps for free; the readout wrapping
+costs the panel its fit, so the note is the one that gives. All four drills come
+back to a 291px setup and 13px of headroom.
+
+### Verification
+
+All 18 tests in `exercise-idle-layout.spec.ts` pass at all four viewports, and
+the full browser suite is green. Measured margins after the fix, on the two
+viewports that were failing:
+
+| viewport | worst drill   | was   | now   |
+| -------- | ------------- | ----- | ----- |
+| 1400x806 | Chord Stacker | −21px | +78px |
+| 1024x560 | Chord Stacker | −7px  | +13px |
