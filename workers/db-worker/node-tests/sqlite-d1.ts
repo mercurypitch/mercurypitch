@@ -37,7 +37,11 @@ export class SqliteD1Statement {
     }
   }
 
-  execute(): { success: true; meta: { changes: number }; results: unknown[] } {
+  execute(): {
+    success: true
+    meta: { changes: number; last_row_id: number }
+    results: unknown[]
+  } {
     // `run()` on a statement that returns rows yields nothing in node:sqlite,
     // and D1's batch() hands back results for every statement — including the
     // SELECTs the worker sends through it.
@@ -45,19 +49,25 @@ export class SqliteD1Statement {
     if (/^\s*(SELECT|WITH)/i.test(this.sql)) {
       return {
         success: true,
-        meta: { changes: 0 },
+        meta: { changes: 0, last_row_id: 0 },
         results: statement.all(...this.values),
       }
     }
     const result = statement.run(...this.values)
     return {
       success: true,
-      meta: { changes: Number(result.changes) },
+      meta: {
+        changes: Number(result.changes),
+        last_row_id: Number(result.lastInsertRowid),
+      },
       results: [],
     }
   }
 
-  async run(): Promise<{ success: true; meta: { changes: number } }> {
+  async run(): Promise<{
+    success: true
+    meta: { changes: number; last_row_id: number }
+  }> {
     return this.execute()
   }
 }
@@ -71,7 +81,9 @@ export class SqliteD1Database {
 
   async batch(
     statements: SqliteD1Statement[],
-  ): Promise<Array<{ success: true; meta: { changes: number } }>> {
+  ): Promise<
+    Array<{ success: true; meta: { changes: number; last_row_id: number } }>
+  > {
     this.native.exec('BEGIN IMMEDIATE')
     try {
       const results = statements.map((statement) => statement.execute())

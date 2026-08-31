@@ -13,6 +13,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
+import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
@@ -35,6 +36,8 @@ type Pane =
   | 'forgot-sent'
   | 'phone'
   | 'twofa'
+  | 'email-code'
+  | 'email-code-sent'
 
 const TITLES: Record<Pane, string> = {
   login: 'Sign in',
@@ -43,6 +46,8 @@ const TITLES: Record<Pane, string> = {
   'forgot-sent': 'Check your inbox',
   phone: 'Sign in with your phone',
   twofa: 'Enter your code',
+  'email-code': 'Sign in with a code',
+  'email-code-sent': 'Check your inbox',
 }
 
 export interface AuthModalProps {
@@ -81,6 +86,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   // the moment it is issued.
   const [ceremony, setCeremony] = createSignal('')
   const [twofaCode, setTwofaCode] = createSignal('')
+  // The mailed code's own ceremony, kept apart from the 2FA one: a code
+  // sign-in can END in a 2FA challenge, and the two tokens are live at the
+  // same moment for different purposes.
+  const [codeCeremony, setCodeCeremony] = createSignal('')
+  const [mailedCode, setMailedCode] = createSignal('')
 
   /**
    * Has anything been typed into this form?
@@ -160,6 +170,13 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       setCeremony('')
       setTwofaCode('')
     }
+    if (next !== 'email-code-sent' && next !== 'twofa') {
+      // Leaving the flow entirely drops the mailed code. Stepping from the
+      // code pane INTO the 2FA pane does not: that ceremony is spent and the
+      // sign-in is still in progress.
+      setCodeCeremony('')
+      setMailedCode('')
+    }
     // The control that changes panes unmounts. Without an explicit handoff,
     // focus falls to <body> and the next Tab enters at the end of the dialog,
     // skipping every field in the newly displayed form.
@@ -188,6 +205,16 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     })
     if (failure !== null) setError(failure)
   }
+
+  /**
+   * Panes that ask for an address and nothing else.
+   *
+   * Both hide the password field, the provider buttons and the divider — a
+   * "Continue with Google" button on a form whose whole point is not needing a
+   * password is an invitation to abandon the flow halfway.
+   */
+  const emailOnlyPane = (): boolean =>
+    pane() === 'forgot' || pane() === 'email-code'
 
   // Live password validity (register only) — red border + checklist so
   // nobody discovers the rules one server rejection at a time.
@@ -253,6 +280,25 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         } else if (current === 'twofa') {
           await verifyTwofa(ceremony(), twofaCode())
           if (request !== requestGeneration) return
+          showNotification('Signed in', 'info')
+          props.onAuthenticated?.()
+          close()
+        } else if (current === 'email-code') {
+          const issued = await requestLoginCode(credentials.email, token)
+          if (request !== requestGeneration) return
+          setCodeCeremony(issued)
+          setSentTo(credentials.email)
+          switchPane('email-code-sent')
+        } else if (current === 'email-code-sent') {
+          const outcome = await verifyLoginCode(codeCeremony(), mailedCode())
+          if (request !== requestGeneration) return
+          if (isTwofaChallenge(outcome)) {
+            // The inbox was proved and bought nothing: this account owes a
+            // second factor as well.
+            setCeremony(outcome.ceremony)
+            switchPane('twofa')
+            return
+          }
           showNotification('Signed in', 'info')
           props.onAuthenticated?.()
           close()
@@ -361,13 +407,72 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
               </div>
             </Match>
 
+            {/* The six digits from the email. Answers the same for an
+                address with an account and one without — the pane cannot say
+                which, because the endpoint behind it deliberately does not. */}
+            <Match when={pane() === 'email-code-sent'}>
+              <p class={styles.sub}>
+                If an account exists for <strong>{sentTo()}</strong>, a
+                six-digit code is on its way. It expires in 10 minutes.
+              </p>
+              <form
+                class={styles.form}
+                onSubmit={handleSubmit}
+                data-testid="auth-email-code-form"
+              >
+                <Show when={error() !== ''}>
+                  <p
+                    class={styles.errorNote}
+                    data-testid="auth-error"
+                    role="alert"
+                  >
+                    {error()}
+                  </p>
+                </Show>
+                <label class={styles.field}>
+                  <span class={styles.fieldLabel}>Code</span>
+                  <input
+                    class={styles.input}
+                    type="text"
+                    value={mailedCode()}
+                    onInput={(e) => setMailedCode(e.currentTarget.value)}
+                    autocomplete="one-time-code"
+                    inputmode="numeric"
+                    autofocus
+                    required
+                    disabled={busy()}
+                    data-testid="auth-email-code-input"
+                    placeholder="123456"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  class={styles.submit}
+                  disabled={busy() || mailedCode().trim() === ''}
+                  data-testid="auth-email-code-submit"
+                >
+                  {busy() ? 'Checking\u2026' : 'Sign in'}
+                </button>
+              </form>
+              <p class={styles.switchRow}>
+                <button
+                  type="button"
+                  class={styles.linkButton}
+                  onClick={() => switchPane('login')}
+                  data-testid="auth-email-code-back"
+                >
+                  Back to sign in
+                </button>
+              </p>
+            </Match>
+
             {/* Second factor. Reached from a password sign-in, from a
                 mailed code, and from the Google redirect — the pane does not
                 care which, because the ceremony token carries that. */}
             <Match when={pane() === 'twofa'}>
               <p class={styles.sub}>
-                Open your authenticator app and enter the six-digit code. No
-                app to hand? One of your recovery codes works here too.
+                Open your authenticator app and enter the six-digit code. No app
+                to hand? One of your recovery codes works here too.
               </p>
               <form
                 class={styles.form}
@@ -428,10 +533,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
               <p class={styles.sub}>
                 {pane() === 'forgot'
                   ? "Enter your account email and we'll send you a link to choose a new password."
-                  : 'Your progress, scores and credits follow your account across devices.'}
+                  : pane() === 'email-code'
+                    ? "Enter your account email and we'll send you a six-digit code. No password needed."
+                    : 'Your progress, scores and credits follow your account across devices.'}
               </p>
 
-              <Show when={pane() !== 'forgot'}>
+              <Show when={!emailOnlyPane()}>
                 <Show
                   when={googleSignInUnavailableReason === null}
                   fallback={
@@ -509,7 +616,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   />
                 </label>
 
-                <Show when={pane() !== 'forgot'}>
+                <Show when={!emailOnlyPane()}>
                   <label class={styles.field}>
                     <span class={styles.fieldLabel}>Password</span>
                     <div class={styles.passwordField}>
@@ -565,6 +672,14 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     <button
                       type="button"
                       class={styles.linkButton}
+                      onClick={() => switchPane('email-code')}
+                      data-testid="auth-email-code-link"
+                    >
+                      Email me a code
+                    </button>
+                    <button
+                      type="button"
+                      class={styles.linkButton}
                       onClick={() => switchPane('forgot')}
                       data-testid="auth-forgot-link"
                     >
@@ -607,14 +722,16 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   {busy()
                     ? pane() === 'register'
                       ? 'Creating account…'
-                      : pane() === 'forgot'
+                      : emailOnlyPane()
                         ? 'Sending…'
                         : 'Signing in…'
                     : pane() === 'register'
                       ? 'Create account'
                       : pane() === 'forgot'
                         ? 'Send reset link'
-                        : 'Sign in'}
+                        : pane() === 'email-code'
+                          ? 'Email me a code'
+                          : 'Sign in'}
                 </button>
               </form>
 
@@ -644,6 +761,17 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   </Match>
                   <Match when={pane() === 'forgot'}>
                     Remembered it?{' '}
+                    <button
+                      type="button"
+                      class={styles.linkButton}
+                      onClick={() => switchPane('login')}
+                      data-testid="auth-switch-login"
+                    >
+                      Back to sign in
+                    </button>
+                  </Match>
+                  <Match when={pane() === 'email-code'}>
+                    Rather use your password?{' '}
                     <button
                       type="button"
                       class={styles.linkButton}

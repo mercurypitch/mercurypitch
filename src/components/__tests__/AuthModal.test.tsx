@@ -22,10 +22,20 @@ const mocks = vi.hoisted(() => ({
 
 const mfaMocks = vi.hoisted(() => ({ verifyTwofa: vi.fn() }))
 
+const codeMocks = vi.hoisted(() => ({
+  requestLoginCode: vi.fn(),
+  verifyLoginCode: vi.fn(),
+}))
+
 vi.mock('@/db/services/auth-service', () => mocks)
 
 vi.mock('@/db/services/auth-mfa-service', () => ({
   verifyTwofa: (...a: unknown[]) => mfaMocks.verifyTwofa(...a),
+}))
+
+vi.mock('@/db/services/auth-email-code-service', () => ({
+  requestLoginCode: (...a: unknown[]) => codeMocks.requestLoginCode(...a),
+  verifyLoginCode: (...a: unknown[]) => codeMocks.verifyLoginCode(...a),
 }))
 
 vi.mock('../account/PhoneSignIn', () => ({
@@ -449,5 +459,167 @@ describe('the second factor', () => {
     openAuthModal('login')
 
     expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
+  })
+})
+
+// ── Signing in with a mailed code ────────────────────────────────────
+//
+// The pane must be reachable, must not leak whether the address is
+// registered, and must hand a code sign-in that still owes a second factor
+// straight to the pane that asks for one.
+
+describe('signing in with a mailed code', () => {
+  it('reaches the pane from the sign-in form', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+
+    // No password field: needing no password is the entire point.
+    await waitFor(() =>
+      expect(screen.queryByTestId('auth-password')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByTestId('auth-email')).toBeTruthy()
+  })
+
+  it('says "if an account exists" rather than confirming one does', async () => {
+    // The endpoint answers identically for a registered and an unregistered
+    // address. Copy that claimed otherwise would undo that on the screen.
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-email-code-form')).toBeTruthy(),
+    )
+    expect(screen.getByText(/if an account exists/i)).toBeTruthy()
+  })
+
+  it('spends the ceremony from the request, not the address', async () => {
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    codeMocks.verifyLoginCode.mockResolvedValue({ token: 'jwt' })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    fireEvent.input(await screen.findByTestId('auth-email-code-input'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-submit'))
+
+    await waitFor(() =>
+      expect(codeMocks.verifyLoginCode).toHaveBeenCalledWith(
+        'code-ceremony',
+        '123456',
+      ),
+    )
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+  })
+
+  it('hands a code sign-in that still owes a second factor to the 2FA pane', async () => {
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    codeMocks.verifyLoginCode.mockResolvedValue({
+      twofaRequired: true,
+      ceremony: 'twofa-ceremony',
+    })
+    mfaMocks.verifyTwofa.mockResolvedValue({ token: 'jwt' })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    fireEvent.input(await screen.findByTestId('auth-email-code-input'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-submit'))
+
+    expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
+    expect(onAuthenticated).not.toHaveBeenCalled()
+
+    // And the SECOND ceremony is the one spent — not the mailed code's.
+    fireEvent.input(screen.getByTestId('auth-twofa-code'), {
+      target: { value: '654321' },
+    })
+    fireEvent.click(screen.getByTestId('auth-twofa-submit'))
+    await waitFor(() =>
+      expect(mfaMocks.verifyTwofa).toHaveBeenCalledWith(
+        'twofa-ceremony',
+        '654321',
+      ),
+    )
+  })
+
+  it('shows a wrong code inline and keeps the pane', async () => {
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    codeMocks.verifyLoginCode.mockRejectedValue(
+      new Error('That code is not valid or has expired'),
+    )
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    fireEvent.input(await screen.findByTestId('auth-email-code-input'), {
+      target: { value: '000000' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-submit'))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('That code is not valid or has expired'),
+      ).toBeTruthy(),
+    )
+    expect(screen.getByTestId('auth-email-code-form')).toBeTruthy()
+  })
+
+  it('drops the mailed code when the reader goes back to sign in', async () => {
+    // Leaving the flow must not leave a live ceremony behind for the next
+    // pane to accidentally spend.
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    fireEvent.input(await screen.findByTestId('auth-email-code-input'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-back'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-password')).toBeTruthy(),
+    )
+    fireEvent.click(screen.getByTestId('auth-email-code-link'))
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    const field = (await screen.findByTestId(
+      'auth-email-code-input',
+    )) as HTMLInputElement
+    expect(field.value).toBe('')
   })
 })

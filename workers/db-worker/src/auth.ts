@@ -19,11 +19,12 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { issueCeremony } from './auth-ceremony'
+import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
-import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './email'
+import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
+import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
@@ -622,6 +623,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   '2fa': { max: 10, windowMs: 900_000 }, // 10/15min per account
   // Starting setup writes a row and mints a secret; nobody does that often.
   '2fa-setup': { max: 20, windowMs: 3_600_000 }, // 20/h per account
+  // Mailed sign-in codes. /request sends mail, so it is as tight as the other
+  // mail-sending endpoints; /verify is a guess against a 10^6 space and gets
+  // the roomier IP cap, because the row's own five-attempt burn is what
+  // actually bounds guessing.
+  'email-code/request': { max: 5, windowMs: 600_000 }, // 5/10min per IP
+  'email-code-address': { max: 5, windowMs: 3_600_000 }, // 5/h per address
+  'email-code/verify': { max: 30, windowMs: 900_000 }, // 30/15min per IP
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
@@ -961,8 +969,11 @@ interface AuthBody {
   idToken?: string
   /** Password-reset token from the emailed link (reset-password). */
   token?: string
-  /** The short code shown on a TV (device/poll, device/approve). */
+  /** The short code shown on a TV (device/poll, device/approve), or the six
+   *  digits mailed for a code sign-in (email-code/verify). */
   code?: string
+  /** The signed blob naming what is still owed (email-code/verify). */
+  ceremony?: string
   /** The secret only the device that asked for that code holds (device/poll). */
   pollToken?: string
   /** What the TV calls itself, shown to whoever approves (device/start). */
@@ -1471,6 +1482,190 @@ async function handleLogin(
     clearRateLimit(env.DB, emailSubject, 'login-email'),
   ])
   const challenge = await twofaChallenge(env, row.id, 'password')
+  if (challenge !== null) return respond(challenge)
+  return issueSession(env, row, respond, false, sessionOrigin(request))
+}
+
+// ── Sign in with a mailed code ───────────────────────────────────────
+//
+// The password-free path. Two requests: /request mails six digits and hands
+// back a ceremony token naming the row it wrote; /verify trades that token
+// plus the digits for a session.
+//
+// The uniform response is the whole design. A stranger who fires /request at
+// somebody else's address gets the same `{ ok: true, ceremony }` as the owner
+// would — a token addressing a code they will never read, on a row they cannot
+// reach through any other endpoint. Nothing about the answer says whether the
+// address has an account.
+
+/** Mail the code. Best-effort, and the code itself is never logged. */
+async function sendLoginCodeEmail(
+  env: Env,
+  user: UserRow,
+  code: string,
+): Promise<void> {
+  if (!user.email) return
+  try {
+    if (!env.RESEND_API_KEY) {
+      // Local wrangler has no Resend key, and a flow nobody can complete is a
+      // flow nobody tests. The code is already only good for ten minutes on
+      // one row, and this branch cannot run in an environment that mails.
+      console.log(
+        `[auth] sign-in code (email skipped, no RESEND_API_KEY): ${code}`,
+      )
+      return
+    }
+    const profile = await env.DB.prepare(
+      'SELECT displayName FROM userProfiles WHERE id = ?',
+    )
+      .bind(user.id)
+      .first<{ displayName: string | null }>()
+    await sendLoginCode(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      user.email,
+      {
+        displayName: profile?.displayName,
+        code,
+        ttlMinutes: LOGIN_CODE_TTL_MS / 60_000,
+      },
+    )
+  } catch (err) {
+    console.error(
+      `[auth] sign-in code email failed (non-fatal): ${String(err)}`,
+    )
+  }
+}
+
+/**
+ * POST /api/auth/email-code/request { email } → { ok: true, ceremony }
+ *
+ * Answers identically whether or not the address has an account. The unknown
+ * branch still generates a code and still hashes it, so the two paths differ by
+ * one INSERT rather than by any measurable work; the ceremony it signs names
+ * row 0, which AUTOINCREMENT can never produce.
+ *
+ * The mail goes through waitUntil rather than being awaited: an awaited Resend
+ * round-trip is a few hundred milliseconds that only a KNOWN address pays,
+ * which is a timing oracle that would undo the uniform body above it.
+ */
+async function handleEmailCodeRequest(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+  ctx?: ExecutionContext,
+): Promise<Response> {
+  const email = body.email?.trim().toLowerCase()
+  if (!email || !EMAIL_RE.test(email)) {
+    return respond({ error: 'Valid email required' }, { status: 400 })
+  }
+  if (isManagedTestEmail(email)) {
+    return respond({ error: 'Email address is reserved' }, { status: 400 })
+  }
+  if (!authEmailDeliveryEnabled(env)) {
+    return respond({ error: PREVIEW_EMAIL_UNAVAILABLE }, { status: 503 })
+  }
+
+  // Per-address cap on top of the per-IP one: rotating IPs must not be able to
+  // bomb one inbox. Silently, because a visible 429 would say the address is
+  // real — and because a stranger hitting this cap has nothing to gain either
+  // way, while the owner still gets an answer they can act on.
+  const addressRl = await checkRateLimit(
+    env.DB,
+    `email:${email}`,
+    'email-code-address',
+  )
+  const user = addressRl.allowed ? await findUserByEmail(env.DB, email) : null
+
+  let codeId = 0
+  if (user?.email) {
+    const minted = await mintLoginCode(env.DB, user.id, email, Date.now())
+    codeId = minted.id
+    const work = sendLoginCodeEmail(env, user, minted.code)
+    // Checked as a function rather than "is there a ctx": a runtime that hands
+    // over a context without waitUntil (a test harness, a non-CF host) must
+    // still send the mail, not throw halfway through minting a code.
+    if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(work)
+    else await work
+  } else {
+    // The decoy. Same hashing cost, no row, and a ceremony that can never
+    // match anything.
+    await hashLoginCode(generateLoginCode())
+  }
+
+  const ceremony = await issueCeremony(env.JWT_SECRET as string, {
+    purpose: 'logincode',
+    codeId,
+    email,
+  })
+  return respond({ ok: true, ceremony })
+}
+
+/**
+ * POST /api/auth/email-code/verify { ceremony, code }
+ *
+ * Typing a mailed code is proof of inbox control — the same proof the
+ * "confirm your address" link asks for — so a success also resolves any
+ * pending verification. It is still only ONE factor: an account with a
+ * confirmed TOTP credential gets the 2FA challenge here exactly as it would
+ * after a password.
+ */
+async function handleEmailCodeVerify(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const dead = { error: 'That code is not valid or has expired' }
+  const claims = await readCeremony(
+    env.JWT_SECRET as string,
+    body.ceremony,
+    'logincode',
+  )
+  const code = body.code?.trim() ?? ''
+  if (claims === null || code === '') return respond(dead, { status: 401 })
+
+  const outcome = await claimLoginCode(
+    env.DB,
+    claims.codeId ?? 0,
+    code,
+    Date.now(),
+  )
+  if (!outcome.ok) return respond(dead, { status: 401 })
+
+  const row = await findUserById(env.DB, outcome.claim.userId)
+  // The address is re-checked against the row rather than trusted from the
+  // ceremony: if the account's email changed while the code was in flight, the
+  // code was mailed to an address that no longer speaks for this account.
+  if (
+    row === null ||
+    (row.email ?? '').toLowerCase() !== outcome.claim.email.toLowerCase()
+  ) {
+    return respond(dead, { status: 401 })
+  }
+  assertAccountActive(row)
+
+  // Reading the code proved the inbox. That is the same thing the verification
+  // link proves, so a pending "confirm your address" is resolved here.
+  if (row.emailVerified !== 1) {
+    await env.DB.prepare(
+      'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
+    )
+      .bind(nowIso(), row.id)
+      .run()
+    row.emailVerified = 1
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  await Promise.all([
+    clearRateLimit(env.DB, ip, 'email-code/verify'),
+    clearRateLimit(
+      env.DB,
+      `email:${outcome.claim.email}`,
+      'email-code-address',
+    ),
+  ])
+
+  const challenge = await twofaChallenge(env, row.id, 'emailcode')
   if (challenge !== null) return respond(challenge)
   return issueSession(env, row, respond, false, sessionOrigin(request))
 }
@@ -2757,6 +2952,8 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'sessionRecords', column: 'userId' },
   // Reset tokens carry the account's email; they die with the account.
   { table: 'passwordResets', column: 'userId' },
+  // So do sign-in codes: the row names the address they were mailed to.
+  { table: 'loginCodes', column: 'userId' },
   { table: 'challengeProgress', column: 'userId' },
   { table: 'userBadges', column: 'userId' },
   { table: 'userAchievements', column: 'userId' },
@@ -3112,7 +3309,8 @@ export async function handleAuth(
   if (
     route === 'register' ||
     route === 'login' ||
-    route === 'forgot-password'
+    route === 'forgot-password' ||
+    route === 'email-code/request'
   ) {
     const validTurnstile = await verifyTurnstile(
       request,
@@ -3138,6 +3336,10 @@ export async function handleAuth(
       return handleGoogle(request, body, env, respond)
     case 'forgot-password':
       return handleForgotPassword(request, body, env, respond, ctx)
+    case 'email-code/request':
+      return handleEmailCodeRequest(body, env, respond, ctx)
+    case 'email-code/verify':
+      return handleEmailCodeVerify(request, body, env, respond)
     case 'reset-password':
       return handleResetPassword(body, env, respond)
     case 'device/start':

@@ -244,7 +244,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 18.2k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 18.7k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -343,7 +343,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 4.9k |
 | [src/App.tsx](../../src/App.tsx) | 4.4k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.2k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.4k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
