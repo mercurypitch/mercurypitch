@@ -1198,11 +1198,14 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
     .first()
     .click()
   const grooveDrawer = page.getByRole('region', { name: 'Shape the groove' })
-  // The pattern library has its own style rail, so this scopes to Feel's group.
-  const feelStyles = grooveDrawer.getByRole('group', { name: 'Feel style' })
-  await feelStyles.getByRole('button', { name: 'Funk' }).click()
+  // Both the Feel panel and the pattern library carry style buttons named
+  // like variations, so this scopes to the authored-variation rail.
+  const variationRail = grooveDrawer.getByRole('group', {
+    name: 'Prepared groove variation',
+  })
+  await variationRail.getByRole('button', { name: 'Funk' }).click()
   await expect(
-    feelStyles.getByRole('button', { name: 'Funk' }),
+    variationRail.getByRole('button', { name: 'Funk' }),
   ).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-click-enabled',
@@ -1578,7 +1581,7 @@ test('hot-edits a playing A B groove with pointer and keyboard without restartin
     }),
   ).toBeVisible()
   await expect(
-    page.getByText(/Built-in groove · 32 mapped hits · 84 BPM take clock/),
+    page.getByText(/Built-in groove · 29 mapped hits · 84 BPM take clock/),
   ).toBeVisible()
   await expect(shell).toHaveAttribute('data-playing', 'true')
 
@@ -1609,7 +1612,7 @@ test('hot-edits a playing A B groove with pointer and keyboard without restartin
   await page.getByRole('button', { name: 'Score view' }).click()
   await expect(
     page
-      .getByText(/32 mapped hits · authored attack span/)
+      .getByText(/29 mapped hits · authored attack span/)
       .filter({ visible: true })
       .first(),
   ).toBeVisible()

@@ -3704,6 +3704,8 @@
 }
 
 .feelStyles > button {
+  /* 44px tap floor: the room-wide smoke gate measures every workbench button. */
+  min-height: 44px;
   padding: 7px 14px;
   border: 1px solid var(--line);
   border-radius: 999px;

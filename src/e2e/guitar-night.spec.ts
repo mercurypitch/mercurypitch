@@ -3523,9 +3523,18 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
   // swallowed the transport while volume was squeezed against the edge, and
   // in landscape the wordmark plus room name cost the fretboard a whole row.
   const baseURL = test.info().project.use.baseURL
+  // The memory budget is device-honest now: a desktop-UA headless browser
+  // affords this six-stem song in RAM and legitimately buffers it. The bug
+  // was reported from a phone, so emulate one — the Android UA classifies
+  // as mobile (384 MiB decoded tier) and the 240 s x 6 stem estimate
+  // (~553 MB) forces the streamed path under test.
   const context = await browser.newContext({
     baseURL,
     viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
   })
   const page = await context.newPage()
 
@@ -3656,7 +3665,7 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
  * streamed locally at 48 kHz. Six stems at three minutes clears the budget
  * from 32 kHz upwards, so the path under test is the one that runs.
  */
-const STREAMED_SONG_SECONDS = 180
+const STREAMED_SONG_SECONDS = 240
 const STREAMED_SONG_STEMS = 6
 
 test('seeks a streamed room without a correction storm @smoke', async ({
@@ -3670,9 +3679,18 @@ test('seeks a streamed room without a correction storm @smoke', async ({
   // against clocks that were still settling. Every one of those is a hole in
   // the audio. This counts them.
   const baseURL = test.info().project.use.baseURL
+  // The memory budget is device-honest now: a desktop-UA headless browser
+  // affords this six-stem song in RAM and legitimately buffers it. The bug
+  // was reported from a phone, so emulate one — the Android UA classifies
+  // as mobile (384 MiB decoded tier) and the 240 s x 6 stem estimate
+  // (~553 MB) forces the streamed path under test.
   const context = await browser.newContext({
     baseURL,
     viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
   })
   const page = await context.newPage()
   const sessionId = `guitar-night-streamed-${Date.now()}`
