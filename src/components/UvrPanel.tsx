@@ -605,6 +605,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [mixerPreparation, setMixerPreparation] =
     createSignal<MixerPreparationState | null>(null)
   let mixerSelectionToken = 0
+  // Counted apart from mixerSelectionToken on purpose. Only a NEWER song
+  // choice may discard this one; a Back press, a cancelled play-along or a
+  // playlist handover must not. Those all bump mixerSelectionToken, and
+  // sharing it meant an abandoned open left the deep-link memo below
+  // pointing at a session that was never shown — the row then did nothing
+  // when tapped, because neither the memo nor the route signal ever changed
+  // again.
+  let sessionViewToken = 0
 
   const supersedeMixerSelection = (): number => {
     mixerSelectionToken++
@@ -791,7 +799,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
-      handleSessionView(sid)
+      // Only the route may ask for the mixer; a row's View button never does.
+      handleSessionView(
+        sid,
+        props.initialView === 'mixer' ? 'mixer' : 'results',
+      )
     }
   })
 
@@ -909,7 +921,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
   const creditBalanceLabel = (): string => {
-    const balance = billingMe()?.creditBalance
+    // `.latest`, not the resource call: this renders inside the Karaoke tab's
+    // single Suspense boundary, whose fallback is a full-tab skeleton. Keyed
+    // on balanceVersion, the resource re-enters its pending state on every
+    // finished job, checkout return and poll — and reading it there took the
+    // whole room down to the skeleton and back, which is what "the app
+    // crashed and reloaded" looked like. The pill holds the balance it has
+    // until the new one lands.
+    const balance = billingMe.latest?.creditBalance
     const cost = songCost()
     const suffix = cost !== undefined ? ` · ${cost} per song` : ''
     return balance !== undefined
@@ -1562,7 +1581,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     props.onExport?.(type)
   }
 
-  const handleSessionView = async (sessionId: string) => {
+  /**
+   * Open one session.
+   *
+   * The destination is passed in rather than read off `props.initialView`,
+   * which latches: it is written only by a hash dispatch, and in-app
+   * navigation rewrites the URL through replaceState, which fires no
+   * hashchange. After any one mixer deep-link it therefore stayed 'mixer'
+   * for the rest of the session, and every later View on a session row
+   * opened the mixer instead of that session's results.
+   */
+  const handleSessionView = async (
+    sessionId: string,
+    requestedView: 'results' | 'mixer' = 'results',
+  ) => {
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
@@ -1582,11 +1614,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // The token makes the newest choice the only one allowed to stage the
     // mixer — without it, whichever hydration finished last won, which is how
     // rapid sidebar picks ended up one song behind.
-    const token = supersedeMixerSelection()
+    const token = ++sessionViewToken
+    // Any pending play-along preparation belongs to the song being left.
+    supersedeMixerSelection()
     // Hydrate blob URLs from IndexedDB before showing results
     // (blob: URLs from localStorage are dead after page reload)
     const hydrated = await ensureHydrated(session)
-    if (token !== mixerSelectionToken) return
+    // Only a newer song choice stands this one down, and that one owns the
+    // deep-link memo from here on — so a superseded open can never strand it.
+    if (token !== sessionViewToken) return
     setCurrentUvrSession(hydrated)
     // Persist the hydrated URLs to localStorage
     if (hydrated !== session) {
@@ -1604,16 +1640,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (hydrated.status === 'processing') {
       setCurrentView('processing')
     } else {
-      // Respect the initial view from the URL hash (e.g. /mixer deep link)
-      const targetView = props.initialView === 'mixer' ? 'mixer' : 'results'
-
-      // When deep-linking directly to mixer, populate the mixer state
-      // just like handlePracticeStart does for 'full' mode. Unconditionally:
-      // this used to be skipped when hydration produced no outputs, which
-      // left the mixer keyed to the PREVIOUS session — its audio kept
-      // playing under the new song's chrome. Empty stems for the right
-      // session are fine; the mixer's own load-error UI owns that case.
-      if (targetView === 'mixer') {
+      // When opening the mixer, populate its state just like
+      // handlePracticeStart does for 'full' mode. Unconditionally: this used
+      // to be skipped when hydration produced no outputs, which left the
+      // mixer keyed to the PREVIOUS session — its audio kept playing under
+      // the new song's chrome. Empty stems for the RIGHT session are fine,
+      // because the load reports "nothing arrived" for an empty stem set as
+      // well as for a failed one, so that room offers its error and Retry
+      // rather than coming up silent.
+      if (requestedView === 'mixer') {
         // One batch, because the session id is the mixer's remount key and
         // the mixer reads `stems` once, at mount. Setting the id on its own
         // line remounts immediately against the stems still sitting in the
@@ -1634,7 +1669,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         })
       }
 
-      setCurrentView(targetView)
+      setCurrentView(requestedView)
     }
   }
 

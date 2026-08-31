@@ -48,7 +48,7 @@ import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
-import { activeStemSplits, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
+import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
@@ -1885,9 +1885,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   onCleanup(() => {
     deviceStemsLoad += 1
   })
+  // Tracked as a boolean, not as the registry itself: that record is replaced
+  // on every progress tick of every session, and depending on it re-ran the
+  // query below once per tick — a full read of this session's stem-blob rows
+  // (whose legacy `data` is an ArrayBuffer, cloned out of IndexedDB whole)
+  // just to look at a type string. Two runs is all the pills need: one on
+  // open, one when a split for THIS session finishes.
+  const splitRunning = createMemo(() => isStemSplitActive(props.sessionId))
   createEffect(() => {
     // A full-band split finishing mid-session adds parts under us.
-    activeStemSplits()
+    splitRunning()
     const sessionId = props.sessionId
     const load = (deviceStemsLoad += 1)
     void listStemTypes(sessionId).then((stems) => {

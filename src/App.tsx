@@ -648,6 +648,11 @@ const AppShell: Component<AppProps> = (props) => {
       }
       mountExercise(drill.exercise)
       setPendingDrill(null)
+      // Same reason the deep-link slug clears it: a drill lands on its setup
+      // screen. setActiveTab only fires the tab-transition disarm on a real
+      // change, so a Practice pressed from inside this tab would otherwise
+      // remount over a flag armed by an earlier quick start and run at once.
+      setAutoStartExercise(false)
     }
   })
 

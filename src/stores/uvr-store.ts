@@ -1114,10 +1114,18 @@ export function startUvrSession(
   // Monotonic, not just Date.now(): two sessions minted inside the same
   // millisecond (a multi-file upload loop) collided on one id and the second
   // upsert silently swallowed the first file's session.
+  //
+  // The counter alone only holds for the life of the page, though — a batch
+  // burns ids ahead of the wall clock, and a reload inside that window (or a
+  // second tab, whose counter is its own zero) mints straight back into the
+  // range already spent. Upserts are by session id and stem blobs are keyed
+  // by it, so such a collision hands one song another's audio. The random
+  // tail is what actually makes the id unique; the timestamp is kept only
+  // because it sorts and reads well in a debug log.
   const now = Date.now()
   lastMintedSessionMillis =
     now > lastMintedSessionMillis ? now : lastMintedSessionMillis + 1
-  const sessionId = `uvr-session-${lastMintedSessionMillis}`
+  const sessionId = `uvr-session-${lastMintedSessionMillis}-${globalThis.crypto.randomUUID().slice(0, 8)}`
 
   const newSession: UvrSession = {
     sessionId,

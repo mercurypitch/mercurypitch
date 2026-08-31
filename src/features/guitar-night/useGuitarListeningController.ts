@@ -1412,9 +1412,20 @@ export function useGuitarListeningController(
       )
       return false
     }
-    if (status() !== 'listening' || tap === null) {
+    if (status() !== 'listening') {
       setNotice(
         'Turn Listening on first — calibration times the live microphone.',
+      )
+      return false
+    }
+    // Split from the check above rather than folded into it: this is the
+    // no-AudioWorklet fallback, which runs WHILE listening is on. Telling
+    // that player to turn listening on sent them round the same loop for
+    // ever, because it already was.
+    if (tap === null) {
+      setNotice(
+        'This browser cannot timestamp audio precisely enough to calibrate. ' +
+          'Timing is measured against the animation clock instead.',
       )
       return false
     }

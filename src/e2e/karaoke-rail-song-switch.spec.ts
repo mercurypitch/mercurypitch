@@ -99,9 +99,25 @@ test('a rail tap lands on that song, and the next tap swaps the audio with it', 
     const win = window as unknown as Record<string, unknown>
     win.__railMarker = 'alive'
     win.__skeletonSeen = 0
-    const observer = new MutationObserver(() => {
-      if (document.querySelector('[class*="skeletonTabContent"]')) {
-        win.__skeletonSeen = (win.__skeletonSeen as number) + 1
+    // The added nodes, not the live DOM: callbacks are delivered at a
+    // microtask checkpoint after the task finishes, so a fallback that is
+    // inserted and removed inside one task leaves nothing to query and a
+    // re-query would report the flash as never having happened — passing on
+    // exactly the case this counts.
+    const isSkeleton = (node: Node): boolean => {
+      if (!(node instanceof HTMLElement)) return false
+      return (
+        node.className.includes('skeletonTabContent') ||
+        node.querySelector('[class*="skeletonTabContent"]') !== null
+      )
+    }
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (isSkeleton(node)) {
+            win.__skeletonSeen = (win.__skeletonSeen as number) + 1
+          }
+        }
       }
     })
     observer.observe(document.body, { subtree: true, childList: true })
