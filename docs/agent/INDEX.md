@@ -112,6 +112,7 @@ These are the rules that break things when ignored.
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 300 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 200 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
+| `share` | [useShareHandlers.ts](../../src/features/share/useShareHandlers.ts) | 200 | useShareHandlers — Share link dispatch & copy handlers Encapsulates decoding and loading of shared melodies, exercises, routines, short U... |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
@@ -326,7 +327,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.3k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/App.tsx](../../src/App.tsx) | 4.1k |
+| [src/App.tsx](../../src/App.tsx) | 3.9k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.3k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.6k |

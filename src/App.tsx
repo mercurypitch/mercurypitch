@@ -230,10 +230,9 @@ import { computeImprovementRate, computePracticeStats, getRecentScores, } from '
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
 import { shiftTakeFrames, useRecordingController, } from '@/features/recording/useRecordingController'
-import type { RoutineTemplate } from '@/features/routines/types'
-import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
+import { useShareHandlers } from '@/features/share/useShareHandlers'
 import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
@@ -251,7 +250,6 @@ import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { installSelectBlurOnPointerChange } from '@/lib/select-blur'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
-import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { createPersistedSignal } from '@/lib/storage'
@@ -823,149 +821,25 @@ const AppShell: Component<AppProps> = (props) => {
     touchStartY = 0
   }
 
-  // ── Share handlers ─────────────────────────────────────────
-  const handleShareMelody = (payload: string) => {
-    const decoded = decodeSharePayload(payload)
-    if (!decoded || decoded.t !== 'melody') return
-    const data = decoded.d as unknown as Record<string, unknown>
-    const name = typeof data.n === 'string' ? data.n : 'Shared Melody'
-    const bpmVal = typeof data.b === 'number' ? data.b : 120
-    const keyVal = typeof data.k === 'string' ? data.k : undefined
-    const scaleVal = typeof data.s === 'string' ? data.s : undefined
-    const items = Array.isArray(data.i)
-      ? generateMelodyItemsFromCompact(
-          data.i as Parameters<typeof generateMelodyItemsFromCompact>[0],
-        )
-      : []
-    if (items.length === 0) {
-      showNotification('Shared melody is empty or invalid', 'warning')
-      return
-    }
-    // Land the shared notes in a melody actually CALLED that — setMelody
-    // would have kept whatever name was open, so the toast and the header
-    // disagreed about what had just been loaded.
-    melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
-    // Drum-kit share links restore the drum preset (legacy links carry no
-    // dk field and default to melody).
-    melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
-    if (bpmVal > 0) setBpm(bpmVal)
-    if (keyVal != null && keyVal !== '') setKeyName(keyVal)
-    if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
-    setActiveTab(TAB_COMPOSE)
-    showNotification(`Loaded shared melody: ${name}`, 'info')
-  }
-
-  const handleShareExercise = (payload: string) => {
-    const decoded = decodeSharePayload(payload)
-    if (!decoded || decoded.t !== 'exercise') return
-    const data = decoded.d as unknown as Record<string, unknown>
-    if (typeof data.e !== 'string') {
-      showNotification('Shared exercise is invalid', 'warning')
-      return
-    }
-    setActiveTab(TAB_EXERCISES)
-    setSelectedExercise(data.e as ExerciseType)
-    setAutoStartExercise(true)
-    showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
-  }
-
-  const handleShareRoutine = (payload: string) => {
-    const decoded = decodeSharePayload(payload)
-    if (!decoded || decoded.t !== 'routine') return
-    const data = decoded.d as unknown as Record<string, unknown>
-    const id = typeof data.id === 'string' ? data.id : ''
-    const name = typeof data.n === 'string' ? data.n : 'Shared Routine'
-    const description = typeof data.desc === 'string' ? data.desc : ''
-    const segs = Array.isArray(data.seg) ? data.seg : []
-    if (segs.length === 0) {
-      showNotification('Shared routine has no segments', 'warning')
-      return
-    }
-    const routine: RoutineTemplate = {
-      id,
-      name,
-      description,
-      segments: segs.map((s: unknown) => {
-        const seg = s as Record<string, unknown>
-        return {
-          type: (typeof seg.k === 'string'
-            ? seg.k
-            : 'exercise') as RoutineTemplate['segments'][0]['type'],
-          durationSec: typeof seg.d === 'number' ? seg.d : 60,
-          config: (typeof seg.c === 'object' && seg.c !== null
-            ? seg.c
-            : {}) as RoutineTemplate['segments'][0]['config'],
-        }
-      }),
-    }
-    const hadProgress = loadSharedRoutine(routine)
-    setActiveTab(TAB_EXERCISES)
-    setAutoStartExercise(true)
-    if (hadProgress) {
-      showNotification(
-        `Loaded shared routine. Your previous progress was replaced.`,
-        'warning',
-      )
-    } else {
-      showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
-    }
-  }
-
-  const handleShareFallback = (_shareType: string, _shareId: string) => {
-    showNotification(
-      'This shared link may have expired or was created in an older version.',
-      'warning',
-    )
-  }
-
-  const handleShareShort = (shortId: string) => {
-    void (async () => {
-      const raw = await fetchShortPayload(shortId)
-      if (raw == null || raw === '') {
-        showNotification(
-          'This shared link has expired or is invalid.',
-          'warning',
-        )
-        return
-      }
-      const decoded = decodeSharePayload(raw)
-      if (!decoded) {
-        showNotification(
-          'Shared content is corrupted or in an older format.',
-          'warning',
-        )
-        return
-      }
-      if (decoded.t === 'melody') {
-        handleShareMelody(raw)
-      } else if (decoded.t === 'exercise') {
-        handleShareExercise(raw)
-      } else if (decoded.t === 'routine') {
-        handleShareRoutine(raw)
-      }
-    })()
-  }
-
-  const handleCopyShareLink = () => {
-    const items = melodyStore.items()
-    if (items.length === 0) {
-      showNotification('No melody to share', 'warning')
-      return
-    }
-    const encoded = encodeMelodyForShare(
-      items,
-      bpm(),
-      keyNameSignal(),
-      scaleTypeSignal(),
-      melodyTotalBeats(items),
-      melodyStore.currentMelody()?.name,
-      melodyStore.getCurrentKind(),
-    )
-    void copyShareUrl(encoded).then((ok) => {
-      if (ok) showNotification('Share link copied!', 'info')
-      else showNotification('Failed to copy link', 'error')
-    })
-  }
+  // ── Share handlers controller ──────────────────────────────
+  const {
+    handleShareMelody,
+    handleShareExercise,
+    handleShareRoutine,
+    handleShareFallback,
+    handleShareShort,
+    handleCopyShareLink,
+  } = useShareHandlers({
+    bpm,
+    setBpm,
+    keyName: keyNameSignal,
+    setKeyName,
+    scaleType: scaleTypeSignal,
+    setScaleType,
+    setActiveTab,
+    setSelectedExercise,
+    setAutoStartExercise,
+  })
 
   // ── Hash routing ────────────────────────────────────────────
   // Return from Stripe checkout: the router already navigated to Settings
