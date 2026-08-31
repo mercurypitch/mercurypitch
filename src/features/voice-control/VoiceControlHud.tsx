@@ -9,7 +9,7 @@
 // interim transcripts change many times a second while music plays.
 
 import { createSignal, For, Show } from 'solid-js'
-import { Mic, Settings } from '@/components/icons'
+import { Mic, Settings, X } from '@/components/icons'
 import { practiceTimerVisible } from '@/stores/practice-timer-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
 import { setVoiceControlEngine, voiceControlEngine, } from '@/stores/settings-store'
@@ -84,7 +84,11 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     // sentinel killing a dead stream, or a backgrounded tab losing its
     // hold. Saying "Listening" over it would be a lie with no tell.
     if (props.controller.listenerState() === 'idle') {
-      return 'Voice stopped — press V twice'
+      // Names the control, not a key. This asked for "V twice" — two presses
+      // because the first only turned the already-silent listener off, and a
+      // key a phone does not have. `toggle` now restarts from this state, so
+      // one tap or one V does it, and the sentence is true on both.
+      return 'Voice stopped — tap the mic to restart'
     }
     const fb = props.controller.feedback()
     if (fb !== null && fb.kind === 'matched') return fb.action ?? 'Done'
@@ -216,6 +220,21 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             {props.controller.lastLatencyMs()} ms
           </span>
         </Show>
+        {/* The way out. Expanded, this pill is a wide bar pinned over the
+            bottom-left of every screen, and the only control that closed it
+            was the mic — which reads as "start/stop listening", not "put
+            this away", and which no longer turns it off from a stopped
+            listener at all. On a phone that left a status line nobody could
+            dismiss sitting on top of the page's own controls. */}
+        <button
+          type="button"
+          class={styles.dismiss}
+          aria-label="Turn voice control off"
+          title="Turn voice control off"
+          onClick={() => props.controller.turnOff()}
+        >
+          <X />
+        </button>
       </Show>
     </div>
   )

@@ -1146,3 +1146,114 @@
 .plateFigure > * {
   width: 100%;
 }
+
+/* ============================================================
+   Short viewport — a phone turned sideways
+   ============================================================
+   Everything above sizes the stage by WIDTH, via the container query. A
+   phone in landscape is wide and short, so none of it fires, and the
+   console is laid out for a screen twice as tall as the one it is on.
+
+   Measured at 844x390 mid-run: the bar took 61px and the sticky console
+   274px — 70% of the screen — so it covered the exercise body (164px)
+   completely. The drill was not cramped, it was invisible.
+
+   The console is where the height goes, so that is what gives it back: a
+   smaller question, a shorter listen pad, pads trimmed to the 44px touch
+   floor and no further, and a last call folded from three stacked rows
+   into one. Landscape has width to spare and no height at all, which is
+   exactly the trade the last-call grid makes here.
+
+   `max-height`, not `orientation: landscape`: what breaks the layout is a
+   short viewport, whichever way the device is held. */
+@media (max-height: 560px) {
+  .bar {
+    gap: 10px;
+    padding: 6px 14px;
+  }
+
+  .body {
+    padding: 8px 16px 4px;
+  }
+
+  .figure {
+    gap: 6px;
+  }
+
+  /* The reserve above matches the trimmed chrome; left at 380 the figure
+     would clamp to its 140px floor and hand the slack back to the console. */
+  .figure > svg {
+    max-height: clamp(96px, calc(100cqh - 250px), 240px);
+  }
+
+  .console {
+    margin: 0 10px 6px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .headline {
+    gap: 2px;
+    padding: 0 2px 4px;
+    border-bottom: 0;
+  }
+
+  .question {
+    font-size: 1.02rem;
+  }
+
+  .lead {
+    gap: 6px;
+  }
+
+  .playPad {
+    min-height: 38px;
+    padding: 5px 10px;
+  }
+
+  .pads {
+    gap: 8px;
+  }
+
+  /* 44px is the floor, not a target to design down from — but the keycap and
+     the label stacked make the pad 60px, well over it, for no reason a wide
+     screen can justify. Side by side they fit the floor exactly. */
+  .pad {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 5px 10px;
+  }
+
+  /* One row instead of three. The kicker is the only part that is pure
+     chrome — the trial number is on the bar — so it is the only part that
+     goes; the verdict and the measurement both stay, side by side. */
+  .lastCall {
+    grid-template-areas: 'mark line note';
+    grid-template-columns: auto auto minmax(0, 1fr);
+    column-gap: 10px;
+    align-items: center;
+    padding: 5px 10px;
+  }
+
+  .lastCallKicker {
+    display: none;
+  }
+
+  .lastCallMark {
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+  }
+
+  .lastCallLine {
+    font-size: 0.86rem;
+    line-height: 1.25;
+  }
+
+  .lastCallNote {
+    font-size: 0.72rem;
+    line-height: 1.25;
+  }
+}

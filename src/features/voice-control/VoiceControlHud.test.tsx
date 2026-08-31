@@ -25,6 +25,7 @@ function createController(
     feedback: () => null,
     lastLatencyMs: () => null,
     toggle: vi.fn(),
+    turnOff: vi.fn(),
     ...overrides,
   } as VoiceControlController
 }
@@ -68,5 +69,63 @@ describe('VoiceControlHud placement', () => {
     const pill = screen.getByTestId('voice-control-pill')
     expect(pill).toHaveAttribute('data-placement', 'docked')
     expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+})
+
+// ============================================================
+// The stopped pill can be acted on, and put away, from a phone
+// ============================================================
+//
+// Enabled but not listening, the status read "press V twice" — a key a phone
+// does not have, asked for twice because the first press only turned an
+// already-silent listener off. Nothing else in the expanded pill closed it
+// either, so on a phone it stayed pinned over the page's own controls.
+
+describe('VoiceControlHud on a device with no keyboard', () => {
+  it('asks for the mic rather than a key when the listener has stopped', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'idle',
+        })}
+      />
+    ))
+
+    const status = screen.getByTestId('voice-control-status')
+    expect(status).toHaveTextContent(/tap the mic/i)
+    // The specific regression: no instruction that needs a keyboard.
+    expect(status.textContent ?? '').not.toMatch(/\bV\b/)
+    expect(status.textContent ?? '').not.toMatch(/twice/i)
+  })
+
+  it('can be dismissed without touching the mic', () => {
+    const turnOff = vi.fn()
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'idle',
+          turnOff,
+        })}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Turn voice control off' }),
+    )
+
+    // turnOff, not toggle: from a stopped listener `toggle` now restarts, so
+    // wiring dismiss to it would have re-opened the mic instead of closing.
+    expect(turnOff).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers no dismiss while the pill is collapsed', () => {
+    // Collapsed it is a single icon button, not something in the way.
+    render(() => <VoiceControlHud controller={createController()} />)
+
+    expect(
+      screen.queryByRole('button', { name: 'Turn voice control off' }),
+    ).toBeNull()
   })
 })
