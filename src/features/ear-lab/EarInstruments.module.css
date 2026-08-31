@@ -522,6 +522,186 @@
   opacity: 0.7;
 }
 
+/* ── The written rhythm (Pulse, The Chart) ───────────────────── */
+
+/* One line, because nothing written here is pitched. */
+.staffLine {
+  stroke: rgb(239 230 214 / 16%);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* The grid inside a beat — eighths, thirds or sixteenths. Faint enough
+   to read past, clear enough to place a note against. */
+.subdivisionGuide {
+  stroke: rgb(239 230 214 / 9%);
+  stroke-width: 1;
+  stroke-dasharray: 1 3;
+}
+
+/* The take's line down the paper: it starts where the anchor stood and
+   runs out on the same clock as the rail above it. */
+@keyframes drumPlayhead {
+  from {
+    transform: translateX(calc(var(--head-from, 0) * var(--head-span, 0px)));
+  }
+
+  to {
+    transform: translateX(var(--head-span, 0px));
+  }
+}
+
+.playhead {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 1.5;
+  opacity: 0.4;
+  transform: translateX(calc(var(--head-from, 0) * var(--head-span, 0px)));
+  animation: drumPlayhead var(--fill-run, 0ms) linear forwards;
+}
+
+/* A note carries its colour on `color`, which animates, and its parts
+   paint themselves in `currentcolor`. `--note-at` is when the running
+   line reaches it; a note the anchor already stands past takes a
+   negative delay and so lights at once. */
+.scoreNote {
+  color: var(--inst-brass);
+}
+
+@keyframes drumNoteLight {
+  to {
+    color: var(--inst-brass-bright);
+  }
+}
+
+.scoreNoteRunning {
+  animation: drumNoteLight 1ms linear var(--note-at, 0ms) forwards;
+}
+
+.scoreNoteMissed {
+  color: var(--inst-garnet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The paper still says where the take is; it just steps with the
+     beat lamps instead of sweeping. */
+  .playhead {
+    animation: none;
+  }
+}
+
+.noteHead {
+  fill: currentcolor;
+}
+
+.noteHeadOpen {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+}
+
+.noteStem {
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.noteBeam,
+.noteFlag,
+.noteDot {
+  fill: currentcolor;
+}
+
+/* Rests are the same ink as the notes, as a printed score's are —
+   set back a little, so the eye still reads the onsets first. */
+.restMark {
+  color: var(--inst-brass);
+  opacity: 0.8;
+}
+
+.restBlock,
+.restDot {
+  fill: currentcolor;
+}
+
+.restStroke {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tupletMark {
+  font-family: var(--inst-serif);
+  font-size: 11px;
+  font-style: italic;
+  fill: var(--inst-muted);
+}
+
+.tupletBracket {
+  fill: none;
+  stroke: var(--inst-muted);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+/* A tap as it lands, before anything has judged it. */
+@keyframes drumTapIn {
+  from {
+    opacity: 0;
+    stroke-width: 6;
+  }
+
+  to {
+    opacity: 1;
+    stroke-width: 3;
+  }
+}
+
+.tapMarkLive {
+  animation: drumTapIn 200ms ease-out;
+}
+
+/* ── The score's own furniture ────────────────────────────────── */
+
+/* The bracket binding the written row to the player's, the two
+   strokes a staff of no pitch carries for a clef, and the metre. */
+.systemBracket {
+  fill: none;
+  stroke: var(--inst-brass-line);
+  stroke-width: 1.4;
+}
+
+.clefStroke {
+  fill: var(--inst-brass);
+  opacity: 0.9;
+}
+
+.timeSignature {
+  font-family: var(--inst-serif);
+  font-size: 14px;
+  fill: var(--inst-brass);
+  opacity: 0.9;
+}
+
+/* Barlines run through the whole system; the beat divisions between
+   them stay dashed (`drumRule`). */
+.barline {
+  stroke: var(--inst-brass-line);
+  stroke-width: 1.2;
+}
+
+.barlineThick {
+  fill: var(--inst-brass-line);
+}
+
+/* The player's lane, washed in the colour their taps land in — whose
+   row it is, said without a word for it. */
+.takeLane {
+  fill: var(--inst-signal);
+  opacity: 0.05;
+}
+
 /* ── The track pendulums ─────────────────────────────────────── */
 
 .calPendulum {

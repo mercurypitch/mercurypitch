@@ -25,7 +25,8 @@ import type { EarBankItem } from '@/lib/ear/banks'
 import { PULSE_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
-import { barBeats, clearedSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
+import type { Subdivision } from '@/lib/ear/rhythm-take'
+import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
 import { micLatencyMs } from '@/stores/mic-latency-store'
@@ -65,6 +66,13 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     from: number
     durationMs: number
   } | null>(null)
+  /** The grid the pattern sits on. Pulse dictates, so the guides
+   *  only go up at the reveal: before it they would say how fine
+   *  the pattern is, which is half of what the ear is asked for. */
+  const [grid, setGrid] = createSignal<Subdivision | null>(null)
+  /** The take's taps in beats, so they land under the score as
+   *  they happen rather than only at the reveal. */
+  const [liveTaps, setLiveTaps] = createSignal<readonly number[]>([])
   const ledger = createTapLedger({ latencyMs: micLatencyMs })
   const raw = () => micLatencyMs() <= 0
 
@@ -72,6 +80,9 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   let timers: Array<ReturnType<typeof setTimeout>> = []
   let trialCancelled = false
   let takeHandle: AnchoredTake | null = null
+  /** The round's first onset, in ms: the place a take is anchored
+   *  on, and so what turns the ledger's taps into beats. */
+  let firstOnsetMs = 0
 
   const period = PULSE_TIMING.periodMs
   const countMs = PULSE_TIMING.beats * period
@@ -88,6 +99,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     setBar(null)
     setBeat(0)
     setBarRun(null)
+    setGrid(null)
+    setLiveTaps([])
   }
 
   const later = (ms: number, fn: () => void) => {
@@ -117,6 +130,9 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         setTapCount(0)
         setBarRun(null)
         setBeats(patternBeats)
+        setGrid(null)
+        setLiveTaps([])
+        firstOnsetMs = onsetsMs[0] ?? 0
 
         const start = ctx.currentTime + PULSE_TIMING.leadS
         const startMs = performance.now() + PULSE_TIMING.leadS * 1000
@@ -179,6 +195,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
               correct: outcome.verdict.correct,
             })
             setBegun(outcome.begun)
+            setLiveTaps([])
+            setGrid(finestSubdivision(item.payload))
             ledger.disarm()
             setBar(null)
             setBeat(0)
@@ -212,7 +230,9 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const onTap = (atMs: number) => {
     if (phase() !== 'answer' || !takeHandle) return
     takeHandle.tap(atMs)
-    setTapCount(ledger.taps().length)
+    const taps = ledger.taps()
+    setTapCount(taps.length)
+    setLiveTaps(anchorTaps(taps, firstOnsetMs).map((t) => t / period))
   }
 
   const ratingLine = () =>
@@ -310,6 +330,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           bar={bar()}
           beat={beat()}
           beats={beats()}
+          grid={grid()}
+          liveTaps={liveTaps()}
           run={barRun()}
           waiting={phase() === 'answer' && barRun() === null}
           reveal={phase() === 'reveal' ? take() : null}

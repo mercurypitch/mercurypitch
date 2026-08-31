@@ -175,7 +175,9 @@ describe('ChartDrill', () => {
       drum().querySelectorAll('[data-part="onset"][data-met="true"]'),
     ).toHaveLength(3)
     expect(drum().querySelectorAll('[data-part="tap"]')).toHaveLength(3)
-    expect(drum().textContent).toContain('the chart')
+    // the paper carries a clef and a metre, so the drill's name is
+    // only in the spoken label now
+    expect(drum().getAttribute('aria-label')).toContain('the chart')
     expect(earPlayerRating('chart').rating).toBeGreaterThan(before)
   })
 
