@@ -75,10 +75,11 @@ interface RhythmDrumProps {
 
 const BAR_LEFT = 132
 const BAR_RIGHT = 436
-/** The staff runs from behind the clef to the final barline, the way
- *  a printed one does — the preface stands on it, not beside it. */
+/** The staff runs from behind the clef to the outer edge of the final
+ *  barline, the way a printed one does — the preface stands on it,
+ *  not beside it, and the thick stroke terminates it. */
 const PAPER_LEFT = 83
-const PAPER_RIGHT = 443
+const PAPER_RIGHT = 442.8
 /** A barline stands just before the beat it opens, so the downbeat's
  *  note has air after it instead of sitting on the line. */
 const BARLINE_LEAD = 9
@@ -104,6 +105,11 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
    *  because nothing is written after it. */
   const barlineX = (beat: number): number =>
     beat === beats() ? beatX(beat) : beatX(beat) - BARLINE_LEAD
+  /** Where a tap is drawn. The take is judged a tolerance and a grace
+   *  after the last beat, so a tap can land past the end of the bar —
+   *  it is pinned to the barline rather than drawn off the paper. */
+  const tapX = (beat: number): number =>
+    beatX(Math.max(0, Math.min(beats(), beat)))
 
   /** The pattern as a score: the reveal's if there is one, else what
    *  the drill wrote for the player to read. */
@@ -159,9 +165,9 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
           in. It says whose row it is without a word for it, and it is
           there before the first tap so they know where to look. */}
       <rect
-        x={PAPER_LEFT}
+        x={barlineX(0)}
         y={TAKE_Y - 21}
-        width={PAPER_RIGHT - PAPER_LEFT}
+        width={beatX(beats()) - barlineX(0)}
         height="42"
         rx="12"
         class={styles.takeLane}
@@ -314,9 +320,9 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         <For each={props.liveTaps ?? []}>
           {(tap) => (
             <line
-              x1={beatX(tap)}
+              x1={tapX(tap)}
               y1={TAKE_Y - 11}
-              x2={beatX(tap)}
+              x2={tapX(tap)}
               y2={TAKE_Y + 11}
               class={`${styles.tapMark} ${styles.tapMarkLive}`}
               data-part="live-tap"
@@ -331,9 +337,9 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
             <For each={reveal().taps}>
               {(tap) => (
                 <line
-                  x1={beatX(tap)}
+                  x1={tapX(tap)}
                   y1={TAKE_Y - 12}
-                  x2={beatX(tap)}
+                  x2={tapX(tap)}
                   y2={TAKE_Y + 12}
                   class={styles.tapMark}
                   data-part="tap"
@@ -343,9 +349,9 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
             <For each={reveal().extras}>
               {(tap) => (
                 <line
-                  x1={beatX(tap)}
+                  x1={tapX(tap)}
                   y1={TAKE_Y - 9}
-                  x2={beatX(tap)}
+                  x2={tapX(tap)}
                   y2={TAKE_Y + 9}
                   class={`${styles.tapMark} ${styles.tapMarkExtra}`}
                   data-part="extra"

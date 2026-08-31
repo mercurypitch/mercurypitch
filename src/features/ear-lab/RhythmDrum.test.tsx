@@ -129,6 +129,14 @@ describe('RhythmDrum', () => {
     expect(parts('barline')).toHaveLength(2)
     expect(parts('final-barline')).toHaveLength(1)
     expect(parts('beat-division')).toHaveLength(3)
+    // and the player's lane stops at the bar rather than running
+    // through the final barline
+    const lane = parts('take-lane')[0]
+    const laneRight =
+      Number(lane.getAttribute('x')) + Number(lane.getAttribute('width'))
+    expect(laneRight).toBeLessThanOrEqual(
+      Number(parts('final-barline')[0].getAttribute('x')),
+    )
   })
 
   it('carries a barline into the middle of a two-bar pattern', () => {
@@ -209,6 +217,51 @@ describe('RhythmDrum', () => {
     // the lane says whose row it is, so no word has to
     expect(parts('take-lane')).toHaveLength(1)
     expect(drum().textContent).not.toContain('yours')
+  })
+
+  it('pins a tap that lands past the bar to the barline', () => {
+    // The take is judged a tolerance and a grace after the last beat,
+    // so a tap can arrive most of a beat past the end of the bar. Drawn
+    // where it fell it would sit outside the drum's paper entirely.
+    render(() => (
+      <RhythmDrum
+        bar="response"
+        beat={4}
+        run={{ from: 0, durationMs: 2400 }}
+        liveTaps={[0, 4.783]}
+        reveal={null}
+      />
+    ))
+    const taps = [...parts('live-tap')].map((mark) =>
+      Number(mark.getAttribute('x1')),
+    )
+    const barEnd = Number(
+      drum().querySelector('[data-part="final-barline"]')?.getAttribute('x'),
+    )
+    expect(taps[1]).toBeLessThanOrEqual(barEnd)
+    // and a tap inside the bar is still drawn where it fell
+    expect(taps[0]).toBeLessThan(taps[1])
+  })
+
+  it('pins a late extra at the reveal too', () => {
+    render(() => (
+      <RhythmDrum
+        bar={null}
+        beat={0}
+        reveal={{
+          onsets: [0, 1, 2],
+          met: [true, true, true],
+          taps: [0, 1, 2],
+          extras: [4.2],
+          correct: false,
+        }}
+      />
+    ))
+    const extra = Number(parts('extra')[0].getAttribute('x1'))
+    const barEnd = Number(
+      drum().querySelector('[data-part="final-barline"]')?.getAttribute('x'),
+    )
+    expect(extra).toBeLessThanOrEqual(barEnd)
   })
 
   it('writes the call as notation at the reveal and marks the misses', () => {
