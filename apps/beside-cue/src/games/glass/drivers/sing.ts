@@ -5,7 +5,7 @@
 // trustworthy pitch. No discrete intents: a voice is continuous.
 
 import type { F0Stream } from '@irchiinnuss/pitch-engine'
-import { centsToMidi, CONF_MIN, createF0Stream, hzToCents, micManager, } from '@irchiinnuss/pitch-engine'
+import { CONF_MIN, createF0Stream, hzToCents, micManager, } from '@irchiinnuss/pitch-engine'
 import type { DiscreteIntent, InteractionDriver, PitchSample } from './types'
 
 export const createSingDriver = (micId: string): InteractionDriver => {
@@ -33,7 +33,7 @@ export const createSingDriver = (micId: string): InteractionDriver => {
       const fr = f0?.latestSmoothed()
       if (!fr || fr.f0 <= 0 || fr.conf < CONF_MIN) return null
       return {
-        midi: centsToMidi(hzToCents(fr.f0)),
+        midi: hzToCents(fr.f0) / 100,
         rms: fr.rms,
         conf: fr.conf,
         tAudio: audioContext?.currentTime ?? 0,
