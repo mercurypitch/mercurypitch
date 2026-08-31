@@ -833,16 +833,25 @@ not decoration.
   in an Android WebView is the real risk here, and the fix is to treat
   the audio clock as the master — which is also what §4a does for pitch.
 - **One AudioContext**, shared with the pitch pipeline that already
-  exists. Resume on the same gesture that starts the game. This is not
-  a wish — it is a fix. Beside Cue currently constructs **five**
-  separate contexts (`audio/web-audio-output.ts`,
-  `onboarding/cinematic-onboarding-audio.ts`, `screens/TapTuner.tsx`,
-  and both glass drivers), and game audio would make six, which is the
-  number older Chrome capped a tab at. The `InteractionDriver` seam
-  already anticipates the consolidation: it exposes `ctx()`, documented
-  as being shared with game output so the stage hums through the clock
-  the input is stamped with. Doing this is small, and it unblocks
-  everything else in this section.
+  exists. Resume on the same gesture that starts the game. This was not
+  a wish — it was a fix, and it is **done**: `audio/shared-audio-context.ts`
+  now owns the only context in the app, and the five that used to exist
+  (`audio/web-audio-output.ts`, `onboarding/cinematic-onboarding-audio.ts`,
+  `screens/TapTuner.tsx`, and both glass drivers) take a named lease on
+  it instead. Game audio is the sixth lease, not the sixth context —
+  six is the number older Chrome capped a tab at. `InteractionDriver`
+  had already anticipated this: `ctx()` returns that shared context, so
+  the stage hums through the clock the input is stamped with.
+
+  What the module handles, so this section does not have to: creation
+  and resume inside the user gesture (iOS WKWebView), `statechange` for
+  the `'interrupted'` state iOS parks a context in during a call, and
+  suspend/resume on `visibilitychange` so the sound pauses with the
+  frame loop. It never closes the context — `close()` is one-way and a
+  replacement would cost another gesture. New audio should call
+  `acquireSharedAudioContext('<owner>')` and never `new AudioContext()`;
+  a test asserts that exactly one module constructs one.
+
 - **The tone has to be distinguishable from the voice, not cancelled.**
   Echo cancellation would tame the mic-into-speaker loop and destroy
   pitch detection, and honest pitch means AGC, noise suppression and

@@ -2,11 +2,14 @@
 // Web Audio output — lazy, pop-free decoded asset playback
 // ============================================================
 //
-// One AudioContext serves every Beside Cue lane. Each playback gets separate
-// envelope and live-mix gains so release tails cannot be reopened by ducking.
+// Playback rides the app's one shared AudioContext (shared-audio-context.ts),
+// so a cue and a game note are scheduled against the same clock. Each playback
+// gets separate envelope and live-mix gains so release tails cannot be
+// reopened by ducking.
 
 import type { AudioSourceVariant } from '../content/audio-manifest'
 import type { AudioOutputFinishResult, AudioOutputPlayback, AudioOutputPlayRequest, AudioOutputStartResult, AudioSessionOutput, } from './audio-session'
+import { acquireSharedAudioContext } from './shared-audio-context'
 
 const ENVELOPE_FLOOR = 0.0001
 const ATTACK_SECONDS = 0.09
@@ -34,6 +37,10 @@ interface CacheEntry {
 }
 
 export interface WebAudioOutputDependencies {
+  /**
+   * Test seam. Injecting a factory also transfers ownership: the output then
+   * closes that context on dispose, where the shared one is only released.
+   */
   readonly createContext?: () => AudioContext | undefined
   readonly fetchArrayBuffer?: (
     url: string,
@@ -60,11 +67,6 @@ function deferred<T>(): Deferred<T> {
       return true
     },
   }
-}
-
-function defaultContext(): AudioContext | undefined {
-  if (typeof AudioContext === 'undefined') return undefined
-  return new AudioContext()
 }
 
 function packagedAudioUrl(src: string): string {
@@ -152,11 +154,15 @@ function validLoopBounds(
   return request.playback.loopEndMs <= buffer.duration * 1_000 + 1
 }
 
-/** Creates a lazy, single-context output suitable for one app-scoped session. */
+/** Creates a lazy output over the app's shared context, for one session. */
 export function createWebAudioOutput(
   dependencies: WebAudioOutputDependencies = {},
 ): AudioSessionOutput {
-  const makeContext = dependencies.createContext ?? defaultContext
+  const ownContext = dependencies.createContext
+  const lease =
+    ownContext === undefined
+      ? acquireSharedAudioContext('asset-output')
+      : undefined
   const readBytes = dependencies.fetchArrayBuffer ?? defaultFetchArrayBuffer
   const supports = dependencies.supportsMimeType ?? createMimeTypeProbe()
   const resolveUrl = dependencies.resolveAssetUrl ?? packagedAudioUrl
@@ -173,8 +179,12 @@ export function createWebAudioOutput(
 
   function ensureContext(): AudioContext | undefined {
     if (context !== undefined) return context
+    if (lease !== undefined) {
+      context = lease.ensure() ?? undefined
+      return context
+    }
     try {
-      context = makeContext()
+      context = ownContext?.()
     } catch {
       return undefined
     }
@@ -384,7 +394,11 @@ export function createWebAudioOutput(
       const audioContext = ensureContext()
       if (audioContext === undefined) return false
       try {
-        await audioContext.resume()
+        if (lease !== undefined) {
+          if (!(await lease.unlock())) return false
+        } else {
+          await audioContext.resume()
+        }
         return !disposed && audioContext.state !== 'closed'
       } catch {
         return false
@@ -402,6 +416,16 @@ export function createWebAudioOutput(
       cachedBytes = 0
       const audioContext = context
       context = undefined
+      if (lease !== undefined) {
+        // Same delay the owned context gets: the handles above scheduled
+        // release tails, and parking the clock under them would freeze a
+        // graph mid-fade. The shared context outlives this output, so only
+        // the claim ends.
+        globalThis.setTimeout(() => {
+          lease.release()
+        }, RELEASE_CLOSE_DELAY_MS)
+        return
+      }
       if (audioContext !== undefined) {
         globalThis.setTimeout(() => {
           void audioContext.close().catch(() => undefined)
