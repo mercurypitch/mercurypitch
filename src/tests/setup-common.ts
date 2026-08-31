@@ -184,21 +184,32 @@ global.AudioContext = MockAudioContext as unknown as typeof global.AudioContext
   getUserMedia: () => Promise.resolve({ getTracks: () => [] }),
 }
 
-// Mock localStorage (functional per-key storage)
-const localStorageStore: Record<string, string> = {}
-const localStorageMock = {
-  getItem: (key: string) => localStorageStore[key] ?? null,
-  setItem: (key: string, value: string) => {
-    localStorageStore[key] = value
-  },
-  removeItem: (key: string) => {
-    delete localStorageStore[key]
-  },
-  clear: () => {
-    Object.keys(localStorageStore).forEach((k) => delete localStorageStore[k])
-  },
+// Mock Web Storage (functional per-key storage).
+//
+// Both are doubled, not just localStorage. jsdom supplies a real
+// sessionStorage, so a missing double was invisible there — and Node 24+
+// exposes both as globals, so it was invisible under a modern local Node too.
+// Under the `node` project on CI's Node 22 neither exists, and
+// `reset-app-data.ts`'s `defaultEnv()` reads bare `sessionStorage`, which threw
+// `ReferenceError: sessionStorage is not defined` on the runner alone.
+function createStorageMock(): Storage {
+  const store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      Object.keys(store).forEach((k) => delete store[k])
+    },
+  } as unknown as Storage
 }
-global.localStorage = localStorageMock as unknown as Storage
+
+global.localStorage = createStorageMock()
+global.sessionStorage = createStorageMock()
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
