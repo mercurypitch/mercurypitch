@@ -156,4 +156,15 @@ describe('Property-Based Tests: Krumhansl-Schmuckler Key Detection', () => {
       { numRuns: 200 },
     )
   })
+
+  it('detectRegionalKeys handles empty or zero-duration note collections safely', () => {
+    expect(detectRegionalKeys([])).toEqual([])
+
+    // A note that is filtered out by zero duration within the window
+    const zeroDurNotes: KeyNote[] = [{ midi: 60, startSec: 0, endSec: 0 }]
+    const zeroRegions = detectRegionalKeys(zeroDurNotes)
+    expect(zeroRegions).toHaveLength(1)
+    expect(zeroRegions[0].startSec).toBe(0)
+    expect(zeroRegions[0].endSec).toBe(0)
+  })
 })
