@@ -1288,3 +1288,58 @@ viewports that were failing:
 | -------- | ------------- | ----- | ----- |
 | 1400x806 | Chord Stacker | −21px | +78px |
 | 1024x560 | Chord Stacker | −7px  | +13px |
+
+## Task 5 verified live, on PR #658
+
+Task 5 shipped with its behavioural check outstanding: every run on the
+original PR finished before the next push landed, so nothing was ever
+superseded. Confirmed afterwards by pushing twice to PR #658 eight seconds
+apart, on the `feat/docs-refresh-ci-gating` branch.
+
+| Time (UTC) | Commit     | Run         | Result        |
+| ---------- | ---------- | ----------- | ------------- |
+| 13:47:37   | `34d1f276` | 33398914277 | success       |
+| 13:48:24   | `7858e988` | 33398986848 | success       |
+| 13:50:20   | `8aedda39` | 33399170622 | **cancelled** |
+| 13:50:28   | `e3dff38b` | 33399184067 | success       |
+
+The third run was killed by the fourth. The first two were 47 seconds apart and
+both survived, which is the same mechanism seen from the other side: the first
+run had already finished, so there was nothing in progress to cancel.
+
+### What does not exercise it, and why that is deliberate
+
+The concurrency group is
+`pr-gate-${{ github.event.pull_request.number || github.ref }}`, so:
+
+- **A merge train on `main` cancels nothing.** `cancel-in-progress` is
+  `${{ github.event_name == 'pull_request' }}`, false for a push. That is the
+  Task 5 fix itself — every `main` commit's coverage is distinct, and
+  cancelling one loses it permanently.
+- **A train of separate PRs cancels nothing.** Different PR numbers land in
+  different groups and never contend.
+
+Only repeated pushes to the _same_ PR supersede anything. Worth knowing before
+planning a test around it, since the obvious experiment — merge several PRs and
+watch — proves nothing either way.
+
+## A docs-only PR now costs 47 seconds
+
+Also measured on run `33398914277`. The scope job resolved `root=false`, so six
+of the eight jobs skipped:
+
+| Job                    | Result  |
+| ---------------------- | ------- |
+| Scope                  | success |
+| PR Gate (aggregator)   | success |
+| Lint and typecheck     | skipped |
+| Unit tests (1-2/2)     | skipped |
+| Browser tests (1-4/4)  | skipped |
+| Workers                | skipped |
+| Validate changed files | skipped |
+| Beside Cue             | skipped |
+
+The aggregator treats a scope-skipped job as a pass, which is what makes this
+safe rather than a hole — a job that was _required_ and did not succeed still
+fails the gate. Against 386s for a full source PR and ~930s for the old serial
+gate, a docs change is now effectively free.
