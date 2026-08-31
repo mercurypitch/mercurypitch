@@ -36,11 +36,18 @@ shatter is the payoff the whole brand is named after.
   runs inside `requestAnimationFrame`. Adding a renderer would degrade
   the game's own input exactly when frames get expensive, so the
   detector moves off the frame loop first (§4a).
-- **Design for WebGL2; treat WebGPU as an upgrade.** Whether Android
-  System WebView exposes WebGPU is disputed by the compat tables and
-  unanswered by them, so the app now measures it and reports the answer
-  in Settings (§5.1). three.js covers both backends behind one renderer
-  object, so the answer changes performance, not architecture.
+- **WebGPU does reach the app, and it still is not the whole audience.**
+  Android System WebView ships WebGPU (chromestatus lists an explicit
+  WebView milestone, and Chromium's source agrees) — but that is about
+  70–80% of Android and iOS 26 upward only. So: one renderer, two tiers.
+  three.js covers both backends behind one object, and the effect
+  degrades on the lower tier rather than merely running slower (§5.1).
+- **The shatter needs no GPU compute.** Bake each shard's trajectory
+  into vertex attributes and drive the whole burst from one `uProgress`
+  uniform: one draw call, no per-frame upload, identical on both
+  backends. That also decides the TypeGPU question — adopting
+  `@typegpu/three` today would forfeit the WebGL2 fallback, for
+  ergonomics on an effect that does not need it (§5.2).
 - **Slices**: Cabinet (engine proof) → Merc moves and breaks a wall →
   Standing Wave Chamber (the first designed level) → polish → the next
   mechanic.
@@ -303,45 +310,112 @@ frame-coupled stream means tuning twice.
 
 ## 5. Renderer and libraries
 
-### 5.1 The one fact still to measure
+### 5.1 WebGPU in the WebView — settled, and maff was right
 
-Whether the app can render on WebGPU at all depends on Android System
-WebView, and the evidence pulls three ways:
+The compat tables were the wrong place to look. caniuse says no WebGPU
+for the Android WebView row; MDN says yes, but by mirroring Chrome
+rather than by observing anything. Neither is evidence. Three primary
+sources are:
 
-- **caniuse** reports no WebGPU for the WebView row.
-- **MDN's compatibility data** mirrors Chrome's yes from 121 — though
-  "mirror" is an inference in that dataset, not an observation.
-- **maff's point**: TypeGPU ships a showcase game that runs on mobile.
-  Worth separating the runtimes, though — TypeGPU's authors also
-  maintain a React Native WebGPU binding backed by Dawn, which is native
-  WebGPU _outside_ any WebView, and Chrome for Android has had WebGPU
-  since 121. Neither of those is the Android System WebView that a
-  Capacitor app renders inside, so the showcase can be entirely real
-  without settling our case.
+- **chromestatus** lists shipping milestones for WebGPU Compatibility
+  Mode as `desktop 146 / android 146 / webview 146` — an explicit
+  WebView milestone, and M146 went stable in March.
+- **Chromium source**: `kWebGPUService` is `FEATURE_ENABLED_BY_DEFAULT`
+  under `BUILDFLAG(IS_ANDROID)`, and `aw_field_trials.cc` — the file
+  that explicitly disables some seventy features for WebView — does not
+  disable it.
+- The **blink-dev Intent to Ship** answered the "WebView application
+  risks" question with "None", meaning WebView was in scope of the ship.
 
-None of the three is a measurement of our runtime, and the question is
-worth an actual answer because it decides months of architecture. So the
-app asks the device: Settings → tap the version line → the **Graphics**
-row, shipped in the mic-fix PR. The **Engine** row alongside it reports
-`Android WebView <version>` versus `Chrome <version>` (they differ by a
-single token in the user agent), so there is no ambiguity about what was
-measured.
+So WebGPU ships in Android System WebView, which is the runtime a
+Capacitor app renders inside. maff's instinct was right, and it was
+right for a better reason than the showcase game he cited: that one most
+likely runs on TypeGPU's own React Native binding, which is Dawn outside
+any WebView. The WebView answer is yes on its own evidence.
 
-Until that reads back from the tablet, **assume WebGL2 and design so the
-answer changes performance rather than architecture** — which the
-layering below achieves. If the answer is yes, TypeGPU shares three's
-device and we get compute; if it is no in the WebView but yes elsewhere,
-the desktop-web funnel still carries the "Powered by TypeGPU" story, and
-the app is unaffected either way.
+**What that does not mean.** Coverage is not universal:
+
+| Hardware                           | WebGPU from                   |
+| ---------------------------------- | ----------------------------- |
+| Mali, Adreno, Intel, Android 12+   | Chrome 121                    |
+| PowerVR, Android 16+               | Chrome 139                    |
+| Samsung Xclipse (Exynos flagships) | not yet — expected around 154 |
+
+Android 12 and above is roughly 81% of devices; after the vendor gaps
+that lands near **70–80% of Android**, and **iOS 26 and above only** —
+there is no flag a third-party app can flip below that. Advanced
+Protection Mode disables WebGPU outright and cannot be overridden. And
+the System WebView does not auto-update on emulators, so this is a
+real-hardware question every time.
+
+The device readout shipped in the mic-fix PR is therefore still the
+thing to trust for our own hardware: Settings → tap the version line →
+the **Graphics** row, with **Engine** alongside it reporting
+`Android WebView <version>` against `Chrome <version>` so there is no
+ambiguity about what was measured. One caveat it already handles, and
+which broke a three.js user in the wild: presence of `navigator.gpu` is
+not the answer — the adapter request has to be awaited, because a device
+can have the API and no adapter.
+
+**The conclusion for the plan is unchanged, for a different reason.**
+Not "assume WebGL2 because WebGPU may be absent", but "one renderer,
+two tiers, because a fifth of Android and every iOS below 26 will land
+on WebGL2". Design the scene once; degrade the effect, not just the
+backend.
 
 ### 5.2 The stack
 
-| Layer                                | Choice                                                           | Why                                                                                                                                                                                                                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Scene, assets, materials             | **three.js r185** (`WebGPURenderer`, automatic WebGL2 fallback)  | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers both backends, so the WebGPU answer above changes performance, not architecture                                                                           |
-| Custom GPU work, where WebGPU exists | **TypeGPU**, sharing three's `GPUDevice`                         | r185's WebGPU backend accepts an externally supplied device, and our `TypeGpuGlassRenderer` already uses `tgpu.initFromDevice` — so the "Powered by TypeGPU" mandate survives on the desktop-web funnel without forking the game                                               |
-| Shard motion                         | **Bespoke integrator**, extending the 2D `stepShardBodies` to 3D | ~0.2ms and no dependency. Baked/bespoke shard motion is the shipping-industry default for this effect (the VAT technique), and we already ship its 2D cousin                                                                                                                   |
-| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                     | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
+| Layer                                | Choice                                                         | Why                                                                                                                                                                                                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scene, assets, materials             | **three.js r185**, `WebGPURenderer` with its automatic backend | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers WebGPU and WebGL2, and r185 asks for `featureLevel: 'compatibility'` by default, which reaches devices without Vulkan 1.1                                 |
+| Shaders                              | **TSL**                                                        | Compiles to WGSL or GLSL from one source, so the shatter shader is written once and survives whichever backend the device gives us. Also makes shaders ordinary JS modules, which is most of §8                                                                                |
+| Shard motion                         | **Baked ballistic trajectories**, one `uProgress` uniform      | See below — this is the finding that removes the need for compute at all                                                                                                                                                                                                       |
+| Custom GPU compute, if it ever comes | **TypeGPU**, sharing three's `GPUDevice` by hand               | `new WebGPURenderer({ device })` and `tgpu.initFromDevice({ device })` both exist, so one device can serve both. Not `@typegpu/three` — see below                                                                                                                              |
+| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                   | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
+
+**The shatter needs no GPU compute, and that is the most useful thing
+the research turned up.** A shatter is deterministic, a few seconds long,
+and not interactive. So bake each shard's launch velocity, rotation axis,
+angular rate and delay into static vertex attributes, merge every shard
+into one `BufferGeometry`, and drive the entire thing from a single
+`uProgress` uniform in the vertex shader. One draw call, zero per-frame
+upload, no compute, no float-texture dependency, no driver-bug exposure,
+and identical behaviour on both backends. Shard trajectories are
+ballistic anyway, so nothing is lost visually. Persistent GPU state —
+ping-pong simulation, transform feedback — only earns its keep if shards
+must bounce, pile and re-scatter, and they do not.
+
+**Do not adopt `@typegpu/three`, at least not for this.** It is real,
+official and elegant (it compiles TypeGPU functions into TSL nodes, so
+no shared device is even needed), but its own docs say adopting it makes
+the app work only on WebGPU-enabled devices — it **disables three's
+WebGL2 fallback**. The tracking issue for that has been open for a year.
+Trading the fifth of Android and all of iOS below 26 for shader
+ergonomics, on an effect that does not need compute, is the wrong way
+round. It is 3.9 KB gzipped and the interop is non-contagious, so
+bolting it on later — if the debris field ever grows into something
+genuinely simulated, and if that issue lands — stays cheap.
+
+That does leave the TypeGPU mandate (`glass-handoff-2026-07-17.md`
+Decision 9) satisfied only on the desktop-web funnel, where the existing
+`TypeGpuGlassRenderer` already lives. Worth naming as a decision rather
+than letting it drift.
+
+**What we are accepting by choosing `WebGPURenderer`.** It is still
+described as experimental by its own manual, and `WebGLRenderer` is
+explicitly not deprecated. Concretely: about +98 KB gzipped over core
+three (185 vs 87 for the shipped builds); material initialisation
+measured 16–36× slower than `WebGLRenderer` on both backends, so it is a
+renderer-class cost we inherit either way; no `ShaderMaterial` or
+`onBeforeCompile` (TSL is the replacement, which is why TSL is in the
+table); no `EffectComposer`, and pmndrs `postprocessing` is not
+compatible; and on **all** Android, shadows fall back to a software
+`step()` depth comparison rather than hardware PCF, so shadow quality
+and cost differ from the desktop machine we develop on.
+
+If any of that bites hard, the exit is plain `WebGLRenderer` and a
+WebGL2-only shatter — and r184's `WebGLNodesHandler` lets it consume
+TSL node materials, so the shaders would survive the move.
 
 ### 5.3 The glass material, and the trick that pays for it
 
@@ -592,10 +666,26 @@ started with.
 | Shard GLB (meshopt, quantised) | ~40–70 KB gz                                        |
 | Frame @60fps                   | physics ≤3ms · scene ≤3ms · GPU ≤8ms                |
 
-`BatchedMesh` is the right primitive: one draw call for many _different_
+Those numbers are deliberately under the ceiling. Scaled from ARM's
+published per-clock rates, a mid-range phone will carry **600–1,500
+opaque shards** of 20–40 triangles plus **2,000–5,000 additive points**
+at around 8px for the glass dust, so 150 shards is a third of the
+conservative end. Take the headroom in shard count only after the
+Cabinet holds 60fps, and remember the limit is fill rate rather than
+geometry: rasterisation happens in 2×2 quads, so even a one-pixel
+particle costs four fragment invocations, and alpha blending defeats
+both hardware overdraw-removal mechanisms at once. Keep draw calls
+under about 100–150 — Chrome's command buffer and ANGLE validation sit
+between us and the driver.
+
+`BatchedMesh` is one option for that: one draw call for many _different_
 geometries sharing a material, with per-instance matrices and
-visibility. (`InstancedMesh` is wrong here — different geometries mean
-one draw call each.)
+visibility. (`InstancedMesh` is wrong here — real fracture shards do not
+share geometry.) But it hard-depends on `WEBGL_multi_draw` with no
+polyfill, and it has a standing report of being slower on WebGPU than
+WebGL on Android. Since the shards are baked and move as one, merging
+them into a single `BufferGeometry` with per-shard attributes is
+simpler, faster and depends on nothing.
 
 **The environment map should be procedural, not a photograph.** three's
 `RoomEnvironment` is about 5 KB of source that builds a room out of
@@ -675,6 +765,13 @@ Everything above fires on one timeline, measured from the crack:
 | 0 → 1200        | dust billboards                                                                                    |
 | 100 / 300 / 550 | three decaying light haptics                                                                       |
 | 2500            | shards freeze, fade, dispose — and the ground keeps them                                           |
+
+**Every one of those numbers is a duration, and the code must treat them
+that way.** iOS puts Low Power Mode, visual idle and thermal mitigation
+into WebKit's half-rate set, which means 30fps that the page cannot
+override. A timeline advanced by frame count would play the whole
+shatter at half speed for anyone with a low battery; advanced by
+`deltaTime` it simply plays at 30fps.
 
 Drop the device pixel ratio from the running cap of 1.5 (§5.4) to ~1.0
 for the 1.2s burst and restore it after: under shake, slow motion and
@@ -768,7 +865,9 @@ Android WebView.
 ## 9. Delivery slices
 
 Each slice lands green (`pnpm check`, tests, and a measured frame time
-on the tablet) before the next begins.
+on the tablet) before the next begins. The §4a prerequisite is not one
+of them — it is already open as its own PR, because it improves the 2D
+games we ship today and should not wait behind a 3D decision.
 
 | Slice | Contains                                                                                                       | Done when                                                                                                                               |
 | ----- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -782,10 +881,16 @@ on the tablet) before the next begins.
 
 ## 10. Risks
 
-- **WebGPU coverage on Android WebView** decides whether the 3D world
-  gets compute or has to fake it. No longer argued from compat tables:
-  the app measures it and reports it in Settings (§5.1), and the plan
-  targets WebGL2 either way.
+- **WebGPU coverage.** Settled in principle — the WebView does ship it
+  (§5.1) — and still a risk in practice, because it is 70–80% of Android
+  and iOS 26 upward. The lower tier has to be a designed experience, not
+  an apology. The app reports what a given device actually got, in
+  Settings.
+- **`WebGPURenderer` is experimental by its own manual**, costs ~98 KB
+  gzipped over core three, initialises materials 16–36× slower on both
+  backends, and runs a software shadow path on all Android. The exit is
+  plain `WebGLRenderer` plus `WebGLNodesHandler`, which keeps the TSL
+  shaders (§5.2).
 - **MSAA against shard geometry.** 4× MSAA is nearly free on a tiler
   until the vertex count climbs, and then it is not — a measured 16 of
   35 fps on a million-vertex scene. A few hundred shards is the case
