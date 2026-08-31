@@ -435,7 +435,7 @@
 
 .actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: 0.65rem;
   padding: 0.9rem 1.4rem max(0.9rem, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(244, 234, 219, 0.11);
@@ -467,6 +467,34 @@
   height: 1rem;
 }
 
+.keepAction {
+  display: grid;
+  align-content: start;
+  gap: 0.38rem;
+}
+
+.keepAction small {
+  color: #b7aa99;
+  font-size: 0.64rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.notNow {
+  justify-content: center;
+  min-height: 2rem;
+  border: 0;
+  color: #b7aa99;
+  background: transparent;
+  font-size: 0.72rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.notNow:hover:not(:disabled) {
+  color: #f4eadb;
+}
+
 .playAgain {
   border: 1px solid #f2bd78;
   color: #1a1109;
@@ -482,6 +510,21 @@
   border: 1px solid rgba(244, 234, 219, 0.18);
   color: #eee2d1;
   background: rgba(244, 234, 219, 0.06);
+}
+
+.keep {
+  border: 1px solid rgba(111, 195, 180, 0.58);
+  color: #e9f6f2;
+  background: rgba(111, 195, 180, 0.13);
+}
+
+.keep:hover:not(:disabled) {
+  background: rgba(111, 195, 180, 0.21);
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .review:hover {

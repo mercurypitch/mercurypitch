@@ -1,5 +1,5 @@
 // ============================================================
-// Voice Playback Transport — one stable play and scrub rail across voice history
+// Take Playback Transport — one stable play and scrub rail across local history
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -46,7 +46,7 @@ export function VoicePlaybackTransport(
         [styles.earlier]: props.tone === 'earlier',
         [styles.later]: props.tone === 'later',
       }}
-      aria-label="Voice playback controls"
+      aria-label="Take playback controls"
     >
       <button
         type="button"

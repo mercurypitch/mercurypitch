@@ -4,6 +4,7 @@
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
@@ -1038,6 +1039,14 @@ export function useGuitarNightReferenceController(
     if (initialSongId !== null) void attach(initialSongId, undefined, 'none')
 
     const handlePopState = () => {
+      if (isLocalSaveNavigationLocked()) {
+        const current = reference()
+        writeScoreToHistory(
+          current?.kind === 'authored' ? current.songId : null,
+          'replace',
+        )
+        return
+      }
       const nextSongId = readGuitarNightScore()
       if (nextSongId === null) {
         detach('none')

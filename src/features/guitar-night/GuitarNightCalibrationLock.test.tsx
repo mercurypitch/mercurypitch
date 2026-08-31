@@ -108,6 +108,17 @@ const scoreRoom = vi.hoisted(() => ({
   >(async () => null),
 }))
 
+const takeCapture = vi.hoisted(() => ({
+  state: vi.fn(() => 'idle'),
+  message: vi.fn(() => ''),
+  boundaryId: vi.fn(() => null),
+  begin: vi.fn(() => true),
+  finish: vi.fn(() => true),
+  attachCompletedSummary: vi.fn(() => true),
+  discard: vi.fn(() => true),
+  keep: vi.fn(async () => true),
+}))
+
 vi.mock('./useGuitarListeningController', () => ({
   useGuitarListeningController: () => listening,
 }))
@@ -120,6 +131,10 @@ vi.mock('./useGuitarNightScoreRoomController', () => ({
   SCORE_ROOM_MIN_TEMPO: 40,
   SCORE_ROOM_MAX_TEMPO: 220,
   useGuitarNightScoreRoomController: () => scoreRoom,
+}))
+
+vi.mock('./useGuitarNightTakeCapture', () => ({
+  useGuitarNightTakeCapture: () => takeCapture,
 }))
 
 const REFERENCE: GuitarNightReference = {
@@ -645,6 +660,7 @@ describe('Guitar Night calibration lock', () => {
     const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
     const [roomStatus, setRoomStatus] = createSignal('quiet')
     const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+    const [suspended, setSuspended] = createSignal(false)
     let takeNumber = 0
     let rejectInput!: (ready: boolean) => void
     const rejectedInput = new Promise<boolean>((resolve) => {
@@ -713,6 +729,7 @@ describe('Guitar Night calibration lock', () => {
     render(() => (
       <GuitarNightScoreRoom
         reference={() => SCORE_RESTART_REFERENCE}
+        suspended={suspended}
         onSongs={vi.fn()}
       />
     ))
@@ -799,30 +816,46 @@ describe('Guitar Night calibration lock', () => {
     expect(liveScore).toHaveAttribute('data-state', 'complete')
     expect(screen.getByLabelText('Replay score')).toBeEnabled()
 
+    const cancelledReplay = Promise.withResolvers<boolean>()
+    listening.start.mockImplementationOnce(() => cancelledReplay.promise)
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    takeCapture.discard.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
+    expect(takeCapture.discard).toHaveBeenCalledWith('score-run-2')
+    expect(screen.queryByRole('dialog', { name: 'Score' })).toBeNull()
+    expect(screen.getByLabelText('Cancel replay')).toBeEnabled()
+    fireEvent.click(screen.getByLabelText('Cancel replay'))
+    cancelledReplay.resolve(true)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(scoreRoom.startLiveScore).toHaveBeenCalledTimes(2)
+
     listening.start.mockResolvedValueOnce(false)
-    fireEvent.click(screen.getByLabelText('Replay score'))
-    expect(screen.getByLabelText('Starting a fresh live score')).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    takeCapture.discard.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
+    expect(takeCapture.discard).toHaveBeenCalledWith('score-run-2')
     expect(liveScore).toHaveAttribute('data-state', 'complete')
     await Promise.resolve()
     await Promise.resolve()
     expect(scoreRoom.startLiveScore).toHaveBeenCalledTimes(2)
     expect(liveScore).toHaveAttribute('data-state', 'complete')
-    expect(screen.getByLabelText('Replay score')).toBeEnabled()
 
     listening.start.mockImplementationOnce(async () => {
       setListeningStatus('listening')
       return true
     })
-    fireEvent.click(screen.getByLabelText('Replay score'))
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
     await vi.waitFor(() =>
       expect(screen.getByLabelText('Pause score')).toBeEnabled(),
     )
 
     expect(scoreRoom.startLiveScore).toHaveBeenNthCalledWith(3, {
-      start: 0,
+      start: 3.4,
       end: 6,
     })
-    expect(listening.start).toHaveBeenCalledTimes(5)
+    expect(listening.start).toHaveBeenCalledTimes(6)
     expect(listening.selectInputProfile).not.toHaveBeenCalled()
     expect(listening.armTakeAt).toHaveBeenCalledTimes(3)
     expect(scoreRoom.toggle).not.toHaveBeenCalled()
@@ -835,6 +868,123 @@ describe('Guitar Night calibration lock', () => {
       expect(liveScore).toHaveAttribute('data-state', 'complete'),
     )
     expect(scoreRoom.stop).toHaveBeenCalled()
+
+    takeCapture.discard.mockClear()
+    setSuspended(true)
+    await Promise.resolve()
+    expect(takeCapture.discard).toHaveBeenCalledWith('score-run-3')
+  })
+
+  it('discards a completed replay before reopening a cached phrase review', async () => {
+    listening.inputProfile.mockReturnValue('interface')
+    listening.status.mockReturnValue('listening')
+    const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(
+      completedReviewTake('completed'),
+    )
+    const [roomStatus, setRoomStatus] = createSignal('quiet')
+    const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+    let armCount = 0
+
+    // Accessors are invoked from the component's tracked owner.
+    // eslint-disable-next-line solid/reactivity
+    listening.take.mockImplementation(take)
+    listening.armTakeAt.mockImplementation(() => {
+      armCount += 1
+      if (armCount === 2) {
+        setTake({
+          ...completedReviewTake('recording'),
+          input: {
+            ...completedReviewTake('recording').input,
+            kind: 'interface',
+          },
+        })
+      }
+      return true
+    })
+    listening.completeTakeAt.mockReturnValue(true)
+    // Accessors are invoked from the component's tracked owner.
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.status.mockImplementation(roomStatus)
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.playheadBeat.mockImplementation(playheadBeat)
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.setupLocked.mockImplementation(() =>
+      ['starting', 'count-in', 'playing'].includes(roomStatus()),
+    )
+    scoreRoom.startAssessment.mockResolvedValue({
+      id: 'review-boundary',
+      reference: REVIEW_REFERENCE,
+      range: { start: 0, end: 4 },
+      tempoBpm: 90,
+      scoreTempoBpm: 90,
+      countInBeats: 4,
+      sampleRate: 1_000,
+      startedAtSeconds: 10,
+      completedAtSeconds: 14,
+      beatToSeconds: (beat: number) => beat,
+    })
+    scoreRoom.startLiveScore.mockImplementation(async (range) => {
+      setRoomStatus('playing')
+      return {
+        id: 'live-cached-review',
+        reference: REVIEW_REFERENCE,
+        range,
+        tempoBpm: 90,
+        scoreTempoBpm: 90,
+        countInBeats: 4,
+        sampleRate: 1_000,
+        startedAtSeconds: 10,
+        completedAtSeconds: 14,
+        beatToSeconds: (beat: number) => beat,
+      }
+    })
+
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => REVIEW_REFERENCE}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Listening is on'))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Review beat 1 for 4 beats' }),
+    )
+    const reviewCue = await screen.findByRole('button', {
+      name: 'Review Beat 1 · 4 beats · 90 BPM: The pulse stayed together.',
+    })
+    fireEvent.click(reviewCue)
+    fireEvent.click(screen.getByRole('button', { name: 'Close Jam Doctor' }))
+
+    fireEvent.click(screen.getByLabelText('Start the count-in'))
+    await vi.waitFor(() =>
+      expect(scoreRoom.startLiveScore).toHaveBeenCalledOnce(),
+    )
+    setPlayheadBeat(4)
+    setRoomStatus('complete')
+    setTake({
+      ...completedReviewTake('completed'),
+      input: {
+        ...completedReviewTake('completed').input,
+        kind: 'interface',
+      },
+    })
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('guitar-night-live-score')).toHaveAttribute(
+        'data-state',
+        'complete',
+      ),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    takeCapture.discard.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Review a phrase' }))
+
+    expect(takeCapture.discard).toHaveBeenCalledWith('live-cached-review')
+    expect(scoreRoom.startAssessment).toHaveBeenCalledOnce()
+    expect(screen.getByRole('dialog')).toHaveAccessibleName(
+      'The pulse stayed together.',
+    )
   })
 
   it('parks a completed score take before opening Listening', () => {

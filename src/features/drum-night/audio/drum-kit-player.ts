@@ -59,6 +59,8 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
   setLaneVolume?(lane: DrumKitPlaybackLane, volume: number): void
   /** Optional for injected legacy players; affects authored playback only. */
   setAuthoredFamilyVolume?(family: DrumKitAuthoredFamily, volume: number): void
+  /** Passive, live-lane-only capture source; never includes authored audio. */
+  liveCaptureStream?(): MediaStream | null
   snapshot(): DrumKitPlayerSnapshot
   subscribe(listener: () => void): () => void
 }
@@ -67,6 +69,7 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
 export interface RoutedDrumKitPlayer extends DrumKitPlayer {
   setLaneVolume(lane: DrumKitPlaybackLane, volume: number): void
   setAuthoredFamilyVolume(family: DrumKitAuthoredFamily, volume: number): void
+  liveCaptureStream(): MediaStream | null
 }
 
 export interface DrumKitPlayerOptions {
@@ -100,6 +103,7 @@ interface PlayerGraph {
   master: GainNode
   lanes: Readonly<Record<DrumKitPlaybackLane, GainNode>>
   authoredFamilies: Readonly<Record<DrumKitAuthoredFamily, GainNode>>
+  liveCapture: MediaStreamAudioDestinationNode | null
 }
 
 interface CachedSample {
@@ -227,6 +231,23 @@ function safeDisconnect(node: AudioNode): void {
     node.disconnect()
   } catch {
     // Natural endings and route teardown may race each other.
+  }
+}
+
+function safeStopStream(stream: MediaStream): void {
+  if (typeof stream.getTracks !== 'function') return
+  let tracks: MediaStreamTrack[]
+  try {
+    tracks = stream.getTracks()
+  } catch {
+    return
+  }
+  for (const track of tracks) {
+    try {
+      track.stop()
+    } catch {
+      // A stopped or externally ended capture track is already released.
+    }
   }
 }
 
@@ -660,6 +681,9 @@ export function createDrumKitPlayer(
         safeDisconnect(activeGraph.lanes.live)
         safeDisconnect(activeGraph.lanes.authored)
         safeDisconnect(activeGraph.master)
+        if (activeGraph.liveCapture !== null) {
+          safeStopStream(activeGraph.liveCapture.stream)
+        }
       },
       (PANIC_RELEASE_SECONDS + RELEASE_SLACK_SECONDS) * 1_000,
     )
@@ -676,6 +700,16 @@ export function createDrumKitPlayer(
     laneOpen.authored = true
     live.connect(master)
     authored.connect(master)
+    let liveCapture: MediaStreamAudioDestinationNode | null = null
+    if (typeof context.createMediaStreamDestination === 'function') {
+      try {
+        liveCapture = context.createMediaStreamDestination()
+        live.connect(liveCapture)
+      } catch {
+        if (liveCapture !== null) safeStopStream(liveCapture.stream)
+        liveCapture = null
+      }
+    }
     const authoredFamilies = {} as Record<DrumKitAuthoredFamily, GainNode>
     for (const family of DRUM_KIT_AUTHORED_FAMILIES) {
       const familyGain = context.createGain()
@@ -693,6 +727,7 @@ export function createDrumKitPlayer(
       master,
       lanes: { authored, live },
       authoredFamilies,
+      liveCapture,
     }
   }
 
@@ -1231,6 +1266,9 @@ export function createDrumKitPlayer(
       } catch {
         // A closing route no longer needs family automation.
       }
+    },
+    liveCaptureStream(): MediaStream | null {
+      return graph?.liveCapture?.stream ?? null
     },
     snapshot(): DrumKitPlayerSnapshot {
       return currentSnapshot()

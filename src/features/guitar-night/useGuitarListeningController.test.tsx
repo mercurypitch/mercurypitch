@@ -302,6 +302,24 @@ describe('useGuitarListeningController', () => {
     vi.unstubAllGlobals()
   })
 
+  it('exposes only the already-owned audio route and clears it on stop', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const stream = {} as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+
+    await withController(audio.context, async (controller) => {
+      expect(controller.recordableStream()).toBeNull()
+      expect(await controller.start()).toBe(true)
+      expect(controller.recordableStream()).toBe(stream)
+      expect(controller.recordableAudioContext()).toBe(audio.context)
+
+      controller.stop()
+      expect(controller.recordableStream()).toBeNull()
+      expect(controller.recordableAudioContext()).toBeNull()
+    })
+  })
+
   it('admits a same-pitch coarse restrike after the debounce', async () => {
     const audio = createAudioHarness()
     const frames = installFrameHarness(audio.context)

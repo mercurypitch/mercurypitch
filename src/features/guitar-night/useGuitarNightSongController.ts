@@ -4,6 +4,7 @@
 import { onCleanup, onMount } from 'solid-js'
 import type { PlayAlongLibraryState, PlayAlongSelectionState, } from '@/features/play-along/useSongController'
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { readGuitarNightSession, withGuitarNightSession } from './session-link'
 import type { GuitarNightBackingLease, GuitarNightSongPort } from './song-port'
 
@@ -55,6 +56,10 @@ export function useGuitarNightSongController(
     }
 
     const handlePopState = () => {
+      if (isLocalSaveNavigationLocked()) {
+        writeSessionToHistory(controller.routeSessionId(), 'replace')
+        return
+      }
       const nextSessionId = readGuitarNightSession()
       if (nextSessionId === null) {
         controller.clearSession('none')

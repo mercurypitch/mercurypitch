@@ -1,15 +1,14 @@
 // ============================================================
-// Voice History — local listening desk for kept voice takes
+// Hear Yourself History — local listening desk for kept performance takes
 // ============================================================
 
 /*
-THESIS: Voice history is a listening desk organised by recurring practice
+THESIS: Hear Yourself is a listening desk organised by recurring practice
 threads, with one focused listening mode visible at a time.
 OWN-WORLD: MercuryPitch's dark Pitch Studio surfaces, ruled waveform fields,
 quiet blue-violet accents, and compact native controls.
-STORY: The singer chooses a thread, compares a pair, opens the longer pattern
-only when it exists, and manages the complete take history without leaving the
-same listening desk.
+STORY: The musician chooses a thread, uses source-appropriate saved evidence,
+and manages the complete take history without leaving the same listening desk.
 FIRST VIEWPORT: A compact thread rail controls a focused detail workspace;
 Compare, Pattern, and All takes are mutually exclusive rather than one long
 stack, and phones move deliberately from the list into one thread.
@@ -32,6 +31,7 @@ import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTa
 import { trackEvent } from '@/lib/analytics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { EXERCISE_PITCH_HOLD } from '@/lib/domain/exercise-contracts'
+import { performanceTakeSourceLabel, takeSupportsVoiceAnalysis, } from '@/lib/domain/performance-take'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
 import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
@@ -52,6 +52,7 @@ import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './g
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import { bindListeningRoomSettings } from './listening-room-settings'
+import { PerformanceTakeScoreCard } from './PerformanceTakeScoreCard'
 import { PracticeLoomPanel } from './PracticeLoomPanel'
 import { buildPracticeLoomRenderModel, buildVoiceAtlasRenderModel, } from './voice-atlas-model'
 import { createVoiceMediaProgressLoop } from './voice-media-progress'
@@ -174,10 +175,7 @@ function threadTitle(take: VoiceTakeRecord): string {
 }
 
 function threadSourceLabel(source: VoiceTakeRecord['source']): string {
-  if (source === 'freeform') return 'Free practice'
-  if (source === 'guided') return 'Guided check'
-  if (source === 'legend') return 'Weekly Legend'
-  return source[0]!.toUpperCase() + source.slice(1)
+  return performanceTakeSourceLabel(source)
 }
 
 export function buildVoiceThreads(
@@ -628,7 +626,16 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     listeningRack = null
   }
 
-  function connectListeningRoom(element: HTMLAudioElement): void {
+  function playbackRoomSettings(take: VoiceTakeRecord): FxSettings {
+    return takeSupportsVoiceAnalysis(take.source)
+      ? roomSettings()
+      : FX_PRESETS[0].settings
+  }
+
+  function connectListeningRoom(
+    element: HTMLAudioElement,
+    take: VoiceTakeRecord,
+  ): void {
     const context = listeningContext
     if (context === null || context.state === 'closed') return
     disposeListeningGraph()
@@ -636,7 +643,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     let nextSource: MediaElementAudioSourceNode | null = null
     try {
       nextRack = createFxRack(context, { safetyLimiter: true })
-      nextRack.setSettings(roomSettings())
+      nextRack.setSettings(playbackRoomSettings(take))
       nextSource = context.createMediaElementSource(element)
       nextSource.connect(nextRack.input)
       listeningRack = nextRack
@@ -776,7 +783,9 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   createEffect(() => {
     const takeCount = selectedThread()?.comparisonTakes.length ?? 0
-    if (activeView() === 'pattern' && takeCount < 3) {
+    if (takeCount === 0 && activeView() !== 'takes') {
+      changeActiveView('takes')
+    } else if (activeView() === 'pattern' && takeCount < 3) {
       changeActiveView('compare')
     }
   })
@@ -1007,7 +1016,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           decodedPlayback === currentPlayback
         ) {
           setPlayerError(
-            'Playback was blocked. Tap play again to start the recording.',
+            'Playback was blocked. Tap play again to start the take.',
           )
         }
       }
@@ -1034,7 +1043,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         } catch {
           if (!requestIsCurrent() || audio !== currentAudio) return
           setPlayerError(
-            'Playback was blocked. Tap play again to start the recording.',
+            'Playback was blocked. Tap play again to start the take.',
           )
         }
       } else {
@@ -1075,7 +1084,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       context: ensureListeningContext(),
       blob,
       persistedMimeType: take.mimeType,
-      settings: roomSettings(),
+      settings: playbackRoomSettings(take),
       autoplay,
       requestedProgress: options.requestedProgress,
       isCurrent: requestIsCurrent,
@@ -1118,7 +1127,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         decodedPlayback === decodedResult.playback
       ) {
         setPlayerError(
-          'Playback was blocked. Tap play again to start the recording.',
+          'Playback was blocked. Tap play again to start the take.',
         )
       }
       return
@@ -1131,7 +1140,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     nextAudio.setAttribute('playsinline', '')
     audioUrl = nextAudioUrl
     audio = nextAudio
-    connectListeningRoom(nextAudio)
+    connectListeningRoom(nextAudio, take)
     nextAudio.addEventListener('timeupdate', () => {
       if (!requestIsCurrent() || audio !== nextAudio) return
       playbackProgress.sample(nextAudio)
@@ -1156,7 +1165,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       playbackProgress.stop()
       setPlaying(false)
       setPlayerError(
-        'This browser could not decode the recording. Export it to keep the original file.',
+        'This browser could not decode the take. Export it to keep the original file.',
       )
     })
     const requestedProgress = options.requestedProgress
@@ -1184,9 +1193,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       playbackProgress.start(nextAudio)
     } catch {
       if (!requestIsCurrent() || audio !== nextAudio) return
-      setPlayerError(
-        'Playback was blocked. Tap play again to start the recording.',
-      )
+      setPlayerError('Playback was blocked. Tap play again to start the take.')
     }
   }
 
@@ -1391,7 +1398,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           setDeleteIntent(null)
           if (!(await refresh(key))) {
             setPlayerError(
-              'The take was deleted, but voice history could not refresh. Reload the page to update the list.',
+              'The take was deleted, but take history could not refresh. Reload the page to update the list.',
             )
             return
           }
@@ -1411,7 +1418,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           setDeleteIntent(null)
           if (!(await refresh())) {
             setPlayerError(
-              'The thread was deleted, but voice history could not refresh. Reload the page to update the list.',
+              'The thread was deleted, but take history could not refresh. Reload the page to update the list.',
             )
             return
           }
@@ -1420,7 +1427,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           disposeAudio()
           if (!(await wipeVoiceTakes())) {
             setDeleteError(
-              'Voice history could not be cleared. Please try again.',
+              'Take history could not be cleared. Please try again.',
             )
             return
           }
@@ -1428,7 +1435,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           setDeleteIntent(null)
           if (!(await refresh())) {
             setPlayerError(
-              'Voice history was cleared, but the page could not refresh. Reload the page to update the list.',
+              'Take history was cleared, but the page could not refresh. Reload the page to update the list.',
             )
             return
           }
@@ -1440,7 +1447,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             ? 'The take could not be deleted. Please try again.'
             : intent.kind === 'thread'
               ? 'The practice thread could not be deleted. Please try again.'
-              : 'Voice history could not be cleared. Please try again.',
+              : 'Take history could not be cleared. Please try again.',
         )
       } finally {
         setDeleteBusy(false)
@@ -1842,7 +1849,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     setAtlasSelectedId(null)
     setAllTakesSelectedId(null)
     setGuidedFocusTakeId(null)
-    setActiveView('compare')
+    const destination = threads().find((thread) => thread.key === key)
+    setActiveView(
+      (destination?.comparisonTakes.length ?? 0) > 0 ? 'compare' : 'takes',
+    )
     setSelectedKey(key)
     setMobileDetailOpen(true)
   }
@@ -1971,10 +1981,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     <section class={styles.page} data-testid="voice-history-page">
       <div class={styles.header}>
         <div>
-          <p class={styles.kicker}>Private voice history</p>
+          <p class={styles.kicker}>Private take history</p>
           <h1>Hear Yourself</h1>
           <p class={styles.intro}>
-            A private listening desk for the voice you are becoming.
+            A private listening desk for the performances you choose to keep.
           </p>
         </div>
       </div>
@@ -2004,12 +2014,12 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             when={loadFailed()}
             fallback={
               <div class={styles.loading} role="status">
-                Opening your local voice history…
+                Opening your local take history…
               </div>
             }
           >
             <div class={styles.alert} role="alert">
-              Your local voice history could not be opened. Your recordings have
+              Your local take history could not be opened. Your kept takes have
               not been changed.
               <button type="button" onClick={() => void refresh()}>
                 Try again
@@ -2097,7 +2107,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             class={styles.desk}
             classList={{ [styles.deskDetail]: mobileDetailOpen() }}
           >
-            <aside class={styles.threadRail} aria-label="Practice threads">
+            <aside class={styles.threadRail} aria-label="Practice contexts">
               <div class={styles.railHeading}>
                 <div>
                   <span>Listening desk</span>
@@ -2154,7 +2164,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
               </div>
               <div
                 class={styles.railStorageScope}
-                aria-label="Local voice storage"
+                aria-label="Local take storage"
               >
                 <div class={styles.railStorageSummary}>
                   <span class={styles.storageDot} aria-hidden="true" />
@@ -2172,7 +2182,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                   </div>
                 </div>
                 <button type="button" onClick={wipeAll}>
-                  Clear entire voice history
+                  Clear entire take history
                 </button>
               </div>
             </aside>
@@ -2185,7 +2195,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                   onClick={returnToThreadList}
                 >
                   <ChevronLeft />
-                  Practice threads
+                  Practice contexts
                 </button>
               </Show>
 
@@ -2458,13 +2468,15 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                               role="group"
                               aria-label="Listening desk view"
                             >
-                              <button
-                                type="button"
-                                aria-pressed={activeView() === 'compare'}
-                                onClick={() => changeActiveView('compare')}
-                              >
-                                Compare
-                              </button>
+                              <Show when={thread.comparisonTakes.length > 0}>
+                                <button
+                                  type="button"
+                                  aria-pressed={activeView() === 'compare'}
+                                  onClick={() => changeActiveView('compare')}
+                                >
+                                  Compare
+                                </button>
+                              </Show>
                               <Show when={thread.comparisonTakes.length >= 3}>
                                 <button
                                   type="button"
@@ -2486,134 +2498,150 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
                             <div class={styles.viewContent}>
                               <Show when={activeView() === 'compare'}>
-                                <VoiceAtlasPanel
-                                  loading={contoursLoading()}
-                                  model={atlasModel()}
-                                  earlier={earlier()}
-                                  later={atlasLater()}
-                                  earlierContour={earlierContour()}
-                                  laterContour={laterContour()}
-                                  selectedId={atlasSelectedId()}
-                                  activeId={activeId()}
-                                  progress={progress()}
-                                  playing={playing()}
-                                  earlierReflections={parseVoiceReflections(
-                                    earlier()?.reflectionsJson,
-                                    earlier()?.reflectionsVersion,
-                                  )}
-                                  laterReflections={parseVoiceReflections(
-                                    atlasLater()?.reflectionsJson,
-                                    atlasLater()?.reflectionsVersion,
-                                  )}
-                                  totalTakeCount={thread.comparisonTakes.length}
-                                  pairPreset={comparisonPairPreset()}
-                                  roomPanel={
-                                    <VoiceRoomPanel
-                                      settings={roomSettings()}
-                                      onChange={setRoomSettings}
-                                    />
-                                  }
-                                  onChoosePairPreset={chooseComparisonPair}
-                                  earlierSelector={
-                                    thread.comparisonTakes.length <
-                                    2 ? undefined : (
-                                      <label>
-                                        Earlier take
-                                        <select
-                                          value={earlierId() ?? ''}
-                                          onChange={(event) =>
-                                            chooseEarlier(
-                                              event.currentTarget.value,
-                                            )
-                                          }
-                                        >
-                                          <For each={thread.comparisonTakes}>
-                                            {(take, index) => (
-                                              <option
-                                                value={take.id}
-                                                disabled={
-                                                  index() >=
-                                                  thread.comparisonTakes.findIndex(
-                                                    (candidate) =>
-                                                      candidate.id ===
-                                                      laterId(),
-                                                  )
-                                                }
-                                              >
-                                                {formatDate(take.capturedAt)} ·
-                                                Take{' '}
-                                                {thread.takes.indexOf(take) + 1}
-                                              </option>
-                                            )}
-                                          </For>
-                                        </select>
-                                      </label>
-                                    )
-                                  }
-                                  laterSelector={
-                                    thread.comparisonTakes.length <
-                                    2 ? undefined : (
-                                      <label>
-                                        Later take
-                                        <select
-                                          value={laterId() ?? ''}
-                                          onChange={(event) =>
-                                            chooseLater(
-                                              event.currentTarget.value,
-                                            )
-                                          }
-                                        >
-                                          <For each={thread.comparisonTakes}>
-                                            {(take, index) => (
-                                              <option
-                                                value={take.id}
-                                                disabled={
-                                                  index() <=
-                                                  thread.comparisonTakes.findIndex(
-                                                    (candidate) =>
-                                                      candidate.id ===
-                                                      earlierId(),
-                                                  )
-                                                }
-                                              >
-                                                {formatDate(take.capturedAt)} ·
-                                                Take{' '}
-                                                {thread.takes.indexOf(take) + 1}
-                                              </option>
-                                            )}
-                                          </For>
-                                        </select>
-                                      </label>
-                                    )
-                                  }
-                                  onPlay={(takeId) => {
-                                    const take = thread.takes.find(
-                                      (candidate) => candidate.id === takeId,
-                                    )
-                                    if (take !== undefined) {
-                                      playTake(
-                                        take,
-                                        thread.comparisonTakes.length >= 2,
+                                <>
+                                  <VoiceAtlasPanel
+                                    loading={contoursLoading()}
+                                    model={atlasModel()}
+                                    earlier={earlier()}
+                                    later={atlasLater()}
+                                    earlierContour={earlierContour()}
+                                    laterContour={laterContour()}
+                                    selectedId={atlasSelectedId()}
+                                    activeId={activeId()}
+                                    progress={progress()}
+                                    playing={playing()}
+                                    earlierReflections={parseVoiceReflections(
+                                      earlier()?.reflectionsJson,
+                                      earlier()?.reflectionsVersion,
+                                    )}
+                                    laterReflections={parseVoiceReflections(
+                                      atlasLater()?.reflectionsJson,
+                                      atlasLater()?.reflectionsVersion,
+                                    )}
+                                    totalTakeCount={
+                                      thread.comparisonTakes.length
+                                    }
+                                    pairPreset={comparisonPairPreset()}
+                                    roomPanel={
+                                      <VoiceRoomPanel
+                                        settings={roomSettings()}
+                                        onChange={setRoomSettings}
+                                      />
+                                    }
+                                    onChoosePairPreset={chooseComparisonPair}
+                                    earlierSelector={
+                                      thread.comparisonTakes.length <
+                                      2 ? undefined : (
+                                        <label>
+                                          Earlier take
+                                          <select
+                                            value={earlierId() ?? ''}
+                                            onChange={(event) =>
+                                              chooseEarlier(
+                                                event.currentTarget.value,
+                                              )
+                                            }
+                                          >
+                                            <For each={thread.comparisonTakes}>
+                                              {(take, index) => (
+                                                <option
+                                                  value={take.id}
+                                                  disabled={
+                                                    index() >=
+                                                    thread.comparisonTakes.findIndex(
+                                                      (candidate) =>
+                                                        candidate.id ===
+                                                        laterId(),
+                                                    )
+                                                  }
+                                                >
+                                                  {formatDate(take.capturedAt)}{' '}
+                                                  · Take{' '}
+                                                  {thread.takes.indexOf(take) +
+                                                    1}
+                                                </option>
+                                              )}
+                                            </For>
+                                          </select>
+                                        </label>
                                       )
                                     }
-                                  }}
-                                  onSeek={(takeId, nextProgress) => {
-                                    const take = thread.takes.find(
-                                      (candidate) => candidate.id === takeId,
-                                    )
-                                    if (take !== undefined) {
-                                      selectAtlasTake(takeId)
-                                      seekTake(
-                                        take,
-                                        nextProgress,
-                                        thread.comparisonTakes.length >= 2,
+                                    laterSelector={
+                                      thread.comparisonTakes.length <
+                                      2 ? undefined : (
+                                        <label>
+                                          Later take
+                                          <select
+                                            value={laterId() ?? ''}
+                                            onChange={(event) =>
+                                              chooseLater(
+                                                event.currentTarget.value,
+                                              )
+                                            }
+                                          >
+                                            <For each={thread.comparisonTakes}>
+                                              {(take, index) => (
+                                                <option
+                                                  value={take.id}
+                                                  disabled={
+                                                    index() <=
+                                                    thread.comparisonTakes.findIndex(
+                                                      (candidate) =>
+                                                        candidate.id ===
+                                                        earlierId(),
+                                                    )
+                                                  }
+                                                >
+                                                  {formatDate(take.capturedAt)}{' '}
+                                                  · Take{' '}
+                                                  {thread.takes.indexOf(take) +
+                                                    1}
+                                                </option>
+                                              )}
+                                            </For>
+                                          </select>
+                                        </label>
                                       )
                                     }
-                                  }}
-                                  onSelect={selectAtlasTake}
-                                  onAddReflection={addReflection}
-                                  onRemoveReflection={removeReflection}
-                                />
+                                    onPlay={(takeId) => {
+                                      const take = thread.takes.find(
+                                        (candidate) => candidate.id === takeId,
+                                      )
+                                      if (take !== undefined) {
+                                        playTake(
+                                          take,
+                                          thread.comparisonTakes.length >= 2,
+                                        )
+                                      }
+                                    }}
+                                    onSeek={(takeId, nextProgress) => {
+                                      const take = thread.takes.find(
+                                        (candidate) => candidate.id === takeId,
+                                      )
+                                      if (take !== undefined) {
+                                        selectAtlasTake(takeId)
+                                        seekTake(
+                                          take,
+                                          nextProgress,
+                                          thread.comparisonTakes.length >= 2,
+                                        )
+                                      }
+                                    }}
+                                    onSelect={selectAtlasTake}
+                                    onAddReflection={addReflection}
+                                    onRemoveReflection={removeReflection}
+                                  />
+                                  <Show
+                                    when={thread.takes.find(
+                                      (take) => take.id === atlasSelectedId(),
+                                    )}
+                                    keyed
+                                  >
+                                    {(take) => (
+                                      <PerformanceTakeScoreCard take={take} />
+                                    )}
+                                  </Show>
+                                </>
                               </Show>
 
                               <Show when={activeView() === 'pattern'}>
@@ -2662,26 +2690,29 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                     <span>
                                       {thread.takes.length}{' '}
                                       {thread.takes.length === 1
-                                        ? 'recording'
-                                        : 'recordings'}
+                                        ? 'replay'
+                                        : 'replays'}
                                     </span>
                                   </div>
                                   <Show when={allTakesSelected()} keyed>
                                     {(take) => (
-                                      <div class={styles.sharedTransport}>
-                                        <VoicePlaybackTransport
-                                          take={take}
-                                          activeId={activeId()}
-                                          progress={progress()}
-                                          playing={playing()}
-                                          eyebrow={`Selected · Take ${thread.takes.indexOf(take) + 1} · ${formatDate(take.capturedAt)} · ${formatBytes(take.sizeBytes)}`}
-                                          tone="neutral"
-                                          onPlay={() => playTake(take)}
-                                          onSeek={(_takeId, nextProgress) =>
-                                            seekTake(take, nextProgress)
-                                          }
-                                        />
-                                      </div>
+                                      <>
+                                        <div class={styles.sharedTransport}>
+                                          <VoicePlaybackTransport
+                                            take={take}
+                                            activeId={activeId()}
+                                            progress={progress()}
+                                            playing={playing()}
+                                            eyebrow={`Selected · Take ${thread.takes.indexOf(take) + 1} · ${formatDate(take.capturedAt)} · ${formatBytes(take.sizeBytes)}`}
+                                            tone="neutral"
+                                            onPlay={() => playTake(take)}
+                                            onSeek={(_takeId, nextProgress) =>
+                                              seekTake(take, nextProgress)
+                                            }
+                                          />
+                                        </div>
+                                        <PerformanceTakeScoreCard take={take} />
+                                      </>
                                     )}
                                   </Show>
                                   <div class={styles.allTakesList}>
@@ -2795,7 +2826,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         open={deleteIntent() !== null}
         title={
           deleteIntent()?.kind === 'all'
-            ? 'Clear all voice history?'
+            ? 'Clear all take history?'
             : deleteIntent()?.kind === 'thread'
               ? 'Delete this practice thread?'
               : 'Delete this take?'

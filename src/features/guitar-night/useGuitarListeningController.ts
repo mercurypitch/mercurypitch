@@ -346,6 +346,8 @@ export function useGuitarListeningController(
   const [pitchRevision, setPitchRevision] = createSignal(0)
   const [clarity, setClarity] = createSignal(0)
   const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
+  const [recordableStream, setRecordableStream] =
+    createSignal<MediaStream | null>(null)
   const evidenceExportEnabled = createMemo(() =>
     guitarInputEvidenceExportEnabled(),
   )
@@ -502,6 +504,7 @@ export function useGuitarListeningController(
   }
 
   const releaseMicHold = (): void => {
+    setRecordableStream(null)
     if (!ownsMic) return
     ownsMic = false
     micManager.release(CONSUMER_ID)
@@ -1028,6 +1031,7 @@ export function useGuitarListeningController(
         releaseMicHold()
         return false
       }
+      setRecordableStream(stream)
 
       await refreshAudioInputs()
       const track = stream.getAudioTracks?.()[0]
@@ -1536,6 +1540,10 @@ export function useGuitarListeningController(
     pitchRevision,
     clarity,
     take,
+    /** The already-owned dry route; consumers must never stop its tracks. */
+    recordableStream,
+    /** The score scheduler and replay recorder read this same audio clock. */
+    recordableAudioContext: () => takeContext,
     evidenceExportEnabled,
     canExportEvidence,
     events,

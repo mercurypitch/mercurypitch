@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { encodeAudioBufferToMonoPcmWav } from './audio-buffer-wav'
+import { encodeAudioBufferToMonoPcmWav, encodeMonoPcmSamplesToWav, } from './audio-buffer-wav'
 
 function testAudioBuffer(): AudioBuffer {
   const channels = [
@@ -54,5 +54,29 @@ describe('encodeAudioBufferToMonoPcmWav', () => {
     expect(view.getUint32(40, true)).toBe(4)
     expect(view.getInt16(44, true)).toBe(-16_384)
     expect(view.getInt16(46, true)).toBe(0)
+  })
+})
+
+describe('encodeMonoPcmSamplesToWav', () => {
+  it('writes an already-mono sample array without changing its frames', () => {
+    const bytes = encodeMonoPcmSamplesToWav(
+      new Float32Array([-1, -0.5, 0, 0.5, 1]),
+      16_000,
+    )
+    const view = new DataView(bytes)
+
+    expect(view.getUint32(24, true)).toBe(16_000)
+    expect(view.getUint32(40, true)).toBe(10)
+    expect(view.getInt16(44, true)).toBe(-32_768)
+    expect(view.getInt16(46, true)).toBe(-16_384)
+    expect(view.getInt16(48, true)).toBe(0)
+    expect(view.getInt16(50, true)).toBe(16_384)
+    expect(view.getInt16(52, true)).toBe(32_767)
+  })
+
+  it('rejects an invalid sample rate', () => {
+    expect(() => encodeMonoPcmSamplesToWav(new Float32Array([0.5]), 0)).toThrow(
+      'sample rate',
+    )
   })
 })

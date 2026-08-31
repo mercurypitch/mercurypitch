@@ -505,6 +505,13 @@ describe('guided voice-take persistence', () => {
     expect(
       isVoiceTakeComparisonEligible({ ...corrupt, source: 'freeform' }),
     ).toBe(true)
+    for (const source of [
+      'guitar-night',
+      'piano-night',
+      'drum-night',
+    ] as const) {
+      expect(isVoiceTakeComparisonEligible({ ...valid, source })).toBe(false)
+    }
   })
 
   it('rejects a dangling Focus Reading instead of trusting stale advice', () => {

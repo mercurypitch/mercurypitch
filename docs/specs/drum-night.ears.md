@@ -396,7 +396,7 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   construct or resume AudioContext, fetch samples, request MIDI, or start a
   timer, frame loop, media element, or playback.
 
-## Device-local prepared projects and take summaries — `DN-PERSIST-*`
+## Device-local projects, summaries, and kept live-kit replays — `DN-PERSIST-*`
 
 - **REQ-DN-PERSIST-001 — Prepared-project boundary:** WHERE the current source
   is prepared First Pocket, Drum Night shall offer an explicit Save project
@@ -459,11 +459,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   counts, signed and absolute timing means, nullable signed and absolute
   velocity means, and optional recovery focus and bar. Its canonical UTF-8
   payload shall not exceed 16,384 bytes.
-- **REQ-DN-PERSIST-011 — No raw take retention:** A project or take summary
+- **REQ-DN-PERSIST-011 — No raw take retention in Drum stores:** A project or take summary
   shall not contain captured-hit arrays, per-hit identifiers, event times,
   offsets, articulations, raw MIDI messages, notes, channels, device names or
   identifiers, audio, blobs, source filenames, rendered coaching prose, or
-  microphone evidence.
+  microphone evidence. An explicitly kept live-kit replay shall use the shared
+  Hear Yourself local-audio boundary and shall not be embedded in either Drum
+  store.
 - **REQ-DN-PERSIST-012 — Summary retention bound:** Drum Night shall retain at
   most 100 summaries per project. WHEN a successful commit would exceed that
   bound, the same transaction shall remove the oldest summary by completion
@@ -479,13 +481,43 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   summaries, with strict record validation and versioned, idempotent, atomic
   migrations. Corrupt or unsupported-future rows shall be skipped, counted,
   disclosed, and left untouched; one bad or old row shall not prevent the
-  standalone route or other valid projects from opening.
+  standalone route or other valid projects from opening. Shared Hear Yourself
+  storage is not a Drum-owned third store.
 - **REQ-DN-PERSIST-015 — Local privacy and reset:** Project and take-summary
   rows shall be absent from cloud entity allowlists, Worker schemas, uploads,
   sync, and analytics payloads and shall make no account or cross-device claim.
   Deleting one project and its summaries shall be atomic. Erase Drum projects
   and take history shall delete only the two Drum stores while preserving kit,
-  room, and device preferences plus unrelated MercuryPitch data.
+  room, and device preferences plus unrelated MercuryPitch data, including any
+  replay the user separately kept in Hear Yourself.
+- **REQ-DN-PERSIST-016 — Live-kit-only replay lane:** WHILE Take events are
+  armed and the transport phase is playing, Drum Night may capture the kit
+  player's live lane after its live level. Sampled and synth-fallback live hits
+  shall reach that lane; authored drums, arrangement or stem backing, click,
+  microphone input, and other route output shall not.
+- **REQ-DN-PERSIST-017 — Transport-segment pooling:** A temporary replay shall
+  start with the first eligible playing segment, pause outside playing and
+  through count-in, and resume across later play/replay or loop segments until
+  Finish take. Paused and stopped gaps shall not be encoded. Changing the
+  source, practiced range, tempo, recovery speed, selected live kit, live-kit
+  level or mute, or saved-project configuration; opening another project; or
+  leaving the active project shall discard the incompatible temporary replay
+  and restart it only when the live take lane remains eligible. The durable
+  Drum summary shall continue to cover the full bounded scalar take, while a
+  kept replay's summary metrics shall cover only retained and omitted evidence
+  from its current configuration segment and shall use a distinct summary
+  identity from the durable full-take row.
+- **REQ-DN-PERSIST-018 — Explicit Hear Yourself Keep:** AFTER the compact
+  summary commits successfully and replay preparation succeeds, Drum Night
+  shall offer Keep in Hear Yourself and Not now. It shall not retain audio
+  automatically. Keep shall write only the encoded live-kit replay plus the
+  frozen summary-derived comparison context and metrics to device-local Hear
+  Yourself storage; Not now shall discard the temporary replay.
+- **REQ-DN-PERSIST-019 — Independent success and evidence truth:** A missing,
+  unsupported, silent, failed, dismissed, or quota-blocked replay shall not
+  fail, roll back, relabel, or fabricate the compact Drum summary. Replay
+  metrics shall be projected only from the validated frozen summary and shall
+  not introduce a score, accuracy, grade, raw event, or device identity.
 
 ## Full-arrangement and prepared-audio playalong — `DN-PLAYALONG-*`
 
@@ -607,28 +639,30 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Pilot exclusions and persistence boundary
 
-This pilot permits only the explicit device-local prepared-project state and
-compact derived take summaries declared by `DN-PERSIST-*`. It does not include
+This pilot permits only the explicit device-local prepared-project state,
+compact derived take summaries, and explicitly kept encoded live-kit replays
+declared by `DN-PERSIST-*`. It does not include
 room-microphone capture or analysis; limb, sticking, grip, or technique
 inference; automatic transcription of a UVR drum stem into score evidence;
 Groove Mirror generation; imported-session persistence; captured per-hit take
 evidence or full coaching traces; raw MIDI messages or device identities; raw
-audio or blobs; groove export; cloud or cross-device sync; public indexing; or
+session audio or audio embedded in Drum-owned stores; groove export; cloud or
+cross-device sync; public indexing; or
 production deployment. The locally retained kit choice, Drum room choice, and
 device-scoped MIDI learn map remain preferences, not project or performance
 persistence.
 
 ## Verification map
 
-| Requirement area            | Minimum evidence                                                                                                                                                                                                                                                                                                                                                                  |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                                                                                                                                                                                                  |
-| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke                                                                                                                                                                         |
-| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                                                                                                                                                                                        |
-| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                                                                                                                      |
-| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                                                                                                                                  |
-| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke                                                                                                       |
-| `DN-GROOVE`                 | Prepared-only domain fixtures; deterministic add/move/remove/swing/density/reset/undo tests; authored-family graph isolation and gain-ramp tests; hot-revision phase/position/loop/take preservation; real-pointer and keyboard grid journeys at desktop, phone, and short landscape                                                                                              |
-| `DN-PERSIST`                | Instrumented no-storage first paint; strict project/summary validators and byte/count bounds; explicit lazy save/open/restore; serialized latest-revision writes; failure-retained dirty/take state; corrupt/future-row isolation; idempotent migration, deterministic retention, transactional delete/reset, forbidden-field, local-only, and responsive keyboard/focus journeys |
-| `DN-PLAYALONG`              | Mixed MIDI/GP fixtures; lazy local-UVR catalogue and lease tests; true-parts/two-stem/upgrade state tests; external-clock stem and authored-backing scheduler tests; live bus ramps, memory refusal, stale replacement, and real-browser Songs/Mix/play/seek/loop journeys                                                                                                        |
-| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                                                                                                                              |
+| Requirement area            | Minimum evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke                                                                                                                                                                                                                                                                                                                                             |
+| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                                                                                                                                                                                                                                                                                                                                                            |
+| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                                                                                                                                                                                                                                                                                          |
+| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                                                                                                                                                                                                                                                                                                      |
+| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke                                                                                                                                                                                                                                                                           |
+| `DN-GROOVE`                 | Prepared-only domain fixtures; deterministic add/move/remove/swing/density/reset/undo tests; authored-family graph isolation and gain-ramp tests; hot-revision phase/position/loop/take preservation; real-pointer and keyboard grid journeys at desktop, phone, and short landscape                                                                                                                                                                                                                                                                  |
+| `DN-PERSIST`                | Instrumented no-storage first paint; strict project/summary validators and byte/count bounds; explicit lazy save/open/restore; serialized latest-revision writes; failure-retained dirty/take state; live-only sampled/synth capture routing and transport-segment pause/resume; explicit Keep/Not now and failed-replay independence; frozen-summary metric projection; corrupt/future-row isolation; idempotent migration, deterministic retention, transactional delete/reset, forbidden-field, local-only, and responsive keyboard/focus journeys |
+| `DN-PLAYALONG`              | Mixed MIDI/GP fixtures; lazy local-UVR catalogue and lease tests; true-parts/two-stem/upgrade state tests; external-clock stem and authored-backing scheduler tests; live bus ramps, memory refusal, stale replacement, and real-browser Songs/Mix/play/seek/loop journeys                                                                                                                                                                                                                                                                            |
+| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                                                                                                                                                                                                                                                                                                  |

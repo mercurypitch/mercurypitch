@@ -100,6 +100,14 @@ class FakeBiquadFilterNode extends FakeAudioNode {
   readonly Q = new FakeAudioParam()
 }
 
+class FakeMediaStreamAudioDestinationNode extends FakeAudioNode {
+  readonly track = { stop: vi.fn() }
+  readonly stream = {
+    id: 'live-kit-capture',
+    getTracks: () => [this.track],
+  } as unknown as MediaStream
+}
+
 function decodedBuffer(length: number): AudioBuffer {
   return {
     duration: length / 48_000,
@@ -131,6 +139,7 @@ class FakeAudioContext {
   readonly sources: FakeBufferSourceNode[] = []
   readonly oscillators: FakeOscillatorNode[] = []
   readonly filters: FakeBiquadFilterNode[] = []
+  readonly mediaStreamDestinations: FakeMediaStreamAudioDestinationNode[] = []
   readonly resume = vi.fn(async () => {
     this.state = 'running'
   })
@@ -165,6 +174,12 @@ class FakeAudioContext {
     const filter = new FakeBiquadFilterNode()
     this.filters.push(filter)
     return filter as unknown as BiquadFilterNode
+  }
+
+  createMediaStreamDestination(): MediaStreamAudioDestinationNode {
+    const destination = new FakeMediaStreamAudioDestinationNode()
+    this.mediaStreamDestinations.push(destination)
+    return destination as unknown as MediaStreamAudioDestinationNode
   }
 
   createBuffer(
@@ -384,9 +399,15 @@ describe('createDrumKitPlayer', () => {
     expect(liveVoice.connections).toEqual([liveLane])
     expect(authoredVoice.connections).toEqual([authoredKick])
     expect(authoredKick.connections).toEqual([authoredLane])
-    expect(liveLane.connections).toEqual([master])
+    expect(liveLane.connections).toEqual([
+      master,
+      context.mediaStreamDestinations[0],
+    ])
     expect(authoredLane.connections).toEqual([master])
     expect(master.connections).toEqual([output])
+    expect(player.liveCaptureStream()).toBe(
+      context.mediaStreamDestinations[0]?.stream,
+    )
 
     player.setLaneVolume('authored', 0.25)
     expect(authoredLane.gain.events.slice(-2)).toEqual([
@@ -449,6 +470,48 @@ describe('createDrumKitPlayer', () => {
 
     expect(player.trigger({ gmKey: 42, velocity: 112 })).toBe('sampled')
     expect(context.sources[2].stops).toEqual([])
+  })
+
+  it('routes sampled and synth live hits into capture while excluding authored hits and disconnects on disposal', async () => {
+    vi.useFakeTimers()
+    const { context, player } = harness()
+    await player.activate()
+
+    const liveLane = context.gains[1]
+    const authoredLane = context.gains[2]
+    const captureDestination = context.mediaStreamDestinations[0]
+    expect(captureDestination).toBeDefined()
+    expect(liveLane.connections).toContain(captureDestination)
+    expect(authoredLane.connections).not.toContain(captureDestination)
+
+    expect(player.trigger({ gmKey: 38, velocity: 100 })).toBe('synth-fallback')
+    expect(
+      context.gains
+        .slice(8)
+        .some((gain) => gain.connections.includes(liveLane)),
+    ).toBe(true)
+
+    await player.selectKit('classic-gm')
+    const sampleSourceStart = context.sources.length
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+    expect(
+      voiceChain(context.sources[sampleSourceStart]).gain.connections,
+    ).toEqual([liveLane])
+    expect(player.trigger({ gmKey: 36, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+    expect(
+      voiceChain(context.sources[sampleSourceStart + 1]).gain.connections[0],
+    ).not.toBe(liveLane)
+
+    player.dispose()
+    expect(captureDestination?.track.stop).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(200)
+    expect(liveLane.disconnect).toHaveBeenCalledOnce()
+    expect(authoredLane.disconnect).toHaveBeenCalledOnce()
+    expect(captureDestination?.track.stop).toHaveBeenCalledOnce()
+    expect(player.liveCaptureStream()).toBeNull()
+    vi.useRealTimers()
   })
 
   it('falls back per hit while a selected sample is still downloading', async () => {

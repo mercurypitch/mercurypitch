@@ -3,7 +3,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The room mounts its whole lazy graph per case — the slowest are ~1.6s here.
@@ -14,6 +14,7 @@ vi.setConfig({ testTimeout: 20000 })
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
+import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { drumKitManifest } from './audio'
@@ -32,6 +33,7 @@ import type { DrumMidiAccessPort, DrumMidiInputPort, DrumMidiMessageLike, DrumRu
 import type { DrumScoreIndex, DrumSessionImportController, DrumSessionImportState, } from './session'
 import { createDrumScoreIndex, IDLE_DRUM_SESSION } from './session'
 import { drumSongFixture, percussionTrackFixture, readySessionFixture, } from './session/drum-session.test-fixtures'
+import type { DrumPerformanceTakeCaptureController, DrumPerformanceTakeCaptureDependencies, } from './useDrumPerformanceTakeCaptureController'
 
 const takeSummaryBuilderLoad = vi.hoisted(() => ({
   entered: vi.fn(),
@@ -871,6 +873,62 @@ function takeHistoryHarness(
   }
 }
 
+function takeCaptureHarness(
+  finishState: 'ready' | 'error' | 'unsupported' = 'ready',
+) {
+  const [state, setState] =
+    createSignal<ReturnType<DrumPerformanceTakeCaptureController['state']>>(
+      'idle',
+    )
+  const [message, setMessage] = createSignal('')
+  const startPlayback = vi.fn(() => setState('capturing'))
+  const pausePlayback = vi.fn()
+  const finish = vi.fn<DrumPerformanceTakeCaptureController['finish']>(
+    (_summary, _projectTitle) => {
+      setState(finishState)
+      setMessage(
+        finishState === 'ready'
+          ? 'Live-kit replay ready. Nothing is saved until you keep it.'
+          : 'The compact summary is safe, but replay is unavailable.',
+      )
+    },
+  )
+  const keep = vi.fn(async () => {
+    if (untrack(state) !== 'ready') return false
+    setState('saved')
+    setMessage('Kept in Hear Yourself on this device.')
+    return true
+  })
+  const dismiss = vi.fn(() => {
+    if (untrack(state) === 'saving') return false
+    setState('idle')
+    setMessage('')
+    return true
+  })
+  const controller = {
+    state,
+    message,
+    startPlayback,
+    pausePlayback,
+    finish,
+    keep,
+    dismiss,
+  } satisfies DrumPerformanceTakeCaptureController
+  const createTakeCaptureController = vi.fn(
+    (_options: DrumPerformanceTakeCaptureDependencies) => controller,
+  )
+  return {
+    controller,
+    createTakeCaptureController,
+    dismiss,
+    finish,
+    keep,
+    pausePlayback,
+    startPlayback,
+    state,
+  }
+}
+
 function renderRoom(options?: {
   readonly access?: DrumMidiAccessPort
   readonly activationResults?: readonly boolean[]
@@ -895,6 +953,7 @@ function renderRoom(options?: {
   readonly maxRecordedHits?: number
   readonly project?: ReturnType<typeof projectHarness>
   readonly takeHistory?: ReturnType<typeof takeHistoryHarness>
+  readonly takeCapture?: ReturnType<typeof takeCaptureHarness>
 }) {
   const session = sessionHarness(options?.schedulerAudioReady)
   const player = playerHarness('mercury-synth', options?.activationResults)
@@ -912,6 +971,9 @@ function renderRoom(options?: {
       createProjectController={options?.project?.createProjectController}
       createTakeHistoryController={
         options?.takeHistory?.createTakeHistoryController
+      }
+      createTakeCaptureController={
+        options?.takeCapture?.createTakeCaptureController
       }
       loadSongPort={options?.loadSongPort}
       loadBandPreparationPort={options?.loadBandPreparationPort}
@@ -1214,6 +1276,46 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
     await waitFor(() => expect(project.controller.dirty()).toBe(true))
     expect(dispatchBeforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('keeps the standalone route mounted and restores its URL during a local save', async () => {
+    renderRoom()
+    const dispatchBeforeUnload = (): BeforeUnloadEvent => {
+      const event = new Event('beforeunload', {
+        bubbles: false,
+        cancelable: true,
+      }) as BeforeUnloadEvent
+      window.dispatchEvent(event)
+      return event
+    }
+    const release = acquireLocalSaveNavigationLock('drum-night route test')
+
+    try {
+      await settleMicrotasks()
+      expect(dispatchBeforeUnload().defaultPrevented).toBe(true)
+      window.history.pushState(
+        {},
+        '',
+        '/hear-yourself?view=seat&drawer=kit&song=other-session',
+      )
+      window.dispatchEvent(new PopStateEvent('popstate'))
+
+      expect(window.location.pathname).toBe('/drum-night')
+      expect(window.location.search).toBe('')
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-view',
+        'pocket',
+      )
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-drawer-open',
+        'false',
+      )
+    } finally {
+      release()
+    }
+
+    await settleMicrotasks()
+    expect(dispatchBeforeUnload().defaultPrevented).toBe(false)
   })
 
   it('queues the latest saved-project groove, family, tempo, count-in, click, and A B mutations', async () => {
@@ -1921,6 +2023,256 @@ describe('DrumNightApp', () => {
     await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(takeEvents).toHaveTextContent('0 hits'))
     expect(takeHistory.summaries).toHaveLength(2)
+  })
+
+  it('pauses pooled live-kit capture at Finish and requires explicit Keep or Not now before the next take', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness('ready')
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Replay Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+
+    expect(takeCapture.startPlayback).toHaveBeenCalled()
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Keep in Hear Yourself' }),
+      ).toBeVisible(),
+    )
+    expect(takeCapture.pausePlayback).toHaveBeenCalled()
+    const durableSummary = takeHistory.summaries[0]!
+    const replaySummary = takeCapture.finish.mock.calls[0]![0]
+    expect(takeCapture.finish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: durableSummary.projectId,
+        capturedHitCount: durableSummary.capturedHitCount,
+      }),
+      'Replay Pocket',
+    )
+    expect(replaySummary.id).not.toBe(durableSummary.id)
+
+    const play = screen.getAllByRole('button', {
+      name: 'Play First Pocket take clock',
+    })[0]!
+    fireEvent.click(play)
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'false',
+    )
+    expect(takeHistory.invalidatePendingTake).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Keep in Hear Yourself' }),
+    )
+    await waitFor(() => expect(takeCapture.keep).toHaveBeenCalledOnce())
+    expect(screen.getByText('Kept in Hear Yourself')).toBeVisible()
+
+    fireEvent.click(play)
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+    expect(takeHistory.invalidatePendingTake).toHaveBeenCalled()
+  })
+
+  it('restarts only the pooled replay when capture-affecting configuration changes', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness()
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Boundary Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    const takeEvents = screen.getByText('Take events').closest('button')!
+
+    takeCapture.dismiss.mockClear()
+    takeCapture.startPlayback.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
+    expect(takeCapture.startPlayback).toHaveBeenCalledOnce()
+    expect(takeEvents).toHaveTextContent('1 hits')
+    expect(takeHistory.invalidatePendingTake).not.toHaveBeenCalled()
+
+    takeCapture.dismiss.mockClear()
+    takeCapture.startPlayback.mockClear()
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
+    expect(takeCapture.startPlayback).toHaveBeenCalledOnce()
+    expect(takeEvents).toHaveTextContent('1 hits')
+    expect(takeHistory.finish).not.toHaveBeenCalled()
+
+    takeCapture.dismiss.mockClear()
+    takeCapture.startPlayback.mockClear()
+    const drawer = screen.getByRole('region', { name: 'Shape the groove' })
+    fireEvent.click(within(drawer).getByRole('tab', { name: 'Kit' }))
+    fireEvent.click(within(drawer).getByRole('radio', { name: /Classic GM/i }))
+
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
+    expect(takeCapture.startPlayback).toHaveBeenCalledOnce()
+    expect(takeEvents).toHaveTextContent('1 hits')
+
+    takeCapture.dismiss.mockClear()
+    takeCapture.startPlayback.mockClear()
+    fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
+    const mixer = within(drawer).getByTestId('drum-play-along-mixer')
+    fireEvent.input(within(mixer).getByRole('slider', { name: 'You level' }), {
+      target: { value: '64' },
+    })
+
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
+    expect(takeCapture.startPlayback).toHaveBeenCalledOnce()
+    expect(takeEvents).toHaveTextContent('1 hits')
+
+    takeCapture.dismiss.mockClear()
+    takeCapture.startPlayback.mockClear()
+    fireEvent.click(within(mixer).getByRole('button', { name: 'Mute You' }))
+
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
+    expect(takeCapture.startPlayback).toHaveBeenCalledOnce()
+    expect(takeEvents).toHaveTextContent('1 hits')
+    expect(takeHistory.invalidatePendingTake).not.toHaveBeenCalled()
+  })
+
+  it('keeps full scalar evidence while replay metrics use only the current configuration segment', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness()
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Segment Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalled())
+
+    clock.advanceTo(clock.nowMs() + 250)
+    dispatchPointerDown(
+      within(openDrummerSeatKit()).getByRole('button', {
+        name: /Play Acoustic snare/i,
+      }),
+      { button: 0, isPrimary: true, pressure: 0.7 },
+    )
+    const takeEvents = screen.getByText('Take events').closest('button')!
+    await waitFor(() => expect(takeEvents).toHaveTextContent('2 hits'))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    await waitFor(() => expect(takeCapture.finish).toHaveBeenCalledOnce())
+
+    const fullSummary = takeHistory.summaries[0]!
+    const replaySummary = takeCapture.finish.mock.calls[0]![0]
+    expect(fullSummary.capturedHitCount).toBe(2)
+    expect(replaySummary.id).not.toBe(fullSummary.id)
+    expect(replaySummary).toEqual(
+      expect.objectContaining({
+        capturedHitCount: 1,
+        omittedCaptureHitCount: 0,
+      }),
+    )
+  })
+
+  it('attributes bounded hit omissions to the current replay segment only', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness()
+    renderRoom({
+      clock,
+      maxRecordedHits: 1,
+      project,
+      takeHistory,
+      takeCapture,
+    })
+    await saveCurrentGroove('Bounded Segment Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalled())
+
+    for (let index = 0; index < 2; index += 1) {
+      clock.advanceTo(clock.nowMs() + 250)
+      dispatchPointerDown(
+        within(openDrummerSeatKit()).getByRole('button', {
+          name: /Play Acoustic snare/i,
+        }),
+        { button: 0, isPrimary: true, pressure: 0.7 },
+      )
+    }
+    const takeEvents = screen.getByText('Take events').closest('button')!
+    await waitFor(() =>
+      expect(takeEvents).toHaveTextContent('1 hits · 2 older not retained'),
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    await waitFor(() => expect(takeCapture.finish).toHaveBeenCalledOnce())
+
+    expect(takeHistory.summaries[0]).toEqual(
+      expect.objectContaining({
+        capturedHitCount: 1,
+        omittedCaptureHitCount: 2,
+      }),
+    )
+    expect(takeCapture.finish.mock.calls[0]![0]).toEqual(
+      expect.objectContaining({
+        capturedHitCount: 1,
+        omittedCaptureHitCount: 1,
+      }),
+    )
+  })
+
+  it('keeps the scalar summary successful when replay preparation fails', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness('error')
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Summary First Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(takeHistory.summaries).toHaveLength(1)
+    expect(screen.getByText('Take summary saved on this device.')).toBeVisible()
+    expect(
+      screen.getByText(/summary is safe.*replay is unavailable/i),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Not now' })).toBeVisible()
   })
 
   it('keeps failed evidence owned by Retry and blocks re-arming until it saves', async () => {

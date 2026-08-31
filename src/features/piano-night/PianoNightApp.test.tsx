@@ -8,9 +8,29 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { PianoNightApp } from './PianoNightApp'
 import { PianoNightSoundPanel } from './PianoNightSoundPanel'
 import type { PianoNightController } from './usePianoNightController'
+
+const keepInstrumentNightTakeMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/lib/domain/performance-take', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  keepInstrumentNightTake: keepInstrumentNightTakeMock,
+}))
+
+function deferred<T>(): {
+  promise: Promise<T>
+  resolve(value: T): void
+} {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
 
 class FakeAudioParam {
   value = 1
@@ -145,6 +165,11 @@ let originalRequestMidiAccess: PropertyDescriptor | undefined
 
 beforeEach(() => {
   localStorage.clear()
+  keepInstrumentNightTakeMock.mockReset().mockResolvedValue({
+    ok: true,
+    quotaExceeded: false,
+    roomAvailable: true,
+  })
   audioContext = new FakeAudioContext()
   createAudioContext = vi.fn(function AudioContextConstructor() {
     return audioContext
@@ -276,6 +301,8 @@ describe('PianoNightApp', () => {
   })
 
   it('rebases the same audio clock for each bounded practice pass', async () => {
+    const save = deferred<SaveVoiceTakeResult>()
+    keepInstrumentNightTakeMock.mockReturnValue(save.promise)
     const scheduledFrames: FrameRequestCallback[] = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       scheduledFrames.push(callback)
@@ -321,6 +348,12 @@ describe('PianoNightApp', () => {
     ).toHaveTextContent('pass 2 accuracy')
     expect(createAudioContext).toHaveBeenCalledOnce()
 
+    const finalPassKey = screen.getByRole('button', { name: 'Play C4' })
+    fireEvent.click(finalPassKey, { detail: 0 })
+    await waitFor(() =>
+      expect(finalPassKey).toHaveAttribute('aria-pressed', 'true'),
+    )
+
     audioContext.currentTime = 80
     const finalBoundaryFrame = scheduledFrames.at(-1)
     if (finalBoundaryFrame === undefined) {
@@ -346,6 +379,52 @@ describe('PianoNightApp', () => {
         'Final pass result',
       ),
     ).toBeInTheDocument()
+    await waitFor(() => {
+      const session = screen.getByRole('tabpanel', { name: 'Session' })
+      expect(
+        within(session).getByRole('heading', {
+          name: 'Keep this Piano Night take?',
+        }),
+      ).toBeVisible()
+      expect(
+        within(session).getByRole('button', {
+          name: 'Keep in Hear Yourself',
+        }),
+      ).toBeEnabled()
+      expect(
+        within(session).getByRole('button', { name: 'Not now' }),
+      ).toBeEnabled()
+    })
+    const keep = within(
+      screen.getByRole('tabpanel', { name: 'Session' }),
+    ).getByRole('button', { name: 'Keep in Hear Yourself' })
+    fireEvent.click(keep)
+    expect(isLocalSaveNavigationLocked()).toBe(true)
+    const savingUnload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(savingUnload)
+    expect(savingUnload.defaultPrevented).toBe(true)
+    expect(keep).toBeDisabled()
+    await waitFor(() =>
+      expect(keepInstrumentNightTakeMock).toHaveBeenCalledOnce(),
+    )
+
+    save.resolve({
+      ok: true,
+      quotaExceeded: false,
+      roomAvailable: true,
+    })
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('tabpanel', { name: 'Session' })).getByRole(
+          'heading',
+          { name: 'Take kept' },
+        ),
+      ).toBeVisible(),
+    )
+    expect(isLocalSaveNavigationLocked()).toBe(false)
+    const settledUnload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(settledUnload)
+    expect(settledUnload.defaultPrevented).toBe(false)
   })
 
   it('projects one prepared score through Fall, Score, and Keys', () => {
@@ -819,6 +898,26 @@ describe('PianoNightApp', () => {
         (oscillator) => oscillator.stop.mock.calls.length > 0,
       ),
     ).toBe(true)
+    await waitFor(() => {
+      const session = screen.getByRole('tabpanel', { name: 'Session' })
+      expect(
+        within(session).getByRole('button', {
+          name: 'Keep in Hear Yourself',
+        }),
+      ).toBeEnabled()
+      expect(session).toHaveTextContent(
+        'Player-only Mercury Felt Synth replay ready',
+      )
+    })
+    fireEvent.input(screen.getByLabelText('Seek piano project'), {
+      target: { value: '2' },
+    })
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Session' })).queryByRole(
+        'button',
+        { name: 'Keep in Hear Yourself' },
+      ),
+    ).not.toBeInTheDocument()
     expect(getUserMedia).not.toHaveBeenCalled()
     expect(databaseOpen).not.toHaveBeenCalled()
     expect(createWorker).not.toHaveBeenCalled()

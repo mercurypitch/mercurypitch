@@ -5,6 +5,8 @@
 // These projections deliberately exclude durable payloads, raw capture data,
 // audio, and device setup. Lazy UI components consume only display-safe truth.
 
+import type { PerformanceTakeKeepState } from '@/lib/use-performance-take-keep'
+
 export interface DrumProjectLibraryRow {
   readonly id: string
   readonly name: string
@@ -125,6 +127,10 @@ export interface DrumTakeHistoryView {
   readonly canFinish: boolean
   readonly unavailableReason?: string
   readonly finish: DrumTakeFinishState
+  readonly replay: {
+    readonly state: PerformanceTakeKeepState
+    readonly message: string
+  }
   readonly history: DrumTakeHistoryState
 }
 
@@ -134,6 +140,8 @@ export interface DrumTakeHistoryProps {
   readonly onFinishTake: () => void
   readonly onRetryFinish: () => void
   readonly onDiscardFailedTake: () => void
+  readonly onKeepReplay: () => void
+  readonly onDismissReplay: () => void
   readonly onLoadHistory: () => void
   readonly onRetryHistory: () => void
 }

@@ -43,6 +43,10 @@ exact room boundary as playback, while Jam Doctor remains an explicit,
 separate diagnostic review. The initial score is notes-only: unmeasured route
 delay never becomes a timing grade, and unsupported acoustic chords or fast
 passages are excluded rather than counted as mistakes.
+Completed Room mic and Direct input score runs may also prepare one temporary
+dry replay from the already-owned stream. The replay remains separate from
+score evidence and becomes durable only after the player explicitly keeps it
+in Hear Yourself.
 
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
 were merged through
@@ -220,8 +224,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   replace the provisional metadata for the same event but shall not append a
   duplicate or change either clock. Evidence before the take or after its end
   shall be excluded; bounded truncation shall be recorded. Stop shall complete
-  the take, while failed activation or disposal shall cancel it. Guitar Night
-  shall neither retain raw input audio nor persist Capture v0 takes.
+  the take, while failed activation or disposal shall cancel it. Raw input
+  audio shall neither enter nor be retained by this evidence take, and Guitar
+  Night shall not persist Capture v0 takes. A separate optional score replay
+  may follow `REQ-GN-SCORE-011` without becoming event evidence.
 - **REQ-GN-RUNTIME-019 — Explicit input routes:** Guitar Night shall present
   room microphone, direct interface, and MIDI as explicit Listening routes.
   The selected route and device may persist locally, but access shall begin
@@ -346,8 +352,10 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SCORE-001 — Explicit scored take:** WHERE an authored score is
   staged and Listening is already active, WHEN the player selects Play,
   Guitar Night shall begin one continuous live-score take without requesting
-  input permission, opening Jam Doctor, or creating another input recorder.
-  Play without active Listening shall remain an ordinary unscored rehearsal.
+  input permission, opening Jam Doctor, or creating another input acquisition
+  or analysis recorder. A passive replay recorder may observe the already-owned
+  stream under `REQ-GN-SCORE-011`. Play without active Listening shall remain
+  an ordinary unscored rehearsal.
 - **REQ-GN-SCORE-002 — Independent contract:** Live score shall use a neutral,
   framework-free scoring boundary with no Jam Doctor diagnosis, recovery,
   history, or persistence dependency. Opening, closing, or clearing Jam Doctor
@@ -406,9 +414,28 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   percentage, judged/hit/missed/skipped counts, best streak, pinned range,
   track, and input kind. A held take may appear as an explicitly partial result
   for the current session but shall not enter history. Only canonical completed
-  cumulative results may persist, with bounded scalar-only history and no raw
-  audio, event timeline, or device identifier. Play again shall start a fresh
-  scored run; phrase diagnosis shall remain a distinct, explicit action.
+  cumulative results may enter this automatic ledger, with bounded scalar-only
+  history and no raw audio, event timeline, or device identifier. A separately
+  and explicitly kept replay may follow `REQ-GN-SCORE-011`. Play again shall
+  start a fresh scored run; phrase diagnosis shall remain a distinct, explicit
+  action.
+- **REQ-GN-SCORE-011 — Explicit private replay:** WHERE a completed authored
+  live-score run uses Room mic or Direct input, Guitar Night may record the
+  already-owned raw input stream between the run's scheduled start and end,
+  excluding count-in and room output buses. The prepared Blob, duration, and
+  waveform peaks shall remain temporary until the player explicitly selects
+  Keep in Hear Yourself. The kept take shall contain a versioned Guitar Night
+  context and scalar score summary, but no device identity, input-event
+  timeline, event ID, or target ID. MIDI, held or partial runs, input loss,
+  seek, source/track/tempo/loop changes, Jam Doctor, and free play shall not
+  yield a keepable audio take. Replay capture or persistence failure shall not
+  alter or suppress the score. IF page visibility or material recorder-timer
+  drift prevents Guitar Night from bounding the untrimmed Blob to the authored
+  run, it shall discard only that temporary replay rather than retain or
+  mislabel out-of-boundary audio. WHILE the explicit local Keep is pending,
+  Guitar Night shall lock navigation; failed persistence shall retain the
+  temporary replay for Retry, and a successful Keep shall store audio only on
+  this device.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
