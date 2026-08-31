@@ -63,6 +63,18 @@ function fakeAudioContext(
       attack: fakeAudioParam(),
       release: fakeAudioParam(),
     }),
+    createWaveShaper: () => ({
+      ...fakeAudioNode(),
+      curve: null,
+      oversample: 'none',
+    }),
+    createBiquadFilter: () => ({
+      ...fakeAudioNode(),
+      type: 'lowpass',
+      frequency: fakeAudioParam(),
+      Q: fakeAudioParam(),
+      gain: fakeAudioParam(),
+    }),
     close: vi.fn(async () => undefined),
   } as unknown as AudioContext
 }
@@ -243,6 +255,106 @@ describe('createGuitarRoomBand', () => {
     expect(bassOutput).not.toBe(guitarOutput)
     expect(bassOutput?.gain.value).toBe(0)
     expect(bassOutput?.gain.setTargetAtTime).toHaveBeenCalledWith(
+      sliderToGain(0.5),
+      5,
+      0.012,
+    )
+    await disposeBand(band)
+  })
+
+  it('sums electric notes into the amp while bass remains on the clean guide path', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const voice = () => ({
+      gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
+      oscillators: [],
+      lfos: [],
+      lfoGains: [],
+      hasCustomEnvelope: true,
+      dispose: vi.fn(),
+    })
+    guitarVoices.createGuitarVoice.mockImplementation(voice)
+    guitarVoices.createBassVoice.mockImplementation(voice)
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 2,
+    })
+
+    await band.start({
+      tempoBpm: 90,
+      countInBeats: 0,
+      exerciseBeats: 2,
+      durationBeats: 2,
+      feel: 'click',
+      melody: [
+        {
+          midi: 64,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'mixed-track',
+          variant: 'electric',
+        },
+        {
+          midi: 40,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'mixed-track',
+          variant: 'bass',
+        },
+        {
+          midi: 67,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'second-electric-track',
+          variant: 'electric',
+        },
+      ],
+    })
+
+    const electricChannel = guitarVoices.createGuitarVoice.mock.results[0]
+      ?.value.gain.connect.mock.calls[0]?.[0] as
+      | (ReturnType<typeof fakeAudioNode> & {
+          gain: ReturnType<typeof fakeAudioParam>
+        })
+      | undefined
+    const cleanChannel = guitarVoices.createBassVoice.mock.results[0]?.value
+      .gain.connect.mock.calls[0]?.[0] as
+      | (ReturnType<typeof fakeAudioNode> & {
+          gain: ReturnType<typeof fakeAudioParam>
+        })
+      | undefined
+    const secondElectricChannel = guitarVoices.createGuitarVoice.mock.results[1]
+      ?.value.gain.connect.mock.calls[0]?.[0] as
+      | (ReturnType<typeof fakeAudioNode> & {
+          gain: ReturnType<typeof fakeAudioParam>
+        })
+      | undefined
+    const electricRunGate = electricChannel?.connect.mock.calls[0]?.[0]
+    const cleanRunGate = cleanChannel?.connect.mock.calls[0]?.[0]
+    const graph = band.getAudioGraph()
+
+    expect(electricChannel).toBeDefined()
+    expect(secondElectricChannel).toBeDefined()
+    expect(cleanChannel).toBeDefined()
+    expect(electricChannel).not.toBe(cleanChannel)
+    expect(secondElectricChannel?.connect).toHaveBeenCalledWith(electricRunGate)
+    expect(
+      guitarVoices.createGuitarVoice.mock.calls.map((call) => call[5]),
+    ).toEqual(['shared', 'shared'])
+    expect(electricRunGate?.connect).toHaveBeenCalledWith(
+      graph?.guideInputs.electric,
+    )
+    expect(cleanRunGate?.connect).toHaveBeenCalledWith(graph?.guideInputs.clean)
+
+    band.setMelodyChannelLevel('mixed-track', 0.5)
+    expect(electricChannel?.gain.setTargetAtTime).toHaveBeenCalledWith(
+      sliderToGain(0.5),
+      5,
+      0.012,
+    )
+    expect(cleanChannel?.gain.setTargetAtTime).toHaveBeenCalledWith(
       sliderToGain(0.5),
       5,
       0.012,
