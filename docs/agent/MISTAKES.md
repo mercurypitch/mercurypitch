@@ -190,6 +190,15 @@ audibility") replays the automation and fails any truncation — never weaken it
 **Cause:** calling an accessor inside an async callback runs it detached from the owner.
 **Rule:** capture the value first, then start the async work.
 
+### A CI-only test timeout is a measurement, not a flake
+
+**Symptom:** a test times out on CI and passes locally, so it looks like runner noise.
+**Cause:** local `/tmp` is a tmpfs, so fixtures that write real files cost almost
+nothing here and fsync on CI. One migration fixture ran 12ms locally and over 5s there.
+**Rule:** reproduce with `TMPDIR=<real-disk-path>` before judging it. Remove accidental
+cost where it exists; only give inherent cost an explicit timeout. Never raise the
+global default. See TESTING.md §3.7.
+
 ### `PlaybackRuntime.on('state')` passes an event object, not a state string
 
 **Symptom:** pause detection never fired; the comparison always failed.

@@ -235,6 +235,50 @@ Shared setup goes in `beforeEach` only when it is genuinely shared and genuinely
 - Current offenders to split: `auth.test.ts` (2243 lines), `arc-physics.test.ts` (1458), `audio-engine.test.ts` (96 tests, 16 with no assertion), `comprehensive.spec.ts` (94 `waitForTimeout`).
 - A `describe` block of 20-30 short cohesive tests is **fine** and is not a "700-line function" — `PianoNightApp.test.tsx:217`, `guitar-night-song-library.test.tsx:149` and `useGuitarListeningController.test.tsx:243` were flagged by a line-counting heuristic and are, on reading, among the best suites in the repo.
 
+### 3.7 Timeouts — fix the cost, do not raise the ceiling
+
+The global default is Vitest's 5s; `vitest.config.ts` deliberately sets no
+`testTimeout`. Do not raise it. It is the only thing that reports a genuine
+hang, and lifting it globally delays that report for all 11,838 tests to buy
+headroom for the twenty that need it.
+
+**A timeout failure on CI and not locally is a measurement, not a flake.**
+Before touching any number, find out which kind of slow the test is:
+
+- **Accidental cost — remove it.** Work the test never needed. The premium
+  background migration fixture fsynced every commit in its chain to a real
+  file: ~2s per Drum case on CI, 12ms locally, three timeouts. `PRAGMA
+synchronous = OFF` on the fixture connections took the file from 9.99s to
+  284ms. Raising its timeout would have preserved a 350x waste.
+- **Inherent cost — give that file an explicit timeout and say why.** Spawning
+  a real process, `vi.resetModules()` plus a re-import, a DSP roundtrip, a
+  deliberate performance benchmark. `admin-studio-responsive-preview.test.ts`
+  spawns Node per case; that is the point of the file.
+
+**This machine hides the problem.** Local `/tmp` is a tmpfs and CI's is a real
+disk, so any fixture writing real files runs orders of magnitude faster here.
+Reproduce CI's cost before concluding anything:
+
+```
+TMPDIR=<path-on-a-real-disk> pnpm exec vitest run <file> --reporter=verbose
+```
+
+**Headroom rule: aim for 5x, never ship under 3x.** A shared CI runner is two
+to three times slower than a developer box, and slower still when loaded. A
+test measured at 2.5s under a 5s ceiling has already failed; it just has not
+happened yet.
+
+To find what is exposed, measure the whole suite and compare each duration
+against its file's ceiling:
+
+```
+pnpm exec vitest run --reporter=json --outputFile=/tmp/timing.json
+```
+
+Guard with `vi.setConfig({ testTimeout: N })` at the top of the file when the
+whole file is slow, or `it(name, { timeout: N }, fn)` for a single case. Both
+carry a comment naming the work being paid for — a bare number is unreviewable.
+
 ### 3.6 When a mock is allowed, and when it is banned
 
 **Allowed — the true edge only:**
