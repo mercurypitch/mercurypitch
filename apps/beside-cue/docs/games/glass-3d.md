@@ -95,12 +95,13 @@ controller, and the room's sound.
 
 ### 2.1 Why this one
 
-Ranked against the other candidates in the research doc (§5, §7): the
-Resonance Ring is already shipped in 2D and becomes the Cabinet slice;
-Shard Sculptor is spectacular but depends on a finished shatter; the
-Detuned World is abstract. The Standing Wave Chamber is the only pick
-whose _rules need three dimensions_ — the answer to the puzzle is a
-place you walk to. It also teaches something no other music game
+Ranked against the other mechanics on the list: the Resonance Ring is
+already shipped in 2D and becomes the Cabinet slice below; Shard
+Sculptor is spectacular but cannot start until the shatter is finished;
+the Detuned World is abstract, and abstract is the one thing a first 3D
+mechanic cannot afford. The Standing Wave Chamber is the only pick whose
+_rules need three dimensions_ — the answer to the puzzle is a place you
+walk to. It also teaches something no other music game
 teaches physically: the harmonic series.
 
 ### 2.2 The fantasy
@@ -158,8 +159,9 @@ sequence in tempo.
 - **Chamber C — finale.** Three panes, three harmonics in sequence, the
   last finished with vibrato. Score card at the end.
 
-Each chamber opens with a difficulty _drop_ — the saw-tooth from the
-research doc, not a ramp.
+Each chamber opens with a difficulty _drop_ rather than a ramp: a
+saw-tooth, so the player gets a moment of feeling capable before the
+next demand lands.
 
 ### 2.6 Feel and forgiveness
 
