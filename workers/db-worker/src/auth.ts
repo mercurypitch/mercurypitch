@@ -19,6 +19,8 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
+import type { SessionOrigin } from './auth-sessions'
+import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
 import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
@@ -131,6 +133,12 @@ export interface Env {
 export interface AuthUser {
   userId: string
   provider: string
+  /**
+   * Which device this is — the `authSessions` row the token names. Absent on
+   * a token issued before migration 0038, which is the whole reason it is
+   * optional: those must keep working until they expire.
+   */
+  sessionId?: string
   isTestAccount?: boolean
   testAccountExpiresAt?: string | null
 }
@@ -153,7 +161,7 @@ interface UserRow {
   deviceSecretHash: string | null
 }
 
-const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
+export const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 const PBKDF2_ITERATIONS = 100_000
 // Syntactically-valid PBKDF2 hash that never matches a real password. Used to
 // keep login timing constant when the email is unknown, defeating user
@@ -230,6 +238,8 @@ interface JwtPayload {
   iat: number
   exp: number
   v: number
+  /** `authSessions.id` — absent on tokens issued before migration 0038. */
+  sid?: string
 }
 
 async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
@@ -333,6 +343,23 @@ export async function getAuth(
   assertManagedTestAccountActive(testAccount)
   if (user.tokenVersion > (payload.v ?? 0)) return null
 
+  // Which device this is. A token minted before migration 0038 carries no
+  // `sid`, and is deliberately still accepted — a hard cutover would sign
+  // every singer out of an app they were using at the time. A token that DOES
+  // name a session and finds no row was signed out on that device, so it fails
+  // closed, exactly like a revoked tokenVersion.
+  if (payload.sid !== undefined) {
+    if (!(await sessionAlive(env.DB, payload.sid, payload.sub))) return null
+    // Fire-and-forget, and conditional in SQL: an idle-ish session costs one
+    // write per SESSION_TOUCH_SECONDS rather than one per request, and a
+    // failed touch must never fail the request that carried it.
+    try {
+      await touchSession(env.DB, payload.sid)
+    } catch {
+      // Ignore: "when we last saw this device" is best-effort.
+    }
+  }
+
   // Throttled last-active touch: at most one write per user per window (see
   // shouldTouchLastActive), so ongoing visits are tracked without multiplying
   // D1 writes. Awaited inside try/catch on purpose: a best-effort tracking
@@ -352,6 +379,7 @@ export async function getAuth(
   return {
     userId: payload.sub,
     provider: payload.provider,
+    ...(payload.sid === undefined ? {} : { sessionId: payload.sid }),
     isTestAccount: testAccount !== null,
     testAccountExpiresAt: testAccount?.expiresAt ?? null,
   }
@@ -563,12 +591,21 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'anonymous-day': { max: 100, windowMs: 86_400_000 }, // 100/day
   register: { max: 5, windowMs: 300_000 }, // 5/5min
   login: { max: 10, windowMs: 300_000 }, // 10/5min
+  // Per-ADDRESS, keyed by `email:<address>` rather than an IP (the limiter's
+  // subject column already carries non-IP keys — see rateLimitSubject). The
+  // per-IP cap above is a flood guard on a key that is not a person; this is
+  // what stops a named account being guessed at from rotating addresses.
+  'login-email': { max: 10, windowMs: 900_000 }, // 10/15min per address
   google: { max: 30, windowMs: 60_000 }, // 30/min
   // The OAuth callback creates a user on first sign-in, so it needs its own
   // bucket: it is reached before the generic auth limiter and a real Google
   // code exchange is the only thing standing in front of it.
   'google-callback': { max: 30, windowMs: 300_000 }, // 30/5min
   logout: { max: 30, windowMs: 60_000 }, // 30/min
+  // Signing out everywhere is a deliberate, rare act; the cap only bounds a
+  // loop. Listing and ending sessions is ordinary account-settings traffic.
+  'logout-all': { max: 10, windowMs: 300_000 }, // 10/5min
+  sessions: { max: 60, windowMs: 300_000 }, // 60/5min
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
@@ -706,22 +743,74 @@ export async function checkRateLimit(
   return { allowed: true }
 }
 
+/**
+ * Forget a bucket entirely. Call after a SUCCESSFUL sign-in.
+ *
+ * The limit exists to blunt credential guessing, and signing in correctly is
+ * proof the credentials are right — counting it against the same budget locks
+ * out the one person who cannot possibly be the attacker. `login` allows ten
+ * per five minutes per IP, so one singer with a phone, a tablet and a laptop,
+ * or one household behind a single address, could lock themselves out of their
+ * own password. Failures still accumulate exactly as before, so a run of wrong
+ * passwords is refused unchanged.
+ *
+ * Best-effort: a limiter that cannot forget must never break a sign-in that
+ * has already succeeded.
+ */
+export async function clearRateLimit(
+  db: D1Database,
+  subject: string,
+  endpoint: string,
+): Promise<void> {
+  try {
+    await db
+      .prepare('DELETE FROM auth_ratelimit WHERE ip = ? AND endpoint = ?')
+      .bind(subject, endpoint)
+      .run()
+  } catch {
+    // Ignore: the sign-in already succeeded.
+  }
+}
+
 // ── Route handlers ───────────────────────────────────────────────────
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
-async function createSession(env: Env, row: UserRow): Promise<string> {
+/** What the request says about the device signing in, for the session row. */
+export function sessionOrigin(request: Request): SessionOrigin {
+  return {
+    userAgent: request.headers.get('user-agent'),
+    ip: request.headers.get('CF-Connecting-IP'),
+  }
+}
+
+/**
+ * Mint a token, and record the device it was minted for.
+ *
+ * `provider` is passed separately from `row.authProvider` because they can
+ * legitimately differ: an account whose provider is 'password' may have just
+ * signed in with a passkey or a mailed code, and the session list is more
+ * useful when it says which.
+ */
+async function createSession(
+  env: Env,
+  row: UserRow,
+  origin: SessionOrigin = {},
+  provider = row.authProvider,
+): Promise<string> {
   assertAccountActive(row)
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   assertManagedTestAccountActive(testAccount)
+  const sid = await createAuthSession(env.DB, row.id, provider, origin)
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
     {
       sub: row.id,
-      provider: row.authProvider,
+      provider,
       iat: now,
       exp: now + TOKEN_TTL_SECONDS,
       v: row.tokenVersion ?? 1,
+      sid,
     },
     env.JWT_SECRET as string,
   )
@@ -734,10 +823,11 @@ async function issueSession(
   row: UserRow,
   respond: Respond,
   isNew = false,
+  origin: SessionOrigin = {},
 ): Promise<Response> {
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   assertManagedTestAccountActive(testAccount)
-  const token = await createSession(env, row)
+  const token = await createSession(env, row, origin)
   return respond({
     token,
     userId: row.id,
@@ -1177,6 +1267,7 @@ async function handleResetPassword(
 }
 
 async function handleAnonymous(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1202,7 +1293,7 @@ async function handleAnonymous(
     if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
       return respond({ error: 'Account requires login' }, { status: 403 })
     }
-    return issueSession(env, existing, respond)
+    return issueSession(env, existing, respond, false, sessionOrigin(request))
   }
   await createUser(env.DB, {
     id,
@@ -1215,7 +1306,7 @@ async function handleAnonymous(
   })
   await ensureProfile(env.DB, id, defaultDisplayName(id))
   const row = (await findUserById(env.DB, id)) as UserRow
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 /**
@@ -1270,7 +1361,7 @@ async function upgradeAnonymousToPassword(
   await sendVerificationEmail(request, env, anon.id, email, chosenName)
   // Upgrading an anonymous device to a password account creates a real
   // account: report isNew so the client's signup funnel event fires.
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 async function handleRegister(
@@ -1323,10 +1414,11 @@ async function handleRegister(
   )
   const row = (await findUserById(env.DB, id)) as UserRow
   await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 async function handleLogin(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1335,6 +1427,15 @@ async function handleLogin(
   if (!email || !body.password) {
     return respond({ error: 'Email and password required' }, { status: 400 })
   }
+  // Per-account throttle, on top of the per-IP one the router already applied.
+  // An IP is not a person — a household, a school music lab and an entire
+  // mobile carrier behind CGNAT all share one — so the IP cap is a flood guard
+  // and this is the limit that actually stops guessing at a named account from
+  // rotating addresses.
+  const emailSubject = `email:${email}`
+  const emailRl = await checkRateLimit(env.DB, emailSubject, 'login-email')
+  if (!emailRl.allowed) return tooMany(respond, emailRl)
+
   const row = await findUserByEmail(env.DB, email)
   // Always run a PBKDF2 verification — even when the user/hash is absent — so
   // the response time doesn't reveal whether the email is registered.
@@ -1345,7 +1446,14 @@ async function handleLogin(
   if (!row?.passwordHash || !ok) {
     return respond({ error: 'Invalid email or password' }, { status: 401 })
   }
-  return issueSession(env, row, respond)
+  // Correct credentials must not spend the budget that exists to stop people
+  // guessing them — see clearRateLimit. Failures still accumulate.
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  await Promise.all([
+    clearRateLimit(env.DB, ip, 'login'),
+    clearRateLimit(env.DB, emailSubject, 'login-email'),
+  ])
+  return issueSession(env, row, respond, false, sessionOrigin(request))
 }
 
 /** Find-or-create the user for verified Google claims (shared by the
@@ -1440,6 +1548,7 @@ async function resolveGoogleUser(
 }
 
 async function handleGoogle(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1456,7 +1565,7 @@ async function handleGoogle(
   }
   const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
   const { row, isNew } = await resolveGoogleUser(claims, deviceId, env)
-  return issueSession(env, row, respond, isNew)
+  return issueSession(env, row, respond, isNew, sessionOrigin(request))
 }
 
 // ── Google OAuth redirect (code) flow ───────────────────────────
@@ -1791,7 +1900,7 @@ async function handleGoogleCallback(
     // deviceId in it only after claimedDevice cleared that id — so this one is
     // already proved and cannot have been forged in transit.
     resolved = await resolveGoogleUser(claims, state.deviceId, env)
-    token = await createSession(env, resolved.row)
+    token = await createSession(env, resolved.row, sessionOrigin(request))
   } catch (error) {
     if (error instanceof AccountSuspendedError) {
       return redirectWithError(state.returnTo, error.code)
@@ -2296,6 +2405,7 @@ async function handleDeviceLinkApprove(
  * cannot both collect one.
  */
 async function handleDeviceLinkPoll(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -2329,7 +2439,12 @@ async function handleDeviceLinkPoll(
   }
   const user = await findUserById(env.DB, row.userId)
   if (!user) return respond({ status: 'expired' })
-  const token = await createSession(env, user)
+  const token = await createSession(
+    env,
+    user,
+    sessionOrigin(request),
+    'device-link',
+  )
   return respond({
     status: 'linked',
     token,
@@ -2458,6 +2573,19 @@ async function handleMe(
   return respond({ user: publicUser(row, testAccount), profile: normalized })
 }
 
+/**
+ * POST /api/auth/logout — sign out THIS device, and only this one.
+ *
+ * This used to bump `tokenVersion`, which revoked every token the account had
+ * ever been issued: signing out on a phone signed out the laptop and the
+ * television with it. That behaviour still exists, honestly named, at
+ * /api/auth/logout-all.
+ *
+ * A token minted before migration 0038 carries no `sid`, so there is no row to
+ * delete and no way to end it selectively. Those fall back to the old
+ * behaviour rather than returning a cheerful `ok` that signs nobody out — the
+ * one thing a sign-out must never do.
+ */
 async function handleLogout(
   request: Request,
   env: Env,
@@ -2465,12 +2593,69 @@ async function handleLogout(
 ): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-  // Increment token version — all previously issued JWTs become invalid
-  await env.DB.prepare(
-    'UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
-  )
-    .bind(nowIso(), auth.userId)
-    .run()
+  if (auth.sessionId === undefined) {
+    return revokeEveryToken(env, auth.userId, respond)
+  }
+  await endSession(env.DB, auth.sessionId, auth.userId)
+  return respond({ ok: true, scope: 'device' })
+}
+
+/** The blunt instrument: every token this account holds stops verifying. */
+async function revokeEveryToken(
+  env: Env,
+  userId: string,
+  respond: Respond,
+): Promise<Response> {
+  await env.DB.batch([
+    env.DB.prepare(
+      'UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+    ).bind(nowIso(), userId),
+    env.DB.prepare('DELETE FROM authSessions WHERE userId = ?').bind(userId),
+  ])
+  return respond({ ok: true, scope: 'all' })
+}
+
+/** POST /api/auth/logout-all — sign out everywhere, including here. */
+async function handleLogoutAll(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return revokeEveryToken(env, auth.userId, respond)
+}
+
+/** GET /api/auth/sessions — where this account is signed in. */
+async function handleListSessions(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return respond({
+    sessions: await listSessions(env.DB, auth.userId, auth.sessionId ?? null),
+  })
+}
+
+/**
+ * DELETE /api/auth/sessions/:id — end one device from the list.
+ *
+ * Scoped to the caller's own rows by the DELETE itself, so naming somebody
+ * else's session id finds nothing and answers 404 — it cannot be used to
+ * probe which ids exist.
+ */
+async function handleRevokeSession(
+  request: Request,
+  env: Env,
+  sessionId: string,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const ended = await endSession(env.DB, sessionId, auth.userId)
+  if (!ended) return respond({ error: 'Not found' }, { status: 404 })
   return respond({ ok: true })
 }
 
@@ -2545,6 +2730,10 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // already yields nothing (the user lookup fails), but "cannot be used" is
   // not the same as "erased".
   { table: 'deviceLinkCodes', column: 'userId' },
+  // Every device this account is signed in on. Leaving these behind would
+  // keep a row naming a user id that no longer belongs to anyone — and, if
+  // that id were ever reissued, would hand the new owner a live session.
+  { table: 'authSessions', column: 'userId' },
 ]
 
 /**
@@ -2719,6 +2908,23 @@ export async function handleAuth(
   if (route === 'logout' && request.method === 'POST') {
     return handleLogout(request, env, respond)
   }
+  if (route === 'sessions' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'sessions')
+    if (!rl.allowed) return tooMany(respond, rl)
+    return handleListSessions(request, env, respond)
+  }
+  if (route.startsWith('sessions/') && request.method === 'DELETE') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'sessions')
+    if (!rl.allowed) return tooMany(respond, rl)
+    return handleRevokeSession(
+      request,
+      env,
+      decodeURIComponent(route.slice('sessions/'.length)),
+      respond,
+    )
+  }
   if (
     route === 'google/start' &&
     (request.method === 'GET' || request.method === 'POST')
@@ -2801,6 +3007,9 @@ export async function handleAuth(
   if (route === 'logout') {
     return handleLogout(request, env, respond)
   }
+  if (route === 'logout-all') {
+    return handleLogoutAll(request, env, respond)
+  }
   if (route === 'resend-verification') {
     return handleResendVerification(request, env, respond)
   }
@@ -2834,13 +3043,13 @@ export async function handleAuth(
 
   switch (route) {
     case 'anonymous':
-      return handleAnonymous(body, env, respond)
+      return handleAnonymous(request, body, env, respond)
     case 'register':
       return handleRegister(request, body, env, respond)
     case 'login':
-      return handleLogin(body, env, respond)
+      return handleLogin(request, body, env, respond)
     case 'google':
-      return handleGoogle(body, env, respond)
+      return handleGoogle(request, body, env, respond)
     case 'forgot-password':
       return handleForgotPassword(request, body, env, respond, ctx)
     case 'reset-password':
@@ -2848,7 +3057,7 @@ export async function handleAuth(
     case 'device/start':
       return handleDeviceLinkStart(body, env, respond)
     case 'device/poll':
-      return handleDeviceLinkPoll(body, env, respond)
+      return handleDeviceLinkPoll(request, body, env, respond)
     case 'device/approve':
       return handleDeviceLinkApprove(request, body, env, respond)
     default:

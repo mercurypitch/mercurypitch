@@ -19,7 +19,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
-import { applyMigration, applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigration, applyMigrations, applyMigrationsAfter, SqliteD1Database, } from './sqlite-d1'
 
 const SECRET_MIGRATION = '0029_device_secret.sql'
 const NOW = '2026-08-09T12:00:00.000Z'
@@ -353,6 +353,9 @@ describe('accounts that predate the secret', () => {
       )
       .run(VICTIM_DEVICE, NOW, NOW, NOW)
     applyMigration(sqlite, SECRET_MIGRATION)
+    // The rows above are what a released build left behind; the worker these
+    // tests then call is today's, so it needs today's schema.
+    applyMigrationsAfter(sqlite, SECRET_MIGRATION)
     env = {
       DB: new SqliteD1Database(sqlite) as unknown as D1Database,
       JWT_SECRET: 'device-secret-integration-secret',

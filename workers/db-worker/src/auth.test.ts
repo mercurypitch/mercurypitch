@@ -21,6 +21,16 @@ interface UserRecord {
   suspensionReason: string | null
 }
 
+interface AuthSessionRecord {
+  id: string
+  userId: string
+  provider: string | null
+  userAgent: string | null
+  ip: string | null
+  createdAt: string
+  lastSeenAt: string
+}
+
 interface PremiumGroupMemberRecord {
   email: string
   groupId: string
@@ -127,6 +137,14 @@ class AuthStatement {
         null) as T | null
     }
 
+    if (
+      this.sql === 'SELECT id FROM authSessions WHERE id = ? AND userId = ?'
+    ) {
+      const [id, userId] = this.values.map(String)
+      const row = this.db.sessions.get(id)
+      return (row && row.userId === userId ? { id: row.id } : null) as T | null
+    }
+
     if (this.sql === 'SELECT * FROM deviceLinkCodes WHERE code = ?') {
       return (this.db.deviceLinks.get(String(this.values[0])) ??
         null) as T | null
@@ -148,6 +166,19 @@ class AuthStatement {
         )
       return {
         results: backgroundIds.map((backgroundId) => ({ backgroundId })) as T[],
+      }
+    }
+
+    if (
+      this.sql ===
+      'SELECT id, provider, userAgent, ip, createdAt, lastSeenAt FROM authSessions WHERE userId = ? ORDER BY lastSeenAt DESC'
+    ) {
+      const userId = String(this.values[0])
+      return {
+        results: [...this.db.sessions.values()]
+          .filter((row) => row.userId === userId)
+          .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt))
+          .map((row) => ({ ...row })) as T[],
       }
     }
 
@@ -216,6 +247,31 @@ class AuthStatement {
         return { success: true, meta: { changes: 0 } }
       }
       row.claimedAt = String(claimedAt)
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    if (this.sql.startsWith('INSERT INTO authSessions')) {
+      const [id, userId, provider, userAgent, ip] = this.values
+      const now = new Date().toISOString()
+      this.db.sessions.set(String(id), {
+        id: String(id),
+        userId: String(userId),
+        provider: provider == null ? null : String(provider),
+        userAgent: userAgent == null ? null : String(userAgent),
+        ip: ip == null ? null : String(ip),
+        createdAt: now,
+        lastSeenAt: now,
+      })
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    if (this.sql.startsWith('UPDATE authSessions SET lastSeenAt')) {
+      // The real statement only writes once the row is already stale. The
+      // fake reports the write truthfully but does not model the clock: no
+      // test here turns on how often the column moves.
+      const row = this.db.sessions.get(String(this.values[0]))
+      if (!row) return { success: true, meta: { changes: 0 } }
+      row.lastSeenAt = new Date().toISOString()
       return { success: true, meta: { changes: 1 } }
     }
 
@@ -344,6 +400,43 @@ class AuthStatement {
       return { success: true, meta: { changes: 1 } }
     }
 
+    if (this.sql === 'DELETE FROM authSessions WHERE id = ? AND userId = ?') {
+      const [id, userId] = this.values.map(String)
+      const row = this.db.sessions.get(id)
+      if (!row || row.userId !== userId) {
+        return { success: true, meta: { changes: 0 } }
+      }
+      this.db.sessions.delete(id)
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    if (
+      this.sql === 'DELETE FROM authSessions WHERE userId = ?' ||
+      this.sql === 'DELETE FROM \"authSessions\" WHERE \"userId\" = ?'
+    ) {
+      const userId = String(this.values[0])
+      let changes = 0
+      for (const [id, row] of this.db.sessions) {
+        if (row.userId === userId) {
+          this.db.sessions.delete(id)
+          changes += 1
+        }
+      }
+      return { success: true, meta: { changes } }
+    }
+
+    if (this.sql === 'DELETE FROM authSessions WHERE userId = ? AND id != ?') {
+      const [userId, keep] = this.values.map(String)
+      let changes = 0
+      for (const [id, row] of this.db.sessions) {
+        if (row.userId === userId && id !== keep) {
+          this.db.sessions.delete(id)
+          changes += 1
+        }
+      }
+      return { success: true, meta: { changes } }
+    }
+
     if (this.sql.startsWith('DELETE FROM ')) {
       const id = String(this.values[0])
       if (this.sql === 'DELETE FROM userProfiles WHERE id = ?') {
@@ -404,6 +497,7 @@ class AuthDatabase {
   readonly users = new Map<string, UserRecord>()
   readonly driveTokens = new Map<string, DriveTokenRecord>()
   readonly deviceLinks = new Map<string, DeviceLinkRecord>()
+  readonly sessions = new Map<string, AuthSessionRecord>()
   // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
   // the /me normalization regression below tests the real shape.
   readonly profiles = new Map<string, Record<string, unknown>>()

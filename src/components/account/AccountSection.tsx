@@ -28,6 +28,7 @@ import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
+import { SessionList } from './SessionList'
 import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
@@ -406,6 +407,15 @@ export const AccountSection: Component = () => {
               practised a few days running; free practice and your streak are
               never published. Friends you add see more.
             </p>
+          </div>
+        </Show>
+
+        {/* Where this account is signed in. Only for a real account: a
+            lazily provisioned device identity has exactly one session by
+            construction, and listing it would be a list of itself. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <SessionList />
           </div>
         </Show>
 

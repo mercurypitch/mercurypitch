@@ -1067,7 +1067,10 @@ export function logout(): void {
   tokenServerVerified = false
   authChanged()
 
-  // Notify the server to revoke all tokens for this account.
+  // Tell the server this DEVICE is done. It deletes the session row named by
+  // the token and leaves the account's other devices signed in — signing out
+  // on a phone used to sign out the laptop and the television with it. To end
+  // every device instead, see revokeAllSessions in auth-sessions-service.
   // Fire-and-forget: the client is already signed out regardless.
   if (
     token != null &&

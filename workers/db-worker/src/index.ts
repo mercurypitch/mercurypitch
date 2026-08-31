@@ -17,7 +17,8 @@
 import { FUNNEL_EVENT_NAMES } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
-import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
+import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
+import { sweepExpiredSessions } from './auth-sessions'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
@@ -1812,6 +1813,16 @@ export default {
   ): Promise<void> {
     await reconcileBilling(env)
     await runWeeklyLeagueCut(env)
+    // Nothing removes an authSessions row except an explicit sign-out, so
+    // without this the table grows by a row per sign-in forever and the
+    // account's device list fills with dead entries that "sign out this
+    // device" cannot remove — there is nothing left to revoke. Swallows its
+    // own errors, like the two above, so one sweep can never starve another.
+    try {
+      await sweepExpiredSessions(env.DB, TOKEN_TTL_SECONDS)
+    } catch (error) {
+      console.error('[cron] session sweep failed:', error)
+    }
   },
 }
 
