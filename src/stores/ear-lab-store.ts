@@ -19,6 +19,7 @@ import type { FacultyReading, MercuryIndex } from '@/lib/ear/mercury-index'
 import { mercuryIndex, scoreReading } from '@/lib/ear/mercury-index'
 import type { SprintCandidate, SprintSegment } from '@/lib/ear/sprint'
 import { planDailySprint, SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -88,6 +89,90 @@ const [homeMode, setHomeMode] = createPersistedSignal<'tap' | 'mic'>(
 
 export const homeAnswerMode = homeMode
 export const setHomeAnswerMode = setHomeMode
+
+// ── Pacing ──────────────────────────────────────────────────────
+
+/** One rule for every drill: after the verdict the run either holds
+ *  for `revealHoldMs` and sounds the next trial by itself, or — with
+ *  auto-advance off — parks until Next. The switch in every stage
+ *  bar and the one in the rack are this same signal. */
+const [autoAdvance, setAutoAdvance] = createPersistedSignal<boolean>(
+  `${KEY_PREFIX}auto_advance`,
+  true,
+  { validator: (value): value is boolean => typeof value === 'boolean' },
+)
+const [revealHold, setRevealHold] = createPersistedSignal<number>(
+  `${KEY_PREFIX}reveal_hold_ms`,
+  REVEAL_HOLD.defaultMs,
+  {
+    validator: (value): value is number =>
+      typeof value === 'number' && Number.isFinite(value),
+  },
+)
+
+export const earAutoAdvance = autoAdvance
+export const setEarAutoAdvance = setAutoAdvance
+
+/** Snapped to the slider's step and clamped to its range, so a stale
+ *  stored value can never stall a run or rush it. */
+export function clampRevealHold(ms: number): number {
+  if (!Number.isFinite(ms)) return REVEAL_HOLD.defaultMs
+  const stepped = Math.round(ms / REVEAL_HOLD.step) * REVEAL_HOLD.step
+  return Math.min(REVEAL_HOLD.max, Math.max(REVEAL_HOLD.min, stepped))
+}
+
+export const earRevealHoldMs = (): number => clampRevealHold(revealHold())
+
+// ── One-time re-seed ────────────────────────────────────────────
+
+/** The ladder drills' tap items were rated while the ladder was
+ *  silent, so their difficulties describe a guessing game. Dropped
+ *  once, the day the ladder began to sound; the Elo ratings stay. */
+const RESEED_KEY = `${KEY_PREFIX}items_reseed`
+const RESEED_STAMP = 'ladder-sounds'
+const SILENT_LADDER_ITEMS = ['e-', 'bassline:']
+
+export function reseedSilentLadderItems(): boolean {
+  if (localStorage.getItem(RESEED_KEY) === RESEED_STAMP) return false
+  setItemStates((states) =>
+    Object.fromEntries(
+      Object.entries(states).filter(
+        ([id]) => !SILENT_LADDER_ITEMS.some((prefix) => id.startsWith(prefix)),
+      ),
+    ),
+  )
+  localStorage.setItem(RESEED_KEY, RESEED_STAMP)
+  return true
+}
+
+reseedSilentLadderItems()
+
+// ── The instrument card ─────────────────────────────────────────
+
+/** Which drills keep their instrument card unfolded. Folded is the
+ *  default: one row on a phone, three lines and More on a desk. */
+const [infoOpen, setInfoOpen] = createPersistedSignal<Record<string, boolean>>(
+  `${KEY_PREFIX}info_open`,
+  {},
+  {
+    validator: (value): value is Record<string, boolean> =>
+      typeof value === 'object' && value !== null && !Array.isArray(value),
+  },
+)
+
+export const earInfoOpen = (drillId: string): boolean =>
+  infoOpen()[drillId] === true
+
+export function setEarInfoOpen(drillId: string, open: boolean): void {
+  setInfoOpen((prev) => ({ ...prev, [drillId]: open }))
+}
+
+/** Returns what was kept. */
+export function setEarRevealHoldMs(ms: number): number {
+  const kept = clampRevealHold(ms)
+  setRevealHold(kept)
+  return kept
+}
 
 // ── Ratings (Ruler B) ───────────────────────────────────────────
 
@@ -279,7 +364,11 @@ export function calibrationHistory(): CalibrationRunEntry[] {
  *  streak, exactly like exercise runs — but they never enter the
  *  vocal exercise history; the two progressions stay separate. */
 export function creditEarSession(durationMs: number): void {
-  if (durationMs > 0) void addScoredMs(durationMs)
+  // Crediting minutes must never take a drill down with it: the
+  // streak read is async and can fail (storage blocked, a stage
+  // unmounted mid-flight), and a rejection nobody holds is fatal
+  // under test and noise in the field.
+  if (durationMs > 0) void addScoredMs(durationMs).catch(() => undefined)
   trackEvent('session_complete')
   recordActivity()
 }
@@ -448,4 +537,7 @@ export function resetEarLabStore(): void {
   setConfusions({})
   setSprintDay(null)
   setSprintDays([])
+  setAutoAdvance(true)
+  setRevealHold(REVEAL_HOLD.defaultMs)
+  setInfoOpen({})
 }

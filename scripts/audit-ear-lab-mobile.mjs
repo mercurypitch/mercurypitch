@@ -528,6 +528,110 @@ async function auditStage(page, name) {
     return m
   }
 
+  // The Field Book: the card on the bench lists the library's finished
+  // separations (the tours build seeds Karaoke Night's examples) or, on
+  // an empty library, points at Karaoke Night; either way its control is
+  // a 44px button. With a song, the page reads it for real — notes, key,
+  // chords — and Home in the Wild opens on the reading.
+  const fieldBook = page.locator('[data-tour="ear.fieldBook"]')
+  if ((await fieldBook.count()) !== 1) {
+    fail(`${name} field book`, 'the Field Book card is missing from the bench')
+  } else {
+    await fieldBook.scrollIntoViewIfNeeded()
+    const control = fieldBook.getByRole('button').first()
+    const box = await control.boundingBox()
+    if (!box || box.height < 44) {
+      fail(
+        `${name} field book`,
+        `the card's button is ${box ? Math.round(box.height) : 0}px tall, expected 44`,
+      )
+    }
+    await fieldBook.screenshot({ path: `${OUT}/${name}-field-book.png` })
+    const opens = fieldBook.getByRole('button', { name: 'Open' })
+    if ((await opens.count()) > 0) {
+      await opens.first().click()
+      await page.locator('[data-testid="ear-stage"]').waitFor({ timeout: 8000 })
+      const statusText = page.getByTestId('ear-stage-status')
+      const deadline = Date.now() + 120_000
+      let text = ''
+      while (Date.now() < deadline) {
+        text = (await statusText.textContent()) ?? ''
+        if (/landings|could not|not be read|no vocal/i.test(text)) break
+        await page.waitForTimeout(1000)
+      }
+      const read = /landings/.test(text)
+      console.log(`  ${name} field book: ${text}`)
+      if (!read) fail(`${name} field book`, `the song never read: "${text}"`)
+      await checkStage('field book', 'stage-field-book')
+      if (read) {
+        // Whichever drill the song yielded items for opens on the reading.
+        const wildPads = page.locator(
+          '[data-testid="ear-stage-console"] button:not([disabled])',
+        )
+        const wildPad = wildPads.filter({ hasText: /in the Wild/ }).first()
+        if ((await wildPad.count()) === 0) {
+          fail(
+            `${name} field book`,
+            `no drill opened on the reading: "${text}"`,
+          )
+        } else {
+          const padName = (await wildPad.textContent()) ?? ''
+          await wildPad.click()
+          await page.waitForTimeout(400)
+          await checkStage('wild drill idle', 'stage-wild-idle')
+          console.log(
+            `  ${name} field book opened: ${padName.trim().slice(0, 40)}`,
+          )
+          await page.getByRole('button', { name: 'Back to the page' }).click()
+          await page.waitForTimeout(300)
+        }
+      }
+      await page
+        .getByRole('button', { name: 'Back to the bench' })
+        .first()
+        .click()
+      await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+      await page.waitForTimeout(400)
+    }
+  }
+
+  // The Ear Path: eleven orbs on one rail, none locked. On a fresh
+  // store the first dark orb is the first reading, so Next opens
+  // Hairline and the bar brings us back.
+  {
+    const path = page.locator('[data-tour="ear.path"]')
+    if ((await path.count()) === 0) {
+      fail(`${name} ear path`, 'the Ear Path is missing from the bench')
+    } else {
+      const orbs = await path.locator('ol li').count()
+      if (orbs !== 11) fail(`${name} ear path`, `${orbs} orbs, expected 11`)
+      const lit = await path.locator('ol li[data-lit]').count()
+      console.log(`  ${name} ear path: ${lit} of ${orbs} lit`)
+      const go = path.getByTestId('ear-path-go')
+      const box = await go.boundingBox()
+      if (!box || box.height < 44) {
+        fail(
+          `${name} ear path`,
+          `the Next button is ${box ? Math.round(box.height) : 'not'} px tall`,
+        )
+      }
+      await path.scrollIntoViewIfNeeded()
+      await page.screenshot({ path: `${OUT}/${name}-bench-path.png` })
+      await go.click()
+      const back = page.getByRole('button', { name: 'Back to the bench' })
+      const opened = await back
+        .first()
+        .waitFor({ timeout: 8000 })
+        .then(() => true)
+        .catch(() => false)
+      if (!opened) fail(`${name} ear path`, 'Next did not open an instrument')
+      else {
+        await back.first().click()
+        await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+      }
+    }
+  }
+
   await openFromStrip('Hairline')
   results.hairlineIdle = await checkStage(
     'hairline idle',
@@ -543,10 +647,86 @@ async function auditStage(page, name) {
   if (!armed)
     fail(`${name} hairline run`, 'a practice run never armed its pads')
   results.hairlineRun = await checkStage('hairline run', 'stage-hairline-run')
+  const autoSwitch = page.getByRole('switch', { name: 'Auto-advance' })
+  if (!(await autoSwitch.isVisible().catch(() => false)))
+    fail(`${name} hairline bar`, 'no auto-advance switch in the stage bar')
+  // The instrument card hangs on the stage: the caption and the drill's
+  // paragraph, one folded row on a phone, three lines and More on a desk.
+  const card = page.locator('[data-testid="ear-instrument-card"]')
+  if (!(await card.isVisible().catch(() => false))) {
+    fail(`${name} hairline card`, 'no instrument card on the stage')
+  } else {
+    const cardText = (await card.textContent()) ?? ''
+    if (!cardText.includes('Hairline'))
+      fail(`${name} hairline card`, `the card reads "${cardText.slice(0, 60)}"`)
+    const consoleText =
+      (await page.locator('[data-testid="ear-stage-console"]').textContent()) ??
+      ''
+    if (consoleText.includes('Two tones; pick the higher one'))
+      fail(`${name} hairline card`, 'the paragraph is still under the pads')
+    const head = card.getByRole('button', { name: 'About Hairline' })
+    if (await head.isVisible().catch(() => false)) {
+      if ((await head.getAttribute('aria-expanded')) !== 'false')
+        fail(`${name} hairline card`, 'the phone card opens unfolded')
+      await head.click()
+      await page.waitForTimeout(150)
+      await page.screenshot({ path: `${OUT}/${name}-stage-hairline-card.png` })
+      if (
+        !(await card
+          .getByText(/Two tones/)
+          .isVisible()
+          .catch(() => false))
+      )
+        fail(`${name} hairline card`, 'the phone card did not unfold')
+      await head.click()
+    } else if (
+      !(await card
+        .getByRole('button', { name: 'More' })
+        .isVisible()
+        .catch(() => false))
+    ) {
+      fail(`${name} hairline card`, 'no More on the desk card')
+    }
+  }
   if (armed) {
     await page.getByRole('button', { name: 'The first' }).click()
     await page.waitForTimeout(150)
     await page.screenshot({ path: `${OUT}/${name}-stage-hairline-reveal.png` })
+    // The Last call plate outlives the hold: the next pair sounds and
+    // the verdict is still under the pads.
+    const lastCall = page.locator('[data-testid="ear-stage-last-call"]')
+    const plateUp = await lastCall
+      .waitFor({ timeout: 2000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!plateUp) fail(`${name} hairline last call`, 'no Last call plate')
+    // During the reveal the pads are disabled but coloured; the next
+    // pair is sounding once they are disabled and bare again.
+    const rearmed = await page
+      .locator(
+        '[data-testid="ear-stage-pads"] button[disabled]:not([data-state])',
+        {
+          hasText: 'The first',
+        },
+      )
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!rearmed)
+      fail(`${name} hairline last call`, 'the next trial never sounded')
+    if (!(await lastCall.isVisible().catch(() => false)))
+      fail(`${name} hairline last call`, 'the plate left with the next trial')
+    // The pads arm: the plate's rail ticks brass.
+    const armedNow = await page
+      .locator('[data-testid="ear-stage-last-call"][data-armed="true"]')
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!armedNow) fail(`${name} hairline last call`, 'the rail never ticked')
+    await page.waitForTimeout(150)
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-hairline-lastcall.png`,
+    })
   }
   await page.getByLabel('Stop').click()
   await page
@@ -600,6 +780,636 @@ async function auditStage(page, name) {
   await page.getByLabel('Stop').click()
   await page.waitForTimeout(300)
   await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+  // Pulse: the answer opens as the call ends, on a pad a thumb can hit;
+  // three taps land on the drum at the reveal.
+  await openFromStrip('Pulse')
+  results.pulseIdle = await checkStage('pulse idle', 'stage-pulse-idle')
+  await page.getByText('Begin').click()
+  const pulsePad = page.locator('[data-testid="ear-tap-pad"]:not([disabled])')
+  const pulseArmed = await pulsePad
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!pulseArmed) fail(`${name} pulse`, 'the response bar never armed the pad')
+  else {
+    const padBox = await pulsePad.boundingBox()
+    if (!padBox || padBox.height < 44)
+      fail(
+        `${name} pulse`,
+        `tap pad is ${Math.round(padBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-pulse-answer.png` })
+    for (let i = 0; i < 3; i++) {
+      await pulsePad.dispatchEvent('pointerdown', { button: 0 })
+      await page.waitForTimeout(600)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Clean|Not quite/,
+      })
+      .waitFor({ timeout: 8000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} pulse`, 'the take was never judged')
+    const drumMarks = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="drum"]')
+      return svg
+        ? {
+            onsets: svg.querySelectorAll('[data-part="onset"]').length,
+            taps:
+              svg.querySelectorAll('[data-part="tap"]').length +
+              svg.querySelectorAll('[data-part="extra"]').length,
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-pulse-reveal.png` })
+    if (!drumMarks || drumMarks.onsets < 3 || drumMarks.taps < 1)
+      fail(
+        `${name} pulse`,
+        `reveal shows ${drumMarks?.onsets ?? 0} onsets and ${drumMarks?.taps ?? 0} taps on the drum`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Echo: the ladder arms only after the cadence and the phrase, every
+  // rung a thumb can hit; the phrase is judged when the last rung lands
+  // and the chain shows a bead and a mark per note at the reveal.
+  await openFromStrip('Echo')
+  results.echoIdle = await checkStage('echo idle', 'stage-echo-idle')
+  // Sing mode: the idle console carries the Answer-by toggle — two radios.
+  const echoModes = await page
+    .locator('[data-testid="ear-stage-console"] [role="radio"]')
+    .count()
+  if (echoModes !== 2) {
+    fail(`${name} echo`, `${echoModes} answer-mode radios at idle, expected 2`)
+  }
+  await page.getByText('Begin').click()
+  const echoRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const echoArmed = await echoRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!echoArmed) fail(`${name} echo`, 'the ladder never armed')
+  else {
+    const rungCount = await echoRungs.count()
+    if (rungCount !== 8)
+      fail(`${name} echo`, `${rungCount} rungs armed, expected 8`)
+    const rungBox = await echoRungs.first().boundingBox()
+    if (!rungBox || rungBox.height < 44)
+      fail(
+        `${name} echo`,
+        `a rung is ${Math.round(rungBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-echo-answer.png` })
+    const judgedStatus = page.locator('[data-testid="ear-stage-status"]', {
+      hasText: /Yes —|That was/,
+    })
+    // The phrase is three to six notes: tap the first rung until judged.
+    let judged = false
+    for (let i = 0; i < 6 && !judged; i++) {
+      await echoRungs.first().click()
+      await page.waitForTimeout(150)
+      judged = (await judgedStatus.count()) > 0
+    }
+    if (!judged) fail(`${name} echo`, 'the phrase was never judged')
+    const chain = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="chain"]')
+      return svg
+        ? {
+            beads: svg.querySelectorAll('[data-part="expected"]').length,
+            marks: svg.querySelectorAll(
+              '[data-part="right"], [data-part="wrong"]',
+            ).length,
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-echo-reveal.png` })
+    if (!chain || chain.beads < 3 || chain.marks !== chain.beads)
+      fail(
+        `${name} echo`,
+        `reveal shows ${chain?.beads ?? 0} beads and ${chain?.marks ?? 0} marks on the chain`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Span: a practice run opens at three notes; the ladder arms after the
+  // phrase, three rungs judge it, and the reveal names the length.
+  await openFromStrip('Span')
+  results.spanIdle = await checkStage('span idle', 'stage-span-idle')
+  // Sing mode: the idle console carries the Answer-by toggle — two radios.
+  const spanModes = await page
+    .locator('[data-testid="ear-stage-console"] [role="radio"]')
+    .count()
+  if (spanModes !== 2) {
+    fail(`${name} span`, `${spanModes} answer-mode radios at idle, expected 2`)
+  }
+  await page.getByText('Practice run').click()
+  const spanRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const spanArmed = await spanRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!spanArmed) fail(`${name} span`, 'the ladder never armed')
+  else {
+    await page.screenshot({ path: `${OUT}/${name}-stage-span-answer.png` })
+    for (let i = 0; i < 3; i++) {
+      await spanRungs.first().click()
+      await page.waitForTimeout(150)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Held —|Slipped at/,
+      })
+      .waitFor({ timeout: 8000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} span`, 'the phrase was never judged')
+    const chain = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="chain"]')
+      return svg ? svg.querySelectorAll('[data-part="expected"]').length : 0
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-span-reveal.png` })
+    if (chain !== 3)
+      fail(`${name} span`, `reveal shows ${chain} beads, expected 3`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Beat Hunt: two pairs on the clock, the pads arm after the second;
+  // nothing on the pendulums says which pair beat until the reveal.
+  await openFromStrip('Beat Hunt')
+  results.beatHuntIdle = await checkStage(
+    'beat-hunt idle',
+    'stage-beat-hunt-idle',
+  )
+  await page.getByText('Practice run').click()
+  const beatPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const beatArmed = await beatPads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!beatArmed) fail(`${name} beat-hunt`, 'the pads never armed')
+  else {
+    const beatingEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="beat-pendulums"] [data-beating="true"]',
+        ).length,
+    )
+    if (beatingEarly > 0)
+      fail(`${name} beat-hunt`, 'a pair is marked beating before the reveal')
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-beat-hunt-answer.png`,
+    })
+    await beatPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /pair was beating/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} beat-hunt`, 'the reveal never named the pair')
+    const marks = await page.evaluate(() => {
+      const svg = document.querySelector(
+        'svg[data-instrument="beat-pendulums"]',
+      )
+      return svg
+        ? {
+            beating: svg.querySelectorAll('[data-beating="true"]').length,
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-beat-hunt-reveal.png`,
+    })
+    if (!marks || marks.beating !== 1 || !/beat/.test(marks.plate))
+      fail(
+        `${name} beat-hunt`,
+        `reveal marks ${marks?.beating ?? 0} pairs beating, plate "${marks?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Drift: eleven clicks, the arm upright until the reveal, then leaning
+  // the way the nameplate says.
+  await openFromStrip('Drift')
+  results.driftIdle = await checkStage('drift idle', 'stage-drift-idle')
+  await page.getByText('Practice run').click()
+  const driftPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const driftArmed = await driftPads
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!driftArmed) fail(`${name} drift`, 'the pads never armed')
+  else {
+    const leanEarly = await page.evaluate(
+      () =>
+        document
+          .querySelector('svg[data-instrument="metronome"] [data-part="arm"]')
+          ?.getAttribute('data-lean') ?? null,
+    )
+    if (leanEarly !== '0')
+      fail(`${name} drift`, `the arm leans ${leanEarly} before the reveal`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-drift-answer.png` })
+    await driftPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /held steady|gained|lost/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} drift`, 'the reveal never said which way')
+    const arm = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="metronome"]')
+      return svg
+        ? {
+            lean: svg
+              .querySelector('[data-part="arm"]')
+              ?.getAttribute('data-lean'),
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-drift-reveal.png` })
+    const expectedLean = /Faster/.test(arm?.plate ?? '')
+      ? '22'
+      : /Slower/.test(arm?.plate ?? '')
+        ? '-22'
+        : '0'
+    if (!arm || arm.lean !== expectedLean)
+      fail(
+        `${name} drift`,
+        `arm leans ${arm?.lean ?? 'nowhere'} under the plate "${arm?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Gravity: twelve rungs, each a thumb can hit, armed only after the
+  // probe; the reveal engraves the chromatic label.
+  await openFromStrip('Gravity')
+  results.gravityIdle = await checkStage('gravity idle', 'stage-gravity-idle')
+  await page.getByText('Begin').click()
+  const gravityRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const gravityArmed = await gravityRungs
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!gravityArmed) fail(`${name} gravity`, 'the pads never armed')
+  else {
+    const rungCount = await gravityRungs.count()
+    if (rungCount !== 12)
+      fail(`${name} gravity`, `${rungCount} pads armed, expected 12`)
+    const rungBox = await gravityRungs.first().boundingBox()
+    if (!rungBox || rungBox.height < 44)
+      fail(
+        `${name} gravity`,
+        `a pad is ${Math.round(rungBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-gravity-answer.png` })
+    await gravityRungs.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} gravity`, 'the answer was never judged')
+    await page.screenshot({ path: `${OUT}/${name}-stage-gravity-reveal.png` })
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // The Pull: the beam stays level through both notes and tips only at
+  // the reveal, toward the pan the nameplate names.
+  await openFromStrip('The Pull')
+  results.pullIdle = await checkStage('the-pull idle', 'stage-the-pull-idle')
+  await page.getByText('Begin').click()
+  const pullPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const pullArmed = await pullPads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!pullArmed) fail(`${name} the-pull`, 'the pads never armed')
+  else {
+    const tiltEarly = await page.evaluate(
+      () =>
+        document
+          .querySelector('svg[data-instrument="beam"] [data-part="beam"]')
+          ?.getAttribute('data-tilt') ?? null,
+    )
+    if (tiltEarly !== '0')
+      fail(`${name} the-pull`, `the beam tilts ${tiltEarly} before the reveal`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-the-pull-answer.png` })
+    await pullPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} the-pull`, 'the answer was never judged')
+    const beam = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="beam"]')
+      return svg
+        ? {
+            tilt: Number(
+              svg
+                .querySelector('[data-part="beam"]')
+                ?.getAttribute('data-tilt'),
+            ),
+            leaning: svg
+              .querySelector('[data-leaning="true"]')
+              ?.getAttribute('data-side'),
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-the-pull-reveal.png` })
+    const tiltsRight = beam ? (beam.leaning === '2') === beam.tilt > 0 : false
+    if (
+      !beam ||
+      beam.tilt === 0 ||
+      !tiltsRight ||
+      !/leaning to/.test(beam.plate)
+    )
+      fail(
+        `${name} the-pull`,
+        `beam tilts ${beam?.tilt ?? 0} with pan ${beam?.leaning ?? 'none'} leaning, plate "${beam?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Cadence: the train turns while the progression strums, four pads are
+  // drawn with the answer among them, the reveal engraves the wheels.
+  await openFromStrip('Cadence')
+  results.cadenceIdle = await checkStage('cadence idle', 'stage-cadence-idle')
+  await page.getByText('Begin').click()
+  const cadencePads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const cadenceArmed = await cadencePads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!cadenceArmed) fail(`${name} cadence`, 'the pads never armed')
+  else {
+    const padCount = await cadencePads.count()
+    if (padCount !== 4)
+      fail(`${name} cadence`, `${padCount} pads drawn, expected 4`)
+    const numeralsEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="train"] [data-part="numeral"]',
+        ).length,
+    )
+    if (numeralsEarly > 0)
+      fail(`${name} cadence`, 'the wheels are engraved before the reveal')
+    await page.screenshot({ path: `${OUT}/${name}-stage-cadence-answer.png` })
+    await cadencePads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} cadence`, 'the answer was never judged')
+    const numerals = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="train"] [data-part="numeral"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-cadence-reveal.png` })
+    if (numerals < 3)
+      fail(`${name} cadence`, `${numerals} wheels engraved at the reveal`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Bassline: seven rungs in numerals arm after the line; four taps judge
+  // it and the chain shows the roots at the reveal.
+  await openFromStrip('Bassline')
+  results.basslineIdle = await checkStage(
+    'bassline idle',
+    'stage-bassline-idle',
+  )
+  await page.getByText('Begin').click()
+  const bassRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const bassArmed = await bassRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!bassArmed) fail(`${name} bassline`, 'the ladder never armed')
+  else {
+    const rungCount = await bassRungs.count()
+    if (rungCount !== 7)
+      fail(`${name} bassline`, `${rungCount} rungs armed, expected 7`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-bassline-answer.png` })
+    for (let i = 0; i < 4; i++) {
+      await bassRungs.first().click()
+      await page.waitForTimeout(120)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} bassline`, 'the line was never judged')
+    const beads = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="chain"] [data-part="expected"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-bassline-reveal.png` })
+    if (beads !== 4)
+      fail(`${name} bassline`, `${beads} roots on the chain, expected 4`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Subdivide: the lattice chases the kit with no bar line or accent
+  // until the reveal; four metre pads are drawn with the answer among them.
+  await openFromStrip('Subdivide')
+  results.subdivideIdle = await checkStage(
+    'subdivide idle',
+    'stage-subdivide-idle',
+  )
+  await page.getByText('Begin').click()
+  const metrePads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const metreArmed = await metrePads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!metreArmed) fail(`${name} subdivide`, 'the pads never armed')
+  else {
+    const padCount = await metrePads.count()
+    if (padCount !== 4)
+      fail(`${name} subdivide`, `${padCount} pads drawn, expected 4`)
+    const groupedEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="metre"] [data-accent="true"], svg[data-instrument="metre"] [data-part="bar-line"]',
+        ).length,
+    )
+    if (groupedEarly > 0)
+      fail(
+        `${name} subdivide`,
+        'the lattice shows the grouping before the reveal',
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-subdivide-answer.png` })
+    await metrePads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} subdivide`, 'the answer was never judged')
+    const accents = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="metre"] [data-accent="true"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-subdivide-reveal.png` })
+    if (accents !== 1)
+      fail(`${name} subdivide`, `${accents} accent lamps at the reveal`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // The desk: one page, three drills. Colour's practice run renders a
+  // slice of the house loop offline and arms six pads — an end-to-end
+  // check of the offline render in this browser.
+  await openFromStrip('The desk')
+  {
+    const statusText = page.getByTestId('ear-stage-status')
+    const deadline = Date.now() + 60_000
+    let text = ''
+    while (Date.now() < deadline) {
+      text = (await statusText.textContent()) ?? ''
+      if (/On |could not/i.test(text)) break
+      await page.waitForTimeout(500)
+    }
+    if (!/On /.test(text))
+      fail(`${name} desk`, `the desk never rendered: "${text}"`)
+  }
+  results.deskIdle = await checkStage('desk idle', 'stage-desk-idle')
+  await page.getByRole('button', { name: /^Colour/ }).click()
+  await page.waitForTimeout(400)
+  results.colourIdle = await checkStage('colour idle', 'stage-colour-idle')
+  await page.getByRole('button', { name: /Practice run/ }).click()
+  const colourPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const colourArmed = await colourPads
+    .first()
+    .waitFor({ timeout: 20000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!colourArmed) fail(`${name} colour`, 'the band pads never armed')
+  else {
+    if ((await colourPads.count()) !== 6) {
+      fail(
+        `${name} colour`,
+        `${await colourPads.count()} pads armed, expected 6`,
+      )
+    }
+    await page.screenshot({ path: `${OUT}/${name}-stage-colour-answer.png` })
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^Weight/ }).click()
+  await page.waitForTimeout(400)
+  results.weightIdle = await checkStage('weight idle', 'stage-weight-idle')
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^Critique/ }).click()
+  await page.waitForTimeout(400)
+  results.critiqueIdle = await checkStage(
+    'critique idle',
+    'stage-critique-idle',
+  )
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Back to the bench' }).first().click()
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
@@ -692,7 +1502,7 @@ async function auditStage(page, name) {
     'calibration run',
     'stage-calibration-run',
   )
-  await page.getByLabel('Abandon').click()
+  await page.getByLabel('Stop').click()
   await page
     .locator('[data-testid="ear-stage-plate"]')
     .waitFor({ timeout: 4000 })

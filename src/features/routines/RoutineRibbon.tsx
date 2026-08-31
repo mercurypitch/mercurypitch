@@ -53,6 +53,12 @@ export interface RoutineRibbonProps {
    * launching the next segment, which is still whole runs away.
    */
   onRunAgain?: () => void
+  /**
+   * Temporarily hold every ribbon-owned transition. The current exercise can
+   * use this while irreplaceable local work is saving so neither a click nor
+   * the auto-continue clock remounts it underneath the pending write.
+   */
+  transitionBlocked?: () => boolean
 }
 
 /** What a segment calls itself in the chip row. */
@@ -66,6 +72,7 @@ function segmentTitle(seg: RoutineSegment): string {
 
 export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
   const routine = useDailyRoutine()
+  const transitionBlocked = (): boolean => props.transitionBlocked?.() ?? false
 
   // Attach once. The alternative — recomputing "does the current segment run
   // this exercise" every render — hides the ribbon the instant auto-advance
@@ -138,7 +145,10 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
         return
       }
       stopCountdown()
-      go()
+      // Recheck at the firing edge as well as in countdownTarget: a save can
+      // begin in the same task as the final timer tick, before the reactive
+      // effect has had a chance to tear the interval down.
+      if (!transitionBlocked()) go()
     }, 1000)
   }
 
@@ -162,6 +172,9 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
    */
   const countdownTarget = createMemo<RoutineSegment | 'run' | 'cancel' | null>(
     () => {
+      // This is a pause, not a dismissal: stop without incrementing the
+      // singer's auto-continue opt-out counter, then restart once saving ends.
+      if (transitionBlocked()) return null
       if (props.isRunning?.() ?? false) return 'cancel'
       // Without this, a drill opened from the exercise list — where the
       // ribbon renders nothing — would still count down and launch the
@@ -186,7 +199,8 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
       if (target === null) return
       if (target === 'run') {
         // runAgainOffer() has already guaranteed the shell wired onRunAgain.
-        startCountdown(() => props.onRunAgain!())
+        const runAgain = props.onRunAgain
+        if (runAgain !== undefined) startCountdown(runAgain)
       } else {
         startCountdown(() => launchRoutineSegment(target))
       }
@@ -225,7 +239,10 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
           <button
             type="button"
             class={styles.link}
-            onClick={() => setActiveTab(TAB_HOME)}
+            disabled={transitionBlocked()}
+            onClick={() => {
+              if (!transitionBlocked()) setActiveTab(TAB_HOME)
+            }}
           >
             Back to routine
           </button>
@@ -258,7 +275,9 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
                 type="button"
                 class={styles.next}
                 data-testid="routine-next"
+                disabled={transitionBlocked()}
                 onClick={() => {
+                  if (transitionBlocked()) return
                   stopCountdown()
                   launchRoutineSegment(next())
                 }}
@@ -342,7 +361,9 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
               type="button"
               class={styles.next}
               data-testid="routine-run-again"
+              disabled={transitionBlocked()}
               onClick={() => {
+                if (transitionBlocked()) return
                 stopCountdown()
                 // Inside the runAgainOffer() gate, onRunAgain is wired.
                 props.onRunAgain!()

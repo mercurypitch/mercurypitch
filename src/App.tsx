@@ -238,7 +238,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -248,6 +248,9 @@ import { useVoiceControlController } from '@/features/voice-control/useVoiceCont
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
+import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/features/voice-history/guided-practice-handoff'
+import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceHistoryPage'
+import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
 import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
@@ -258,7 +261,8 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { navigateTo, parseHash } from '@/lib/hash-router'
+import { navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
+import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -271,6 +275,7 @@ import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melod
 import { createPersistedSignal } from '@/lib/storage'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { fitPhraseToRange, pickVocalRangeMelody } from '@/lib/vocal-range'
@@ -289,7 +294,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -423,6 +428,7 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Local UI state ──────────────────────────────────────────
   const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
+  useBeforeUnloadGuard(isLocalSaveNavigationLocked)
 
   // Store-backed (ui-store) so the tour engine can open the mobile sidebar
   // and expand the desktop-collapsed rail (sidebarCollapsed lives there too).
@@ -519,13 +525,13 @@ const AppShell: Component<AppProps> = (props) => {
   const [selectedExercise, setSelectedExercise] =
     createSignal<ExerciseType | null>(null)
   const [autoStartExercise, setAutoStartExercise] = createSignal(false)
-  const clearExercise = () => {
+  const resetExerciseLaunchState = () => {
     setSelectedExercise(null)
     setPendingDrill(null)
     setAutoStartExercise(false)
     clearLaunchOverride()
-    // Backing out of the exercise abandons any armed challenge attempt —
-    // a later unrelated run must not count toward the challenge.
+    // A later unrelated run must not inherit a challenge attempt from the
+    // exercise that just left the screen.
     clearChallengeAttempt()
   }
   // Exercises read their launch override at mount. If the same type is
@@ -540,6 +546,11 @@ const AppShell: Component<AppProps> = (props) => {
     } else {
       setSelectedExercise(type)
     }
+  }
+  const clearExercise = () => {
+    const guidedReturn = returnFromGuidedPractice()
+    resetExerciseLaunchState()
+    if (guidedReturn !== null) setActiveTab(TAB_VOICE_HISTORY)
   }
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
@@ -610,7 +621,18 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
-      if (drill.notes.length > 0 || drill.pattern != null) {
+      const armedGuidedPractice = currentGuidedPracticeLaunch()
+      const guidedPractice =
+        drill.guidedPractice ??
+        (armedGuidedPractice?.exercise.exerciseId === drill.exercise
+          ? armedGuidedPractice
+          : undefined)
+      if (
+        drill.notes.length > 0 ||
+        drill.difficulty !== undefined ||
+        drill.pattern != null ||
+        guidedPractice !== undefined
+      ) {
         // Routine phrases and challenge notes are authored in a middle
         // register; fitted here — the one choke point every drill launch
         // passes — so a baritone is never handed G4 to start from.
@@ -621,6 +643,7 @@ const AppShell: Component<AppProps> = (props) => {
           targetNotes: notes.length > 0 ? notes : undefined,
           difficulty: drill.difficulty,
           pattern: drill.pattern,
+          guidedPractice,
         })
       }
       mountExercise(drill.exercise)
@@ -882,18 +905,20 @@ const AppShell: Component<AppProps> = (props) => {
       showNotification('Shared melody is empty or invalid', 'warning')
       return
     }
-    // Land the shared notes in a melody actually CALLED that — setMelody
-    // would have kept whatever name was open, so the toast and the header
-    // disagreed about what had just been loaded.
-    melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
-    // Drum-kit share links restore the drum preset (legacy links carry no
-    // dk field and default to melody).
-    melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
-    if (bpmVal > 0) setBpm(bpmVal)
-    if (keyVal != null && keyVal !== '') setKeyName(keyVal)
-    if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
-    setActiveTab(TAB_COMPOSE)
-    showNotification(`Loaded shared melody: ${name}`, 'info')
+    handleTabChange(TAB_COMPOSE, (accepted) => {
+      if (!accepted) return
+      // Land the shared notes in a melody actually CALLED that — setMelody
+      // would have kept whatever name was open, so the toast and the header
+      // disagreed about what had just been loaded.
+      melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
+      // Drum-kit share links restore the drum preset (legacy links carry no
+      // dk field and default to melody).
+      melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
+      if (bpmVal > 0) setBpm(bpmVal)
+      if (keyVal != null && keyVal !== '') setKeyName(keyVal)
+      if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
+      showNotification(`Loaded shared melody: ${name}`, 'info')
+    })
   }
 
   const handleShareExercise = (payload: string) => {
@@ -904,10 +929,12 @@ const AppShell: Component<AppProps> = (props) => {
       showNotification('Shared exercise is invalid', 'warning')
       return
     }
-    setActiveTab(TAB_EXERCISES)
-    setSelectedExercise(data.e as ExerciseType)
-    setAutoStartExercise(true)
-    showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
+    handleTabChange(TAB_EXERCISES, (accepted) => {
+      if (!accepted) return
+      setSelectedExercise(data.e as ExerciseType)
+      setAutoStartExercise(true)
+      showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
+    })
   }
 
   const handleShareRoutine = (payload: string) => {
@@ -939,17 +966,19 @@ const AppShell: Component<AppProps> = (props) => {
         }
       }),
     }
-    const hadProgress = loadSharedRoutine(routine)
-    setActiveTab(TAB_EXERCISES)
-    setAutoStartExercise(true)
-    if (hadProgress) {
-      showNotification(
-        `Loaded shared routine. Your previous progress was replaced.`,
-        'warning',
-      )
-    } else {
-      showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
-    }
+    handleTabChange(TAB_EXERCISES, (accepted) => {
+      if (!accepted) return
+      const hadProgress = loadSharedRoutine(routine)
+      setAutoStartExercise(true)
+      if (hadProgress) {
+        showNotification(
+          `Loaded shared routine. Your previous progress was replaced.`,
+          'warning',
+        )
+      } else {
+        showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
+      }
+    })
   }
 
   const handleShareFallback = (_shareType: string, _shareId: string) => {
@@ -1073,8 +1102,70 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
+  let requestVoiceHistoryLeave: VoiceHistoryLeaveRequester | null = null
+  let pendingVoiceHistoryTab: ActiveTab | null = null
+  const [voiceHistoryDraftTitle, setVoiceHistoryDraftTitle] = createSignal('')
+
+  const requestActiveTabChange = (
+    newTab: ActiveTab,
+    onResolved: (accepted: boolean) => void,
+  ): void => {
+    if (
+      vetoNavigationDuringLocalSave({
+        onBlocked: () =>
+          showNotification(
+            'Please wait while this take finishes saving on this device.',
+            'info',
+            { channel: 'voice-take-save' },
+          ),
+        onResolved,
+      })
+    ) {
+      return
+    }
+    if (newTab === activeTab()) {
+      onResolved(true)
+      return
+    }
+    if (
+      activeTab() === TAB_VOICE_HISTORY &&
+      requestVoiceHistoryLeave !== null
+    ) {
+      if (pendingVoiceHistoryTab !== null) {
+        onResolved(false)
+        return
+      }
+      pendingVoiceHistoryTab = newTab
+      requestVoiceHistoryLeave((closed) => {
+        const destinationMatches = pendingVoiceHistoryTab === newTab
+        pendingVoiceHistoryTab = null
+        onResolved(closed && destinationMatches)
+      })
+      return
+    }
+    onResolved(true)
+  }
+
+  function handleTabChange(
+    newTab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ): void {
+    requestActiveTabChange(newTab, (accepted) => {
+      if (accepted) {
+        setActiveTab(newTab)
+      } else {
+        const route = parseHash(window.location.hash)
+        if (route.type === 'share-load' || route.type === 'share-short') {
+          replaceHash({ type: 'tab', tab: activeTab() })
+        }
+      }
+      onResolved?.(accepted)
+    })
+  }
+
   useHashRouter({
     setActiveTab,
+    requestActiveTabChange,
     setInitialUvrView,
     setInitialUvrSessionId,
     setActiveUvrSessionId,
@@ -1638,6 +1729,16 @@ const AppShell: Component<AppProps> = (props) => {
     closeSingingZen()
     closeChallengeStage()
 
+    // A guided dose is launch-scoped. Leaving Exercises through the sidebar
+    // must end that launch just as reliably as its Back button; otherwise the
+    // old prescription and target remount when Exercises is visited again.
+    // Mark the handoff returned without redirecting away from the tab the
+    // singer deliberately chose. Hear Yourself consumes it on their return.
+    if (prevTab === TAB_EXERCISES && currentGuidedPracticeLaunch() !== null) {
+      returnFromGuidedPractice()
+      resetExerciseLaunchState()
+    }
+
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
     // lingers after leaving and micActive stays stuck on — making the mic
@@ -1689,10 +1790,6 @@ const AppShell: Component<AppProps> = (props) => {
   // input now.
   if (activeTab() === TAB_GUITAR) {
     guitarCtx.guitar.applyGuitarInputDevice()
-  }
-
-  const handleTabChange = (newTab: ActiveTab) => {
-    setActiveTab(newTab)
   }
 
   // Compose autosave is silent: melodyStore.setMelody persists (debounced
@@ -2028,6 +2125,7 @@ const AppShell: Component<AppProps> = (props) => {
   const navigationVoiceCommands = createNavigationVoiceCommands({
     suspended: () => transportShortcutHandlers.isSuspended?.() === true,
     openVoiceHelp: () => setShowVoiceHelp(true),
+    navigateToTab: handleTabChange,
   })
   onCleanup(registerVoiceCommands(() => navigationVoiceCommands))
   const mercurySingCommands = createMercurySingVoiceCommands()
@@ -2516,7 +2614,6 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   onMount(() => {
-    initTheme()
     initDefaultOGTags()
 
     // Blur a <select> after a pointer pick so Spacebar hits the global
@@ -3754,6 +3851,18 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_ANALYSIS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
                   <AnalysisPage />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_VOICE_HISTORY}>
+                <TabErrorBoundary tabName={tabLabel(TAB_VOICE_HISTORY)}>
+                  <VoiceHistoryPage
+                    draftTitle={voiceHistoryDraftTitle()}
+                    onDraftTitleChange={setVoiceHistoryDraftTitle}
+                    onLeaveRequestReady={(request) => {
+                      requestVoiceHistoryLeave = request
+                    }}
+                  />
                 </TabErrorBoundary>
               </Show>
 

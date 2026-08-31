@@ -48,3 +48,16 @@
 :global(.app-tab.active) .tabIcon {
   opacity: 1;
 }
+
+/* Drum Night is a standalone document rather than a hash-routed app tab.
+   It still belongs beside the Play destinations, but remains an anchor so
+   open-in-new-tab, copy-link and the full-document loading cue all work. */
+.roomLink {
+  color: color-mix(in srgb, var(--accent) 58%, #e7ad52);
+  text-decoration: none;
+}
+
+.roomLink:hover,
+.roomLink:focus-visible {
+  color: var(--text-primary);
+}

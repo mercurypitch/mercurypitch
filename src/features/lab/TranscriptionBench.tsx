@@ -19,8 +19,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { WaveformBars } from '@/components/icons'
-import type { MidiSong, MidiSongTrack } from '@/lib/midi-song'
-import { createBeatClock, parseMidiSong } from '@/lib/midi-song'
+import type { MidiSong, MidiSongPitchedTrack } from '@/lib/midi-song'
+import { createBeatClock, isPitchedMidiSongTrack, parseMidiSong, } from '@/lib/midi-song'
 import { downloadMIDI } from '@/lib/piano-roll'
 import { midiToNote } from '@/lib/scale-data'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
@@ -156,12 +156,17 @@ export const TranscriptionBench: Component = () => {
     })),
   )
 
-  const referenceTrack = createMemo<MidiSongTrack | null>(() => {
+  const pitchedReferenceTracks = createMemo<readonly MidiSongPitchedTrack[]>(
+    () => reference()?.tracks.filter(isPitchedMidiSongTrack) ?? [],
+  )
+
+  const referenceTrack = createMemo<MidiSongPitchedTrack | null>(() => {
     const song = reference()
     if (song === null) return null
+    const pitchedTracks = pitchedReferenceTracks()
     return (
-      song.tracks.find((track) => track.id === trackId()) ??
-      pickReferenceTrack(song.tracks) ??
+      pitchedTracks.find((track) => track.id === trackId()) ??
+      pickReferenceTrack(pitchedTracks) ??
       null
     )
   })
@@ -391,9 +396,17 @@ export const TranscriptionBench: Component = () => {
         setMessage(`${file.name} is not a tab this can read.`)
         return
       }
+      const pitchedTracks = song.tracks.filter(isPitchedMidiSongTrack)
+      if (pitchedTracks.length === 0) {
+        setReference(null)
+        setReferenceName('')
+        setTrackId('')
+        setMessage(`${file.name} has no pitched track to use as reference.`)
+        return
+      }
       setReference(song)
       setReferenceName(file.name)
-      setTrackId(pickReferenceTrack(song.tracks)?.id ?? '')
+      setTrackId(pickReferenceTrack(pitchedTracks)?.id ?? '')
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : 'That tab could not be read.',
@@ -789,7 +802,7 @@ export const TranscriptionBench: Component = () => {
         </label>
 
         <Show when={reference()}>
-          {(song) => (
+          {(_song) => (
             <label class={styles.slot}>
               <span class={styles.slotLabel}>Reference track</span>
               <span class={styles.slotHint}>{referenceName()}</span>
@@ -797,7 +810,7 @@ export const TranscriptionBench: Component = () => {
                 value={trackId()}
                 onChange={(event) => setTrackId(event.currentTarget.value)}
               >
-                <For each={song().tracks}>
+                <For each={pitchedReferenceTracks()}>
                   {(track) => (
                     <option value={track.id}>
                       {track.name} ({track.noteCount})

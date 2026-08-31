@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
-import { TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
@@ -40,26 +40,45 @@ describe('Home destination gallery', () => {
       { kind: 'page', href: '/karaoke' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
-      { kind: 'tab', tab: TAB_EXERCISES },
-      { kind: 'tab', tab: TAB_EAR_LAB },
-      { kind: 'tab', tab: TAB_ANALYSIS },
+      { kind: 'page', href: '/drum-night' },
       { kind: 'tab', tab: TAB_JAM },
+      { kind: 'tab', tab: TAB_EAR_LAB },
+      { kind: 'tab', tab: TAB_VOICE_HISTORY },
+      { kind: 'tab', tab: TAB_ANALYSIS },
+      { kind: 'tab', tab: TAB_EXERCISES },
     ])
   })
 
-  it('draws the night rooms from pictures those rooms give away', () => {
+  it('keeps photographic night-room covers on free catalogue assets', () => {
     const { container } = render(() => <DestinationGallery />)
     const sources = [...container.querySelectorAll('img')].map(
       (image) => image.getAttribute('src') ?? '',
     )
 
-    // Both ship as free backdrops inside their own rooms. A supporter-only
-    // picture on the Home page would be handing out what people pay for.
+    // Each room shows a backdrop already available to every user. Supporter
+    // room bytes remain behind the protected room picker and delivery API.
     expect(sources).toContain('/piano-night/afterglow-studio-landscape.webp')
     expect(sources).toContain('/guitar-night/velvet-rehearsal.webp')
+    expect(sources).toContain('/drum-night/pocket-console-landscape.webp')
     for (const source of sources) {
       expect([...FREE_IMAGE_SOURCES]).toContain(source)
     }
+    expect(
+      container.querySelector('[data-destination="drumNight"] img'),
+    ).not.toBeNull()
+  })
+
+  it('describes Drum Night as a playable instrument room', () => {
+    const drumNight = HOME_DESTINATIONS.find(
+      (destination) => destination.visual === 'drumNight',
+    )
+
+    expect(drumNight).toMatchObject({
+      eyebrow: 'New room',
+      action: 'Enter Drum Night',
+    })
+    expect(drumNight?.description).toContain('touch, keys or an e-kit')
+    expect(drumNight?.description).toContain('MIDI or Guitar Pro')
   })
 
   it('admits the tap while a room is still opening', () => {
@@ -83,8 +102,9 @@ describe('Home destination gallery', () => {
       ...container.querySelectorAll<HTMLElement>('[data-destination]'),
     ]
 
-    // Every navigable destination plus the veiled coming-soon teaser.
-    expect(covers).toHaveLength(HOME_DESTINATIONS.length + 1)
+    // Every destination, Hear Yourself among them — it is a veiled cover,
+    // not an extra one appended after the list.
+    expect(covers).toHaveLength(HOME_DESTINATIONS.length)
 
     for (let index = 0; index < HOME_DESTINATIONS.length; index++) {
       const cover = covers[index]!
@@ -104,6 +124,21 @@ describe('Home destination gallery', () => {
     }
   })
 
+  it('gives every cover a span class, so none collapses into one column', () => {
+    // The cover's grid placement comes from a class named after its
+    // visual; a visual with no class renders "cover undefined" and the
+    // card shrinks to a twelfth of the gallery (the Ear Lab, 2026-08-28).
+    const { container } = render(() => <DestinationGallery />)
+    // Tabs render as buttons, pages as links; the teaser is a button too.
+    const covers = [...container.querySelectorAll('a, button')]
+    expect(covers.length).toBeGreaterThanOrEqual(HOME_DESTINATIONS.length)
+    for (const cover of covers) {
+      expect(cover.className, cover.textContent ?? '').not.toContain(
+        'undefined',
+      )
+    }
+  })
+
   it('keeps the teaser un-navigable and toggles its reveal on tap', () => {
     const { container } = render(() => <DestinationGallery />)
     const teaser = container.querySelector<HTMLElement>(
@@ -111,13 +146,9 @@ describe('Home destination gallery', () => {
     )!
 
     expect(teaser.tagName).toBe('BUTTON')
-    expect(teaser.getAttribute('aria-expanded')).toBe('false')
+    expect(teaser.getAttribute('aria-label')).toContain('Hear Yourself')
 
     fireEvent.click(teaser)
-    expect(teaser.getAttribute('aria-expanded')).toBe('true')
-    expect(activeTab()).toBe(TAB_HOME)
-
-    fireEvent.click(teaser)
-    expect(teaser.getAttribute('aria-expanded')).toBe('false')
+    expect(activeTab()).toBe(TAB_VOICE_HISTORY)
   })
 })

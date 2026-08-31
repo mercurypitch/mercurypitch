@@ -9,10 +9,32 @@ describe('drill views', () => {
     }
   })
 
-  it('keeps the designed rhythm drills off every door until built', () => {
-    expect(VIEW_FOR_DRILL).not.toHaveProperty('pulse')
-    expect(VIEW_FOR_DRILL).not.toHaveProperty('echo')
-    expect(SPRINT_DRILL_IDS).not.toContain('pulse')
-    expect(SPRINT_DRILL_IDS).not.toContain('echo')
+  it('opens the built drills, and keeps the unbuilt off every door', () => {
+    for (const id of [
+      'pulse',
+      'echo',
+      'span',
+      'beat-hunt',
+      'drift',
+      'gravity',
+      'the-pull',
+      'cadence',
+      'bassline',
+      'subdivide',
+    ]) {
+      expect(VIEW_FOR_DRILL).toHaveProperty(id, id)
+      expect(SPRINT_DRILL_IDS).toContain(id)
+    }
+    // The desk's drills open the desk and stay out of the sprint: they
+    // read on their own plate, never the Column.
+    for (const id of [
+      'colour',
+      'desk-colour',
+      'desk-weight',
+      'desk-critique',
+    ]) {
+      expect(VIEW_FOR_DRILL).toHaveProperty(id, 'desk')
+      expect(SPRINT_DRILL_IDS).not.toContain(id)
+    }
   })
 })

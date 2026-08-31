@@ -3,7 +3,8 @@
 // ============================================================
 // Unlocks with the X-Admin-Key (stored locally), lists every row, and
 // creates/edits/deletes challenges. Targets are entered as note names
-// ("G4 A4 B4") and converted to MelodyItem[]. A founder seed score can be set
+// ("G4 A4 B4") and converted to MelodyItem[]; a list that does not parse in
+// full is refused rather than saved short. A founder seed score can be set
 // here (the "sing it to record" flow is a later polish). All writes go through
 // the admin-gated /api/weekly endpoints.
 
@@ -14,7 +15,7 @@ import type { MelodyItem } from '@/types'
 import styles from './AdminWeeklyPage.module.css'
 import { CHALLENGE_PERIODS, DEFAULT_PERIOD_WEEKS, formatIsoWeek, reflowChanges, reflowQueue, reorder, shiftWeeks, weeksBetween, windowFrom, } from './challenge-window'
 import type { WeeklyAdminRow } from './weekly-service'
-import { createWeekly, deleteWeekly, getAdminKey, listAllWeekly, melodyItemsToNotes, notesToMelodyItems, plusOneWeekIso, setAdminKey, thisMondayUtcIso, updateWeekly, } from './weekly-service'
+import { createWeekly, deleteWeekly, getAdminKey, listAllWeekly, melodyItemsToNotes, parseTargetNotes, plusOneWeekIso, setAdminKey, thisMondayUtcIso, updateWeekly, } from './weekly-service'
 
 // Inline rather than from the icon set: the admin console does not import it,
 // and a few 14px chevrons are not worth a new dependency edge.
@@ -269,7 +270,15 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
   async function save(): Promise<void> {
     const f = form()
     if (!f) return
-    const items = notesToMelodyItems(f.notes)
+    const { items, rejected } = parseTargetNotes(f.notes)
+    if (rejected.length > 0) {
+      // Saving the survivors would ship a melody a note short, silently.
+      showNotification(
+        `Not note names: ${rejected.join(', ')}. Use letter + optional # or b + octave, e.g. "Bb4".`,
+        'error',
+      )
+      return
+    }
     if (items.length === 0) {
       showNotification('Enter target notes, e.g. "G4 A4 B4"', 'error')
       return

@@ -202,6 +202,15 @@ describe('tabSheetRenderer.laneHeight', () => {
       ),
     ).toBe(metrics.labelHeight + 3 * metrics.rowHeight)
   })
+
+  it('gives percussion a compact five-row staff', () => {
+    expect(
+      tabSheetRenderer.laneHeight(
+        lane({ content: 'percussion', scoreable: false }),
+        metrics,
+      ),
+    ).toBe(metrics.labelHeight + 4 * metrics.rowHeight)
+  })
 })
 
 describe('tabSheetRenderer.paintSystem', () => {
@@ -283,6 +292,54 @@ describe('tabSheetRenderer.paintSystem', () => {
       ...DEFAULT_GUITAR_TUNING.labels,
     ])
     expect(Number(labels[0]?.args[1])).toBeLessThan(metrics.gutterWidth)
+  })
+
+  it('writes exact GM keys at their authored beats on semantic drum rows', () => {
+    const ops = paint([
+      lane({
+        trackId: 'track-drums',
+        trackName: 'Drum kit',
+        content: 'percussion',
+        scoreable: false,
+        notes: [],
+        percussionHits: [
+          { gmKey: 36, startBeat: 0, velocity: 126 },
+          { gmKey: 38, startBeat: 1, velocity: 96 },
+          { gmKey: 42, startBeat: 2, velocity: 72 },
+          { gmKey: 49, startBeat: 4, velocity: 112 },
+        ],
+      }),
+    ])
+    const byGmKey = (gmKey: number): RecordedOp | undefined =>
+      ops.find(
+        (entry) => entry.op === 'fillText' && entry.args[0] === `${gmKey}`,
+      )
+    const staffTop = metrics.systemPaddingTop + metrics.labelHeight
+    const contentWidth = metrics.width - metrics.gutterWidth
+
+    expect(byGmKey(36)?.args.slice(1)).toEqual([
+      metrics.gutterWidth,
+      staffTop + 4 * metrics.rowHeight,
+    ])
+    expect(byGmKey(38)?.args.slice(1)).toEqual([
+      metrics.gutterWidth + contentWidth / 8,
+      staffTop + 3 * metrics.rowHeight,
+    ])
+    expect(byGmKey(42)?.args.slice(1)).toEqual([
+      metrics.gutterWidth + contentWidth / 4,
+      staffTop + metrics.rowHeight,
+    ])
+    expect(byGmKey(49)?.args.slice(1)).toEqual([
+      metrics.gutterWidth + contentWidth / 2,
+      staffTop,
+    ])
+    expect(
+      ops
+        .filter(
+          (entry) => entry.op === 'fillText' && entry.textAlign === 'right',
+        )
+        .map((entry) => entry.args[0]),
+    ).toEqual(['CY', 'HH', 'T', 'SN', 'K'])
   })
 
   it('keeps a note off the end of the neck on the last line it has', () => {

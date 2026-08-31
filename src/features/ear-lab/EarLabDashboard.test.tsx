@@ -9,7 +9,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { resetEarLabStore } from '@/stores/ear-lab-store'
+import { earAutoAdvance, earRevealHoldMs, resetEarLabStore, } from '@/stores/ear-lab-store'
 import { earClickVoice, setEarClickVoice } from './ear-sound'
 import type { EarLabView } from './EarLabDashboard'
 import { EarLabDashboard } from './EarLabDashboard'
@@ -51,6 +51,8 @@ const TOUR_HOOKS = [
   'ear.sprint',
   'ear.actions',
   'ear.drills',
+  'ear.path',
+  'ear.fieldBook',
   'ear.latency',
   'ear.rulers',
 ] as const
@@ -174,5 +176,21 @@ describe('EarLabDashboard', () => {
     expect(voices[2].getAttribute('aria-checked')).toBe('true')
     // Choosing a click plays it once — the engine is woken for it.
     expect(engine.init).toHaveBeenCalled()
+  })
+
+  it('sets the pace between trials from the rack: the hold and the switch', () => {
+    render(() => <Bench />)
+    fireEvent.click(screen.getByTestId('ear-room-chip'))
+    const hold = screen.getByTestId('ear-room-hold') as HTMLInputElement
+    expect(hold.value).toBe('1500')
+    fireEvent.input(hold, { target: { value: '3000' } })
+    expect(earRevealHoldMs()).toBe(3000)
+    expect(hold.getAttribute('aria-valuetext')).toBe('3 s')
+
+    const auto = screen.getByRole('switch', { name: 'Auto-advance' })
+    expect(auto.getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(auto)
+    expect(earAutoAdvance()).toBe(false)
+    expect(auto.getAttribute('aria-checked')).toBe('false')
   })
 })

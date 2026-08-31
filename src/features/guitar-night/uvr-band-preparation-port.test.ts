@@ -48,7 +48,17 @@ describe('createUvrGuitarNightBandPreparationPort', () => {
   })
 
   it('runs the split when only the two-stem mix exists', async () => {
-    manifestMock.mockResolvedValue(['vocal', 'instrumental'])
+    manifestMock
+      .mockResolvedValueOnce(['vocal', 'instrumental'])
+      .mockResolvedValueOnce([
+        'vocal',
+        'instrumental',
+        'drums',
+        'bass',
+        'guitar',
+        'piano',
+        'other',
+      ])
     splitMock.mockResolvedValue({
       saved: ['drums', 'bass', 'guitar', 'piano', 'other'],
       elapsedMs: 1200,

@@ -28,8 +28,12 @@ export interface PitchFrame extends F0Frame {
 export interface F0Stream {
   /** Begin a task recording: clears frames and re-zeroes the clock. */
   startTask: () => void
-  /** Frames captured since the last startTask(), time-relative to it. */
+  /** Frames captured since the last startTask(), time-relative to it.
+   *  Ends the recording. */
   takeFrames: () => PitchFrame[]
+  /** The same frames so far, without ending the recording — a live
+   *  view while a window is still open. */
+  peekFrames: () => PitchFrame[]
   /** The most recent frame, for live visual feedback (null before any). */
   latest: () => PitchFrame | null
   /**
@@ -178,6 +182,7 @@ export function createF0Stream(
       frames = []
       return taken
     },
+    peekFrames: () => frames.slice(),
     latest: () => latestFrame,
     latestSmoothed: () => smoothedFrame,
     latestLevel: () => latestRms,

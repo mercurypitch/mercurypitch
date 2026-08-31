@@ -89,6 +89,17 @@
       width: min(260px, 30vw);
     }
 
+    /* The same ceiling for the content-sized column, and the screen where the
+       lack of one bit. With no timer, launch sized itself to the capture
+       note's 46ch — 344px of a 650px row, against the 260px the timer column
+       gets — and the dial gave up the missing 19px. Nineteen pixels of width
+       is a second line of the dial's readout, and that second line put Siren,
+       Dynamic Swell, Chord Stacker and Staccato Precision 7px past the bottom
+       of a 1024x560 window. */
+    .exercise-idle-launch {
+      max-width: min(260px, 30vw);
+    }
+
     /* Same definite row as the wide case — see exercises.css. Only where
        there is a launch column with a width of its own to divide against;
        around a lone Start button the row stays content-sized so the two

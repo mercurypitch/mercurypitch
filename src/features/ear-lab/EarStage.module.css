@@ -72,14 +72,87 @@
   border-color: var(--stage-brass-line);
 }
 
-.stop {
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+}
+
+.stop {
+  padding: 8px;
   color: var(--stage-garnet);
   border-color: rgb(163 69 79 / 50%);
 }
 
 .stop:hover {
   background: rgb(163 69 79 / 18%);
+}
+
+/* The auto-advance switch: a brass lamp on a short track. */
+.auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--stage-touch);
+  padding: 6px 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+  color: var(--stage-muted);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.auto:hover {
+  border-color: var(--stage-brass-line);
+}
+
+.auto[aria-checked='true'] {
+  color: var(--stage-brass-bright);
+}
+
+.autoLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.autoTrack {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border: 1px solid var(--stage-line);
+  border-radius: 999px;
+  background: rgb(10 11 13 / 80%);
+  transition: background 140ms ease;
+}
+
+.autoKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--stage-muted);
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.auto[aria-checked='true'] .autoTrack {
+  border-color: var(--stage-brass-line);
+  background: rgb(201 164 94 / 22%);
+}
+
+.auto[aria-checked='true'] .autoKnob {
+  transform: translateX(14px);
+  background: var(--stage-brass-bright);
+  box-shadow: 0 0 8px rgb(231 198 125 / 55%);
 }
 
 .identity {
@@ -107,9 +180,40 @@
   color: var(--stage-muted);
 }
 
+/* The calibration's three tracks, as bars that fill with their turns. */
+.turns {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.turnsTrack {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(239 230 214 / 12%);
+  overflow: hidden;
+}
+
+.turnsTrack::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left;
+  background: var(--stage-mercury);
+  transition: transform 220ms ease;
+}
+
+.turnsActive::after {
+  background: var(--stage-brass-bright);
+}
+
 /* ── The instrument ──────────────────────────────────────────── */
 
 .body {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -139,23 +243,52 @@
   filter: drop-shadow(0 18px 32px rgb(0 0 0 / 50%));
 }
 
-.status {
-  max-width: 56ch;
-  min-height: 1.5em;
+/* ── The headline: the question, above the pads ──────────────── */
+
+.headline {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 4px 8px;
+  border-bottom: 1px solid var(--stage-line);
+}
+
+.question {
+  min-height: 1.3em;
   margin: 0;
-  text-align: center;
   font-family: var(--stage-serif);
-  font-size: 1.08rem;
-  line-height: 1.4;
+  font-size: 1.35rem;
+  line-height: 1.3;
   color: var(--stage-parchment);
 }
 
-.statusRight {
+.headlineRight .question {
   color: var(--stage-signal);
 }
 
-.statusWrong {
+.headlineWrong .question {
   color: var(--stage-garnet);
+}
+
+.keyHint {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+/* A key the browser took: said once, under the headline. */
+.swallowed {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed var(--stage-brass-line);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--stage-parchment);
 }
 
 /* ── The answer console ──────────────────────────────────────── */
@@ -260,6 +393,96 @@
   color: var(--stage-muted);
 }
 
+/* ── Last call: the verdict kept under the pads ──────────────── */
+
+.lastCall {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-areas:
+    'mark kicker'
+    'mark line'
+    'mark note';
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--stage-brass-line);
+  border-radius: 4px;
+  background: rgb(239 230 214 / 4%);
+}
+
+/* The pads armed: a brass tick on the rail, with the click. */
+.lastCallArmed {
+  border-left-color: var(--stage-brass);
+}
+
+.lastCallArmed::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: -3px;
+  width: 3px;
+  height: 14px;
+  background: var(--stage-brass-bright);
+  box-shadow: 0 0 8px var(--stage-brass);
+}
+
+.lastCallRight {
+  border-left-color: var(--stage-signal);
+}
+
+.lastCallWrong {
+  border-left-color: var(--stage-garnet);
+}
+
+.lastCallMark {
+  grid-area: mark;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+.lastCallRight .lastCallMark {
+  color: var(--stage-signal);
+}
+
+.lastCallWrong .lastCallMark {
+  color: var(--stage-garnet);
+}
+
+.lastCallKicker {
+  grid-area: kicker;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stage-brass);
+}
+
+.lastCallLine {
+  grid-area: line;
+  margin: 0;
+  font-family: var(--stage-serif);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--stage-parchment);
+}
+
+.lastCallNote {
+  grid-area: note;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--stage-muted);
+}
+
 /* ── The tap pad: the rhythm seam's one input ────────────────── */
 
 .tapPad {
@@ -326,8 +549,9 @@
 
 .consoleLink {
   align-self: center;
-  min-height: 32px;
-  padding: 0;
+  /* A link in the console is still a touch target: 44px like a pad. */
+  min-height: 44px;
+  padding: 4px 0;
   border: 0;
   background: none;
   font: inherit;
@@ -353,6 +577,66 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+}
+
+/* The phrase strip: what has been tapped so far, in solfège. */
+/* The ladder's one footnote: the top rung. */
+.ladderHint {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--stage-muted);
+}
+
+.phraseStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 0;
+}
+
+.phraseChip {
+  padding: 4px 9px;
+  border: 1px solid var(--stage-brass-bright);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--stage-parchment);
+  background: color-mix(in srgb, var(--stage-brass-bright) 14%, transparent);
+}
+
+.phraseCount {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--stage-parchment) 65%, transparent);
+}
+
+/* The mic lamp on a sung answer: lit while the window is open, its
+   glow the input level (--mic-level, 0..1 on a dB scale). */
+.micLamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--stage-line);
+  border-radius: 50%;
+  color: var(--stage-muted);
+  background: rgb(20 23 28 / 70%);
+  transition:
+    box-shadow 90ms linear,
+    background 90ms linear;
+}
+
+.micLampOn {
+  color: var(--stage-brass-bright);
+  border-color: var(--stage-brass-line);
+  background: rgb(201 164 94 / calc(6% + 28% * var(--mic-level, 0)));
+  box-shadow: 0 0 calc(2px + 18px * var(--mic-level, 0))
+    rgb(231 198 125 / calc(0.2 + 0.6 * var(--mic-level, 0)));
 }
 
 .pads {
@@ -421,6 +705,20 @@
   border-radius: 3px;
   color: var(--stage-brass-bright);
   font-size: 0.72rem;
+}
+
+/* The stimulus lamp on a first/second pad. */
+.padLamp {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgb(95 199 184 / 45%);
+  border-radius: 50%;
+  background: rgb(95 199 184 / 14%);
+}
+
+.padLampOn {
+  background: var(--stage-signal);
+  box-shadow: 0 0 8px var(--stage-signal);
 }
 
 .padMark {
@@ -706,8 +1004,14 @@
     font-size: 1rem;
   }
 
-  .stopLabel {
+  /* The switch keeps its track and its aria-label; the word would
+     push the live line onto two rows. The rack spells it out. */
+  .autoLabel {
     display: none;
+  }
+
+  .auto {
+    padding: 6px 8px;
   }
 
   .body {
@@ -718,14 +1022,23 @@
     gap: 10px;
   }
 
-  /* Budget: bar, status, console and the pill band, so the stage need
-     not scroll on a phone. */
+  /* Budget: bar, the console with its headline and the pill band, so
+     the stage need not scroll on a phone. */
   .figure > svg {
-    max-height: clamp(140px, calc(100cqh - 360px), 300px);
+    max-height: clamp(140px, calc(100cqh - 380px), 300px);
   }
 
-  .status {
-    font-size: 0.96rem;
+  .headline {
+    padding: 0 2px 6px;
+  }
+
+  .question {
+    font-size: 1.2rem;
+  }
+
+  /* Touch answers on a phone; the keycaps are hidden with it. */
+  .keyHint {
+    display: none;
   }
 
   /* Sticky over scrolling content, so both stay near-opaque: nothing
@@ -792,7 +1105,10 @@
   .pad,
   .playPad,
   .back,
-  .stop {
+  .stop,
+  .auto,
+  .autoTrack,
+  .autoKnob {
     transition: none;
   }
 }

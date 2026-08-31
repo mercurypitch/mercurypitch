@@ -2,7 +2,7 @@
 // Dexie (IndexedDB) Adapter
 // ============================================================
 
-import type { Table } from 'dexie'
+import type { Table, UpdateSpec } from 'dexie'
 import DexieDB from 'dexie'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
@@ -59,16 +59,21 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
-    // v6: exact session-and-stem reads let standalone playback rooms hydrate
-    // only the band parts they selected instead of materializing every blob.
+    // v6 reconciles two histories that both shipped in preview builds: main's
+    // exact session-and-stem index and Hear Yourself's metadata/audio stores.
+    // Keep this union registered so a v6 voice preview does not lose its rows
+    // while passing through the v7 upgrade below.
     this.version(6).stores({
       uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
     })
-    // v7: canonical Piano projects and non-destructive legacy-import markers.
-    // Both stores are intentionally local-only and absent from CLOUD_ENTITIES.
+    // v7 likewise preserves main's local Piano stores and the voice-preview
+    // contour store. All remain local-only and absent from CLOUD_ENTITIES.
     this.version(7).stores({
       pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
       pianoProjectMigrations: 'id, &migrationKey, completedAt',
+      voiceTakeContours: 'id, &takeId',
     })
     // v8: song manifests — the library list, without any audio.
     //
@@ -79,6 +84,32 @@ class DexieDatabase extends DexieDB {
     // empty list. See docs/plans/device-sync.md.
     this.version(8).stores({
       songManifests: 'id, userId, fileHash, [userId+fileHash], updatedAt',
+    })
+    // v9 reconciles both schemas that reached browsers at v8: main's synced
+    // song manifest and the Hear Yourself preview's local voice stores. The
+    // complete union preserves either history while adding whichever stores
+    // that browser has not seen yet.
+    this.version(9).stores({
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+      pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
+      pianoProjectMigrations: 'id, &migrationKey, completedAt',
+      songManifests: 'id, userId, fileHash, [userId+fileHash], updatedAt',
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
+      voiceTakeContours: 'id, &takeId',
+    })
+    // v10: selecting the newest durable UVR stem must not materialize every
+    // historical duplicate blob first. The trailing timestamp keeps the
+    // lookup cursor-ordered while preserving the existing exact-kind index.
+    this.version(10).stores({
+      uvrStemBlobs:
+        'id, sessionId, stemType, createdAt, [sessionId+stemType], [sessionId+stemType+createdAt]',
+    })
+    // v11: portable Drum Night projects and scalar-only completed take
+    // summaries. Both remain device-local and absent from CLOUD_ENTITIES.
+    this.version(11).stores({
+      drumProjects: 'id, updatedAt, sourceKind, sourceRef',
+      drumTakeSummaries: 'id, projectId, completedAt, [projectId+completedAt]',
     })
   }
 }
@@ -236,19 +267,20 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
-    const existing = await this.table.get(id)
-    if (!existing) {
+    const now = new Date().toISOString()
+    // Dexie's field-level update is atomic. A read-merge-put sequence can lose
+    // a concurrent patch to a different field on the same local record.
+    const changed = await this.table.update(id, {
+      ...patch,
+      updatedAt: now,
+    } as UpdateSpec<T>)
+    if (changed === 0) {
       throw new Error(`Entity not found in ${this.table.name}: ${id}`)
     }
-    const now = new Date().toISOString()
-    const updated = {
-      ...existing,
-      ...patch,
-      id: existing.id,
-      createdAt: existing.createdAt,
-      updatedAt: now,
-    } as T
-    await this.table.put(updated)
+    const updated = await this.table.get(id)
+    if (updated === undefined) {
+      throw new Error(`Entity disappeared from ${this.table.name}: ${id}`)
+    }
     return updated
   }
 
@@ -348,6 +380,25 @@ export class DexieAdapter implements DatabaseAdapter {
       .toArray()
   }
 
+  /** Read only the newest value under a compound prefix. */
+  readLatestByCompoundPrefixStrict<T extends DbEntity>(
+    entityName: string,
+    indexName: string,
+    prefix: readonly (string | number)[],
+  ): Promise<T | undefined> {
+    return this.db
+      .table<T, string>(entityName)
+      .where(indexName)
+      .between(
+        [...prefix, DexieDB.minKey],
+        [...prefix, DexieDB.maxKey],
+        true,
+        true,
+      )
+      .reverse()
+      .first()
+  }
+
   /** Add a caller-owned local row and preserve uniqueness failures. */
   async addStrict<T extends DbEntity>(
     entityName: string,
@@ -369,6 +420,11 @@ export class DexieAdapter implements DatabaseAdapter {
   /** Delete one local row while preserving IndexedDB failures for the caller. */
   deleteByIdStrict(entityName: string, id: string): Promise<void> {
     return this.db.table(entityName).delete(id)
+  }
+
+  /** Clear one local store while preserving transaction and failure semantics. */
+  clearStrict(entityName: string): Promise<void> {
+    return this.db.table(entityName).clear()
   }
 
   async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {

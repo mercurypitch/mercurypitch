@@ -1,6 +1,7 @@
 // Compiled tab notes keep static score work out of the renderer's frame loop.
 // ============================================================
 
+import { chordLabelForMidis } from '@/lib/guitar/chord-naming'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { TabNoteIntervalIndex, TabScene, TabSceneEvent, TabSceneNote, } from './TabRenderer'
@@ -103,9 +104,15 @@ export function compileTabNotes(
   }
   const events = eventGroups
     .map<TabSceneEvent>((eventNotes) => {
-      const chordLabel = eventNotes.find(
-        (note) => note.notation?.chordLabel !== undefined,
-      )?.notation?.chordLabel
+      // A Guitar Pro file names its own chords. MIDI cannot, so the notes are
+      // named from themselves rather than leaving the player to read a bare
+      // `0 2` off the highway mid-passage. An authored name always wins: it is
+      // what the writer of the tab meant, voicing and all.
+      const chordLabel =
+        eventNotes.find((note) => note.notation?.chordLabel !== undefined)
+          ?.notation?.chordLabel ??
+        chordLabelForMidis(eventNotes.map((note) => note.midi)) ??
+        undefined
       const base = {
         id: `event-${eventNotes[0]?.id ?? 'empty'}`,
         startBeat: Math.min(...eventNotes.map((note) => note.startBeat)),

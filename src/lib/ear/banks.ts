@@ -202,6 +202,242 @@ export const CONTOUR_BANK: readonly EarBankItem[] = [
   },
 ]
 
+// ── Pulse: rhythm dictation, tapped back ────────────────────────
+
+/** Onsets in beats; an onset at 4 or beyond crosses into a second
+ *  bar (`barBeats` in rhythm-take reads the span off the payload).
+ *  Seeds climb with the finest subdivision in the pattern (quarters,
+ *  eighths, triplets, sixteenths) and with the count of onsets;
+ *  `rhythm-take.ts` reads the tolerance tier straight off the
+ *  payload. The two-bar items give the faster subdivisions air —
+ *  a figure, then room — instead of squeezing more taps into one
+ *  bar than a pointer can land. */
+export const PULSE_BANK: readonly EarBankItem[] = [
+  {
+    itemId: 'p-q3',
+    label: '3 quarters',
+    name: 'Three quarters',
+    seed: 900,
+    payload: [0, 1, 2],
+  },
+  {
+    itemId: 'p-q4',
+    label: '4 quarters',
+    name: 'Four quarters',
+    seed: 950,
+    payload: [0, 1, 2, 3],
+  },
+  {
+    itemId: 'p-q-rest',
+    label: 'rest on 2',
+    name: 'A rest on two',
+    seed: 1000,
+    payload: [0, 2, 3],
+  },
+  {
+    itemId: 'p-e-and',
+    label: 'and of 2',
+    name: 'The and of two',
+    seed: 1100,
+    payload: [0, 1, 1.5, 2],
+  },
+  {
+    itemId: 'p-e-one',
+    label: 'eighths on 1',
+    name: 'Eighths on one',
+    seed: 1150,
+    payload: [0, 0.5, 1, 2, 3],
+  },
+  {
+    itemId: 'p-e-off',
+    label: 'off the beat',
+    name: 'Off the beat',
+    seed: 1250,
+    payload: [0.5, 1, 2.5, 3],
+  },
+  {
+    itemId: 'p-e-run',
+    label: 'eighth run',
+    name: 'An eighth run',
+    seed: 1300,
+    payload: [0, 0.5, 1, 1.5, 2, 3],
+  },
+  {
+    itemId: 'p-t-one',
+    label: 'triplet on 1',
+    name: 'A triplet on one',
+    seed: 1400,
+    payload: [0, 1 / 3, 2 / 3, 1],
+  },
+  {
+    itemId: 'p-t-two',
+    label: 'triplet on 2',
+    name: 'A triplet on two',
+    seed: 1500,
+    payload: [0, 1, 4 / 3, 5 / 3, 2],
+  },
+  {
+    itemId: 'p-s-one',
+    label: '16ths on 1',
+    name: 'Sixteenths on one',
+    seed: 1550,
+    payload: [0, 0.25, 0.5, 1],
+  },
+  {
+    itemId: 'p-s-gallop',
+    label: 'gallop',
+    name: 'A gallop',
+    seed: 1600,
+    payload: [0, 0.75, 1, 2],
+  },
+  {
+    itemId: 'p-s-mixed',
+    label: 'mixed',
+    name: 'Mixed subdivisions',
+    seed: 1700,
+    payload: [0, 0.5, 0.75, 1, 2.5],
+  },
+  {
+    itemId: 'p-e-across',
+    label: '2 bars · and',
+    name: 'Over the barline',
+    seed: 1350,
+    payload: [0, 1.5, 2, 3, 4, 5.5, 6],
+  },
+  {
+    itemId: 'p-t-air',
+    label: '2 bars · triplet',
+    name: 'A triplet with air',
+    seed: 1520,
+    payload: [0, 1, 4 / 3, 5 / 3, 2, 4, 5],
+  },
+  {
+    itemId: 'p-s-air',
+    label: '2 bars · 16ths',
+    name: 'Sixteenths with air',
+    seed: 1650,
+    payload: [0, 0.25, 0.5, 1, 4, 4.25, 4.5, 5],
+  },
+]
+
+/** The Chart reads the same patterns Pulse dictates — written on the
+ *  drum instead of sounded — so the two drills stay comparable. The
+ *  ids differ because item difficulties are stored per item: a
+ *  pattern hard to hold in the ear is not the same item as a pattern
+ *  hard to read off the paper. */
+export const CHART_BANK: readonly EarBankItem[] = PULSE_BANK.map((item) => ({
+  ...item,
+  itemId: `c-${item.itemId.slice(2)}`,
+}))
+
+// ── Echo: phrases as scale degrees, 8 the tonic above ─────────────
+//
+// Fourteen phrases of three to six notes. The seed rises with length
+// and with the widest leap: steps and triads first, then turns and
+// scales, then the phrases that leap a sixth or fall from the octave.
+// The name is the phrase in solfège, which is what the reveal says.
+
+export const ECHO_BANK: readonly EarBankItem[] = [
+  {
+    itemId: 'e-steps-up',
+    label: '3 · steps',
+    name: 'Do Re Mi',
+    seed: 900,
+    payload: [1, 2, 3],
+  },
+  {
+    itemId: 'e-triad-up',
+    label: '3 · triad',
+    name: 'Do Mi Sol',
+    seed: 950,
+    payload: [1, 3, 5],
+  },
+  {
+    itemId: 'e-steps-down',
+    label: '3 · steps down',
+    name: 'Mi Re Do',
+    seed: 950,
+    payload: [3, 2, 1],
+  },
+  {
+    itemId: 'e-turn',
+    label: '4 · turn',
+    name: 'Do Re Mi Do',
+    seed: 1050,
+    payload: [1, 2, 3, 1],
+  },
+  {
+    itemId: 'e-scale-down',
+    label: '5 · scale down',
+    name: 'Sol Fa Mi Re Do',
+    seed: 1100,
+    payload: [5, 4, 3, 2, 1],
+  },
+  {
+    itemId: 'e-walk-up',
+    label: '4 · walk up',
+    name: 'Mi Fa Sol La',
+    seed: 1150,
+    payload: [3, 4, 5, 6],
+  },
+  {
+    itemId: 'e-fifth-turn',
+    label: '4 · fifth',
+    name: 'Do Sol La Sol',
+    seed: 1200,
+    payload: [1, 5, 6, 5],
+  },
+  {
+    itemId: 'e-arch',
+    label: '5 · arch',
+    name: 'Do Mi Sol Mi Do',
+    seed: 1250,
+    payload: [1, 3, 5, 3, 1],
+  },
+  {
+    itemId: 'e-lead-home',
+    label: '4 · to home',
+    name: 'Sol La Ti Do′',
+    seed: 1300,
+    payload: [5, 6, 7, 8],
+  },
+  {
+    itemId: 'e-leap-seven',
+    label: '4 · leaps',
+    name: 'Do Fa Ti Do′',
+    seed: 1400,
+    payload: [1, 4, 7, 8],
+  },
+  {
+    itemId: 'e-fall',
+    label: '5 · fall',
+    name: 'La Fa Re Mi Do',
+    seed: 1500,
+    payload: [6, 4, 2, 3, 1],
+  },
+  {
+    itemId: 'e-sixth',
+    label: '6 · sixth',
+    name: 'Do Mi La Do′ Sol Mi',
+    seed: 1600,
+    payload: [1, 3, 6, 8, 5, 3],
+  },
+  {
+    itemId: 'e-cascade',
+    label: '6 · cascade',
+    name: 'Do′ Sol Re Sol Mi Do',
+    seed: 1650,
+    payload: [8, 5, 2, 5, 3, 1],
+  },
+  {
+    itemId: 'e-wide',
+    label: '6 · wide',
+    name: 'Do La Re Do′ Fa Do',
+    seed: 1750,
+    payload: [1, 6, 2, 8, 4, 1],
+  },
+]
+
 // ── Generic state + picker ──────────────────────────────────────
 
 /** An item's current rating: stored override or fresh at the seed. */

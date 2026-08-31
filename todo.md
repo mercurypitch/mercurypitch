@@ -5,19 +5,27 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 
 ---
 
-## In Progress (on branches)
+## Recently shipped
 
-- [ ] **Guitar practice page** (`feat/guitar-practice`)
+Everything below has landed on `main`. The branches this section used to point
+at — `feat/guitar-practice`, `feat/runpods-server-rendering-8v2oxt`,
+`feat/support-badge`, `feat/practice-intelligence` — are all deleted, so the
+code path is the reference now.
+
+- [x] **Guitar practice page** — `src/features/guitar-practice/`, since joined by
+      `guitar/`, `guitar-night/` and `guitar-tab-3d/` as guitar became a
+      catalogue surface of its own.
 - [x] **Vocal analysis redesign** — one responsive dashboard, capability-tiered
       metrics, Sonic-Visualiser tooling moved to the hidden Lab. Supersedes the
       phased plans in `docs/plans/va/`.
-- [ ] **Server-side RunPod separation** (`feat/runpods-server-rendering-8v2oxt`) — GPU + CPU tiers, off by default
-- [ ] **Header support badge** (`feat/support-badge`) — version + Ko-fi pill
-- [x] **Practice Intelligence** (`feat/practice-intelligence`) — adaptive difficulty engine, weakness drill generator, practice summary & trends dashboard
+- [x] **Server-side RunPod separation** — GPU + CPU tiers, off by default.
+      `src/lib/runpod.ts` and `src/lib/runpod-bridge.ts`.
+- [x] **Header support badge** — version + Ko-fi pill. `src/components/SupportBadge.tsx`.
+- [x] **Practice Intelligence** — adaptive difficulty engine, weakness drill generator, practice summary & trends dashboard
 
 ---
 
-## ~~Practice Intelligence~~ ✅
+## ~~Practice Intelligence~~
 
 - [x] **Adaptive difficulty engine** -- Auto-adjust exercise difficulty based on rolling performance (EMA of last 10 scores)
 - [x] **Weakness drill generator** -- Analyze exercise history to find weak areas, generate targeted micro-drills
@@ -57,13 +65,13 @@ per-use server cost. See [docs/plans/premium.md](docs/plans/premium.md).
 
 ## UX & Quality of Life
 
-- [x] **Keyboard shortcut system** -- Space=play/pause, Esc=close/stop, Home=seek start, R=repeat, P=session, M=mic, Arrows=speed, ?=help overlay ✅  (1-9=tabs still pending)
+- [x] **Keyboard shortcut system** -- Space=play/pause, Esc=close/stop, Home=seek start, R=repeat, P=session, M=mic, Arrows=speed, ?=help overlay (1-9=tabs still pending)
 - [ ] **Onboarding flow with voice type detection** -- 3-step wizard: mic test -> range detection -> recommended routine
 - [ ] **Practice timer with break reminders** -- Pomodoro-style vocal rest reminders (25min/5min)
 - [ ] **Theme auto-switch & accent colors** -- Follow system dark/light preference, customizable accent palette
 - [ ] **Loading skeletons** -- Skeleton placeholders while melody/session data loads
 - [ ] **Transition animations** -- Smooth transitions for sidebar panels, tab switches, modal open/close
-- [x] **Undo toast** -- Show "Undo" action in toast notifications after destructive operations ✅
+- [x] **Undo toast** -- Show "Undo" action in toast notifications after destructive operations
 
 ---
 
@@ -107,16 +115,16 @@ per-use server cost. See [docs/plans/premium.md](docs/plans/premium.md).
 - [ ] **Canvas draw throttling** -- Skip PitchCanvas RAF redraw when nothing changed
 - [ ] **Virtual scrolling for NoteList** -- Virtualize for 100+ note melodies
 - [ ] **Lazy-load tabs** -- Defer Community, Leaderboard, Analysis, Challenges tabs
-- [x] **Global error handler memory leak** -- Cap `logs[]` array at 500 entries ✅
+- [x] **Global error handler memory leak** -- Cap `logs[]` array at 500 entries
 
 ---
 
 ## Bug Fixes
 
-- [x] **Mic state mismatch warning** -- `practice-engine.ts` mic state mismatch with audioEngine ✅ (throttled warning, auto-syncs)
-- [x] **Silent AudioContext resume failures** -- Three locations swallow resume errors ✅ (throttled user-facing notification added)
-- [x] **Empty catch in WelcomeScreen** -- ~~`catch (_err) { }` silently swallows errors~~ ✅ (verified: already handled, `_err` underscore-prefixes intentional unused var)
-- [x] **Duplicate error handlers** -- ~~Both `AppErrorBoundary` and `global-error-handler` attach `window.onerror`~~ ✅ (verified: intentional — global-error-handler captures for E2E, AppErrorBoundary shows crash modal — different purposes)
+- [x] **Mic state mismatch warning** -- `practice-engine.ts` mic state mismatch with audioEngine (throttled warning, auto-syncs)
+- [x] **Silent AudioContext resume failures** -- Three locations swallow resume errors (throttled user-facing notification added)
+- [x] **Empty catch in WelcomeScreen** -- ~~`catch (_err) { }` silently swallows errors~~ (verified: already handled, `_err` underscore-prefixes intentional unused var)
+- [x] **Duplicate error handlers** -- ~~Both `AppErrorBoundary` and `global-error-handler` attach `window.onerror`~~ (verified: intentional — global-error-handler captures for E2E, AppErrorBoundary shows crash modal — different purposes)
 
 ---
 

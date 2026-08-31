@@ -377,7 +377,14 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                   <span class="exercise-recent-type">{entry.type}</span>
                   <span
                     class="exercise-recent-score"
-                    style={`color:${entry.score >= 80 ? '#22c55e' : entry.score >= 50 ? '#eab308' : '#ef4444'}`}
+                    style={{
+                      color:
+                        entry.score >= 80
+                          ? 'var(--exercise-score-high)'
+                          : entry.score >= 50
+                            ? 'var(--exercise-score-mid)'
+                            : 'var(--exercise-score-low)',
+                    }}
                   >
                     {entry.score}%
                   </span>

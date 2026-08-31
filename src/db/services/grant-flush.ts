@@ -122,7 +122,16 @@ function bindLifecycleListeners(): void {
  * the buffer would silently reset a singer's visible progress bars to
  * whatever was last stored.
  */
-export async function flushGrants(unloading = false): Promise<void> {
+export interface GrantFlushCredentials {
+  readonly cloud: boolean
+  readonly headers: Record<string, string>
+  readonly userId: string
+}
+
+export async function flushGrants(
+  unloading = false,
+  credentials?: GrantFlushCredentials,
+): Promise<void> {
   if (inFlight) return inFlight
   if (pendingAchievements.size === 0 && pendingBadges.size === 0) return
 
@@ -138,10 +147,16 @@ export async function flushGrants(unloading = false): Promise<void> {
 
   // Snapshotted here, synchronously, rather than read inside the request.
   // logout() flushes and then clears the token in the same tick; resolving
-  // the identity later would send the write with no credentials.
-  const cloud = cloudActive()
-  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
-  const userId = getUserId()
+  // the identity later would send the write with no credentials. A caller
+  // that reaches this module through a dynamic import passes the snapshot it
+  // took before yielding, because by the time the module resolves the token
+  // is already gone.
+  const cloud = credentials?.cloud ?? cloudActive()
+  const headers = credentials?.headers ?? {
+    'Content-Type': 'application/json',
+    ...getAuthHeaders(),
+  }
+  const userId = credentials?.userId ?? getUserId()
   const startedAt = epoch
 
   const restore = (): void => {

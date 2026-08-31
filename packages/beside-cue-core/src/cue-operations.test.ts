@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { activateCue, createCue, pauseCue, replaceCue, resumeCue, } from './cue-operations'
 import { CueDomainError } from './errors'
 import { createInitialState } from './state'
+import { CueTextValidationError } from './text'
 
 const FIRST_INPUT = {
   id: 'cue-1',
   pullText: '  Doom   scrolling ',
   bSideText: ' Play guitar ',
+  cueContextSuggestionId: 'anchor.scrolling.in-bed',
+  cueContextText: '  When I get into bed with my phone. ',
   at: '2026-08-06T08:00:00+02:00',
 } as const
 
@@ -42,6 +45,8 @@ describe('cue lifecycle', () => {
       status: 'active',
       pullText: 'Doom scrolling',
       bSideText: 'Play guitar',
+      cueContextSuggestionId: 'anchor.scrolling.in-bed',
+      cueContextText: 'When I get into bed with my phone.',
     })
     expect(() =>
       activateCue(active.state, 'cue-2', '2026-08-06T08:02:00+02:00'),
@@ -49,6 +54,18 @@ describe('cue lifecycle', () => {
     expect(
       active.state.cues.filter((cue) => cue.status === 'active'),
     ).toHaveLength(1)
+  })
+
+  it('omits cue context properties when no context is chosen', () => {
+    const created = createCue(createInitialState(), {
+      id: 'cue-legacy',
+      pullText: 'Doom scrolling',
+      bSideText: 'Play guitar',
+      at: FIRST_INPUT.at,
+    })
+
+    expect(created.cue).not.toHaveProperty('cueContextSuggestionId')
+    expect(created.cue).not.toHaveProperty('cueContextText')
   })
 
   it('pauses and resumes without losing the cue', () => {
@@ -62,7 +79,11 @@ describe('cue lifecycle', () => {
     )
 
     expect(paused.cue.status).toBe('paused')
-    expect(resumed.cue.status).toBe('active')
+    expect(resumed.cue).toMatchObject({
+      status: 'active',
+      cueContextSuggestionId: 'anchor.scrolling.in-bed',
+      cueContextText: 'When I get into bed with my phone.',
+    })
     expect(resumed.state.cues).toHaveLength(1)
   })
 
@@ -74,14 +95,21 @@ describe('cue lifecycle', () => {
       id: 'cue-2',
       pullText: 'Sugar',
       bSideText: 'Take a short walk',
+      cueContextText: '  After lunch. ',
       at: '2026-08-07T08:00:00+02:00',
     })
 
-    expect(replaced.cue.status).toBe('active')
+    expect(replaced.cue).toMatchObject({
+      status: 'active',
+      cueContextText: 'After lunch.',
+    })
+    expect(replaced.cue).not.toHaveProperty('cueContextSuggestionId')
     expect(replaced.state.cues).toHaveLength(2)
     expect(replaced.state.cues[0]).toMatchObject({
       id: 'cue-1',
       status: 'archived',
+      cueContextSuggestionId: 'anchor.scrolling.in-bed',
+      cueContextText: 'When I get into bed with my phone.',
       archivedAt: '2026-08-07T08:00:00+02:00',
     })
     expect(
@@ -98,13 +126,37 @@ describe('cue lifecycle', () => {
         replacedCueId: 'cue-1',
         id: 'cue-2',
         pullText: 'Sugar',
-        bSideText: '   ',
+        bSideText: 'Take a short walk',
+        cueContextSuggestionId: 'anchor.sugar.after-lunch',
         at: '2026-08-07T08:00:00+02:00',
       }),
-    ).toThrow()
+    ).toThrowError(CueTextValidationError)
     expect(active.state.cues).toHaveLength(1)
     expect(active.state.cues[0].status).toBe('active')
   })
+
+  it.each(['', ' ', ' anchor.scrolling.in-bed '])(
+    'rejects a noncanonical cue context suggestion id %j before mutation',
+    (cueContextSuggestionId) => {
+      const created = createCue(createInitialState(), FIRST_INPUT)
+      const active = activateCue(created.state, 'cue-1', FIRST_INPUT.at)
+
+      expectDomainErrorCode(
+        () =>
+          replaceCue(active.state, {
+            replacedCueId: 'cue-1',
+            id: 'cue-2',
+            pullText: 'Sugar',
+            bSideText: 'Take a short walk',
+            cueContextSuggestionId,
+            cueContextText: 'After lunch.',
+            at: '2026-08-07T08:00:00+02:00',
+          }),
+        'invalid_cue_context_suggestion_id',
+      )
+      expect(active.state.cues).toEqual([active.cue])
+    },
+  )
 
   it('rejects duplicate persisted cue ids before mutating any record', () => {
     const created = createCue(createInitialState(), FIRST_INPUT)

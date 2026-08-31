@@ -8,11 +8,16 @@
 import type { UvrStemType } from '@/db/entities'
 import type { UvrStemSnapshotEntry } from '@/db/services/uvr-read-service'
 import { readUvrStemSnapshot } from '@/db/services/uvr-read-service'
+import { stemDataBlob, stemHeaderBytes } from '@/db/stem-blob-data'
 import { wavDurationSeconds } from '@/lib/wav-meta'
 
 export type UvrStemLeaseAsset = {
   kind: UvrStemType
   url: string
+  /** The stored audio the URL was minted from — a lazy handle for Blob-era
+   *  rows. Windowed playback reads slices of it instead of fetching the URL. */
+  blob: Blob
+  mimeType: string
   sizeBytes: number
   durationSeconds?: number
 }
@@ -75,16 +80,17 @@ export async function openUvrStemLease(
       if (entry === undefined) continue
 
       throwIfAborted(signal)
-      const url = URL.createObjectURL(
-        new Blob([entry.data], { type: entry.mimeType }),
-      )
+      const blob = stemDataBlob(entry.data, entry.mimeType)
+      const url = URL.createObjectURL(blob)
       ownedUrls.add(url)
       assets.push({
         kind,
         url,
+        blob,
+        mimeType: entry.mimeType,
         sizeBytes: entry.sizeBytes,
         durationSeconds: wavDurationSeconds(
-          entry.data.slice(0, 4096),
+          await stemHeaderBytes(entry.data, 4096),
           entry.sizeBytes,
         ),
       })

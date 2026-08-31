@@ -1,0 +1,208 @@
+.surface {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(98 199 207 / 22%);
+  border-radius: 18px;
+  background: #071421;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 5%),
+    0 24px 54px rgb(0 0 0 / 25%);
+}
+
+.canvasHeader {
+  position: absolute;
+  z-index: 3;
+  top: 18px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.canvasHeader div {
+  display: grid;
+  gap: 3px;
+}
+
+.canvasHeader span {
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: rgb(159 199 231 / 68%);
+}
+
+.canvasHeader strong {
+  max-width: 34ch;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  line-height: 1.22;
+  color: #edf7ff;
+}
+
+.targetLabel {
+  text-align: right;
+}
+
+.targetLabel strong {
+  font-size: 1.55rem;
+  color: #ffe4a4;
+}
+
+.canvasWrap {
+  position: relative;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: clamp(260px, 38vw, 420px);
+  touch-action: manipulation;
+}
+
+.targetHorizon {
+  position: absolute;
+  top: 52%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 221 133 / 76%) 12% 88%,
+    transparent
+  );
+  box-shadow: 0 0 16px rgb(255 216 116 / 30%);
+  pointer-events: none;
+}
+
+.evidenceRail {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.evidenceMarker {
+  position: absolute;
+  z-index: 4;
+  top: 52%;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 9px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #ffe6a9;
+  font-size: 0.7rem;
+  font-weight: 800;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.evidenceMarkerVisual {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid rgb(255 228 160 / 58%);
+  border-radius: 50%;
+  background: #172337;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 34%);
+}
+
+.evidenceMarker:hover .evidenceMarkerVisual,
+.evidenceMarker:focus-visible .evidenceMarkerVisual,
+.evidenceMarkerSelected .evidenceMarkerVisual {
+  border-color: #ffe39f;
+  background: #514625;
+  color: #fff8df;
+  box-shadow:
+    0 0 0 3px rgb(255 226 153 / 12%),
+    0 8px 22px rgb(0 0 0 / 38%);
+}
+
+.evidenceMarker:focus-visible {
+  outline: none;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid rgb(139 175 218 / 9%);
+  color: rgb(196 215 236 / 62%);
+  font-size: 0.69rem;
+  font-weight: 650;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend span::before {
+  content: '';
+  width: 17px;
+  height: 2px;
+  border-radius: 999px;
+}
+
+.targetKey::before {
+  background: #ffe09a;
+}
+
+.pitchKey::before {
+  background: #dffcff;
+  box-shadow: 0 0 6px rgb(104 230 232 / 62%);
+}
+
+.energyKey::before {
+  background: linear-gradient(90deg, #43cfd4, #956fff);
+}
+
+.srSummary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 760px) {
+  .surface {
+    border-radius: 15px;
+  }
+
+  .canvasHeader {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+  }
+
+  .canvas {
+    height: min(52vh, 330px);
+    min-height: 250px;
+  }
+
+  .legend {
+    gap: 12px;
+    padding-inline: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .targetHorizon,
+  .evidenceMarker {
+    box-shadow: none;
+  }
+}

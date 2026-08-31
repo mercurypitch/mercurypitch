@@ -8,6 +8,9 @@
 import type { FacultyId } from '@/lib/ear/drills'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
+import { scoreReading } from '@/lib/ear/mercury-index'
+import { clearedSubdivision } from '@/lib/ear/rhythm-take'
+import { WILD_DRILLS, WILD_TRACKS } from '@/lib/ear/wild'
 import { earPlayerRating, latestCalibration, latestThresholdReading, } from '@/stores/ear-lab-store'
 
 export type InstrumentView =
@@ -16,7 +19,19 @@ export type InstrumentView =
   | 'grid'
   | 'leap'
   | 'stack'
+  | 'desk'
   | 'contour'
+  | 'echo'
+  | 'span'
+  | 'beat-hunt'
+  | 'drift'
+  | 'gravity'
+  | 'the-pull'
+  | 'cadence'
+  | 'bassline'
+  | 'pulse'
+  | 'chart'
+  | 'subdivide'
   | 'calibration'
 
 export interface Instrument {
@@ -50,6 +65,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'Two tones — which was higher',
   },
   {
+    view: 'beat-hunt',
+    drillId: 'beat-hunt',
+    name: 'Beat Hunt',
+    faculty: 'resolution',
+    measures: 'Resolution · beats',
+    answer: 'Two pairs of tones — which pair was beating',
+  },
+  {
     view: 'home',
     drillId: 'home',
     name: 'Home',
@@ -58,12 +81,52 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'A cadence, one note — name the degree, tap or sing',
   },
   {
+    view: 'gravity',
+    drillId: 'gravity',
+    name: 'Gravity',
+    faculty: 'function',
+    measures: 'Function · chromatic',
+    answer: 'One note of the twelve over a planted key — name it',
+  },
+  {
+    view: 'the-pull',
+    drillId: 'the-pull',
+    name: 'The Pull',
+    faculty: 'function',
+    measures: 'Function · tendency',
+    answer: 'Two degrees — which one leans harder',
+  },
+  {
+    view: 'cadence',
+    drillId: 'cadence',
+    name: 'Cadence',
+    faculty: 'function',
+    measures: 'Function · progression',
+    answer: 'A progression on the guitar — name it in numerals',
+  },
+  {
+    view: 'bassline',
+    drillId: 'bassline',
+    name: 'Bassline',
+    faculty: 'function',
+    measures: 'Function · root motion',
+    answer: 'Four bass roots under a held tonic — tap them back',
+  },
+  {
     view: 'grid',
     drillId: 'the-grid',
     name: 'The Grid',
     faculty: 'time',
     measures: 'Time · milliseconds',
     answer: 'Six clicks — which one left the lattice',
+  },
+  {
+    view: 'drift',
+    drillId: 'drift',
+    name: 'Drift',
+    faculty: 'time',
+    measures: 'Time · tempo',
+    answer: 'A click train — did the tempo hold, gain or lose',
   },
   {
     view: 'leap',
@@ -82,12 +145,60 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'One chord, roved root — name its quality',
   },
   {
+    view: 'desk',
+    drillId: 'desk-colour',
+    name: 'The desk',
+    faculty: 'colour',
+    measures: 'Colour · the mixing desk',
+    answer: 'A boosted band, the heavier render, a named fault',
+  },
+  {
     view: 'contour',
     drillId: 'contour',
     name: 'Contour',
     faculty: 'shape',
     measures: 'Shape · direction',
     answer: 'Up, down or level — fast',
+  },
+  {
+    view: 'echo',
+    drillId: 'echo',
+    name: 'Echo',
+    faculty: 'shape',
+    measures: 'Shape · dictation',
+    answer: 'A phrase in a planted key — tap it back in order',
+  },
+  {
+    view: 'span',
+    drillId: 'span',
+    name: 'Span',
+    faculty: 'shape',
+    measures: 'Shape · span',
+    answer: 'The phrase grows a note at a time — how many hold?',
+  },
+  {
+    view: 'pulse',
+    drillId: 'pulse',
+    name: 'Pulse',
+    faculty: 'time',
+    measures: 'Time · rhythm',
+    answer: 'A bar of onsets — your first tap starts yours',
+  },
+  {
+    view: 'chart',
+    drillId: 'chart',
+    name: 'The Chart',
+    faculty: 'time',
+    measures: 'Time · reading',
+    answer: 'A written bar over the click — tap it at sight',
+  },
+  {
+    view: 'subdivide',
+    drillId: 'subdivide',
+    name: 'Subdivide',
+    faculty: 'time',
+    measures: 'Time · metre',
+    answer: 'Two bars on the kit — name the metre',
   },
   {
     view: 'calibration',
@@ -131,11 +242,18 @@ export function instrumentReading(
   switch (instrument.view) {
     case 'hairline':
     case 'grid':
+    case 'span':
+    case 'desk':
+      return thresholdReading('desk-colour')
+    case 'beat-hunt':
+    case 'drift':
       return thresholdReading(instrument.drillId ?? '')
-    case 'home': {
-      const ear = ratingReading('home')
+    case 'home':
+    case 'gravity':
+    case 'echo': {
+      const ear = ratingReading(instrument.view)
       if (ear === null) return null
-      const voice = earPlayerRating('home-sing')
+      const voice = earPlayerRating(`${instrument.view}-sing`)
       return voice.attempts > 0
         ? { ...ear, unit: `· voice ${Math.round(voice.rating)}` }
         : ear
@@ -143,7 +261,19 @@ export function instrumentReading(
     case 'leap':
     case 'stack':
     case 'contour':
+    case 'the-pull':
+    case 'cadence':
+    case 'bassline':
+    case 'subdivide':
       return ratingReading(instrument.drillId ?? '')
+    case 'pulse':
+    case 'chart': {
+      const id = instrument.drillId ?? 'pulse'
+      const rating = ratingReading(id)
+      if (rating === null) return null
+      const cleared = clearedSubdivision(earPlayerRating(id).rating)
+      return cleared ? { ...rating, unit: `· ${cleared}` } : rating
+    }
     case 'calibration': {
       const sealed = latestCalibration()
       if (!sealed) return null
@@ -159,14 +289,17 @@ export function facultyReadout(faculty: FacultyId): InstrumentReading | null {
       return thresholdReading('hairline')
     case 'time':
       return thresholdReading('the-grid')
-    case 'function':
-      return instrumentReading(INSTRUMENTS[1])
+    case 'function': {
+      const home = INSTRUMENTS.find((i) => i.view === 'home')
+      return home ? instrumentReading(home) : null
+    }
     case 'colour':
       return ratingReading('stack')
     case 'shape': {
-      // Leap and Contour average into the faculty; the readout shows
-      // whichever exist.
-      const parts = ['leap', 'contour']
+      // Leap, Contour and Echo average into the faculty; the readout
+      // shows whichever exist. Span reads in notes, so it stays on its
+      // own instrument.
+      const parts = ['leap', 'contour', 'echo']
         .map((id) => earPlayerRating(id))
         .filter((rating) => rating.attempts > 0)
       if (parts.length === 0) return null
@@ -178,7 +311,35 @@ export function facultyReadout(faculty: FacultyId): InstrumentReading | null {
         settling: parts.some((rating) => isProvisional(rating)),
       }
     }
-    case 'wild':
-      return null
+    case 'wild': {
+      const mean = wildMeanRating()
+      if (mean === null) return null
+      return {
+        value: String(Math.round(mean)),
+        unit: '',
+        settling: WILD_TRACKS.map((track) => earPlayerRating(track)).some(
+          (rating) => rating.attempts > 0 && isProvisional(rating),
+        ),
+      }
+    }
   }
+}
+
+/** The Field Book's own rating: the mean of the wild tracks played so
+ *  far, or null. It reads on the sixth dial and never in the Column. */
+export function wildMeanRating(): number | null {
+  const played = WILD_TRACKS.map((track) => earPlayerRating(track)).filter(
+    (rating) => rating.attempts > 0,
+  )
+  if (played.length === 0) return null
+  return played.reduce((sum, rating) => sum + rating.rating, 0) / played.length
+}
+
+/** The dial's needle for In The Wild, on the Elo scale the wild drills
+ *  borrow from Home. */
+export function wildFacultyScore(): number | null {
+  const mean = wildMeanRating()
+  return mean === null
+    ? null
+    : scoreReading(mean, WILD_DRILLS['wild-home'].scale)
 }

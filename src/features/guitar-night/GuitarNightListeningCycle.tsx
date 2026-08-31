@@ -6,7 +6,7 @@
 // advances through the four room-level states.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createMemo, createSignal, Match, Switch } from 'solid-js'
+import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
 import { AudioWave, Loader2, Mic, MidiDin, PowerSymbol, } from '@/components/icons'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import { guitarInputProfileLabel } from '@/lib/guitar/guitar-input-profile'
@@ -27,6 +27,11 @@ const PROFILE_ORDER: readonly GuitarInputProfileKind[] = [
   'interface',
   'midi',
 ]
+
+/** How long a touch must be held before it means "let me choose". */
+const LONG_PRESS_MS = 450
+/** Finger travel that makes a press a scroll instead. */
+const LONG_PRESS_SLOP_PX = 10
 
 /** The route that is genuinely open, or null while Listening is off. */
 export function guitarNightListeningSelection(
@@ -81,6 +86,19 @@ function routeIcon(
   )
 }
 
+function profileIcon(profile: GuitarInputProfileKind): JSX.Element {
+  return (
+    <Switch fallback={<AudioWave />}>
+      <Match when={profile === 'microphone'}>
+        <Mic />
+      </Match>
+      <Match when={profile === 'midi'}>
+        <MidiDin />
+      </Match>
+    </Switch>
+  )
+}
+
 export function GuitarNightListeningCycle(
   props: GuitarNightListeningCycleProps,
 ) {
@@ -93,6 +111,20 @@ export function GuitarNightListeningCycle(
   const controlledSelection = createMemo(() =>
     guitarNightListeningSelection(props.status(), props.profile()),
   )
+  /**
+   * The route the room is CONFIGURED for, whether or not Listening is on.
+   *
+   * `controlledSelection` collapses every non-listening status to null, which
+   * is right for the on/off state and wrong for saying which input is chosen.
+   * The session panel writes the same `inputProfile` signal this reads, so a
+   * route picked there while Listening was off left this control showing
+   * nothing about it -- the two surfaces looked out of sync when they were
+   * reading the same value.
+   */
+  const route = createMemo<GuitarInputProfileKind>(() => {
+    const local = pendingSelection()
+    return local !== undefined && local !== null ? local : props.profile()
+  })
   const externallyPending = createMemo(
     () => props.status() === 'requesting' || props.status() === 'calibrating',
   )
@@ -135,10 +167,111 @@ export function GuitarNightListeningCycle(
     }
     return `${state}. ${nextActionLabel(controlledSelection())}`
   })
-  const selectNext = (): void => {
-    if (blocked()) return
+  // Cycling is the fast path for "start listening", but it can only reach
+  // Direct input by passing through Room mic -- which asks the browser for
+  // microphone consent a player plugged into an interface never wanted to
+  // give. The picker is the way past that, on the secondary gesture so the
+  // one-tap toggle keeps its meaning.
+  const [pickerOpen, setPickerOpen] = createSignal(false)
+  // How far the fan has to slide to stay on screen. The control sits at the
+  // left end of the bottom rail, so a menu centred on it hangs its first chip
+  // off the edge of a narrow window.
+  const [pickerShift, setPickerShift] = createSignal(0)
+  let button: HTMLButtonElement | undefined
+  let pickerRoot: HTMLDivElement | undefined
+  let longPressTimer = 0
+  let longPressOrigin: { x: number; y: number } | null = null
+  // A long press must not also fire the click that ends it.
+  let suppressNextClick = false
 
-    const next = nextGuitarNightListeningSelection(controlledSelection())
+  const cancelLongPress = (): void => {
+    if (longPressTimer !== 0) clearTimeout(longPressTimer)
+    longPressTimer = 0
+    longPressOrigin = null
+  }
+  onCleanup(cancelLongPress)
+
+  /** Slide the fan back inside the window, measured after it has laid out. */
+  let measureFrame = 0
+  const cancelMeasure = (): void => {
+    if (measureFrame !== 0) cancelAnimationFrame(measureFrame)
+    measureFrame = 0
+  }
+  onCleanup(cancelMeasure)
+
+  const keepPickerOnScreen = (element: HTMLDivElement): void => {
+    setPickerShift(0)
+    cancelMeasure()
+    measureFrame = requestAnimationFrame(() => {
+      measureFrame = 0
+      const rect = element.getBoundingClientRect()
+      if (rect.width === 0) return
+      const margin = 8
+      const overflowLeft = margin - rect.left
+      const overflowRight = rect.right - (window.innerWidth - margin)
+      if (overflowLeft > 0) setPickerShift(overflowLeft)
+      else if (overflowRight > 0) setPickerShift(-overflowRight)
+    })
+  }
+
+  const openPicker = (): void => {
+    // Read once, deliberately untracked: a long press resolves inside a timer,
+    // where a tracked read would belong to no owner anyway.
+    if (untrack(blocked)) return
+    setPickerOpen(true)
+  }
+  const closePicker = (focusButton: boolean): void => {
+    if (!pickerOpen()) return
+    setPickerOpen(false)
+    if (focusButton) button?.focus()
+  }
+
+  const handlePointerDown = (
+    event: PointerEvent & { currentTarget: HTMLButtonElement },
+  ): void => {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+    longPressOrigin = { x: event.clientX, y: event.clientY }
+    longPressTimer = window.setTimeout(() => {
+      longPressTimer = 0
+      suppressNextClick = true
+      openPicker()
+    }, LONG_PRESS_MS)
+  }
+  const handlePointerMove = (event: PointerEvent): void => {
+    const origin = longPressOrigin
+    if (origin === null) return
+    if (
+      Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >
+      LONG_PRESS_SLOP_PX
+    ) {
+      cancelLongPress()
+    }
+  }
+
+  // Choosing the route already open turns Listening off, so three chips still
+  // reach all four states without a fourth that only ever says "stop".
+  const chooseProfile = (profile: GuitarInputProfileKind): void => {
+    closePicker(true)
+    applySelection(controlledSelection() === profile ? null : profile)
+  }
+  const chipLabel = (profile: GuitarInputProfileKind): string => {
+    if (controlledSelection() === profile) {
+      return `Turn Listening off (${guitarInputProfileLabel(profile)} is on)`
+    }
+    return route() === profile
+      ? `Listen with ${guitarInputProfileLabel(profile)} (selected)`
+      : `Listen with ${guitarInputProfileLabel(profile)}`
+  }
+
+  const moveChipFocus = (from: number, delta: number): void => {
+    const chips = pickerRoot?.querySelectorAll('[data-chip]')
+    if (chips === undefined || chips.length === 0) return
+    const next = (from + delta + chips.length) % chips.length
+    ;(chips[next] as HTMLElement | undefined)?.focus()
+  }
+
+  const applySelection = (next: GuitarNightListeningSelection): void => {
+    if (blocked()) return
     setPendingSelection(next)
 
     let result: Promise<void> | void
@@ -162,29 +295,133 @@ export function GuitarNightListeningCycle(
     )
   }
 
+  const selectNext = (): void => {
+    applySelection(nextGuitarNightListeningSelection(controlledSelection()))
+  }
+
   return (
-    <>
+    <div class={styles.dock}>
       <button
         type="button"
+        ref={button}
         class={styles.cycle}
         data-state={selection() ?? 'off'}
         data-status={props.status()}
         data-active={active()}
         data-pending={pending()}
+        data-testid="guitar-night-listening-cycle"
         aria-label={accessibleLabel()}
         aria-busy={pending()}
         aria-disabled={blocked()}
-        title={accessibleLabel()}
-        onClick={selectNext}
+        aria-haspopup="menu"
+        aria-expanded={pickerOpen()}
+        data-route={route()}
+        title={`${accessibleLabel()}. Hold or right-click to pick a route.`}
+        onClick={() => {
+          if (suppressNextClick) {
+            suppressNextClick = false
+            return
+          }
+          selectNext()
+        }}
+        // Right-click on a pointer device, and the keyboard's own context
+        // key, both arrive here -- so the picker is reachable without a mouse.
+        onContextMenu={(event) => {
+          event.preventDefault()
+          openPicker()
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={cancelLongPress}
+        onPointerCancel={cancelLongPress}
+        onPointerLeave={cancelLongPress}
       >
         <span class={styles.icon} aria-hidden="true">
-          {routeIcon(selection(), pending())}
+          {/* The configured route while Listening is off, not a power symbol:
+              switching route in Session tears the open stream down, so every
+              route change from there landed this control on the same generic
+              off glyph and it looked like the two surfaces had stopped
+              agreeing. The word beside it still says Off. */}
+          {routeIcon(selection() ?? route(), pending())}
         </span>
         <span class={styles.copy} aria-hidden="true">
           <span class={styles.eyebrow}>Listening</span>
           <strong>{selectionLabel(selection())}</strong>
         </span>
       </button>
+      <Show when={pickerOpen()}>
+        <div
+          class={styles.pickerBackdrop}
+          data-testid="guitar-night-listening-picker-backdrop"
+          aria-hidden="true"
+          onPointerDown={() => {
+            closePicker(false)
+          }}
+        />
+        <div
+          class={styles.picker}
+          ref={(element) => {
+            pickerRoot = element
+            keepPickerOnScreen(element)
+          }}
+          style={{ '--picker-shift': `${pickerShift()}px` }}
+          role="menu"
+          data-testid="guitar-night-listening-picker"
+          aria-label="Listening route"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault()
+              closePicker(true)
+              return
+            }
+            const chips = [
+              ...(pickerRoot?.querySelectorAll('[data-chip]') ?? []),
+            ]
+            const index = chips.indexOf(event.target as Element)
+            if (index < 0) return
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+              event.preventDefault()
+              moveChipFocus(index, 1)
+            }
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+              event.preventDefault()
+              moveChipFocus(index, -1)
+            }
+          }}
+        >
+          <For each={PROFILE_ORDER}>
+            {(profile, index) => (
+              <button
+                type="button"
+                data-chip={profile}
+                class={styles.pickerChip}
+                data-current={route() === profile}
+                // The fan: outer chips sit lower and lean away from the middle.
+                style={{ '--chip-slot': String(index() - 1) }}
+                role="menuitemradio"
+                aria-checked={route() === profile}
+                aria-label={chipLabel(profile)}
+                title={chipLabel(profile)}
+                ref={(element) => {
+                  if (route() === profile || index() === 0) {
+                    queueMicrotask(() => element.focus())
+                  }
+                }}
+                onClick={() => {
+                  chooseProfile(profile)
+                }}
+              >
+                <span class={styles.pickerIcon} aria-hidden="true">
+                  {profileIcon(profile)}
+                </span>
+                <span class={styles.pickerName} aria-hidden="true">
+                  {guitarInputProfileLabel(profile)}
+                </span>
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
       <span
         class={styles.visuallyHidden}
         role="status"
@@ -193,6 +430,6 @@ export function GuitarNightListeningCycle(
       >
         {accessibleLabel()}
       </span>
-    </>
+    </div>
   )
 }

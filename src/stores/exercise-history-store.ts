@@ -20,6 +20,7 @@ import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordCompletion } from './usage-store'
 
@@ -38,6 +39,11 @@ export interface ExerciseStats {
   lastScore: number
   lastPlayedAt: number
   avgScore: number
+}
+
+export interface ExerciseResultRecordOptions {
+  /** Present only when a Weekly Legend run hands off its temporary replay. */
+  weeklyVoiceCapture?: ExerciseVoiceCaptureOutcome
 }
 
 const [history, setHistory] = createPersistedSignal<ExerciseHistoryEntry[]>(
@@ -86,7 +92,10 @@ export function exerciseSessionPayload(
   }
 }
 
-export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
+export function recordExerciseResult(
+  entry: ExerciseHistoryEntry,
+  options?: ExerciseResultRecordOptions,
+): void {
   const ownerId = getUserId()
   setHistory((prev) => {
     const next = [entry, ...prev]
@@ -134,6 +143,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
       score: entry.score,
       durationMs,
       metrics: entry.metrics,
+      voiceCapture: options?.weeklyVoiceCapture,
     })
     if (consumedChallenge || consumedWeekly) return
 

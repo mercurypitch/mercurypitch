@@ -1,15 +1,21 @@
-import { For } from 'solid-js'
+import { For, onMount } from 'solid-js'
 import { AppHeader } from '@/components/AppHeader'
 
+interface BSideChoicePresentation {
+  readonly key: string
+  readonly label: string
+}
+
 interface ChooseBSideScreenProps {
+  headerLabel: string
   pullText: string
-  suggestions: readonly string[]
-  selectedText: string
+  suggestions: readonly BSideChoicePresentation[]
+  selectedKey?: string
   customText: string
   customSelected: boolean
   error?: string
   pending: boolean
-  onSelect: (text: string) => void
+  onSelect: (choiceKey: string) => void
   onSelectCustom: () => void
   onCustomInput: (value: string) => void
   onBack: () => void
@@ -17,12 +23,29 @@ interface ChooseBSideScreenProps {
 }
 
 export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
+  let headingElement: HTMLHeadingElement | undefined
+
+  onMount(() => {
+    queueMicrotask(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      headingElement?.focus({ preventScroll: true })
+    })
+  })
+
   return (
     <main class="setup-screen app-screen">
-      <AppHeader label="Your first plan" onBack={props.onBack} />
+      <AppHeader label={props.headerLabel} onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="bside-title">
         <p class="step-label step-label--bside">Side B · your chosen turn</p>
-        <h1 id="bside-title">What small action would you rather start?</h1>
+        <h1
+          ref={(element) => {
+            headingElement = element
+          }}
+          id="bside-title"
+          tabIndex={-1}
+        >
+          What small action would you rather begin?
+        </h1>
         <p>
           When <strong>{props.pullText}</strong> shows up, choose something
           concrete enough to begin without planning.
@@ -40,18 +63,17 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
               class="choice-row"
               classList={{
                 'choice-row--selected':
-                  !props.customSelected && props.selectedText === suggestion,
+                  !props.customSelected && props.selectedKey === suggestion.key,
               }}
               role="radio"
               aria-checked={
-                !props.customSelected && props.selectedText === suggestion
+                !props.customSelected && props.selectedKey === suggestion.key
               }
-              onClick={() => props.onSelect(suggestion)}
+              onClick={() => props.onSelect(suggestion.key)}
             >
               <span class="choice-row__disc" aria-hidden="true" />
               <span class="choice-row__copy">
-                <strong>{suggestion}</strong>
-                <small>One clear beginning, not a new task list.</small>
+                <strong>{suggestion.label}</strong>
               </span>
               <span class="choice-row__check" aria-hidden="true">
                 <svg viewBox="0 0 24 24">

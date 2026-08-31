@@ -18,6 +18,7 @@ import { LEAP_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { LEAP_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
+import { playToneFor } from './ear-sound'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { IndexArc } from './IndexArc'
 import type { IdentificationTrial } from './use-identification-controller'
@@ -43,11 +44,13 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
     const second = midiToFreq(ascending ? root + semitones : root)
 
     const playPair = async (toneMs: number, gapMs: number) => {
+      // Both tones whole: playTone resolves on scheduling and the second
+      // note would otherwise cut the first at the gap.
       setSounding(1)
-      await audioEngine.playTone(first, toneMs)
+      await playToneFor(audioEngine, first, toneMs)
       await new Promise((resolve) => setTimeout(resolve, gapMs))
       setSounding(2)
-      await audioEngine.playTone(second, toneMs)
+      await playToneFor(audioEngine, second, toneMs)
       setSounding(0)
     }
 

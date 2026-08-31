@@ -10,7 +10,12 @@ import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
-/** A single note within a parsed MIDI track. */
+export {
+  createBeatClock,
+  createSecondsToBeatClock,
+} from '@/lib/midi-tempo-clock'
+
+/** A single pitched note within a parsed MIDI track. */
 export interface MidiSongNote {
   /** Stable score-local id when the source exposes note relationships. */
   id?: string
@@ -34,8 +39,37 @@ export interface MidiSongNote {
   notation?: GuitarNoteNotation
 }
 
-/** One playable track (drum channels are filtered out). */
-export interface MidiSongTrack {
+/** Source evidence retained for a percussion articulation. */
+export interface MidiSongPercussionSource {
+  format: 'midi' | 'guitar-pro'
+  /** Original MIDI channel when the source was an SMF (zero based). */
+  channel?: number
+  /** Original MIDI key before a documented fold onto the GM map. */
+  midiKey?: number
+  /** Direct legacy GP articulation id, or the modern articulation's own id. */
+  articulationId?: number
+  /** Modern GP index into track.percussionArticulations; zero is meaningful. */
+  articulationIndex?: number
+  label?: string
+  staffLine?: number
+  noteHead?: number
+  technique?: number
+}
+
+/** A one-shot drum articulation. Duration is notation, never sound length. */
+export interface MidiSongPercussionHit {
+  id?: string
+  /** Bounded General MIDI percussion key (35–81), not a pitch. */
+  gmKey: number
+  startBeat: number
+  /** Authored attack intensity, 1–127. */
+  velocity: number
+  /** Written duration for a future staff renderer; playback stays one-shot. */
+  writtenDuration?: number
+  source?: MidiSongPercussionSource
+}
+
+interface MidiSongTrackBase {
   /** Stable id within the song (track index + channel) */
   id: string
   /** Track name from meta events, or a GM instrument fallback */
@@ -43,6 +77,11 @@ export interface MidiSongTrack {
   /** General MIDI instrument name from the first program change */
   instrumentName: string
   noteCount: number
+}
+
+/** A scoreable pitched track in the canonical in-memory song model. */
+export interface MidiSongPitchedTrack extends MidiSongTrackBase {
+  kind: 'pitched'
   notes: MidiSongNote[]
   /** Authored open pitches before capo, highest string first. */
   sourceTuning?: readonly number[]
@@ -50,6 +89,33 @@ export interface MidiSongTrack {
   sourceTuningName?: string
   /** Authored capo fret. Zero is meaningful and may be present. */
   sourceCapo?: number
+}
+
+/** A percussion track whose events can never enter a pitch renderer. */
+export interface MidiSongPercussionTrack extends MidiSongTrackBase {
+  kind: 'percussion'
+  /** Compatibility seam for pitch-only readers; always empty by invariant. */
+  notes: never[]
+  sourceTuning?: never
+  sourceTuningName?: never
+  sourceCapo?: never
+  percussionHits: MidiSongPercussionHit[]
+  /** Source articulations dropped because no honest GM mapping existed. */
+  droppedHitCount: number
+}
+
+export type MidiSongTrack = MidiSongPitchedTrack | MidiSongPercussionTrack
+
+/** Pre-percussion saved rows had no track discriminator. Normalize at ingress. */
+export interface LegacyMidiSongPitchedTrack extends Omit<
+  MidiSongPitchedTrack,
+  'kind'
+> {
+  kind?: 'pitched'
+}
+
+export interface MidiSongNormalizationInput extends Omit<MidiSong, 'tracks'> {
+  tracks: Array<MidiSongTrack | LegacyMidiSongPitchedTrack>
 }
 
 /** One set-tempo event, placed on the beat it takes effect. */
@@ -88,86 +154,53 @@ export interface MidiSong {
   tracks: MidiSongTrack[]
 }
 
+export function isPercussionMidiSongTrack(
+  track: MidiSongTrack,
+): track is MidiSongPercussionTrack {
+  return track.kind === 'percussion'
+}
+
+export function isPitchedMidiSongTrack(
+  track: MidiSongTrack,
+): track is MidiSongPitchedTrack {
+  return track.kind === 'pitched'
+}
+
 /**
- * Beats to seconds through the whole tempo map.
- *
- * Returns a function rather than converting one beat at a time: the anchors
- * are accumulated once, so converting a few thousand notes stays linear
- * instead of rescanning the map per note.
+ * Upgrade trusted in-memory or persisted legacy DTOs at their boundary.
+ * Missing `kind` means pitched because old MercuryPitch versions never saved
+ * percussion. A malformed percussion row is dropped, never reinterpreted as
+ * pitch data.
  */
-type MidiTempoSource = {
-  bpm: number
-  tempoChanges?: readonly MidiTempoChange[]
-  /** Accepted for whole-song object literals; timing itself does not read it. */
-  tracks?: readonly unknown[]
-}
-
-interface TempoAnchor {
-  beat: number
-  seconds: number
-  usPerBeat: number
-}
-
-function tempoAnchors(song: MidiTempoSource): TempoAnchor[] {
-  const changes = [...(song.tempoChanges ?? [])].sort(
-    (left, right) => left.beat - right.beat,
-  )
-  const opening = 60000000 / Math.max(1, song.bpm)
-  if (changes.length === 0 || (changes[0]?.beat ?? 0) > 0) {
-    changes.unshift({ beat: 0, usPerBeat: opening })
-  }
-
-  // Seconds elapsed at each change, accumulated at the tempo in force before it.
-  const anchors: TempoAnchor[] = [
-    { beat: 0, seconds: 0, usPerBeat: changes[0]?.usPerBeat ?? opening },
-  ]
-  for (let index = 1; index < changes.length; index += 1) {
-    const change = changes[index]
-    const previous = anchors[index - 1]
-    if (change === undefined || previous === undefined) continue
-    anchors.push({
-      beat: change.beat,
-      seconds:
-        previous.seconds +
-        ((change.beat - previous.beat) * previous.usPerBeat) / 1e6,
-      usPerBeat: change.usPerBeat,
-    })
-  }
-  return anchors
-}
-
-export function createBeatClock(
-  song: MidiTempoSource,
-): (beat: number) => number {
-  const anchors = tempoAnchors(song)
-
-  return (beat: number): number => {
-    let anchor = anchors[0]
-    if (anchor === undefined) return 0
-    // Linear rather than binary: a tempo map is a handful of entries, and the
-    // scan is cheaper than the branchy search it would replace.
-    for (const candidate of anchors) {
-      if (candidate.beat <= beat) anchor = candidate
-      else break
-    }
-    return anchor.seconds + ((beat - anchor.beat) * anchor.usPerBeat) / 1e6
-  }
-}
-
-/** Seconds back to authored beat time through the same complete tempo map. */
-export function createSecondsToBeatClock(
-  song: MidiTempoSource,
-): (seconds: number) => number {
-  const anchors = tempoAnchors(song)
-
-  return (seconds: number): number => {
-    let anchor = anchors[0]
-    if (anchor === undefined) return 0
-    for (const candidate of anchors) {
-      if (candidate.seconds <= seconds) anchor = candidate
-      else break
-    }
-    return anchor.beat + ((seconds - anchor.seconds) * 1e6) / anchor.usPerBeat
+export function normalizeMidiSong(song: MidiSongNormalizationInput): MidiSong {
+  return {
+    ...song,
+    tracks: song.tracks.map((track) => {
+      if (track.kind !== 'percussion') {
+        return { ...track, kind: 'pitched' as const }
+      }
+      const hits = (track.percussionHits ?? []).filter(
+        (hit) =>
+          Number.isInteger(hit.gmKey) &&
+          hit.gmKey >= 35 &&
+          hit.gmKey <= 81 &&
+          Number.isFinite(hit.startBeat) &&
+          hit.startBeat >= 0 &&
+          Number.isInteger(hit.velocity) &&
+          hit.velocity >= 1 &&
+          hit.velocity <= 127,
+      )
+      return {
+        ...track,
+        kind: 'percussion' as const,
+        notes: [],
+        percussionHits: hits,
+        noteCount: hits.length,
+        droppedHitCount:
+          Math.max(0, track.droppedHitCount ?? 0) +
+          ((track.percussionHits?.length ?? 0) - hits.length),
+      }
+    }),
   }
 }
 
@@ -321,11 +354,12 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
   return parseMidiSongViaProject(data, gmInstrumentName)
 }
 
-/** Pick a sensible default track to score against: most notes wins. */
-export function defaultScoreTrack(song: MidiSong): MidiSongTrack {
-  let best = song.tracks[0]
-  for (const t of song.tracks) {
-    if (t.noteCount > best.noteCount) best = t
+/** Pick the densest pitched track; percussion is never a neck/keyboard score. */
+export function defaultScoreTrack(song: MidiSong): MidiSongPitchedTrack | null {
+  let best: MidiSongPitchedTrack | null = null
+  for (const track of song.tracks) {
+    if (!isPitchedMidiSongTrack(track) || track.notes.length === 0) continue
+    if (best === null || track.noteCount > best.noteCount) best = track
   }
   return best
 }

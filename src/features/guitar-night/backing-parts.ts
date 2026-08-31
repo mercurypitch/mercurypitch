@@ -8,7 +8,8 @@
 // graded on is yours to play. Nothing in this file touches audio or the DOM —
 // it turns a score into notes for the band and answers which parts are on.
 
-import type { GuitarRoomBandNote } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import type { GuitarNightReferenceSource } from './reference-port'
 import { suggestReferenceInstrument } from './reference-port'
@@ -24,26 +25,58 @@ export interface BackingPartSelection {
 }
 
 /** One part of the score the room can sound underneath the player. */
-export interface BackingPart {
-  trackId: string
-  name: string
-  variant: GuitarVariant
-  noteCount: number
-}
+export type BackingPart =
+  | {
+      trackId: string
+      name: string
+      kind: 'pitched'
+      variant: GuitarVariant
+      noteCount: number
+    }
+  | {
+      trackId: string
+      name: string
+      kind: 'percussion'
+      hitCount: number
+      supportedHitCount: number
+      droppedHitCount: number
+    }
 
 /** Every part that could play under the scored one, in written order. */
 export function backingParts(
   source: GuitarNightReferenceSource,
   scoredTrackId?: string,
 ): readonly BackingPart[] {
-  return source.tracks
-    .filter((track) => track.notes.length > 0 && track.id !== scoredTrackId)
-    .map((track) => ({
+  const parts: BackingPart[] = []
+  for (const track of source.tracks) {
+    if (track.id === scoredTrackId) continue
+    if (track.kind === 'percussion') {
+      const hitCount = track.percussionHits?.length ?? 0
+      const droppedHitCount = Math.max(0, track.droppedHitCount ?? 0)
+      if (hitCount > 0 || droppedHitCount > 0) {
+        parts.push({
+          trackId: track.id,
+          name: track.name,
+          kind: 'percussion',
+          hitCount,
+          supportedHitCount: (track.percussionHits ?? []).filter(
+            (hit) => drumVoiceForMidi(hit.gmKey) !== null,
+          ).length,
+          droppedHitCount,
+        })
+      }
+      continue
+    }
+    if (track.notes.length === 0) continue
+    parts.push({
       trackId: track.id,
       name: track.name,
+      kind: 'pitched',
       variant: variantForTrack(source, track.id),
       noteCount: track.notes.length,
-    }))
+    })
+  }
+  return parts
 }
 
 /**
@@ -58,6 +91,7 @@ export function backingMelody(
   const notes: GuitarRoomBandNote[] = []
 
   for (const track of source.tracks) {
+    if (track.kind === 'percussion') continue
     if (track.notes.length === 0) continue
     if (track.id === selection.scoredTrackId) continue
     if (audible !== undefined && !audible.includes(track.id)) continue
@@ -80,6 +114,45 @@ export function backingMelody(
   return notes.sort((left, right) => left.startBeat - right.startBeat)
 }
 
+/** Authored drum attacks from every audible percussion part. */
+export function backingPercussion(
+  source: GuitarNightReferenceSource,
+  selection: BackingPartSelection = {},
+): GuitarRoomBandPercussionHit[] {
+  const audible = selection.audibleTrackIds
+  const hits: GuitarRoomBandPercussionHit[] = []
+
+  for (const track of source.tracks) {
+    if (track.kind !== 'percussion') continue
+    if (track.id === selection.scoredTrackId) continue
+    if (audible !== undefined && !audible.includes(track.id)) continue
+
+    for (const hit of track.percussionHits ?? []) {
+      if (
+        !Number.isInteger(hit.gmKey) ||
+        hit.gmKey < 35 ||
+        hit.gmKey > 81 ||
+        !Number.isFinite(hit.startBeat) ||
+        hit.startBeat < 0 ||
+        !Number.isInteger(hit.velocity) ||
+        hit.velocity < 1 ||
+        hit.velocity > 127
+      ) {
+        continue
+      }
+      hits.push({
+        trackId: track.id,
+        gmKey: hit.gmKey,
+        startBeat: hit.startBeat,
+        velocity: hit.velocity,
+        ...(hit.id === undefined ? {} : { sourceId: hit.id }),
+      })
+    }
+  }
+
+  return hits.sort((left, right) => left.startBeat - right.startBeat)
+}
+
 /**
  * Whether the scored part should sound as well. A tab with one part must keep
  * playing itself — muting the only part would leave nothing but the click.
@@ -89,7 +162,9 @@ export function scoredPartSoundsByDefault(
   scoredTrackId?: string,
 ): boolean {
   if (source === null) return true
-  return backingParts(source, scoredTrackId).length === 0
+  return !backingParts(source, scoredTrackId).some(
+    (part) => part.kind === 'pitched' || part.supportedHitCount > 0,
+  )
 }
 
 function variantForTrack(

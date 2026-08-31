@@ -8,6 +8,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import type { DragGestureEndReason, DragGestureOptions, } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightSheetView.module.css'
 import type { SheetLane, SheetLoopFragment, SheetLoopMarker, SheetPlacement, SheetSystem, } from './sheet-model'
 import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, sheetLoopFragments, sheetLoopMarkers, } from './sheet-model'
@@ -17,6 +18,27 @@ import { tabSheetRenderer } from './sheet-tab-renderer'
 
 /** Backing store beyond two device pixels buys nothing a reader can see. */
 const MAX_CANVAS_SCALE = 2
+
+/** Magnification survives leaving the sheet: it is a reading preference. */
+const SHEET_ZOOM_KEY = 'guitar-night-sheet-zoom-v1'
+const MIN_SHEET_ZOOM = 0.6
+const MAX_SHEET_ZOOM = 3
+/** Wheel delta to magnification. Exponential, so each notch feels equal. */
+const WHEEL_ZOOM_RATE = 0.0015
+
+const clampSheetZoom = (value: number): number =>
+  Math.min(MAX_SHEET_ZOOM, Math.max(MIN_SHEET_ZOOM, value))
+
+/** Distance between the first two touches, for a pinch. */
+const touchSpread = (touches: TouchList): number => {
+  const first = touches[0]
+  const second = touches[1]
+  if (first === undefined || second === undefined) return 0
+  return Math.hypot(
+    second.clientX - first.clientX,
+    second.clientY - first.clientY,
+  )
+}
 
 export interface GuitarNightSheetViewProps {
   lanes: Accessor<readonly SheetLane[]>
@@ -41,6 +63,8 @@ export interface GuitarNightSheetViewProps {
   /** Tapping a part's name asks to score it. */
   onSelectTrack?: (trackId: string) => void
   emptyNote?: string
+  /** Give a short reference-only part the visual weight of a music stand. */
+  focusSingleSystem?: boolean
 }
 
 export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
@@ -48,25 +72,65 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
 ) => {
   let host: HTMLDivElement | undefined
   let scroller: HTMLDivElement | undefined
-  let page: HTMLDivElement | undefined
+  // Measures the viewport, not the score. The page grows past the scroller
+  // once magnified, so it can no longer report how wide the reader's view is.
+  let gauge: HTMLDivElement | undefined
 
   const [width, setWidth] = createSignal(0)
   const [scrollTop, setScrollTop] = createSignal(0)
   const [viewportHeight, setViewportHeight] = createSignal(0)
   const [theme, setTheme] = createSignal<SheetTheme>(readSheetTheme(null))
+  const [zoom, setZoom] = createPersistedSignal<number>(SHEET_ZOOM_KEY, 1, {
+    validator: (value): value is number =>
+      typeof value === 'number' &&
+      Number.isFinite(value) &&
+      value >= MIN_SHEET_ZOOM &&
+      value <= MAX_SHEET_ZOOM,
+  })
 
   const renderer = createMemo(() => props.renderer?.() ?? tabSheetRenderer)
-  const metrics = createMemo<SheetMetrics>(() => ({
-    ...DEFAULT_SHEET_METRICS,
-    width: Math.max(1, width()),
-  }))
+  // Magnification scales the measure set rather than transforming the result.
+  // Every painter derives its fonts and stave gaps from these numbers, so the
+  // canvas is drawn at the size it is displayed and stays sharp at any zoom --
+  // a CSS scale on a finished canvas would just enlarge its pixels. The
+  // focused single-system view pins its own compact numbers instead.
+  const metrics = createMemo<SheetMetrics>(() => {
+    if (props.focusSingleSystem === true) {
+      return {
+        ...DEFAULT_SHEET_METRICS,
+        rowHeight: 22,
+        labelHeight: 24,
+        systemPaddingTop: 12,
+        systemPaddingBottom: 16,
+        gutterWidth: 42,
+        width: Math.max(1, width()),
+      }
+    }
+    const scale = zoom()
+    return {
+      rowHeight: DEFAULT_SHEET_METRICS.rowHeight * scale,
+      labelHeight: DEFAULT_SHEET_METRICS.labelHeight * scale,
+      laneGap: DEFAULT_SHEET_METRICS.laneGap * scale,
+      systemPaddingTop: DEFAULT_SHEET_METRICS.systemPaddingTop * scale,
+      systemPaddingBottom: DEFAULT_SHEET_METRICS.systemPaddingBottom * scale,
+      gutterWidth: DEFAULT_SHEET_METRICS.gutterWidth * scale,
+      // The one measure that does NOT scale. Widening the page magnifies the
+      // score into a side-scroll, and a reader who has to pan across a row to
+      // finish it has gained nothing.
+      width: Math.max(1, width()),
+    }
+  })
   const placement = createMemo(() =>
     buildSheetPlacement({
       lanes: props.lanes(),
       ...(props.timeSignatures?.() === undefined
         ? {}
         : { timeSignatures: props.timeSignatures() }),
-      barsPerSystem: barsPerSystemForWidth(metrics().width),
+      // Magnification spends the row's fixed width on fewer bars, so each one
+      // gets more room and its fret numbers more space to be read in. That is
+      // what makes zoom readable rather than merely large: the same viewport,
+      // less music inside it.
+      barsPerSystem: barsPerSystemForWidth(width() / zoom()),
     }),
   )
   const layout = createMemo<SheetSystemLayout>(() =>
@@ -138,6 +202,11 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     }
     return ''
   })
+  const focusedInset = createMemo(() =>
+    props.focusSingleSystem === true && systemCount() === 1
+      ? Math.max(0, (viewportHeight() - systemHeight()) / 2)
+      : 0,
+  )
 
   const playhead = createMemo(() => {
     const position = locateBeat(placement(), props.playheadBeat())
@@ -147,7 +216,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     return {
       systemIndex: position.systemIndex,
       x: current.gutterWidth + position.fraction * contentWidth,
-      y: position.systemIndex * systemHeight(),
+      y: focusedInset() + position.systemIndex * systemHeight(),
     }
   })
   const playheadSystemIndex = createMemo(() => playhead()?.systemIndex ?? null)
@@ -155,12 +224,42 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   const measure = (): void => {
     const element = scroller
     if (element === undefined) return
-    // The scroller owns horizontal padding while the score page owns the
-    // actual paintable width. Measuring the padded box projected a row-end B
+    // The scroller owns horizontal padding while the gauge spans the width
+    // actually paintable. Measuring the padded box projected a row-end B
     // marker beyond the page and created a hidden horizontal scroll range.
-    setWidth(page?.clientWidth ?? element.clientWidth)
+    setWidth(gauge?.clientWidth ?? element.clientWidth)
     setViewportHeight(element.clientHeight)
     setScrollTop(element.scrollTop)
+  }
+
+  const pageHeight = (): number => systemHeight() * systemCount()
+
+  /**
+   * Change magnification while holding a place in the music.
+   *
+   * The bar under the pointer -- or the middle of the view, when the slider
+   * drove it -- should still be about there afterwards. Zoom re-breaks the
+   * rows, so the page does not simply scale and a multiple of the old offset
+   * would land nowhere. The anchor is kept as a fraction of the whole score
+   * instead, which survives the reflow.
+   */
+  const zoomAbout = (next: number, clientY?: number): void => {
+    const element = scroller
+    const to = clampSheetZoom(next)
+    if (element === undefined || to === zoom()) return
+    const rect = element.getBoundingClientRect()
+    const anchorY = (clientY ?? rect.top + rect.height / 2) - rect.top
+    const before = pageHeight()
+    const held = before <= 0 ? 0 : (element.scrollTop + anchorY) / before
+    setZoom(to)
+    // The rows only re-break once the new metrics have reached the DOM, and a
+    // scroll offset past the current extent is silently clamped to it.
+    queueMicrotask(() => {
+      // A one-shot read after the flush, deliberately untracked: this runs in
+      // a microtask that belongs to no owner.
+      element.scrollTop = Math.max(0, untrack(pageHeight) * held - anchorY)
+      measure()
+    })
   }
 
   onMount(() => {
@@ -170,6 +269,59 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
       measure()
     })
     if (scroller !== undefined) observer.observe(scroller)
+    if (gauge !== undefined) observer.observe(gauge)
+
+    const element = scroller
+    if (element !== undefined) {
+      // Both of these must be able to preventDefault -- the wheel to stop the
+      // browser zooming the whole app, the pinch to stop it panning the page
+      // out from under us -- so neither can be a passive listener.
+      const onWheel = (event: WheelEvent): void => {
+        if (!event.ctrlKey && !event.metaKey) return
+        event.preventDefault()
+        zoomAbout(
+          zoom() * Math.exp(-event.deltaY * WHEEL_ZOOM_RATE),
+          event.clientY,
+        )
+      }
+      // One finger keeps native scrolling; two are ours.
+      let pinchSpread = 0
+      let pinchFrom = 1
+      const onTouchStart = (event: TouchEvent): void => {
+        if (event.touches.length !== 2) return
+        pinchSpread = touchSpread(event.touches)
+        pinchFrom = zoom()
+      }
+      const onTouchMove = (event: TouchEvent): void => {
+        if (event.touches.length !== 2 || pinchSpread <= 0) return
+        const spread = touchSpread(event.touches)
+        if (spread <= 0) return
+        event.preventDefault()
+        const first = event.touches[0]
+        const second = event.touches[1]
+        if (first === undefined || second === undefined) return
+        zoomAbout(
+          pinchFrom * (spread / pinchSpread),
+          (first.clientY + second.clientY) / 2,
+        )
+      }
+      const endPinch = (event: TouchEvent): void => {
+        if (event.touches.length < 2) pinchSpread = 0
+      }
+      element.addEventListener('wheel', onWheel, { passive: false })
+      element.addEventListener('touchstart', onTouchStart, { passive: true })
+      element.addEventListener('touchmove', onTouchMove, { passive: false })
+      element.addEventListener('touchend', endPinch, { passive: true })
+      element.addEventListener('touchcancel', endPinch, { passive: true })
+      onCleanup(() => {
+        element.removeEventListener('wheel', onWheel)
+        element.removeEventListener('touchstart', onTouchStart)
+        element.removeEventListener('touchmove', onTouchMove)
+        element.removeEventListener('touchend', endPinch)
+        element.removeEventListener('touchcancel', endPinch)
+      })
+    }
+
     onCleanup(() => {
       observer.disconnect()
     })
@@ -200,6 +352,8 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     <div
       class={styles.sheet}
       ref={host}
+      // Lane names are DOM, not paint, so they scale from here.
+      style={{ '--sheet-zoom': String(zoom()) }}
       role="group"
       aria-label={
         loopDescription() === ''
@@ -207,6 +361,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           : `Score sheet. ${loopDescription()}.`
       }
       data-testid="guitar-night-sheet"
+      data-layout={props.focusSingleSystem === true ? 'focused' : 'page'}
     >
       <div
         class={styles.scroll}
@@ -216,6 +371,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           measure()
         }}
       >
+        <div class={styles.gauge} ref={gauge} aria-hidden="true" />
         <Show
           when={props.lanes().length > 0}
           fallback={
@@ -226,11 +382,13 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
         >
           <div
             class={styles.page}
-            ref={(element) => {
-              page = element
-              measure()
+            data-testid="guitar-night-sheet-page"
+            style={{
+              height: `${Math.max(
+                systemHeight() * systemCount() + focusedInset(),
+                props.focusSingleSystem === true ? viewportHeight() : 0,
+              )}px`,
             }}
-            style={{ height: `${systemHeight() * systemCount()}px` }}
           >
             <For each={visibleSystems()}>
               {(system) => (
@@ -241,7 +399,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
                   metrics={metrics()}
                   theme={theme()}
                   renderer={renderer()}
-                  top={system.index * systemHeight()}
+                  top={focusedInset() + system.index * systemHeight()}
                   playheadBeat={props.playheadBeat()}
                   loopFragment={loopVisuals().fragments.get(system.index)}
                   loopMarkers={loopVisuals().markers.get(system.index) ?? []}
@@ -287,6 +445,35 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           </div>
         </Show>
       </div>
+      <Show when={props.lanes().length > 0}>
+        <div class={styles.zoomBar}>
+          <input
+            class={styles.zoomSlider}
+            type="range"
+            min={MIN_SHEET_ZOOM}
+            max={MAX_SHEET_ZOOM}
+            step={0.05}
+            value={zoom()}
+            data-testid="guitar-night-sheet-zoom"
+            aria-label="Sheet zoom"
+            aria-valuetext={`${Math.round(zoom() * 100)} percent`}
+            onInput={(event) => {
+              zoomAbout(Number(event.currentTarget.value))
+            }}
+          />
+          <button
+            class={styles.zoomReset}
+            type="button"
+            data-testid="guitar-night-sheet-zoom-reset"
+            aria-label="Reset sheet zoom to 100 percent"
+            onClick={() => {
+              zoomAbout(1)
+            }}
+          >
+            {Math.round(zoom() * 100)}%
+          </button>
+        </div>
+      </Show>
     </div>
   )
 }
@@ -648,15 +835,20 @@ interface LaneNameProps {
 
 const LaneName: Component<LaneNameProps> = (props) => {
   const missing = createMemo(() => props.lane.outOfRangeNotes)
-  const label = createMemo(() =>
-    missing() > 0
+  const label = createMemo(() => {
+    if (props.lane.content === 'percussion') {
+      const hits = props.lane.percussionHits?.length ?? 0
+      const dropped = props.lane.droppedPercussionHits ?? 0
+      return `${props.lane.trackName} — ${hits} authored ${hits === 1 ? 'hit' : 'hits'}${dropped > 0 ? ` · ${dropped} unmapped` : ''} · reference only`
+    }
+    return missing() > 0
       ? `${props.lane.trackName} — ${missing()} note${missing() === 1 ? '' : 's'} off this neck`
-      : props.lane.trackName,
-  )
+      : props.lane.trackName
+  })
 
   return (
     <Show
-      when={props.onSelectTrack !== undefined}
+      when={props.onSelectTrack !== undefined && props.lane.scoreable !== false}
       fallback={
         <span
           class={styles.laneName}

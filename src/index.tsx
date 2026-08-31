@@ -4,6 +4,7 @@
 
 import { render } from 'solid-js/web'
 import '@/styles/app.css'
+import '@/styles/dark-stage.css'
 import '@/styles/mobile-kit.css'
 import '@/styles/mixer-shared.css'
 import '@/styles/vocal-analysis.css'
@@ -27,7 +28,11 @@ import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
+import { initTheme } from '@/stores/theme-store'
 
+// The head prepaint script covers the network gap. Reconcile the persisted
+// source and install system/time watchers before Solid mounts.
+initTheme()
 // Publish the device tier on <html> before the first paint, so nothing ever
 // renders a frame of full-quality glass on a television and then downgrades.
 initDeviceTier()

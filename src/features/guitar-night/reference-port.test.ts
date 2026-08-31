@@ -216,6 +216,70 @@ describe('openGuitarNightReference', () => {
     ])
   })
 
+  it('lists retained drums for backing without making them scoreable', () => {
+    const result = openGuitarNightReference(
+      source({
+        tracks: [
+          ...source().tracks,
+          {
+            id: 'track-drums',
+            kind: 'percussion',
+            name: 'Drum kit',
+            noteCount: 2,
+            notes: [],
+            percussionHits: [
+              { gmKey: 36, startBeat: 0, velocity: 100 },
+              { gmKey: 38, startBeat: 1, velocity: 90 },
+            ],
+          },
+        ],
+      }),
+      'track-drums',
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.trackId).toBe('track-lead')
+    expect(result.reference.tracks.at(-1)).toEqual({
+      id: 'track-drums',
+      name: 'Drum kit',
+      kind: 'percussion',
+      hitCount: 2,
+      supportedHitCount: 2,
+      droppedHitCount: 0,
+    })
+  })
+
+  it('lists a dropped-only drum row instead of hiding the source evidence', () => {
+    const result = openGuitarNightReference(
+      source({
+        tracks: [
+          ...source().tracks,
+          {
+            id: 'track-unmapped-drums',
+            kind: 'percussion',
+            name: 'Unmapped kit',
+            noteCount: 0,
+            notes: [],
+            percussionHits: [],
+            droppedHitCount: 3,
+          },
+        ],
+      }),
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.tracks.at(-1)).toEqual({
+      id: 'track-unmapped-drums',
+      name: 'Unmapped kit',
+      kind: 'percussion',
+      hitCount: 0,
+      supportedHitCount: 0,
+      droppedHitCount: 3,
+    })
+  })
+
   it('reports a score with nothing playable instead of showing an empty stage', () => {
     const result = openGuitarNightReference(
       source({
@@ -224,6 +288,58 @@ describe('openGuitarNightReference', () => {
     )
 
     expect(result).toEqual({ ok: false, code: 'no-playable-notes' })
+  })
+
+  it('opens percussion-only music as backing without inventing score authority', () => {
+    const drumsOnly = source({
+      scoreTrackId: null,
+      tracks: [
+        {
+          id: 'track-drums',
+          kind: 'percussion',
+          name: 'Drum kit',
+          noteCount: 2,
+          notes: [],
+          percussionHits: [
+            {
+              id: 'midi-t0-e1',
+              gmKey: 36,
+              startBeat: 0,
+              velocity: 110,
+              source: { format: 'midi', channel: 9, midiKey: 36 },
+            },
+            {
+              id: 'midi-t0-e2',
+              gmKey: 38,
+              startBeat: 1,
+              velocity: 96,
+              source: { format: 'midi', channel: 9, midiKey: 38 },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(drumsOnly.tracks[0]?.percussionHits).toHaveLength(2)
+    const result = openGuitarNightReference(drumsOnly)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference).toMatchObject({
+      scoreMode: 'backing-only',
+      title: drumsOnly.name,
+      trackId: '',
+      trackName: 'No scored part',
+      tempoBpm: drumsOnly.bpm,
+      notes: [],
+    })
+    expect(result.reference.tracks[0]).toEqual({
+      id: 'track-drums',
+      name: 'Drum kit',
+      kind: 'percussion',
+      hitCount: 2,
+      supportedHitCount: 2,
+      droppedHitCount: 0,
+    })
   })
 
   it('substitutes a usable tempo when the source recorded none', () => {

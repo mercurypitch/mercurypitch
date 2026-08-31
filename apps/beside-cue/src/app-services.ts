@@ -1,6 +1,14 @@
+// ============================================================
+// Beside Cue app services — app-lifetime platform and media ports
+// ============================================================
+
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createSignal } from 'solid-js'
+import type { AudioSessionOutput } from './audio'
+import { createWebAudioOutput } from './audio'
+import type { VoiceAudioPort } from './content/voice'
+import { createElementAudioPort } from './content/voice'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { createIndexedDbBesideCueRepository } from './infrastructure/indexed-db-repository'
 import type { BesideCuePlatform } from './infrastructure/mobile-runtime'
@@ -18,6 +26,13 @@ export interface BesideCueAppServices {
   readonly platform: BesideCuePlatform
   readonly purchases: PurchasesSetup
   readonly onboardingPreferences: CinematicOnboardingPreferenceStore
+  /** Optional for injected/test environments; defaults to one lazy web output. */
+  readonly audioOutput?: AudioSessionOutput
+  /**
+   * App-owned character voice output. It is deliberately separate from the
+   * cinematic onboarding mix and may be absent in caption-only environments.
+   */
+  readonly voiceAudio?: VoiceAudioPort
   /**
    * Set only by a development build running the fake store. The app renders the
    * mock overlay from it; a shipped build leaves it undefined.
@@ -63,6 +78,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
   const platform = getBesideCuePlatform()
   const purchases = resolvePurchasesSetup(platform, import.meta.env)
   const repository = createIndexedDbBesideCueRepository()
+  const audioOutput = createWebAudioOutput()
 
   // The literal DEV test is what lets the bundler delete this whole branch, and
   // with it the dynamic import of the fake store, from a production build.
@@ -88,6 +104,8 @@ export function createDefaultAppServices(): BesideCueAppServices {
         config: { apiKey: 'mock-store', logLevel: 'debug' },
       },
       onboardingPreferences: createCinematicOnboardingPreferenceStore(),
+      audioOutput,
+      voiceAudio: createElementAudioPort(),
       mockPurchaseRequest,
       now: () => new Date(),
       createId: createLocalId,
@@ -100,6 +118,8 @@ export function createDefaultAppServices(): BesideCueAppServices {
     platform,
     purchases,
     onboardingPreferences: createCinematicOnboardingPreferenceStore(),
+    audioOutput,
+    voiceAudio: createElementAudioPort(),
     now: () => new Date(),
     createId: createLocalId,
   }

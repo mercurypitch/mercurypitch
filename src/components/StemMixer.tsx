@@ -30,6 +30,7 @@ import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -42,6 +43,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
+import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
@@ -285,6 +287,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
   const [shareToast, setShareToast] = createSignal('')
 
+  /** Where the thumb sits along its own travel, for the custom track's fill. */
+  const stageGlassFillPercent = (): number => {
+    const { min, max } = KARAOKE_STAGE_ALPHA
+    const span = max - min
+    if (span <= 0) return 0
+    return Math.round(((stageAlpha() - min) / span) * 100)
+  }
+
   const updateStageAlpha = (value: number) => {
     const alpha = persistKaraokeStageAlpha(value)
     setStageAlpha(alpha)
@@ -303,16 +313,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       'karaoke_toolbar_position',
       'bottom',
     )
-
-  // Esc key to exit focus mode
-  createEffect(() => {
-    if (!karaokeFocus()) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setKaraokeFocus(false)
-    }
-    document.addEventListener('keydown', handler)
-    onCleanup(() => document.removeEventListener('keydown', handler))
-  })
 
   const PITCH_WINDOW_FILL_RATIO = 0.75
 
@@ -443,6 +443,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
   })
+  const scoreModalOpen = (): boolean => mic.showScore() && mic.score() !== null
+
+  // Escape exits focus mode only when the score dialog is not the active
+  // surface. The dialog owns Escape while open, closes itself, and restores
+  // focus to the control that launched it.
+  createEffect(() => {
+    if (!karaokeFocus() || scoreModalOpen()) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !scoreModalOpen()) setKaraokeFocus(false)
+    }
+    document.addEventListener('keydown', handler)
+    onCleanup(() => document.removeEventListener('keydown', handler))
+  })
+
   let micGrantedReported = false
   createEffect(
     on(mic.micActive, (active) => {
@@ -450,6 +464,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       micGrantedReported = true
       props.onMicGranted?.()
     }),
+  )
+
+  // Karaoke sessions are keyed-remounted per song, so these two identifiers
+  // intentionally snapshot the staged song for the lifetime of this mixer.
+  /* eslint-disable solid/reactivity */
+  const karaokeVoiceCapture = useKaraokeVoiceCaptureController({
+    sessionId: props.sessionId,
+    songTitle: props.songTitle,
+    getStream: mic.getMicStream,
+    getAudioContext: () => audioCtxForMic.getAudioCtx() ?? null,
+  })
+  /* eslint-enable solid/reactivity */
+  useLocalSaveNavigationLock(
+    () => karaokeVoiceCapture.state() === 'saving',
+    'karaoke voice-take keep',
   )
 
   // Mutable holders — backfilled after canvas/lyrics controllers are created.
@@ -511,6 +540,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackEnded: () => handleSongEnded(),
     onValidMicPitch: () => props.onValidMicPitch?.(),
     onScoreCreated: (score) => props.onScoreCreated?.(score),
+    onPlaybackStarted: karaokeVoiceCapture.startPlayback,
+    onPlaybackPaused: karaokeVoiceCapture.pausePlayback,
+    onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
+    onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
+    onMicFrame: karaokeVoiceCapture.pushMicFrame,
     showNotification,
   })
 
@@ -525,6 +559,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       'karaoke-take',
       () => mic.micActive() && audio.playing(),
     ),
+  )
+
+  // A singer may enable the scoring mic after playback has already started.
+  // Join that run at the moment the mic becomes live. Disabling the mic ends
+  // the current score window, so discard its matching replay too; re-enabling
+  // during playback starts one fresh score-and-audio window.
+  createEffect(
+    on(mic.micActive, (active) => {
+      syncKaraokeCaptureWithMic(karaokeVoiceCapture, active, audio.playing())
+    }),
   )
 
   // Mic feedback: "can't hear you" / "too quiet" while a song plays.
@@ -566,6 +610,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // True between a natural song end and the score modal being dismissed, so we
   // advance the playlist only after the user has seen their score.
   let pendingAdvance = false
+  let pendingLibraryAdvanceSessionId: string | null = null
+  // Phone playlists advance immediately and show the result on the next-song
+  // overlay; suppress the old song's late score modal after handleStop runs.
+  let suppressZenScore = false
   let playStarted = false
 
   // `preset` is fixed for the lifetime of a StemMixer instance (the studio
@@ -645,10 +693,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // it closes.
       pendingAdvance = true
     } else {
-      // The zen stage mounts no score modal, so score (comparison data is
-      // still intact — handleStop() clears it after this callback) and
-      // advance right away; the result surfaces on the next song's overlay
-      // and the summary instead.
+      // Phone playlists intentionally skip the old song's score modal: score
+      // while comparison data is still intact, advance right away, and show
+      // the result on the next song's overlay and in the summary instead.
+      suppressZenScore = true
       playlist.reportSongScore(
         action === 'advance-with-score' ? mic.computeScore() : null,
       )
@@ -656,13 +704,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // Safety net: an advance must never wait on a score modal that is not
-  // mounted. If the zen stage is up (it renders no StemMixerScoreModal) while
-  // the end-of-song score signal is showing — e.g. zen was toggled while the
-  // modal was open — consume it here exactly like the modal's close would.
+  // Phone playlists advance immediately and surface scores on their own
+  // next-song/summary chrome, so suppress the old song's late modal. Manual
+  // stops and non-playlist natural ends still get the shared keep prompt.
   createEffect(() => {
-    if (!zenStage() || !mic.showScore()) return
+    if (
+      !zenStage() ||
+      !mic.showScore() ||
+      (!suppressZenScore && !pendingAdvance)
+    )
+      return
     mic.setShowScore(false)
+    karaokeVoiceCapture.dismiss()
+    suppressZenScore = false
     if (playlist.isPlaylistActive() && pendingAdvance) {
       pendingAdvance = false
       playlist.reportSongScore(mic.score())
@@ -764,7 +818,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       orderedLibraryIds(),
       props.sessionId,
     )
-    if (target !== null) props.onPickSession?.(target)
+    if (target === null) return
+    if (mic.micActive() && mic.comparisonData().length > 0) {
+      pendingLibraryAdvanceSessionId = target
+      return
+    }
+    props.onPickSession?.(target)
   }
 
   // Start playback once the countdown flips the phase to 'playing'. Wait for a
@@ -1926,6 +1985,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
+      // The score dialog owns keyboard input while it is open. Without this
+      // guard Space restarted playback and letter shortcuts mutated the mixer
+      // behind the singer's keep-or-close decision.
+      if (scoreModalOpen()) return
+
       // Ignore when typing in inputs
       if (
         e.target instanceof HTMLInputElement ||
@@ -2166,87 +2230,130 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  const handleKeepKaraokeVoiceTake = (): void => {
+    void karaokeVoiceCapture.keep().then((kept) => {
+      if (kept) {
+        showNotification(
+          'Voice take kept in Hear Yourself on this device.',
+          'success',
+        )
+      }
+    })
+  }
+
+  const handleScoreClose = (): void => {
+    if (karaokeVoiceCapture.state() === 'saving') return
+    mic.setShowScore(false)
+    karaokeVoiceCapture.dismiss()
+    if (playlist.isPlaylistActive() && pendingAdvance) {
+      pendingAdvance = false
+      playlist.reportSongScore(mic.score())
+      playlist.advance()
+    }
+    const nextLibrarySessionId = pendingLibraryAdvanceSessionId
+    pendingLibraryAdvanceSessionId = null
+    if (nextLibrarySessionId !== null) {
+      props.onPickSession?.(nextLibrarySessionId)
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <Show
       when={!zenStage()}
       fallback={
-        <KaraokeMobileStage
-          songTitle={props.songTitle}
-          onBack={handleZenBack}
-          playing={audio.playing}
-          loading={audio.loading}
-          loadError={audio.loadError}
-          // The same byte-based progress the desktop card shows. On a phone
-          // this stage replaces that card entirely, so without these the whole
-          // download is one static line of text.
-          loadProgress={audio.loadProgress}
-          loadPhase={audio.loadPhase}
-          loadedBytes={audio.loadedBytes}
-          totalBytes={audio.totalBytes}
-          // The same retry the desktop card has carried all along. On a
-          // phone this stage IS the mixer, so without it a failed load had
-          // no door but the browser's reload button.
-          onRetryLoad={() => {
-            void audio.loadStems()
-          }}
-          elapsed={audio.elapsed}
-          lyricsElapsed={audio.audibleElapsed}
-          duration={audio.duration}
-          onPlay={audio.handlePlay}
-          onPause={audio.handlePause}
-          onSeekToStart={() => audio.seekTo(0)}
-          seekTo={audio.seekTo}
-          hasPrevItem={hasPrevItem}
-          hasNextItem={hasNextItem}
-          onPrevItem={goPrevItem}
-          onNextItem={goNextItem}
-          autoplayEnabled={autoplayEnabled}
-          onToggleAutoplay={() => setAutoplayEnabled((v) => !v)}
-          vocal={vocal}
-          onToggleVocal={() => toggleMute('Vocal')}
-          onVocalVolume={(v) => setTrackVolume('Vocal', v)}
-          parsedLyrics={stableParsedLyrics}
-          currentLineIdx={currentLineIdx}
-          lyricsLoading={lyricsLoading}
-          computeActiveWord={computeActiveWord}
-          onLineClick={handleLyricLineClick}
-          playlistOverlayActive={isCurrentPlaylistSong}
-          onPlaylistStart={handlePlaylistStart}
-          onPlaylistSkip={() => {
-            audio.handlePause()
-            playlist.advance()
-          }}
-          showStageSettings={props.showStageSettings !== false}
-          onPickSession={props.onPickSession}
-          onUploadLyrics={handleLyricsUpload}
-          lyricsSuggestion={() => props.songTitle}
-          lrclibSearchUrl={lrclibSearchUrl}
-          songMatches={songMatches}
-          songPickerQuery={songPickerQuery}
-          onSongPickerQuery={setSongPickerQuery}
-          onSongPickerRefine={() => void handleSongPickerRefine()}
-          onSongPick={(m) => void handleSongPick(m)}
-          alignedWords={() => alignmentResult().alignedWords}
-          onEnsureNotes={ensureZenNotes}
-          notesAnalyzing={pitchAnalysis.isAnalyzing}
-          notesProgress={pitchAnalysis.progress}
-          micActive={mic.micActive}
-          onToggleMic={toggleZenMic}
-          // Beside the mic, because the mic is what makes it necessary.
-          // The desktop mixer header carried this slider first and it was
-          // unreachable from the one surface that needs it — the phone shows
-          // only the zen stage.
-          musicLevel={audio.musicLevel}
-          onMusicLevel={audio.setMusicLevel}
-          musicLevelRange={audio.musicLevelRange}
-          micPitch={mic.micPitch}
-          ribbonNotes={pitchAnalysis.editableNotes}
-        />
+        <>
+          <KaraokeMobileStage
+            songTitle={props.songTitle}
+            onBack={handleZenBack}
+            playing={audio.playing}
+            loading={audio.loading}
+            loadError={audio.loadError}
+            // The same byte-based progress the desktop card shows. On a phone
+            // this stage replaces that card entirely, so without these the whole
+            // download is one static line of text.
+            loadProgress={audio.loadProgress}
+            loadPhase={audio.loadPhase}
+            loadedBytes={audio.loadedBytes}
+            totalBytes={audio.totalBytes}
+            // The same retry the desktop card has carried all along. On a
+            // phone this stage IS the mixer, so without it a failed load had
+            // no door but the browser's reload button.
+            onRetryLoad={() => {
+              void audio.loadStems()
+            }}
+            elapsed={audio.elapsed}
+            lyricsElapsed={audio.audibleElapsed}
+            duration={audio.duration}
+            onPlay={audio.handlePlay}
+            onPause={audio.handlePause}
+            onSeekToStart={() => audio.seekTo(0)}
+            seekTo={audio.seekTo}
+            hasPrevItem={hasPrevItem}
+            hasNextItem={hasNextItem}
+            onPrevItem={goPrevItem}
+            onNextItem={goNextItem}
+            autoplayEnabled={autoplayEnabled}
+            onToggleAutoplay={() => setAutoplayEnabled((v) => !v)}
+            vocal={vocal}
+            onToggleVocal={() => toggleMute('Vocal')}
+            onVocalVolume={(v) => setTrackVolume('Vocal', v)}
+            parsedLyrics={stableParsedLyrics}
+            currentLineIdx={currentLineIdx}
+            lyricsLoading={lyricsLoading}
+            computeActiveWord={computeActiveWord}
+            onLineClick={handleLyricLineClick}
+            playlistOverlayActive={isCurrentPlaylistSong}
+            onPlaylistStart={handlePlaylistStart}
+            onPlaylistSkip={() => {
+              audio.handlePause()
+              playlist.advance()
+            }}
+            showStageSettings={props.showStageSettings !== false}
+            onPickSession={props.onPickSession}
+            onUploadLyrics={handleLyricsUpload}
+            lyricsSuggestion={() => props.songTitle}
+            lrclibSearchUrl={lrclibSearchUrl}
+            songMatches={songMatches}
+            songPickerQuery={songPickerQuery}
+            onSongPickerQuery={setSongPickerQuery}
+            onSongPickerRefine={() => void handleSongPickerRefine()}
+            onSongPick={(m) => void handleSongPick(m)}
+            alignedWords={() => alignmentResult().alignedWords}
+            onEnsureNotes={ensureZenNotes}
+            notesAnalyzing={pitchAnalysis.isAnalyzing}
+            notesProgress={pitchAnalysis.progress}
+            micActive={mic.micActive}
+            onToggleMic={toggleZenMic}
+            // Beside the mic, because the mic is what makes it necessary.
+            // The desktop mixer header carried this slider first and it was
+            // unreachable from the one surface that needs it — the phone shows
+            // only the zen stage.
+            musicLevel={audio.musicLevel}
+            onMusicLevel={audio.setMusicLevel}
+            musicLevelRange={audio.musicLevelRange}
+            micPitch={mic.micPitch}
+            ribbonNotes={pitchAnalysis.editableNotes}
+          />
+          <StemMixerScoreModal
+            showScore={mic.showScore}
+            score={mic.score}
+            onViewed={(score) => props.onScorecardViewed?.(score)}
+            voiceTakeState={karaokeVoiceCapture.state()}
+            voiceTakeMessage={karaokeVoiceCapture.message()}
+            onKeepVoiceTake={handleKeepKaraokeVoiceTake}
+            onClose={handleScoreClose}
+          />
+        </>
       }
     >
       <div
-        class="stem-mixer"
+        // The mixer is a stage in every preset: it always sits on a
+        // photographic backdrop, and its panels are glass over that photo. A
+        // light app palette faded to 57% over a dark photograph composites to
+        // mid grey and drops its own ink to 2.9:1, so the stage owns its
+        // palette here rather than inheriting the app's.
+        class="stem-mixer mp-dark-stage"
         style={{
           ...background.resolvedStyle(),
           '--sm-stage-alpha':
@@ -2255,6 +2362,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               : String(stageAlpha()),
         }}
         classList={{
+          'stem-mixer--performance': props.preset === 'performance',
           'stem-mixer--focus': karaokeFocus(),
           'stem-mixer--mapping': lrcGenMode(),
           'stem-mixer--pitch-studio':
@@ -2359,6 +2467,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       max={KARAOKE_STAGE_ALPHA.max}
                       step={KARAOKE_STAGE_ALPHA.step}
                       value={stageAlpha()}
+                      // A custom track cannot read the input's own value, so
+                      // the filled share travels as a percentage — the same
+                      // arrangement the stem faders use with --stem-volume.
+                      style={{
+                        '--sm-stage-glass-fill': `${stageGlassFillPercent()}%`,
+                      }}
                       aria-label="Stage transparency"
                       onInput={(event) =>
                         updateStageAlpha(Number(event.currentTarget.value))
@@ -2817,14 +2931,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showScore={mic.showScore}
           score={mic.score}
           onViewed={(score) => props.onScorecardViewed?.(score)}
-          onClose={() => {
-            mic.setShowScore(false)
-            if (playlist.isPlaylistActive() && pendingAdvance) {
-              pendingAdvance = false
-              playlist.reportSongScore(mic.score())
-              playlist.advance()
-            }
-          }}
+          voiceTakeState={karaokeVoiceCapture.state()}
+          voiceTakeMessage={karaokeVoiceCapture.message()}
+          onKeepVoiceTake={handleKeepKaraokeVoiceTake}
+          onClose={handleScoreClose}
         />
 
         {/* Pitch Studio elevates the existing canvas instead of mounting a
@@ -3069,14 +3179,9 @@ const LoopMetricsBar: Component<{
 export const StemMixerStyles: string = `
 .stem-mixer {
   --sm-stage-alpha: ${KARAOKE_STAGE_ALPHA.defaultValue};
-  --bg-primary: rgba(13, 17, 23, var(--sm-stage-alpha));
-  --bg-secondary: rgba(22, 27, 34, var(--sm-stage-alpha));
-  --bg-tertiary: rgba(
-    33,
-    38,
-    45,
-    min(1, calc(var(--sm-stage-alpha) + 0.08))
-  );
+  /* The analysis canvas stays a dark plate in every theme — the waveform and
+     pitch ink are drawn for it — but it is still stage glass, so it follows
+     the slider a step behind the panels. */
   --sm-canvas-bg: rgba(
     13,
     17,
@@ -3085,30 +3190,84 @@ export const StemMixerStyles: string = `
   );
   /* The lane names (Vocal, Instrumental, …) and the MONITORING badge are
      painted onto the canvas, so CSS cannot fade them — the canvas controller
-     reads this variable on each redraw instead. Carries more weight than the
-     glass itself: small mono type over a moving waveform needs the contrast,
-     and at the slider's floor a matching alpha would erase the names.
-     Defined here rather than per host, so the studio's slider reaches the
-     lane rails exactly as Karaoke Night's does (the performance preset
-     resolves --sm-stage-alpha from --kn-alpha, so both arrive here). */
+     reads this variable on each redraw instead. It belongs to the base block,
+     not the performance preset: the canvas stays deliberately dark in the
+     studio too, and only here does the studio's own stage slider reach the
+     lane rails the way Karaoke Night's --kn-alpha does. Carries more weight
+     than the glass itself, because at the slider's floor a matching alpha
+     would erase small mono type over a moving waveform. */
   --sm-lane-label-bg: rgba(
     5,
     8,
     18,
     min(1, calc(var(--sm-stage-alpha) + 0.2))
   );
+  --sm-stage-surface: color-mix(
+    in srgb,
+    var(--bg-secondary, #161b22) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+
+  /* Stage glass, derived rather than hardcoded: the studio fades the active
+     app theme, the performance preset fades the dark stage it already sits
+     on. Each depth keeps the step the stage has always had, so the slider
+     never flattens the panels into one sheet. */
+  --sm-glass-primary: color-mix(
+    in srgb,
+    var(--bg-primary) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+  --sm-glass-secondary: color-mix(
+    in srgb,
+    var(--bg-secondary) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+  --sm-glass-tertiary: color-mix(
+    in srgb,
+    var(--bg-tertiary) min(100%, calc((var(--sm-stage-alpha) + 0.08) * 100%)),
+    transparent
+  );
+  --sm-glass-card: color-mix(
+    in srgb,
+    var(--bg-card) min(100%, calc((var(--sm-stage-alpha) + 0.12) * 100%)),
+    transparent
+  );
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
+  background:
+    linear-gradient(var(--sm-stage-surface), var(--sm-stage-surface)),
+    var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
+    var(--bg-secondary, #161b22);
+  overflow: hidden;
+}
+
+/* The surfaces reach the panels here and not on .stem-mixer itself: a custom
+   property cannot read the value it shadows on its own element, and the root
+   is where the un-faded palette has to stay readable for the derivations
+   above and for the backdrop's own base layer. */
+.stem-mixer > * {
+  --bg-primary: var(--sm-glass-primary);
+  --bg-secondary: var(--sm-glass-secondary);
+  --bg-tertiary: var(--sm-glass-tertiary);
+  --bg-card: var(--sm-glass-card);
+}
+
+/* The standalone stage keeps translucent theatre glass. Studio mode never
+   shadows app theme tokens: its header, panels and controls inherit the
+   selected app palette, while only .sm-canvas remains deliberately dark. */
+.stem-mixer--performance {
+  /* Surfaces are not re-declared here. .mp-dark-stage already supplies this
+     preset's palette and the base block fades it, so shadowing them again
+     would run the glass through the slider twice. */
   background:
     linear-gradient(
       rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.08))),
       rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.18)))
     ),
     var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
-    var(--bg-secondary, #161b22);
-  overflow: hidden;
+    #161b22;
 }
 
 /* Header */
@@ -3167,9 +3326,68 @@ export const StemMixerStyles: string = `
   flex: none;
 }
 
+/* The only mixer slider that still wore the native appearance. A native range
+   paints its unfilled half in a hard-coded UA grey -- #3b3b3b under a dark
+   color-scheme -- which owes nothing to the stage palette and reads as a grey
+   plate on the glass, more or less visible depending on the backdrop behind
+   it. The stem faders and the pitch-analysis sliders already draw their own
+   track; this one now does too, from the same tokens. */
 .sm-stage-glass-slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   width: 88px;
-  accent-color: var(--accent, #58a6ff);
+  height: 14px;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+/* WebKit track */
+.sm-stage-glass-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
+  );
+}
+
+.sm-stage-glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+/* Firefox track */
+.sm-stage-glass-slider::-moz-range-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
+  );
+}
+
+.sm-stage-glass-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
 
@@ -3246,7 +3464,7 @@ export const StemMixerStyles: string = `
   height: 14px;
 }
 .sm-playlist-ctrl-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
   color: var(--fg-primary, #c9d1d9);
 }
 .sm-playlist-ctrl-btn:disabled {
@@ -3319,7 +3537,7 @@ export const StemMixerStyles: string = `
 
 .sm-btn--active {
   background: var(--accent, #58a6ff) !important;
-  color: #fff !important;
+  color: var(--on-accent, #0d1117) !important;
   border-color: var(--accent, #58a6ff) !important;
 }
 
@@ -3653,7 +3871,7 @@ export const StemMixerStyles: string = `
   height: 14px;
 }
 .sm-mic-monitor-toggle--active {
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
 }
@@ -3721,7 +3939,7 @@ export const StemMixerStyles: string = `
 .pitch-canvas-toggle.active {
   background: var(--accent, #8b5cf6);
   border-color: var(--accent, #8b5cf6);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .pitch-canvas-toggle svg {
@@ -3732,16 +3950,18 @@ export const StemMixerStyles: string = `
   font-size: 0.55rem;
   padding: 0.05rem 0.3rem;
   border-radius: 0.2rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--success, #3fb950);
   text-transform: none;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .pitch-alignment-stats.whisper-processing {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--warning, #d29922);
   animation: sm-pulse 1.5s ease-in-out infinite;
 }
 
@@ -3767,10 +3987,10 @@ export const StemMixerStyles: string = `
   min-width: 0;
   width: 100%;
   touch-action: none;
-  /* The canvas draws light-on-dark ink (#fff labels, dark gridlines), so the
-     studio keeps an opaque dark backdrop in EVERY theme — matching the old
-     hard-coded #0d1117 fillRect. Only the karaoke page overrides
-     --sm-canvas-bg (to a translucent value) to let its stage glass through. */
+  /* The canvas draws light-on-dark ink (#fff labels, dark gridlines), so its
+     backdrop stays the same dark plate in EVERY theme — the old hard-coded
+     #0d1117 fillRect. It is stage glass all the same, so --sm-canvas-bg
+     follows the transparency slider a step behind the panels. */
   background: var(--sm-canvas-bg, #0d1117);
 }
 
@@ -4273,15 +4493,17 @@ export const StemMixerStyles: string = `
   font-size: 0.55rem;
   padding: 0.05rem 0.3rem;
   border-radius: 0.2rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--success, #3fb950);
   text-transform: none;
   letter-spacing: 0;
 }
 
 .sm-lyrics-source-upload {
-  background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--purple, #bc8cff);
 }
 
 .sm-lyrics-loading {
@@ -5486,7 +5708,7 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-loop-badge--a {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-lyrics-loop-badge--b {
@@ -6788,7 +7010,7 @@ export const StemMixerStyles: string = `
 }
 .sm-dock-compass-btn--active {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 .sm-dock-compass-hub {
   grid-column: 2;
@@ -7207,7 +7429,7 @@ export const StemMixerStyles: string = `
   border-radius: 50%;
   font-size: 0.68rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   flex-shrink: 0;
 }
 .sm-loop-menu-dot--a { background: #58a6ff; }
@@ -7234,6 +7456,8 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   align-items: center;
   width: min(560px, 94%);
+  max-height: calc(100% - 2rem);
+  overflow: auto;
   padding: 2.25rem 2rem 2rem;
   border-radius: 20px;
   background: linear-gradient(
@@ -7294,7 +7518,7 @@ export const StemMixerStyles: string = `
 }
 .sm-mic-grade--b {
   background: linear-gradient(135deg, #60a5fa, #3b82f6);
-  color: #fff;
+  color: #0d1117;
   box-shadow: 0 0 42px rgba(96, 165, 250, 0.4);
 }
 .sm-mic-grade--c {
@@ -7303,8 +7527,8 @@ export const StemMixerStyles: string = `
   box-shadow: 0 0 42px rgba(251, 191, 36, 0.35);
 }
 .sm-mic-grade--d {
-  background: linear-gradient(135deg, #f87171, #dc2626);
-  color: #fff;
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  color: #0d1117;
   box-shadow: 0 0 42px rgba(248, 113, 113, 0.35);
 }
 .sm-mic-score-verdict {
@@ -7362,21 +7586,68 @@ export const StemMixerStyles: string = `
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.sm-mic-score-take {
+  width: 100%;
+  margin: -0.35rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(110, 231, 220, 0.22);
+  border-radius: 0.8rem;
+  background: linear-gradient(135deg, rgba(21, 88, 94, 0.18), rgba(68, 46, 112, 0.16));
+  text-align: left;
+}
+.sm-mic-score-take-kicker {
+  margin-bottom: 0.25rem;
+  color: #7ee7dd;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sm-mic-score-take p {
+  margin: 0;
+  color: var(--fg-secondary, #a8b3bf);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.sm-mic-score-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+}
+.sm-mic-score-keep-btn,
 .sm-mic-score-ok-btn {
-  padding: 0.7rem 2.75rem;
-  background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
-  color: #fff;
-  border: none;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.4rem;
   border-radius: 999px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity 0.15s, transform 0.15s, border-color 0.15s;
 }
+.sm-mic-score-keep-btn {
+  min-width: 13.75rem;
+  background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
+  color: var(--on-accent, #0d1117);
+  border: none;
+}
+.sm-mic-score-ok-btn {
+  background: transparent;
+  color: var(--fg-secondary, #a8b3bf);
+  border: 1px solid var(--border, #30363d);
+}
+.sm-mic-score-keep-btn:hover:not(:disabled),
 .sm-mic-score-ok-btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+.sm-mic-score-ok-btn:hover {
+  border-color: var(--fg-tertiary, #8b949e);
+}
+.sm-mic-score-keep-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 /* Fixed 2-Column Layout */
@@ -7541,13 +7812,13 @@ export const StemMixerStyles: string = `
 
 .sm-sidebar-toggle--active {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   border-color: var(--accent, #58a6ff);
 }
 
 .sm-sidebar-toggle--active:hover {
   background: var(--accent-hover, #79c0ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 /* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────
@@ -7625,7 +7896,7 @@ export const StemMixerStyles: string = `
   font-size: 0.9rem;
   font-weight: 600;
   font-family: inherit;
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--lyf-acc);
   border: none;
   border-radius: 12px;
@@ -7835,7 +8106,7 @@ export const StemMixerStyles: string = `
 }
 
 .sm-song-picker-footer-btn--primary {
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--lyf-acc);
   border-color: transparent;
 }
@@ -7888,7 +8159,7 @@ export const StemMixerStyles: string = `
 
 .sm-btn-primary {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-btn-primary:hover:not(:disabled) {

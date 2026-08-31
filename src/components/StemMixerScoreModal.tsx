@@ -10,11 +10,16 @@ import type { Accessor } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
 import type { MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
+import { useFocusTrap } from '@/lib/use-focus-trap'
+import type { KaraokeVoiceCaptureState } from '@/lib/use-karaoke-voice-capture-controller'
 
 interface StemMixerScoreModalProps {
   showScore: Accessor<boolean>
   score: Accessor<MicScore | null>
   onViewed?: (score: MicScore) => void
+  voiceTakeState?: KaraokeVoiceCaptureState
+  voiceTakeMessage?: string
+  onKeepVoiceTake?: () => void
   onClose: () => void
 }
 
@@ -29,7 +34,23 @@ const GRADE_LABEL: Record<MicScore['grade'], string> = {
 export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   props,
 ) => {
+  let dialogRef: HTMLDivElement | undefined
   let viewedScore: MicScore | null = null
+  const isOpen = (): boolean => props.showScore() && props.score() !== null
+  const takeState = (): KaraokeVoiceCaptureState =>
+    props.voiceTakeState ?? 'idle'
+  const dismissalLocked = (): boolean => takeState() === 'saving'
+  const requestClose = (): void => {
+    if (dismissalLocked()) return
+    props.onClose()
+  }
+
+  useFocusTrap(() => dialogRef, {
+    isOpen,
+    onClose: requestClose,
+    isolateKeyboard: true,
+  })
+
   createEffect(() => {
     const score = props.score()
     if (
@@ -43,13 +64,41 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
     props.onViewed?.(score)
   })
 
+  const showTakeStatus = (): boolean =>
+    !['idle', 'recording', 'paused'].includes(takeState())
+  const showKeepAction = (): boolean =>
+    ['processing', 'ready', 'saving', 'saved'].includes(takeState())
+  const keepLabel = (): string => {
+    switch (takeState()) {
+      case 'processing':
+        return 'Preparing replay'
+      case 'saving':
+        return 'Keeping take'
+      case 'saved':
+        return 'Kept in Hear Yourself'
+      default:
+        return 'Keep in Hear Yourself'
+    }
+  }
+
   return (
-    <Show when={props.showScore() && props.score()}>
-      <div class="sm-mic-score-overlay" onClick={() => props.onClose()}>
-        <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
+    <Show when={isOpen()}>
+      <div class="sm-mic-score-overlay" onClick={requestClose}>
+        <div
+          ref={dialogRef}
+          class="sm-mic-score-card mp-dark-stage"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Karaoke score"
+          aria-busy={dismissalLocked()}
+          tabindex="-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
+            type="button"
             class="sm-mic-score-close"
-            onClick={() => props.onClose()}
+            disabled={dismissalLocked()}
+            onClick={requestClose}
             aria-label="Close score"
           >
             <svg
@@ -138,9 +187,36 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
             </span>
           </div>
 
-          <button class="sm-mic-score-ok-btn" onClick={() => props.onClose()}>
-            OK
-          </button>
+          <Show when={showTakeStatus()}>
+            <div class="sm-mic-score-take" aria-live="polite">
+              <div class="sm-mic-score-take-kicker">Private voice history</div>
+              <p>{props.voiceTakeMessage}</p>
+            </div>
+          </Show>
+
+          <div class="sm-mic-score-actions">
+            <Show when={showKeepAction()}>
+              <button
+                type="button"
+                class="sm-mic-score-keep-btn"
+                disabled={takeState() !== 'ready'}
+                aria-busy={
+                  takeState() === 'processing' || takeState() === 'saving'
+                }
+                onClick={() => props.onKeepVoiceTake?.()}
+              >
+                {keepLabel()}
+              </button>
+            </Show>
+            <button
+              type="button"
+              class="sm-mic-score-ok-btn"
+              disabled={dismissalLocked()}
+              onClick={requestClose}
+            >
+              {takeState() === 'ready' ? 'Not now' : 'Close'}
+            </button>
+          </div>
         </div>
       </div>
     </Show>

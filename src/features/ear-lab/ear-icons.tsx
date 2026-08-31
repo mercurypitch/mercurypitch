@@ -121,6 +121,161 @@ export function IconTap(p: IconProps): JSX.Element {
   )
 }
 
+/** The Chart: a ruled page with the rhythm written across it. */
+export function IconChart(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 12h18" />
+      <path d="M7 8.5v7M11 9.5v5M15 8.5v7M18 9.5v5" />
+    </svg>
+  )
+}
+
+export function IconChain(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 16.5 8 11l4 3.5 4.5-6L21 12" />
+      <circle cx="3" cy="16.5" r="1.6" />
+      <circle cx="8" cy="11" r="1.6" />
+      <circle cx="12" cy="14.5" r="1.6" />
+      <circle cx="16.5" cy="8.5" r="1.6" />
+      <circle cx="21" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconSpan(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 12h4.5l3-4 3 8 3-4H21" />
+      <path d="M17.5 8.5 21 12l-3.5 3.5" />
+      <circle cx="3" cy="12" r="1.6" />
+      <circle cx="7.5" cy="12" r="1.6" />
+      <circle cx="10.5" cy="8" r="1.6" />
+      <circle cx="13.5" cy="16" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconBeats(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 4h18" />
+      <path d="M8 4v11M16 4l2 11" />
+      <circle cx="8" cy="17.5" r="2.5" />
+      <circle cx="18.3" cy="17.5" r="2.5" />
+    </svg>
+  )
+}
+
+export function IconMetronome(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M8 21 10 4h4l2 17Z" />
+      <path d="M12 16 17 6" />
+      <circle cx="16.2" cy="7.6" r="1.4" />
+    </svg>
+  )
+}
+
+export function IconTwelve(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v3M21 12h-3M12 21v-3M3 12h3" />
+      <path d="M18.4 5.6l-2.1 2.1M18.4 18.4l-2.1-2.1M5.6 18.4l2.1-2.1M5.6 5.6l2.1 2.1" />
+      <circle cx="12" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconBalance(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M12 4v16M8 20h8" />
+      <path d="M3 8h18" />
+      <path d="M3 8l-1.5 6a3 3 0 0 0 6 0L6 8M18 8l-1.5 6a3 3 0 0 0 6 0L21 8" />
+    </svg>
+  )
+}
+
+export function IconNumerals(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M4 7v10M9 7l3 10 3-10M19 7v10" />
+      <path d="M3 20h18" />
+    </svg>
+  )
+}
+
+export function IconBassLine(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 17h4l3-8 3 5 3-3 5 6" />
+      <circle cx="3" cy="17" r="1.6" />
+      <circle cx="10" cy="9" r="1.6" />
+      <circle cx="13" cy="14" r="1.6" />
+      <circle cx="16" cy="11" r="1.6" />
+      <circle cx="21" cy="17" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconMetre(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 5v14M9 8v8M15 8v8M21 8v8" />
+      <circle cx="3" cy="19" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconDesk(p: IconProps): JSX.Element {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={p.size ?? 20}
+      height={p.size ?? 20}
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      class={p.class}
+      aria-hidden="true"
+    >
+      <path d="M6 4v16M12 4v16M18 4v16" />
+      <rect
+        x="4"
+        y="9"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="10"
+        y="13"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="16"
+        y="7"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>
@@ -227,6 +382,14 @@ export function IconEar(p: IconProps): JSX.Element {
     <svg {...frame(p.size)} class={p.class}>
       <path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 3-2 3.5-2.5 5.5S13.5 20 11.5 20" />
       <path d="M9.5 10.5a2.5 2.5 0 0 1 5 0c0 1.5-1 2-1.5 3" />
+    </svg>
+  )
+}
+
+export function IconChevron(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M6 9l6 6 6-6" />
     </svg>
   )
 }

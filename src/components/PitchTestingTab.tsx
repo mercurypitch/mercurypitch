@@ -13,6 +13,7 @@ import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import { deleteOfflineAnalysis, getOfflineAnalysis, saveOfflineAnalysis, } from '@/db/services/pitch-analysis-service'
 import { saveUvrSession } from '@/db/services/uvr-service'
+import { stemDataBytes } from '@/db/stem-blob-data'
 import { computeFileHash } from '@/lib/file-hash'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { parseLrcFile } from '@/lib/lyrics-service'
@@ -485,8 +486,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               setAudioContext(ctx)
             }
 
-            const bufferCopy = blob.data.slice(0)
-            const audioBuffer = await ctx.decodeAudioData(bufferCopy)
+            const audioBuffer = await ctx.decodeAudioData(
+              await stemDataBytes(blob.data),
+            )
             const rawData = audioBuffer.getChannelData(0)
             const sampleRate = audioBuffer.sampleRate
 

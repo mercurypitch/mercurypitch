@@ -269,7 +269,7 @@ const WEAK_MATCHERS = new Set([
   'toBeDefined',
 ])
 const MATCHER_RE =
-  /\.(toBeInTheDocument|toBeVisible|toBeTruthy|toBeDefined|toBe|toEqual|toStrictEqual|toBeCloseTo|toHaveBeenCalled\w*|toHaveTextContent|toHaveAttribute|toContain\w*|toMatch\w*|toThrow\w*|toBeNull|toBeGreaterThan\w*|toBeLessThan\w*|toHaveLength|toBeFalsy|toBeUndefined|toHaveProperty|toSatisfy)\b/g
+  /\.(toBeInTheDocument|toBeVisible|toBeTruthy|toBeDefined|toBeDisabled|toBeEnabled|toBeChecked|toBeRequired|toBeInvalid|toBeValid|toBe|toEqual|toStrictEqual|toBeCloseTo|toHaveBeenCalled\w*|toHaveTextContent|toHaveAttribute|toContain\w*|toMatch\w*|toThrow\w*|toBeNull|toBeGreaterThan\w*|toBeLessThan\w*|toHaveLength|toBeFalsy|toBeUndefined|toHaveProperty|toSatisfy)\b/g
 
 function testShapeMetrics(files) {
   const testFiles = files.filter((f) => /\.(test)\.tsx?$/.test(f))

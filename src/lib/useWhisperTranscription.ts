@@ -20,7 +20,7 @@ import { createSignal } from 'solid-js'
 import { deleteTranscriptionFromDb, loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/whisper-transcription-db-service'
 import { deduplicateWhisperSegments, WHISPER_CHUNK_SEC, WHISPER_OVERLAP_SEC, WHISPER_SAMPLE_RATE, } from '@/lib/transcription-alignment-utils'
 import type { WhisperSegment } from '@/lib/whisper-service'
-import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
+import { resampleTo16kHz, WHISPER_SERVICE_DESTROYED_MESSAGE, WhisperService, } from '@/lib/whisper-service'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -371,6 +371,17 @@ export function detectWhisperHallucination(
   }
 }
 
+/**
+ * `destroy()` rejects any in-flight `init()` with a sentinel so the caller is
+ * released rather than left awaiting a worker that has been terminated. That
+ * is an unmount, not a failed download, and must not reach the visitor as one.
+ */
+export function isTeardownRejection(err: unknown): boolean {
+  return (
+    err instanceof Error && err.message === WHISPER_SERVICE_DESTROYED_MESSAGE
+  )
+}
+
 // ── Controller ─────────────────────────────────────────────────
 
 export function useWhisperTranscription(
@@ -407,7 +418,8 @@ export function useWhisperTranscription(
   const initWhisper = () => {
     if (serviceRef != null) return
     setStatus('loading')
-    serviceRef = new WhisperService()
+    const service = new WhisperService()
+    serviceRef = service
     // Forward status changes from the service, but NOT while actively
     // transcribing -- the worker fires 'ready' after each chunk completes,
     // which would overwrite our 'processing' status and confuse the UI.
@@ -422,13 +434,29 @@ export function useWhisperTranscription(
     serviceRef
       .init()
       .then(() => {
+        // A load that finished after this hook moved on (song switched, room
+        // closed) must not publish 'ready' or start transcribing over it.
+        if (serviceRef !== service) return
         setStatus('ready')
         if (pendingStart) {
           pendingStart = false
           startTranscription()
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
+        // An unmount mid-init lands here. Nothing failed and nobody is left
+        // to read a message, so say nothing — but still clear the pending
+        // request, so a controller that is somehow initialised again does not
+        // inherit a transcription the previous life had queued.
+        //
+        // A rejection from a service this hook has already replaced is the
+        // same story even when it is a genuine failure: switching songs
+        // disposes the room mid-load, and telling the singer to check their
+        // connection because they picked a different song is wrong.
+        if (serviceRef !== service || isTeardownRejection(err)) {
+          pendingStart = false
+          return
+        }
         console.error(`[${tag()}] Whisper init failed:`, err)
         pendingStart = false
         setErrorMessage(

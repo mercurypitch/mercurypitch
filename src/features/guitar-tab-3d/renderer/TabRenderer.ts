@@ -32,6 +32,8 @@ export interface DisplaySettings {
   motion?: 'full' | 'reduced'
   /** Reduced effects preserve notation while dropping expensive glow/compositing. */
   effects?: 'full' | 'reduced'
+  /** Draw the chord name over each stacked event. Defaults to on. */
+  chordLabels?: boolean
 }
 
 export const DEFAULT_DISPLAY: DisplaySettings = {
@@ -40,6 +42,7 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
   theme: 'midnight',
   motion: 'full',
   effects: 'full',
+  chordLabels: true,
 }
 
 export const VELVET_DISPLAY: DisplaySettings = {

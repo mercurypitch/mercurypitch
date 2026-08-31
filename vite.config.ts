@@ -15,6 +15,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 // Only use SSL in dev mode - production builds don't need it
 const isDev = process.env.NODE_ENV !== 'production'
 
+// A self-signed certificate costs a human one click and an agent a wall: an
+// automated browser cannot accept the warning, so it sees a blank page. The
+// `app-http` launch entry sets this to serve dev over plain http instead.
+const wantsPlainHttp = process.env.MP_DEV_HTTP === '1'
+
 let commitSha = 'unknown'
 try {
   const { execSync } = await import('node:child_process')
@@ -42,7 +47,7 @@ try {
 }
 
 // Production has real HTML entries for Voice Mirror, the vocal-range test,
-// Karaoke Night, Guitar Night and Piano Night. Dev and preview servers need
+// Karaoke Night, Guitar Night, Piano Night and Drum Night. Dev and preview servers need
 // equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
 // because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
@@ -52,6 +57,10 @@ const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
 const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
+const DRUM_NIGHT_PATHS = new Set(['/drum-night'])
+// The Ear Lab is a tab of the studio, like Jam: /ear-lab boots the studio on
+// the Ear Lab tab so the bench has a real URL with a card — see ear-lab.html.
+const EAR_LAB_PATHS = new Set(['/ear-lab'])
 // Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
 // exists so the feature has a real URL a crawler can fetch — see jam.html.
 const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
@@ -98,6 +107,8 @@ function standaloneEntryRewritePlugin() {
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
         else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
+        else if (DRUM_NIGHT_PATHS.has(path)) req.url = '/drum-night.html'
+        else if (EAR_LAB_PATHS.has(path)) req.url = '/ear-lab.html'
         else if (JAM_PATHS.has(path)) req.url = '/jam.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -172,7 +183,7 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
-      isDev ? ssl() : [],
+      isDev && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
@@ -259,7 +270,11 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
-      port: Number(process.env.VITE_DEV_PORT) || 3000,
+      // VITE_DEV_PORT is the explicit override. PORT is what a supervisor
+      // assigns when 3000 is already taken -- several worktrees of this repo
+      // can have a dev server up at once, and only one of them can hold 3000.
+      port:
+        Number(process.env.VITE_DEV_PORT) || Number(process.env.PORT) || 3000,
       headers: {
         // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
         'Cross-Origin-Opener-Policy': 'same-origin',
@@ -327,6 +342,8 @@ export default defineConfig(({ command, mode }) => {
           jam: resolve(__dirname, 'jam.html'),
           guitarNight: resolve(__dirname, 'guitar-night.html'),
           pianoNight: resolve(__dirname, 'piano-night.html'),
+          drumNight: resolve(__dirname, 'drum-night.html'),
+          earLab: resolve(__dirname, 'ear-lab.html'),
           glass: resolve(__dirname, 'glass.html'),
         },
         output: {
@@ -351,12 +368,40 @@ export default defineConfig(({ command, mode }) => {
             // chunk and make standalone song pickers download the app UI.
             if (id.includes('/src/lib/audio-upload-contract.'))
               return 'audio-upload-contract'
+            // The native file-picker probe is shared by standalone song
+            // rooms and UvrPanel. Without a dedicated leaf chunk, Rollup can
+            // co-locate it with UvrPanel's broad `advanced` chunk, turning a
+            // permission-free local-file button into a static dependency on
+            // stores, IndexedDB and media tooling.
+            if (id.includes('/src/lib/file-picker.')) return 'file-picker'
+            // Perceptual fader math is another dependency-free leaf shared by
+            // standalone rooms and the full mixer. Pin it before `advanced`
+            // so a route-local gain write cannot preload stores/DB/media.
+            if (id.includes('/src/lib/volume-curve.')) return 'volume-curve'
             // These dependency-free UI leaves are shared by the app and
             // standalone rooms. If Rollup co-locates either one with
             // LibraryModal, a standalone first paint inherits the complete
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // The shared A/B rail uses this Solid-only pointer primitive, but
+            // the main app also reaches it through library-owned surfaces.
+            // Without its own chunk Rollup files the primitive under
+            // `library`, making Drum Night preload stores, Dexie and media
+            // code just to bind a timeline drag gesture.
+            if (id.includes('/src/components/shared/drag-gesture.')) {
+              return 'drag-gesture'
+            }
+            // The synthesized drum recipes are dependency-free Web Audio
+            // leaves shared by the main app and Drum Night. Without a pin,
+            // Rollup co-locates them with LibraryModal and turns that entire
+            // IndexedDB/media graph into Drum Night first-paint work.
+            if (
+              id.includes('/src/lib/drum-voices.') ||
+              id.includes('/src/lib/drum-voice-map.')
+            ) {
+              return 'drum-voices'
+            }
             // Shared by the app's sign-in surface (statically, via
             // AuthModal → PhoneSignIn) and the sync modal that Karaoke
             // Night lazy-loads. Without a pin it is hoisted into the APP
@@ -505,8 +550,25 @@ export default defineConfig(({ command, mode }) => {
             // app dies at first paint on "Cannot access 'ge' before
             // initialization", with no clue which module 'ge' was. Whatever
             // pitch-core reaches has to be in pitch-core.
+            // The stem Blob seam (stem-blob-data, uvr-stem-migration,
+            // durable-write) rides with its reader. All three are leaves,
+            // but `uvr-read-service` imports the first two statically — left
+            // organic they land in 'library', which gave this chunk a
+            // library edge and closed the library → pitch-core →
+            // local-song-library → library cycle: Guitar Night died at
+            // first paint on "Cannot access 'At' before initialization"
+            // (2026-08-31, melody-store reading scale-data's KEY_OFFSETS).
+            //
+            // The db bootstrap (index, seed, persistent-storage, the hybrid
+            // and server adapters) rides here too. Organic, Rollup filed it
+            // under pitch-core, which made vendor-db a hoisted static dep of
+            // EVERY pitch-core importer — a standalone room's account chip
+            // (auth-service + notifications-store) preloaded Dexie on first
+            // paint and broke Drum Night's projects-stay-lazy contract. The
+            // services pitch-core keeps (auth/user/billing) import no db
+            // code, so this direction has no cycle back.
             if (
-              /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service)/.test(
+              /src\/db\/(index\.|seed|persistent-storage|local-database|adapters\/(dexie-adapter|hybrid-adapter|server-adapter)|services\/uvr-read-service|services\/uvr-stem-migration|stem-blob-data|durable-write)/.test(
                 id,
               ) ||
               /src\/lib\/wav-meta/.test(id)

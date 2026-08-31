@@ -111,6 +111,24 @@ describe('iOS audio unlock', () => {
     uninstall()
   })
 
+  it('lets a local-buffer consumer replace a context that WebKit left silent', async () => {
+    const { installAudioUnlock } = await import('@/lib/audio-unlock')
+    const context = createAudioContext()
+    const rebuild = vi.fn()
+    const uninstall = installAudioUnlock(
+      () => context as unknown as AudioContext,
+      { onBackgroundReturn: rebuild },
+    )
+
+    setVisibility('hidden')
+    setVisibility('visible')
+
+    expect(rebuild).toHaveBeenCalledOnce()
+    expect(context.suspend).not.toHaveBeenCalled()
+    expect(context.resume).not.toHaveBeenCalled()
+    uninstall()
+  })
+
   it('does not recycle the context after its listener is removed', async () => {
     const { installAudioUnlock } = await import('@/lib/audio-unlock')
     const context = createAudioContext()

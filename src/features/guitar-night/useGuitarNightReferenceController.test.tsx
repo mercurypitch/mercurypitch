@@ -4,7 +4,7 @@
 import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
+import type { GuitarNightReferencePort, GuitarNightReferenceSource, GuitarNightTranscriptionPort, } from './reference-port'
 import { openGuitarNightReference, suggestReferenceInstrument, } from './reference-port'
 import { useGuitarNightReferenceController } from './useGuitarNightReferenceController'
 
@@ -38,6 +38,39 @@ const VELVET_RIFF = {
       notes: [
         { midi: 28, startBeat: 0, duration: 1, stringIndex: 3, fret: 0 },
         { midi: 33, startBeat: 1, duration: 1, stringIndex: 2, fret: 0 },
+      ],
+    },
+  ],
+}
+
+const DRUMMED_RIFF: GuitarNightReferenceSource = {
+  ...VELVET_RIFF,
+  tracks: [
+    ...VELVET_RIFF.tracks,
+    {
+      id: 'track-drums',
+      kind: 'percussion',
+      name: 'Drum kit',
+      instrumentName: 'General MIDI Drum Kit',
+      noteCount: 2,
+      notes: [],
+      percussionHits: [
+        {
+          id: 'midi-t3-e1',
+          gmKey: 36,
+          startBeat: 0,
+          velocity: 100,
+          writtenDuration: 0.25,
+          source: { format: 'midi', channel: 9, midiKey: 36 },
+        },
+        {
+          id: 'midi-t3-e2',
+          gmKey: 38,
+          startBeat: 1,
+          velocity: 72,
+          writtenDuration: 0.5,
+          source: { format: 'midi', channel: 9, midiKey: 38 },
+        },
       ],
     },
   ],
@@ -174,6 +207,69 @@ describe('useGuitarNightReferenceController', () => {
       songId: 'gsong-gone',
       reason: 'not-found',
     })
+  })
+
+  it('opens a percussion-only file as backing-only free play', async () => {
+    const drumsOnly: GuitarNightReferenceSource = {
+      id: 'gsong-drums',
+      name: 'Drums only',
+      bpm: 120,
+      scoreTrackId: null,
+      tracks: [DRUMMED_RIFF.tracks.at(-1)!],
+    }
+    const { port, rememberTrack } = fakePort({
+      openReference: () => openGuitarNightReference(drumsOnly),
+      readSource: () => drumsOnly,
+      suggestInstrument: () => null,
+    })
+    const controller = mount(port)
+
+    await controller.attach(drumsOnly.id)
+
+    expect(controller.reference()).toMatchObject({
+      scoreMode: 'backing-only',
+      songId: drumsOnly.id,
+      trackId: '',
+      trackName: 'No scored part',
+      notes: [],
+    })
+    expect(controller.state()).toMatchObject({
+      kind: 'ready',
+      reference: {
+        scoreMode: 'backing-only',
+        songId: drumsOnly.id,
+        trackId: '',
+      },
+    })
+    expect(rememberTrack).not.toHaveBeenCalled()
+    expect(controller.backingPercussionHits()).toEqual([
+      {
+        trackId: 'track-drums',
+        sourceId: 'midi-t3-e1',
+        gmKey: 36,
+        startBeat: 0,
+        velocity: 100,
+      },
+      {
+        trackId: 'track-drums',
+        sourceId: 'midi-t3-e2',
+        gmKey: 38,
+        startBeat: 1,
+        velocity: 72,
+      },
+    ])
+    expect(controller.allBackingPercussionHits()).toEqual(
+      controller.backingPercussionHits(),
+    )
+    expect(controller.sheetVisibleTrackIds()).toEqual(['track-drums'])
+    expect(controller.sheetLanes()).toHaveLength(1)
+    expect(controller.sheetLanes()[0]).toMatchObject({
+      trackId: 'track-drums',
+      content: 'percussion',
+      scoreable: false,
+      notes: [],
+    })
+    expect(controller.secondaryLane()).toBeNull()
   })
 
   it('restores the score named in the URL on open', async () => {
@@ -835,6 +931,158 @@ describe('useGuitarNightReferenceController', () => {
       const controller = mount(port)
       await controller.attach(VELVET_RIFF.id, 'track-lead')
       expect(controller.scoredPartDefaultsAudible()).toBe(false)
+    })
+
+    it('plays authored drums and exposes their non-scoreable sheet lane', async () => {
+      const { port } = fakePort({
+        openReference: (_songId, trackId, tuning) =>
+          openGuitarNightReference(DRUMMED_RIFF, trackId, tuning),
+        readSource: () => DRUMMED_RIFF,
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(DRUMMED_RIFF, trackId),
+      })
+      const controller = mount(port)
+      await controller.attach(DRUMMED_RIFF.id, 'track-lead')
+
+      expect(controller.backingPartList().at(-1)).toEqual({
+        trackId: 'track-drums',
+        name: 'Drum kit',
+        kind: 'percussion',
+        hitCount: 2,
+        supportedHitCount: 2,
+        droppedHitCount: 0,
+      })
+      expect(controller.audibleBackingTrackIds()).toContain('track-drums')
+      expect(controller.backingPercussionHits()).toEqual([
+        {
+          trackId: 'track-drums',
+          sourceId: 'midi-t3-e1',
+          gmKey: 36,
+          startBeat: 0,
+          velocity: 100,
+        },
+        {
+          trackId: 'track-drums',
+          sourceId: 'midi-t3-e2',
+          gmKey: 38,
+          startBeat: 1,
+          velocity: 72,
+        },
+      ])
+      expect(controller.sheetVisibleTrackIds()).toContain('track-drums')
+      const drumLane = controller
+        .sheetLanes()
+        .find((lane) => lane.trackId === 'track-drums')
+      expect(drumLane).toMatchObject({
+        content: 'percussion',
+        scoreable: false,
+        droppedPercussionHits: 0,
+      })
+      expect(drumLane?.percussionHits).toEqual(
+        DRUMMED_RIFF.tracks.at(-1)?.percussionHits,
+      )
+      expect(controller.secondaryLane()?.trackId).not.toBe('track-drums')
+    })
+
+    it('keeps an unsupported-only drum row visible but never calls it audible', async () => {
+      const unsupported: GuitarNightReferenceSource = {
+        ...DRUMMED_RIFF,
+        tracks: [
+          ...VELVET_RIFF.tracks,
+          {
+            id: 'track-aux-drums',
+            kind: 'percussion',
+            name: 'Aux percussion',
+            instrumentName: 'General MIDI Drum Kit',
+            noteCount: 1,
+            notes: [],
+            percussionHits: [
+              {
+                id: 'gp-t4-b2-v0-n0',
+                gmKey: 54,
+                startBeat: 3,
+                velocity: 90,
+                source: {
+                  format: 'guitar-pro',
+                  articulationIndex: 0,
+                  label: 'Tambourine',
+                },
+              },
+            ],
+            droppedHitCount: 2,
+          },
+        ],
+      }
+      const { port } = fakePort({
+        openReference: (_songId, trackId, tuning) =>
+          openGuitarNightReference(unsupported, trackId, tuning),
+        readSource: () => unsupported,
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(unsupported, trackId),
+      })
+      const controller = mount(port)
+      await controller.attach(unsupported.id, 'track-lead')
+
+      expect(controller.backingPartList().at(-1)).toMatchObject({
+        trackId: 'track-aux-drums',
+        supportedHitCount: 0,
+        droppedHitCount: 2,
+      })
+      expect(controller.audibleBackingTrackIds()).not.toContain(
+        'track-aux-drums',
+      )
+      expect(controller.backingPercussionHits()).toEqual([])
+      expect(controller.allBackingPercussionHits()).toEqual([
+        {
+          trackId: 'track-aux-drums',
+          sourceId: 'gp-t4-b2-v0-n0',
+          gmKey: 54,
+          startBeat: 3,
+          velocity: 90,
+        },
+      ])
+    })
+
+    it('mutes and restores drums without changing the pitched backing', async () => {
+      const { port } = fakePort({
+        openReference: (_songId, trackId, tuning) =>
+          openGuitarNightReference(DRUMMED_RIFF, trackId, tuning),
+        readSource: () => DRUMMED_RIFF,
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(DRUMMED_RIFF, trackId),
+      })
+      const controller = mount(port)
+      await controller.attach(DRUMMED_RIFF.id, 'track-lead')
+      const pitchedCount = controller.backingMelodyNotes().length
+
+      controller.toggleBackingTrack('track-drums')
+      expect(controller.backingPercussionHits()).toEqual([])
+      expect(controller.allBackingPercussionHits()).toHaveLength(2)
+      expect(controller.backingMelodyNotes()).toHaveLength(pitchedCount)
+
+      controller.toggleBackingTrack('track-drums')
+      expect(controller.backingPercussionHits()).toHaveLength(2)
+      expect(controller.backingMelodyNotes()).toHaveLength(pitchedCount)
+    })
+
+    it('never selects a drum part for neck scoring', async () => {
+      const openReference = vi.fn<GuitarNightReferencePort['openReference']>(
+        (_songId, trackId, tuning) =>
+          openGuitarNightReference(DRUMMED_RIFF, trackId, tuning),
+      )
+      const { port } = fakePort({
+        openReference,
+        readSource: () => DRUMMED_RIFF,
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(DRUMMED_RIFF, trackId),
+      })
+      const controller = mount(port)
+      await controller.attach(DRUMMED_RIFF.id, 'track-lead')
+
+      openReference.mockClear()
+      await controller.selectTrack('track-drums')
+      expect(controller.reference()?.trackId).toBe('track-lead')
+      expect(openReference).not.toHaveBeenCalled()
     })
 
     it('mutes a part, and brings it back', async () => {

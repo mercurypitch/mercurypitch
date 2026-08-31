@@ -7,6 +7,7 @@ import { CORKY_V023_REST_ART } from '@/content'
 interface HomeScreenProps {
   pullText: string
   bSideText: string
+  cueContextText?: string
   todayCount: number
   weekCount: number
   paused: boolean
@@ -55,6 +56,13 @@ export function HomeScreen(props: HomeScreenProps) {
           </div>
         </div>
       </section>
+
+      {props.cueContextText === undefined ? null : (
+        <section class="plan-cue-note" aria-label="Your cue">
+          <span>Your cue</span>
+          <p>{props.cueContextText}</p>
+        </section>
+      )}
 
       <button
         class="cue-now-button"

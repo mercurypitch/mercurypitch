@@ -605,6 +605,39 @@
   text-align: right;
 }
 
+.pace {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+}
+
+.paceSwitch {
+  justify-self: start;
+}
+
+.paceHold {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+}
+
+.paceSub {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--ear-muted);
+}
+
+.paceNote {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ear-muted);
+}
+
 .voices {
   display: grid;
   gap: 8px;

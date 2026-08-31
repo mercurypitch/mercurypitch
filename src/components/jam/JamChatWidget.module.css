@@ -177,7 +177,7 @@
   border-radius: 28px;
   background: var(--accent);
   border: none;
-  color: white;
+  color: var(--on-accent, var(--bg-primary));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,7 +197,7 @@
   top: -4px;
   right: -4px;
   background: var(--red, #f85149);
-  color: white;
+  color: var(--on-danger, #fff);
   font-size: 0.75rem;
   font-weight: bold;
   padding: 2px 6px;

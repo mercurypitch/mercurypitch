@@ -2391,15 +2391,17 @@ export class AudioEngine {
     offlineGain.connect(offlineCtx.destination)
 
     if (kind === 'drums') {
-      const hits = melody.filter(
-        (item) => item.note != null && item.isRest !== true,
-      )
+      const hits = melody.flatMap((item) => {
+        if (item.note == null || item.isRest === true) return []
+        const voice = drumVoiceForMidi(item.note.midi)
+        return voice === null ? [] : [{ item, voice }]
+      })
       if (hits.length === 0) return null
-      for (const item of hits) {
+      for (const hit of hits) {
         triggerDrumVoice(
-          drumVoiceForMidi(item.note.midi) ?? 'snare',
+          hit.voice,
           offlineCtx,
-          item.startBeat * beatDuration,
+          hit.item.startBeat * beatDuration,
           0.8,
           offlineGain,
         )

@@ -105,8 +105,77 @@ function expectDomainErrorCode(
 }
 
 describe('assertStateIdentityInvariants', () => {
-  it('accepts joined emoji and complete archived cue history', () => {
+  it('enables local character voice for fresh installs', () => {
+    expect(createInitialState().settings.voiceEnabled).toBe(true)
+  })
+
+  it('accepts legacy cues without context and complete archived history', () => {
     expect(() => assertStateIdentityInvariants(validState())).not.toThrow()
+  })
+
+  it('accepts suggested and custom cue contexts', () => {
+    const state = validState()
+
+    expect(() =>
+      assertStateIdentityInvariants({
+        ...state,
+        cues: [
+          ARCHIVED_CUE,
+          {
+            ...ACTIVE_CUE,
+            cueContextSuggestionId: 'anchor.scrolling.in-bed',
+            cueContextText: 'When I get into bed with my phone.',
+          },
+        ],
+      }),
+    ).not.toThrow()
+    expect(() =>
+      assertStateIdentityInvariants({
+        ...state,
+        cues: [
+          ARCHIVED_CUE,
+          { ...ACTIVE_CUE, cueContextText: 'After dinner.' },
+        ],
+      }),
+    ).not.toThrow()
+  })
+
+  it.each([
+    [
+      'suggestion without text',
+      { cueContextSuggestionId: 'anchor.scrolling.in-bed' },
+    ],
+    ['empty text', { cueContextText: '' }],
+    ['noncanonical text', { cueContextText: '  After dinner.' }],
+    ['overlong text', { cueContextText: 'x'.repeat(121) }],
+    [
+      'empty suggestion id',
+      { cueContextSuggestionId: ' ', cueContextText: 'After dinner.' },
+    ],
+    [
+      'noncanonical suggestion id',
+      {
+        cueContextSuggestionId: ' anchor.scrolling.in-bed ',
+        cueContextText: 'After dinner.',
+      },
+    ],
+    [
+      'non-string suggestion id',
+      { cueContextSuggestionId: 42, cueContextText: 'After dinner.' },
+    ],
+    ['non-string text', { cueContextText: 42 }],
+  ])('rejects malformed cue context: %s', (_label, contextFields) => {
+    const state = validState()
+
+    expectDomainErrorCode(
+      {
+        ...state,
+        cues: [{ ...ACTIVE_CUE, ...contextFields }],
+        scheduleRules: [],
+        occurrences: [],
+      },
+      'invalid_state_shape',
+    )
   })
 
   it('accepts an enabled rule for the one paused current cue', () => {

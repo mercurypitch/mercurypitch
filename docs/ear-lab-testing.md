@@ -347,6 +347,486 @@ generated through the dotfiles background pipeline (masters at 3840x2160 /
   Retest finding 2026-08-27: the parchment was invisible on the glass. The
   audit measures the bench title's luminance in that room.
 
+## 2m. Pulse — rhythm dictation — follow-up item 2
+
+The first rhythm drill on the seam of §2k. Bench strip → _Pulse_ (Time ·
+rhythm). Begin: four soft clicks count you in, a bar of onsets sounds in
+the room's click voice, and the next bar is yours — a soft click keeps the
+beat while you tap the call back on the wide pad (Space or Enter work
+too). The take is judged when the bar and its grace have passed: every
+onset met in order inside the pattern's tolerance (quarters 100 ms,
+eighths 80, triplets 65, sixteenths 50), nothing extra.
+
+- **What to check on hardware:** the count-in, the call and your bar sit
+  on one steady grid — no gap or hitch between bars; the pad registers
+  every tap (the status counts them); the reveal draws the call's onsets
+  on the upper rule and your taps under them, signal where met, garnet
+  dashed where missed, muted for an extra. With the round trip measured
+  (§1), a take you know was tight should come back _Clean_; the
+  progress line drops its _raw_ word.
+- **The reading:** the bench tile shows the rating and, once the rating
+  clears a rung, the finest subdivision it clears (_· eighths_). No
+  percent anywhere; the plate says _n of 12 calls tapped back clean_.
+- **Latency gate:** with the round trip unmeasured the idle console links
+  to the readiness panel and the run is marked _raw_; nothing is locked.
+- Stop mid-call silences the clicks already on the audio clock and lands
+  on the plate; the tap pad is disabled outside your bar.
+
+## 2n. Echo and Span — melodic dictation — follow-up item 3
+
+The Shape dial's two dictation drills. Bench strip → _Echo_ (Shape ·
+dictation) and _Span_ (Shape · span). Both plant the key with a short
+I–IV–V–I cadence, sound a phrase, and open the **ladder** — eight rungs,
+1 to 1′, keys 1–8 — only after the last note. Each note must match in
+order; the strip under the ladder shows the phrase forming in solfège
+(_Do Re Mi_ · _2 of 3_) and **Take one back** (Backspace) removes the last
+note. Nothing says right or wrong until the whole phrase is in.
+
+- **Echo** (rating run, 12 rounds): phrases of three to six notes from a
+  bank of fourteen, steps and triads first, leaps and octave falls at the
+  top. A slip replays the phrase slower before the next round.
+- **Span** (practice or calibration, the staircase): starts at three
+  notes; hold the whole phrase and it grows by one, slip and it shortens.
+  The reading is _notes held_. The phrase is drawn fresh every trial — a
+  diatonic walk, leaps within a fifth, starting on a chord tone.
+- **What to check on hardware:** the cadence sounds as chords, the beads
+  on the chain sit on one level line while the phrase plays and light in
+  turn (no heights shown — that would draw the contour for the eye); the
+  ladder is disabled until the phrase ends and Space does nothing there;
+  the reveal strings the phrase at its true heights in brass, a signal
+  ring on every matched bead, a garnet ring at the height you tapped
+  instead (dashed when the note was never tapped), solfège under each
+  bead; the status names the phrase (_Yes — Do Re Mi._ / _That was Do Re
+  Mi — listen again._ / _Slipped at note 2 of 3 — it was Do Sol Do. The
+  phrase shortens._).
+- **The reading:** Echo's rating joins Leap and Contour in the Shape
+  readout; Span shows on its own tile in notes. No percent anywhere.
+- Stop mid-cadence or mid-phrase silences the engine and lands on the
+  plate.
+
+## 2o. Beat Hunt and Drift — follow-up item 4
+
+Two threshold drills on the staircase. Bench strip → _Beat Hunt_
+(Resolution · beats) and _Drift_ (Time · tempo); both offer Practice run and
+Calibration like Hairline and The Grid.
+
+- **Beat Hunt:** two pairs of tones, 1.4 s each. One pair is in tune with
+  itself; in the other one tone is pulled off by the staircase's detune in
+  cents, and the pair beats. _Which pair was beating — the first, or the
+  second?_ The pairs go through their own synth (`dyad-synth.ts`): each tone
+  has its own gain and the second starts at a random phase inside ±90°, so
+  the in-tune pair is not simply the louder one. The base is roved A2–E4.
+  - **What to check on hardware:** at 40 ¢ the beating is plain (about
+    3–7 beats a second depending on the base); as the detune shrinks the
+    swell slows to a fraction of a cycle across the pair. The pendulums
+    swing together for both pairs while they sound — no hint — and only the
+    reveal hangs the detuned pair's second bob out of phase, garnet, with
+    the beat rate on the nameplate (_5.1 beats a second_ / _a beat every
+    4 s_). The status names the pair and the detune.
+- **Drift:** eleven clicks in the room's voice, 520 ms apart. The first five
+  hold; the last six gain the level in percent of tempo, lose it, or hold —
+  a third each. _Steady / Faster / Slower_ (keys 1–3).
+  - **What to check on hardware:** the lamps under the metronome chase the
+    clicks at even spacing (never at the drifted timing), the arm stays
+    upright until the reveal, then leans forward for _Faster by 10%_, back
+    for _Slower_, holds for _Steady_. A steady train answered right reads
+    _Right — it held steady._ — the level does not move on catch trials'
+    wording but the staircase still counts them.
+- **The readings:** Beat Hunt in cents detune on the Resolution dial's
+  second tile; Drift in % tempo on Time. No percent-correct anywhere; the
+  plate shows the threshold and its unit.
+- Stop mid-pair or mid-train cancels the tones already on the audio clock.
+
+## 2p. Gravity and The Pull — function past the seven — follow-up item 5
+
+Two more Function drills beside Home. Bench strip → _Gravity_ (Function ·
+chromatic) and _The Pull_ (Function · tendency).
+
+- **Gravity** is Home over the chromatic twelve: the same cadence, the same
+  controller and mic path, but the probe can land on any of the twelve and
+  the pads are twelve in two rows — the diatonic seven by number, the rest
+  by their leaning (♭2, ♭3, ♯4, ♭6, ♭7). Keys run along the keyboard row
+  (1–9, 0, −, =). Tap answers rate under `gravity` with a 1/12 floor; _Sing
+  or play_ answers under `gravity-sing` with none, the yardsticks untouched,
+  the same separation Home keeps. Item ids live in their own namespace
+  (`gravity:deg-N`), so Home's Elo state is not shared or disturbed.
+  - **What to check on hardware:** the reveal says _Yes — Le (♭6)._ with
+    the label, not a bare number; a miss plays the note and then home; the
+    twelve pads stay ≥ 44 px on the phone; the bench tile shows Gravity's
+    rating (with _· voice N_ once the mic mode has been rated) and the
+    Function dial keeps reading Home.
+- **The Pull:** a cadence, then two degrees one after the other. _Which
+  note leans harder — the first, or the second?_ The table: 7 up to home
+  hardest, 4 down to 3, then 6 and 2; 1, 3, 5 rest. Pairs come from a bank
+  of sixteen (each restless degree against each stable one, then 7 v 6,
+  7 v 2, 4 v 6, 4 v 2 — 6 v 2 and 7 v 4 are left out as contestable); the
+  order the two sound in is a coin flip. Rated with a 1/2 floor.
+  - **What to check on hardware:** the balance stays level through both
+    notes with only the pan's lamp lit; the reveal tips it toward the
+    leaning pan, farther for a harder lean, the pan garnet, the plate
+    _Ti leaning to Do′_; a miss replays the leaning note and lets it
+    resolve (Ti then Do′, Fa then Mi). The plate's dots name each pair.
+- No percent anywhere; both tiles show ratings.
+
+## 2q. Cadence and Bassline — the guitar's harmony — follow-up item 6
+
+Two Function drills on the guitar room's voices (`guitar-synth.ts`, struck on
+the audio clock through one master gain at the stage's level). Bench strip →
+_Cadence_ (Function · progression) and _Bassline_ (Function · root motion).
+
+- **Cadence:** one of the guitar room's eight progressions (I–IV–V, I–V–vi–IV,
+  ii–V–I, I–vi–IV–V, I–vi–ii–V, I–IV–vi–V, vi–IV–I–V, I–iii–vi–IV), strummed
+  in a roved key, the root doubled below on the bass voice. Four pads: the
+  answer and three others drawn fresh each round (keys 1–4). A miss strums it
+  again, slower.
+  - **What to check on hardware:** the strums sound like a guitar, not a
+    click; the going train turns one wheel per chord and every wheel is the
+    same until the reveal engraves the numerals and the plate names the
+    progression; the pads' labels are numerals with en dashes; no pad is
+    pre-lit.
+- **Bassline:** the tonic chord rings on the guitar while four roots walk
+  under it on the bass voice — the first always I. The ladder is seven rungs
+  in numerals (keys 1–7, Backspace takes one back); the whole line is judged
+  at once, like Echo. A miss plays the line again, slower.
+  - **What to check on hardware:** the bass sits clearly under the chord; the
+    beads stay level while the line plays and light in turn; the reveal
+    strings the roots at their heights with signal / garnet rings and the
+    status says _Yes — I–IV–V–I._ or _That was I–IV–V–I — listen again._
+- **The readings:** both are ratings on the Function dial's row; the Function
+  readout itself still reads Home.
+- Stop mid-strum pulls the master gain to silence and disposes the voices —
+  nothing keeps ringing after the stage closes.
+
+## 2r. Subdivide — name the metre — follow-up item 7
+
+The kit's drill on the Time dial. Bench strip → _Subdivide_ (Time · metre).
+Two bars on the drum voices (`drum-voices.ts`) through one master gain at
+the stage's level: 3/4, 4/4, 5/4, 6/8 or 7/8, two patterns each, the kick on
+one and louder. Four pads out of the five metres, the answer among three
+others drawn fresh each round (keys 1–4). A miss plays the bars again,
+slower.
+
+- **What to check on hardware:** quarters at 120, eighths at 240; the kick
+  on one is plainly the accent; the lattice has one pallet per step and the
+  lamps chase them through both bars with no bar line and no accent until
+  the reveal, which lights beat one brass, draws the bar line and names the
+  metre; 6/8 reads as two threes, 7/8 limps, 5/4 leans.
+- **The reading:** a rating on the Time dial's row. The plan's alternative
+  answer — tapping where beat one falls in the odd metres — is not built;
+  naming the metre is the drill, and the tap ledger stays with Pulse.
+- Stop pulls the master gain to silence and clears the lamps.
+
+### 2s. Sing mode for Echo and Span — follow-up item 8
+
+Both drills carry an **Answer by** toggle on the idle console: Tap, or Sing
+or play. Choose the second and press Begin (Echo) or Practice run (Span): the
+drill opens the microphone through the mic manager (`ear-echo-drill` /
+`ear-span-drill`) before the run starts; if the mic is refused, the run
+starts anyway on the ladder and a warning under the toggle says so.
+
+- The phrase sounds as before. When the ladder would open, the console shows
+  the strip with a mic lamp and a **Done** pad, and the status reads "Sing or
+  play it back — at your own pace, then a breath." Sing (or play an
+  instrument at the mic) the phrase at any pace: the lamp glows with the
+  input, and each note the mic hears appears in the strip as it is sung
+  (`src/lib/ear/sung-notes.ts` cuts voiced runs of 120 ms or more, split on
+  a step over 70 cents; the median pitch names the note; it counts within 60
+  cents, in order, any octave). The window closes itself after 1.2 s of
+  silence once a note is in, at a ceiling of twice the phrase plus three
+  seconds, or on Done (Space). Extra or missing notes are misses.
+- The reveal is the same chain: right beads ringed, wrong beads marked, a
+  bead the mic did not catch dashed. A miss replays the phrase slowly (Echo).
+- Ratings: Echo's sung run rates under `echo-sing` with no guess floor and the
+  phrases' difficulties untouched — the bench's Echo row shows `· voice N`
+  once there is one. Span's sung run is practice only (no Calibration pad
+  while Sing or play is chosen) and reads under `span-sing`; the Shape dial
+  keeps the tapped reading.
+- Stop hands the mic back; so does starting a tapped run, or leaving the
+  drill.
+
+Checks: the toggle is a radiogroup with two radios on both idle consoles; the
+Listening pad is at least 44 px tall; no percent anywhere; the chain shows
+nothing before the reveal.
+
+### 2t. The Field Book — In The Wild, follow-up item 9
+
+The bench carries **The Field Book** under the instrument strip: every
+finished separation in the karaoke library is a page. With no songs the card
+says so and its **Open Karaoke Night** button goes to the upload; with
+songs it lists up to six, newest first, with what has been read of each.
+
+- **Open** a song: the Field Book page reads it once (the status walks
+  through opening the stems, listening to the vocal, reading the chords; the
+  page's brass rule fills). The reading is the vocal's notes
+  (`detectNotes`), the key they imply (`detectKeyFromNotes`) and the chords
+  under them (STFT → NNLS chroma → `detectChords`, on the bass part when the
+  song had a stem split, else the instrumental). Once read, the status names
+  the key and the counts — landings, phrases, root motions — and the three
+  play pads open.
+- **Home in the Wild** (`1`): the song's tonic triad plants the key, then an
+  excerpt of the vocal over the instrumental plays up to a note the singer
+  held; seven degree pads, the fork on the drum. **Echo in the Wild** (`2`):
+  a phrase the singer sang, three to six notes, tapped back on the ladder —
+  1′ counts as 1; the beads light on the notes' own onsets. **Bassline in
+  the Wild** (`3`): two chords of the song, the first root named in the
+  question; answer the degree the root moved to on seven numeral pads; the
+  gear train turns a wheel per chord. A miss replays the excerpt.
+- Ratings live under `wild-home` / `wild-echo` / `wild-bassline`: the sixth
+  dial on the bench (In The Wild) reads their mean and the card wears it as
+  a seal, but the Column is five faculties — a wild reading never enters the
+  composite and In The Wild no longer counts as a missing faculty. Item
+  difficulties are never refined (the items are one song).
+- Degrees are named in the song's own mode, do-based: a minor song's third
+  is Me, its seventh Te, and the numerals are i, ii°, III… The stems play at
+  the room's level; Stop silences the excerpt.
+
+Checks: the card is on the bench with a 44 px button in its empty state (the
+audit walks this); no percent on screen while reading; the page shows counts
+and the key, never an answer; the three drills' stages pass the same walk as
+their catalogue cousins.
+
+### 2u. The mixing desk — follow-up item 10
+
+**The desk** is a tile on the instrument strip (Colour · the mixing desk). Its
+page renders one source once: the newest finished separation in the karaoke
+library (vocal and instrumental summed over twelve seconds from a third of
+the way in) or, with no song, the house loop — four bars of I–V–vi–IV on the
+guitar and bass voices with a straight kit, at 100. The status names the
+source; three play pads open the drills, each rendering a 3.2 s slice of the
+source offline through the fault under test.
+
+- **Colour** (`1`, threshold, practice only): one octave band boosted —
+  125 Hz, 250, 500, 1 kHz, 2 kHz, 4 kHz — at the staircase's level in dB
+  (start 12, floor 0.5); six pads. The reveal names the band; the reading is
+  the smallest boost still placed.
+- **Weight** (`2`, threshold, practice only): the same slice twice, one with
+  a low shelf under 120 Hz at the level in dB (start 6, floor 0.25), the pair
+  matched for loudness so the heavier is never the louder; two pads.
+- **Critique** (`3`, Elo): one of six faults at a frozen strength — mud
+  (250 Hz), box (500), harsh (3 kHz), sibilance (8 kHz), pumping (a
+  compressor at 12:1 breathing), narrow (the stereo folded) — six pads.
+- The desk's instrument is a row of channel strips with every fader at the
+  same height; the lamp of the answer lights at the reveal, the master lamp
+  while a render plays, and Weight brackets the strip that is sounding.
+- Readings live under `desk-colour` / `desk-weight` / `desk-critique`; the
+  strip tile reads Colour's dB. The catalogue's `colour` drill keeps its
+  settings but never records — the Column's estimate reads every catalogue
+  drill, so the desk records beside it. No Calibration on the desk.
+
+Checks: the desk page renders within a minute (the audit waits on it), the
+Colour practice run arms six pads from an offline render, the three idle
+stages pass the standard walk, no percent on screen, and nothing on the desk
+answers before the reveal.
+
+### 2v. The Ear Path — follow-up item 11
+
+**The Ear Path** is a plate on the bench under the instrument strip: a going
+train of eleven orbs on one brass rail — the first reading, the first seal,
+each of the Column's five faculties sealed (a Calibration run whose seal
+carried that faculty's part), the first rhythm take (Pulse, Subdivide, Drift
+or the Grid), the first page of the Field Book, the first desk reading,
+thirty days of regulation. Orbs light from what the store already holds; the
+next dark orb is ringed, and the plate's Next line names it and opens its
+instrument (the month's orb opens whatever is still open in today's
+regulation).
+
+- Nothing is locked: every orb is a button that opens its instrument, lit or
+  dark, and a later orb lights while an earlier one stays dark.
+- The count reads "n of 11 lit" — no percent.
+- `lib/ear/path.ts` holds the milestones; the plate only reads the store.
+
+Checks: eleven orbs on a fresh store, none lit; Next reads "Open Hairline"
+and opens it; a practice reading lights the first orb and moves Next to
+Calibration; a seal lights the seal's orb and the faculty it carried; the
+Next button is a full touch target on the phone; the tour's step finds the
+plate.
+
+### 2w. The entry page and the tab icon — follow-up item 12
+
+- `/ear-lab` is a real page (`ear-lab.html`, built as its own Vite entry and
+  served by Cloudflare's html handling the way `/jam` is): its own title,
+  description, canonical and share card (`public/ear-lab-og.png`,
+  regenerated with `node scripts/generate-ear-lab-og.mjs`). It boots the
+  studio and sets `#/ear-lab`, so the bench opens rather than Home. Listed
+  in the sitemap and the README's row of surfaces.
+- The tab's icon is the Regulator's pendulum jar — a mercury bob on its
+  rod — in place of the thermometer.
+
+Checks: `src/tests/entry-page-og.test.ts` (every entry page unfurls with a
+card, the image and the generator exist, `/ear-lab` maps to the page in dev,
+the hash lands on the tab, the sitemap lists it); once deployed, pasting
+`https://mercurypitch.com/ear-lab` into a chat unfurls the card.
+
+### 2x. Retest fixes — the stimulus is whole, a miss's replay finishes
+
+- **Every tone sounds whole** (`playToneFor` in `ear-sound.ts`): the engine's
+  `playTone` resolves when a note is scheduled and a new note replaces the
+  one before it, so Hairline, Contour and Leap used to cut their first tone
+  at the gap and arm the pads before the second had begun; Stack's broken
+  replay scheduled every note at once. Now each tone is waited out and the
+  pads arm only after the last one (Hairline 500 + 220 + 500 ms).
+- **A miss's slow replay finishes before anything else starts**: the
+  identification controller awaits `replayOnWrong`, exposes `replaying()`,
+  and counts the hold from the replay's end; Stop during the replay still
+  ends the run.
+
+Checks: Hairline — pressing `1` while the second tone is still sounding does
+nothing; the pads arm the moment it ends. Echo — a wrong phrase: the slow
+replay plays through, then the hold, then the next cadence; nothing
+overlaps. Contour — both tones the same length.
+
+### 2y. Retest fixes — the verdict stays, auto-advance is a switch, the hold is a setting
+
+1. Any drill, any run: after an answer a **Last call** plate sits under the
+   pads — the mark (check or cross), the verdict sentence, and a consequence
+   line: threshold drills say where the level goes ("Gap 12.0¢ → 9.5¢",
+   with the track letter in a calibration), identification drills the
+   rating's move and, on a miss, what you named. It stays through the next
+   trial and is replaced by the next verdict; the pads keep their colouring
+   only until the next trial arms.
+2. The stage bar, while a run is on: the **Auto** switch and the stop square
+   (icon only — no "Abandon"). Auto on (the default): the verdict holds,
+   then the next trial sounds by itself. Off: the run parks on the verdict
+   and the lead pad becomes **Next** (Space); flipping the switch on while
+   parked resumes after one hold. Calibration obeys the same switch.
+3. The rack's Sound panel, **Between trials**: the same switch, and **Hold
+   after the verdict** from 1 s to 10 s in half-second steps (default
+   1.5 s). Identification drills count the hold from the end of a miss's
+   replay; Home from the end of the resolution.
+4. Stop while parked lands on the plate as before; nothing is marked by a
+   stopped calibration. Both preferences survive a reload.
+
+### 2z. Retest fixes — sing mode in free time
+
+1. Echo, Span and Echo in the Wild, **Sing or play**: after the phrase the
+   strip shows the mic lamp (lit, glowing with the input) and "0 of N"; sing
+   at any pace — each note appears as solfège while you sing, and "n of N"
+   counts up. Stop singing: about a second later the answer is judged by
+   itself. Press Done (or Space) to judge at once. Say nothing: the window
+   closes at twice the phrase's length plus three seconds and counts a miss.
+2. A sung repeated note needs a breath between (a held pitch is one note);
+   a slide of more than 70 cents starts a new note; consonants inside a note
+   do not split it.
+3. Echo in the Wild's sung runs rate under `wild-echo-sing`; the Field Book's
+   phrase rating stays the tapped one.
+
+### 2aa. Retest fixes — a calibration you can see the end of
+
+1. The bench's amber control and the Hairline ritual's Begin pad say
+   "about 50 questions"; the idle line reads "Three short staircases,
+   shuffled and pooled · about 50 questions". Begin: the bar shows the
+   whole run — "Turns 0 of 18 · Track A · 18.0¢ · about 45 questions left"
+   — with a three-bar strip under it that fills as each track turns (the
+   brass bar is the track sounding); on a desk the pendulums still swing
+   below the loupe.
+2. Each track opens one and a half times easier than your latest Hairline
+   reading, practice or sealed (12¢ → 18¢), not at 50¢; with no reading it
+   opens at the catalogue's start. Six turns a track, forty trials at most.
+   A run takes 45–60 questions, about two and a half minutes; the plate's
+   pooled reading still carries its ± spread and the three pendulums.
+3. Practice runs say "turns n of 8" rather than "reversal", and count
+   questions left the same way.
+4. The stop control is the square alone, in practice and in calibration.
+
+### 2ab. Retest fixes — the instrument card
+
+1. Open any drill from the bench. The paragraph that sat under the play
+   pads is gone from the console; it hangs on the stage instead, at the
+   top left under the bar: an engraved plate with the instrument's icon,
+   its name, what it measures ("Resolution · cents") and the text clamped
+   to three lines. "More" unfolds it, "Less" folds it. The console keeps
+   the lead pads, the question and the answer pads.
+2. On a phone the plate is one row — "About Hairline" with a chevron —
+   and a tap unfolds it over the instrument, caption and all; a second tap
+   folds it. The state is per drill and survives a reload
+   (`mercurypitch_ear_info_open`); every drill opens folded the first time.
+3. The card stays through a run; the end plate replaces it with the
+   reading. In the calibration ritual the bar says Calibration and the
+   card still says Hairline.
+4. The Field Book's wild drills carry their bench twin's glyph (Echo's
+   chain for Echo in the Wild); Pulse and Home carry theirs; the desk's
+   drills the desk's.
+
+### 2ac. Retest fixes — the question as the headline
+
+1. Open Hairline and begin a practice run. The line that sat under the
+   loupe ("Which tone was higher?") is the console's headline now, in the
+   stage serif above the pads, with "1 · 2 on the keyboard" under it
+   while the pads are armed; on a phone the headline is a size smaller
+   and the key line is absent. The reveal colours the headline — signal
+   for a hit, garnet for a miss — as the caption did.
+2. The lead pad says the phase word only — Listening, Your call, Next —
+   and the bar keeps the mode and the running level.
+3. Home with seven degrees reads "1–7 on the keyboard"; Gravity "1–=";
+   the Begin and Next pads still show their Space keycap.
+
+### 2ad. Retest fixes — the ladder sounds
+
+1. Echo, Begin. Once the ladder opens, every rung you tap sounds its
+   note — short, the drill's own voice, in the planted key — and the pads
+   are labelled "Tap the 3 notes back" (the phrase's length), with the
+   strip counting "1 of 3" under the chips. Under the rungs one line
+   explains the top rung: 1′ is home again, an octave up.
+2. Span and the Field Book's Echo do the same; Bassline's rungs strum
+   their root on the bass and read "Tap the 4 roots back".
+3. Sung answers are untouched: the mic strip fills without a ladder.
+4. First open after the update: Echo's and Bassline's item difficulties
+   learned on the silent ladder are dropped once
+   (`mercurypitch_ear_items_reseed` = `ladder-sounds`); ratings, readings
+   and the Column keep their values.
+
+### 2ae. Retest fixes — the arming cue
+
+1. Hairline, practice run, a first answer. When the next pair has sounded
+   and the pads arm, a soft click sounds on the room's click voice (the
+   rack's Sound panel picks it; the bench volume governs it) and the Last
+   call plate's rail ticks brass for as long as the pads stay armed.
+2. Every stage does the same — the identification drills, Home, Pulse; a
+   sung answer's window opens with the same click.
+3. Stop mid-run: no click follows.
+
+### 2af. Retest fixes — the reveal says both ways
+
+1. Echo, a slip: the headline says what it was ("That was Do Re Mi —
+   listen again."), and the Last call plate says what came back and where
+   it went wrong — "You tapped Do Re Sol · first slip at note 3 · Rating
+   1200 → 1188". A sung slip says "You sang".
+2. Span's slip line carries both phrases: "Slipped at note 2 of 3 — it was
+   Do Sol Do, you tapped Do Re Do. The phrase shortens."
+3. Bassline: "You tapped I–V–IV–I · first slip at root 2"; Cadence names
+   the progression both ways as before; the desk's Colour and Weight say
+   the band and the dB; the threshold drills say where the level goes.
+
+### 2ag. Retest fixes — keys by their place
+
+1. Hairline, pads armed: the numpad's 1 and 2 answer, Num Lock on or off;
+   a shifted digit answers; a layout that moves the top row answers by
+   the physical key. Space still starts and steps.
+
+### 2ah. Retest fixes — a key the browser took
+
+1. With Vimium (or any extension binding the digits) active and the site
+   not excluded: Hairline, pads armed, press 1. Nothing answers, and a
+   dashed note appears under the headline — "The browser took that key —
+   an extension such as Vimium binds the digits. Exclude mercurypitch.com
+   in it, or tap the pads." It stays until a digit arrives whole.
+2. Without an extension no note ever shows: a key pressed during the
+   stimulus and released once the pads armed is not a swallowed one.
+
+### 2ai. Retest fixes — the first and the second, as lamps
+
+1. The Pull, Beat Hunt, Weight: while the two stimuli sound, the pad for
+   the one sounding carries a lit lamp — "the first" then "the second" —
+   so the question "which was…" has a referent on screen. Both lamps are
+   dark once the pads arm, and through the reveal.
+2. The other drills' pads carry no lamp.
+
+### 2aj. Retest fixes — Span says its start
+
+1. Span on the bench reads "A phrase of 3 notes to start — give it all
+   back, and it grows while you keep up." — the staircase's start, from
+   the catalogue.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
@@ -358,7 +838,7 @@ generated through the dotfiles background pipeline (masters at 3840x2160 /
    status line, an amber **Begin**). One run: three interleaved tracks,
    pooled reading, the plate shows the pendulums in phase, the etched
    index and "Next calibration due {date}" (fourteen days); the session
-   bar reads "sealed … · due …". **Abandon** mid-run must NOT mark the
+   bar reads "sealed … · due …". **Stop** mid-run must NOT mark the
    column.
 4. **Mercury Column on the phone** — after the fixes: no white blob at the
    tube top, the dashed cap floats above the glass, tube centred, column no

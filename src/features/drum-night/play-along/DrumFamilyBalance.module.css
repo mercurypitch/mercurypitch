@@ -1,0 +1,375 @@
+/* Authored-kit family balance — compact controls embedded in the drum bus. */
+
+.balance {
+  --family-vellum: var(--mix-vellum, #eee7db);
+  --family-muted: var(--mix-muted, #b8b2a8);
+  --family-amber: var(--mix-amber, #e7ad52);
+  --family-cyan: var(--mix-cyan, #66d5cd);
+  --family-line: var(--mix-line, rgb(238 231 219 / 13%));
+  --family-line-strong: var(--mix-line-strong, rgb(238 231 219 / 24%));
+  min-width: 0;
+  padding: 14px 16px 16px;
+  color: var(--family-vellum);
+  background:
+    linear-gradient(105deg, rgb(231 173 82 / 4%), transparent 48%), #0b0d10;
+}
+
+.balance *,
+.balance *::before,
+.balance *::after {
+  box-sizing: border-box;
+}
+
+.balance button,
+.balance input {
+  min-height: 44px;
+  color: inherit;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.balance button:focus-visible,
+.balance input:focus-visible {
+  outline: 2px solid var(--family-cyan);
+  outline-offset: 2px;
+}
+
+.heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 11px;
+}
+
+.heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.heading span {
+  color: var(--family-amber);
+  font-size: 8px;
+  font-weight: 780;
+  letter-spacing: 0.11em;
+}
+
+.heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 730;
+  letter-spacing: -0.01em;
+}
+
+.heading p {
+  max-width: 250px;
+  margin: 0;
+  color: var(--family-muted);
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.familyRail {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--family-line);
+  border-radius: 9px;
+  background: #090b0d;
+}
+
+.familyChip {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 52px;
+  grid-template-columns: 15px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  gap: 1px 6px;
+  padding: 6px 7px;
+  border: 0;
+  border-right: 1px solid var(--family-line);
+  color: var(--family-muted);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.familyChip:last-child {
+  border-right: 0;
+}
+
+.familyChip::after {
+  position: absolute;
+  right: 7px;
+  bottom: 0;
+  left: 7px;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  content: '';
+}
+
+.familyChip > i {
+  display: block;
+  width: 13px;
+  height: 7px;
+  grid-row: 1 / span 2;
+  border: 1px solid currentcolor;
+  border-radius: 2px 2px 5px 5px;
+  opacity: 0.82;
+}
+
+.familyChip[data-family='kick'] > i {
+  height: 13px;
+  border-radius: 50%;
+}
+
+.familyChip[data-family='hats'] > i {
+  height: 3px;
+  border-radius: 50%;
+  box-shadow: 0 4px 0 -1px currentcolor;
+}
+
+.familyChip[data-family='toms'] > i {
+  width: 12px;
+  height: 10px;
+  border-radius: 4px 4px 6px 6px;
+}
+
+.familyChip[data-family='cymbals'] > i {
+  width: 14px;
+  height: 5px;
+  border-radius: 50%;
+  transform: rotate(-7deg);
+}
+
+.familyChip > span,
+.familyChip > small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.familyChip > span {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.familyChip > small {
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.familyChip[data-muted='true'] > i {
+  opacity: 0.34;
+}
+
+.familyChip[aria-pressed='true'] {
+  color: var(--family-vellum);
+  background: rgb(231 173 82 / 8%);
+}
+
+.familyChip[aria-pressed='true']::after {
+  background: var(--family-amber);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .familyChip:hover {
+    color: var(--family-vellum);
+    background: rgb(238 231 219 / 4%);
+  }
+}
+
+.selectedControl {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(84px, 0.6fr) minmax(100px, 1fr) 38px 64px;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.selectedIdentity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.selectedIdentity span {
+  color: var(--family-muted);
+  font-size: 8px;
+}
+
+.selectedIdentity strong {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 710;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.levelControl {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.levelControl input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--family-amber);
+  cursor: pointer;
+}
+
+.selectedControl > output {
+  color: var(--family-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.muteButton {
+  display: flex;
+  min-width: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid var(--family-line-strong);
+  border-radius: 8px;
+  color: var(--family-muted);
+  background: rgb(238 231 219 / 3%);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.muteButton > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--family-cyan);
+}
+
+.muteButton[aria-pressed='true'] {
+  border-color: rgb(231 173 82 / 40%);
+  color: #f2c477;
+  background: rgb(231 173 82 / 8%);
+}
+
+.muteButton[aria-pressed='true'] > i {
+  background: rgb(238 231 219 / 24%);
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (width <= 680px) {
+  .balance {
+    padding: 13px 12px 14px;
+  }
+
+  .heading {
+    align-items: start;
+  }
+
+  .heading p {
+    max-width: 210px;
+  }
+}
+
+@media (width <= 420px) {
+  .heading {
+    display: grid;
+    gap: 5px;
+  }
+
+  .heading p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .familyChip {
+    min-height: 56px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 2px;
+    padding: 6px 3px;
+    text-align: center;
+  }
+
+  .familyChip > i {
+    grid-row: auto;
+  }
+
+  .familyChip > span {
+    width: 100%;
+    font-size: 8px;
+  }
+
+  .familyChip > small {
+    display: none;
+  }
+
+  .familyChip[data-muted='true'] > small {
+    display: block;
+    width: 100%;
+    color: #f2c477;
+    font-size: 7px;
+  }
+
+  .selectedControl {
+    grid-template-columns: minmax(0, 1fr) 36px 60px;
+    row-gap: 2px;
+  }
+
+  .selectedIdentity {
+    grid-column: 1 / -1;
+  }
+
+  .levelControl {
+    grid-column: 1;
+  }
+
+  .selectedControl > output {
+    grid-column: 2;
+  }
+
+  .muteButton {
+    min-width: 60px;
+    grid-column: 3;
+  }
+}
+
+@media (height <= 560px) and (orientation: landscape) {
+  .balance {
+    padding-block: 10px;
+  }
+
+  .heading {
+    margin-bottom: 7px;
+  }
+
+  .familyChip {
+    min-height: 44px;
+  }
+
+  .selectedControl {
+    margin-top: 6px;
+  }
+}

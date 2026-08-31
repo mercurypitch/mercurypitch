@@ -144,9 +144,11 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
     bounds: Pick<DOMRect, 'left' | 'width'> | undefined,
     viewport: LoopRangeDomain,
     mark: 'A' | 'B',
+    grabOffsetPx = 0,
   ): number => {
     if (bounds === undefined) return markerBounds(mark).start
-    const ratio = (event.clientX - bounds.left) / Math.max(1, bounds.width)
+    const ratio =
+      (event.clientX - grabOffsetPx - bounds.left) / Math.max(1, bounds.width)
     const axisValue = loopRangeValueAtRatio(ratio, viewport)
     return legalMarkValue(props.fromAxis(axisValue), mark)
   }
@@ -196,17 +198,31 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
     precision: boolean,
   ): DragGestureOptions => {
     let gestureBounds: Pick<DOMRect, 'left' | 'width'> | undefined
+    let gestureGrabOffsetPx = 0
+    let gestureViewport: LoopRangeDomain | undefined
     return {
       canStart: () => !markerDisabled(mark),
-      onStart: () => {
+      onStart: (event) => {
         gestureBounds = element()?.getBoundingClientRect()
+        gestureViewport = precision ? precisionViewport() : axisDomain()
         const current = mark === 'A' ? props.markA() : props.markB()
+        if (gestureBounds !== undefined && current !== null) {
+          const anchorX =
+            gestureBounds.left +
+            (loopRangePercent(props.toAxis(current), gestureViewport) / 100) *
+              gestureBounds.width
+          gestureGrabOffsetPx = event.clientX - anchorX
+        } else {
+          gestureGrabOffsetPx = 0
+        }
         setDragTarget(mark)
         if (mark === 'A') setPreviewA(current)
         else setPreviewB(current)
       },
       onEnd: (_event, reason) => {
         gestureBounds = undefined
+        gestureGrabOffsetPx = 0
+        gestureViewport = undefined
         finishMarker(mark, reason)
       },
       stopPropagation: true,
@@ -222,8 +238,9 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
           valueFromPointer(
             event,
             gestureBounds,
-            precision ? precisionViewport() : axisDomain(),
+            gestureViewport ?? (precision ? precisionViewport() : axisDomain()),
             mark,
+            gestureGrabOffsetPx,
           ),
         getValueText: () => {
           const value = shownMark(mark)
@@ -278,6 +295,16 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
     precision?: boolean
   }> = (markerProps) => {
     const options = untrack(() => markerProps.options)
+    const position = createMemo(() => {
+      const percent = markPercent(markerProps.mark, markerProps.viewport)
+      if (percent <= 0) {
+        return { anchor: '0%', percent, shift: '0%' }
+      }
+      if (percent >= 100) {
+        return { anchor: '100%', percent, shift: '-100%' }
+      }
+      return { anchor: '50%', percent, shift: '-50%' }
+    })
     return (
       <div
         class={`${styles.marker} ${markerProps.mark === 'A' ? styles.markerA : styles.markerB}`}
@@ -285,7 +312,9 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
           [styles.markerDragging]: dragTarget() === markerProps.mark,
         }}
         style={{
-          left: `${markPercent(markerProps.mark, markerProps.viewport)}%`,
+          '--loop-marker-anchor': position().anchor,
+          '--loop-marker-shift': position().shift,
+          left: `${position().percent}%`,
         }}
         data-testid={`${props.testIdPrefix}-${markerProps.precision === true ? 'precision-' : ''}loop-marker-${markerProps.mark.toLowerCase()}`}
         ref={(element) => dragGesture(element, () => options)}

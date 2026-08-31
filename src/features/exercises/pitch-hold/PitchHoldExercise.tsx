@@ -1,18 +1,23 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconLock } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { noteToMidi } from '@/lib/frequency-to-note'
+import { exerciseLaunchGuidedPractice, exerciseLaunchTargetNote, } from '@/lib/domain/exercise-launch'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { PITCH_CENTRE_PILOT_THRESHOLDS_V1 } from '@/lib/guided-voice'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import type { GuidedPracticeLaunchConfig } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchHoldController } from './use-pitch-hold-controller'
+
+const PITCH_HOLD_LEAD_IN_MS = 3_000
 
 interface PitchHoldExerciseProps {
   audioEngine: AudioEngine
@@ -21,9 +26,57 @@ interface PitchHoldExerciseProps {
   autoStart?: boolean
 }
 
+export function isSupportedGuidedPitchHoldLaunch(
+  launch: GuidedPracticeLaunchConfig | undefined,
+): launch is GuidedPracticeLaunchConfig {
+  return (
+    launch?.exercise.exerciseId === EXERCISE_PITCH_HOLD &&
+    launch.exercise.exerciseVersion === '1.0.0' &&
+    launch.exercise.configuration.configurationId ===
+      'pitch-hold.guided-pitch-centre' &&
+    launch.exercise.configuration.configurationVersion === '1.0.0' &&
+    launch.dose.durationMilliseconds === 5_000 &&
+    launch.dose.repetitions === 3 &&
+    launch.dose.sets === 1 &&
+    launch.dose.comfortableRangeMidiCents === null &&
+    launch.dose.demand === 'same' &&
+    launch.stopRuleId === 'guided.stop-on-discomfort-v1' &&
+    launch.assessmentRunId.trim().length > 0 &&
+    Number.isSafeInteger(launch.targetMidiCents) &&
+    launch.targetMidiCents % 100 === 0 &&
+    launch.toleranceCents ===
+      PITCH_CENTRE_PILOT_THRESHOLDS_V1.measurement.settleToleranceCents
+  )
+}
+
+export function shouldRecordOrdinaryPitchHoldProgress(
+  launch: GuidedPracticeLaunchConfig | undefined,
+): boolean {
+  return launch === undefined
+}
+
 const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
+  const noteOptions = getNoteOptions(vocalRangePreset())
+  const requestedGuidedPractice =
+    exerciseLaunchGuidedPractice(EXERCISE_PITCH_HOLD)
+  const guidedPractice = isSupportedGuidedPitchHoldLaunch(
+    requestedGuidedPractice,
+  )
+    ? requestedGuidedPractice
+    : undefined
+  const requestedTarget = exerciseLaunchTargetNote(EXERCISE_PITCH_HOLD)
+  const guidedTarget =
+    guidedPractice === undefined
+      ? undefined
+      : midiToNoteName(guidedPractice.targetMidiCents / 100)
   const [targetNote, setTargetNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
+    guidedTarget ??
+      (requestedTarget !== undefined && noteOptions.includes(requestedTarget)
+        ? requestedTarget
+        : getDefaultNote(vocalRangePreset())),
+  )
+  const [leadInRemainingMs, setLeadInRemainingMs] = createSignal<number | null>(
+    null,
   )
   const audioEngine = untrack(() => props.audioEngine)
 
@@ -31,14 +84,31 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'pitch-hold', targetNote: untrack(() => targetNote()) },
+    config: () => ({ type: 'pitch-hold', targetNote: targetNote() }),
   })
 
-  const controller = usePitchHoldController(base)
+  const controller = usePitchHoldController(base, {
+    fixedZoneCents: guidedPractice?.toleranceCents,
+    fixedTargetDurationSeconds:
+      guidedPractice?.dose.durationMilliseconds === null ||
+      guidedPractice?.dose.durationMilliseconds === undefined
+        ? undefined
+        : guidedPractice.dose.durationMilliseconds / 1000,
+  })
 
   const handleStart = async () => {
+    setLeadInRemainingMs(null)
     controller.setTarget(noteToMidi(untrack(() => targetNote())))
-    if (!(await base.start())) return
+    if (
+      !(await base.start({
+        leadInMs: PITCH_HOLD_LEAD_IN_MS,
+        onLeadInProgress: setLeadInRemainingMs,
+      }))
+    ) {
+      setLeadInRemainingMs(null)
+      return
+    }
+    setLeadInRemainingMs(null)
     controller.startLoop()
   }
 
@@ -56,7 +126,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
   createEffect(() => {
     const r = base.result()
-    if (r && r.type === 'pitch-hold') {
+    if (
+      r &&
+      r.type === 'pitch-hold' &&
+      shouldRecordOrdinaryPitchHoldProgress(guidedPractice)
+    ) {
       untrack(() => {
         recordExerciseResult({
           type: r.type,
@@ -93,33 +167,71 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconLock size={20} />}
+      guidedPractice={guidedPractice}
+      guidedCompletionReady={controller.hasSufficientVoicedEvidence}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
-            Keep your pitch locked inside the target zone as it shrinks over
-            time.
+            {guidedPractice === undefined
+              ? 'Keep your pitch locked inside the target zone as it shrinks over time.'
+              : `Meet ${targetNote()} gently, then keep it centred for each short hold.`}
           </p>
         </div>
       }
       idleSettings={
-        <NoteDial
-          label="Target"
-          notes={getNoteOptions(vocalRangePreset())}
-          selected={targetNote()}
-          onChange={setTargetNote}
-        />
+        guidedPractice === undefined ? (
+          <NoteDial
+            label="Target"
+            notes={noteOptions}
+            selected={targetNote()}
+            onChange={setTargetNote}
+          />
+        ) : undefined
       }
+      startLabel={guidedPractice === undefined ? undefined : 'Begin first hold'}
       onStart={() => void handleStart()}
-      stopLabel="Stop & Score"
+      stopLabel={guidedPractice === undefined ? 'Stop & Score' : 'Stop now'}
       onStop={handleStop}
       autoTimer={{ onElapse: handleStop }}
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => noteToMidi(targetNote()),
       }}
+      countInContent={
+        <div
+          class="pitch-hold-count-in"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span class="pitch-hold-count-in-kicker">Before the hold</span>
+          <Show
+            when={leadInRemainingMs() !== null}
+            fallback={
+              <>
+                <strong>Preparing microphone</strong>
+                <small>The count begins when your microphone is ready.</small>
+              </>
+            }
+          >
+            <span class="pitch-hold-count-in-number">
+              {Math.max(1, Math.ceil((leadInRemainingMs() ?? 0) / 1000))}
+            </span>
+            <strong>
+              {(leadInRemainingMs() ?? 0) > 2_000
+                ? 'Take a calm breath'
+                : (leadInRemainingMs() ?? 0) > 1_000
+                  ? `Find ${targetNote()}`
+                  : 'Ready to hold'}
+            </strong>
+            <small>Recording starts after the count.</small>
+          </Show>
+        </div>
+      }
       activeContent={
         <>
           <div class="pitch-hold-header">

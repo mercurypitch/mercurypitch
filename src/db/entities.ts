@@ -185,6 +185,62 @@ export interface ZenTakeRecord extends DbEntity {
   scoreAverageCents?: number
 }
 
+// ── Voice History ──────────────────────────────────────────────
+
+/** A local real-voice recording explicitly kept by the singer. */
+export type VoiceTakeSource =
+  | 'glass'
+  | 'exercise'
+  | 'legend'
+  | 'karaoke'
+  | 'freeform'
+  | 'guided'
+
+/**
+ * Lightweight, list-safe metadata. The audio payload deliberately lives in
+ * voiceTakeAudio so rendering history never hydrates every recording.
+ */
+export interface VoiceTakeRecord extends DbEntity {
+  source: VoiceTakeSource
+  comparisonKey: string
+  contextVersion: number
+  capturedAt: string
+  durationMs: number
+  mimeType: string
+  sizeBytes: number
+  peaks: number[]
+  title: string
+  favorite: boolean
+  contextJson: string
+  metricsJson?: string
+  metricsVersion?: number
+  /** Present when a separate local contour row can power Voice Atlas. */
+  contourVersion?: number
+  contourPointCount?: number
+  contourBytes?: number
+  /** Small subjective replay markers; the heavier contour remains separate. */
+  reflectionsJson?: string
+  reflectionsVersion?: number
+  roomId?: string
+}
+
+/** One-to-one local audio payload for a VoiceTakeRecord. */
+export interface VoiceTakeAudioRecord extends DbEntity {
+  takeId: string
+  mimeType: string
+  size: number
+  data: ArrayBuffer
+}
+
+/** One-to-one compact F0/confidence/RMS payload for Voice Atlas rendering. */
+export interface VoiceTakeContourRecord extends DbEntity {
+  takeId: string
+  contourVersion: number
+  analysisSource: string
+  pointCount: number
+  payloadJson: string
+}
+
 // ── Voiceprints ─────────────────────────────────────────────────
 
 /** Where a voiceprint was measured. */
@@ -516,6 +572,22 @@ export interface PianoProjectMigrationRecord extends DbEntity {
   completedAt: string
 }
 
+// ── Drum Projects (device-local authored state and take summaries) ────────
+
+/** Indexed wrapper around one validated, portable Drum Night project. */
+export interface DrumProjectRecord<TProject = unknown> extends DbEntity {
+  sourceKind: string
+  sourceRef: string
+  project: TProject
+}
+
+/** Indexed wrapper around one validated, scalar-only completed take. */
+export interface DrumTakeSummaryRecord<TSummary = unknown> extends DbEntity {
+  projectId: string
+  completedAt: string
+  summary: TSummary
+}
+
 // ── Song manifests: the library without the audio ────────────────
 
 /** The quality the audio behind a manifest was last shared at. */
@@ -622,7 +694,11 @@ export interface UvrStemBlob extends DbEntity {
   /** Server registry model that produced it (e.g. 'demucs-6s'). */
   producedBy?: string
   mimeType: string // 'audio/wav' | 'audio/mpeg'
-  data: ArrayBuffer // binary audio data
+  /** Binary audio. Rows written before the Blob migration hold an
+   *  ArrayBuffer; newer rows hold a Blob (lazy handle — read through
+   *  src/db/stem-blob-data.ts, never assume one shape). Not indexed, so the
+   *  two shapes coexist without a schema version bump. */
+  data: ArrayBuffer | Blob
   size: number // byte size
   fileName: string
 }

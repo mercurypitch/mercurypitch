@@ -16,6 +16,7 @@ import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { HAIRLINE_TIMING } from '@/lib/ear/timing'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
+import { playToneFor } from './ear-sound'
 import type { PadState } from './EarStage'
 import { Pads, StagePad } from './EarStage'
 import { ThresholdDrillView } from './ThresholdDrillView'
@@ -51,13 +52,24 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       setPicked(null)
       const higher = base * 2 ** (level / 1200)
 
+      // Each tone is waited out: the pads arm only once the second has
+      // finished sounding, so an answer is never a guess at a tone still
+      // in the air.
       api.step(1)
-      await audioEngine.playTone(first ? higher : base, HAIRLINE_TIMING.toneMs)
+      await playToneFor(
+        audioEngine,
+        first ? higher : base,
+        HAIRLINE_TIMING.toneMs,
+      )
       if (api.cancelled()) return
       await new Promise((resolve) => setTimeout(resolve, HAIRLINE_TIMING.gapMs))
       if (api.cancelled()) return
       api.step(2)
-      await audioEngine.playTone(first ? base : higher, HAIRLINE_TIMING.toneMs)
+      await playToneFor(
+        audioEngine,
+        first ? base : higher,
+        HAIRLINE_TIMING.toneMs,
+      )
     },
     // Stop cuts the tone that is already sounding; without this the
     // drill keeps playing after the plate appears.

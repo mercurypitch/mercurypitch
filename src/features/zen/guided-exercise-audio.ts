@@ -1,5 +1,6 @@
+import { encodeAudioBufferToMonoPcmWav } from '@/lib/audio-buffer-wav'
+
 const OUTPUT_SAMPLE_RATE = 44_100
-const WAV_HEADER_BYTES = 44
 
 export const MAX_GUIDED_EXAMPLE_CLIP_MS = 15_000
 export const MIN_GUIDED_EXAMPLE_CLIP_MS = 100
@@ -79,12 +80,6 @@ export async function decodeGuidedExerciseAudio(
   }
 }
 
-function writeAscii(view: DataView, offset: number, value: string): void {
-  for (let index = 0; index < value.length; index += 1) {
-    view.setUint8(offset + index, value.charCodeAt(index))
-  }
-}
-
 function clipName(name: string, durationMs: number): string {
   const stem = name.replace(/\.[^.]+$/, '').trim() || 'example-audio'
   const seconds = (durationMs / 1000)
@@ -152,40 +147,10 @@ export function createGuidedExerciseAudioClip(
     Math.max(startFrame + 1, Math.ceil((endMs / 1000) * buffer.sampleRate)),
   )
   const frameCount = endFrame - startFrame
-  const pcmBytes = frameCount * 2
-  const bytes = new ArrayBuffer(WAV_HEADER_BYTES + pcmBytes)
-  const view = new DataView(bytes)
-
-  writeAscii(view, 0, 'RIFF')
-  view.setUint32(4, 36 + pcmBytes, true)
-  writeAscii(view, 8, 'WAVE')
-  writeAscii(view, 12, 'fmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, buffer.sampleRate, true)
-  view.setUint32(28, buffer.sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  writeAscii(view, 36, 'data')
-  view.setUint32(40, pcmBytes, true)
-
-  const channelCount = buffer.numberOfChannels
-  const channels = Array.from({ length: channelCount }, (_, channel) =>
-    buffer.getChannelData(channel),
-  )
-  let outputOffset = WAV_HEADER_BYTES
-  for (let frame = 0; frame < frameCount; frame += 1) {
-    let sample = 0
-    for (const channel of channels) sample += channel[startFrame + frame] ?? 0
-    sample = Math.max(-1, Math.min(1, sample / channelCount))
-    view.setInt16(
-      outputOffset,
-      sample < 0 ? Math.round(sample * 0x8000) : Math.round(sample * 0x7fff),
-      true,
-    )
-    outputOffset += 2
-  }
+  const bytes = encodeAudioBufferToMonoPcmWav(buffer, {
+    startFrame,
+    endFrame,
+  })
 
   const durationMs = Math.max(
     1,

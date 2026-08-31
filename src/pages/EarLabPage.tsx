@@ -10,17 +10,30 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
+import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
+import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
+import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
+import { ChartDrill } from '@/features/ear-lab/ChartDrill'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
+import { DeskView } from '@/features/ear-lab/DeskView'
+import { DriftDrill } from '@/features/ear-lab/DriftDrill'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
 import { EarReport } from '@/features/ear-lab/EarReport'
 import { EarRoomShell } from '@/features/ear-lab/EarRoomShell'
+import { EchoDrill } from '@/features/ear-lab/EchoDrill'
+import { FieldBookView } from '@/features/ear-lab/FieldBookView'
+import { GravityDrill } from '@/features/ear-lab/GravityDrill'
 import { GridDrill } from '@/features/ear-lab/GridDrill'
 import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
 import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
+import { PullDrill } from '@/features/ear-lab/PullDrill'
+import { PulseDrill } from '@/features/ear-lab/PulseDrill'
+import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
+import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
 export function EarLabPage(): JSX.Element {
@@ -64,6 +77,45 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'contour'}>
           <ContourDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'pulse'}>
+          <PulseDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'chart'}>
+          <ChartDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'echo'}>
+          <EchoDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'span'}>
+          <SpanDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'beat-hunt'}>
+          <BeatHuntDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'drift'}>
+          <DriftDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'gravity'}>
+          <GravityDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'the-pull'}>
+          <PullDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'cadence'}>
+          <CadenceDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'bassline'}>
+          <BasslineDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'subdivide'}>
+          <SubdivideDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'desk'}>
+          <DeskView onBack={back} />
+        </Show>
+        <Show when={view() === 'field-book'}>
+          <FieldBookView onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />

@@ -20,10 +20,12 @@ import type { SungFrame } from '@/lib/ear/degree-detect'
 import { detectSungDegree } from '@/lib/ear/degree-detect'
 import type { Rating } from '@/lib/ear/elo'
 import type { HomeDegree } from '@/lib/ear/item-bank'
-import { cadenceChordMidis, HOME_CHOICES, HOME_DRILL_ID, HOME_SING_DRILL_ID, homeItemId, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
-import { HOME_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
+import type { DegreeSet } from '@/lib/ear/item-bank'
+import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
+import { HOME_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
   | 'idle'
@@ -74,6 +76,8 @@ export interface HomeOptions {
    *  before the phase flips — a cadence committed to the audio clock
    *  outlives its setTimeout. */
   cancelAudio?: () => void
+  /** The degrees to run over; Home's seven unless told otherwise. */
+  set?: DegreeSet
 }
 
 interface AudioLike {
@@ -92,8 +96,8 @@ interface AudioLike {
   ) => Promise<void>
 }
 
-function drillIdFor(mode: HomeAnswerMode): string {
-  return mode === 'mic' ? HOME_SING_DRILL_ID : HOME_DRILL_ID
+function drillIdFor(set: DegreeSet, mode: HomeAnswerMode): string {
+  return mode === 'mic' ? set.micDrillId : set.tapDrillId
 }
 
 export function useHomeController(
@@ -101,6 +105,7 @@ export function useHomeController(
   singCapture?: SingCapture,
   options?: HomeOptions,
 ) {
+  const set = options?.set ?? HOME_SET
   const [phase, setPhase] = createSignal<HomePhase>('idle')
   const [mode, setMode] = createSignal<HomeAnswerMode>('tap')
   const [cadenceStep, setCadenceStep] = createSignal(0)
@@ -114,7 +119,7 @@ export function useHomeController(
    *  drives the "once more, louder" hint. */
   const [unclear, setUnclear] = createSignal(false)
   const [rating, setRating] = createSignal<Rating>(
-    earPlayerRating(HOME_DRILL_ID),
+    earPlayerRating(set.tapDrillId),
   )
   const [result, setResult] = createSignal<HomeResult | null>(null)
 
@@ -127,6 +132,13 @@ export function useHomeController(
   let startedAt = 0
   let cancelled = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  const pacer = createRevealPacer(
+    () => {
+      setRound((r) => r + 1)
+      void playRound()
+    },
+    () => cancelled,
+  )
 
   function wait(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -153,14 +165,14 @@ export function useHomeController(
     startedAt = performance.now()
     outcomes = []
     skipped = 0
-    ratingAtStart = earPlayerRating(drillIdFor(runMode)).rating
+    ratingAtStart = earPlayerRating(drillIdFor(set, runMode)).rating
     batch(() => {
       setMode(runMode)
       setRound(0)
       setResult(null)
       setLastCents(null)
       setUnclear(false)
-      setRating(earPlayerRating(drillIdFor(runMode)))
+      setRating(earPlayerRating(drillIdFor(set, runMode)))
     })
     void playRound()
   }
@@ -174,6 +186,7 @@ export function useHomeController(
 
     const pick = pickHomeItem(earItemStates(), rating().rating, {
       avoidItemId: lastItemId,
+      set,
     })
     lastItemId = pick.itemId
     rootMidi = roveRootMidi()
@@ -199,7 +212,7 @@ export function useHomeController(
 
     setPhase('probe')
     await audioEngine.playTone(
-      midiToFreq(probeMidi(rootMidi, pick.degree.degree)),
+      midiToFreq(probeMidi(rootMidi, pick.degree.degree, set)),
       HOME_TIMING.probeMs,
     )
     // The answer opens once the probe has died away, so a sung answer
@@ -222,7 +235,11 @@ export function useHomeController(
     await wait(HOME_TIMING.singWindowMs)
     if (cancelled || phase() !== 'answer') return
 
-    const sung = detectSungDegree(singCapture.takeFrames(), rootMidi)
+    const sung = detectSungDegree(
+      singCapture.takeFrames(),
+      rootMidi,
+      set.degrees,
+    )
     if (sung !== null) {
       submit(sung.degree.degree, sung.centsOff)
       return
@@ -246,11 +263,7 @@ export function useHomeController(
       setAnsweredDegree(null)
       setPhase('reveal')
     })
-    timer = setTimeout(() => {
-      if (cancelled) return
-      setRound((r) => r + 1)
-      void playRound()
-    }, REVEAL_TIMING.identificationWrongMs)
+    pacer.hold()
   }
 
   function submit(degree: number, centsOff?: number): void {
@@ -259,13 +272,13 @@ export function useHomeController(
 
     const isMic = mode() === 'mic'
     const correct = degree === target.degree
-    const itemDifficulty = homeItemState(earItemStates(), target.degree)
+    const itemDifficulty = homeItemState(earItemStates(), target.degree, set)
     const nextRating = recordIdentificationAnswer({
-      drillId: drillIdFor(mode()),
-      itemId: homeItemId(target.degree),
+      drillId: drillIdFor(set, mode()),
+      itemId: set.itemId(target.degree),
       itemDifficulty,
       correct,
-      guessRate: isMic ? 0 : 1 / HOME_CHOICES,
+      guessRate: isMic ? 0 : 1 / set.choices,
       expected: `deg-${target.degree}`,
       answered: `deg-${degree}`,
       updateItem: !isMic,
@@ -291,18 +304,17 @@ export function useHomeController(
       setPhase('reveal')
     })
 
-    if (!correct) void playResolution(target.degree)
-
-    timer = setTimeout(
-      () => {
+    // A miss hears the probe fall home first; the hold — and the next
+    // round — count from the end of that, or the two would overlap.
+    const resolution = correct
+      ? Promise.resolve()
+      : playResolution(target.degree)
+    void resolution
+      .catch(() => undefined)
+      .then(() => {
         if (cancelled) return
-        setRound((r) => r + 1)
-        void playRound()
-      },
-      correct
-        ? REVEAL_TIMING.identificationCorrectMs
-        : REVEAL_TIMING.identificationWrongMs,
-    )
+        pacer.hold()
+      })
   }
 
   /** Tap answer (the seven buttons). */
@@ -315,7 +327,7 @@ export function useHomeController(
    *  just misjudged, heard once more with the answer known. */
   async function playResolution(degree: number): Promise<void> {
     await audioEngine.playTone(
-      midiToFreq(probeMidi(rootMidi, degree)),
+      midiToFreq(probeMidi(rootMidi, degree, set)),
       HOME_TIMING.resolutionProbeMs,
     )
     await wait(HOME_TIMING.resolutionProbeMs)
@@ -349,7 +361,7 @@ export function useHomeController(
     creditEarSession(performance.now() - startedAt)
     // Always the tap id: the sprint schedules the drill, not the way
     // you chose to answer it, and singing your answers is still Home.
-    markSprintSegmentDone(HOME_DRILL_ID)
+    markSprintSegmentDone(set.tapDrillId)
     setPhase('done')
   }
 
@@ -362,12 +374,14 @@ export function useHomeController(
     // phase after the end card is already showing.
     cancelled = true
     clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
     finish()
   }
 
   function reset(): void {
     clearTimeout(timer)
+    pacer.cancel()
     setPhase('idle')
     setResult(null)
     setCurrentDegree(null)
@@ -377,6 +391,7 @@ export function useHomeController(
   function dispose(): void {
     cancelled = true
     clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
   }
 
@@ -394,6 +409,9 @@ export function useHomeController(
     unclear,
     rating,
     result,
+    /** Auto-advance off: the run waits on the verdict for next(). */
+    parked: pacer.parked,
+    next: pacer.next,
     start,
     answer,
     stop,

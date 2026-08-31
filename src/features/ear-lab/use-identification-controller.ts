@@ -17,8 +17,8 @@ import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { createRevealPacer } from './reveal-pacing'
 
 export type IdentificationPhase =
   | 'idle'
@@ -52,11 +52,23 @@ export interface IdentificationResult {
 
 export const IDENTIFICATION_ROUNDS = 12
 
+/** Where a run's answers are rated when not under the drill's own
+ *  id — Echo's sung answers go to 'echo-sing' with no guess floor
+ *  and leave the items' difficulties untouched. */
+export interface RunTrack {
+  drillId: string
+  guessRate: number
+  updateItem: boolean
+}
+
 export interface IdentificationOptions {
   /** Silence anything already sounding. Called on stop and unmount,
    *  before the phase flips — a prompt committed to the audio clock
    *  outlives its setTimeout. */
   cancelAudio?: () => void
+  /** Read at start(): the track this run rates under, or null for
+   *  the drill's own. */
+  track?: () => RunTrack | null
 }
 
 export function useIdentificationController(
@@ -70,7 +82,11 @@ export function useIdentificationController(
   const [expectedId, setExpectedId] = createSignal<string | null>(null)
   const [answeredId, setAnsweredId] = createSignal<string | null>(null)
   const [rating, setRating] = createSignal<Rating>(earPlayerRating(drill.id))
+  let runTrack: RunTrack | null = null
+  const trackId = () => runTrack?.drillId ?? drill.id
   const [result, setResult] = createSignal<IdentificationResult | null>(null)
+  /** True while a miss's slow replay is sounding. */
+  const [replaying, setReplaying] = createSignal(false)
 
   let currentItem: EarBankItem | null = null
   let trial: IdentificationTrial | null = null
@@ -79,17 +95,24 @@ export function useIdentificationController(
   let ratingAtStart = 0
   let startedAt = 0
   let cancelled = false
-  let timer: ReturnType<typeof setTimeout> | undefined
+  const pacer = createRevealPacer(
+    () => {
+      setRound((r) => r + 1)
+      void playRound()
+    },
+    () => cancelled,
+  )
 
   function start(): void {
     cancelled = false
     startedAt = performance.now()
     outcomes = []
-    ratingAtStart = earPlayerRating(drill.id).rating
+    runTrack = options?.track?.() ?? null
+    ratingAtStart = earPlayerRating(trackId()).rating
     batch(() => {
       setRound(0)
       setResult(null)
-      setRating(earPlayerRating(drill.id))
+      setRating(earPlayerRating(trackId()))
     })
     void playRound()
   }
@@ -129,13 +152,14 @@ export function useIdentificationController(
 
     const correct = choiceId === expected
     const nextRating = recordIdentificationAnswer({
-      drillId: drill.id,
+      drillId: trackId(),
       itemId: item.itemId,
       itemDifficulty: bankItemState(earItemStates(), item),
       correct,
-      guessRate: guessRate(drill),
+      guessRate: runTrack?.guessRate ?? guessRate(drill),
       expected,
       answered: choiceId,
+      ...(runTrack ? { updateItem: runTrack.updateItem } : {}),
     })
     outcomes.push({ expectedId: expected, answeredId: choiceId, correct })
 
@@ -151,18 +175,22 @@ export function useIdentificationController(
       setPhase('reveal')
     })
 
-    if (!correct && trial?.replayOnWrong) void trial.replayOnWrong()
-
-    timer = setTimeout(
-      () => {
+    // A miss replays the item slowly; the hold — and the next round —
+    // count from the end of the replay, or the two would sound over
+    // each other. Stop still cuts it: cancelled is checked after the
+    // replay, and the pacer checks it again when the hold ends.
+    const replay =
+      !correct && trial?.replayOnWrong
+        ? trial.replayOnWrong()
+        : Promise.resolve()
+    setReplaying(!correct && trial?.replayOnWrong !== undefined)
+    void replay
+      .catch(() => undefined)
+      .then(() => {
+        setReplaying(false)
         if (cancelled) return
-        setRound((r) => r + 1)
-        void playRound()
-      },
-      correct
-        ? REVEAL_TIMING.identificationCorrectMs
-        : REVEAL_TIMING.identificationWrongMs,
-    )
+        pacer.hold()
+      })
   }
 
   function finish(): void {
@@ -183,14 +211,14 @@ export function useIdentificationController(
     if (phase() === 'idle' || phase() === 'done') return
     // Cancel FIRST — see playRound()'s post-await guard.
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
     finish()
   }
 
   function dispose(): void {
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
   }
 
@@ -204,6 +232,11 @@ export function useIdentificationController(
     answeredId,
     rating,
     result,
+    replaying,
+    /** Auto-advance off: the run waits on the verdict for next(). */
+    parked: pacer.parked,
+    next: pacer.next,
+    track: () => runTrack,
     start,
     answer,
     stop,

@@ -13,6 +13,7 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import type { MidiBar, MidiTimeSignature } from '@/lib/midi-bars'
 import { buildBars } from '@/lib/midi-bars'
+import type { MidiSongPercussionHit } from '@/lib/midi-song'
 import type { GuitarNightReferenceKind } from '../reference-port'
 
 /**
@@ -44,6 +45,14 @@ export interface SheetLane {
   instrument: StringedInstrument
   tuning: InstrumentTuning
   notes: readonly GuitarNote[]
+  /**
+   * Authored drum notation is a readable reference lane, never guitar score
+   * authority. Missing means the established pitched-tab lane.
+   */
+  content?: 'pitched' | 'percussion'
+  percussionHits?: readonly MidiSongPercussionHit[]
+  droppedPercussionHits?: number
+  scoreable?: boolean
   /** Notes this lane's neck could not reach, so they were not placed. */
   outOfRangeNotes: number
 }
@@ -57,6 +66,7 @@ export interface SheetPlacement {
   systems: readonly SheetSystem[]
   lanes: readonly SheetLane[]
   notesBySystem: readonly (readonly (readonly GuitarNote[])[])[]
+  percussionHitsBySystem: readonly (readonly (readonly MidiSongPercussionHit[])[])[]
   totalBeats: number
   barsPerSystem: number
 }
@@ -97,6 +107,11 @@ export function totalBeatsForLanes(lanes: readonly SheetLane[]): number {
     for (const note of lane.notes) {
       const noteEnd = note.startBeat + Math.max(0, note.duration)
       if (noteEnd > end) end = noteEnd
+    }
+    for (const hit of lane.percussionHits ?? []) {
+      const hitEnd =
+        hit.startBeat + Math.max(0.001, hit.writtenDuration ?? 0.001)
+      if (hitEnd > end) end = hitEnd
     }
   }
   return end
@@ -165,6 +180,9 @@ export function buildSheetPlacement(input: SheetLayoutInput): SheetPlacement {
   const systems = groupIntoSystems(bars, barsPerSystem)
 
   const notesBySystem: GuitarNote[][][] = systems.map(() => lanes.map(() => []))
+  const percussionHitsBySystem: MidiSongPercussionHit[][][] = systems.map(() =>
+    lanes.map(() => []),
+  )
 
   for (let laneIndex = 0; laneIndex < lanes.length; laneIndex += 1) {
     const lane = lanes[laneIndex]
@@ -173,6 +191,11 @@ export function buildSheetPlacement(input: SheetLayoutInput): SheetPlacement {
       const systemIndex = systemIndexForBeat(systems, note.startBeat)
       if (systemIndex === null) continue
       notesBySystem[systemIndex]?.[laneIndex]?.push(note)
+    }
+    for (const hit of lane.percussionHits ?? []) {
+      const systemIndex = systemIndexForBeat(systems, hit.startBeat)
+      if (systemIndex === null) continue
+      percussionHitsBySystem[systemIndex]?.[laneIndex]?.push(hit)
     }
   }
 
@@ -183,8 +206,20 @@ export function buildSheetPlacement(input: SheetLayoutInput): SheetPlacement {
       notes.sort((left, right) => left.startBeat - right.startBeat)
     }
   }
+  for (const perLane of percussionHitsBySystem) {
+    for (const hits of perLane) {
+      hits.sort((left, right) => left.startBeat - right.startBeat)
+    }
+  }
 
-  return { systems, lanes, notesBySystem, totalBeats, barsPerSystem }
+  return {
+    systems,
+    lanes,
+    notesBySystem,
+    percussionHitsBySystem,
+    totalBeats,
+    barsPerSystem,
+  }
 }
 
 /** The notes of one lane inside one system, or an empty list off the sheet. */

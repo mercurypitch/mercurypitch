@@ -7,7 +7,12 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+    // ES2024 for the type checker only; "target" stays ES2023, so nothing
+    // about the emitted code changes. The repo already uses an ES2024 API —
+    // Promise.withResolvers, six times in
+    // useGuitarNightReferenceController.test.tsx — and tsc rejected it. The
+    // usage is test-only, so no shipped code depends on an ES2024 runtime.
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker"],
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vitest/globals", "node", "@webgpu/types"],

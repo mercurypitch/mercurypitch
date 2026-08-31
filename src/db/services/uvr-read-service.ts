@@ -3,13 +3,28 @@
 
 import type { UvrSessionRecord, UvrStemBlob, UvrStemType } from '@/db/entities'
 import { getLocalDatabase } from '@/db/local-database'
+import { queueStemRowBlobMigration } from '@/db/services/uvr-stem-migration'
 
 export interface UvrStemSnapshotEntry {
   kind: UvrStemType
   mimeType: string
-  data: ArrayBuffer
+  /** ArrayBuffer for legacy rows, Blob for migrated ones — read via
+   *  src/db/stem-blob-data.ts. */
+  data: ArrayBuffer | Blob
   sizeBytes: number
 }
+
+export type UvrBudgetedStemSelection =
+  | {
+      ok: true
+      snapshot: readonly UvrStemSnapshotEntry[]
+      totalBytes: number
+    }
+  | {
+      ok: false
+      requiredBytes: number
+      budgetBytes: number
+    }
 
 const PLAYABLE_STEM_KINDS: readonly Exclude<UvrStemType, 'original'>[] = [
   'vocal',
@@ -50,12 +65,15 @@ export async function readUvrStemSnapshot(
   return Object.freeze(
     [...latestByKind.values()]
       .filter((row) => row.stemType !== 'original')
-      .map((row) => ({
-        kind: row.stemType,
-        mimeType: row.mimeType,
-        data: row.data,
-        sizeBytes: row.size,
-      })),
+      .map((row) => {
+        queueStemRowBlobMigration(row)
+        return {
+          kind: row.stemType,
+          mimeType: row.mimeType,
+          data: row.data,
+          sizeBytes: row.size,
+        }
+      }),
   )
 }
 
@@ -92,21 +110,19 @@ export async function readUvrStemSelection(
   )
   const rowsByKind = await Promise.all(
     uniqueKinds.map((kind) =>
-      database.readByCompoundIndexStrict<UvrStemBlob>(
+      database.readLatestByCompoundPrefixStrict<UvrStemBlob>(
         'uvrStemBlobs',
-        '[sessionId+stemType]',
+        '[sessionId+stemType+createdAt]',
         [sessionId, kind],
       ),
     ),
   )
 
   return Object.freeze(
-    rowsByKind.flatMap((rows) => {
-      const newest = rows.reduce<UvrStemBlob | null>((latest, row) => {
-        if (latest === null || row.createdAt > latest.createdAt) return row
-        return latest
-      }, null)
+    rowsByKind.flatMap((newest) => {
       if (newest === null) return []
+      if (newest === undefined) return []
+      queueStemRowBlobMigration(newest)
       return [
         {
           kind: newest.stemType,
@@ -117,4 +133,66 @@ export async function readUvrStemSelection(
       ]
     }),
   )
+}
+
+/**
+ * Hydrate requested rows sequentially and stop before retaining a selection
+ * whose authoritative persisted sizes exceed the caller's encoded budget.
+ *
+ * This is the explicit-Play path. It intentionally avoids `Promise.all`: at
+ * most one not-yet-budgeted stem row is materialized at a time, cancellation
+ * is checked between every IndexedDB read, and no object URL is created here.
+ */
+export async function readUvrStemSelectionWithinBudget(
+  sessionId: string,
+  requested: readonly UvrStemType[],
+  options: { signal: AbortSignal; budgetBytes: number },
+): Promise<UvrBudgetedStemSelection> {
+  const database = getLocalDatabase()
+  const uniqueKinds = [...new Set(requested)].filter(
+    (kind) => kind !== 'original',
+  )
+  const budgetBytes = Math.max(0, Math.floor(options.budgetBytes))
+  const snapshot: UvrStemSnapshotEntry[] = []
+  let totalBytes = 0
+
+  for (const kind of uniqueKinds) {
+    if (options.signal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    }
+    const newest = await database.readLatestByCompoundPrefixStrict<UvrStemBlob>(
+      'uvrStemBlobs',
+      '[sessionId+stemType+createdAt]',
+      [sessionId, kind],
+    )
+    if (options.signal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    }
+    if (newest === undefined) continue
+
+    const rowBytes = Number.isFinite(newest.size)
+      ? Math.max(0, Math.ceil(newest.size))
+      : Number.MAX_SAFE_INTEGER
+    const requiredBytes = Math.min(
+      Number.MAX_SAFE_INTEGER,
+      totalBytes + rowBytes,
+    )
+    if (requiredBytes > budgetBytes) {
+      return { ok: false, requiredBytes, budgetBytes }
+    }
+    totalBytes = requiredBytes
+    queueStemRowBlobMigration(newest)
+    snapshot.push({
+      kind: newest.stemType,
+      mimeType: newest.mimeType,
+      data: newest.data,
+      sizeBytes: newest.size,
+    })
+  }
+
+  return {
+    ok: true,
+    snapshot: Object.freeze(snapshot),
+    totalBytes,
+  }
 }

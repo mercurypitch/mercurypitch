@@ -4,7 +4,41 @@
 
 /* ── Exercise Menu ────────────────────────────────────────── */
 
+#exercises-panel {
+  /* Score ink is shared by the menu's recent-session row and the active
+     exercise's mobile history card, so it belongs to their common root. */
+  --exercise-score-high: #66d391;
+  --exercise-score-mid: #e5bd4d;
+  --exercise-score-low: #ff8f8b;
+}
+
+[data-theme='light'] #exercises-panel {
+  --exercise-score-high: #126b3a;
+  --exercise-score-mid: #775800;
+  --exercise-score-low: #b42335;
+}
+
 .exercises-panel {
+  /* Small badges need opaque pairs: their 0.6–0.66rem text cannot rely on a
+     translucent accent over whichever card happens to sit behind it. These
+     defaults are the dark composition; the light theme remaps the same roles
+     below without changing the exercise/difficulty meaning. */
+  --exercise-tag-bg: #1b2d42;
+  --exercise-tag-fg: #8fc7ff;
+  --exercise-easy-bg: #163a27;
+  --exercise-easy-fg: #66d391;
+  --exercise-medium-bg: #3a2d10;
+  --exercise-medium-fg: #e5bd4d;
+  --exercise-hard-bg: #421d23;
+  --exercise-hard-fg: #ff8f8b;
+  --exercise-elite-bg: #302650;
+  --exercise-elite-fg: #c4b5fd;
+  --exercise-great-bg: #163a27;
+  --exercise-great-fg: #66d391;
+  --exercise-good-bg: #3a2d10;
+  --exercise-good-fg: #e5bd4d;
+  --exercise-novice-bg: #27313d;
+  --exercise-novice-fg: #b6c2cf;
   width: 100%;
   height: 100%;
   padding: 20px;
@@ -34,6 +68,22 @@
 
 /* The art is near-black and there is no light version of it. */
 [data-theme='light'] .exercises-panel {
+  --exercise-tag-bg: #e7f1ff;
+  --exercise-tag-fg: #0969da;
+  --exercise-easy-bg: #dcf4e5;
+  --exercise-easy-fg: #167744;
+  --exercise-medium-bg: #fff0bf;
+  --exercise-medium-fg: #806000;
+  --exercise-hard-bg: #fde4e4;
+  --exercise-hard-fg: #b42335;
+  --exercise-elite-bg: #ede9fe;
+  --exercise-elite-fg: #6d28d9;
+  --exercise-great-bg: #dcf4e5;
+  --exercise-great-fg: #167744;
+  --exercise-good-bg: #fff0bf;
+  --exercise-good-fg: #806000;
+  --exercise-novice-bg: #e2e8f0;
+  --exercise-novice-fg: #475569;
   background-image: none;
 }
 
@@ -140,18 +190,18 @@
 }
 
 .exercise-card-difficulty.diff-easy {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.14);
+  color: var(--exercise-easy-fg);
+  background: var(--exercise-easy-bg);
 }
 
 .exercise-card-difficulty.diff-medium {
-  color: #eab308;
-  background: rgba(234, 179, 8, 0.14);
+  color: var(--exercise-medium-fg);
+  background: var(--exercise-medium-bg);
 }
 
 .exercise-card-difficulty.diff-hard {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.14);
+  color: var(--exercise-hard-fg);
+  background: var(--exercise-hard-bg);
 }
 
 /* Difficulty filter pills above the gallery. */
@@ -187,7 +237,7 @@
    selected seat already uses it. */
 .exercise-filter-pill.active {
   background: var(--accent);
-  color: var(--bg-primary);
+  color: var(--on-accent, var(--bg-primary));
   border-color: var(--accent);
 }
 
@@ -211,8 +261,8 @@
   font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: var(--bg-accent, rgba(99, 102, 241, 0.1));
-  color: var(--text-accent, #a5b4fc);
+  background: var(--exercise-tag-bg);
+  color: var(--exercise-tag-fg);
 }
 
 /* ── Exercise Card Stats ──────────────────────────────────── */
@@ -238,23 +288,23 @@
 }
 
 .exercise-grade-elite {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a78bfa;
+  background: var(--exercise-elite-bg);
+  color: var(--exercise-elite-fg);
 }
 
 .exercise-grade-great {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
+  background: var(--exercise-great-bg);
+  color: var(--exercise-great-fg);
 }
 
 .exercise-grade-good {
-  background: rgba(234, 179, 8, 0.12);
-  color: #facc15;
+  background: var(--exercise-good-bg);
+  color: var(--exercise-good-fg);
 }
 
 .exercise-grade-novice {
-  background: rgba(148, 163, 184, 0.1);
-  color: var(--text-secondary);
+  background: var(--exercise-novice-bg);
+  color: var(--exercise-novice-fg);
 }
 
 .exercise-card-best {
@@ -277,7 +327,7 @@
   border-radius: 999px;
   border: none;
   background: var(--accent-color, #6366f1);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
@@ -290,8 +340,21 @@
   transform: scale(0.96);
 }
 
-.exercise-card-start-btn:hover {
+.exercise-card-start-btn:hover:not(:disabled) {
   background: var(--accent-hover, #4f46e5);
+}
+
+.exercise-card-start-btn:focus-visible,
+.exercise-btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.exercise-card-start-btn:disabled,
+.exercise-btn-primary:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+  opacity: 0.55;
 }
 
 /* Inline "start with X" link in the getting-started nudge. */
@@ -453,6 +516,66 @@
   font-variant-numeric: tabular-nums;
 }
 
+.exercise-guided-dose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 18px;
+  margin: -2px 0 14px;
+  padding: 11px 14px;
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 56%
+    ),
+    var(--bg-card);
+}
+
+.exercise-guided-dose-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.exercise-guided-dose-heading span {
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.exercise-guided-dose-heading strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-guided-dose p,
+.exercise-guided-dose small {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.exercise-guided-dose p {
+  grid-row: 1;
+  grid-column: 2;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.exercise-guided-dose small {
+  grid-column: 1 / -1;
+}
+
 .exercise-canvas-area {
   flex: 1;
   display: flex;
@@ -585,10 +708,10 @@
 
 .exercise-btn-primary {
   background: var(--accent-color, #6366f1);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
 }
 
-.exercise-btn-primary:hover {
+.exercise-btn-primary:hover:not(:disabled) {
   background: var(--accent-hover, #4f46e5);
 }
 
@@ -758,24 +881,44 @@
   min-width: 0;
 }
 
-/* Split only when the launch column has something to say. A drill with no
-   timer has one button in it, and a lone button floating in a column beside a
-   340px dial reads as a mistake — for those the stack is both tidier and
-   already short, since the icon row is gone. A short viewport overrides this
-   and splits regardless; see short-viewport.css, where height is the scarce
-   axis and balance is not the point. */
+/* Split as soon as there is width for one, timer or not. This used to be
+   gated on `:has(.exercise-timer-field)`, on the reasoning that a timerless
+   drill has one button in its launch column and a lone button floating beside
+   a 340px dial reads as a mistake — the stack being both tidier and, with the
+   icon row gone, already short enough to fit.
+
+   The second half of that stopped being true. The launch column now also
+   carries the capture note, and a stack of dial + note + Start asks for 500px
+   of a 608px card once the placeholder above it has taken its share: Dynamic
+   Swell, Chord Stacker and Staccato Precision each ran 21px past the bottom of
+   a 1400x806 tablet, putting Start under the fold. Beside the dial the same
+   content costs the taller of the two columns instead of their sum — 401px,
+   with room to spare.
+
+   So the timer is no longer the question; it only decides how the row is
+   divided. With one, launch gets a definite column of its own and setup takes
+   the rest. Without one, the row stays content-sized so the two groups sit
+   together in the middle rather than at opposite ends of a slab. That is what
+   short-viewport.css already concluded for screens under 720px tall, for the
+   same reason; the two now agree instead of one overriding the other. */
 @media (min-width: 700px) {
-  .exercise-idle-body:has(.exercise-timer-field) {
+  .exercise-idle-body {
     flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 28px;
-    /* Definite, not shrink-to-fit. A content-sized row hands the column
-       widths to whichever child has the longest text, and one of those
-       children is the vibrato hint, whose text changes with the style you
-       pick — so picking a style re-laid-out the styles. With a definite row,
-       launch takes its fixed column and setup takes the rest, and nothing
-       inside either can move them. */
+    width: auto;
+  }
+
+  /* Definite, not shrink-to-fit. A content-sized row hands the column widths
+     to whichever child has the longest text, and one of those children is the
+     vibrato hint, whose text changes with the style you pick — so picking a
+     style re-laid-out the styles. With a definite row, launch takes its fixed
+     column and setup takes the rest, and nothing inside either can move them.
+
+     Only where there is a launch column with a width of its own to divide
+     against; see the content-sized row above for the timerless case. */
+  .exercise-idle-body:has(.exercise-timer-field) {
     width: min(100%, 980px);
   }
 
@@ -785,11 +928,25 @@
   }
 
   /* Launch takes a column of its own and fills it, so the timer chips and
-     Start line up at one width instead of each finding their own. */
+     Start line up at one width instead of each finding their own. Stretched
+     around a lone Start button it would instead make a 300px slab floating in
+     space next to the dial, so it stays gated on there being segments. */
   .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
     align-items: stretch;
     flex: 0 0 auto;
     width: min(330px, 40vw);
+  }
+
+  /* Whatever is in it, the launch column never claims more room than the
+     version of itself that has the most in it. Left uncapped it claimed more:
+     content-sized around the capture note it reaches the note's 46ch, which is
+     wider than the column a timer gets, and the width comes out of the dial
+     beside it. The dial spends width on its readout, so what it gives up in
+     width it takes back in height — see short-viewport.css, where that trade
+     ran a panel off the bottom of the screen. The note is prose and wraps for
+     free; the readout wrapping costs the panel its fit, so the note gives. */
+  .exercise-idle-launch {
+    max-width: min(330px, 40vw);
   }
 
   .exercise-idle-launch .exercise-idle-start {
@@ -839,6 +996,15 @@
   .exercise-idle-setup:has(> :nth-child(2)) svg[class*='face'] {
     max-width: 100%;
   }
+}
+
+.exercise-capture-note {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: center;
 }
 
 /* Start sits on its own row beneath the settings/description. */
@@ -893,6 +1059,13 @@
 /* ── ExerciseShell: recent-scores chip (canvas corner) ─────── */
 
 .exercise-score-history {
+  /* This is a deliberately dark glass card even inside the light app shell.
+     Own its ink locally; mobile-polish.css remaps these roles when the card
+     becomes an ordinary theme surface in the in-flow phone layout. */
+  --exercise-history-muted: #a8b3bf;
+  --exercise-history-good: #66d391;
+  --exercise-history-ok: #e5bd4d;
+  --exercise-history-poor: #ff8f8b;
   position: absolute;
   top: 12px;
   right: 12px;
@@ -914,7 +1087,7 @@
   font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  color: var(--exercise-history-muted);
 }
 
 /* The most recent score, shown large so it's clearly visible after a run. */
@@ -938,24 +1111,23 @@
   padding: 2px 8px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
-  opacity: 0.85;
 }
 
 .exercise-score-chip-good {
-  color: #22c55e;
+  color: var(--exercise-history-good);
 }
 
 .exercise-score-chip-ok {
-  color: #eab308;
+  color: var(--exercise-history-ok);
 }
 
 .exercise-score-chip-poor {
-  color: #ef4444;
+  color: var(--exercise-history-poor);
 }
 
 .exercise-score-history-best {
   font-size: 0.72rem;
-  color: var(--text-secondary);
+  color: var(--exercise-history-muted);
   margin-top: 2px;
 }
 
@@ -1570,6 +1742,53 @@
 }
 
 /* ── Pitch Hold Exercise ───────────────────────────────────── */
+
+.pitch-hold-count-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 220px;
+  padding: 24px;
+  text-align: center;
+}
+
+.pitch-hold-count-in-kicker {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.pitch-hold-count-in-number {
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  margin: 4px 0;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+  font-size: 2.2rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pitch-hold-count-in strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.pitch-hold-count-in small {
+  max-width: 34ch;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
 
 .pitch-hold-header {
   display: flex;
@@ -2308,6 +2527,7 @@
 
 .exercise-result-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 14px 20px;
@@ -2323,6 +2543,78 @@
 .exercise-result-card.mid-reps {
   animation: none;
   padding: 10px 16px;
+}
+
+.exercise-result-card.is-guided {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-color));
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 62%
+    ),
+    var(--bg-secondary);
+  animation: none;
+}
+
+.exercise-result-card.is-guided:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.exercise-guided-result-title {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.exercise-guided-stop-copy {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.exercise-guided-stop-question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.exercise-guided-stop-question > span {
+  flex-basis: 100%;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.exercise-guided-pause,
+.exercise-guided-discomfort {
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.exercise-guided-pause:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-color));
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-secondary));
+}
+
+.exercise-guided-discomfort {
+  border-color: rgba(248, 81, 73, 0.44);
+  color: #ffaaa3;
+}
+
+.exercise-guided-discomfort:hover {
+  border-color: rgba(248, 81, 73, 0.72);
+  background: rgba(248, 81, 73, 0.12);
 }
 
 .exercise-result-grade {
@@ -2397,6 +2689,88 @@
 .exercise-result-summary {
   font-size: 0.82rem;
   color: var(--text-secondary);
+}
+
+.exercise-result-voice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.exercise-result-voice-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.exercise-result-voice-copy strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.exercise-result-voice-copy span {
+  max-width: 54ch;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.exercise-result-voice-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-result-voice-actions .exercise-btn {
+  min-height: 44px;
+  padding: 9px 16px;
+}
+
+.exercise-keep-voice {
+  background: var(--accent-color, #6366f1);
+  color: #fff;
+}
+
+.exercise-keep-voice:hover:not(:disabled) {
+  background: var(--accent-hover, #4f46e5);
+}
+
+.exercise-keep-voice:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.exercise-discard-voice {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.exercise-discard-voice:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .exercise-result-voice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exercise-result-voice-actions {
+    width: 100%;
+  }
+
+  .exercise-result-voice-actions .exercise-btn {
+    flex: 1;
+  }
 }
 
 /* ── Adaptive level chip (header) ── */

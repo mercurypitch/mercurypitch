@@ -35,6 +35,7 @@ describe('GuitarNightFirstWin', () => {
       activate: vi.fn(async () => null),
       setMasterLevel: vi.fn(),
       setMelodyChannelLevel: vi.fn(),
+      setPercussionTrackAudible: vi.fn(),
       stop: vi.fn(),
       getAudioGraph: () => null,
       dispose: vi.fn(async () => undefined),
@@ -99,5 +100,53 @@ describe('GuitarNightFirstWin', () => {
     expect(onHit).toHaveBeenCalledOnce()
     expect(controller.hits()).toBe(4)
     expect(controller.lastFeedback()).toBe('Next lap · 1 of 4 marked early.')
+  })
+  it('offers the way out where a beginner looks for it', () => {
+    const band: GuitarRoomBand = {
+      start: vi.fn(async () => ({
+        expectedHitTimesMs: [],
+        exerciseStartedAtSeconds: null,
+        completedAtSeconds: null,
+      })),
+      activate: vi.fn(async () => null),
+      setMasterLevel: vi.fn(),
+      setMelodyChannelLevel: vi.fn(),
+      setPercussionTrackAudible: vi.fn(),
+      stop: vi.fn(),
+      getAudioGraph: () => null,
+      dispose: vi.fn(async () => undefined),
+    }
+    const onBack = vi.fn()
+    render(() => {
+      const controller = useGuitarFirstWinController({
+        config: () => DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+        createBand: () => band,
+        now: () => 1_000,
+      })
+      return (
+        <GuitarNightFirstWin
+          controller={controller}
+          stage={{} as GuitarPerformanceStageSource}
+          tuning={() => DEFAULT_GUITAR_TUNING}
+          active={() => true}
+          completionAction={() => 'load-song'}
+          headingRef={() => undefined}
+          onHit={() => undefined}
+          onBack={onBack}
+          onSkip={() => undefined}
+          onAdvance={() => undefined}
+          onComplete={() => undefined}
+        />
+      )
+    })
+
+    const button = screen.getByTestId('guitar-night-first-win-back')
+    // It heads the brief, so it reads as the panel's top-left corner rather
+    // than sitting below the controls where it used to hide.
+    expect(button.parentElement?.firstElementChild).toBe(button)
+    expect(button).toHaveAttribute('aria-label', 'Back to Guitar Night')
+
+    fireEvent.click(button)
+    expect(onBack).toHaveBeenCalledTimes(1)
   })
 })

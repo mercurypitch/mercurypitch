@@ -16,6 +16,7 @@ import { useEngines } from '@/contexts/EngineContext'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { CONTOUR_TIMING } from '@/lib/ear/timing'
+import { playToneFor } from './ear-sound'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { ContourDirection } from './StylusTrace'
 import { StylusTrace } from './StylusTrace'
@@ -49,11 +50,13 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
         : base * 2 ** (((direction.id === 'up' ? 1 : -1) * gapCents) / 1200)
 
     const playPair = async (toneMs: number, gapMs: number) => {
+      // Both tones whole: playTone resolves on scheduling and the second
+      // note would otherwise cut the first at the gap.
       setSounding(1)
-      await audioEngine.playTone(base, toneMs)
+      await playToneFor(audioEngine, base, toneMs)
       await new Promise((resolve) => setTimeout(resolve, gapMs))
       setSounding(2)
-      await audioEngine.playTone(second, toneMs)
+      await playToneFor(audioEngine, second, toneMs)
       setSounding(0)
     }
 

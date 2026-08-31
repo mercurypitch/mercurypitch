@@ -9,7 +9,7 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
-import { X } from '@/components/icons'
+import { ChevronLeft, GuitarTab, Info, LinkChain, ScoreDocument, Split, X, } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
@@ -18,6 +18,7 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
 import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
@@ -81,6 +82,12 @@ const AuthModal = lazy(async () => {
 const GuitarNightScoreRoom = lazy(async () => {
   const module = await import('./GuitarNightScoreRoom')
   return { default: module.GuitarNightScoreRoom }
+})
+
+/** Backing-only imports keep their smaller, explicitly non-scoring room lazy. */
+const GuitarNightPercussionRoom = lazy(async () => {
+  const module = await import('./GuitarNightPercussionRoom')
+  return { default: module.GuitarNightPercussionRoom }
 })
 
 /** Learn input and activity state stay out of the silent entry bundle. */
@@ -168,7 +175,7 @@ function unavailableReferenceCopy(
     return 'That tab is not on this device. Open its file again to follow it.'
   }
   if (state.reason === 'no-playable-notes') {
-    return 'That file has no playable notes, so the stage stays in free play.'
+    return 'That file has no pitched part to score on the guitar neck, so Guitar Night did not open a scored room. Drum parts, if present, remain preserved in the saved file.'
   }
   return 'Your tab library could not be opened. Try again.'
 }
@@ -184,6 +191,9 @@ function unavailableSongCopy(
   }
   if (state.reason === 'missing-local-audio') {
     return 'The song record is here, but its local audio is missing.'
+  }
+  if (state.reason === 'encoded-budget') {
+    return playAlongEncodedBudgetCopy(state.requiredBytes, state.budgetBytes)
   }
   return 'Your prepared-song library could not be opened. Try again.'
 }
@@ -469,6 +479,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const attached = attachedReference()
     return attached !== null && attached.kind === 'authored' ? attached : null
   })
+  const percussionOnlyReference = createMemo(() => {
+    const authored = authoredReference()
+    return authored?.scoreMode === 'backing-only' ? authored : null
+  })
   const attachedMeasuredReference = createMemo(() => {
     const attached = attachedReference()
     return attached !== null && attached.kind === 'measured' ? attached : null
@@ -578,6 +592,35 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const activeBacking = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'ready' ? state.lease : null
+  })
+
+  /**
+   * What is staged right now, for the panel beside the library.
+   *
+   * The actions used to sit under the drop zone AND both galleries, so on a
+   * short window "Practice with tab" was below the fold and the reader had to
+   * scroll past everything they had just chosen from to reach it. It reads
+   * better beside them: the left column stays a chooser, the right column
+   * says what was chosen and what can be done with it.
+   */
+  const loadedSummary = createMemo(() => {
+    const backing = activeBacking()
+    const tab = authoredReference()
+    if (backing === null && tab === null) return null
+    const lines: string[] = []
+    if (backing !== null) {
+      lines.push(
+        `${backing.stems.length} local ${
+          backing.stems.length === 1 ? 'stem' : 'stems'
+        }`,
+      )
+    }
+    if (tab !== null) {
+      lines.push(`${tab.notes.length} notes`)
+      lines.push(tab.trackName)
+      lines.push(`${Math.round(tab.tempoBpm)} BPM`)
+    }
+    return { title: backing?.title ?? tab?.title ?? 'Ready', lines }
   })
 
   const prepareGoogleRedirect = (): (() => void) | undefined => {
@@ -915,7 +958,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   /**
-   * Rehearse the tab alone. The recording is left paused rather than played
+   * Practice with tab alone. The recording is left paused rather than played
    * underneath it: nothing has aligned the two timelines, and a backing
    * running against an unrelated tempo is worse than silence.
    */
@@ -924,6 +967,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     playbackController.pause()
     setView('score-room')
   }
+
+  // A drums-only import opens a backing room, not a scored tab rehearsal —
+  // the door must say which one it is.
+  const rehearsalActionLabel = () =>
+    authoredReference()?.scoreMode === 'backing-only'
+      ? 'Play the drum backing'
+      : 'Practice with tab'
 
   const returnToSongs = () => {
     playbackController.pause()
@@ -1183,6 +1233,38 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               : 'Open'}
           </i>
         </button>
+        {/* Both of these belong to the row they act on, not to the panel
+            beside it: separating the guitar is something you do TO this
+            recording, and unstaging it is how you get a loaded tab back on
+            its own after the two were connected by a click. */}
+        <Show when={isActive()}>
+          <div class={styles.songChoiceActions}>
+            <Show
+              when={activeBacking()?.defaultMix.kind === 'mixed-instrumental'}
+            >
+              <button
+                type="button"
+                class={styles.songChoiceAction}
+                title={SEPARATE_GUITAR_HINT}
+                onClick={prepareGuitarFreeBand}
+              >
+                <span aria-hidden="true">
+                  <Split />
+                </span>
+                Separate guitar
+              </button>
+            </Show>
+            <button
+              type="button"
+              class={styles.songChoiceUnstage}
+              aria-label={`Unstage ${song.title}`}
+              title="Unstage this recording"
+              onClick={() => songController.clearSession()}
+            >
+              <X />
+            </button>
+          </div>
+        </Show>
       </li>
     )
   }
@@ -1190,7 +1272,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   return (
     <div
       ref={appRoot}
-      class={styles.app}
+      class={`${styles.app} mp-dark-stage`}
       classList={{ [styles.appRoom]: isStageView() }}
       style={{ [GUITAR_NIGHT_GLASS_VAR]: String(roomGlass()) }}
       data-backdrop-treatment={background.resolved().treatment}
@@ -1390,7 +1472,23 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
           <Switch>
             <Match when={view() === 'choices'}>
-              <p class={styles.eyebrow}>The room is quiet</p>
+              {/* The way back to the Guitar workspace used to be a third
+                  entry button reading "I know my way around" -- a claim about
+                  the reader rather than a destination, and it sat at the same
+                  weight as the two things this screen is actually for. It is
+                  a return control on the eyebrow now. */}
+              <p class={styles.eyebrow}>
+                <button
+                  type="button"
+                  class={styles.eyebrowReturn}
+                  aria-label="Open the Guitar workspace"
+                  title="Open the Guitar workspace"
+                  onClick={skipFirstWin}
+                >
+                  <ChevronLeft />
+                </button>
+                Ready to practice?
+              </p>
               <h1>Guitar Night</h1>
               <p class={styles.lede}>
                 Your room is ready. Begin with one string, bring a song, or step
@@ -1426,18 +1524,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     Open a prepared song or choose local audio
                   </span>
                 </button>
-                <button
-                  class={styles.expertAction}
-                  type="button"
-                  aria-label="I know my way around"
-                  aria-describedby="guitar-night-expert-description"
-                  onClick={skipFirstWin}
-                >
-                  <strong>I know my way around</strong>
-                  <span id="guitar-night-expert-description">
-                    Open the current Guitar workspace
-                  </span>
-                </button>
               </div>
               <button
                 class={styles.tunerEntryAction}
@@ -1469,14 +1555,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
 
             <Match when={view() === 'song'}>
-              <p class={styles.eyebrow}>Songs · this device</p>
-              <h1 ref={detailHeading} tabindex="-1">
+              <h1 ref={detailHeading} class={styles.songHeading} tabindex="-1">
                 Bring a song into the room.
               </h1>
-              <p class={styles.detailCopy}>
-                Open something already prepared here, or choose audio, MIDI, or
-                Guitar Pro from this device. Nothing starts playing on its own.
-              </p>
+              {/* One line. The drop zone below names the formats and says
+                  nothing plays on its own, so the long version spent three
+                  rows restating what is already on screen -- in the one view
+                  where rows were the problem. */}
+              <p class={styles.detailCopy}>Choose your next song.</p>
 
               <GuitarNightFileDrop
                 class={styles.songWell}
@@ -1645,10 +1731,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   <Match when={true}>
                     <strong>No song or score selected</strong>
                     <span>Audio, MIDI, or Guitar Pro</span>
-                    <small>
-                      Your files stay on this device and open without an upload
-                      or automatic playback.
-                    </small>
                   </Match>
                 </Switch>
               </GuitarNightFileDrop>
@@ -1762,7 +1844,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 }
               >
                 <div class={styles.songLibraryHeader}>
-                  <h2 id="guitar-night-reference-title">Score to follow</h2>
+                  <h2 id="guitar-night-reference-title">
+                    {percussionOnlyReference() === null
+                      ? 'Score to follow'
+                      : 'Drums to follow'}
+                  </h2>
                   <Show when={attachedReference() !== null}>
                     <button
                       type="button"
@@ -1779,16 +1865,30 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     {(attached) => (
                       <div class={styles.referenceAttached}>
                         <strong>{attached().title}</strong>
+                        {/* Count, tempo, instrument and tuning are all in the
+                            staged panel now. Repeating them here cost four
+                            rows of the one column that has to fit. */}
                         <small>
-                          {attached().kind === 'measured'
-                            ? `${attached().notes.length} notes heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
-                            : `${attached().notes.length} authored notes at ${attached().tempoBpm} BPM`}
+                          {attached().scoreMode === 'backing-only'
+                            ? `${attached().tracks.reduce(
+                                (total, track) =>
+                                  total +
+                                  (track.kind === 'percussion'
+                                    ? track.hitCount
+                                    : 0),
+                                0,
+                              )} authored drum hits at ${attached().tempoBpm} BPM · backing-only free play`
+                            : attached().kind === 'measured'
+                              ? `Heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
+                              : `${attached().notes.length} notes · ${attached().tuning.stringCount}-string`}
                         </small>
-                        <small>
-                          On a {attached().tuning.stringCount}-string{' '}
-                          {attached().tuning.instrument} ·{' '}
-                          {attached().tuning.labels.join(' ')}
-                        </small>
+                        <Show when={attached().scoreMode !== 'backing-only'}>
+                          <small>
+                            On a {attached().tuning.stringCount}-string{' '}
+                            {attached().tuning.instrument} ·{' '}
+                            {attached().tuning.labels.join(' ')}
+                          </small>
+                        </Show>
                         <Show when={attached().liftedOctaves === true}>
                           <small>
                             Raised by whole octaves to reach this instrument’s
@@ -1798,26 +1898,39 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         <Show
                           when={
                             attached().kind === 'authored' &&
+                            attached().scoreMode !== 'backing-only' &&
                             activeBacking() !== null
                           }
                         >
-                          <small>
-                            This tab keeps its own {attached().tempoBpm} BPM, so
-                            it rehearses in the tab room rather than over the
-                            backing — until it is hung on this recording.
-                          </small>
-                          <button
-                            type="button"
-                            class={styles.referenceOnRecordingButton}
-                            onClick={() =>
-                              void referenceController.placeScoreByHand(
-                                attached().songId,
-                                attached().trackId,
-                              )
-                            }
-                          >
-                            Place it on this recording by hand
-                          </button>
+                          {/* The explanation was three rows of prose above a
+                              sentence-long button. Same explanation, in a
+                              tooltip the reader opens only if the short label
+                              is not enough. */}
+                          <div class={styles.referencePlaceRow}>
+                            <button
+                              type="button"
+                              class={styles.referenceOnRecordingButton}
+                              onClick={() =>
+                                void referenceController.placeScoreByHand(
+                                  attached().songId,
+                                  attached().trackId,
+                                )
+                              }
+                            >
+                              <span aria-hidden="true">
+                                <LinkChain />
+                              </span>
+                              Align to recording
+                            </button>
+                            <button
+                              type="button"
+                              class={styles.referencePlaceHelp}
+                              aria-label="What aligning does"
+                              title={`This tab keeps its own ${attached().tempoBpm} BPM, so it rehearses in the tab room rather than over the backing. Aligning hangs it on this recording so the two play together.`}
+                            >
+                              <Info />
+                            </button>
+                          </div>
                         </Show>
                         <GuitarNightOnRecording
                           scores={referenceController.alignableScores()}
@@ -1870,10 +1983,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                                       track.id === attached().trackId,
                                   }}
                                   aria-pressed={track.id === attached().trackId}
+                                  disabled={track.kind === 'percussion'}
+                                  title={
+                                    track.kind === 'percussion'
+                                      ? `${track.name} is readable backing, not a guitar scoring target`
+                                      : undefined
+                                  }
                                   onClick={() =>
-                                    void referenceController.selectTrack(
-                                      track.id,
-                                    )
+                                    track.kind === 'percussion'
+                                      ? undefined
+                                      : void referenceController.selectTrack(
+                                          track.id,
+                                        )
                                   }
                                 >
                                   {track.name}
@@ -2012,184 +2133,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </div>
                 </Show>
               </section>
-
-              <div class={styles.detailActions}>
-                <button type="button" onClick={returnToChoices}>
-                  Back
-                </button>
-                <Switch>
-                  <Match when={bandPreparation() !== null}>
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      onClick={bandPreparationController.cancel}
-                    >
-                      Keep current mix
-                    </button>
-                  </Match>
-                  <Match when={bandPreparationBlocked()}>
-                    {(blocked) => (
-                      <Switch
-                        fallback={
-                          <button
-                            class={styles.completionAction}
-                            type="button"
-                            onClick={bandPreparationController.clear}
-                          >
-                            Keep current mix
-                          </button>
-                        }
-                      >
-                        <Match when={blocked().blocker.reason === 'signed-out'}>
-                          <button
-                            class={styles.completionAction}
-                            type="button"
-                            onClick={() =>
-                              openBandPreparationSignIn(blocked().sessionId)
-                            }
-                          >
-                            Sign in
-                          </button>
-                        </Match>
-                        <Match
-                          when={
-                            blocked().blocker.reason === 'insufficient-credits'
-                          }
-                        >
-                          <a
-                            class={styles.completionAction}
-                            href="/#/settings/credits"
-                          >
-                            Get credits
-                          </a>
-                        </Match>
-                      </Switch>
-                    )}
-                  </Match>
-                  <Match when={bandPreparationError()}>
-                    {(error) => (
-                      <button
-                        class={styles.completionAction}
-                        type="button"
-                        onClick={() =>
-                          bandPreparationController.start(error().sessionId)
-                        }
-                      >
-                        Try full band again
-                      </button>
-                    )}
-                  </Match>
-                  <Match when={preparingSong() !== null}>
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      onClick={preparationController.cancel}
-                    >
-                      Cancel preparation
-                    </button>
-                  </Match>
-                  {/* A stopped separation is a dead end unless it can be put
-                      down. Both of these branches used to offer retrying and
-                      nothing else — and because they sit above the branches
-                      that offer a room, a reader who cancelled a separation
-                      and then attached a tab could not reach the tab at all.
-                      Reported as: "I cannot remove that added item... all I
-                      have from options is try again... but cannot rehearse and
-                      close that loaded song for separation". */}
-                  <Match when={preparationError()}>
-                    {(error) => (
-                      <>
-                        <Show when={error().retryable}>
-                          <button
-                            class={styles.completionAction}
-                            type="button"
-                            onClick={preparationController.retry}
-                          >
-                            Try again
-                          </button>
-                        </Show>
-                        <StoppedPreparationActions
-                          onDiscard={preparationController.clear}
-                          onRehearseTab={
-                            authoredReference() === null
-                              ? undefined
-                              : enterScoreRoom
-                          }
-                        />
-                      </>
-                    )}
-                  </Match>
-                  <Match when={cancelledPreparation() !== null}>
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      onClick={preparationController.retry}
-                    >
-                      Try again
-                    </button>
-                    <StoppedPreparationActions
-                      onDiscard={preparationController.clear}
-                      onRehearseTab={
-                        authoredReference() === null
-                          ? undefined
-                          : enterScoreRoom
-                      }
-                    />
-                  </Match>
-                  <Match when={activeBacking()}>
-                    {(backing) => (
-                      <>
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={enterRoom}
-                        >
-                          {authoredReference() === null
-                            ? 'Enter room'
-                            : 'Play along'}
-                        </button>
-                        {/* Two rooms, one at a time: the tab has its own
-                            tempo and the recording has its own, and nothing
-                            aligns them yet. */}
-                        <Show when={authoredReference()}>
-                          <button
-                            class={styles.bandPreparationAction}
-                            type="button"
-                            onClick={enterScoreRoom}
-                          >
-                            Rehearse the tab
-                          </button>
-                        </Show>
-                        <Show
-                          when={
-                            backing().defaultMix.kind === 'mixed-instrumental'
-                          }
-                        >
-                          <button
-                            class={styles.bandPreparationAction}
-                            type="button"
-                            title={SEPARATE_GUITAR_HINT}
-                            onClick={prepareGuitarFreeBand}
-                          >
-                            Separate guitar
-                          </button>
-                        </Show>
-                      </>
-                    )}
-                  </Match>
-                  <Match when={authoredReference() !== null}>
-                    {/* A tab alone is a complete rehearsal — no recording
-                        needed to enter a room. */}
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      onClick={enterScoreRoom}
-                    >
-                      Rehearse the tab
-                    </button>
-                  </Match>
-                </Switch>
-              </div>
             </Match>
 
             <Match when={view() === 'room' && activeBacking()}>
@@ -2228,52 +2171,85 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       role="status"
                       aria-live="polite"
                     >
-                      Opening the tab room…
+                      Opening the rehearsal room…
                     </p>
                   }
                 >
-                  <GuitarNightScoreRoom
-                    reference={authored}
-                    tuning={referenceController.tuning}
-                    onInstrument={referenceController.setInstrument}
-                    onStringCount={referenceController.setStringCount}
-                    onTuning={referenceController.setTuning}
-                    suspended={learnOpen}
-                    onSongs={returnToSongs}
-                    onSelectTrack={(trackId) =>
-                      void referenceController.selectTrack(trackId)
+                  <Show
+                    when={authored().scoreMode === 'backing-only'}
+                    fallback={
+                      <GuitarNightScoreRoom
+                        reference={authored}
+                        tuning={referenceController.tuning}
+                        onInstrument={referenceController.setInstrument}
+                        onStringCount={referenceController.setStringCount}
+                        onTuning={referenceController.setTuning}
+                        suspended={learnOpen}
+                        onSongs={returnToSongs}
+                        onSelectTrack={(trackId) =>
+                          void referenceController.selectTrack(trackId)
+                        }
+                        sheetLanes={referenceController.sheetLanes}
+                        sheetTimeSignatures={
+                          referenceController.sheetTimeSignatures
+                        }
+                        sheetVisibleTrackIds={
+                          referenceController.sheetVisibleTrackIds
+                        }
+                        onToggleSheetTrack={
+                          referenceController.toggleSheetTrack
+                        }
+                        secondaryLane={referenceController.secondaryLane}
+                        backingMelody={
+                          referenceController.rehearsalBackingMelodyNotes
+                        }
+                        backingPercussion={
+                          referenceController.allBackingPercussionHits
+                        }
+                        defaultHearScore={
+                          referenceController.scoredPartDefaultsAudible
+                        }
+                        audibleBackingTrackIds={
+                          referenceController.audibleBackingTrackIds
+                        }
+                        mutedBackingTrackIds={
+                          referenceController.mutedBackingTrackIds
+                        }
+                        onToggleBackingTrack={
+                          referenceController.toggleBackingTrack
+                        }
+                        soloedBackingTrackId={
+                          referenceController.soloedBackingTrackId
+                        }
+                        onToggleSoloBackingTrack={
+                          referenceController.toggleSoloBackingTrack
+                        }
+                      />
                     }
-                    sheetLanes={referenceController.sheetLanes}
-                    sheetTimeSignatures={
-                      referenceController.sheetTimeSignatures
-                    }
-                    sheetVisibleTrackIds={
-                      referenceController.sheetVisibleTrackIds
-                    }
-                    onToggleSheetTrack={referenceController.toggleSheetTrack}
-                    secondaryLane={referenceController.secondaryLane}
-                    backingMelody={
-                      referenceController.rehearsalBackingMelodyNotes
-                    }
-                    defaultHearScore={
-                      referenceController.scoredPartDefaultsAudible
-                    }
-                    audibleBackingTrackIds={
-                      referenceController.audibleBackingTrackIds
-                    }
-                    mutedBackingTrackIds={
-                      referenceController.mutedBackingTrackIds
-                    }
-                    onToggleBackingTrack={
-                      referenceController.toggleBackingTrack
-                    }
-                    soloedBackingTrackId={
-                      referenceController.soloedBackingTrackId
-                    }
-                    onToggleSoloBackingTrack={
-                      referenceController.toggleSoloBackingTrack
-                    }
-                  />
+                  >
+                    <GuitarNightPercussionRoom
+                      reference={authored}
+                      suspended={learnOpen}
+                      onSongs={returnToSongs}
+                      sheetLanes={referenceController.sheetLanes}
+                      sheetTimeSignatures={
+                        referenceController.sheetTimeSignatures
+                      }
+                      sheetVisibleTrackIds={
+                        referenceController.sheetVisibleTrackIds
+                      }
+                      onToggleSheetTrack={referenceController.toggleSheetTrack}
+                      backingPercussion={
+                        referenceController.allBackingPercussionHits
+                      }
+                      audibleBackingTrackIds={
+                        referenceController.audibleBackingTrackIds
+                      }
+                      onToggleBackingTrack={
+                        referenceController.toggleBackingTrack
+                      }
+                    />
+                  </Show>
                 </Suspense>
               )}
             </Match>
@@ -2308,6 +2284,222 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
           </Switch>
         </div>
+
+        {/* Its own panel beside the chooser, not inside it. The staged song
+            and the things you can do with it are a different subject from
+            the library you picked it out of, and burying the actions under
+            both galleries put them below the fold. */}
+        <Show when={view() === 'song'}>
+          <aside
+            class={styles.songAside}
+            aria-labelledby="guitar-night-staged-title"
+          >
+            {/* The way out is not one of the things you can do with what is
+                staged, so it reads as a heading with a way back rather than
+                as a fourth action sitting under Play along. */}
+            <h2 id="guitar-night-staged-title" class={styles.songAsideTitle}>
+              <button
+                type="button"
+                class={styles.songAsideBack}
+                aria-label="Back to Guitar Night"
+                onClick={returnToChoices}
+              >
+                <ChevronLeft />
+              </button>
+              Staged
+            </h2>
+            <Show
+              when={loadedSummary()}
+              fallback={
+                <div class={styles.songAsideEmpty}>
+                  <span aria-hidden="true">
+                    <ScoreDocument />
+                  </span>
+                  <strong>Nothing loaded yet</strong>
+                  <span>
+                    Drop a file or pick a prepared song to see it here.
+                  </span>
+                </div>
+              }
+            >
+              {(summary) => (
+                <div class={styles.songAsideCard}>
+                  <strong title={summary().title}>{summary().title}</strong>
+                  <ul class={styles.songAsideMeta}>
+                    <For each={summary().lines}>
+                      {(line) => <li>{line}</li>}
+                    </For>
+                  </ul>
+                </div>
+              )}
+            </Show>
+            <div class={styles.detailActions}>
+              <Switch>
+                <Match when={bandPreparation() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={bandPreparationController.cancel}
+                  >
+                    Keep current mix
+                  </button>
+                </Match>
+                <Match when={bandPreparationBlocked()}>
+                  {(blocked) => (
+                    <Switch
+                      fallback={
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={bandPreparationController.clear}
+                        >
+                          Keep current mix
+                        </button>
+                      }
+                    >
+                      <Match when={blocked().blocker.reason === 'signed-out'}>
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={() =>
+                            openBandPreparationSignIn(blocked().sessionId)
+                          }
+                        >
+                          Sign in
+                        </button>
+                      </Match>
+                      <Match
+                        when={
+                          blocked().blocker.reason === 'insufficient-credits'
+                        }
+                      >
+                        <a
+                          class={styles.completionAction}
+                          href="/#/settings/credits"
+                        >
+                          Get credits
+                        </a>
+                      </Match>
+                    </Switch>
+                  )}
+                </Match>
+                <Match when={bandPreparationError()}>
+                  {(error) => (
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={() =>
+                        bandPreparationController.start(error().sessionId)
+                      }
+                    >
+                      Try full band again
+                    </button>
+                  )}
+                </Match>
+                <Match when={preparingSong() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={preparationController.cancel}
+                  >
+                    Cancel preparation
+                  </button>
+                </Match>
+                {/* A stopped separation is a dead end unless it can be put
+                      down. Both of these branches used to offer retrying and
+                      nothing else — and because they sit above the branches
+                      that offer a room, a reader who cancelled a separation
+                      and then attached a tab could not reach the tab at all.
+                      Reported as: "I cannot remove that added item... all I
+                      have from options is try again... but cannot rehearse and
+                      close that loaded song for separation". */}
+                <Match when={preparationError()}>
+                  {(error) => (
+                    <>
+                      <Show when={error().retryable}>
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={preparationController.retry}
+                        >
+                          Try again
+                        </button>
+                      </Show>
+                      <StoppedPreparationActions
+                        onDiscard={preparationController.clear}
+                        rehearsalLabel={rehearsalActionLabel()}
+                        onRehearseTab={
+                          authoredReference() === null
+                            ? undefined
+                            : enterScoreRoom
+                        }
+                      />
+                    </>
+                  )}
+                </Match>
+                <Match when={cancelledPreparation() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={preparationController.retry}
+                  >
+                    Try again
+                  </button>
+                  <StoppedPreparationActions
+                    onDiscard={preparationController.clear}
+                    rehearsalLabel={rehearsalActionLabel()}
+                    onRehearseTab={
+                      authoredReference() === null ? undefined : enterScoreRoom
+                    }
+                  />
+                </Match>
+                <Match when={activeBacking() !== null}>
+                  {/* Two rooms, one at a time: the tab has its own tempo and
+                      the recording has its own, and nothing aligns them yet.
+                      They are peers, so they sit side by side rather than one
+                      reading as a consolation below the other. */}
+                  <div class={styles.songAsidePrimary}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={enterRoom}
+                    >
+                      {authoredReference() === null
+                        ? 'Enter room'
+                        : 'Play along'}
+                    </button>
+                    <Show when={authoredReference()}>
+                      <button
+                        class={styles.completionAction}
+                        type="button"
+                        onClick={enterScoreRoom}
+                      >
+                        <span aria-hidden="true">
+                          <GuitarTab />
+                        </span>
+                        {rehearsalActionLabel()}
+                      </button>
+                    </Show>
+                  </div>
+                </Match>
+                <Match when={authoredReference() !== null}>
+                  {/* A tab alone is a complete rehearsal — no recording
+                        needed to enter a room. */}
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={enterScoreRoom}
+                  >
+                    <span aria-hidden="true">
+                      <GuitarTab />
+                    </span>
+                    {rehearsalActionLabel()}
+                  </button>
+                </Match>
+              </Switch>
+            </div>
+          </aside>
+        </Show>
       </main>
 
       <Notifications />

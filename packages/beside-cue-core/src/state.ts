@@ -14,7 +14,10 @@ export const DEFAULT_APP_SETTINGS: Readonly<AppSettings> = Object.freeze({
   scheduledSoundEnabled: false,
   acknowledgementSoundEnabled: false,
   hapticsEnabled: true,
-  voiceEnabled: false,
+  // Character speech is local, caption-matched, and starts only after an
+  // explicit in-app choice. Keep it on for fresh installs; people can persist
+  // a quieter preference from Settings without losing the captions.
+  voiceEnabled: true,
   motion: 'system',
   locale: 'en',
 })

@@ -95,11 +95,14 @@ export const [jamBackgroundChanging, setJamBackgroundChanging] =
 export const [jamBackgroundError, setJamBackgroundError] = createSignal<
   string | null
 >(null)
-export const jamSelectedBackgroundId = createMemo(() => {
-  const selected = getBackgroundDefinition(jamRoomBackground()?.backgroundId)
-  return selected?.surface === 'jam'
-    ? selected.id
-    : deterministicFreeJamBackground(jamRoomId()).id
+export const jamSelectedBackgroundId = createRoot(() => {
+  const memo = createMemo(() => {
+    const selected = getBackgroundDefinition(jamRoomBackground()?.backgroundId)
+    return selected?.surface === 'jam'
+      ? selected.id
+      : deterministicFreeJamBackground(jamRoomId()).id
+  })
+  return memo
 })
 /**
  * Muted until you say otherwise.

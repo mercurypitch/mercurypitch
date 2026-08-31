@@ -19,6 +19,7 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { VERSION_LABELS } from '@/lib/lyrics-versions'
+import { createPortalSkinBridge } from './portal-skin'
 
 export interface LyricsVersionMenuProps {
   versions: Accessor<LyricsVersion[]>
@@ -38,6 +39,7 @@ export interface LyricsVersionMenuProps {
 export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
   const [open, setOpen] = createSignal(false)
   const [menuPos, setMenuPos] = createSignal({ top: 0, right: 0 })
+  const portalSkin = createPortalSkinBridge(open)
   let triggerRef: HTMLButtonElement | undefined
 
   const openMenu = (): void => {
@@ -83,6 +85,7 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
       }
     >
       <div class="sm-lyrics-version">
+        <span ref={portalSkin.anchorRef} hidden aria-hidden="true" />
         <button
           ref={triggerRef}
           class="sm-lyrics-version-btn"
@@ -106,6 +109,7 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
           <Portal>
             <div
               class="sm-lyrics-version-backdrop"
+              style={portalSkin.style()}
               onClick={(e) => {
                 e.stopPropagation()
                 setOpen(false)
@@ -114,6 +118,7 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
             <div
               class="sm-lyrics-version-menu"
               style={{
+                ...portalSkin.style(),
                 position: 'fixed',
                 top: `${menuPos().top}px`,
                 right: `${menuPos().right}px`,

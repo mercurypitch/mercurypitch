@@ -84,7 +84,10 @@ function stubCanvas(): { calls: string[] } {
           calls.push(`${property}:${args.join(',')}`)
         }
       },
-      set: () => true,
+      set: (_target, property: string, value: unknown) => {
+        calls.push(`${property}=${String(value)}`)
+        return true
+      },
     },
   )
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
@@ -166,6 +169,49 @@ describe('GuitarNightSheetView', () => {
 
     fireEvent.click(other)
     expect(onSelectTrack).toHaveBeenCalledWith('track-2')
+  })
+
+  it('keeps an authored percussion lane readable but never scoreable', () => {
+    const onSelectTrack = vi.fn()
+    render(() => (
+      <GuitarNightSheetView
+        lanes={() => [
+          lane({
+            trackId: 'track-drums',
+            trackName: 'Drum kit',
+            content: 'percussion',
+            scoreable: false,
+            notes: [],
+            percussionHits: [
+              {
+                id: 'midi-t2-e1',
+                gmKey: 36,
+                startBeat: 0,
+                velocity: 117,
+              },
+              {
+                id: 'midi-t2-e2',
+                gmKey: 49,
+                startBeat: 1,
+                velocity: 91,
+              },
+            ],
+            droppedPercussionHits: 1,
+          }),
+        ]}
+        playheadBeat={() => 0}
+        scoredTrackId={() => 'track-lead'}
+        onSelectTrack={onSelectTrack}
+      />
+    ))
+
+    expect(
+      screen.getByText(
+        'Drum kit — 2 authored hits · 1 unmapped · reference only',
+      ),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Drum kit/ })).toBeNull()
+    expect(onSelectTrack).not.toHaveBeenCalled()
   })
 
   it('says how many notes a part could not reach', () => {
@@ -516,5 +562,149 @@ describe('GuitarNightSheetView', () => {
       }
       restore()
     }
+  })
+  describe('magnification', () => {
+    beforeEach(() => {
+      localStorage.removeItem('guitar-night-sheet-zoom-v1')
+    })
+
+    it('spends the row on fewer bars instead of widening the page', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView
+            lanes={() => [
+              lane({ notes: [note(0), note(4), note(8), note(12)] }),
+            ]}
+            playheadBeat={() => 0}
+          />
+        ))
+        const page = screen.getByTestId('guitar-night-sheet-page')
+        // The suite stubs ResizeObserver with a no-op, so nothing re-measures
+        // after jsdom lays the page out. A scroll is the cheapest honest
+        // nudge; a real browser gets this from the observer.
+        fireEvent.scroll(screen.getByTestId('guitar-night-sheet-scroll'))
+        // Rows are virtualized, so count them from the page rather than from
+        // what happens to be mounted.
+        const rowCount = (): number => {
+          const row = document.querySelector('[data-system]') as HTMLElement
+          return Math.round(
+            parseFloat(page.style.height) / parseFloat(row.style.height),
+          )
+        }
+        const beforeRows = rowCount()
+        const beforeHeight = parseFloat(page.style.height)
+
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '2' },
+        })
+
+        // The page never grows sideways -- that would be a side-scroll, not a
+        // magnification -- so it carries no width of its own at all.
+        expect(page.style.width).toBe('')
+        // The rows re-broke: fewer bars fit each one, so the same music needs
+        // more of them, and each is taller than it was.
+        expect(rowCount()).toBeGreaterThan(beforeRows)
+        expect(parseFloat(page.style.height)).toBeGreaterThan(beforeHeight)
+      } finally {
+        restore()
+      }
+    })
+
+    it('paints the notation itself larger, not just the layout', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const fontOf = (calls: string[]): number => {
+          const set = calls.filter((call) => call.startsWith('font=')).at(-1)
+          return set === undefined ? 0 : parseFloat(set.slice('font='.length))
+        }
+        const before = fontOf(painted.calls)
+        expect(before).toBeGreaterThan(0)
+
+        painted.calls.length = 0
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '2' },
+        })
+        // The fret numbers are what the reader came for.
+        expect(fontOf(painted.calls)).toBeGreaterThan(before)
+      } finally {
+        restore()
+      }
+    })
+
+    it('zooms on ctrl+wheel and leaves a plain wheel to scroll', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const sheet = screen.getByTestId('guitar-night-sheet')
+        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
+
+        scroll.dispatchEvent(
+          new WheelEvent('wheel', { deltaY: -240, bubbles: true }),
+        )
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
+
+        scroll.dispatchEvent(
+          new WheelEvent('wheel', {
+            deltaY: -240,
+            ctrlKey: true,
+            bubbles: true,
+          }),
+        )
+        expect(
+          Number(sheet.style.getPropertyValue('--sheet-zoom')),
+        ).toBeGreaterThan(1)
+      } finally {
+        restore()
+      }
+    })
+
+    it('returns to 100% from the readout', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const sheet = screen.getByTestId('guitar-night-sheet')
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '1.5' },
+        })
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1.5')
+
+        fireEvent.click(screen.getByTestId('guitar-night-sheet-zoom-reset'))
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
+      } finally {
+        restore()
+      }
+    })
+
+    it('clamps to the readable range', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const sheet = screen.getByTestId('guitar-night-sheet')
+        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
+        for (let step = 0; step < 40; step += 1) {
+          scroll.dispatchEvent(
+            new WheelEvent('wheel', {
+              deltaY: -240,
+              ctrlKey: true,
+              bubbles: true,
+            }),
+          )
+        }
+        expect(Number(sheet.style.getPropertyValue('--sheet-zoom'))).toBe(3)
+      } finally {
+        restore()
+      }
+    })
   })
 })

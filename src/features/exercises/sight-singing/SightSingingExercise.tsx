@@ -7,6 +7,7 @@ import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } fro
 import { IconMusic } from '@/components/exercise-icons'
 import { launchTargetNotes } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { activeWeeklyAttempt } from '@/lib/domain/weekly-attempt-context'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
@@ -144,11 +145,34 @@ function StaffNote(p: {
 const SightSingingExercise: Component<Props> = (props) => {
   const audioEngine = untrack(() => props.audioEngine)
   const practiceEngine = untrack(() => props.practiceEngine)
+  const weeklyAttemptAtLaunch = untrack(activeWeeklyAttempt)
+  const weeklyVoiceHandoff =
+    weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
+  const launchedTargetNotes =
+    untrack(() => launchTargetNotes(EXERCISE_SIGHT_SINGING))?.slice() ?? []
+  const launchedMidiSequence = launchedTargetNotes.flatMap((name) => {
+    try {
+      const midi = noteToMidi(name)
+      return Number.isFinite(midi) ? [midi] : []
+    } catch {
+      return []
+    }
+  })
 
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'sight-singing' },
+    config: () => ({
+      type: 'sight-singing',
+      targetNotes:
+        launchedTargetNotes.length > 0
+          ? [...launchedTargetNotes]
+          : currentScale().map((note) => `${note.name}${note.octave}`),
+      pattern:
+        weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
+          ? `legend:${weeklyAttemptAtLaunch.challengeId}`
+          : `${keyName()}:${scaleType()}`,
+    }),
   })
 
   const controller = useSightSingingController(base)
@@ -158,9 +182,11 @@ const SightSingingExercise: Component<Props> = (props) => {
     // the notes arrive already fitted to the singer's range (App's launch
     // choke point). Without an armed phrase the drill quizzes on the
     // current scale, as it always has.
-    const authored = launchTargetNotes(EXERCISE_SIGHT_SINGING)
-    if (authored !== undefined && authored.length >= 2) {
-      controller.setNotes(authored.map(noteToMidi))
+    const authored = weeklyVoiceHandoff
+      ? launchedMidiSequence
+      : (launchTargetNotes(EXERCISE_SIGHT_SINGING)?.map(noteToMidi) ?? [])
+    if (authored.length >= 2) {
+      controller.setNotes(authored)
     } else {
       const scale = currentScale()
       if (scale.length < 3) return
@@ -183,17 +209,31 @@ const SightSingingExercise: Component<Props> = (props) => {
     }
   })
 
+  let recordedCompletedAt: number | null = null
   createEffect(() => {
     const r = base.result()
-    if (r && r.type === 'sight-singing') {
-      untrack(() =>
-        recordExerciseResult({
-          type: r.type,
-          score: r.score,
-          metrics: r.metrics,
-          completedAt: r.completedAt,
-        }),
-      )
+    if (
+      r &&
+      r.type === 'sight-singing' &&
+      r.completedAt !== recordedCompletedAt
+    ) {
+      recordedCompletedAt = r.completedAt
+      const entry = {
+        type: r.type,
+        score: r.score,
+        metrics: r.metrics,
+        completedAt: r.completedAt,
+      }
+      untrack(() => {
+        if (!weeklyVoiceHandoff) {
+          recordExerciseResult(entry)
+          return
+        }
+        const outcomePromise = base.voiceCapture.awaitOutcome()
+        void outcomePromise.then((weeklyVoiceCapture) =>
+          recordExerciseResult(entry, { weeklyVoiceCapture }),
+        )
+      })
     }
   })
 
@@ -222,6 +262,7 @@ const SightSingingExercise: Component<Props> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={weeklyVoiceHandoff ? undefined : base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconMusic size={20} />}

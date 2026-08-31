@@ -11,7 +11,21 @@
         "VITE_OVERRIDE_ONNX_MODEL=",
         "vite"
       ],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "app-http",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "cross-env",
+        "MP_DEV_HTTP=1",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite"
+      ],
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "app-host",
@@ -23,7 +37,8 @@
         "vite",
         "--host"
       ],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "beside-cue",
@@ -48,7 +63,15 @@
       "name": "jam-lan",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["exec", "run-p", "dev:jam", "dev:host"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "drum-night",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "cross-env", "VITE_OVERRIDE_ONNX_MODEL=", "vite"],
+      "port": 3000,
+      "url": "https://localhost:3000"
     }
   ]
 }

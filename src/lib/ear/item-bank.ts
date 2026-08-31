@@ -38,6 +38,8 @@ export interface HomeDegree {
   solfege: string
   /** Authored starting difficulty on the Elo scale. */
   seed: number
+  /** Pad label where the number alone misleads (♭2, ♯4). */
+  label?: string
 }
 
 /** Ordered by degree. Seeds follow the pedagogy consensus: the tonal
@@ -52,6 +54,59 @@ export const HOME_DEGREES: readonly HomeDegree[] = [
   { degree: 6, semitone: 9, solfege: 'La', seed: 1200 },
   { degree: 7, semitone: 11, solfege: 'Ti', seed: 1300 },
 ]
+
+/** The chromatic twelve for Gravity, numbered 1..12 by semitone. The
+ *  diatonic seven keep Home's seeds plus a hundred for the wider menu;
+ *  the five between them start harder still. */
+export const GRAVITY_DEGREES: readonly HomeDegree[] = [
+  { degree: 1, semitone: 0, solfege: 'Do', seed: 1050, label: '1' },
+  { degree: 2, semitone: 1, solfege: 'Ra', seed: 1350, label: '♭2' },
+  { degree: 3, semitone: 2, solfege: 'Re', seed: 1250, label: '2' },
+  { degree: 4, semitone: 3, solfege: 'Me', seed: 1300, label: '♭3' },
+  { degree: 5, semitone: 4, solfege: 'Mi', seed: 1150, label: '3' },
+  { degree: 6, semitone: 5, solfege: 'Fa', seed: 1350, label: '4' },
+  { degree: 7, semitone: 6, solfege: 'Fi', seed: 1350, label: '♯4' },
+  { degree: 8, semitone: 7, solfege: 'Sol', seed: 1100, label: '5' },
+  { degree: 9, semitone: 8, solfege: 'Le', seed: 1300, label: '♭6' },
+  { degree: 10, semitone: 9, solfege: 'La', seed: 1300, label: '6' },
+  { degree: 11, semitone: 10, solfege: 'Te', seed: 1250, label: '♭7' },
+  { degree: 12, semitone: 11, solfege: 'Ti', seed: 1400, label: '7' },
+]
+
+/** What a degree drill runs over: its degrees, its two rating tracks
+ *  and its item namespace. Home is the diatonic seven; Gravity the
+ *  chromatic twelve. */
+export interface DegreeSet {
+  tapDrillId: string
+  micDrillId: string
+  degrees: readonly HomeDegree[]
+  /** Guess floor for the tap menu: 1 / choices. */
+  choices: number
+  itemId: (degree: number) => string
+}
+
+export const HOME_SET: DegreeSet = {
+  tapDrillId: HOME_DRILL_ID,
+  micDrillId: HOME_SING_DRILL_ID,
+  degrees: HOME_DEGREES,
+  choices: HOME_CHOICES,
+  itemId: homeItemId,
+}
+
+export const GRAVITY_SET: DegreeSet = {
+  tapDrillId: 'gravity',
+  micDrillId: 'gravity-sing',
+  degrees: GRAVITY_DEGREES,
+  choices: GRAVITY_DEGREES.length,
+  itemId: (degree) => `gravity:deg-${degree}`,
+}
+
+/** The pad's word for a degree: its label when it has one, else the
+ *  number. */
+export function degreeLabel(degree: HomeDegree | null | undefined): string {
+  if (!degree) return ''
+  return degree.label ?? String(degree.degree)
+}
 
 /** Stable item id — Elo state and confusion counts key off this, so
  *  it must never change once user data exists. */
@@ -68,10 +123,11 @@ export function homeDegree(degree: number): HomeDegree | undefined {
 export function homeItemState(
   states: Readonly<Record<string, Rating>>,
   degree: number,
+  set: DegreeSet = HOME_SET,
 ): Rating {
-  const stored = states[homeItemId(degree)]
+  const stored = states[set.itemId(degree)]
   if (stored !== undefined) return stored
-  const seed = homeDegree(degree)?.seed ?? 1100
+  const seed = set.degrees.find((d) => d.degree === degree)?.seed ?? 1100
   return { rating: seed, attempts: 0 }
 }
 
@@ -93,8 +149,12 @@ export function cadenceChordMidis(rootMidi: number): number[][] {
 /** Where the probe note for a degree sounds, relative to the roved
  *  root. Kept inside the octave above the tonic in v1 — register
  *  roving is a difficulty layer for later, not a different item. */
-export function probeMidi(rootMidi: number, degree: number): number {
-  const semitone = homeDegree(degree)?.semitone ?? 0
+export function probeMidi(
+  rootMidi: number,
+  degree: number,
+  set: DegreeSet = HOME_SET,
+): number {
+  const semitone = set.degrees.find((d) => d.degree === degree)?.semitone ?? 0
   return rootMidi + semitone
 }
 
@@ -127,21 +187,24 @@ const PICK_TEMPERATURE = 180
 export function pickHomeItem(
   itemStates: Readonly<Record<string, Rating>>,
   playerRating: number,
-  options?: { random?: () => number; avoidItemId?: string },
+  options?: { random?: () => number; avoidItemId?: string; set?: DegreeSet },
 ): PickedHomeItem {
   const random = options?.random ?? Math.random
-  const target = targetDifficulty(playerRating, 0.75, 1 / HOME_CHOICES)
+  const set = options?.set ?? HOME_SET
+  const target = targetDifficulty(playerRating, 0.75, 1 / set.choices)
 
-  const candidates = HOME_DEGREES.map((degree) => ({
-    degree,
-    itemId: homeItemId(degree.degree),
-    difficulty: homeItemState(itemStates, degree.degree).rating,
-  })).filter(
-    (c) =>
-      options?.avoidItemId === undefined ||
-      c.itemId !== options.avoidItemId ||
-      HOME_DEGREES.length === 1,
-  )
+  const candidates = set.degrees
+    .map((degree) => ({
+      degree,
+      itemId: set.itemId(degree.degree),
+      difficulty: homeItemState(itemStates, degree.degree, set).rating,
+    }))
+    .filter(
+      (c) =>
+        options?.avoidItemId === undefined ||
+        c.itemId !== options.avoidItemId ||
+        set.degrees.length === 1,
+    )
 
   const weights = candidates.map((c) =>
     Math.exp(-Math.abs(c.difficulty - target) / PICK_TEMPERATURE),

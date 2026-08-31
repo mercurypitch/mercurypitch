@@ -18,6 +18,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parseHash } from '@/lib/hash-router'
 
 const repo = resolve(__dirname, '../..')
 
@@ -54,6 +55,7 @@ describe('entry pages', () => {
   it('found the pages to check', () => {
     expect(pages.length).toBeGreaterThanOrEqual(6)
     expect(pages).toContain('piano-night.html')
+    expect(pages).toContain('drum-night.html')
   })
 
   it.each(pages)('%s unfurls with a card', (name) => {
@@ -102,7 +104,14 @@ describe('the card generators', () => {
   it('exist for every room-specific card', () => {
     // A card with no script is a card nobody can regenerate when the room's
     // art or copy changes.
-    for (const room of ['karaoke', 'jam', 'guitar-night', 'piano-night']) {
+    for (const room of [
+      'karaoke',
+      'jam',
+      'guitar-night',
+      'piano-night',
+      'drum-night',
+      'ear-lab',
+    ]) {
       expect(
         existsSync(resolve(repo, `scripts/generate-${room}-og.mjs`)),
         `no generator for ${room}`,
@@ -148,5 +157,31 @@ describe('the jam room invite link', () => {
       "const JAM_PATHS = new Set(['/jam', '/jam-rooms'])",
     )
     expect(config).toContain("JAM_PATHS.has(path)) req.url = '/jam.html'")
+  })
+})
+
+// ============================================================
+// The Ear Lab entry lands on the bench, not on Home
+// ============================================================
+//
+// Same shape as Jam: the Lab is a tab of the studio, so /ear-lab is a real
+// page for crawlers and unfurlers that boots the studio and sets the hash.
+describe('the ear lab entry', () => {
+  it('lands on the Ear Lab tab', () => {
+    expect(read('ear-lab.html')).toContain("window.location.hash = '#/ear-lab'")
+    expect(parseHash('#/ear-lab')).toEqual({ type: 'tab', tab: 'ear-lab' })
+  })
+  it('targets a path vite maps to ear-lab.html', () => {
+    const config = readFileSync(resolve(repo, 'vite.config.ts'), 'utf8')
+    expect(config).toContain("const EAR_LAB_PATHS = new Set(['/ear-lab'])")
+    expect(config).toContain(
+      "EAR_LAB_PATHS.has(path)) req.url = '/ear-lab.html'",
+    )
+    expect(config).toContain("earLab: resolve(__dirname, 'ear-lab.html')")
+  })
+  it('is listed in the sitemap', () => {
+    expect(readFileSync(resolve(repo, 'public/sitemap.xml'), 'utf8')).toContain(
+      '<loc>https://mercurypitch.com/ear-lab</loc>',
+    )
   })
 })

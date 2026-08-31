@@ -1,7 +1,11 @@
 import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { UvrView } from '@/components/UvrPanel'
 import { useHashRouter } from '@/features/routing/useHashRouter'
+import type { ActiveTab } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { AdminSection } from '@/stores/ui-store'
 import { adminContentSection, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
 
@@ -12,19 +16,34 @@ function mountRouter(options: {
   showAdminContentStudio?: boolean
   showSelection?: boolean
   selectedWalkthrough?: string | null
+  activeTab?: ActiveTab
+  activeUvrView?: UvrView
+  activeUvrSessionId?: string | null
+  requestActiveTabChange?: (
+    tab: ActiveTab,
+    onResolved: (accepted: boolean) => void,
+  ) => void
 }) {
   const setActiveTab = vi.fn()
+  const requestActiveTabChange = vi.fn(
+    options.requestActiveTabChange ??
+      ((_tab: ActiveTab, onResolved: (accepted: boolean) => void) =>
+        onResolved(true)),
+  )
   const openAdminContent = vi.fn(options.openAdminContent ?? (() => true))
   const closeAdminContent = vi.fn(options.closeAdminContent)
   const closeResetPassword = vi.fn()
   const setVoiceConstellationOpen = vi.fn<(open: boolean) => void>()
+  const handleShareMelody = vi.fn()
+  const setInitialUvrView = vi.fn()
 
   const Fixture = () => {
     const [voiceConstellationOpen, setVoiceOpen] = createSignal(false)
     const [whatsNewOpen, setWhatsNewOpen] = createSignal(false)
     useHashRouter({
       setActiveTab,
-      setInitialUvrView: vi.fn(),
+      requestActiveTabChange,
+      setInitialUvrView,
       setInitialUvrSessionId: vi.fn(),
       setActiveUvrSessionId: vi.fn(),
       openLearningWalkthrough: vi.fn(),
@@ -33,7 +52,7 @@ function mountRouter(options: {
       setShowGuideSelection: vi.fn(),
       setJamRoomToJoin: vi.fn(),
       dismissWelcome: vi.fn(),
-      handleShareMelody: vi.fn(),
+      handleShareMelody,
       handleShareExercise: vi.fn(),
       handleShareRoutine: vi.fn(),
       handleShareFallback: vi.fn(),
@@ -56,9 +75,9 @@ function mountRouter(options: {
       setWhatsNewOpen,
       whatsNewOpen,
       adminContentSection: () => options.adminContentSection ?? 'exercises',
-      activeTab: () => 'singing',
-      activeUvrView: () => 'upload',
-      activeUvrSessionId: () => null,
+      activeTab: () => options.activeTab ?? 'singing',
+      activeUvrView: () => options.activeUvrView ?? 'upload',
+      activeUvrSessionId: () => options.activeUvrSessionId ?? null,
       showSelection: () => options.showSelection ?? false,
       walkthroughModalOpen: () => false,
       showGuideSelection: () => false,
@@ -72,10 +91,102 @@ function mountRouter(options: {
     closeAdminContent,
     openAdminContent,
     setActiveTab,
+    requestActiveTabChange,
     setVoiceConstellationOpen,
     closeResetPassword,
+    handleShareMelody,
+    setInitialUvrView,
   }
 }
+
+describe('tab hash navigation guard', () => {
+  it('restores the current tab hash when browser navigation is cancelled', async () => {
+    history.replaceState(null, '', '#/voice-history')
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    router.setActiveTab.mockClear()
+    router.requestActiveTabChange.mockClear()
+
+    history.replaceState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    await waitFor(() => expect(window.location.hash).toBe('#/voice-history'))
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_HOME,
+      expect.any(Function),
+    )
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+  })
+
+  it('vetoes a shared melody before importing it and restores voice history', async () => {
+    const payload =
+      'eyJ2IjoxLCJ0IjoibWVsb2R5IiwiZCI6eyJuIjoiVGVzdCIsImIiOjEyMCwiaSI6W119fQ'
+    history.replaceState(null, '', '#/voice-history')
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    router.setActiveTab.mockClear()
+    router.requestActiveTabChange.mockClear()
+
+    history.replaceState(null, '', `#/share/${payload}`)
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    await waitFor(() => expect(window.location.hash).toBe('#/voice-history'))
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_COMPOSE,
+      expect.any(Function),
+    )
+    expect(router.handleShareMelody).not.toHaveBeenCalled()
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+  })
+
+  it('restores the exact Karaoke mixer hash when same-tab navigation is cancelled', async () => {
+    history.replaceState(null, '', '#/karaoke/session/song-1/mixer')
+    const router = mountRouter({
+      activeTab: TAB_KARAOKE,
+      activeUvrView: 'mixer',
+      activeUvrSessionId: 'song-1',
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_KARAOKE),
+    )
+    router.setActiveTab.mockClear()
+    router.setInitialUvrView.mockClear()
+    router.requestActiveTabChange.mockClear()
+
+    const releaseNavigationLock =
+      acquireLocalSaveNavigationLock('karaoke test save')
+    history.replaceState(null, '', '#/karaoke/upload')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    releaseNavigationLock()
+
+    await waitFor(() =>
+      expect(window.location.hash).toBe('#/karaoke/session/song-1/mixer'),
+    )
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_KARAOKE,
+      expect.any(Function),
+    )
+    expect(router.setInitialUvrView).not.toHaveBeenCalled()
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+  })
+})
 
 afterEach(() => {
   cleanup()

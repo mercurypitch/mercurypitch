@@ -43,6 +43,10 @@ interface GuitarNightSessionPanelProps {
   onToggleTrackSolo?(trackId: string): void
   /** Whether the scored part sounds — owned by the room's Tab sounds control. */
   scoredPartSounds?: Accessor<boolean>
+  /** The current take pins pitched backing; drum rows remain live-gated. */
+  takeActive?: Accessor<boolean>
+  /** True only while the one-clock rehearsal has live per-drum-track gates. */
+  percussionControlsLive?: Accessor<boolean>
 }
 
 export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
@@ -82,27 +86,63 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
   const tracks = () => props.reference().tracks
   const backingTracks = () =>
     tracks().filter((track) => track.id !== props.reference().trackId)
+  const playableBackingTracks = () =>
+    backingTracks().filter(
+      (track) => track.kind !== 'percussion' || track.supportedHitCount > 0,
+    )
+  const unavailableDrumCount = () =>
+    backingTracks().filter(
+      (track) => track.kind === 'percussion' && track.supportedHitCount === 0,
+    ).length
   const soloedTrack = () =>
     tracks().find((track) => track.id === props.soloedTrackId?.()) ?? null
   const mutedBackingCount = () =>
-    backingTracks().filter((track) =>
+    playableBackingTracks().filter((track) =>
       props.mutedTrackIds !== undefined
         ? props.mutedTrackIds().includes(track.id)
         : !(props.audibleTrackIds?.().includes(track.id) ?? false),
     ).length
+  const drumReferenceNote = () => {
+    const hasDrums = backingTracks().some(
+      (track) => track.kind === 'percussion',
+    )
+    if (!hasDrums) return ''
+    const authority =
+      props.reference().scoreMode === 'backing-only'
+        ? ' Their lanes are authored reference, never guitar scoring targets'
+        : ' Drum lanes are readable authored reference, never guitar scoring targets'
+    return unavailableDrumCount() > 0
+      ? `${authority}; unmapped sounds stay listed but silent.`
+      : `${authority}.`
+  }
+  const withDrumReference = (status: string) =>
+    `${status}${drumReferenceNote()}`
   const bandStatus = () => {
     if (props.backingMasterEnabled?.() === false) {
-      return 'Backing is silent. Your M and Solo choices stay ready for when Backing returns.'
+      return withDrumReference(
+        'Backing is silent. Your M and Solo choices stay ready for when Backing returns.',
+      )
     }
     const soloed = soloedTrack()
     if (soloed !== null) {
-      return `Only ${soloed.name} is playing. Turn Solo off to restore the backing mix.`
+      return withDrumReference(
+        `Only ${soloed.name} is playing. Turn Solo off to restore the backing mix.`,
+      )
     }
     const muted = mutedBackingCount()
     if (muted > 0) {
-      return `${muted === 1 ? '1 backing part is' : `${muted} backing parts are`} muted. Mute and Solo changes work while playback runs.`
+      return withDrumReference(
+        `${muted === 1 ? '1 backing part is' : `${muted} backing parts are`} muted. Mute and Solo changes work while playback runs.`,
+      )
     }
-    return 'Backing parts play underneath while you perform the scored part. Use M to mute or S to solo them.'
+    if (props.reference().scoreMode === 'backing-only') {
+      return withDrumReference(
+        'Supported drum parts play as backing for free play. Use M to mute or S to solo them.',
+      )
+    }
+    return withDrumReference(
+      'Backing parts play underneath while you perform the scored part. Use M to mute or S to solo them.',
+    )
   }
 
   return (
@@ -120,11 +160,19 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         class={styles.sessionPanel}
         role="dialog"
         aria-modal="true"
-        aria-label="Loaded score"
+        aria-label={
+          props.reference().scoreMode === 'backing-only'
+            ? 'Loaded arrangement'
+            : 'Loaded score'
+        }
       >
         <div class={styles.sessionHeader}>
           <div>
-            <p class={styles.eyebrow}>Loaded score</p>
+            <p class={styles.eyebrow}>
+              {props.reference().scoreMode === 'backing-only'
+                ? 'Loaded arrangement · free play'
+                : 'Loaded score'}
+            </p>
             <strong>{props.reference().title}</strong>
             <small>
               {props.reference().tempoBpm} BPM ·{' '}
@@ -145,11 +193,15 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         <div
           class={styles.sessionTracks}
           role="group"
-          aria-label="Part to read and score"
+          aria-label={
+            props.reference().scoreMode === 'backing-only'
+              ? 'Arrangement parts'
+              : 'Score and backing parts'
+          }
         >
           <Show
             when={
-              backingTracks().length > 0 &&
+              playableBackingTracks().length > 0 &&
               props.onToggleBackingMaster !== undefined
             }
           >
@@ -188,7 +240,13 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
           </Show>
           <For each={tracks()}>
             {(track) => {
-              const isScored = () => track.id === props.reference().trackId
+              const isPercussion = () => track.kind === 'percussion'
+              const isScored = () =>
+                !isPercussion() && track.id === props.reference().trackId
+              const drumSoundUnavailable = () =>
+                track.kind === 'percussion' && track.supportedHitCount === 0
+              const drumSheetUnavailable = () =>
+                track.kind === 'percussion' && track.hitCount === 0
               // A part you are graded on is a part you can see. The toggle for
               // the scored row is shown but held, rather than hidden, so the
               // rule is visible instead of just enforced.
@@ -198,9 +256,11 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
               // The scored part's sound belongs to the room's Tab sounds
               // control, so this row reports it rather than owning it.
               const isAudible = () =>
-                isScored()
-                  ? (props.scoredPartSounds?.() ?? false)
-                  : (props.audibleTrackIds?.().includes(track.id) ?? false)
+                drumSoundUnavailable()
+                  ? false
+                  : isScored()
+                    ? (props.scoredPartSounds?.() ?? false)
+                    : (props.audibleTrackIds?.().includes(track.id) ?? false)
               const isMuted = () =>
                 isScored()
                   ? !isAudible()
@@ -214,6 +274,42 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                 !isScored() && !isMuted() && anotherTrackIsSoloed()
               const isMaskedByMaster = () =>
                 !isScored() && props.backingMasterEnabled?.() === false
+              const soundChangeWaitsForNextTake = () =>
+                isPercussion() &&
+                (props.takeActive?.() ?? false) &&
+                !(props.percussionControlsLive?.() ?? false)
+              const partDetail = () => {
+                if (track.kind !== 'percussion') {
+                  return track.noteCount === 1
+                    ? '1 note'
+                    : `${track.noteCount} notes`
+                }
+                const hits =
+                  track.hitCount === 1 ? '1 hit' : `${track.hitCount} hits`
+                if (track.hitCount === 0) {
+                  const dropped =
+                    track.droppedHitCount === 1
+                      ? '1 unmapped source hit'
+                      : `${track.droppedHitCount} unmapped source hits`
+                  return `0 hits · drums · ${dropped}`
+                }
+                if (track.supportedHitCount === 0) {
+                  const dropped =
+                    track.droppedHitCount > 0
+                      ? ` · ${track.droppedHitCount} unmapped`
+                      : ''
+                  return `${hits} · drums · no available sound${dropped}`
+                }
+                const partial =
+                  track.supportedHitCount < track.hitCount
+                    ? ` · ${track.supportedHitCount} currently sound`
+                    : ''
+                const dropped =
+                  track.droppedHitCount > 0
+                    ? ` · ${track.droppedHitCount} unmapped`
+                    : ''
+                return `${hits} · drums · backing only${partial}${dropped}`
+              }
               return (
                 <div
                   class={styles.sessionTrackRow}
@@ -225,15 +321,22 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                   <button
                     type="button"
                     data-testid="guitar-night-session-track"
+                    data-track-kind={isPercussion() ? 'percussion' : 'pitched'}
                     classList={{ [styles.sessionTrackActive]: isScored() }}
                     aria-pressed={isScored()}
-                    onClick={() => props.onSelectTrack(track.id)}
+                    disabled={isPercussion()}
+                    title={
+                      isPercussion()
+                        ? `${track.name} is a drum backing part and cannot be scored on the guitar neck`
+                        : undefined
+                    }
+                    onClick={() => {
+                      if (!isPercussion()) props.onSelectTrack(track.id)
+                    }}
                   >
                     <span>{track.name}</span>
                     <small>
-                      {track.noteCount === 1
-                        ? '1 note'
-                        : `${track.noteCount} notes`}
+                      {partDetail()}
                       {/* Said outright rather than implied by the highlight:
                           this is the part your playing is graded against. */}
                       <Show when={isScored()}> · scored</Show>
@@ -249,28 +352,40 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                           isMaskedBySolo() || isMaskedByMaster(),
                       }}
                       aria-pressed={isMuted()}
-                      disabled={isScored()}
+                      disabled={
+                        isScored() ||
+                        drumSoundUnavailable() ||
+                        soundChangeWaitsForNextTake()
+                      }
                       title={
                         isScored()
                           ? `Use Tab sounds to hear or mute ${track.name}`
-                          : isMuted()
-                            ? isMaskedByMaster()
-                              ? `Unmute ${track.name}; it will return when Backing is on`
-                              : anotherTrackIsSoloed()
-                                ? `Unmute ${track.name}; it will return when Solo ends`
-                                : `Unmute ${track.name}`
-                            : isMaskedByMaster()
-                              ? `${track.name} is quiet while Backing is off`
-                              : isMaskedBySolo()
-                                ? `${track.name} is quiet while ${soloedTrack()?.name ?? 'another part'} is soloed`
-                                : isSoloed()
-                                  ? `Mute ${track.name} and end Solo`
-                                  : `Mute ${track.name}`
+                          : drumSoundUnavailable()
+                            ? `${track.name} has no drum sounds available yet`
+                            : soundChangeWaitsForNextTake()
+                              ? `Stop this take to change whether ${track.name} is heard`
+                              : isMuted()
+                                ? isMaskedByMaster()
+                                  ? `Unmute ${track.name}; it will return when Backing is on`
+                                  : anotherTrackIsSoloed()
+                                    ? `Unmute ${track.name}; it will return when Solo ends`
+                                    : `Unmute ${track.name}`
+                                : isMaskedByMaster()
+                                  ? `${track.name} is quiet while Backing is off`
+                                  : isMaskedBySolo()
+                                    ? `${track.name} is quiet while ${soloedTrack()?.name ?? 'another part'} is soloed`
+                                    : isSoloed()
+                                      ? `Mute ${track.name} and end Solo`
+                                      : `Mute ${track.name}`
                       }
                       aria-label={
-                        isMuted()
-                          ? `Unmute ${track.name}`
-                          : `Mute ${track.name}`
+                        drumSoundUnavailable()
+                          ? `${track.name} has no drum sounds available yet`
+                          : soundChangeWaitsForNextTake()
+                            ? `Stop this take to ${isMuted() ? 'unmute' : 'mute'} ${track.name}`
+                            : isMuted()
+                              ? `Unmute ${track.name}`
+                              : `Mute ${track.name}`
                       }
                       onClick={() => props.onToggleTrackAudible?.(track.id)}
                     >
@@ -283,22 +398,34 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       class={styles.sessionTrackVisibility}
                       classList={{ [styles.sessionTrackSolo]: isSoloed() }}
                       aria-pressed={isSoloed()}
-                      disabled={isScored()}
+                      disabled={
+                        isScored() ||
+                        drumSoundUnavailable() ||
+                        soundChangeWaitsForNextTake()
+                      }
                       title={
                         isScored()
                           ? `${track.name} is the scored part`
-                          : isSoloed()
-                            ? props.backingMasterEnabled?.() === false
-                              ? `Turn off Solo for ${track.name}; Backing is currently off`
-                              : `Hear every backing part`
-                            : props.backingMasterEnabled?.() === false
-                              ? `Solo ${track.name}; it will sound when Backing is on`
-                              : `Solo ${track.name}`
+                          : drumSoundUnavailable()
+                            ? `${track.name} has no drum sounds available yet`
+                            : soundChangeWaitsForNextTake()
+                              ? `Stop this take to change Solo for ${track.name}`
+                              : isSoloed()
+                                ? props.backingMasterEnabled?.() === false
+                                  ? `Turn off Solo for ${track.name}; Backing is currently off`
+                                  : `Hear every backing part`
+                                : props.backingMasterEnabled?.() === false
+                                  ? `Solo ${track.name}; it will sound when Backing is on`
+                                  : `Solo ${track.name}`
                       }
                       aria-label={
-                        isSoloed()
-                          ? `Turn off solo for ${track.name}`
-                          : `Solo ${track.name}`
+                        drumSoundUnavailable()
+                          ? `${track.name} cannot be soloed because no drum sounds are available`
+                          : soundChangeWaitsForNextTake()
+                            ? `Stop this take to change solo for ${track.name}`
+                            : isSoloed()
+                              ? `Turn off solo for ${track.name}`
+                              : `Solo ${track.name}`
                       }
                       onClick={() => props.onToggleTrackSolo?.(track.id)}
                     >
@@ -310,18 +437,22 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       type="button"
                       class={styles.sessionTrackVisibility}
                       aria-pressed={isVisible()}
-                      disabled={isScored()}
+                      disabled={isScored() || drumSheetUnavailable()}
                       title={
                         isScored()
                           ? `${track.name} is scored, so it always shows on the sheet`
+                          : drumSheetUnavailable()
+                            ? `${track.name} has no mapped hits to draw on the sheet`
+                            : isVisible()
+                              ? `Hide ${track.name} on the sheet`
+                              : `Show ${track.name} on the sheet`
+                      }
+                      aria-label={
+                        drumSheetUnavailable()
+                          ? `${track.name} has no mapped hits to draw on the sheet`
                           : isVisible()
                             ? `Hide ${track.name} on the sheet`
                             : `Show ${track.name} on the sheet`
-                      }
-                      aria-label={
-                        isVisible()
-                          ? `Hide ${track.name} on the sheet`
-                          : `Show ${track.name} on the sheet`
                       }
                       onClick={() => props.onToggleTrackVisible?.(track.id)}
                     >
@@ -345,8 +476,9 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
           }
         >
           <p class={styles.sessionNote}>
-            This file carries one part. A Guitar Pro file with several will list
-            them all here.
+            {props.reference().scoreMode === 'backing-only'
+              ? 'This file carries one authored drum part. Its sheet is reference only; no guitar notes are scored.'
+              : 'This file carries one part. A Guitar Pro file with several will list them all here.'}
           </p>
         </Show>
       </div>

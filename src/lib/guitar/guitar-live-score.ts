@@ -22,6 +22,8 @@ const RECENT_EVENT_IDENTITIES = 512
 
 export type GuitarLiveScoreGrade = 'S' | 'A' | 'B' | 'C' | 'D'
 
+export type GuitarLiveScorePolicy = 'exclude-first' | 'evidence-first'
+
 export interface GuitarLiveScoreTargetInput {
   id: string
   midi: number
@@ -47,12 +49,77 @@ export interface CreateGuitarLiveScoreEngineOptions {
   targets: readonly GuitarLiveScoreTargetInput[]
   inputKind: GuitarInputProfileKind
   matchToleranceMs?: number
+  /**
+   * How late a strike may land and still prove a target. Separate from the
+   * early side because the two are not symmetric in nature: capture and output
+   * delay can only ever make a player look LATE, never early, and while that
+   * delay is unmeasured half a symmetric window is dead space. Widening it is
+   * an association decision, not a timing claim — the score stays 100 either
+   * way. Defaults to `matchToleranceMs`.
+   */
+  lateToleranceMs?: number
+  /**
+   * Accept the target's pitch class in an adjacent octave. On the low strings
+   * the second harmonic routinely exceeds the fundamental, so a mono detector
+   * reporting the octave above is a physical certainty rather than a player
+   * error. Guitar Practice already folds mic input to pitch class for exactly
+   * this reason. Defaults to off, which keeps MIDI exact.
+   */
+  octaveTolerantPitch?: boolean
+  /**
+   * Let a pitch change prove a target, not only a picked attack.
+   *
+   * The attack detector compares against a delayed peak envelope, so it misses
+   * same-strength repeated picking faster than the string decays — measured on
+   * two real takes of a fast piece, it fired 6 times in 34 seconds and 37 in
+   * 61, against 202 and 286 pitch changes over the same spans. Only attacks
+   * could score, so the run graded 0% and 6% while the pitch path was tracking
+   * 85-94% of the authored notes correctly.
+   *
+   * A hammer-on, pull-off or slide is also a note the tab asks for, and it
+   * never produces an attack by design. Excluding pitch changes made the score
+   * a measure of picking transients rather than of notes played.
+   */
+  matchPitchChanges?: boolean
+  /**
+   * Whether a hard passage is excluded before the evidence is read, or judged
+   * against it like any other note.
+   *
+   * 'exclude-first' is the original behaviour: a target on a chord or inside a
+   * dense run is skipped at construction time and never compared against a
+   * single input event. Measured on a real take, that discarded 317 of 406
+   * targets, 218 of which had the authored pitch detected inside the match
+   * window — the score then read 92% while grading 22% of what was played.
+   *
+   * 'evidence-first' keeps every predicate identical and only changes which
+   * targets are allowed to ask. Exclusion still exists, but it means the
+   * evidence is missing or untrustworthy, never that the music was difficult.
+   */
+  scorePolicy?: GuitarLiveScorePolicy
+  /**
+   * Onset spacing under which acoustic targets are excluded rather than
+   * judged. Defaults to twice the pitch-attachment window.
+   */
+  denseTargetSpacingMs?: number
   minimumPitchClarity?: number
   instrumentation?: GuitarLiveScoreInstrumentation
+  /**
+   * Retain every judgment and expose the pinned target frames for the
+   * development overlay. Off in production builds: an uncapped judgment log on
+   * a long score is memory the player never asked to spend.
+   */
+  debug?: boolean
 }
 
 export type GuitarLiveScoreSkipReason =
   | 'polyphonic-onset'
+  /**
+   * A voice of a chord that a mono pitch detector cannot reach. One onset
+   * yields one pitch, so a second authored voice at the same instant is
+   * unprovable by construction — not something the player failed to do. The
+   * chord is judged once, through whichever voice was heard.
+   */
+  | 'unheard-voice'
   | 'fast-passage'
   | 'input-clipping'
   | 'input-noisy'
@@ -69,6 +136,12 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: string
       timingOffsetMs: number
       skipReason: null
+      /**
+       * The exclusion this target carried and was judged anyway. Null for a
+       * target nothing ever proposed excluding. Present so a recovered hit is
+       * auditable rather than merely a larger number.
+       */
+      reclaimedFrom: GuitarLiveScoreSkipReason | null
     }
   | {
       targetId: string
@@ -79,6 +152,7 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: null
       timingOffsetMs: null
       skipReason: null
+      reclaimedFrom: GuitarLiveScoreSkipReason | null
     }
   | {
       targetId: string
@@ -89,6 +163,7 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: null
       timingOffsetMs: null
       skipReason: GuitarLiveScoreSkipReason
+      reclaimedFrom: null
     }
 >
 
@@ -129,6 +204,38 @@ export type GuitarLiveScoreHealth =
   | GuitarInputHealthReading
   | null
 
+/** One target exactly as the engine pinned it, for the development overlay. */
+export interface GuitarLiveScoreDebugTarget {
+  id: string
+  midi: number
+  startBeat: number
+  onsetFrame: number
+  skipReason: GuitarLiveScoreSkipReason | null
+}
+
+/**
+ * Everything the engine decided, unabridged. This is deliberately raw: the
+ * production display withholds claims it cannot support, and that is right,
+ * but a diagnosis needs the numbers the withholding hides.
+ */
+export interface GuitarLiveScoreDebugSnapshot {
+  sampleRate: number
+  durationFrames: number
+  toleranceFrames: number
+  lateToleranceFrames: number
+  pitchGraceFrames: number
+  minimumPitchClarity: number
+  inputKind: GuitarInputProfileKind
+  /** Whether pitch changes, not only picked attacks, could prove a target. */
+  matchPitchChanges: boolean
+  throughFrame: number
+  /** Recorder pages the engine never saw; each one skips the targets it spans. */
+  detectedGapCount: number
+  targets: readonly GuitarLiveScoreDebugTarget[]
+  /** Every judgment this run has made, not the rolling window. */
+  judgments: readonly GuitarLiveScoreJudgment[]
+}
+
 export interface GuitarLiveScoreEngine {
   sample(
     take: GuitarTakeSnapshot,
@@ -136,6 +243,8 @@ export interface GuitarLiveScoreEngine {
     health: GuitarLiveScoreHealth,
   ): GuitarLiveScoreDisplay
   snapshot(): GuitarLiveScoreDisplay
+  /** Null unless the engine was created with `debug: true`. */
+  debugSnapshot(): GuitarLiveScoreDebugSnapshot | null
 }
 
 interface TargetFrame extends GuitarLiveScoreTargetInput {
@@ -144,6 +253,8 @@ interface TargetFrame extends GuitarLiveScoreTargetInput {
     GuitarLiveScoreSkipReason,
     'polyphonic-onset' | 'fast-passage'
   > | null
+  /** How many authored voices share this exact onset. One unless a chord. */
+  onsetGroupSize: number
 }
 
 interface GapInterval {
@@ -251,6 +362,7 @@ function createTargets(
         Math.round((targetSeconds - rangeStartSeconds) * options.sampleRate),
       ),
       skipReason: null,
+      onsetGroupSize: 1,
     })
   }
   targets.sort(
@@ -258,7 +370,36 @@ function createTargets(
       left.onsetFrame - right.onsetFrame || left.id.localeCompare(right.id),
   )
 
-  if (options.inputKind !== 'midi') {
+  // How many authored voices share an onset is a fact about the music, not a
+  // scoring preference, so it is computed whatever the exclusion settings say.
+  // A mono detector returns one pitch per onset either way, and judging the
+  // other voices independently guarantees a miss for each of them.
+  {
+    let index = 0
+    while (index < targets.length) {
+      let end = index
+      const first = targets[index]
+      if (first === undefined) break
+      while (
+        end + 1 < targets.length &&
+        targets[end + 1]?.onsetFrame === first.onsetFrame
+      ) {
+        end += 1
+      }
+      const size = end - index + 1
+      for (let member = index; member <= end; member += 1) {
+        const target = targets[member]
+        if (target !== undefined) target.onsetGroupSize = size
+      }
+      index = end + 1
+    }
+  }
+
+  const denseTargetSpacingMs =
+    options.denseTargetSpacingMs ?? PITCH_ATTACH_WINDOW_MS * 2
+  // Zero disables exclusion outright, so a development run can see what the
+  // excluded targets would have scored instead of only that they were skipped.
+  if (options.inputKind !== 'midi' && denseTargetSpacingMs > 0) {
     const groups = new Map<number, TargetFrame[]>()
     for (const target of targets) {
       const group = groups.get(target.onsetFrame)
@@ -267,7 +408,7 @@ function createTargets(
     }
     const onsetFrames = [...groups.keys()].sort((left, right) => left - right)
     const minimumSpacingFrames = Math.round(
-      ((PITCH_ATTACH_WINDOW_MS * 2) / 1000) * options.sampleRate,
+      (denseTargetSpacingMs / 1000) * options.sampleRate,
     )
     for (let index = 0; index < onsetFrames.length; index += 1) {
       const onsetFrame = onsetFrames[index]
@@ -304,12 +445,17 @@ export function createGuitarLiveScoreEngine(
   }
   const matchToleranceMs =
     options.matchToleranceMs ?? GUITAR_LIVE_SCORE_MATCH_TOLERANCE_MS
+  const lateToleranceMs = options.lateToleranceMs ?? matchToleranceMs
   const minimumPitchClarity =
     options.minimumPitchClarity ?? GUITAR_LIVE_SCORE_MINIMUM_PITCH_CLARITY
   assertFinite(matchToleranceMs, 'matchToleranceMs')
+  assertFinite(lateToleranceMs, 'lateToleranceMs')
   assertFinite(minimumPitchClarity, 'minimumPitchClarity')
   if (matchToleranceMs <= 0) {
     throw new RangeError('matchToleranceMs must be positive.')
+  }
+  if (lateToleranceMs <= 0) {
+    throw new RangeError('lateToleranceMs must be positive.')
   }
   if (minimumPitchClarity < 0 || minimumPitchClarity > 1) {
     throw new RangeError('minimumPitchClarity must be between zero and one.')
@@ -335,10 +481,31 @@ export function createGuitarLiveScoreEngine(
     1,
     Math.round((matchToleranceMs / 1000) * options.sampleRate),
   )
+  const lateToleranceFrames = Math.max(
+    1,
+    Math.round((lateToleranceMs / 1000) * options.sampleRate),
+  )
+  /** The widest either side reaches; used for retention and gap overlap. */
+  const spanToleranceFrames = Math.max(toleranceFrames, lateToleranceFrames)
+  const octaveTolerantPitch = options.octaveTolerantPitch === true
+  const matchPitchChanges = options.matchPitchChanges === true
+  const scorableKind = (kind: GuitarTakeEvent['kind']): boolean =>
+    kind === 'attack' || (matchPitchChanges && kind === 'pitch-change')
+  const pitchMatches = (heard: number, authored: number): boolean => {
+    if (heard === authored) return true
+    if (!octaveTolerantPitch) return false
+    const delta = heard - authored
+    return Math.abs(delta) <= 12 && delta % 12 === 0
+  }
+  /** Signed: negative is early, positive is late. */
+  const withinWindow = (offsetFrames: number): boolean =>
+    offsetFrames >= -toleranceFrames && offsetFrames <= lateToleranceFrames
   const pitchGraceFrames = Math.max(
     1,
     Math.round((PITCH_ATTACH_WINDOW_MS / 1000) * options.sampleRate),
   )
+  const evidenceFirst =
+    (options.scorePolicy ?? 'exclude-first') === 'evidence-first'
   const onRetainedEventVisit = options.instrumentation?.onRetainedEventVisit
   const onTargetVisit = options.instrumentation?.onTargetVisit
 
@@ -358,14 +525,32 @@ export function createGuitarLiveScoreEngine(
   let bestStreak = 0
   let detectedGapCount = 0
   let recentJudgments: readonly GuitarLiveScoreJudgment[] = []
+  const debugJudgments: GuitarLiveScoreJudgment[] = []
   let rollingJudgments: readonly GuitarLiveScoreJudgment[] = []
   const consumedEventIds = new Set<string>()
   const activeEvents = new Map<string, GuitarTakeEvent>()
+  /**
+   * The frame this engine first SAW each still-unpitched strike at.
+   *
+   * A pitch is stapled to its attack within PITCH_ATTACH_WINDOW_MS of the
+   * strike's own timestamp, but that timestamp is backdated: the reading comes
+   * off an analysis window tens of milliseconds wide and reaches the main
+   * thread later still. Counting the grace from the strike therefore spends it
+   * on lag that already happened, and a strike landing late in a target's
+   * window can be judged unpitched while its pitch is still in flight.
+   * Measured on a real take: a B4 struck 228.6 ms into a 320 ms window, exact
+   * pitch at clarity 0.97 -- its grace lapsed 69 frames (1.4 ms) before the
+   * target expired. It scored a miss live and a hit when the very same events
+   * were replayed through this engine. Counted from first sight instead, the
+   * wait is 90 ms of evidence rather than 90 ms shared with the delivery.
+   */
+  const provisionalFirstSeen = new Map<string, number>()
   const eventIdentities = new Map<string, EventIdentity>()
   const gapIntervals: GapInterval[] = []
 
   const appendJudgment = (judgment: GuitarLiveScoreJudgment): void => {
     const frozen = freezeJudgment(judgment)
+    if (options.debug === true) debugJudgments.push(frozen)
     recentJudgments = Object.freeze(
       [...recentJudgments, frozen].slice(-GUITAR_LIVE_SCORE_ROLLING_TARGETS),
     )
@@ -391,8 +576,8 @@ export function createGuitarLiveScoreEngine(
   const overlapsGap = (target: TargetFrame): boolean =>
     gapIntervals.some(
       (gap) =>
-        target.onsetFrame + toleranceFrames >= gap.startFrame &&
-        target.onsetFrame - toleranceFrames <= gap.endFrame,
+        target.onsetFrame + spanToleranceFrames >= gap.startFrame &&
+        target.onsetFrame - spanToleranceFrames <= gap.endFrame,
     )
 
   const matchingEvent = (
@@ -404,14 +589,13 @@ export function createGuitarLiveScoreEngine(
     for (const event of activeEvents.values()) {
       if (
         consumedEventIds.has(event.id) ||
-        event.kind !== 'attack' ||
+        !scorableKind(event.kind) ||
         event.source !== options.inputKind ||
         event.compensatedTransportFrame > throughFrame ||
         event.compensatedTransportFrame >= durationFrames ||
-        Math.abs(event.compensatedTransportFrame - target.onsetFrame) >
-          toleranceFrames ||
+        !withinWindow(event.compensatedTransportFrame - target.onsetFrame) ||
         event.pitch === null ||
-        event.pitch.midi !== target.midi ||
+        !pitchMatches(event.pitch.midi, target.midi) ||
         (options.inputKind !== 'midi' &&
           event.pitch.clarity < minimumPitchClarity)
       ) {
@@ -434,28 +618,30 @@ export function createGuitarLiveScoreEngine(
   const hasProvisionalCandidate = (
     target: TargetFrame,
     throughFrame: number,
-  ): boolean =>
-    [...activeEvents.values()].some((event) => {
+  ): boolean => {
+    for (const event of activeEvents.values()) {
       if (
         consumedEventIds.has(event.id) ||
-        event.kind !== 'attack' ||
+        !scorableKind(event.kind) ||
         event.source !== options.inputKind ||
         event.compensatedTransportFrame > throughFrame ||
         event.compensatedTransportFrame >= durationFrames ||
-        Math.abs(event.compensatedTransportFrame - target.onsetFrame) >
-          toleranceFrames
+        !withinWindow(event.compensatedTransportFrame - target.onsetFrame)
       ) {
-        return false
+        continue
       }
       const pitchIsProvisional =
         event.pitch === null ||
         (options.inputKind !== 'midi' &&
           event.pitch.clarity < minimumPitchClarity)
-      return (
-        pitchIsProvisional &&
-        throughFrame <= event.compensatedTransportFrame + pitchGraceFrames
-      )
-    })
+      const graceFrom =
+        provisionalFirstSeen.get(event.id) ?? event.compensatedTransportFrame
+      if (pitchIsProvisional && throughFrame <= graceFrom + pitchGraceFrames) {
+        return true
+      }
+    }
+    return false
+  }
 
   const judgeThrough = (
     throughFrame: number,
@@ -472,10 +658,14 @@ export function createGuitarLiveScoreEngine(
         firstUnresolvedTargetIndex = targets.length
         break
       }
-      const expired = throughFrame > target.onsetFrame + toleranceFrames
+      const expired = throughFrame > target.onsetFrame + lateToleranceFrames
       if (!finalize && !expired) break
 
-      if (target.skipReason !== null) {
+      // Under 'exclude-first' a chord or dense-run target is resolved here,
+      // before a single event is looked at. Left byte-identical on purpose:
+      // the property check replays both policies over the same input, so the
+      // baseline has to stay reachable in the same binary.
+      if (!evidenceFirst && target.skipReason !== null) {
         appendJudgment({
           targetId: target.id,
           midi: target.midi,
@@ -485,6 +675,7 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: target.skipReason,
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -499,11 +690,21 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: 'event-gap',
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
         continue
       }
-      if (badHealthReason !== null) {
+      // Input health is the last exclusion that used to fire before any event
+      // was read, and it was the most expensive one: it is a whole-take verdict
+      // applied to every target still unresolved, so one bad stretch condemned
+      // notes recorded either side of it. Measured on a take where 20% of the
+      // level readings clipped: all 54 targets were skipped while their nearest
+      // events sat at the exact authored pitch with clarity 0.999 to 1.000.
+      // Clipping can corrupt pitch detection; whether it did is a question the
+      // evidence answers, so under 'evidence-first' the reason is carried on
+      // the judgment instead of standing in for it.
+      if (!evidenceFirst && badHealthReason !== null) {
         appendJudgment({
           targetId: target.id,
           midi: target.midi,
@@ -513,8 +714,124 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: badHealthReason,
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
+        continue
+      }
+
+      // What this target was excluded for before the evidence was read, so a
+      // reclaimed judgment can still say which guard it walked past.
+      const excludedFrom = target.skipReason ?? badHealthReason
+
+      // A chord is one thing the player either played or did not, and a mono
+      // detector returns one pitch per onset. Judging each voice separately
+      // therefore guarantees a miss for every voice past the first, which is
+      // an accusation the analysis cannot support. So the onset is resolved
+      // once, through whichever voice was actually heard, and the remaining
+      // voices are named unprovable rather than wrong.
+      //
+      // Gated on group size, not on the pinned exclusion reason. Turning
+      // dense-passage exclusion off says "judge the hard passages"; it does not
+      // say "pretend one detector can hear two strings at once". Measured on a
+      // real take of fast power chords with that toggle on: ten chords resolved
+      // as one hit and one miss, the miss being a voice nothing could have
+      // proven.
+      if (
+        evidenceFirst &&
+        options.inputKind !== 'midi' &&
+        target.onsetGroupSize > 1
+      ) {
+        const group: TargetFrame[] = []
+        for (
+          let index = firstUnresolvedTargetIndex;
+          index < targets.length;
+          index += 1
+        ) {
+          const member = targets[index]
+          if (member === undefined || member.onsetFrame !== target.onsetFrame) {
+            break
+          }
+          group.push(member)
+        }
+        // Defer the whole onset while any voice still has a strike whose pitch
+        // has not arrived; resolving half a chord early would burn the event.
+        if (
+          !finalize &&
+          group.some((member) => hasProvisionalCandidate(member, throughFrame))
+        ) {
+          break
+        }
+        let provenIndex = -1
+        let provenEvent: GuitarTakeEvent | null = null
+        let provenExact = false
+        for (let index = 0; index < group.length; index += 1) {
+          const member = group[index]
+          if (member === undefined) continue
+          const candidate = matchingEvent(member, throughFrame)
+          if (candidate === null) continue
+          // Prefer the voice whose pitch matches outright. Spending the one
+          // available credit on an octave-tolerant match while the note the
+          // player actually fretted goes unclaimed would be the wrong voice.
+          const exact = candidate.pitch?.midi === member.midi
+          if (provenEvent === null || (exact && !provenExact)) {
+            provenIndex = index
+            provenEvent = candidate
+            provenExact = exact
+          }
+        }
+        if (provenEvent !== null) consumedEventIds.add(provenEvent.id)
+        // Nothing heard: the onset still has to answer for itself, so its
+        // first voice carries the miss. One judged unit either way — the
+        // chord can fail, which is what keeps the percentage honest.
+        const answeringIndex = provenIndex >= 0 ? provenIndex : 0
+        for (let index = 0; index < group.length; index += 1) {
+          const member = group[index]
+          if (member === undefined) continue
+          if (index !== answeringIndex) {
+            appendJudgment({
+              targetId: member.id,
+              midi: member.midi,
+              onsetFrame: member.onsetFrame,
+              outcome: 'skipped',
+              score: null,
+              eventId: null,
+              timingOffsetMs: null,
+              skipReason: 'unheard-voice',
+              reclaimedFrom: null,
+            })
+            continue
+          }
+          if (provenEvent === null) {
+            appendJudgment({
+              targetId: member.id,
+              midi: member.midi,
+              onsetFrame: member.onsetFrame,
+              outcome: 'miss',
+              score: 0,
+              eventId: null,
+              timingOffsetMs: null,
+              skipReason: null,
+              reclaimedFrom: excludedFrom,
+            })
+            continue
+          }
+          const offsetFrames =
+            provenEvent.compensatedTransportFrame - member.onsetFrame
+          appendJudgment({
+            targetId: member.id,
+            midi: member.midi,
+            onsetFrame: member.onsetFrame,
+            outcome: 'hit',
+            score: 100,
+            eventId: provenEvent.id,
+            timingOffsetMs:
+              Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
+            skipReason: null,
+            reclaimedFrom: excludedFrom,
+          })
+        }
+        firstUnresolvedTargetIndex += group.length
         continue
       }
 
@@ -535,6 +852,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs:
             Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
           skipReason: null,
+          reclaimedFrom: excludedFrom,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -549,6 +867,7 @@ export function createGuitarLiveScoreEngine(
         eventId: null,
         timingOffsetMs: null,
         skipReason: null,
+        reclaimedFrom: excludedFrom,
       })
       firstUnresolvedTargetIndex += 1
     }
@@ -559,13 +878,14 @@ export function createGuitarLiveScoreEngine(
     const oldestUsefulFrame =
       nextTarget === undefined
         ? throughFrame
-        : nextTarget.onsetFrame - toleranceFrames
+        : nextTarget.onsetFrame - spanToleranceFrames
     for (const [eventId, event] of activeEvents) {
       if (
         consumedEventIds.has(eventId) ||
         event.compensatedTransportFrame < oldestUsefulFrame
       ) {
         activeEvents.delete(eventId)
+        provisionalFirstSeen.delete(eventId)
       }
     }
     while (
@@ -686,7 +1006,15 @@ export function createGuitarLiveScoreEngine(
           eventIdentities.delete(event.id)
           eventIdentities.set(event.id, identity)
         }
-        activeEvents.set(event.id, event)
+        // Consumed events are deliberately dropped by `prune`. Re-adding them
+        // here would undo that every snapshot and grow the retained page back
+        // to the full recorder page on each sample.
+        if (!consumedEventIds.has(event.id)) {
+          activeEvents.set(event.id, event)
+          if (event.pitch === null && !provisionalFirstSeen.has(event.id)) {
+            provisionalFirstSeen.set(event.id, throughFrame)
+          }
+        }
       }
       while (eventIdentities.size > RECENT_EVENT_IDENTITIES) {
         const oldestId = eventIdentities.keys().next().value as
@@ -747,7 +1075,7 @@ export function createGuitarLiveScoreEngine(
       }
     }
     const effectiveThroughFrame = finalize
-      ? Math.max(throughFrame, finalDurationFrames + toleranceFrames + 1)
+      ? Math.max(throughFrame, finalDurationFrames + lateToleranceFrames + 1)
       : throughFrame
     judgeThrough(effectiveThroughFrame, health, finalize, finalDurationFrames)
     prune(effectiveThroughFrame)
@@ -756,5 +1084,29 @@ export function createGuitarLiveScoreEngine(
     return display()
   }
 
-  return { sample, snapshot: display }
+  const debugSnapshot = (): GuitarLiveScoreDebugSnapshot | null => {
+    if (options.debug !== true) return null
+    return {
+      sampleRate: options.sampleRate,
+      durationFrames,
+      toleranceFrames,
+      lateToleranceFrames,
+      pitchGraceFrames,
+      minimumPitchClarity,
+      inputKind: options.inputKind,
+      matchPitchChanges,
+      throughFrame: lastThroughFrame,
+      detectedGapCount,
+      targets: targets.map((target) => ({
+        id: target.id,
+        midi: target.midi,
+        startBeat: target.startBeat,
+        onsetFrame: target.onsetFrame,
+        skipReason: target.skipReason,
+      })),
+      judgments: [...debugJudgments],
+    }
+  }
+
+  return { sample, snapshot: display, debugSnapshot }
 }

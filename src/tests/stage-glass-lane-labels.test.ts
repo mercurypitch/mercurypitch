@@ -64,6 +64,39 @@ describe('stage glass — canvas-painted lane labels', () => {
     )
   })
 
+  it('fades the panels in the studio, where the slider actually lives', () => {
+    // The regression this pins: the surface tokens moved to
+    // `.stem-mixer--performance` while the slider stayed behind a
+    // `preset !== 'performance'` guard, so the one mode that shows the control
+    // was the one mode the control could not reach. The backdrop still faded,
+    // which is why it read as "transparency half works" rather than as gone.
+    const base = stemMixerBlock()
+    for (const role of ['primary', 'secondary', 'tertiary', 'card']) {
+      expect(
+        base,
+        `--sm-glass-${role} must derive from the stage alpha`,
+      ).toMatch(new RegExp(`--sm-glass-${role}:[^;]*var\\(--sm-stage-alpha\\)`))
+    }
+
+    const handoff = mixerSource.slice(
+      mixerSource.indexOf('\n.stem-mixer > * {'),
+    )
+    const body = handoff.slice(0, handoff.indexOf('\n}'))
+    expect(body).toMatch(/--bg-primary: var\(--sm-glass-primary\)/)
+    expect(body).toMatch(/--bg-secondary: var\(--sm-glass-secondary\)/)
+    expect(body).toMatch(/--bg-tertiary: var\(--sm-glass-tertiary\)/)
+    expect(body).toMatch(/--bg-card: var\(--sm-glass-card\)/)
+  })
+
+  it('never runs the glass through the slider twice', () => {
+    // .mp-dark-stage supplies the performance palette and the base block fades
+    // it. Re-declaring a surface here would fade an already faded colour.
+    const start = mixerSource.indexOf('\n.stem-mixer--performance {')
+    expect(start).toBeGreaterThan(-1)
+    const preset = mixerSource.slice(start, mixerSource.indexOf('\n}', start))
+    expect(preset).not.toMatch(/--bg-(?:primary|secondary|tertiary|card):/)
+  })
+
   it('asks for a repaint when the studio slider moves', () => {
     const updater = mixerSource.slice(
       mixerSource.indexOf('const updateStageAlpha ='),

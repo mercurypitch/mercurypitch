@@ -14,6 +14,8 @@
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
+import type { DecodedMonoAudio } from '@/lib/decode-audio-to-mono'
+import { fetchAudioToMono } from '@/lib/decode-audio-to-mono'
 import { getSessionHistory } from '@/stores'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -37,12 +39,6 @@ const CAPABILITY_RANK: Record<TakeCapability, number> = {
   audio: 2,
 }
 
-/** Decoded mono audio for the `audio` tier. */
-export interface TakeAudio {
-  samples: Float32Array
-  sampleRate: number
-}
-
 export interface AnalysisTake {
   id: string
   source: TakeSource
@@ -55,7 +51,7 @@ export interface AnalysisTake {
   /** Cached detected-note analysis. Present for `notes` and `audio` takes. */
   loadNotes?: () => Promise<SessionPitchData | null>
   /** Decoded mono audio. Present for `audio` takes only. */
-  loadAudio?: () => Promise<TakeAudio | null>
+  loadAudio?: () => Promise<DecodedMonoAudio | null>
   /** Practice record. Present for `summary` takes only. */
   summary?: SessionResult
 }
@@ -84,22 +80,9 @@ function liveTake(): AnalysisTake {
 }
 
 /** Fetch and decode a stem URL down to mono samples. */
-async function decodeStem(url: string): Promise<TakeAudio | null> {
+async function decodeStem(url: string): Promise<DecodedMonoAudio | null> {
   try {
-    const resp = await fetch(url)
-    if (!resp.ok) return null
-    const arrayBuffer = await resp.arrayBuffer()
-    const ctx = new OfflineAudioContext(1, 2, 44100)
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-
-    const left = audioBuffer.getChannelData(0)
-    if (audioBuffer.numberOfChannels === 1) {
-      return { samples: left, sampleRate: audioBuffer.sampleRate }
-    }
-    const right = audioBuffer.getChannelData(1)
-    const mono = new Float32Array(left.length)
-    for (let i = 0; i < mono.length; i++) mono[i] = (left[i] + right[i]) / 2
-    return { samples: mono, sampleRate: audioBuffer.sampleRate }
+    return await fetchAudioToMono(url)
   } catch {
     return null
   }

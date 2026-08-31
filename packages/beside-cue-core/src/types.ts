@@ -18,6 +18,8 @@ export interface Cue {
   readonly pullText: string
   readonly bSideSuggestionId?: string
   readonly bSideText: string
+  readonly cueContextSuggestionId?: string
+  readonly cueContextText?: string
   readonly mascotSetId: string
   readonly createdAt: Instant
   readonly updatedAt: Instant

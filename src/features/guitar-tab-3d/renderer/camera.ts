@@ -31,6 +31,25 @@ export const DEFAULT_CAMERA: CameraState = {
   target: [0, -0.4, -12],
 }
 
+/**
+ * Whether two framings are the same to the eye.
+ *
+ * Hosts may rebuild a preset object on unrelated reactive changes, so identity
+ * cannot decide whether the camera was actually asked to move. The epsilon is
+ * far below what a viewer could perceive at any radius this clamps to.
+ */
+export function sameCamera(a: CameraState, b: CameraState): boolean {
+  const near = (left: number, right: number) => Math.abs(left - right) < 1e-6
+  return (
+    near(a.yaw, b.yaw) &&
+    near(a.pitch, b.pitch) &&
+    near(a.radius, b.radius) &&
+    near(a.target[0], b.target[0]) &&
+    near(a.target[1], b.target[1]) &&
+    near(a.target[2], b.target[2])
+  )
+}
+
 export const PITCH_MIN = -0.15 // ~ -9°: a hair below level
 export const PITCH_MAX = 1.45 // ~ 83°: near top-down, never flips over
 export const RADIUS_MIN = 7

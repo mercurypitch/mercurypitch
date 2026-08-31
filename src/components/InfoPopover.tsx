@@ -21,10 +21,11 @@
 // listeners below, and the cleanup that removes them.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { Info } from './icons'
 import styles from './InfoPopover.module.css'
+import { createPortalSkinBridge } from './portal-skin'
 
 interface InfoPopoverProps {
   /** What the panel says. */
@@ -56,6 +57,8 @@ const GAP = 8
 export const InfoPopover: Component<InfoPopoverProps> = (props) => {
   const [open, setOpen] = createSignal(false)
   const [pos, setPos] = createSignal({ x: 0, y: 0 })
+  const panelId = createUniqueId()
+  const portalSkin = createPortalSkinBridge(open)
   let trigger: HTMLButtonElement | undefined
   let panel: HTMLDivElement | undefined
 
@@ -83,6 +86,13 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
   createEffect(() => {
     if (!open()) return
     place()
+    let closeOnScroll = false
+    let scrollArmFrame: number | undefined = window.requestAnimationFrame(
+      () => {
+        scrollArmFrame = undefined
+        closeOnScroll = true
+      },
+    )
 
     const onPointerDown = (e: PointerEvent): void => {
       const target = e.target as Node | null
@@ -96,9 +106,12 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
       if (e.key === 'Escape') setOpen(false)
     }
     // Scrolling would leave the panel stranded where the trigger used to
-    // be, so close rather than chase it. Capture, because the scroll may
-    // happen in any ancestor.
+    // be, so close rather than chase it. A click target can first be scrolled
+    // into view by the browser; that queued activation scroll must not close
+    // the panel that the same click just opened. Arm closing on the next
+    // frame, then capture later scrolling from any ancestor.
     const onScroll = (): void => {
+      if (!closeOnScroll) return
       setOpen(false)
     }
 
@@ -108,6 +121,9 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
     window.addEventListener('resize', place)
 
     onCleanup(() => {
+      if (scrollArmFrame !== undefined) {
+        window.cancelAnimationFrame(scrollArmFrame)
+      }
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('scroll', onScroll, true)
@@ -144,13 +160,18 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
   return (
     <>
       <button
-        ref={trigger}
+        ref={(element) => {
+          trigger = element
+          portalSkin.anchorRef(element)
+        }}
         type="button"
         class={`${styles.trigger} ${
           props.triggerLabel === undefined ? '' : styles.labelledTrigger
         } ${props.class ?? ''}`}
         aria-label={props.label}
         aria-expanded={open()}
+        aria-controls={panelId}
+        aria-describedby={open() ? panelId : undefined}
         onClick={(e) => {
           e.stopPropagation()
           setOpen((v) => !v)
@@ -165,9 +186,14 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
         <Portal>
           <div
             ref={panel}
+            id={panelId}
             class={`${styles.panel} ${props.panelClass ?? ''}`}
             role="tooltip"
-            style={{ left: `${pos().x}px`, top: `${pos().y}px` }}
+            style={{
+              ...portalSkin.style(),
+              left: `${pos().x}px`,
+              top: `${pos().y}px`,
+            }}
           >
             {props.children}
           </div>

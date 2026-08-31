@@ -1,0 +1,184 @@
+/* The Ear Path: the going train, on a plate at the edge of the bench. */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgb(27 32 39 / 86%), rgb(20 23 28 / 90%));
+  box-shadow:
+    inset 0 1px 0 rgb(239 230 214 / 6%),
+    0 14px 30px rgb(0 0 0 / 35%);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgb(201 164 94 / 16%);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.title {
+  font-family: var(--ear-serif);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ear-brass-bright);
+}
+
+.count {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ear-muted);
+}
+
+/* The rail: one brass line through every jewel, the orbs spaced
+   across whatever width the bench gives the plate. */
+.train {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 0 2px;
+}
+
+.train::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: var(--ear-brass-line);
+  pointer-events: none;
+}
+
+.stop {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 44px;
+  height: var(--ear-touch, 44px);
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.orb:focus-visible {
+  outline: 1px solid var(--ear-brass-bright);
+  outline-offset: -2px;
+}
+
+/* A jewel in its setting: dark glass until the milestone lands. */
+.jewel {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #151a20;
+  box-shadow: inset 0 0 0 1px rgb(239 230 214 / 18%);
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.stopLit .jewel {
+  background: var(--ear-brass-bright);
+  box-shadow:
+    0 0 0 1px var(--ear-brass),
+    0 0 10px rgb(201 164 94 / 40%);
+}
+
+/* The next orb is the jewel waiting for its setting: an open ring. */
+.stopNext .jewel {
+  box-shadow:
+    inset 0 0 0 1px var(--ear-brass-bright),
+    0 0 0 4px rgb(201 164 94 / 14%);
+}
+
+.orb:hover .jewel,
+.orb:focus-visible .jewel {
+  box-shadow:
+    inset 0 0 0 1px var(--ear-brass-bright),
+    0 0 0 4px rgb(201 164 94 / 24%);
+}
+
+.next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nextMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nextKicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ear-brass-bright);
+}
+
+.nextName {
+  font-family: var(--ear-serif);
+  font-size: 1.02rem;
+  color: var(--ear-parchment);
+}
+
+.nextNote {
+  font-size: 0.72rem;
+  color: var(--ear-muted);
+}
+
+.go {
+  flex: 0 0 auto;
+  min-height: var(--ear-touch, 44px);
+  min-width: 64px;
+  padding: 6px 14px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 4px;
+  background: rgb(20 23 28 / 80%);
+  color: var(--ear-parchment);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.go:hover {
+  background: rgb(201 164 94 / 14%);
+  border-color: var(--ear-brass);
+}

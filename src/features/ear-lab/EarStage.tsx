@@ -19,15 +19,32 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { unlockAudio } from '@/lib/audio-unlock'
+import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
+import { InstrumentCard } from './InstrumentCard'
+import { formatKeyHint, keyMatches } from './key-hint'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
 export interface StageKey {
   /** `event.key` to match ('1'…'9'), or 'Space' for the space bar. */
   key: string
-  action: () => void
+  /** Handed the keydown's own timeStamp, for the rhythm drills —
+   *  most actions ignore it. */
+  action: (atMs: number) => void
+}
+
+/** The verdict the Last call plate keeps until the next one. */
+export interface LastCall {
+  correct: boolean
+  /** The verdict sentence — what was true. */
+  line: string
+  /** The consequence: where the level goes, the rating's move, what
+   *  was answered on a miss. */
+  consequence?: string
+  /** "Trial 7", "Round 3" — where in the run it was called. */
+  label?: string
 }
 
 interface EarStageProps {
@@ -36,8 +53,16 @@ interface EarStageProps {
   name: string
   /** Shown small beside the name: "practice", "calibration", "rating". */
   mode: string
-  /** The live line under the name: gap, reversal, round, rating. */
+  /** The live line under the name: gap, turns, round, rating. */
   progress: string
+  progressAside?: JSX.Element
+  /** The bench caption and the drill's paragraph, hung on the stage
+   *  as the instrument card; no card without a description. */
+  measures?: string
+  description?: string
+  /** The card's name when the bar says something else (the ritual
+   *  bars "Calibration" over Hairline's plate). */
+  cardName?: string
   /** The instrument's spoken line; announced politely as it changes. */
   status: string
   tone?: StageTone
@@ -46,10 +71,15 @@ interface EarStageProps {
   /** True once the run is over; the plate replaces instrument + console. */
   done?: () => boolean
   plate?: () => JSX.Element
-  /** Set while a run can be stopped; the control shows only then. */
+  /** Set while a run can be stopped; the stop square and the
+   *  auto-advance switch show only then. */
   onStop?: () => void
-  stopLabel?: string
+  /** The last verdict, kept under the pads until the next one. */
+  lastCall?: () => LastCall | null
+  /** The pads are armed: the Last call plate's rail ticks brass. */
+  armed?: () => boolean
   onBack: () => void
+  backLabel?: string
   keys?: () => StageKey[]
   /** Flip to true to move focus onto the first live pad (the answer
    *  phase opening), so a keyboard user is already on the console. */
@@ -71,7 +101,11 @@ interface StageBarProps {
   /** Shown small beside the name; the report has none. */
   mode?: string
   progress: string
+  /** Under the live line: the calibration's three-track strip. */
+  progressAside?: JSX.Element
   onBack: () => void
+  /** Where back goes when not the bench: "Back to the page". */
+  backLabel?: string
   /** The right-hand control: Stop while a run can be stopped, the
    *  report's range control. */
   aside?: JSX.Element
@@ -86,7 +120,7 @@ export function StageBar(props: StageBarProps): JSX.Element {
         type="button"
         class={styles.back}
         onClick={() => props.onBack()}
-        aria-label="Back to the bench"
+        aria-label={props.backLabel ?? 'Back to the bench'}
       >
         <IconBack size={18} />
       </button>
@@ -105,14 +139,79 @@ export function StageBar(props: StageBarProps): JSX.Element {
         <span class={styles.progress} data-testid="ear-stage-progress">
           {props.progress}
         </span>
+        {props.progressAside}
       </div>
       {props.aside}
     </div>
   )
 }
 
+interface AutoAdvanceSwitchProps {
+  /** "Auto" in the bar, "Auto-advance" in the rack. */
+  label?: string
+}
+
+/** The one switch behind every drill's pacing: on, the verdict holds
+ *  for the rack's setting and the next trial follows by itself; off,
+ *  the run parks on the verdict until Next. The bar and the rack
+ *  both render it, and both read the same persisted signal. */
+export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      class={styles.auto}
+      aria-checked={earAutoAdvance()}
+      aria-label="Auto-advance"
+      title={
+        earAutoAdvance()
+          ? 'Auto-advance on: the next trial follows the verdict'
+          : 'Auto-advance off: each verdict waits for Next'
+      }
+      data-testid="ear-auto-advance"
+      onClick={() => setEarAutoAdvance(!earAutoAdvance())}
+    >
+      <span class={styles.autoLabel}>{props.label ?? 'Auto'}</span>
+      <span class={styles.autoTrack} aria-hidden="true">
+        <span class={styles.autoKnob} />
+      </span>
+    </button>
+  )
+}
+
 export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
+
+  // Every keydown, registered or not, so a keyup can tell a key the
+  // browser took from one pressed before the pads armed. A keyup with
+  // no keydown behind it is a key something upstream swallowed — an
+  // extension binding the digits — and the console says so, once.
+  const pressed = new Set<string>()
+  const [swallowed, setSwallowed] = createSignal(false)
+  const registered = (event: KeyboardEvent): boolean =>
+    (props.keys?.() ?? []).some((entry) =>
+      entry.key === 'Space'
+        ? event.code === 'Space'
+        : keyMatches(entry.key, event),
+    )
+  onMount(() => {
+    const down = (event: KeyboardEvent) => {
+      pressed.add(event.code)
+      if (swallowed() && registered(event)) setSwallowed(false)
+    }
+    const up = (event: KeyboardEvent) => {
+      if (pressed.delete(event.code)) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTypingTarget(event.target) || !registered(event)) return
+      setSwallowed(true)
+    }
+    document.addEventListener('keydown', down, true)
+    document.addEventListener('keyup', up)
+    onCleanup(() => {
+      document.removeEventListener('keydown', down, true)
+      document.removeEventListener('keyup', up)
+    })
+  })
 
   createEffect(() => {
     const keys = props.keys?.()
@@ -124,11 +223,11 @@ export function EarStage(props: EarStageProps): JSX.Element {
       // A focused button already fires on Space; let the browser have it.
       if (isSpace && event.target instanceof HTMLButtonElement) return
       const match = keys.find((entry) =>
-        entry.key === 'Space' ? isSpace : entry.key === event.key,
+        entry.key === 'Space' ? isSpace : keyMatches(entry.key, event),
       )
       if (!match) return
       event.preventDefault()
-      match.action()
+      match.action(event.timeStamp)
     }
     document.addEventListener('keydown', onKey)
     onCleanup(() => document.removeEventListener('keydown', onKey))
@@ -155,18 +254,23 @@ export function EarStage(props: EarStageProps): JSX.Element {
         name={props.name}
         mode={props.mode}
         progress={props.progress}
+        progressAside={props.progressAside}
         onBack={props.onBack}
+        backLabel={props.backLabel}
         aside={
           <Show when={props.onStop}>
-            <button
-              type="button"
-              class={styles.stop}
-              onClick={() => props.onStop?.()}
-              aria-label={props.stopLabel ?? 'Stop'}
-            >
-              <IconStop size={18} />
-              <span class={styles.stopLabel}>{props.stopLabel ?? 'Stop'}</span>
-            </button>
+            <div class={styles.controls}>
+              <AutoAdvanceSwitch />
+              <button
+                type="button"
+                class={styles.stop}
+                onClick={() => props.onStop?.()}
+                aria-label="Stop"
+                title="Stop the run"
+              >
+                <IconStop size={18} />
+              </button>
+            </div>
           </Show>
         }
       />
@@ -176,27 +280,91 @@ export function EarStage(props: EarStageProps): JSX.Element {
         fallback={
           <>
             <div class={styles.body}>
-              <figure class={styles.figure}>
-                {props.instrument()}
-                <figcaption
-                  class={styles.status}
-                  classList={{
-                    [styles.statusRight]: props.tone === 'right',
-                    [styles.statusWrong]: props.tone === 'wrong',
-                  }}
-                  aria-live="polite"
-                  data-testid="ear-stage-status"
-                >
-                  {props.status}
-                </figcaption>
-              </figure>
+              <Show when={props.description}>
+                {(description) => (
+                  <InstrumentCard
+                    drillId={props.drillId}
+                    name={props.cardName ?? props.name}
+                    measures={props.measures}
+                    description={description()}
+                  />
+                )}
+              </Show>
+              <figure class={styles.figure}>{props.instrument()}</figure>
             </div>
             <div
               class={styles.console}
               ref={consoleEl}
               data-testid="ear-stage-console"
             >
+              <div
+                class={styles.headline}
+                classList={{
+                  [styles.headlineRight]: props.tone === 'right',
+                  [styles.headlineWrong]: props.tone === 'wrong',
+                }}
+              >
+                <p
+                  class={styles.question}
+                  aria-live="polite"
+                  data-testid="ear-stage-status"
+                >
+                  {props.status}
+                </p>
+                <Show when={formatKeyHint(props.keys?.() ?? [])}>
+                  {(hint) => (
+                    <p class={styles.keyHint} data-testid="ear-stage-keys">
+                      {hint()}
+                    </p>
+                  )}
+                </Show>
+              </div>
+              <Show when={swallowed()}>
+                <p
+                  class={styles.swallowed}
+                  role="status"
+                  data-testid="ear-stage-swallowed"
+                >
+                  The browser took that key — an extension such as Vimium binds
+                  the digits. Exclude mercurypitch.com in it, or tap the pads.
+                </p>
+              </Show>
               {props.console()}
+              <Show when={props.lastCall?.()}>
+                {(call) => (
+                  <aside
+                    class={styles.lastCall}
+                    classList={{
+                      [styles.lastCallRight]: call().correct,
+                      [styles.lastCallWrong]: !call().correct,
+                      [styles.lastCallArmed]: props.armed?.() === true,
+                    }}
+                    data-testid="ear-stage-last-call"
+                    data-verdict={call().correct ? 'right' : 'wrong'}
+                    data-armed={props.armed?.() === true ? 'true' : 'false'}
+                  >
+                    <span class={styles.lastCallMark} aria-hidden="true">
+                      <Show
+                        when={call().correct}
+                        fallback={<IconClose size={13} />}
+                      >
+                        <IconCheck size={13} />
+                      </Show>
+                    </span>
+                    <span class={styles.lastCallKicker}>
+                      {call().label === undefined
+                        ? 'Last call'
+                        : `Last call · ${call().label}`}
+                    </span>
+                    <p class={styles.lastCallLine}>{call().line}</p>
+                    <Show when={call().consequence}>
+                      {(consequence) => (
+                        <p class={styles.lastCallNote}>{consequence()}</p>
+                      )}
+                    </Show>
+                  </aside>
+                )}
+              </Show>
             </div>
           </>
         }
@@ -267,6 +435,7 @@ export function ConsoleNote(props: { children: JSX.Element }): JSX.Element {
 interface TapPadProps {
   label: string
   sub?: string
+  keycap?: string
   /** Lit while a take is on: the pad is listening for taps. */
   armed?: boolean
   disabled?: boolean
@@ -316,6 +485,9 @@ export function TapPad(props: TapPadProps): JSX.Element {
       <span>{props.label}</span>
       <Show when={props.sub}>
         <small>{props.sub}</small>
+      </Show>
+      <Show when={props.keycap}>
+        <kbd class={styles.padKey}>{props.keycap}</kbd>
       </Show>
     </button>
   )
@@ -377,6 +549,9 @@ interface StagePadProps {
   label: string
   sub?: string
   state?: PadState
+  /** A lamp on the pad, lit while the stimulus it stands for sounds —
+   *  "the first" has a referent on screen. Absent: no lamp. */
+  lamp?: boolean
   disabled?: boolean
   onClick: () => void
 }
@@ -395,8 +570,18 @@ export function StagePad(props: StagePadProps): JSX.Element {
       disabled={props.disabled === true}
       onClick={() => props.onClick()}
       data-state={props.state ?? undefined}
+      data-lamp={
+        props.lamp === undefined ? undefined : props.lamp ? 'on' : 'off'
+      }
     >
       <span class={styles.padHead}>
+        <Show when={props.lamp !== undefined}>
+          <span
+            class={styles.padLamp}
+            classList={{ [styles.padLampOn]: props.lamp === true }}
+            aria-hidden="true"
+          />
+        </Show>
         <Show when={props.keycap}>
           <kbd class={styles.padKey}>{props.keycap}</kbd>
         </Show>
@@ -470,6 +655,7 @@ interface EndPlateProps {
   onAgain?: () => void
   againLabel?: string
   onBack: () => void
+  backLabel?: string
 }
 
 export function EndPlate(props: EndPlateProps): JSX.Element {
@@ -513,7 +699,7 @@ export function EndPlate(props: EndPlateProps): JSX.Element {
             if (!props.onAgain) first = el
           }}
         >
-          Back to the bench
+          {props.backLabel ?? 'Back to the bench'}
         </button>
       </div>
     </div>
@@ -568,5 +754,42 @@ export function OutcomeDots(props: { outcomes: OutcomeDot[] }): JSX.Element {
         )}
       </For>
     </div>
+  )
+}
+
+interface TurnsStripProps {
+  /** Turns recorded per track. */
+  counts: readonly number[]
+  /** Turns each track needs. */
+  target: number
+  /** The track whose trial is sounding. */
+  active: number
+}
+
+/** The calibration's three tracks as three short bars under the live
+ *  line — the whole run at a glance, on a phone too, where the
+ *  pendulums step aside for the instrument. */
+export function TurnsStrip(props: TurnsStripProps): JSX.Element {
+  return (
+    <span
+      class={styles.turns}
+      role="img"
+      aria-label={`Tracks: ${props.counts
+        .map((count) => `${count} of ${props.target} turns`)
+        .join(', ')}`}
+      data-testid="ear-turns-strip"
+    >
+      <For each={props.counts}>
+        {(count, i) => (
+          <span
+            class={styles.turnsTrack}
+            classList={{ [styles.turnsActive]: i() === props.active }}
+            style={{
+              '--fill': String(Math.min(1, count / Math.max(1, props.target))),
+            }}
+          />
+        )}
+      </For>
+    </span>
   )
 }

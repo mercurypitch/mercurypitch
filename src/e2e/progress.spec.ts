@@ -165,6 +165,7 @@ test.describe('Progress dashboard', () => {
     await page.addInitScript((userId) => {
       ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
       localStorage.setItem('mp:userId', userId)
+      localStorage.setItem('pitchperfect_theme', 'light')
     }, USER_ID)
 
     await page.goto('/')
@@ -178,6 +179,24 @@ test.describe('Progress dashboard', () => {
     await page.goto('/#/progress')
     await dismissOverlays(page)
     await expect(page.getByRole('heading', { name: 'Progress' })).toBeVisible()
+
+    const progress = page.locator('[data-progress-state]')
+    await expect(progress).toHaveClass(/mp-dark-stage/)
+    await expect(progress).toHaveCSS('color-scheme', 'dark')
+    const pagePalette = await progress.evaluate((element) => {
+      const style = getComputedStyle(element)
+      const rootStyle = getComputedStyle(document.documentElement)
+      return {
+        primary: style.getPropertyValue('--bg-primary').trim(),
+        rootPrimary: rootStyle.getPropertyValue('--bg-primary').trim(),
+        rootScheme: rootStyle.colorScheme,
+      }
+    })
+    expect(pagePalette).toEqual({
+      primary: '#0d1117',
+      rootPrimary: '#f3f4f6',
+      rootScheme: 'light',
+    })
 
     const weekField = page.getByRole('group', { name: /Practice by week/ })
     const atlas = weekField.locator('..')
@@ -204,7 +223,50 @@ test.describe('Progress dashboard', () => {
     const before = await geometry()
     await whyMoment.click()
     await expect(whyMoment).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.getByRole('tooltip')).toBeVisible()
+    const tooltip = page.getByRole('tooltip')
+    await expect(tooltip).toBeVisible()
+    await expect(tooltip).toHaveCSS('color-scheme', 'dark')
+    const tooltipPalette = await tooltip.evaluate((element) => {
+      const parse = (value: string): [number, number, number] => {
+        const channels = value
+          .match(/[\d.]+/g)
+          ?.slice(0, 3)
+          .map(Number)
+        if (channels === undefined || channels.length !== 3) {
+          throw new Error(`Expected an RGB color, received ${value}`)
+        }
+        return [channels[0], channels[1], channels[2]]
+      }
+      const luminance = ([red, green, blue]: [number, number, number]) => {
+        const channels = [red, green, blue].map((channel) => {
+          const normalized = channel / 255
+          return normalized <= 0.04045
+            ? normalized / 12.92
+            : Math.pow((normalized + 0.055) / 1.055, 2.4)
+        })
+        return (
+          0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+        )
+      }
+      const style = getComputedStyle(element)
+      const body = element.querySelector('p')
+      if (body === null) throw new Error('Why-moment copy is missing')
+      const foreground = luminance(parse(getComputedStyle(body).color))
+      const background = luminance(parse(style.backgroundColor))
+      return {
+        contrast:
+          (Math.max(foreground, background) + 0.05) /
+          (Math.min(foreground, background) + 0.05),
+        outsideAppRoot:
+          document.querySelector('#root')?.contains(element) === false,
+        primary: style.getPropertyValue('--bg-primary').trim(),
+        progressInk: style.getPropertyValue('--progress-ink').trim(),
+      }
+    })
+    expect(tooltipPalette.outsideAppRoot).toBe(true)
+    expect(tooltipPalette.primary).toBe('#0d1117')
+    expect(tooltipPalette.progressInk).toBe('#f4f5fb')
+    expect(tooltipPalette.contrast).toBeGreaterThanOrEqual(4.5)
     await page.evaluate(
       () =>
         new Promise<void>((resolve) => {

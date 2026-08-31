@@ -1,4 +1,4 @@
-// Guitar Night reference ports describe verified authored scores, never invented ones.
+// Guitar Night reference ports describe verified authored material, never invented notes.
 // ============================================================
 //
 // A reference is the score axis of a rehearsal: the authored notes the stage
@@ -8,12 +8,14 @@
 // through when an import carried them; plain MIDI and measured audio remain
 // deliberately silent about details they cannot prove.
 
+import { isGuitarProSongFile, isMidiSongFile, SONG_REFERENCE_FILE_ACCEPT, } from '@/features/play-along/song-import'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, instrumentTuningFromSource, liftIntoTuningRange, MAX_PLAYABLE_FRET, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
-import type { MidiSongNote, MidiTempoChange } from '@/lib/midi-song'
+import type { MidiSongNote, MidiSongPercussionHit, MidiTempoChange, } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
 import type { GuitarNightStemKind } from './song-port'
@@ -21,10 +23,14 @@ import type { GuitarNightStemKind } from './song-port'
 /** The minimal saved-song shape a reference is read from. */
 export interface GuitarNightReferenceSourceTrack {
   id: string
+  /** Missing means pitched for references saved before percussion support. */
+  kind?: 'pitched' | 'percussion'
   name: string
   instrumentName?: string
   noteCount: number
   notes: readonly MidiSongNote[]
+  percussionHits?: readonly MidiSongPercussionHit[]
+  droppedHitCount?: number
   sourceTuning?: readonly number[]
   sourceTuningName?: string
   sourceCapo?: number
@@ -47,14 +53,25 @@ export interface GuitarNightReferenceSource {
   timeSignatures?: readonly MidiTimeSignature[]
   tracks: readonly GuitarNightReferenceSourceTrack[]
   /** The track this source was last scored against. */
-  scoreTrackId: string
+  scoreTrackId: string | null
 }
 
-export interface GuitarNightReferenceTrack {
-  id: string
-  name: string
-  noteCount: number
-}
+export type GuitarNightReferenceTrack =
+  | {
+      id: string
+      name: string
+      /** Missing means pitched for references created before drum backing. */
+      kind?: 'pitched'
+      noteCount: number
+    }
+  | {
+      id: string
+      name: string
+      kind: 'percussion'
+      hitCount: number
+      supportedHitCount: number
+      droppedHitCount: number
+    }
 
 export interface GuitarNightReferenceSummary {
   songId: string
@@ -72,9 +89,16 @@ export type GuitarNightReferenceKind = 'authored' | 'measured'
 
 export interface GuitarNightReference {
   kind: GuitarNightReferenceKind
+  /**
+   * Missing means the legacy/scored pitched mode. A percussion-only import is
+   * still an authored rehearsal, but it carries no guitar score authority.
+   */
+  scoreMode?: 'pitched' | 'backing-only'
   songId: string
   title: string
+  /** Empty only when `scoreMode` is `backing-only`. */
   trackId: string
+  /** Human-readable scored part, or "No scored part" in backing-only mode. */
   trackName: string
   tempoBpm: number
   /** Authored only: tempo events in the score's beat time. */
@@ -130,14 +154,14 @@ export interface GuitarNightReferencePort {
 }
 
 /** Accepted score files: Guitar Pro tabs and standard MIDI. */
-export const REFERENCE_FILE_ACCEPT = '.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi'
+export const REFERENCE_FILE_ACCEPT = SONG_REFERENCE_FILE_ACCEPT
 
 export function isMidiReferenceFile(fileName: string): boolean {
-  return /\.midi?$/i.test(fileName)
+  return isMidiSongFile(fileName)
 }
 
 export function isGuitarProReferenceFile(fileName: string): boolean {
-  return /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName)
+  return isGuitarProSongFile(fileName)
 }
 
 /**
@@ -149,7 +173,9 @@ export function resolveReferenceTrack(
   source: GuitarNightReferenceSource,
   requestedTrackId?: string,
 ): GuitarNightReferenceSourceTrack | null {
-  const playable = source.tracks.filter((track) => track.notes.length > 0)
+  const playable = source.tracks.filter(
+    (track) => track.kind !== 'percussion' && track.notes.length > 0,
+  )
   if (playable.length === 0) return null
 
   const requested = playable.find((track) => track.id === requestedTrackId)
@@ -166,13 +192,33 @@ export function resolveReferenceTrack(
 export function referenceTrackSummaries(
   source: GuitarNightReferenceSource,
 ): readonly GuitarNightReferenceTrack[] {
-  return source.tracks
-    .filter((track) => track.notes.length > 0)
-    .map((track) => ({
+  const tracks: GuitarNightReferenceTrack[] = []
+  for (const track of source.tracks) {
+    if (track.kind === 'percussion') {
+      const hitCount = track.percussionHits?.length ?? 0
+      const droppedHitCount = Math.max(0, track.droppedHitCount ?? 0)
+      if (hitCount > 0 || droppedHitCount > 0) {
+        tracks.push({
+          id: track.id,
+          name: track.name,
+          kind: 'percussion',
+          hitCount,
+          supportedHitCount: (track.percussionHits ?? []).filter(
+            (hit) => drumVoiceForMidi(hit.gmKey) !== null,
+          ).length,
+          droppedHitCount,
+        })
+      }
+      continue
+    }
+    if (track.notes.length === 0) continue
+    tracks.push({
       id: track.id,
       name: track.name,
       noteCount: track.notes.length,
-    }))
+    })
+  }
+  return tracks
 }
 
 interface StageNoteInput {
@@ -347,7 +393,35 @@ export function openGuitarNightReference(
   tuning?: InstrumentTuning,
 ): GuitarNightOpenReferenceResult {
   const track = resolveReferenceTrack(source, requestedTrackId)
-  if (track === null) return { ok: false, code: 'no-playable-notes' }
+  if (track === null) {
+    const hasAuthoredPercussion = source.tracks.some(
+      (candidate) =>
+        candidate.kind === 'percussion' &&
+        (candidate.percussionHits?.length ?? 0) > 0,
+    )
+    if (!hasAuthoredPercussion) {
+      return { ok: false, code: 'no-playable-notes' }
+    }
+    const tempoBpm =
+      Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
+    return {
+      ok: true,
+      reference: {
+        kind: 'authored',
+        scoreMode: 'backing-only',
+        songId: source.id,
+        title: source.name,
+        trackId: '',
+        trackName: 'No scored part',
+        tempoBpm,
+        tempoChanges: source.tempoChanges,
+        tuning: tuning ?? DEFAULT_GUITAR_TUNING,
+        notes: [],
+        tracks: referenceTrackSummaries(source),
+        outOfRangeNotes: 0,
+      },
+    }
+  }
 
   const placed = placeReferenceTrack(track, { tuning })
   const tempoBpm =

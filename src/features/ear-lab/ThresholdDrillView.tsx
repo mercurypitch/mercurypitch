@@ -17,11 +17,13 @@
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
+import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
 import type { StageKey } from './EarStage'
-import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, } from './EarStage'
+import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
+import { useLastCall } from './reveal-pacing'
 import { TrackPendulums } from './TrackPendulums'
 import { useCompactStage } from './use-compact-stage'
 import type { ThresholdRunMode, useThresholdRun } from './use-threshold-run'
@@ -70,15 +72,28 @@ interface ThresholdDrillViewProps {
   keys: () => StageKey[]
   /** The reveal sentence: what was true, and which way the level moves. */
   revealLine: () => string
+  /** Starts a run; the run's start unless the drill has to acquire
+   *  something (a microphone) first. */
+  onStart?: (mode: ThresholdRunMode) => void
+  /** Hide Calibration: a sung run is practice only. */
+  practiceOnly?: () => boolean
   onBack: () => void
+  /** The back control's label when back is not the bench. */
+  backLabel?: string
 }
 
 export function ThresholdDrillView(
   props: ThresholdDrillViewProps,
 ): JSX.Element {
   const phase = () => props.run.phase()
+  const start = (runMode: ThresholdRunMode) => {
+    if (props.onStart) props.onStart(runMode)
+    else props.run.start(runMode)
+  }
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const calibrating = () => props.run.mode() === 'calibration'
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => props.run.parked()
   const ritual = () => props.ritual === true
   const compact = useCompactStage()
 
@@ -92,21 +107,20 @@ export function ThresholdDrillView(
   const progress = () => {
     if (!running()) {
       if (ritual() && phase() === 'idle') {
-        return 'Three tracks, interleaved · about three minutes'
+        return 'Three short staircases, shuffled and pooled · about 50 questions'
       }
       const latest = props.latestValue()
       return latest === null
         ? 'Unmeasured'
         : `Latest reading ${props.formatValue(latest)}${props.unitShort}`
     }
+    const left = `about ${props.run.questionsLeft()} questions left`
     if (calibrating()) {
-      // Per track, so the line still reads on a phone, where the
-      // pendulums step aside for the loupe during the trials.
-      const track = props.run.activeTrack()
-      const turns = props.run.trackReversals()[track] ?? 0
-      return `Track ${TRACK_NAMES[track] ?? ''} · ${props.levelCaption} ${props.levelLabel()} · reversal ${turns} of ${props.run.trackTarget()}`
+      // The whole run, not the active track: the end is in sight.
+      const track = TRACK_NAMES[props.run.activeTrack()] ?? ''
+      return `Turns ${props.run.reversalsDone()} of ${props.run.reversalTarget()} · Track ${track} · ${props.levelLabel()} · ${left}`
     }
-    return `${props.levelCaption} ${props.levelLabel()} · reversal ${props.run.reversalsDone()} of ${props.run.reversalTarget()}`
+    return `${props.levelCaption} ${props.levelLabel()} · turns ${props.run.reversalsDone()} of ${props.run.reversalTarget()} · ${left}`
   }
 
   const status = () => {
@@ -132,11 +146,32 @@ export function ThresholdDrillView(
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
       const mode: ThresholdRunMode = ritual() ? 'calibration' : 'practice'
-      return [{ key: 'Space', action: () => props.run.start(mode) }]
+      return [{ key: 'Space', action: () => start(mode) }]
     }
+    if (parked()) return [{ key: 'Space', action: () => props.run.next() }]
     if (phase() === 'answer') return props.keys()
     return []
   }
+
+  /** "Gap 12.0¢ → 9.5¢": where this track's level goes next. */
+  const consequence = (): string | undefined => {
+    const next = props.run.nextLevel()
+    if (next === null) return undefined
+    const track = calibrating()
+      ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
+      : ''
+    const unit = props.unitShort
+    return `${track}${props.levelCaption} ${props.formatValue(props.run.level())}${unit} → ${props.formatValue(next)}${unit}`
+  }
+
+  useArmingCue(() => phase() === 'answer')
+
+  const lastCall = useLastCall(phase, () => ({
+    correct: props.run.lastCorrect() === true,
+    line: props.revealLine(),
+    consequence: consequence(),
+    label: `Trial ${props.run.trials()}`,
+  }))
 
   const estimate = () => props.run.result()?.estimate ?? null
   const again = (): ThresholdRunMode => props.run.result()?.mode ?? 'practice'
@@ -145,15 +180,29 @@ export function ThresholdDrillView(
     <EarStage
       drillId={props.drillId}
       name={name()}
+      cardName={props.title}
+      measures={props.measures}
+      description={props.description}
       mode={mode()}
       progress={progress()}
+      progressAside={
+        <Show when={running() && calibrating()}>
+          <TurnsStrip
+            counts={props.run.trackReversals()}
+            target={props.run.trackTarget()}
+            active={props.run.activeTrack()}
+          />
+        </Show>
+      }
       status={status()}
       tone={tone()}
       keys={keys}
-      focusConsole={() => phase() === 'answer'}
+      focusConsole={() => phase() === 'answer' || parked()}
       onBack={props.onBack}
+      backLabel={props.backLabel}
       onStop={running() ? () => props.run.stop() : undefined}
-      stopLabel={calibrating() ? 'Abandon' : 'Stop'}
+      lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={() => (
         <>
@@ -198,17 +247,18 @@ export function ThresholdDrillView(
                       sub="about a minute"
                       keycap="Space"
                       icon={<IconPlay size={20} />}
-                      onClick={() => props.run.start('practice')}
+                      onClick={() => start('practice')}
                     />
-                    <PlayPad
-                      amber
-                      label="Calibration"
-                      sub="3 tracks · about 3 min"
-                      icon={<IconSeal size={20} />}
-                      onClick={() => props.run.start('calibration')}
-                    />
+                    <Show when={props.practiceOnly?.() !== true}>
+                      <PlayPad
+                        amber
+                        label="Calibration"
+                        sub="about 50 questions"
+                        icon={<IconSeal size={20} />}
+                        onClick={() => start('calibration')}
+                      />
+                    </Show>
                   </ConsoleLead>
-                  <ConsoleNote>{props.description}</ConsoleNote>
                   {props.idleAside}
                 </>
               }
@@ -217,26 +267,41 @@ export function ThresholdDrillView(
                 <PlayPad
                   amber
                   label="Begin"
-                  sub="3 tracks · about 3 min"
+                  sub="about 50 questions · marks the glass"
                   keycap="Space"
                   icon={<IconSeal size={20} />}
-                  onClick={() => props.run.start('calibration')}
+                  onClick={() => start('calibration')}
                 />
               </ConsoleLead>
               <ConsoleNote>
                 No hints, no retries, no adaptation beyond the staircase itself.
-                Abandoning it marks nothing.
+                Stopping it marks nothing.
               </ConsoleNote>
             </Show>
           }
         >
-          <PlayPad
-            state={phase() === 'answer' ? 'armed' : 'sounding'}
-            label={phase() === 'answer' ? 'Your call' : 'Listening'}
-            sub={
-              phase() === 'answer' ? props.measures : `${props.levelLabel()}`
+          <Show
+            when={parked()}
+            fallback={
+              <PlayPad
+                state={phase() === 'answer' ? 'armed' : 'sounding'}
+                label={
+                  phase() === 'answer'
+                    ? 'Your call'
+                    : phase() === 'reveal'
+                      ? 'Next'
+                      : 'Listening'
+                }
+              />
             }
-          />
+          >
+            <PlayPad
+              label="Next"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => props.run.next()}
+            />
+          </Show>
           {props.pads()}
         </Show>
       )}
@@ -252,9 +317,10 @@ export function ThresholdDrillView(
                   ? 'Stopped before the tracks could finish — a calibration only counts when all three run to the end, so nothing was marked.'
                   : 'Stopped before the staircase turned — nothing to read yet, and nothing marked.'
               }
-              onAgain={() => props.run.start(again())}
+              onAgain={() => start(again())}
               againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
               onBack={props.onBack}
+              backLabel={props.backLabel}
             />
           }
         >
@@ -289,9 +355,10 @@ export function ThresholdDrillView(
                     {dateLabel(calibrationDueAt(Date.now()))}.
                   </Show>
                 }
-                onAgain={() => props.run.start(again())}
+                onAgain={() => start(again())}
                 againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
                 onBack={props.onBack}
+                backLabel={props.backLabel}
               >
                 <Show when={marked() !== undefined}>
                   <div class={styles.plateFigure}>

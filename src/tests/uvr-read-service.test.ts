@@ -9,13 +9,14 @@ const localReads = vi.hoisted(() => ({
   readByIndexStrict: vi.fn(),
   countByCompoundIndexStrict: vi.fn(),
   readByCompoundIndexStrict: vi.fn(),
+  readLatestByCompoundPrefixStrict: vi.fn(),
 }))
 
 vi.mock('@/db/local-database', () => ({
   getLocalDatabase: () => localReads,
 }))
 
-import { readUvrSessionRecords, readUvrStemManifest, readUvrStemSelection, readUvrStemSnapshot, } from '@/db/services/uvr-read-service'
+import { readUvrSessionRecords, readUvrStemManifest, readUvrStemSelection, readUvrStemSelectionWithinBudget, readUvrStemSnapshot, } from '@/db/services/uvr-read-service'
 
 function stemRow(
   stemType: UvrStemBlob['stemType'],
@@ -41,6 +42,7 @@ describe('UVR strict read service', () => {
     localReads.readByIndexStrict.mockReset()
     localReads.countByCompoundIndexStrict.mockReset()
     localReads.readByCompoundIndexStrict.mockReset()
+    localReads.readLatestByCompoundPrefixStrict.mockReset()
   })
 
   it('propagates a session-catalog read failure instead of reporting an empty library', async () => {
@@ -95,15 +97,15 @@ describe('UVR strict read service', () => {
       (_entity: string, _index: string, value: string[]) =>
         Promise.resolve(value[1] === 'drums' || value[1] === 'guitar' ? 1 : 0),
     )
-    localReads.readByCompoundIndexStrict.mockImplementation(
+    localReads.readLatestByCompoundPrefixStrict.mockImplementation(
       (_entity: string, _index: string, value: string[]) =>
-        Promise.resolve([
+        Promise.resolve(
           stemRow(
             value[1] as UvrStemBlob['stemType'],
             '2026-08-06T11:00:00.000Z',
             24,
           ),
-        ]),
+        ),
     )
 
     await expect(readUvrStemManifest('session-1')).resolves.toEqual([
@@ -116,6 +118,61 @@ describe('UVR strict read service', () => {
       { kind: 'drums', sizeBytes: 24 },
       { kind: 'guitar', sizeBytes: 24 },
     ])
-    expect(localReads.readByCompoundIndexStrict).toHaveBeenCalledTimes(2)
+    expect(localReads.readLatestByCompoundPrefixStrict).toHaveBeenCalledTimes(2)
+  })
+
+  it('hydrates explicit-Play rows sequentially and stops at the encoded ceiling', async () => {
+    localReads.readLatestByCompoundPrefixStrict.mockImplementation(
+      (_entity: string, _index: string, value: string[]) =>
+        Promise.resolve(
+          stemRow(
+            value[1] as UvrStemBlob['stemType'],
+            '2026-08-06T11:00:00.000Z',
+            40,
+          ),
+        ),
+    )
+
+    await expect(
+      readUvrStemSelectionWithinBudget(
+        'session-1',
+        ['drums', 'guitar', 'bass'],
+        { signal: new AbortController().signal, budgetBytes: 64 },
+      ),
+    ).resolves.toEqual({
+      ok: false,
+      requiredBytes: 80,
+      budgetBytes: 64,
+    })
+    expect(localReads.readLatestByCompoundPrefixStrict).toHaveBeenCalledTimes(2)
+    expect(
+      localReads.readLatestByCompoundPrefixStrict,
+    ).not.toHaveBeenCalledWith(
+      'uvrStemBlobs',
+      '[sessionId+stemType+createdAt]',
+      ['session-1', 'bass'],
+    )
+  })
+
+  it('reads one newest duplicate per kind instead of materializing duplicate blobs', async () => {
+    const newestDrums = stemRow('drums', '2026-08-06T12:00:00.000Z', 32)
+    localReads.readLatestByCompoundPrefixStrict.mockResolvedValue(newestDrums)
+
+    await expect(
+      readUvrStemSelectionWithinBudget('session-1', ['drums'], {
+        signal: new AbortController().signal,
+        budgetBytes: 64,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      totalBytes: 32,
+      snapshot: [{ kind: 'drums', sizeBytes: 32 }],
+    })
+    expect(localReads.readLatestByCompoundPrefixStrict).toHaveBeenCalledWith(
+      'uvrStemBlobs',
+      '[sessionId+stemType+createdAt]',
+      ['session-1', 'drums'],
+    )
+    expect(localReads.readByCompoundIndexStrict).not.toHaveBeenCalled()
   })
 })

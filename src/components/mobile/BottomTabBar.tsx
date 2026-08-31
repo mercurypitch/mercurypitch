@@ -3,11 +3,11 @@
 // ============================================================
 //
 // The Apple-style floating glass bar (mobile-kit.md §2, decision D1):
-// the first 4 visible tabs of the primary groups (You + Practice) plus a
-// More tab that opens a Sheet with every remaining visible tab.
-// Visibility is delegated to the existing scope/UI-mode gating
-// (visibleTabOrder — the same source the swipe gesture uses), so the bar
-// can never drift from the app's navigation model.
+// four stable, scope-aware destinations plus a More tab that opens a Sheet
+// with every remaining visible tab.
+// Visibility is delegated to the existing scope/UI-mode policy. More and the
+// swipe gesture still derive from visibleTabOrder, so every visible tab that
+// is not pinned here remains reachable in canonical order.
 //
 // This is the pattern the desktop bar now copies: AppNavTabs shows three
 // tabs per group and folds the rest behind a "..." per group. Same
@@ -23,10 +23,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { TabMeta } from '@/components/AppNavTabs'
 import { TAB_META } from '@/components/AppNavTabs'
+import { Drum } from '@/components/icons'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
-import { isTabVisible, PRIMARY_TABS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
+import { BusyLink } from '@/components/shared/BusyLink'
+import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
+import { mobileBarTabs, TAB_EXERCISES, TAB_KARAOKE, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -39,22 +42,13 @@ export interface BottomTabBarProps {
   tabLabel: (tab: ActiveTab) => string
 }
 
-/** How many tabs fit the bar before the rest overflow into More. */
-const BAR_SLOTS = 4
-
 export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   const [moreOpen, setMoreOpen] = createSignal(false)
 
-  // Bar = the primary groups (You + Practice) under the current scope/mode,
-  // capped at BAR_SLOTS; everything else visible (Play, Studio, Settings, and
-  // any primary overflow) lives in the More sheet. PRIMARY_TABS is asked for
-  // by name because Home and Path no longer live inside the practice group —
-  // reading `practice` alone would quietly drop the daily hub off the bar.
-  const barTabs = createMemo(() =>
-    PRIMARY_TABS.filter((t) =>
-      isTabVisible(t, practiceScope(), uiMode()),
-    ).slice(0, BAR_SLOTS),
-  )
+  // Bar = the stable mobile priority under the current scope/mode. Everything
+  // else visible — including personal destinations added to You — lives in
+  // More without displacing the scope's core instrument.
+  const barTabs = createMemo(() => mobileBarTabs(practiceScope(), uiMode()))
 
   const moreTabs = createMemo(() => {
     const inBar = new Set(barTabs())
@@ -64,6 +58,44 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   })
 
   const moreIsActive = (): boolean => moreTabs().includes(props.activeTab())
+
+  // The Drum Night door lives with Practice (it is instrument practice),
+  // between the instruments and the Exercises drills. When Exercises is in
+  // the sheet the door renders just above it; otherwise it anchors after the
+  // last practice row, and when the current scope fits every practice tab
+  // into the bar itself, it falls back to the end of Play rather than
+  // dropping the door entirely.
+  const drumNightBeforeTab = createMemo(() =>
+    moreTabs().includes(TAB_EXERCISES) ? TAB_EXERCISES : null,
+  )
+  const drumNightAnchorTab = createMemo(() =>
+    drumNightBeforeTab() !== null
+      ? null
+      : (moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'practice') ??
+        moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'play')),
+  )
+
+  const drumNightDoor = () => (
+    <li>
+      <BusyLink
+        id="nav-drum-night"
+        href={DRUM_NIGHT_PATH}
+        class={styles.moreRoomLink}
+        data-testid="nav-drum-night"
+        aria-label="Drum Night — open standalone room"
+        busyLabel="Opening Drum Night…"
+        onClick={() => setMoreOpen(false)}
+      >
+        <span class={styles.moreIcon} aria-hidden="true">
+          <Drum />
+        </span>
+        <span class={styles.moreRoomCopy}>
+          <strong>Drum Night</strong>
+          <small>Open the standalone room</small>
+        </span>
+      </BusyLink>
+    </li>
+  )
 
   const pick = (tab: ActiveTab): void => {
     haptics.tapLight()
@@ -131,29 +163,39 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
         <ul class={styles.moreList}>
           <For each={moreTabs()}>
             {(tab) => (
-              <li>
-                {/* Same `#tab-*` id the bar buttons carry. A tab is either in
+              <>
+                <Show when={tab === drumNightBeforeTab()}>
+                  {drumNightDoor()}
+                </Show>
+                <li>
+                  {/* Same `#tab-*` id the bar buttons carry. A tab is either in
                     the bar or in this sheet, never both, so the ids stay
                     unique — and a tour or audit script that looks for
                     `#tab-exercises` now resolves it once the sheet is open
                     instead of finding nothing on a phone at all. */}
-                <button
-                  id={TAB_META[tab]?.id}
-                  classList={{
-                    [styles.moreRow]: true,
-                    [styles.moreRowActive]: props.activeTab() === tab,
-                    active: props.activeTab() === tab,
-                  }}
-                  onClick={() => pick(tab)}
-                  aria-current={props.activeTab() === tab ? 'page' : undefined}
-                  aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
-                >
-                  <span class={styles.moreIcon}>
-                    {renderIcon(TAB_META[tab])}
-                  </span>
-                  {props.tabLabel(tab)}
-                </button>
-              </li>
+                  <button
+                    id={TAB_META[tab]?.id}
+                    classList={{
+                      [styles.moreRow]: true,
+                      [styles.moreRowActive]: props.activeTab() === tab,
+                      active: props.activeTab() === tab,
+                    }}
+                    onClick={() => pick(tab)}
+                    aria-current={
+                      props.activeTab() === tab ? 'page' : undefined
+                    }
+                    aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
+                  >
+                    <span class={styles.moreIcon}>
+                      {renderIcon(TAB_META[tab])}
+                    </span>
+                    {props.tabLabel(tab)}
+                  </button>
+                </li>
+                <Show when={tab === drumNightAnchorTab()}>
+                  {drumNightDoor()}
+                </Show>
+              </>
             )}
           </For>
         </ul>

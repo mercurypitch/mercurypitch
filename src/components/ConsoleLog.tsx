@@ -22,7 +22,7 @@ export const ConsoleLog: Component = () => {
         class="console-log-header"
         style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface-hover);"
       >
-        <h4 style="margin: 0; font-size: 0.9rem; color: var(--text);">
+        <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">
           Developer Console
         </h4>
         <button
@@ -43,8 +43,7 @@ export const ConsoleLog: Component = () => {
               class={`console-log-entry console-log-${entry.type}`}
               style={{
                 padding: '0.2rem 0.5rem',
-                'border-bottom':
-                  '1px solid var(--border-light, rgba(255,255,255,0.05))',
+                'border-bottom': '1px solid var(--border)',
                 color:
                   entry.type === 'error'
                     ? '#ff6b6b'
@@ -52,7 +51,7 @@ export const ConsoleLog: Component = () => {
                       ? '#feca57'
                       : entry.type === 'info'
                         ? '#48dbfb'
-                        : 'var(--text, #c8d6e5)',
+                        : 'var(--text-primary, #c8d6e5)',
                 'word-break': 'break-word',
                 'white-space': 'pre-wrap',
               }}

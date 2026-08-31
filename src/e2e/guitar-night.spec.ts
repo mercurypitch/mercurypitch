@@ -39,6 +39,77 @@ function createTestWav(
   return wav
 }
 
+/** A format-0 score with three authored channel-10 GM drum attacks. */
+function createPercussionOnlyMidi(): Buffer {
+  const name = Buffer.from('Studio Drums', 'ascii')
+  const track = Buffer.from([
+    // 120 BPM, 4/4, and a source-authored part name.
+    0x00,
+    0xff,
+    0x51,
+    0x03,
+    0x07,
+    0xa1,
+    0x20,
+    0x00,
+    0xff,
+    0x58,
+    0x04,
+    0x04,
+    0x02,
+    0x18,
+    0x08,
+    0x00,
+    0xff,
+    0x03,
+    name.length,
+    ...name,
+    // Kick at beat 0 (velocity 110), closed hat at beat 1 (83),
+    // and snare at beat 2 (96). Notes are one sixteenth long.
+    0x00,
+    0x99,
+    36,
+    110,
+    0x78,
+    0x89,
+    36,
+    0,
+    0x82,
+    0x68,
+    0x99,
+    42,
+    83,
+    0x78,
+    0x89,
+    42,
+    0,
+    0x82,
+    0x68,
+    0x99,
+    38,
+    96,
+    0x78,
+    0x89,
+    38,
+    0,
+    0x00,
+    0xff,
+    0x2f,
+    0x00,
+  ])
+  const trackHeader = Buffer.alloc(8)
+  trackHeader.write('MTrk', 0)
+  trackHeader.writeUInt32BE(track.length, 4)
+  return Buffer.concat([
+    Buffer.from([
+      0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01,
+      0x01, 0xe0,
+    ]),
+    trackHeader,
+    track,
+  ])
+}
+
 async function instrumentAudioContext(
   page: import('@playwright/test').Page,
 ): Promise<void> {
@@ -435,10 +506,14 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
 
   const actions = page.getByTestId('guitar-night-entry-actions')
   const buttons = actions.getByRole('button')
-  await expect(buttons).toHaveCount(3)
+  // Two entries, not three: the way to the Guitar workspace is a return
+  // control on the eyebrow rather than a third choice of equal weight.
+  await expect(buttons).toHaveCount(2)
   await expect(buttons.nth(0)).toHaveAccessibleName('Start')
   await expect(buttons.nth(1)).toHaveAccessibleName('Load a song')
-  await expect(buttons.nth(2)).toHaveAccessibleName('I know my way around')
+  await expect(
+    page.getByRole('button', { name: 'Open the Guitar workspace' }),
+  ).toBeVisible()
 
   await buttons.nth(0).focus()
   await page.keyboard.press('Tab')
@@ -450,7 +525,8 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   expect(focusStyle.outline).not.toBe('none')
   expect(focusStyle.width).not.toBe('0px')
   await page.keyboard.press('Tab')
-  await expect(buttons.nth(2)).toBeFocused()
+  // Tune guitar sits outside the pair, so the third stop leaves the group.
+  await expect(page.getByRole('button', { name: /Tune guitar/ })).toBeFocused()
 
   const accountTrigger = page.getByRole('button', {
     name: 'Sign in to MercuryPitch',
@@ -1201,8 +1277,8 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     const buttons = page
       .getByTestId('guitar-night-entry-actions')
       .getByRole('button')
-    await expect(buttons).toHaveCount(3)
-    for (let index = 0; index < 3; index += 1) {
+    await expect(buttons).toHaveCount(2)
+    for (let index = 0; index < 2; index += 1) {
       const box = await buttons.nth(index).boundingBox()
       expect(box).not.toBeNull()
       expect(box?.width).toBeGreaterThanOrEqual(44)
@@ -1511,9 +1587,7 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   await expect(
     page.getByRole('heading', { name: 'Bring a song into the room.' }),
   ).toBeVisible()
-  await expect(
-    page.getByText('Nothing starts playing on its own.'),
-  ).toBeVisible()
+  await expect(page.getByText('Choose your next song.')).toBeVisible()
 
   const fileChooserPromise = page.waitForEvent('filechooser')
   await page
@@ -1549,6 +1623,302 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   expect(microphoneRequests).toBe(0)
 })
 
+test('imports authored drums into a backing-only free-play room @smoke', async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(75_000)
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await instrumentAudioContext(page)
+  await instrumentMicrophoneRequests(page)
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page.getByTestId('guitar-night-file-input').setInputFiles({
+    name: 'studio-drums-only.mid',
+    mimeType: 'audio/midi',
+    buffer: createPercussionOnlyMidi(),
+  })
+
+  await expect(
+    page.getByText('3 authored drum hits at 120 BPM · backing-only free play', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Drums to follow', exact: true }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/guitar-night\?song=/)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await page
+    .getByRole('button', { name: 'Play the drum backing', exact: true })
+    .click()
+  const room = page.getByTestId('guitar-night-percussion-room')
+  await expect(room).toBeVisible({ timeout: 15_000 })
+  await expect(room).toHaveAttribute('data-room-kind', 'backing-only')
+  await expect(room).toHaveAttribute('data-score-authority', 'none')
+  await expect(page.getByTestId('guitar-night-score-room')).toHaveCount(0)
+
+  const sheet = room.getByTestId('guitar-night-sheet')
+  await expect(sheet).toBeVisible()
+  await expect(sheet).toHaveAttribute('data-layout', 'focused')
+  await expect(
+    room.getByText(
+      'The authored drums are backing only. Your guitar is not scored.',
+      { exact: true },
+    ),
+  ).toHaveCount(0)
+  await expect(
+    sheet
+      .getByText('Studio Drums — 3 authored hits · reference only', {
+        exact: true,
+      })
+      .first(),
+  ).toBeVisible()
+
+  await room.getByTestId('guitar-night-session-trigger').click()
+  let arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  await expect(arrangement).toBeVisible()
+  await expect(
+    arrangement.getByRole('group', { name: 'Arrangement parts' }),
+  ).toBeVisible()
+  const drumPart = arrangement
+    .getByTestId('guitar-night-session-track')
+    .filter({ hasText: 'Studio Drums' })
+  await expect(drumPart).toBeDisabled()
+  await expect(arrangement.getByLabel('Mute Studio Drums')).toBeEnabled()
+  await arrangement.getByLabel('Hide Studio Drums on the sheet').click()
+  await arrangement
+    .getByRole('button', { name: 'Close the session details' })
+    .click()
+  await expect(
+    room.getByText(
+      'All drum reference lanes are hidden. Open the arrangement to show one.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+
+  await room.getByTestId('guitar-night-session-trigger').click()
+  arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  await arrangement.getByLabel('Show Studio Drums on the sheet').click()
+  await arrangement
+    .getByRole('button', { name: 'Close the session details' })
+    .click()
+  await expect(sheet).toBeVisible()
+
+  const timeline = room.getByTestId('guitar-night-percussion-loop-range')
+  const position = room.getByRole('slider', {
+    name: 'Drum backing position',
+    exact: true,
+  })
+  const loopControls = room.getByRole('group', {
+    name: 'Section loop',
+    exact: true,
+  })
+  const markAButton = loopControls.getByRole('button', {
+    name: 'A — start the loop at the playhead',
+    exact: true,
+  })
+  const markBButton = loopControls.getByRole('button', {
+    name: 'B — end the loop at the playhead',
+    exact: true,
+  })
+  await expect(timeline).toBeVisible()
+  await expect(position).toHaveAttribute('aria-valuetext', /beat 1$/)
+  await markAButton.click()
+  await markBButton.click()
+
+  let markerA = room.getByRole('slider', {
+    name: 'Loop start marker',
+    exact: true,
+  })
+  let markerB = room.getByRole('slider', {
+    name: 'Loop end marker',
+    exact: true,
+  })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  // The authored one-shot horizon ends just after beat 2. The right edge is
+  // the scheduler's full third beat, so the last snare remains in [A, B).
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
+
+  const desktopRailBox = await position.boundingBox()
+  const desktopMarkerABox = await markerA.boundingBox()
+  expect(desktopRailBox).not.toBeNull()
+  expect(desktopMarkerABox).not.toBeNull()
+  await page.mouse.move(
+    (desktopMarkerABox?.x ?? 0) + (desktopMarkerABox?.width ?? 0) / 2,
+    (desktopMarkerABox?.y ?? 0) + (desktopMarkerABox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (desktopMarkerABox?.x ?? 0) +
+      (desktopMarkerABox?.width ?? 0) / 2 +
+      (desktopRailBox?.width ?? 0) * 0.34,
+    (desktopMarkerABox?.y ?? 0) + (desktopMarkerABox?.height ?? 0) / 2,
+    { steps: 6 },
+  )
+  await page.mouse.up()
+  await expect(markerA).toHaveAttribute('aria-valuenow', '1')
+
+  await page.mouse.click(
+    (desktopRailBox?.x ?? 0) + (desktopRailBox?.width ?? 0) * 0.62,
+    (desktopRailBox?.y ?? 0) + (desktopRailBox?.height ?? 0) / 2,
+  )
+  await expect
+    .poll(async () => Number(await position.inputValue()))
+    .toBeGreaterThan(0.45)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await loopControls.getByRole('button', { name: 'Clear', exact: true }).click()
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
+
+  await position.focus()
+  await page.keyboard.press('Home')
+  await markAButton.click()
+  await position.focus()
+  await page.keyboard.press('End')
+  await markBButton.click()
+  markerA = room.getByRole('slider', {
+    name: 'Loop start marker',
+    exact: true,
+  })
+  markerB = room.getByRole('slider', {
+    name: 'Loop end marker',
+    exact: true,
+  })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
+
+  await page.screenshot({
+    path: testInfo.outputPath('guitar-night-percussion-room.png'),
+    fullPage: true,
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(sheet).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0)
+  const phonePositionBox = await position.boundingBox()
+  const phoneMarkABox = await markAButton.boundingBox()
+  const phoneMarkBBox = await markBButton.boundingBox()
+  const phoneMarkerBBox = await markerB.boundingBox()
+  expect(phonePositionBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkABox?.width ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkABox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkBBox?.width ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkBBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkerBBox).not.toBeNull()
+
+  // Drag B away and back with a real pointer at phone size. Returning to the
+  // endpoint must recover exercise beat 3, not floor the one-shot horizon.
+  await page.mouse.move(
+    (phoneMarkerBBox?.x ?? 0) + (phoneMarkerBBox?.width ?? 0) / 2,
+    (phoneMarkerBBox?.y ?? 0) + (phoneMarkerBBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (phoneMarkerBBox?.x ?? 0) - (phonePositionBox?.width ?? 0) * 0.2,
+    (phoneMarkerBBox?.y ?? 0) + (phoneMarkerBBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(markerB).toHaveAttribute('aria-valuenow', '1')
+  const movedPhoneMarkerBBox = await markerB.boundingBox()
+  await page.mouse.move(
+    (movedPhoneMarkerBBox?.x ?? 0) + (movedPhoneMarkerBBox?.width ?? 0) / 2,
+    (movedPhoneMarkerBBox?.y ?? 0) + (movedPhoneMarkerBBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (phonePositionBox?.x ?? 0) + (phonePositionBox?.width ?? 0) - 1,
+    (movedPhoneMarkerBBox?.y ?? 0) + (movedPhoneMarkerBBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
+  await page.screenshot({
+    path: testInfo.outputPath('guitar-night-percussion-room-phone.png'),
+    fullPage: true,
+  })
+
+  await room
+    .getByRole('button', {
+      name: /^(?:Start|Replay|Resume) drum backing$/,
+    })
+    .click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __guitarNightAudioContexts: number })
+            .__guitarNightAudioContexts,
+      ),
+    )
+    .toBe(1)
+  await expect(room.getByRole('button', { name: 'End the take' })).toBeVisible()
+  await expect(
+    room.getByRole('status').filter({ hasText: /Counting in|playing/ }),
+  ).toBeVisible()
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
+  ).toBeVisible({ timeout: 5_000 })
+  const runningRailBox = await position.boundingBox()
+  expect(runningRailBox).not.toBeNull()
+  await page.mouse.move(
+    (runningRailBox?.x ?? 0) + (runningRailBox?.width ?? 0) * 0.42,
+    (runningRailBox?.y ?? 0) + (runningRailBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (runningRailBox?.x ?? 0) + (runningRailBox?.width ?? 0) * 0.62,
+    (runningRailBox?.y ?? 0) + (runningRailBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Backing paused' }),
+  ).toBeVisible()
+  await page.mouse.up()
+  await expect(
+    room.getByRole('status').filter({ hasText: /^Counting in/ }),
+  ).toHaveCount(0)
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
+  ).toBeVisible({ timeout: 2_000 })
+  await loopControls.getByRole('button', { name: 'Clear', exact: true }).click()
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __guitarNightMicCalls: number
+            __guitarNightMidiCalls: number
+          }
+        ).__guitarNightMicCalls,
+    ),
+  ).toBe(0)
+  expect(pageErrors).toEqual([])
+})
+
 test('scrubs, pauses, and resumes an authored score with a real pointer @smoke', async ({
   page,
 }) => {
@@ -1561,7 +1931,7 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -1730,7 +2100,7 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2120,7 +2490,7 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
 
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2269,7 +2639,7 @@ test('moves and widens the other-part preview without covering stage controls wi
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
@@ -2457,7 +2827,7 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
     })
     await page.getByRole('button', { name: 'Load a song', exact: true }).click()
     await page
-      .getByRole('button', { name: 'Rehearse the tab', exact: true })
+      .getByRole('button', { name: 'Practice with tab', exact: true })
       .click()
     await page.evaluate(() => {
       document.documentElement.style.setProperty(
@@ -2918,7 +3288,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
 
   await room.getByRole('button', { name: 'Back to Songs', exact: true }).click()
-  const resumeSong = page.getByRole('button', { name: /midnight-drums\.wav/ })
+  const resumeSong = page.getByRole('button', { name: /^midnight-drums\.wav/ })
   await expect(resumeSong).toContainText('Resume')
   await resumeSong.click()
   await expect(
@@ -3153,9 +3523,18 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
   // swallowed the transport while volume was squeezed against the edge, and
   // in landscape the wordmark plus room name cost the fretboard a whole row.
   const baseURL = test.info().project.use.baseURL
+  // The memory budget is device-honest now: a desktop-UA headless browser
+  // affords this six-stem song in RAM and legitimately buffers it. The bug
+  // was reported from a phone, so emulate one — the Android UA classifies
+  // as mobile (384 MiB decoded tier) and the 240 s x 6 stem estimate
+  // (~553 MB) forces the streamed path under test.
   const context = await browser.newContext({
     baseURL,
     viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
   })
   const page = await context.newPage()
 
@@ -3286,7 +3665,7 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
  * streamed locally at 48 kHz. Six stems at three minutes clears the budget
  * from 32 kHz upwards, so the path under test is the one that runs.
  */
-const STREAMED_SONG_SECONDS = 180
+const STREAMED_SONG_SECONDS = 240
 const STREAMED_SONG_STEMS = 6
 
 test('seeks a streamed room without a correction storm @smoke', async ({
@@ -3300,9 +3679,18 @@ test('seeks a streamed room without a correction storm @smoke', async ({
   // against clocks that were still settling. Every one of those is a hole in
   // the audio. This counts them.
   const baseURL = test.info().project.use.baseURL
+  // The memory budget is device-honest now: a desktop-UA headless browser
+  // affords this six-stem song in RAM and legitimately buffers it. The bug
+  // was reported from a phone, so emulate one — the Android UA classifies
+  // as mobile (384 MiB decoded tier) and the 240 s x 6 stem estimate
+  // (~553 MB) forces the streamed path under test.
   const context = await browser.newContext({
     baseURL,
     viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
   })
   const page = await context.newPage()
   const sessionId = `guitar-night-streamed-${Date.now()}`

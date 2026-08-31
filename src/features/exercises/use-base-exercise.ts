@@ -1,16 +1,36 @@
 import { batch, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureOutcome, ExerciseVoiceCaptureState, } from '@/lib/domain/exercise-voice-capture'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import type { TakeRecorder } from '@/lib/voice-capture'
+import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
+import type { VoiceAtlasRawFrame } from '@/lib/voice-contour'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import type { TracePoint } from './last-run-trace'
 import { downsampleTrace, publishRunTrace } from './last-run-trace'
 import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
 
 const MAX_PITCH_HISTORY = 2000
+const MAX_EXERCISE_CAPTURE_MS = 5 * 60 * 1000
+
+export type {
+  ExerciseSessionVoiceTake,
+  ExerciseVoiceCaptureController,
+  ExerciseVoiceCaptureOutcome,
+  ExerciseVoiceCaptureState,
+} from '@/lib/domain/exercise-voice-capture'
 
 interface BaseExerciseDeps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
-  config: ExerciseConfig
+  config: ExerciseConfig | (() => ExerciseConfig)
+}
+
+export interface BaseExerciseStartOptions {
+  /** Optional preparation window after mic acquisition, before capture. */
+  leadInMs?: number
+  /** Remaining preparation time, updated while the lead-in is visible. */
+  onLeadInProgress?: (remainingMs: number) => void
 }
 
 /**
@@ -49,10 +69,24 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   const [getTargetPitch, setTargetPitch] = createSignal<number | null>(null)
   const [getResult, setResult] = createSignal<ExerciseResult | null>(null)
   const [getError, setError] = createSignal<string | null>(null)
+  const [getVoiceCaptureState, setVoiceCaptureState] =
+    createSignal<ExerciseVoiceCaptureState>('idle')
+  const [getVoiceTake, setVoiceTake] =
+    createSignal<ExerciseSessionVoiceTake | null>(null)
 
   let animId = 0
   let startTime = 0
   let running = false
+  let voiceRecorder: TakeRecorder | null = null
+  let cappedVoiceBlob: Promise<Blob | null> | null = null
+  let pendingVoiceOutcome: Promise<ExerciseVoiceCaptureOutcome> | null = null
+  let voiceCaptureTimer: ReturnType<typeof setTimeout> | undefined
+  let voiceCaptureGeneration = 0
+  let cancelLeadInWait: (() => void) | null = null
+  let activeVoiceConfig: ExerciseConfig | null = null
+  let voiceContourFrames: VoiceAtlasRawFrame[] = []
+  let cappedVoiceContourFrames: VoiceAtlasRawFrame[] | null = null
+  let voiceContourRecording = false
   // Target-pitch timeline of the current run: one point per reference-tone
   // change, on the same elapsed-seconds epoch as pitchHistory `.time`. Feeds
   // the published run trace (pitch-race share / duet-with-past-self).
@@ -82,6 +116,180 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let resetDepth = 0
   let startDepth = 0
 
+  const resolveConfig = (): ExerciseConfig => {
+    const config =
+      typeof deps.config === 'function' ? deps.config() : deps.config
+    return {
+      ...config,
+      targetNotes:
+        config.targetNotes === undefined ? undefined : [...config.targetNotes],
+    }
+  }
+
+  const clearVoiceCaptureTimer = (): void => {
+    if (voiceCaptureTimer !== undefined) clearTimeout(voiceCaptureTimer)
+    voiceCaptureTimer = undefined
+  }
+
+  const waitForLeadIn = (
+    options: BaseExerciseStartOptions,
+  ): Promise<boolean> => {
+    const durationMs = options.leadInMs ?? 0
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+      return Promise.resolve(true)
+    }
+
+    return new Promise((resolve) => {
+      const deadline = performance.now() + durationMs
+      let settled = false
+
+      const settle = (completed: boolean): void => {
+        if (settled) return
+        settled = true
+        clearInterval(ticker)
+        clearTimeout(finishTimer)
+        if (cancelLeadInWait === cancel) cancelLeadInWait = null
+        if (completed) options.onLeadInProgress?.(0)
+        resolve(completed)
+      }
+      const cancel = (): void => settle(false)
+      const update = (): void => {
+        const remainingMs = Math.max(0, deadline - performance.now())
+        options.onLeadInProgress?.(remainingMs)
+        if (remainingMs <= 0) settle(true)
+      }
+
+      const ticker = setInterval(update, 100)
+      const finishTimer = setTimeout(() => settle(true), durationMs)
+      cancelLeadInWait = cancel
+      options.onLeadInProgress?.(durationMs)
+    })
+  }
+
+  function finishVoiceContourCapture(): VoiceAtlasRawFrame[] {
+    voiceContourRecording = false
+    const frames = voiceContourFrames
+    voiceContourFrames = []
+    return frames
+  }
+
+  function discardVoiceTake(): void {
+    voiceCaptureGeneration++
+    clearVoiceCaptureTimer()
+    voiceRecorder?.discard()
+    voiceRecorder = null
+    cappedVoiceBlob = null
+    voiceContourFrames = []
+    cappedVoiceContourFrames = null
+    voiceContourRecording = false
+    pendingVoiceOutcome = null
+    activeVoiceConfig = null
+    setVoiceTake(null)
+    setVoiceCaptureState('idle')
+  }
+
+  function beginVoiceCapture(config: ExerciseConfig): void {
+    discardVoiceTake()
+    activeVoiceConfig = config
+    const stream = audioEngine.getMicStream()
+    if (stream === null) {
+      setVoiceCaptureState('error')
+      return
+    }
+    const recorder = createTakeRecorder(stream)
+    if (recorder === null) {
+      setVoiceCaptureState('unsupported')
+      return
+    }
+    voiceRecorder = recorder
+    voiceRecorder.start()
+    voiceContourFrames = []
+    cappedVoiceContourFrames = null
+    voiceContourRecording = true
+    setVoiceCaptureState('recording')
+    voiceCaptureTimer = setTimeout(() => {
+      const current = voiceRecorder
+      voiceRecorder = null
+      if (current !== null) cappedVoiceBlob = current.stop()
+      cappedVoiceContourFrames = finishVoiceContourCapture()
+      voiceCaptureTimer = undefined
+    }, MAX_EXERCISE_CAPTURE_MS)
+  }
+
+  function finishVoiceCapture(
+    exerciseResult: ExerciseResult,
+    fallbackDurationMs: number,
+  ): void {
+    if (getVoiceCaptureState() !== 'recording') return
+    const generation = voiceCaptureGeneration
+    const config = activeVoiceConfig ?? resolveConfig()
+    const current = voiceRecorder
+    voiceRecorder = null
+    clearVoiceCaptureTimer()
+    const blobPromise =
+      cappedVoiceBlob ?? current?.stop() ?? Promise.resolve(null)
+    cappedVoiceBlob = null
+    const contourFrames =
+      cappedVoiceContourFrames ?? finishVoiceContourCapture()
+    cappedVoiceContourFrames = null
+    setVoiceCaptureState('processing')
+
+    const outcomePromise = (async (): Promise<ExerciseVoiceCaptureOutcome> => {
+      const blob = await blobPromise
+      if (generation !== voiceCaptureGeneration) {
+        return { state: 'discarded', take: null }
+      }
+      if (blob === null || blob.size === 0) {
+        setVoiceCaptureState('error')
+        return { state: 'error', take: null }
+      }
+      const inspection = await inspectVoiceTake(
+        blob,
+        audioEngine.getAudioContext(),
+        Math.max(0, Math.round(fallbackDurationMs)),
+      )
+      if (generation !== voiceCaptureGeneration) {
+        return { state: 'discarded', take: null }
+      }
+      const take: ExerciseSessionVoiceTake = {
+        blob,
+        durationMs: inspection.durationMs,
+        peaks: inspection.peaks,
+        capturedAt: new Date(exerciseResult.completedAt).toISOString(),
+        contour: encodeVoiceAtlasContour(contourFrames, {
+          source: 'practice-engine-v1',
+        }),
+        config,
+        result: exerciseResult,
+      }
+      setVoiceTake(take)
+      setVoiceCaptureState('ready')
+      return { state: 'ready', take }
+    })()
+    pendingVoiceOutcome = outcomePromise
+    void outcomePromise.finally(() => {
+      if (pendingVoiceOutcome === outcomePromise) pendingVoiceOutcome = null
+    })
+  }
+
+  function awaitVoiceCaptureOutcome(): Promise<ExerciseVoiceCaptureOutcome> {
+    const state = getVoiceCaptureState()
+    const take = getVoiceTake()
+    if (state === 'ready' && take !== null) {
+      return Promise.resolve({ state: 'ready', take })
+    }
+    if (state === 'processing' && pendingVoiceOutcome !== null) {
+      return pendingVoiceOutcome
+    }
+    if (state === 'unsupported') {
+      return Promise.resolve({ state: 'unsupported', take: null })
+    }
+    if (state === 'error') {
+      return Promise.resolve({ state: 'error', take: null })
+    }
+    return Promise.resolve({ state: 'discarded', take: null })
+  }
+
   // NOTE: exercises deliberately do NOT subscribe to practice-engine
   // callbacks — they poll practiceEngine.update() in their own rAF loop.
   // A previous version registered a no-op onMicStateChange here via the
@@ -95,7 +303,15 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
    * logic on it, or a denied mic / concurrent start would kick off timer
    * chains on an exercise that is still idle.
    */
-  async function start(): Promise<boolean> {
+  function start(options: BaseExerciseStartOptions = {}): Promise<boolean> {
+    const voiceConfig = resolveConfig()
+    return startWithConfig(voiceConfig, options)
+  }
+
+  async function startWithConfig(
+    voiceConfig: ExerciseConfig,
+    options: BaseExerciseStartOptions,
+  ): Promise<boolean> {
     // Guard against concurrent starts — reset() fires the autoStart effect
     // which races with explicit handleStart() calls from click handlers.
     if (state().status !== 'idle') return false
@@ -144,10 +360,18 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       return false
     }
 
+    const leadInCompleted = await waitForLeadIn(options)
+    if (!leadInCompleted || state().status !== 'count-in') {
+      if (!micWasActive) practiceEngine.stopMic()
+      startDepth--
+      return false
+    }
+
     setError(null)
 
     startTime = performance.now()
     running = true
+    beginVoiceCapture(voiceConfig)
     setState((s) => ({ ...s, status: 'active' }))
 
     const loop = () => {
@@ -156,6 +380,16 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       const pitch = practiceEngine.update()
       const now = performance.now()
       const elapsed = now - startTime
+      const inputLevel = practiceEngine.getInputLevel()
+
+      if (voiceContourRecording) {
+        voiceContourFrames.push({
+          t: elapsed / 1000,
+          f0: pitch?.frequency ?? 0,
+          conf: pitch?.clarity ?? 0,
+          rms: inputLevel,
+        })
+      }
 
       batch(() => {
         if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
@@ -177,7 +411,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
                 // Real per-frame loudness so dynamics exercises can score
                 // actual crescendo/decrescendo (reuses the mic RMS the engine
                 // already computes for its input-level meter).
-                rms: practiceEngine.getInputLevel(),
+                rms: inputLevel,
               },
             ]
             return next.length > MAX_PITCH_HISTORY
@@ -203,6 +437,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     // pending setInterval/setTimeout chains from the exercise controller.
     runDisposers()
     const finalElapsed = performance.now() - startTime
+    discardVoiceTake()
     setState((s) => ({ ...s, status: 'complete', elapsedMs: finalElapsed }))
   }
 
@@ -217,6 +452,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     running = false
     cancelAnimationFrame(animId)
     const finalElapsed = performance.now() - startTime
+    finishVoiceCapture(exerciseResult, finalElapsed)
     // Publish the run's contour BEFORE the result signal fires: the
     // component's result effect calls recordExerciseResult, whose challenge
     // return path reads the trace synchronously.
@@ -247,6 +483,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       return
     }
     resetDepth++
+    cancelLeadInWait?.()
     running = false
     cancelAnimationFrame(animId)
 
@@ -257,6 +494,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     runDisposers()
 
     practiceEngine.stopMic()
+    discardVoiceTake()
     batch(() => {
       setState({ status: 'idle', currentScore: 0, elapsedMs: 0, metrics: {} })
       setPitchHistory([])
@@ -289,12 +527,21 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 
   onCleanup(() => {
+    cancelLeadInWait?.()
     running = false
     cancelAnimationFrame(animId)
     // Dispose controller timers (setInterval, rAF loops) to prevent leaks
     runDisposers()
     practiceEngine.stopMic()
+    discardVoiceTake()
   })
+
+  const voiceCapture: ExerciseVoiceCaptureController = {
+    state: getVoiceCaptureState,
+    take: getVoiceTake,
+    awaitOutcome: awaitVoiceCaptureOutcome,
+    discard: discardVoiceTake,
+  }
 
   return {
     state,
@@ -307,6 +554,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     frequencyData: getFrequencyData,
     targetPitch: getTargetPitch,
     error: getError,
+    voiceCapture,
     // Expose internals for exercise controllers
     _commitResult: commitResult,
     _updateScore: updateScore,
@@ -348,4 +596,8 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 }
 
-export type BaseExerciseController = ReturnType<typeof useBaseExercise>
+/** Scoring controllers do not depend on the optional audio-capture sidecar. */
+export type BaseExerciseController = Omit<
+  ReturnType<typeof useBaseExercise>,
+  'voiceCapture'
+>

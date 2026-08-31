@@ -405,19 +405,56 @@ on `db`/`jam` while `root` is not, so they run on a worker-only PR without
 duplicating work when `root=true` already covers them. Measured cost: **16s**
 (19 files / 276 tests) and **4s** (4 files / 36 tests).
 
-### 6.2 What CI does well
+### 6.2 The full browser suite did not gate a PR
 
-Worth noting, because the gap above is an exception rather than the rule. The PR
-gate computes a per-surface change scope and runs typecheck, lint, format check,
-the full unit suite, an e2e build, `@smoke`-tagged Playwright specs, both worker
-typechecks and the whole Beside Cue workspace. Actions are pinned to major
-version tags. The generated-index staleness check runs before dependency install,
-so the cheapest failure happens first. This is a well-built pipeline.
+The gate ran `test:e2e --grep @smoke` on `pull_request` — 59 tagged tests across
+21 of the then-56 spec files. The other 35 files ran only on push to `main`,
+which is to say after merge, where a failure is a notification and not a gate.
 
-### 6.3 Remaining gaps
+Two layout regressions rode through that hole. `exercise-idle-layout.spec.ts`
+was failing at two of its four viewports for days while `main` reported green,
+because `main`'s push runs stopped after the unit projects: run `33326451351` is
+77KB of log with zero Playwright output.
+
+**Fixed:** the gate is now a job graph rather than one serial job, and the
+browser suite runs in full on every pull request, sharded four ways. Measured on
+run `33394274494`: **386s wall clock** for the whole gate, against **~930s**
+serial before — more coverage for 40% of the time, because the shards run
+alongside lint, units, workers and Beside Cue instead of behind them.
+
+| Job                      | Wall clock |
+| ------------------------ | ---------- |
+| Scope                    | 12s        |
+| Validate changed files   | 36s        |
+| Lint and typecheck       | 182s       |
+| Unit tests (2 shards)    | 166s each  |
+| Browser tests (4 shards) | 225-360s   |
+| Workers                  | 27s        |
+| Beside Cue               | 74s        |
+
+`cancel-in-progress` is keyed on `github.event_name == 'pull_request'`, so a
+superseded PR push is dropped but a `main` run never is — every `main` commit's
+coverage is distinct and cancelling one loses it permanently.
+
+The `@smoke` tags stay in the specs. They no longer select what CI runs; they
+are a local convenience for `test:e2e --grep @smoke` when you want a fast pass
+before pushing. 153 tests across 42 of 70 files carry one.
+
+Full plan and outcome log: `docs/plans/pr-gate-hardening.md`.
+
+### 6.3 What CI does well
+
+The gate computes a per-surface change scope and routes work to the jobs that
+need it, so a Beside Cue-only PR does not pay for the MercuryPitch suite.
+Actions are pinned to major version tags. The generated-index staleness check
+runs before dependency install, so the cheapest failure happens first. An
+aggregator job fails the gate when any required job did not succeed, which
+closes the "skipped job reads as a pass" hole that a plain `needs:` list leaves
+open. This is a well-built pipeline.
+
+### 6.4 Remaining gaps
 
 - **No coverage gate of any kind.** `vitest.config.ts` configures reporters but no thresholds. §5 argues against a repo-wide number; a per-glob threshold on extracted pure modules plus a total-lines-covered ratchet is the useful form.
-- **The full e2e suite runs only after merge** (push to main / tags), so it is a notification, not a gate. Only 59 `@smoke` tests across 21 files gate a PR.
 - **`pnpm arch` is not yet in `check:ci`.** The metrics ratchet covers the counts; wiring `arch` in makes the failure legible at the point of change.
 - **No `--sequence.shuffle` job.** A nightly shuffled run is the right vehicle for flushing out the remaining order dependence — not the PR gate, where an intermittent red trains people to ignore CI.
 

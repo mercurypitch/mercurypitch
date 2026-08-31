@@ -1,9 +1,12 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { AppNavOverflowMenu } from '@/components/AppNavOverflowMenu'
+import { Drum } from '@/components/icons'
+import { BusyLink } from '@/components/shared/BusyLink'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -219,8 +222,8 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
   [TAB_EAR_LAB]: {
     id: 'tab-ear-lab',
     ariaLabel: 'Ear Lab',
-    // Thermometer with a scale tick — the Mercury Column in
-    // miniature: a calibrated instrument, not a game.
+    // The Regulator's pendulum jar — a mercury bob on its rod: the
+    // Mercury Column in miniature, a calibrated instrument, not a game.
     icon: () => (
       <svg
         viewBox="0 0 24 24"
@@ -233,10 +236,18 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <path d="M10 4a2 2 0 0 1 4 0v9.3a4.5 4.5 0 1 1-4 0Z" />
-        <circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none" />
-        <line x1="12" y1="15.4" x2="12" y2="9" />
-        <line x1="16.5" y1="7.5" x2="19" y2="7.5" />
+        <line x1="9" y1="3" x2="15" y2="3" />
+        <line x1="12" y1="3" x2="12" y2="10.5" />
+        <rect x="8" y="10.5" width="8" height="10.5" rx="3" />
+        <rect
+          x="9.6"
+          y="16.2"
+          width="4.8"
+          height="3.2"
+          rx="1.4"
+          fill="currentColor"
+          stroke="none"
+        />
       </svg>
     ),
   },
@@ -259,6 +270,25 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         <line x1="8" y1="9" x2="8" y2="15"></line>
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="16" y1="10" x2="16" y2="14"></line>
+      </svg>
+    ),
+  },
+  [TAB_VOICE_HISTORY]: {
+    id: 'tab-voice-history',
+    ariaLabel: 'Hear Yourself voice history',
+    icon: () => (
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        class={styles.tabIcon}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      >
+        <path d="M3 12h2l1.5-5 3 10 2.5-8 2.5 6 2-7 1.5 4H21" />
+        <path d="M5 20h14" opacity=".45" />
       </svg>
     ),
   },
@@ -710,6 +740,23 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     </button>
   )
 
+  const drumNightRoomLink = () => (
+    <BusyLink
+      id="nav-drum-night"
+      href={DRUM_NIGHT_PATH}
+      class={`app-tab ${styles.roomLink}`}
+      data-testid="nav-drum-night"
+      aria-label="Drums — open Drum Night room"
+      busyLabel="Opening Drum Night…"
+      title={iconOnly() ? 'Drum Night room' : undefined}
+    >
+      <span class={styles.tabIcon} aria-hidden="true">
+        <Drum />
+      </span>
+      <span class="tab-text">Drums</span>
+    </BusyLink>
+  )
+
   return (
     <nav
       id="app-tabs"
@@ -741,7 +788,28 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
               <Show when={collapsible()}>
                 {groupLabel(group.id, group.label)}
               </Show>
-              <For each={split(group).inline}>{(tab) => renderTab(tab)}</For>
+              {/* The Drum Night door sits with the instruments: after Guitar,
+                  before the Exercises drills wherever they land. */}
+              <For each={split(group).inline}>
+                {(tab) => (
+                  <>
+                    <Show
+                      when={group.id === 'practice' && tab === TAB_EXERCISES}
+                    >
+                      {drumNightRoomLink()}
+                    </Show>
+                    {renderTab(tab)}
+                  </>
+                )}
+              </For>
+              <Show
+                when={
+                  group.id === 'practice' &&
+                  !split(group).inline.includes(TAB_EXERCISES)
+                }
+              >
+                {drumNightRoomLink()}
+              </Show>
               <Show when={split(group).overflow.length > 0}>
                 <AppNavOverflowMenu
                   groupLabel={group.label}

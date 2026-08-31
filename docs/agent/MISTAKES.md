@@ -190,6 +190,15 @@ audibility") replays the automation and fails any truncation — never weaken it
 **Cause:** calling an accessor inside an async callback runs it detached from the owner.
 **Rule:** capture the value first, then start the async work.
 
+### A CI-only test timeout is a measurement, not a flake
+
+**Symptom:** a test times out on CI and passes locally, so it looks like runner noise.
+**Cause:** local `/tmp` is a tmpfs, so fixtures that write real files cost almost
+nothing here and fsync on CI. One migration fixture ran 12ms locally and over 5s there.
+**Rule:** reproduce with `TMPDIR=<real-disk-path>` before judging it. Remove accidental
+cost where it exists; only give inherent cost an explicit timeout. Never raise the
+global default. See TESTING.md §3.7.
+
 ### `PlaybackRuntime.on('state')` passes an event object, not a state string
 
 **Symptom:** pause detection never fired; the comparison always failed.
@@ -360,6 +369,16 @@ is what made this invisible.
 
 **See:** `src/components/sync/SyncDevicesModal.tsx`,
 `src/components/__tests__/SyncDevicesModal.test.tsx`
+
+### Cap viewport-sized overlays to their positioned container
+
+**Symptom:** a drawer looked open, but its tabs could not be clicked because a
+fixed header intercepted every pointer attempt at a common desktop viewport.
+**Cause:** the drawer used `vh` height while positioned inside a shorter stage;
+its top extended beneath the higher-z-index header outside that container.
+**Rule:** cap viewport-derived overlay height to `100%` of its containing block,
+then regression-test settled geometry and `elementFromPoint` hit ownership.
+**See:** `src/features/drum-night/DrumNightApp.module.css`
 
 ## Performance
 
@@ -777,6 +796,16 @@ cap (`width: min(400px, 82vw, 35vh)` for a 4:5 box wanting ≤ 44vh) and let
 stays at zero.
 
 **See:** `.mirror-peek-card` in `src/features/mirror/mirror.css`
+
+### Open mobile More before selecting an overflow tab
+
+**Symptom:** `pnpm audit:mobile` could not find Exercises even though the tab
+was visible in the app's mobile navigation.
+**Cause:** overflow destinations are not mounted until More is opened and do
+not necessarily keep their desktop tab id.
+**Rule:** mobile automation opens More when the stable tab id is absent, then
+selects the destination by its exact accessible name.
+**See:** `scripts/audit-exercises-mobile.mjs`
 
 ## Process
 

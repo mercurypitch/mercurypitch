@@ -3,10 +3,11 @@
 // flow, confusion bookkeeping and the Mercury Index snapshots.
 // ============================================================
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
-import { calibrationHistory, completeCalibrationRun, completeSprint, earConfusions, earPlayerRating, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
+import { calibrationHistory, completeCalibrationRun, completeSprint, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -232,5 +233,74 @@ describe('finishing a sprint', () => {
     completeSprint()
     const today = sprintProgress().day
     expect(sprintStreak(shiftDay(today, 2))).toBe(0)
+  })
+})
+
+describe('pacing', () => {
+  it('starts with auto-advance on and the default hold', () => {
+    expect(earAutoAdvance()).toBe(true)
+    expect(earRevealHoldMs()).toBe(REVEAL_HOLD.defaultMs)
+  })
+
+  it('snaps the hold to the slider step and clamps it to the range', () => {
+    expect(setEarRevealHoldMs(2750)).toBe(3000)
+    expect(earRevealHoldMs()).toBe(3000)
+    expect(setEarRevealHoldMs(100)).toBe(REVEAL_HOLD.min)
+    expect(setEarRevealHoldMs(99999)).toBe(REVEAL_HOLD.max)
+    expect(setEarRevealHoldMs(Number.NaN)).toBe(REVEAL_HOLD.defaultMs)
+  })
+
+  it('persists both and comes back with reset', () => {
+    setEarAutoAdvance(false)
+    setEarRevealHoldMs(4000)
+    expect(localStorage.getItem('mercurypitch_ear_auto_advance')).toBe('false')
+    expect(localStorage.getItem('mercurypitch_ear_reveal_hold_ms')).toBe('4000')
+    resetEarLabStore()
+    expect(earAutoAdvance()).toBe(true)
+    expect(earRevealHoldMs()).toBe(REVEAL_HOLD.defaultMs)
+  })
+})
+
+describe('the instrument card', () => {
+  it('is folded until a drill unfolds it, and remembers per drill', () => {
+    expect(earInfoOpen('hairline')).toBe(false)
+    setEarInfoOpen('hairline', true)
+    expect(earInfoOpen('hairline')).toBe(true)
+    expect(earInfoOpen('leap')).toBe(false)
+    expect(
+      JSON.parse(localStorage.getItem('mercurypitch_ear_info_open') ?? '{}'),
+    ).toEqual({ hairline: true })
+    setEarInfoOpen('hairline', false)
+    expect(earInfoOpen('hairline')).toBe(false)
+    setEarInfoOpen('hairline', true)
+    resetEarLabStore()
+    expect(earInfoOpen('hairline')).toBe(false)
+  })
+})
+
+describe('the silent-ladder re-seed', () => {
+  const items = (
+    record: Record<string, { rating: number; attempts: number }>,
+  ) => localStorage.setItem('mercurypitch_ear_items', JSON.stringify(record))
+
+  it("drops the ladder drills' tap items once, on load, and keeps the rest", async () => {
+    items({
+      'e-steps-up': { rating: 1300, attempts: 4 },
+      'bassline:1451': { rating: 1250, attempts: 2 },
+      'leap:m2': { rating: 1100, attempts: 9 },
+    })
+    localStorage.removeItem('mercurypitch_ear_items_reseed')
+    vi.resetModules()
+    const fresh = await import('@/stores/ear-lab-store')
+    expect(Object.keys(fresh.earItemStates())).toEqual(['leap:m2'])
+    expect(localStorage.getItem('mercurypitch_ear_items_reseed')).toBe(
+      'ladder-sounds',
+    )
+    expect(fresh.reseedSilentLadderItems()).toBe(false)
+    // Stamped: a later load keeps what the sounding ladder has rated.
+    items({ 'e-steps-up': { rating: 1300, attempts: 4 } })
+    vi.resetModules()
+    const later = await import('@/stores/ear-lab-store')
+    expect(Object.keys(later.earItemStates())).toEqual(['e-steps-up'])
   })
 })

@@ -228,7 +228,10 @@ describe('Guitar Night separation account gate', () => {
       await screen.findByRole('button', { name: 'Complete sign in' }),
     )
     await waitFor(() => expect(accountState.refreshAccount).toHaveBeenCalled())
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    // The way out of the staged panel is the chevron on its heading now.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Back to Guitar Night' }),
+    )
     accountRefresh.resolve()
     await waitFor(() => expect(accountState.refreshCredits).toHaveBeenCalled())
     creditsRefresh.resolve()

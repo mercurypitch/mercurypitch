@@ -7,7 +7,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type * as ParseMidiProject from '@/features/piano-project/parse-midi-project'
-import { gmInstrumentName } from '@/lib/midi-song'
+import { gmInstrumentName, isPercussionMidiSongTrack } from '@/lib/midi-song'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
 // ── Binary MIDI builders ───────────────────────────────────────
@@ -52,12 +52,12 @@ function buildMidi(...tracks: number[][]): Uint8Array {
   ])
 }
 
-const noteOn = (midi: number, delta = 0, channel = 0): number[] => [
-  ...varLen(delta),
-  0x90 | channel,
-  midi,
-  100,
-]
+const noteOn = (
+  midi: number,
+  delta = 0,
+  channel = 0,
+  velocity = 100,
+): number[] => [...varLen(delta), 0x90 | channel, midi, velocity]
 
 const noteOff = (midi: number, delta: number, channel = 0): number[] => [
   ...varLen(delta),
@@ -143,10 +143,41 @@ describe('parseMidiSongViaProject', () => {
     expect(song?.tracks[0].notes[0].duration).toBe(0.25)
   })
 
-  it('answers null when every track was percussion', () => {
-    expect(
-      parse(buildMidi([...noteOn(38, 0, 9), ...noteOff(38, 480, 9)])),
-    ).toBe(null)
+  it('keeps a percussion-only file as one-shot hits with velocity', () => {
+    const song = parse(
+      buildMidi([
+        ...noteOn(38, 0, 9, 73),
+        ...noteOff(38, 480, 9),
+        // A one-shot remains valid without a matching note-off.
+        ...noteOn(42, 240, 9, 41),
+      ]),
+    )
+    const track = song?.tracks.find(isPercussionMidiSongTrack)
+
+    expect(song).not.toBeNull()
+    expect(track).toMatchObject({
+      kind: 'percussion',
+      noteCount: 2,
+      notes: [],
+      droppedHitCount: 0,
+    })
+    expect(track?.percussionHits).toEqual([
+      expect.objectContaining({ gmKey: 38, startBeat: 0, velocity: 73 }),
+      expect.objectContaining({ gmKey: 42, startBeat: 1.5, velocity: 41 }),
+    ])
+  })
+
+  it('reports channel-10 keys it cannot map instead of inventing a snare', () => {
+    const song = parse(
+      buildMidi([...noteOn(32, 0, 9, 90), ...noteOn(91, 0, 9, 90)]),
+    )
+    const track = song?.tracks.find(isPercussionMidiSongTrack)
+
+    expect(track).toMatchObject({
+      noteCount: 0,
+      percussionHits: [],
+      droppedHitCount: 2,
+    })
   })
 
   it('lets a failure that is not a parse error through', async () => {

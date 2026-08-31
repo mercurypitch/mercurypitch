@@ -25,6 +25,22 @@ const PIANO_PACK_MIGRATION = join(
   import.meta.dirname,
   '../migrations/0024_piano_background_pack.sql',
 )
+const GUITAR_MIGRATION = join(
+  import.meta.dirname,
+  '../migrations/0031_guitar_background_surface.sql',
+)
+const MERCURY_ROOMS_MIGRATION = join(
+  import.meta.dirname,
+  '../migrations/0032_mercury_rooms_background_pack.sql',
+)
+const DRUM_MIGRATION = join(
+  import.meta.dirname,
+  '../migrations/0036_drum_background_surface.sql',
+)
+const DRUM_PACK_MIGRATION = join(
+  import.meta.dirname,
+  '../migrations/0037_drum_background_pack.sql',
+)
 const BACKGROUND_ID = 'golden-stage'
 const NOW = '2026-08-06T00:00:00.000Z'
 const PIANO_CORE_IDS = [
@@ -42,6 +58,13 @@ const PIANO_PACK_IDS = [
   'piano-rain-glasshouse',
 ] as const
 const PIANO_IDS = [...PIANO_CORE_IDS, ...PIANO_PACK_IDS].sort()
+const DRUM_IDS = [
+  'drum-blue-hour-live-room',
+  'drum-bronze-soundstage',
+  'drum-rain-glass-studio',
+  'drum-sunrise-pavilion',
+  'drum-walnut-live-room',
+] as const
 
 let directory: string
 let primary: DatabaseSync
@@ -82,6 +105,21 @@ function applyPianoPackMigration(database: DatabaseSync): void {
   database.exec(readFileSync(PIANO_PACK_MIGRATION, 'utf8'))
 }
 
+function applyPreDrumBackgroundMigrations(database: DatabaseSync): void {
+  applyPianoMigration(database)
+  database.exec(readFileSync(GUITAR_MIGRATION, 'utf8'))
+  database.exec(readFileSync(MERCURY_ROOMS_MIGRATION, 'utf8'))
+}
+
+function applyDrumMigration(database: DatabaseSync): void {
+  database.exec(readFileSync(DRUM_MIGRATION, 'utf8'))
+  database.exec(readFileSync(DRUM_PACK_MIGRATION, 'utf8'))
+}
+
+function applyDrumPackMigration(database: DatabaseSync): void {
+  database.exec(readFileSync(DRUM_PACK_MIGRATION, 'utf8'))
+}
+
 function rows(database: DatabaseSync, table: string, where = '1 = 1') {
   return database
     .prepare(`SELECT * FROM ${table} WHERE ${where} ORDER BY 1, 2`)
@@ -92,10 +130,19 @@ beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'mercurypitch-premium-migration-'))
   const databasePath = join(directory, 'premium.sqlite')
   primary = new DatabaseSync(databasePath)
+  // The migration chain commits hundreds of statements, and every commit
+  // fsyncs by default. That is real durability nobody wants from a fixture
+  // in a temp directory the afterEach deletes: it costs ~2s per Drum test on
+  // a spinning-rust CI disk, past the 5s test timeout, while the same file on
+  // a tmpfs /tmp runs in 12ms and hides the cost entirely. Durability is the
+  // only thing switched off — these connections still share one real file, so
+  // the locking the concurrency tests rely on behaves exactly as before.
+  primary.exec('PRAGMA synchronous = OFF')
   primary.exec('PRAGMA foreign_keys = ON')
   primary.exec('CREATE TABLE users (id TEXT PRIMARY KEY)')
   primary.exec(readFileSync(STUDIO_MIGRATION, 'utf8'))
   contender = new DatabaseSync(databasePath)
+  contender.exec('PRAGMA synchronous = OFF')
   contender.exec('PRAGMA foreign_keys = ON')
 })
 
@@ -324,6 +371,197 @@ describe('premium background revision migration', () => {
           `SELECT revokedAt FROM premiumSupporterGroupPerks
             WHERE groupId = 'group-active-supporters'
               AND backgroundId = 'piano-rain-glasshouse'`,
+        )
+        .get(),
+    ).toEqual({ revokedAt: NOW })
+    expect(primary.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+  })
+
+  it('preserves the complete protected graph while adding the Drum surface', () => {
+    applyPreDrumBackgroundMigrations(primary)
+    primary.prepare('INSERT INTO users (id) VALUES (?)').run('drum-user')
+    primary
+      .prepare(
+        `INSERT INTO premiumBackgroundRevisions
+          (id, backgroundId, version, lifecycle, createdAt, updatedAt,
+           publishedAt, supersededAt)
+         VALUES ('drum-preserved-revision', ?, 1, 'published', ?, ?, ?, NULL)`,
+      )
+      .run(BACKGROUND_ID, NOW, NOW, NOW)
+    for (const [id, variant, width, height] of [
+      ['drum-preserved-2k', 'landscape-2k', 2048, 1152],
+      ['drum-preserved-4k', 'landscape-4k', 3840, 2160],
+      ['drum-preserved-portrait', 'portrait-2k', 1440, 2560],
+    ] as const) {
+      primary
+        .prepare(
+          `INSERT INTO premiumBackgroundVariants
+            (id, revisionId, variant, objectKey, width, height, byteSize,
+             sha256, etag, createdAt, updatedAt)
+           VALUES (?, 'drum-preserved-revision', ?, ?, ?, ?, 123,
+                   'sha256', 'etag', ?, ?)`,
+        )
+        .run(
+          id,
+          variant,
+          `backgrounds/v2/jam/golden-stage/v1/${variant}/${id}.webp`,
+          width,
+          height,
+          NOW,
+          NOW,
+        )
+    }
+    primary
+      .prepare(
+        `UPDATE premiumBackgroundAssets
+            SET activeRevisionId = 'drum-preserved-revision'
+          WHERE id = ?`,
+      )
+      .run(BACKGROUND_ID)
+    primary
+      .prepare(
+        `UPDATE premiumSupporterGroupPerks
+            SET revokedAt = ?
+          WHERE groupId = 'group-active-supporters'
+            AND backgroundId = 'guitar-british-rock'`,
+      )
+      .run(NOW)
+    primary
+      .prepare(
+        `INSERT INTO premiumBackgroundCapabilities
+          (id, backgroundId, revisionId, version, roomId, issuerUserId,
+           issuedAt, expiresAt, revokedAt)
+         VALUES ('drum-preserved-capability', ?, 'drum-preserved-revision', 1,
+                 'ABCDEFGH', 'drum-user', ?,
+                 '2099-01-01T00:00:00.000Z', NULL)`,
+      )
+      .run(BACKGROUND_ID, NOW)
+
+    const before = {
+      assets: rows(primary, 'premiumBackgroundAssets'),
+      capabilities: rows(primary, 'premiumBackgroundCapabilities'),
+      groupPerks: rows(primary, 'premiumSupporterGroupPerks'),
+      revisions: rows(primary, 'premiumBackgroundRevisions'),
+      variants: rows(primary, 'premiumBackgroundVariants'),
+    }
+
+    primary.exec(readFileSync(DRUM_MIGRATION, 'utf8'))
+
+    expect(rows(primary, 'premiumBackgroundAssets')).toEqual(before.assets)
+    expect(rows(primary, 'premiumBackgroundRevisions')).toEqual(
+      before.revisions,
+    )
+    expect(rows(primary, 'premiumBackgroundVariants')).toEqual(before.variants)
+    expect(rows(primary, 'premiumSupporterGroupPerks')).toEqual(
+      before.groupPerks,
+    )
+    expect(rows(primary, 'premiumBackgroundCapabilities')).toEqual(
+      before.capabilities,
+    )
+    expect(primary.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+
+    expect(() =>
+      primary
+        .prepare(
+          `INSERT INTO premiumBackgroundAssets
+            (id, surface, title, description, status, activeRevisionId,
+             createdAt, updatedAt, retiredAt)
+           VALUES ('drum-schema-probe', 'drum', 'Probe', '', 'active', NULL,
+                   ?, ?, NULL)`,
+        )
+        .run(NOW, NOW),
+    ).not.toThrow()
+    expect(() =>
+      primary
+        .prepare(
+          `INSERT INTO premiumBackgroundAssets
+            (id, surface, title, description, status, activeRevisionId,
+             createdAt, updatedAt, retiredAt)
+           VALUES ('bad-drum-surface', 'video', 'Bad', '', 'active', NULL,
+                   ?, ?, NULL)`,
+        )
+        .run(NOW, NOW),
+    ).toThrow(/CHECK constraint failed/)
+    expect(() =>
+      primary
+        .prepare(
+          `INSERT INTO premiumBackgroundRevisions
+            (id, backgroundId, version, lifecycle, createdAt, updatedAt,
+             publishedAt, supersededAt)
+           VALUES ('duplicate-drum-published', ?, 2, 'published', ?, ?, ?, NULL)`,
+        )
+        .run(BACKGROUND_ID, NOW, NOW, NOW),
+    ).toThrow(/UNIQUE constraint failed/)
+  })
+
+  it('adds the complete Drum pack without publishing protected revisions', () => {
+    applyPreDrumBackgroundMigrations(primary)
+    applyDrumMigration(primary)
+
+    expect(
+      primary
+        .prepare(
+          `SELECT id, surface, status, activeRevisionId
+             FROM premiumBackgroundAssets
+            WHERE surface = 'drum'
+            ORDER BY id`,
+        )
+        .all(),
+    ).toEqual(
+      DRUM_IDS.map((id) => ({
+        activeRevisionId: null,
+        id,
+        status: 'active',
+        surface: 'drum',
+      })),
+    )
+    expect(
+      primary
+        .prepare(
+          `SELECT backgroundId, revokedAt
+             FROM premiumSupporterGroupPerks
+            WHERE backgroundId LIKE 'drum-%'
+            ORDER BY backgroundId`,
+        )
+        .all(),
+    ).toEqual(
+      DRUM_IDS.map((backgroundId) => ({
+        backgroundId,
+        revokedAt: null,
+      })),
+    )
+    expect(
+      primary
+        .prepare(
+          `SELECT COUNT(*) AS count
+             FROM premiumBackgroundRevisions r
+             JOIN premiumBackgroundAssets a ON a.id = r.backgroundId
+            WHERE a.surface = 'drum'`,
+        )
+        .get(),
+    ).toEqual({ count: 0 })
+    expect(primary.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+  })
+
+  it('replays the Drum pack without restoring an intentional revocation', () => {
+    applyPreDrumBackgroundMigrations(primary)
+    applyDrumMigration(primary)
+    primary
+      .prepare(
+        `UPDATE premiumSupporterGroupPerks
+            SET revokedAt = ?
+          WHERE groupId = 'group-active-supporters'
+            AND backgroundId = 'drum-rain-glass-studio'`,
+      )
+      .run(NOW)
+
+    expect(() => applyDrumPackMigration(primary)).not.toThrow()
+    expect(
+      primary
+        .prepare(
+          `SELECT revokedAt FROM premiumSupporterGroupPerks
+            WHERE groupId = 'group-active-supporters'
+              AND backgroundId = 'drum-rain-glass-studio'`,
         )
         .get(),
     ).toEqual({ revokedAt: NOW })

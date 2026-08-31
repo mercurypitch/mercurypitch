@@ -8,14 +8,15 @@ import type { UvrStemSnapshotEntry } from '@/db/services/uvr-read-service'
 const adapterReads = vi.hoisted(() => ({
   readUvrSessionRecords: vi.fn(),
   readUvrStemManifest: vi.fn(),
-  readUvrStemSelection: vi.fn(),
+  readUvrStemSelectionWithinBudget: vi.fn(),
   openUvrStemLease: vi.fn(),
 }))
 
 vi.mock('@/db/services/uvr-read-service', () => ({
   readUvrSessionRecords: adapterReads.readUvrSessionRecords,
   readUvrStemManifest: adapterReads.readUvrStemManifest,
-  readUvrStemSelection: adapterReads.readUvrStemSelection,
+  readUvrStemSelectionWithinBudget:
+    adapterReads.readUvrStemSelectionWithinBudget,
 }))
 
 vi.mock('@/lib/uvr-stem-lease', () => ({
@@ -71,7 +72,7 @@ describe('createUvrGuitarNightSongPort', () => {
   beforeEach(() => {
     adapterReads.readUvrSessionRecords.mockReset()
     adapterReads.readUvrStemManifest.mockReset()
-    adapterReads.readUvrStemSelection.mockReset()
+    adapterReads.readUvrStemSelectionWithinBudget.mockReset()
     adapterReads.openUvrStemLease.mockReset()
   })
 
@@ -116,7 +117,11 @@ describe('createUvrGuitarNightSongPort', () => {
     adapterReads.readUvrStemManifest.mockResolvedValue(
       snapshot.map((stem) => stem.kind),
     )
-    adapterReads.readUvrStemSelection.mockResolvedValue(snapshot)
+    adapterReads.readUvrStemSelectionWithinBudget.mockResolvedValue({
+      ok: true,
+      snapshot,
+      totalBytes: 24,
+    })
     adapterReads.openUvrStemLease.mockResolvedValue({
       assets: [
         { kind: 'drums', url: 'blob:drums', sizeBytes: 8 },
@@ -169,10 +174,11 @@ describe('createUvrGuitarNightSongPort', () => {
       'vocal',
       'instrumental',
     ])
-    adapterReads.readUvrStemSelection.mockResolvedValue([
-      snapshotStem('vocal'),
-      snapshotStem('instrumental'),
-    ])
+    adapterReads.readUvrStemSelectionWithinBudget.mockResolvedValue({
+      ok: true,
+      snapshot: [snapshotStem('vocal'), snapshotStem('instrumental')],
+      totalBytes: 16,
+    })
     adapterReads.openUvrStemLease.mockResolvedValue({
       assets: [{ kind: 'vocal', url: 'blob:vocal', sizeBytes: 8 }],
       release,

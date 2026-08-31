@@ -215,6 +215,13 @@ export const IDENTIFICATION_DRILLS: IdentificationDrill[] = [
     scale: ELO_SCALE,
   },
   {
+    id: 'chart',
+    faculty: 'time',
+    name: 'The Chart',
+    choices: 0,
+    scale: ELO_SCALE,
+  },
+  {
     id: 'subdivide',
     faculty: 'time',
     name: 'Subdivide',

@@ -33,20 +33,41 @@ export interface LegacyMidiNote {
   letRing?: boolean
 }
 
-export interface LegacyMidiTrack {
+export interface LegacyMidiPitchedTrack {
   id: string
+  /** Missing in pre-percussion rows; normalized as pitched while reading. */
+  kind: 'pitched'
   name: string
   instrumentName: string
   noteCount: number
   notes: LegacyMidiNote[]
 }
 
+export interface LegacyMidiPercussionHit {
+  gmKey: number
+  startBeat: number
+  velocity: number
+}
+
+export interface LegacyMidiPercussionTrack {
+  id: string
+  kind: 'percussion'
+  name: string
+  instrumentName: string
+  noteCount: number
+  notes: never[]
+  percussionHits: LegacyMidiPercussionHit[]
+  droppedHitCount: number
+}
+
+export type LegacyMidiTrack = LegacyMidiPitchedTrack | LegacyMidiPercussionTrack
+
 export interface LegacyMidiSong {
   id: string
   name: string
   bpm: number
   tracks: LegacyMidiTrack[]
-  scoreTrackId: string
+  scoreTrackId: string | null
   backingTrackIds: string[]
   importedAt: number
 }
@@ -149,11 +170,62 @@ function parseNote(value: unknown): LegacyMidiNote | null {
   return note
 }
 
+function parsePercussionHit(value: unknown): LegacyMidiPercussionHit | null {
+  if (!isRecord(value)) return null
+  if (!Number.isInteger(value.gmKey) || !isFiniteBetween(value.gmKey, 35, 81)) {
+    return null
+  }
+  if (!isFiniteBetween(value.startBeat, 0, MAX_LEGACY_BEAT)) return null
+  if (
+    !Number.isInteger(value.velocity) ||
+    !isFiniteBetween(value.velocity, 1, 127)
+  ) {
+    return null
+  }
+  const tick = Math.round(value.startBeat * LEGACY_TICKS_PER_QUARTER)
+  if (!Number.isSafeInteger(tick) || tick > MAX_PROJECT_TICK) return null
+  return {
+    gmKey: value.gmKey,
+    startBeat: value.startBeat,
+    velocity: value.velocity,
+  }
+}
+
 function parseTrack(value: unknown): LegacyMidiTrack | null {
   if (!isRecord(value)) return null
   if (!isBoundedString(value.id, MAX_ID_LENGTH)) return null
   if (!isBoundedString(value.name, MAX_NAME_LENGTH)) return null
   if (!isBoundedString(value.instrumentName, MAX_NAME_LENGTH)) return null
+  if (value.kind === 'percussion') {
+    if (!Array.isArray(value.notes) || value.notes.length !== 0) return null
+    if (
+      !Array.isArray(value.percussionHits) ||
+      value.percussionHits.length > MAX_LEGACY_NOTES ||
+      !Number.isInteger(value.noteCount) ||
+      value.noteCount !== value.percussionHits.length ||
+      !Number.isInteger(value.droppedHitCount) ||
+      !isFiniteBetween(value.droppedHitCount, 0, MAX_LEGACY_NOTES)
+    ) {
+      return null
+    }
+    const percussionHits: LegacyMidiPercussionHit[] = []
+    for (const rawHit of value.percussionHits) {
+      const hit = parsePercussionHit(rawHit)
+      if (hit === null) return null
+      percussionHits.push(hit)
+    }
+    return {
+      id: value.id,
+      kind: 'percussion',
+      name: value.name,
+      instrumentName: value.instrumentName,
+      noteCount: value.noteCount,
+      notes: [],
+      percussionHits,
+      droppedHitCount: value.droppedHitCount,
+    }
+  }
+  if (value.kind !== undefined && value.kind !== 'pitched') return null
   if (!Array.isArray(value.notes) || value.notes.length > MAX_LEGACY_NOTES) {
     return null
   }
@@ -171,6 +243,7 @@ function parseTrack(value: unknown): LegacyMidiTrack | null {
   }
   return {
     id: value.id,
+    kind: 'pitched',
     name: value.name,
     instrumentName: value.instrumentName,
     noteCount: value.noteCount,
@@ -194,21 +267,28 @@ function parseSong(value: unknown): LegacyMidiSong | null {
 
   const tracks: LegacyMidiTrack[] = []
   const trackIds = new Set<string>()
+  const pitchedTrackIds = new Set<string>()
   let noteCount = 0
   for (const rawTrack of value.tracks) {
     const track = parseTrack(rawTrack)
     if (track === null || trackIds.has(track.id)) return null
-    noteCount += track.notes.length
+    noteCount += track.noteCount
     if (noteCount > MAX_LEGACY_NOTES) return null
     trackIds.add(track.id)
+    if (track.kind === 'pitched') pitchedTrackIds.add(track.id)
     tracks.push(track)
   }
 
-  if (
-    !isBoundedString(value.scoreTrackId, MAX_ID_LENGTH) ||
-    !trackIds.has(value.scoreTrackId) ||
-    !Array.isArray(value.backingTrackIds)
-  ) {
+  const scoreTrackId = value.scoreTrackId
+  if (scoreTrackId !== null) {
+    if (
+      !isBoundedString(scoreTrackId, MAX_ID_LENGTH) ||
+      !pitchedTrackIds.has(scoreTrackId)
+    ) {
+      return null
+    }
+  }
+  if (!Array.isArray(value.backingTrackIds)) {
     return null
   }
   const backingTrackIds: string[] = []
@@ -217,7 +297,7 @@ function parseSong(value: unknown): LegacyMidiSong | null {
     if (
       !isBoundedString(id, MAX_ID_LENGTH) ||
       !trackIds.has(id) ||
-      id === value.scoreTrackId ||
+      id === scoreTrackId ||
       seenBacking.has(id)
     ) {
       return null
@@ -231,7 +311,7 @@ function parseSong(value: unknown): LegacyMidiSong | null {
     name: value.name,
     bpm: value.bpm,
     tracks,
-    scoreTrackId: value.scoreTrackId,
+    scoreTrackId,
     backingTrackIds,
     importedAt: value.importedAt,
   }
@@ -271,20 +351,37 @@ function normalizedSong(song: LegacyMidiSong): unknown {
   return {
     name: song.name,
     bpm: song.bpm,
-    tracks: song.tracks.map((track) => ({
-      id: track.id,
-      name: track.name,
-      instrumentName: track.instrumentName,
-      noteCount: track.noteCount,
-      notes: track.notes.map((note) => ({
-        midi: note.midi,
-        startBeat: note.startBeat,
-        duration: note.duration,
-        stringIndex: note.stringIndex ?? null,
-        fret: note.fret ?? null,
-        letRing: note.letRing ?? null,
-      })),
-    })),
+    tracks: song.tracks.map((track) =>
+      track.kind === 'percussion'
+        ? {
+            id: track.id,
+            kind: track.kind,
+            name: track.name,
+            instrumentName: track.instrumentName,
+            noteCount: track.noteCount,
+            notes: [],
+            percussionHits: track.percussionHits.map((hit) => ({
+              gmKey: hit.gmKey,
+              startBeat: hit.startBeat,
+              velocity: hit.velocity,
+            })),
+            droppedHitCount: track.droppedHitCount,
+          }
+        : {
+            id: track.id,
+            name: track.name,
+            instrumentName: track.instrumentName,
+            noteCount: track.noteCount,
+            notes: track.notes.map((note) => ({
+              midi: note.midi,
+              startBeat: note.startBeat,
+              duration: note.duration,
+              stringIndex: note.stringIndex ?? null,
+              fret: note.fret ?? null,
+              letRing: note.letRing ?? null,
+            })),
+          },
+    ),
     scoreTrackId: song.scoreTrackId,
     backingTrackIds: [...song.backingTrackIds].sort(),
   }
@@ -316,34 +413,47 @@ export function legacyMidiSongToProject(
   sourceHash: string,
 ): PianoProject {
   const tracks = song.tracks.map((track, sourceTrackIndex) => {
-    const channel = legacyTrackChannel(track.id)
-    const pending = track.notes.flatMap((note, noteIndex) => {
-      const tick = Math.round(note.startBeat * LEGACY_TICKS_PER_QUARTER)
-      const durationTicks = Math.max(
-        1,
-        Math.round(note.duration * LEGACY_TICKS_PER_QUARTER),
-      )
-      return [
-        {
-          type: 'note-on' as const,
-          channel,
-          note: note.midi,
-          velocity: DEFAULT_LEGACY_VELOCITY,
-          tick,
-          noteIndex,
-          off: false,
-        },
-        {
-          type: 'note-off' as const,
-          channel,
-          note: note.midi,
-          velocity: 0,
-          tick: tick + durationTicks,
-          noteIndex,
-          off: true,
-        },
-      ]
-    })
+    const legacyChannel = legacyTrackChannel(track.id)
+    const channel =
+      track.kind === 'percussion' ? 9 : legacyChannel === 9 ? 0 : legacyChannel
+    const pending =
+      track.kind === 'percussion'
+        ? track.percussionHits.map((hit, noteIndex) => ({
+            type: 'note-on' as const,
+            channel,
+            note: hit.gmKey,
+            velocity: hit.velocity,
+            tick: Math.round(hit.startBeat * LEGACY_TICKS_PER_QUARTER),
+            noteIndex,
+            off: false,
+          }))
+        : track.notes.flatMap((note, noteIndex) => {
+            const tick = Math.round(note.startBeat * LEGACY_TICKS_PER_QUARTER)
+            const durationTicks = Math.max(
+              1,
+              Math.round(note.duration * LEGACY_TICKS_PER_QUARTER),
+            )
+            return [
+              {
+                type: 'note-on' as const,
+                channel,
+                note: note.midi,
+                velocity: DEFAULT_LEGACY_VELOCITY,
+                tick,
+                noteIndex,
+                off: false,
+              },
+              {
+                type: 'note-off' as const,
+                channel,
+                note: note.midi,
+                velocity: 0,
+                tick: tick + durationTicks,
+                noteIndex,
+                off: true,
+              },
+            ]
+          })
     pending.sort(
       (left, right) =>
         left.tick - right.tick ||

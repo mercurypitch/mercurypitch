@@ -444,6 +444,84 @@
     cy 400ms ease;
 }
 
+/* ── The rhythm drum (Pulse) ──────────────────────────────────── */
+
+.beatLamp {
+  fill: var(--inst-line);
+  stroke: var(--inst-brass-line);
+  stroke-width: 1;
+}
+
+.beatLampLit {
+  fill: var(--inst-brass-bright);
+}
+
+/* A lamp the take's progress line has already run past. Dimmer than the
+   beat sounding now, brighter than one still ahead. */
+.beatLampPassed {
+  fill: var(--inst-brass);
+}
+
+/* The take's progress rail: the unfilled track, then the part the
+   player's bar has covered since the tap that started it. */
+.progressTrack {
+  stroke: var(--inst-line);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* The fill is the full-width rule squashed to the anchor's place in the
+   bar, then run out to full over what is left of it. Two custom
+   properties set per take (`--fill-from`, `--fill-run`) carry those, so
+   the animation is declarative: no frame loop, nothing to leak, and a
+   tab that was hidden mid-bar comes back in the right place. */
+@keyframes drumBarFill {
+  from {
+    transform: scaleX(var(--fill-from, 0));
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.progressFill {
+  fill: var(--inst-brass-bright);
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(var(--fill-from, 0));
+  animation: drumBarFill var(--fill-run, 0ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The bar still says where the take is, it just steps with the beat
+     lamps instead of sweeping. */
+  .progressFill {
+    animation: none;
+  }
+}
+
+.onset {
+  stroke: var(--inst-brass);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.onsetMissed {
+  stroke: var(--inst-garnet);
+  stroke-dasharray: 3 3;
+}
+
+.tapMark {
+  stroke: var(--inst-signal);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.tapMarkExtra {
+  stroke: var(--inst-muted);
+  opacity: 0.7;
+}
+
 /* ── The track pendulums ─────────────────────────────────────── */
 
 .calPendulum {
@@ -490,7 +568,185 @@
   fill: var(--inst-brass-bright);
 }
 
+/* ── Bead chain (Echo, Span) ─────────────────────────────── */
+
+.bead {
+  fill: var(--inst-muted);
+  opacity: 0.55;
+  transition:
+    fill 120ms ease,
+    opacity 120ms ease;
+}
+
+.beadSounded {
+  fill: var(--inst-mercury);
+  opacity: 0.8;
+}
+
+.beadLit {
+  fill: var(--inst-brass-bright);
+  opacity: 1;
+}
+
+.beadTrue {
+  fill: var(--inst-brass);
+  opacity: 1;
+}
+
+.chainLine {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+  opacity: 0.7;
+}
+
+.beadRight {
+  fill: none;
+  stroke: var(--inst-signal);
+  stroke-width: 1.6;
+}
+
+.beadWrong {
+  fill: none;
+  stroke: var(--inst-garnet);
+  stroke-width: 1.6;
+}
+
+.beadMissing {
+  stroke-dasharray: 3 3;
+}
+
+/* ── Beat pendulums (Beat Hunt) ──────────────────────────── */
+
+.beam {
+  stroke: var(--inst-brass);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.rod {
+  stroke: var(--inst-line);
+  stroke-width: 1.2;
+  transition: x2 140ms ease;
+}
+
+.rodSwinging {
+  stroke: var(--inst-brass);
+}
+
+.bob {
+  fill: var(--inst-muted);
+  opacity: 0.7;
+  transition:
+    cx 140ms ease,
+    fill 120ms ease;
+}
+
+.bobLit {
+  fill: var(--inst-brass-bright);
+  opacity: 1;
+}
+
+.bobBeating {
+  fill: var(--inst-garnet);
+  opacity: 1;
+}
+
+/* ── Metronome column (Drift) ─────────────────────────────── */
+
+.metronomeBody {
+  fill: var(--inst-parchment);
+  fill-opacity: 0.08;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+}
+
+.metronomeArm {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transition:
+    x2 260ms ease,
+    y2 260ms ease;
+}
+
+.metronomeWeight {
+  fill: var(--inst-brass);
+  transition:
+    cx 260ms ease,
+    cy 260ms ease;
+}
+
+.pivot {
+  fill: var(--inst-brass-bright);
+}
+
+.lampDrift {
+  stroke: rgb(239 230 214 / 34%);
+}
+
+/* ── Balance beam (The Pull) ──────────────────────────────── */
+
+.beamArm {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  transition:
+    x1 300ms ease,
+    y1 300ms ease,
+    x2 300ms ease,
+    y2 300ms ease;
+}
+
+.pan {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+}
+
+.panLeaning {
+  stroke: var(--inst-garnet);
+  stroke-width: 2;
+}
+
+/* ── Going train (Cadence) ────────────────────────────────── */
+
+.trainWheel {
+  transition: transform 500ms linear;
+}
+
+.trainWheelTurning {
+  transform: rotate(30deg);
+}
+
+.wheelNumeral {
+  font-family: var(--font-display, serif);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  fill: var(--inst-parchment);
+}
+
+/* ── Metre lattice (Subdivide) ────────────────────────────── */
+
+.barLine {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.2;
+}
+
+.lampAccent {
+  fill: var(--inst-brass-bright);
+  stroke: var(--inst-brass-bright);
+  filter: drop-shadow(0 0 6px rgb(214 176 96 / 55%));
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .bead,
+  .trainWheel,
+  .beamArm,
+  .rod,
+  .bob,
+  .metronomeArm,
+  .metronomeWeight,
   .hair,
   .loupe,
   .pallet,

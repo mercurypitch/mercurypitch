@@ -1,0 +1,209 @@
+/* Drum pattern picker — the idiom library beside the groove editor. */
+
+.patterns {
+  display: grid;
+  width: min(620px, 100%);
+  justify-self: center;
+  gap: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #11151a;
+  color: var(--vellum);
+}
+
+.patterns *,
+.patterns *::before,
+.patterns *::after {
+  box-sizing: border-box;
+}
+
+.patterns > header {
+  display: grid;
+  gap: 4px;
+}
+
+.patterns > header > h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+
+.patterns > header > p {
+  margin: 0;
+  color: var(--vellum-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.styleRail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.styleRail > button {
+  /* 44px tap floor: the room-wide smoke gate measures every workbench button. */
+  min-height: 44px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--vellum);
+  background: var(--slate-raised);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12px;
+}
+
+.styleRail > button:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.styleRail > button[aria-pressed='true'] {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgb(231 173 82 / 14%);
+}
+
+.styleRail > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.patternList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  list-style: none;
+}
+
+.patternList > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--slate);
+}
+
+.patternList > li[data-loaded='true'] {
+  border-color: rgb(231 173 82 / 46%);
+  background: rgb(231 173 82 / 7%);
+}
+
+.patternIdentity {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.patternIdentity > strong {
+  font-size: 14px;
+  font-weight: 660;
+}
+
+.patternIdentity > small {
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.patternIdentity > p {
+  margin: 0;
+  color: var(--vellum-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.loadedMark {
+  justify-self: start;
+  margin-top: 3px;
+  padding: 3px 8px;
+  border: 1px solid rgb(231 173 82 / 42%);
+  border-radius: 999px;
+  color: var(--amber);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.patterns button {
+  min-height: 44px;
+  font: inherit;
+}
+
+.patterns button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.confirmActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirmActions > button:last-child,
+.startAction {
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--vellum);
+  background: rgb(238 231 219 / 5%);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Scoped under `.patterns` so it outranks the `.patterns button` reset above,
+   which would otherwise leave vellum text on the brass fill. */
+.patterns .startAction {
+  border-color: rgb(231 173 82 / 48%);
+  color: #17110a;
+  background: var(--amber);
+}
+
+.patterns .startAction:hover:not(:disabled) {
+  border-color: #f2c677;
+  background: #f0bb65;
+}
+
+.confirmActions > button:last-child:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: rgb(238 231 219 / 9%);
+}
+
+.patterns button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.confirmNote {
+  margin: 0;
+  color: var(--amber);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (width <= 620px) {
+  .patternList > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .startAction,
+  .confirmActions {
+    width: 100%;
+  }
+
+  .confirmActions > button {
+    flex: 1;
+  }
+}

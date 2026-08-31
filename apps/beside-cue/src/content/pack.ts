@@ -3,17 +3,20 @@
 // ============================================================
 //
 // One place that a designer, a voice actor and a translator can all be pointed
-// at. Art arrives as slots (see `assets.ts`), spoken copy arrives as lines with
-// an optional audio file, and neither needs a code change to land: an asset
-// pass fills in `frames` or `video`, a recording pass fills in `audio`.
+// at. Art arrives as slots (see `assets.ts`) and spoken copy arrives as exact,
+// durable captions. Optional recordings live in the pack audio manifest and
+// bind to a line through its caption hash.
 //
-// Cue names and roles are stable product language. The current app cutouts are
-// explicit stand-ins until each versioned character export is ready; detailed
-// modelling and rig readiness live with the authored source packages, not in
-// runtime content that would drift away from them.
+// Pull-character names and roles are stable product language. The cue is the
+// context that brings a Pull into focus; the character personifies that Pull
+// and must never be described as the cue itself.
 
 import type { AssetSlot } from './assets'
-import { pullOptions } from './pulls'
+import type { AudioAssetManifest } from './audio-manifest'
+import { DEFAULT_AUDIO_ASSET_MANIFEST, validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
+import { canonicalPullId, pullOptions } from './pulls'
+import type { VoiceLineKind, VoiceSpeakerId } from './voice-lines'
+import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 export type CharacterStateId = 'rest' | 'notice' | 'turn' | 'quiet'
 
@@ -28,10 +31,13 @@ export interface Line {
   readonly id: string
   readonly text: string
   /**
-   * Undefined until a voice actor has delivered this line. The interface shows
-   * the caption either way, so an unrecorded line is quieter, never missing.
+   * Precomputed from exact NFC UTF-8 text. Optional for injected legacy packs;
+   * required before a manifest recording can bind to this caption.
    */
-  readonly audio?: string
+  readonly captionSha256?: string
+  readonly speakerId?: VoiceSpeakerId
+  readonly fileStem?: string
+  readonly kind?: VoiceLineKind
 }
 
 export interface Character {
@@ -40,7 +46,7 @@ export interface Character {
   readonly states: Readonly<Record<CharacterStateId, AssetSlot>>
 }
 
-export interface CueEntity {
+export interface PullCharacter {
   /** Matches a `PullOption` id, so a pull can find its own creature. */
   readonly id: string
   readonly name: string
@@ -50,7 +56,7 @@ export interface CueEntity {
    * Full-frame, rendered through the same camera and cropped with the same box
    * as the character states, so it composites over one with no positioning
    * code. That is how a single `notice` render personalises to every pull: the
-   * character looks at a fixed point, and the entity is what lands there.
+   * character looks at a fixed point, and the Pull character lands there.
    */
   readonly noticeOverlay: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
@@ -62,8 +68,12 @@ export interface ContentPack {
   readonly version: string
   readonly leadCharacterId: string
   readonly characters: readonly Character[]
-  readonly cueEntities: readonly CueEntity[]
+  readonly pullCharacters: readonly PullCharacter[]
+  /** @deprecated Use `pullCharacters`; retained for V1 content callers. */
+  readonly cueEntities: readonly PullCharacter[]
   readonly lines: readonly Line[]
+  /** Optional media delivery; the empty manifest is a complete silent state. */
+  readonly audio: AudioAssetManifest
 }
 
 const ART = `${import.meta.env.BASE_URL}art`
@@ -73,25 +83,14 @@ export const CORKY_V023_REST_ART: AssetSlot = {
   alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
 }
 
-/**
- * Debug APKs from the unpublished content-spine branch may already have saved
- * one of these technical ids. Keep compatibility private while every new cue
- * and every user-facing string uses the neutral taxonomy.
- */
-const LEGACY_PULL_ID_ALIASES: Readonly<Record<string, string>> = Object.freeze({
-  'alcohol-ritual': 'familiar-ritual',
-  'smoking-vaping': 'two-minute-pause',
-  takeaway: 'one-tap-convenience',
-})
-
 function corkyState(state: CharacterStateId, alt: string): AssetSlot {
   return { still: `${ART}/corky/corky-${state}-1024.webp`, alt }
 }
 
-function cueToken(id: string, name: string): AssetSlot {
+function pullToken(filename: string, alt: string): AssetSlot {
   return {
-    still: `${ART}/cues/cue-${id}-256.webp`,
-    alt: `${name}, a soft coloured token standing in for this cue.`,
+    still: `${ART}/pulls/${filename}`,
+    alt,
   }
 }
 
@@ -104,11 +103,16 @@ function cueOverlay(id: string): AssetSlot {
   }
 }
 
-function entity(id: string, name: string, voiceNote: string): CueEntity {
+function pullCharacter(
+  id: string,
+  name: string,
+  token: AssetSlot,
+  voiceNote: string,
+): PullCharacter {
   return {
     id,
     name,
-    token: cueToken(id, name),
+    token,
     noticeOverlay: cueOverlay(id),
     voiceNote,
   }
@@ -137,170 +141,95 @@ const corky: Character = {
   },
 }
 
-// The names are the current generic cue-world cast. Voice notes describe
-// temperament, never a diagnosis or a specific substance or behaviour.
-const cueEntities: readonly CueEntity[] = [
-  entity(
+// The cast personifies Pulls. Voice notes describe temperament, never a
+// diagnosis or a specific substance or behaviour.
+export const PULL_CHARACTERS: readonly PullCharacter[] = [
+  pullCharacter(
     'scrolling',
     'The Scroll',
+    pullToken(
+      'pull-the-scroll-nanobanana-v0_1-512.webp',
+      'The Scroll, a pale blue rolled-scroll character with sleepy cream eyes and small curled feet.',
+    ),
     'Endless, pleasant, never finishes a sentence.',
   ),
-  entity(
+  pullCharacter(
     'snacking',
-    'Sugar Cube',
+    'Sugarlump',
+    pullToken(
+      'pull-sugarlump-nanobanana-v0_1-512.webp',
+      'Sugarlump, a grainy cream character made of three rounded sugar-block shapes with small arms and feet.',
+    ),
     'Sweet and insistent. Offers, never argues.',
   ),
-  entity(
+  pullCharacter(
     'familiar-ritual',
     'The Usual',
+    pullToken(
+      'pull-the-usual-nanobanana-v0_1-512.webp',
+      'The Usual, a round wooden character with tiny dot eyes, small arms and broad wooden feet.',
+    ),
     'Familiar and hospitable. Knows the routine before you choose it.',
   ),
-  entity(
+  pullCharacter(
     'two-minute-pause',
     'Ember',
+    pullToken(
+      'pull-ember-nanobanana-v0_1-512.webp',
+      'Ember, a rounded charcoal character with half-closed eyes and a warm orange seam glowing through the middle.',
+    ),
     'Warm, close and patient. Always suggests one more small pause.',
   ),
-  entity(
+  pullCharacter(
     'one-tap-convenience',
     'Dinger',
+    pullToken(
+      'pull-dinger-nanobanana-v0_1-512.webp',
+      'Dinger, an olive-green service-bell character with a brass button, cream rim and four small feet.',
+    ),
     'Bright and quick. Makes the easiest answer feel already chosen.',
   ),
-  entity(
+  pullCharacter(
     'avoidance',
     'The Fog',
+    pullToken(
+      'pull-the-fog-nanobanana-v0_1-512.webp',
+      'The Fog, a low lavender-grey cloud character with dark half-closed eyes and a small smile.',
+    ),
     'Soft, unhurried, faintly reasonable. Never states a plan.',
   ),
 ]
 
 /**
- * Shown when a beat needs a cue but the pull has none of its own -- someone
- * who named their own moment, for instance. Keeps the canon turquoise.
+ * Shown when a beat needs a Pull character but a custom Pull has none of its
+ * own. The generic turquoise shape keeps that path complete without pretending
+ * the custom words belong to one of the built-in cast.
  */
-export const GENERIC_CUE_ENTITY: CueEntity = entity(
+export const GENERIC_PULL_CHARACTER: PullCharacter = pullCharacter(
   'generic',
-  'Cue',
-  'No entity. The plain cue, used where a pull has no creature.',
+  'Your Pull',
+  {
+    still: `${ART}/cues/cue-generic-256.webp`,
+    alt: 'A small turquoise shape representing a custom Pull.',
+  },
+  'Quiet and neutral. Used only when a custom Pull has no cast character.',
 )
 
-// Corky's own lines. Selected from the mantra set; the audio field stays
-// undefined until the recording pass lands.
-const lines: readonly Line[] = [
-  {
-    id: 'core.two-sides',
-    text: 'Every record has two sides. So does this moment.',
-  },
-  {
-    id: 'core.beside-it',
-    text: "I'm not here to grade the spin. I'm here beside it.",
-  },
-  {
-    id: 'core.needle-drop',
-    text: 'A cue is just the needle dropping. You choose the track.',
-  },
-  {
-    id: 'core.b-side-meaning',
-    text: "Side B doesn't mean second best. It means the one you chose.",
-  },
-  { id: 'core.one-turn', text: 'One turn at a time.' },
-  { id: 'core.same-record', text: 'Same record. Better side.' },
-  {
-    id: 'core.flip-it',
-    text: "You can't unplay a groove. You can flip the record.",
-  },
-  { id: 'core.loud-quiet', text: 'Loud cue. Quiet turn.' },
-  {
-    id: 'core.a-side-talking',
-    text: "The pull is the A-side talking. It's allowed to talk.",
-  },
-  { id: 'core.still-spinning', text: "Still spinning. That's the whole job." },
+/** @deprecated Use `PullCharacter`. */
+export type CueEntity = PullCharacter
 
-  { id: 'bside.clean-groove', text: "That's a clean groove." },
-  { id: 'bside.pressed', text: 'Pressed. Nothing flashy. It counts.' },
-  {
-    id: 'bside.the-craft',
-    text: "Heard the cue, chose the track. That's the craft.",
-  },
-  {
-    id: 'bside.run-out',
-    text: 'One more turn in the run-out. See you at the next spin.',
-  },
-  { id: 'bside.good-side', text: 'Good side, this one.' },
-
-  { id: 'aside.records-do-that', text: 'The A-side played. Records do that.' },
-  { id: 'aside.noted', text: 'Noted, not graded.' },
-  {
-    id: 'aside.flip-when-ready',
-    text: "Still the same record. Flip it when you're ready.",
-  },
-  {
-    id: 'aside.beside-you',
-    text: "Some spins go that way. I'm still beside you.",
-  },
-  {
-    id: 'aside.tomorrow',
-    text: 'The needle drops again tomorrow. Same time, same us.',
-  },
-
-  {
-    id: 'return.kept-your-place',
-    text: 'There you are. The turntable kept your place.',
-  },
-  {
-    id: 'return.surface-noise',
-    text: "Surface noise. The music's still under it.",
-  },
-  {
-    id: 'return.no-groove-wore-out',
-    text: 'No groove wore out while you were gone.',
-  },
-  {
-    id: 'return.records-wait',
-    text: "Records wait. It's one of their best features.",
-  },
-  { id: 'return.left-the-sleeve', text: 'Right where we left the sleeve.' },
-
-  {
-    id: 'pressing.hold-to-light',
-    text: "That's a pressing. Hold it up to the light.",
-  },
-  {
-    id: 'pressing.every-groove',
-    text: 'Every groove in this one is a turn you made.',
-  },
-  { id: 'pressing.run-of-one', text: 'Limited edition. Run of one.' },
-  {
-    id: 'pressing.needed-yours',
-    text: "This didn't need to be perfect. It needed to be yours.",
-  },
-  {
-    id: 'pressing.listen-back',
-    text: 'Worth a listen back, this side of you.',
-  },
-
-  { id: 'cue.hovering', text: "Needle's hovering. No rush." },
-  {
-    id: 'cue.on-the-label',
-    text: "It's that time on the label. What are we playing?",
-  },
-  { id: 'cue.hold-the-sleeve', text: "Cue's here. I'll hold the sleeve." },
-  { id: 'cue.quick-spin', text: 'Quick spin with me?' },
-  { id: 'cue.your-move', text: "The record's on the platter. Your move, DJ." },
-
-  { id: 'reminder.at-seven', text: "I'll drop the needle at seven, then." },
-  { id: 'reminder.same-time', text: 'Same time on the label as always.' },
-  {
-    id: 'reminder.slot-is-safe',
-    text: 'Your slot on the turntable is safe with me.',
-  },
-]
+/** @deprecated Use `GENERIC_PULL_CHARACTER`. */
+export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.2.0',
+  version: '0.4.0',
   leadCharacterId: corky.id,
   characters: [corky],
-  cueEntities,
-  lines,
+  pullCharacters: PULL_CHARACTERS,
+  cueEntities: PULL_CHARACTERS,
+  lines: CANONICAL_VOICE_LINES,
+  audio: DEFAULT_AUDIO_ASSET_MANIFEST,
 }
 
 export function findCharacter(
@@ -310,15 +239,23 @@ export function findCharacter(
   return pack.characters.find((character) => character.id === id)
 }
 
-export function findCueEntity(
+export function findPullCharacter(
   pack: ContentPack,
   pullId: string | undefined,
-): CueEntity | undefined {
+): PullCharacter | undefined {
   if (pullId === undefined) {
     return undefined
   }
-  const canonicalId = LEGACY_PULL_ID_ALIASES[pullId] ?? pullId
-  return pack.cueEntities.find((entity) => entity.id === canonicalId)
+  const canonicalId = canonicalPullId(pullId)
+  return pack.pullCharacters.find((character) => character.id === canonicalId)
+}
+
+/** @deprecated Use `findPullCharacter`. */
+export function findCueEntity(
+  pack: ContentPack,
+  pullId: string | undefined,
+): PullCharacter | undefined {
+  return findPullCharacter(pack, pullId)
 }
 
 export function findLine(pack: ContentPack, id: string): Line | undefined {
@@ -329,11 +266,13 @@ export function findLine(pack: ContentPack, id: string): Line | undefined {
  * Reports everything wrong with a pack instead of throwing on the first fault,
  * so one test run tells a content author the whole story.
  *
- * A pull with no entity is allowed on purpose: someone can name their own
- * moment, and a custom pull will never have a creature.
+ * A Pull with no authored character is allowed on purpose: someone can name
+ * their own moment, and a custom Pull will use the generic fallback at runtime.
  */
 export function validateContentPack(pack: ContentPack): readonly string[] {
   const problems: string[] = []
+
+  problems.push(...validateAudioAssetManifest(pack.audio))
 
   if (findCharacter(pack, pack.leadCharacterId) === undefined) {
     problems.push(
@@ -359,16 +298,16 @@ export function validateContentPack(pack: ContentPack): readonly string[] {
 
   const pullIds = new Set(pullOptions.map((option) => option.id))
   const seen = new Set<string>()
-  for (const entity of pack.cueEntities) {
-    if (!pullIds.has(entity.id)) {
-      problems.push(`Cue entity "${entity.id}" matches no pull option.`)
+  for (const character of pack.pullCharacters) {
+    if (!pullIds.has(character.id)) {
+      problems.push(`Pull character "${character.id}" matches no pull option.`)
     }
-    if (seen.has(entity.id)) {
-      problems.push(`Cue entity "${entity.id}" is declared twice.`)
+    if (seen.has(character.id)) {
+      problems.push(`Pull character "${character.id}" is declared twice.`)
     }
-    seen.add(entity.id)
-    if (entity.token.alt.trim() === '') {
-      problems.push(`Cue entity "${entity.id}" has no alt text.`)
+    seen.add(character.id)
+    if (character.token.alt.trim() === '') {
+      problems.push(`Pull character "${character.id}" has no alt text.`)
     }
   }
 
@@ -382,6 +321,30 @@ export function validateContentPack(pack: ContentPack): readonly string[] {
       problems.push(`Line "${line.id}" has no text.`)
     }
   }
+
+  for (const pull of pullOptions) {
+    if (!lineIds.has(pull.previewLineId)) {
+      problems.push(
+        `Pull "${pull.id}" references missing preview line "${pull.previewLineId}".`,
+      )
+    }
+  }
+
+  problems.push(
+    ...validateAudioDialogueLineBindings(
+      pack.audio,
+      pack.lines.flatMap((line) =>
+        line.captionSha256 === undefined
+          ? []
+          : [
+              {
+                lineId: line.id,
+                captionSha256: line.captionSha256,
+              },
+            ],
+      ),
+    ),
+  )
 
   return problems
 }

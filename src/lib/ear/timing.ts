@@ -72,11 +72,157 @@ export const CONTOUR_TIMING = {
   replayGapMs: 180,
 } as const
 
-/** How long the reveal holds before the next round. */
-export const REVEAL_TIMING = {
-  /** Threshold drills: right/wrong is a colour flash, no replay. */
-  thresholdMs: 420,
-  identificationCorrectMs: 650,
-  /** Longer, because a miss replays the sound. */
-  identificationWrongMs: 1500,
+/** The verdict's hold before the next trial, when auto-advance is on.
+ *  A preference rather than a number — the rack's Sound panel has the
+ *  slider — so what lives here is its range. Identification drills
+ *  count it from the end of a miss's replay, threshold drills from the
+ *  verdict; one rule for every drill, since a pause between trials
+ *  does not bias a threshold. */
+export const REVEAL_HOLD = {
+  min: 1000,
+  max: 10000,
+  step: 500,
+  defaultMs: 1500,
+} as const
+
+/** Pulse and The Chart — a bar of onsets, tapped on an anchored
+ *  take: the player's first tap starts their bar. */
+export const PULSE_TIMING = {
+  /** Beats in the count-in, and in a one-bar pattern. */
+  beats: 4,
+  periodMs: 600,
+  /** Lead before the count-in, so the first click is never late. */
+  leadS: 0.6,
+  /** Grace after the anchored bar before the take is judged. */
+  tailMs: 350,
+  /** Beats the soft rail keeps ticking while the take waits for its
+   *  first tap; after them the take is judged as never begun. */
+  waitBeats: 8,
+  /** The pads arm this early, so an eager first tap is the anchor
+   *  and not a tap into a dead pad. */
+  armEarlyMs: 120,
+} as const
+
+/** Echo — melodic dictation: a cadence, the phrase, the ladder. */
+export const ECHO_TIMING = {
+  /** Cadence chords that plant the key. */
+  chordMs: 380,
+  chordGapMs: 90,
+  /** Silence between the cadence and the phrase. */
+  restMs: 260,
+  noteMs: 380,
+  gapMs: 120,
+  /** The wrong-answer replay, slower. */
+  replayNoteMs: 560,
+  replayGapMs: 180,
+  /** After the last note, before the ladder opens. */
+  tailMs: 200,
+  /** Sung answers: a breath before the first window, and grace after
+   *  the phrase's own length. */
+  singLeadMs: 250,
+  singTailMs: 450,
+} as const
+
+/** Span — the phrase at the staircase's length. */
+/** The ladder: a tapped rung sounds its note, short. */
+export const LADDER_TIMING = {
+  tapMs: 220,
+} as const
+
+export const SPAN_TIMING = {
+  chordMs: 380,
+  chordGapMs: 90,
+  restMs: 260,
+  noteMs: 340,
+  gapMs: 110,
+  tailMs: 200,
+  /** Sung answers: a breath before the first window, and grace after
+   *  the phrase's own length. */
+  singLeadMs: 250,
+  singTailMs: 450,
+} as const
+
+/** Beat Hunt — two pairs of tones, one detuned. */
+export const BEAT_TIMING = {
+  leadInS: 0.2,
+  /** Each pair sounds this long: slow beats need room to swell. */
+  dyadMs: 1400,
+  gapMs: 300,
+  tailMs: 250,
+} as const
+
+/** Drift — a click train that holds, gains or loses tempo. */
+export const DRIFT_TIMING = {
+  leadInS: 0.2,
+  periodMs: 520,
+  /** Clicks at the first tempo. */
+  steadyClicks: 5,
+  /** Clicks at the second. */
+  driftClicks: 6,
+  tailMs: 250,
+} as const
+
+/** The Pull — a cadence, two degrees, which leans harder. */
+export const PULL_TIMING = {
+  chordMs: 380,
+  chordGapMs: 90,
+  restMs: 240,
+  probeMs: 700,
+  probeGapMs: 220,
+  tailMs: 200,
+  /** The wrong-answer replay: the lean, then its resolution. */
+  replayMs: 900,
+} as const
+
+/** Cadence — a progression strummed on the guitar voices. */
+export const CADENCE_TIMING = {
+  leadInS: 0.15,
+  chordMs: 900,
+  gapMs: 80,
+  tailMs: 250,
+  /** The wrong-answer replay, slower. */
+  replayChordMs: 1150,
+} as const
+
+/** Bassline — four roots under a held tonic. */
+export const BASSLINE_TIMING = {
+  leadInS: 0.15,
+  /** The tonic rings alone this long before the roots start. */
+  restMs: 500,
+  rootMs: 650,
+  rootGapMs: 100,
+  tailMs: 250,
+  replayRootMs: 850,
+} as const
+
+/** Subdivide — two bars on the kit, the kick on one. */
+export const SUBDIVIDE_TIMING = {
+  leadInS: 0.15,
+  /** A quarter at 120; eighth-note metres run at half this. */
+  quarterMs: 500,
+  bars: 2,
+  tailMs: 250,
+  /** The wrong-answer replay, slower. */
+  replayQuarterMs: 620,
+} as const
+
+/** The Field Book — excerpts of the user's own song. */
+export const WILD_TIMING = {
+  /** The tonic chord that plants the song's key before an excerpt. */
+  plantMs: 650,
+  plantGapMs: 180,
+  /** A wrong answer replays this much of the excerpt's end. */
+  replayTailS: 1.6,
+  tailMs: 220,
+} as const
+
+/** The mixing desk — slices of the rendered source. */
+export const DESK_TIMING = {
+  /** One slice of the source per render. */
+  sliceS: 3.2,
+  /** Between Weight's two renders. */
+  gapMs: 350,
+  tailMs: 250,
+  /** How much of the user's song the desk renders as its source. */
+  songExcerptS: 12,
 } as const

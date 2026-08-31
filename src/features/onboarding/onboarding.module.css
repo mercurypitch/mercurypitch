@@ -715,7 +715,7 @@
   font-size: 0.86rem;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--ob-ink-1);
+  color: var(--ob-ink);
 }
 
 .keepPerkBody {
@@ -1200,7 +1200,7 @@
 
 .mapKeepLink:hover,
 .mapKeepLink:focus-visible {
-  color: var(--ob-ink-1);
+  color: var(--ob-ink);
 }
 
 /* ── Motion ──────────────────────────────────────────────────── */

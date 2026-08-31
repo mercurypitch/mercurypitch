@@ -21,7 +21,8 @@ import { AUTO_CONTINUE_SECONDS, resetAutoContinueDismissals, } from '@/features/
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import type { RoutineTemplate } from '@/features/routines/types'
 import { autoAdvanceRoutineSegment, loadSharedRoutine, routinePrefs, segmentRunsExercise, setRoutinePrefs, } from '@/features/routines/use-daily-routine'
-import { pendingDrill, setPendingDrill } from '@/stores/ui-store'
+import { TAB_EXERCISES } from '@/features/tabs/constants'
+import { activeTab, pendingDrill, setActiveTab, setPendingDrill, } from '@/stores/ui-store'
 
 const WARMUP_SEGMENT = {
   type: 'warmup' as const,
@@ -212,6 +213,38 @@ describe('RoutineRibbon auto-continue', () => {
       String(AUTO_CONTINUE_SECONDS - 1),
     )
 
+    runOutTheClock()
+    expect(pendingDrill()?.exercise).toBe(EXERCISE_SCALE_RUNNER)
+  })
+
+  it('pauses every routine transition while the result is saving', () => {
+    const [saving, setSaving] = createSignal(false)
+    seedAtLongNote()
+    setActiveTab(TAB_EXERCISES)
+    const { getByRole, getByTestId, queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} transitionBlocked={saving} />
+    ))
+    finishSegment()
+    expect(queryByTestId('routine-stay')).not.toBeNull()
+
+    setSaving(true)
+
+    const back = getByRole('button', { name: 'Back to routine' })
+    const next = getByTestId('routine-next')
+    expect(back).toBeDisabled()
+    expect(next).toBeDisabled()
+    expect(queryByTestId('routine-stay')).toBeNull()
+
+    fireEvent.click(back)
+    fireEvent.click(next)
+    runOutTheClock()
+    expect(activeTab()).toBe(TAB_EXERCISES)
+    expect(pendingDrill()).toBeNull()
+
+    // Ending the save restarts a fresh, visible countdown instead of silently
+    // treating the safety pause as the singer dismissing auto-continue.
+    setSaving(false)
+    expect(queryByTestId('routine-stay')).not.toBeNull()
     runOutTheClock()
     expect(pendingDrill()?.exercise).toBe(EXERCISE_SCALE_RUNNER)
   })
@@ -428,10 +461,15 @@ describe('RoutineRibbon between-run countdown', () => {
     // counting over a still-live stage would race the restart.
     const onRunAgain = vi.fn()
     const [complete, setComplete] = createSignal(false)
-    const { queryByTestId, getByTestId } = renderBetweenRuns(
-      onRunAgain,
-      complete,
-    )
+    seedRoutine(REPS_TEMPLATE)
+    const { queryByTestId, getByTestId } = render(() => (
+      <RoutineRibbon
+        type={EXERCISE_LONG_NOTE}
+        isComplete={complete}
+        onRunAgain={onRunAgain}
+      />
+    ))
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
 
     expect(queryByTestId('routine-run-again')).toBeNull()
     runOutTheClock()
@@ -503,10 +541,15 @@ describe('RoutineRibbon between-run countdown', () => {
     // destinations.
     const onRunAgain = vi.fn()
     const [complete, setComplete] = createSignal(true)
-    const { getByTestId, queryByTestId } = renderBetweenRuns(
-      onRunAgain,
-      complete,
-    )
+    seedRoutine(REPS_TEMPLATE)
+    const { getByTestId, queryByTestId } = render(() => (
+      <RoutineRibbon
+        type={EXERCISE_LONG_NOTE}
+        isComplete={complete}
+        onRunAgain={onRunAgain}
+      />
+    ))
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
 
     fireEvent.click(getByTestId('routine-stay'))
     expect(queryByTestId('routine-autocontinue-off')).toBeNull()

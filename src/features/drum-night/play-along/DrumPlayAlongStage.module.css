@@ -1,0 +1,622 @@
+/* Drum play-along stage — strike plates over the existing photographed room. */
+
+.stage {
+  --pa-room: var(--room, #08090b);
+  --pa-slate: var(--slate, #13171b);
+  --pa-vellum: var(--vellum, #eee7db);
+  --pa-muted: var(--vellum-muted, #b8b2a8);
+  --pa-amber: var(--amber, #e7ad52);
+  --pa-cyan: var(--cyan, #66d5cd);
+  --pa-line: var(--line, rgb(238 231 219 / 13%));
+  --pa-line-strong: var(--line-strong, rgb(238 231 219 / 24%));
+  position: relative;
+  width: 100%;
+  min-height: clamp(340px, 54vh, 590px);
+  overflow: hidden;
+  border: 1px solid var(--pa-line);
+  border-radius: 14px;
+  color: var(--pa-vellum);
+  background:
+    linear-gradient(180deg, rgb(5 6 8 / 76%) 0%, transparent 28%),
+    linear-gradient(0deg, rgb(5 6 8 / 82%) 0%, transparent 34%);
+  box-shadow: 0 24px 62px rgb(0 0 0 / 34%);
+  isolation: isolate;
+}
+
+.stage *,
+.stage *::before,
+.stage *::after {
+  box-sizing: border-box;
+}
+
+.stage button {
+  min-width: 44px;
+  min-height: 44px;
+  color: inherit;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage button:focus-visible {
+  outline: 2px solid var(--pa-cyan);
+  outline-offset: 3px;
+}
+
+.stageTopline {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 22px;
+  pointer-events: none;
+}
+
+.titleBlock {
+  display: grid;
+  max-width: min(64%, 560px);
+  gap: 5px;
+  text-shadow: 0 3px 18px rgb(0 0 0 / 72%);
+}
+
+.sourceLabel {
+  color: var(--pa-amber);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+}
+
+.titleBlock h2 {
+  margin: 0;
+  font-family:
+    var(--serif), 'Iowan Old Style', 'Palatino Linotype', Baskerville, Georgia,
+    serif;
+  font-size: clamp(25px, 3.4vw, 46px);
+  font-weight: 540;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.transportReadout {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--pa-line-strong);
+  border-radius: 9px;
+  background: rgb(7 8 10 / 76%);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 24%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.transportReadout i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(238 231 219 / 28%);
+}
+
+.transportReadout i[data-active='true'] {
+  background: var(--pa-cyan);
+  box-shadow: 0 3px 8px rgb(102 213 205 / 42%);
+}
+
+.transportReadout small {
+  color: var(--pa-muted);
+  font-size: 10px;
+}
+
+.kitField {
+  position: absolute;
+  z-index: 2;
+  inset: 82px 0 58px;
+}
+
+.kitAxis {
+  position: absolute;
+  inset: 22% 15% 15%;
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.kitAxis span {
+  position: absolute;
+  border: 1px solid rgb(238 231 219 / 12%);
+  border-radius: 50%;
+}
+
+.kitAxis span:nth-child(1) {
+  inset: 4% 4% 0;
+}
+
+.kitAxis span:nth-child(2) {
+  inset: 19% 18% 8%;
+}
+
+.kitAxis span:nth-child(3) {
+  inset: 35% 34% 14%;
+}
+
+.strikePad {
+  position: absolute;
+  display: grid;
+  width: clamp(58px, 6.6vw, 86px);
+  aspect-ratio: 1;
+  place-content: center;
+  gap: 3px;
+  border: 1px solid rgb(238 231 219 / 34%);
+  border-radius: 50%;
+  color: rgb(238 231 219 / 82%);
+  background: rgb(7 8 10 / 34%);
+  box-shadow:
+    0 12px 28px rgb(0 0 0 / 25%),
+    inset 0 0 0 1px rgb(0 0 0 / 26%);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    background 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.strikePad::before {
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgb(102 213 205 / 38%);
+  border-radius: inherit;
+  content: '';
+  pointer-events: none;
+}
+
+.strikePad:hover:not(:disabled),
+.strikePad:focus-visible:not(:disabled) {
+  border-color: rgb(102 213 205 / 78%);
+  color: var(--pa-vellum);
+  background: rgb(8 16 17 / 58%);
+}
+
+.strikePad:active:not(:disabled),
+.strikePad[data-active='true'] {
+  border-color: var(--pa-amber);
+  color: #fff8ec;
+  background: rgb(231 173 82 / 18%);
+  box-shadow:
+    0 9px 20px rgb(0 0 0 / 25%),
+    inset 0 0 0 1px rgb(231 173 82 / 24%);
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.strikePad:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.strikePad span {
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: 0.025em;
+}
+
+.strikePad small {
+  color: var(--pa-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.strikePad[data-pad='crash'] {
+  top: 22%;
+  left: 29%;
+}
+
+.strikePad[data-pad='hi-hat'] {
+  top: 54%;
+  left: 22%;
+}
+
+.strikePad[data-pad='snare'] {
+  top: 70%;
+  left: 43%;
+}
+
+.strikePad[data-pad='tom'] {
+  top: 43%;
+  left: 52%;
+}
+
+.strikePad[data-pad='ride'] {
+  top: 34%;
+  left: 77%;
+}
+
+.strikePad[data-pad='kick'] {
+  top: 79%;
+  left: 63%;
+}
+
+.stage[data-view='pocket'] .strikePad {
+  background: rgb(7 8 10 / 52%);
+}
+
+.playHint {
+  position: absolute;
+  right: 22px;
+  bottom: 12px;
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.playHint span {
+  color: var(--pa-amber);
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+}
+
+.playHint small {
+  color: var(--pa-muted);
+  font-size: 10px;
+}
+
+/* A caption card, not a footer band. Spanning the full stage width with a
+   border-top made this read as a horizontal rule cutting the page in half, so
+   it is inset and self-sized: it now sits inside the room instead of dividing
+   it. The 58px bottom reserve on `.kitField` / `.scoreTruth` keeps the kit
+   clear of it. */
+.sourceTruth {
+  position: absolute;
+  z-index: 5;
+  bottom: 12px;
+  left: 18px;
+  display: grid;
+  max-width: min(430px, calc(100% - 36px));
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border: 1px solid var(--pa-line-strong);
+  border-radius: 11px;
+  background: rgb(7 8 10 / 88%);
+  box-shadow: 0 10px 26px rgb(0 0 0 / 32%);
+}
+
+.sourceTruth > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.sourceTruth strong {
+  font-size: 11px;
+  font-weight: 740;
+}
+
+.sourceTruth small {
+  color: var(--pa-muted);
+  font-size: 10px;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.reducedFidelity {
+  color: var(--pa-amber);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sourceTruth b {
+  color: var(--pa-cyan);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.routeGlyph {
+  position: relative;
+  display: grid;
+  width: 30px;
+  height: 28px;
+  align-content: space-evenly;
+}
+
+.routeGlyph i {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--pa-amber);
+}
+
+.routeGlyph i:nth-child(2) {
+  background: var(--pa-cyan);
+}
+
+.stage[data-mix-kind='two-stem'] .routeGlyph i:first-child {
+  width: 60%;
+  background: rgb(238 231 219 / 28%);
+  transform: translate(40%, 4px) rotate(16deg);
+}
+
+.stage[data-mix-kind='two-stem'] .routeGlyph i:nth-child(2) {
+  transform: translateY(-3px);
+}
+
+.scoreTruth {
+  position: absolute;
+  z-index: 2;
+  inset: 82px 18px 58px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 500px);
+  place-content: center;
+  align-items: center;
+  gap: clamp(22px, 5vw, 54px);
+  padding: 28px;
+  background: rgb(7 8 10 / 36%);
+}
+
+.scoreTruth > div {
+  display: grid;
+  gap: 8px;
+}
+
+.scoreTruth small {
+  color: var(--pa-amber);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+}
+
+.scoreTruth h3 {
+  margin: 0;
+  font-family:
+    var(--serif), 'Iowan Old Style', 'Palatino Linotype', Baskerville, Georgia,
+    serif;
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 540;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.scoreTruth p {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--pa-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.scoreTruth button {
+  width: fit-content;
+  margin-top: 7px;
+  padding: 0 16px;
+  border: 1px solid rgb(231 173 82 / 48%);
+  border-radius: 9px;
+  color: #17120c;
+  background: var(--pa-amber);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 740;
+}
+
+.scoreTruth button:hover {
+  background: #f0bb65;
+}
+
+.emptyMark {
+  position: relative;
+  display: grid;
+  width: 98px;
+  height: 98px;
+  place-items: center;
+  border: 1px solid var(--pa-line-strong);
+  border-radius: 50%;
+  background: rgb(238 231 219 / 3%);
+}
+
+.emptyMark::before {
+  position: absolute;
+  width: 1px;
+  height: 76px;
+  background: rgb(238 231 219 / 20%);
+  content: '';
+  transform: rotate(38deg);
+}
+
+.emptyMark i {
+  width: 46px;
+  height: 1px;
+  background: rgb(238 231 219 / 24%);
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (width <= 620px) {
+  .stage {
+    min-height: 370px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .stageTopline {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+  }
+
+  .titleBlock {
+    max-width: calc(100% - 102px);
+  }
+
+  .titleBlock h2 {
+    overflow: hidden;
+    font-size: clamp(23px, 7vw, 32px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .transportReadout {
+    min-height: 44px;
+    padding: 0 10px;
+  }
+
+  .transportReadout small {
+    display: none;
+  }
+
+  .kitField {
+    top: 76px;
+  }
+
+  .strikePad {
+    width: clamp(52px, 16vw, 68px);
+  }
+
+  .strikePad[data-pad='crash'] {
+    left: 20%;
+  }
+
+  .strikePad[data-pad='hi-hat'] {
+    left: 15%;
+  }
+
+  .strikePad[data-pad='ride'] {
+    left: 84%;
+  }
+
+  .strikePad[data-pad='kick'] {
+    left: 66%;
+  }
+
+  .sourceTruth {
+    left: 14px;
+    max-width: calc(100% - 28px);
+    padding: 7px 11px;
+  }
+
+  .sourceTruth b {
+    display: none;
+  }
+
+  .scoreTruth {
+    inset: 74px 0 58px;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 24px;
+  }
+
+  .emptyMark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .emptyMark::before {
+    height: 48px;
+  }
+
+  .emptyMark i {
+    width: 30px;
+  }
+
+  .scoreTruth h3 {
+    font-size: 26px;
+  }
+
+  .playHint,
+  .kitAxis {
+    display: none;
+  }
+}
+
+@media (height <= 560px) and (orientation: landscape) {
+  .stage {
+    min-height: 260px;
+  }
+
+  .kitField {
+    inset: 64px 0 52px;
+  }
+
+  .stageTopline {
+    top: 10px;
+  }
+
+  .sourceLabel,
+  .playHint {
+    display: none;
+  }
+
+  .titleBlock h2 {
+    font-size: 24px;
+  }
+
+  .strikePad {
+    width: 52px;
+  }
+
+  .sourceTruth {
+    bottom: 8px;
+    max-width: min(360px, calc(100% - 36px));
+    padding: 6px 11px;
+  }
+
+  .scoreTruth {
+    inset: 58px 0 52px;
+    grid-template-columns: 58px minmax(0, 560px);
+    gap: 20px;
+    padding: 14px 24px;
+  }
+
+  .emptyMark {
+    width: 54px;
+    height: 54px;
+  }
+
+  .emptyMark::before {
+    height: 40px;
+  }
+
+  .emptyMark i {
+    width: 24px;
+  }
+
+  .scoreTruth h3 {
+    font-size: 24px;
+  }
+
+  .scoreTruth p {
+    line-height: 1.4;
+  }
+
+  .scoreTruth button {
+    position: absolute;
+    right: 18px;
+    bottom: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strikePad {
+    transition: none;
+  }
+}

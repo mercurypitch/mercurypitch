@@ -9,11 +9,13 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createEffect, For, Show, untrack } from 'solid-js'
 import { isProvisional } from '@/lib/ear/elo'
+import { useArmingCue } from './arming-cue'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { ConsoleNote, EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { useLastCall } from './reveal-pacing'
 import type { useIdentificationController } from './use-identification-controller'
 
 export interface IdentificationChoice {
@@ -33,6 +35,8 @@ interface IdentificationDrillViewProps {
   listenHint: string
   answerHint: string
   choices: IdentificationChoice[]
+  /** A lamp per pad, lit while its stimulus sounds (The Pull). */
+  padLamp?: (choiceId: string) => boolean
   /** Pads per row (6 for Leap, 3 for Stack and Contour). */
   columns: number
   /** Narrow rungs in one row rather than labelled pads. */
@@ -40,9 +44,27 @@ interface IdentificationDrillViewProps {
   controller: ReturnType<typeof useIdentificationController>
   /** Reveal copy for a choice, e.g. "Minor 6th". */
   revealName: (choiceId: string) => string
+  /** "named" unless the answer was tapped or sung back. */
+  answerVerb?: string
+  /** After a miss, where it went wrong: "first slip at note 2". */
+  slipNote?: () => string | undefined
   /** The drill's instrument, reactive to the controller. */
   instrument: () => JSX.Element
+  /** A console of the drill's own in place of the choice pads — Echo's
+   *  ladder, which answers through the controller itself. */
+  answerConsole?: () => JSX.Element
+  /** The keys for that console; replaces the digit keys. */
+  answerKeys?: () => StageKey[]
+  /** Under the description at idle: a mode toggle, a mic warning. */
+  idleAside?: JSX.Element
+  /** Starts a run; the controller's start unless the drill has to
+   *  acquire something (a microphone) first. */
+  onStart?: () => void
+  /** The stage's mode word while running; "rating run" by default. */
+  runMode?: () => string
   onBack: () => void
+  /** The back control's label when back is not the bench. */
+  backLabel?: string
 }
 
 export function IdentificationDrillView(
@@ -51,9 +73,15 @@ export function IdentificationDrillView(
   // No cleanup here: the controller registers its own onCleanup, so
   // disposing from the view too would just double up.
   const phase = () => props.controller.phase()
+  const start = () => {
+    if (props.onStart) props.onStart()
+    else props.controller.start()
+  }
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const correct = () =>
     props.controller.answeredId() === props.controller.expectedId()
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => props.controller.parked()
 
   const ratingLine = () =>
     `Rating ${Math.round(props.controller.rating().rating)}${
@@ -106,8 +134,12 @@ export function IdentificationDrillView(
 
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
-      return [{ key: 'Space', action: () => props.controller.start() }]
+      return [{ key: 'Space', action: () => start() }]
     }
+    if (parked()) {
+      return [{ key: 'Space', action: () => props.controller.next() }]
+    }
+    if (props.answerKeys) return props.answerKeys()
     if (phase() !== 'answer' || props.choices.length > 9) return []
     return props.choices.map((choice, i) => ({
       key: String(i + 1),
@@ -115,18 +147,57 @@ export function IdentificationDrillView(
     }))
   }
 
+  // The rating as the round opened, so the plate can say where the
+  // answer moved it.
+  let ratingBefore = 0
+  createEffect(() => {
+    if (phase() === 'playing') {
+      ratingBefore = untrack(() => props.controller.rating().rating)
+    }
+  })
+
+  useArmingCue(() => phase() === 'answer')
+
+  const lastCall = useLastCall(phase, () => {
+    const expected = props.controller.expectedId()
+    const answered = props.controller.answeredId()
+    const move = `Rating ${Math.round(ratingBefore)} → ${Math.round(
+      props.controller.rating().rating,
+    )}`
+    const named =
+      !correct() && answered !== null && answered !== expected
+        ? `You ${props.answerVerb ?? 'named'} ${props.revealName(answered)} · `
+        : ''
+    const slip = correct() ? undefined : props.slipNote?.()
+    return {
+      correct: correct(),
+      line: status(),
+      consequence: `${named}${slip === undefined ? '' : `${slip} · `}${move}`,
+      label: `Round ${props.controller.round() + 1}`,
+    }
+  })
+
   return (
     <EarStage
       drillId={props.drillId}
       name={props.title}
-      mode={phase() === 'idle' ? 'on the bench' : 'rating run'}
+      measures={props.measures}
+      description={props.description}
+      mode={
+        phase() === 'idle'
+          ? 'on the bench'
+          : (props.runMode?.() ?? 'rating run')
+      }
       progress={progress()}
       status={status()}
       tone={tone()}
       keys={keys}
-      focusConsole={() => phase() === 'answer'}
+      focusConsole={() => phase() === 'answer' || parked()}
       onBack={props.onBack}
+      backLabel={props.backLabel}
       onStop={running() ? () => props.controller.stop() : undefined}
+      lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={props.instrument}
       console={() => (
@@ -139,35 +210,60 @@ export function IdentificationDrillView(
                 sub={`${props.controller.totalRounds} rounds`}
                 keycap="Space"
                 icon={<IconPlay size={20} />}
-                onClick={() => props.controller.start()}
+                onClick={() => start()}
               />
-              <ConsoleNote>{props.description}</ConsoleNote>
+              {props.idleAside}
             </>
           }
         >
-          <PlayPad
-            state={phase() === 'answer' ? 'armed' : 'sounding'}
-            label={phase() === 'answer' ? 'Your call' : 'Listening'}
-            sub={props.measures}
-          />
-          <Pads
-            columns={props.columns}
-            compact={props.compact}
-            label={props.answerHint}
+          <Show
+            when={parked()}
+            fallback={
+              <PlayPad
+                state={phase() === 'answer' ? 'armed' : 'sounding'}
+                label={
+                  phase() === 'answer'
+                    ? 'Your call'
+                    : phase() === 'reveal' && !props.controller.replaying()
+                      ? 'Next'
+                      : 'Listening'
+                }
+              />
+            }
           >
-            <For each={props.choices}>
-              {(choice, i) => (
-                <StagePad
-                  keycap={keycap(i())}
-                  label={choice.label}
-                  sub={choice.sub}
-                  state={padState(choice.id)}
-                  disabled={phase() !== 'answer'}
-                  onClick={() => props.controller.answer(choice.id)}
-                />
-              )}
-            </For>
-          </Pads>
+            <PlayPad
+              label="Next"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => props.controller.next()}
+            />
+          </Show>
+          <Show
+            when={props.answerConsole}
+            fallback={
+              <Pads
+                columns={props.columns}
+                compact={props.compact}
+                label={props.answerHint}
+              >
+                <For each={props.choices}>
+                  {(choice, i) => (
+                    <StagePad
+                      keycap={keycap(i())}
+                      label={choice.label}
+                      sub={choice.sub}
+                      state={padState(choice.id)}
+                      lamp={props.padLamp?.(choice.id)}
+                      disabled={phase() !== 'answer'}
+                      onClick={() => props.controller.answer(choice.id)}
+                    />
+                  )}
+                </For>
+              </Pads>
+            }
+          >
+            {(answerConsole) => answerConsole()()}
+          </Show>
         </Show>
       )}
       plate={() => (
@@ -180,8 +276,9 @@ export function IdentificationDrillView(
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }
-              onAgain={() => props.controller.start()}
+              onAgain={() => start()}
               onBack={props.onBack}
+              backLabel={props.backLabel}
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>

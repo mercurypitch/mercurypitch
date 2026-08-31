@@ -20,14 +20,14 @@ describe('StoppedPreparationActions', () => {
         onRehearseTab={onRehearseTab}
       />
     ))
-    fireEvent.click(screen.getByRole('button', { name: 'Rehearse the tab' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Practice with tab' }))
     expect(onRehearseTab).toHaveBeenCalledTimes(1)
   })
 
   it('offers no tab when none is attached, because it would go nowhere', () => {
     render(() => <StoppedPreparationActions onDiscard={vi.fn()} />)
     expect(
-      screen.queryByRole('button', { name: 'Rehearse the tab' }),
+      screen.queryByRole('button', { name: 'Practice with tab' }),
     ).toBeNull()
   })
 })

@@ -38,6 +38,12 @@ const PitchAlgorithmTester = lazy(async () =>
 const LrcDiffTool = lazy(async () =>
   import('./LrcDiffTool').then((m) => ({ default: m.LrcDiffTool })),
 )
+// Dev-only measurement surface for the stem Blob-storage migration plan.
+// Registered below only when import.meta.env.DEV, so production builds never
+// list the tool and never ship the chunk.
+const StemStorageBench = lazy(async () =>
+  import('./StemStorageBench').then((m) => ({ default: m.StemStorageBench })),
+)
 // Lazy for the usual reason and one extra: picking the SwiftF0 source pulls in
 // the ONNX runtime, and nobody opening the spectral workbench should pay for it.
 const TranscriptionBench = lazy(async () =>
@@ -52,6 +58,7 @@ export type LabTab =
   | 'algorithms'
   | 'lrc-diff'
   | 'transcribe'
+  | 'stem-bench'
 
 interface LabTool {
   id: LabTab
@@ -99,6 +106,19 @@ const TABS: LabTool[] = [
     icon: () => <Split />,
     route: TAB_LAB_DIFF,
   },
+  // Reuses the #lab hash: a dev bench needs no deep link of its own.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          id: 'stem-bench' as const,
+          label: 'Stem storage bench',
+          description:
+            'Measure ArrayBuffer vs Blob vs OPFS stem storage on this browser.',
+          icon: () => <Cpu />,
+          route: TAB_LAB,
+        },
+      ]
+    : []),
 ]
 
 const LabToolBoundary: ParentComponent<{
@@ -333,6 +353,24 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
             >
               <Suspense fallback={<SkeletonTabContent />}>
                 <TranscriptionBench />
+              </Suspense>
+            </LabToolBoundary>
+          </section>
+        </Show>
+        <Show when={tab() === 'stem-bench' && import.meta.env.DEV}>
+          <section
+            class={styles.panel}
+            id="lab-panel-stem-bench"
+            role="tabpanel"
+            aria-labelledby="lab-tab-stem-bench"
+            aria-describedby="lab-tool-description"
+          >
+            <LabToolBoundary
+              label="Stem storage bench"
+              onBack={() => showTool('workbench')}
+            >
+              <Suspense fallback={<SkeletonTabContent />}>
+                <StemStorageBench />
               </Suspense>
             </LabToolBoundary>
           </section>

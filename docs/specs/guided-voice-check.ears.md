@@ -10,8 +10,13 @@ ships.
 
 **Product source:**
 `<user-dotfiles>/mercurypitch/plans/guided-voice-check-plan.md`
-**Foundation source:** `src/lib/guided-voice/`
-**Foundation tests:** colocated `src/lib/guided-voice/*.test.ts`
+**Implementation sources:** `src/lib/guided-voice/`,
+`src/features/voice-history/GuidedVoiceCheck.tsx`,
+`src/features/voice-history/guided-voice-take.ts`, and
+`src/features/voice-history/guided-practice-handoff.ts`
+**Tests:** colocated guided-voice tests,
+`src/features/voice-history/GuidedVoiceCheck.test.tsx`, and
+`src/e2e/guided-voice-check.spec.ts`
 
 ---
 
@@ -41,6 +46,12 @@ remove the temporary audio and shall not create a voice-history thread.
 
 **When** the singer explicitly keeps a Focus Take, the system shall store it
 through the existing durable voice-take service.
+
+### REQ-GVC-006 — Thread navigation remains available
+
+**WHEN** a singer selects an existing Hear Yourself thread while Guided Check
+is open, the system shall return to that thread; if the guide holds an unkept
+capture, the system shall first use the same discard confirmation as Close.
 
 ## 2. Protocol and capture
 
@@ -149,6 +160,13 @@ comparison, the system shall suppress that delta and name why.
 
 Controlled assessment and scoring shall use the dry microphone source without
 accompaniment or listening-room effects.
+
+### REQ-GVC-036 — Explain unavailable checks plainly
+
+**When** an optional recording-quality check is unavailable, the method
+disclosure shall name the missing check in plain singer language, shall not
+attribute it to the browser unless a browser capability was actually tested,
+and shall not expose internal quality-gate labels as user guidance.
 
 ## 5. Focus reading
 

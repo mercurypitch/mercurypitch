@@ -112,6 +112,6 @@ test('the tab a stopped separation was blocking is still reachable', async ({
   await dropAudioThatStops(page)
 
   // This is the whole report: the tab was attached and unreachable.
-  await page.getByRole('button', { name: 'Rehearse the tab' }).click()
+  await page.getByRole('button', { name: 'Practice with tab' }).click()
   await expect(page.getByTestId('guitar-night-score-room')).toBeVisible()
 })

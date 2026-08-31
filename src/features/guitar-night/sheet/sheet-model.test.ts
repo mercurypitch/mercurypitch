@@ -123,6 +123,26 @@ describe('totalBeatsForLanes', () => {
   it('does not let a negative duration pull the end backwards', () => {
     expect(totalBeatsForLanes([lane([note(4, -2)])])).toBe(4)
   })
+
+  it('runs through the written end of an authored percussion hit', () => {
+    expect(
+      totalBeatsForLanes([
+        lane([], {
+          content: 'percussion',
+          scoreable: false,
+          percussionHits: [
+            {
+              id: 'midi-t2-e9',
+              gmKey: 49,
+              startBeat: 7.5,
+              velocity: 112,
+              writtenDuration: 0.5,
+            },
+          ],
+        }),
+      ]),
+    ).toBe(8)
+  })
 })
 
 describe('buildSheetPlacement', () => {
@@ -157,6 +177,45 @@ describe('buildSheetPlacement', () => {
       'early',
       'late',
     ])
+  })
+
+  it('indexes authored GM hits once by lane and system without losing evidence', () => {
+    const late = {
+      id: 'gp-t4-b3-v0-n0',
+      gmKey: 54,
+      startBeat: 5.5,
+      velocity: 91,
+      writtenDuration: 0.25,
+      source: {
+        format: 'guitar-pro' as const,
+        articulationIndex: 0,
+        label: 'Tambourine',
+      },
+    }
+    const early = {
+      id: 'midi-t2-e1',
+      gmKey: 36,
+      startBeat: 0.5,
+      velocity: 123,
+      source: { format: 'midi' as const, channel: 9, midiKey: 36 },
+    }
+    const placement = buildSheetPlacement({
+      lanes: [
+        lane([], {
+          trackId: 'track-drums',
+          content: 'percussion',
+          scoreable: false,
+          percussionHits: [late, early],
+        }),
+      ],
+      totalBeats: 8,
+      barsPerSystem: 1,
+    })
+
+    expect(placement.percussionHitsBySystem[0]?.[0]).toEqual([early])
+    expect(placement.percussionHitsBySystem[1]?.[0]).toEqual([late])
+    expect(placement.percussionHitsBySystem[0]?.[0]?.[0]).toBe(early)
+    expect(placement.percussionHitsBySystem[1]?.[0]?.[0]).toBe(late)
   })
 
   it('keeps notes outside the bars rather than dropping them', () => {

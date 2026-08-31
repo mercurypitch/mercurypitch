@@ -14,22 +14,43 @@ permissions:
 
 concurrency:
   group: pr-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Superseding a PR push is free: the newer commit is the one that matters.
+  # A push to main is not. Every main run covers a distinct commit, and
+  # cancelling one loses that commit's coverage permanently. Five main pushes
+  # landed inside thirty minutes on 2026-08-30 — long enough for a long suite
+  # to be killed by the next merge every time.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The gate used to be one serial job, ~15.5 minutes: lint, then units, then a
+# build, then a browser run, then the workers, then Beside Cue — none of which
+# depends on the one before it. It is now a fan-out from `scope`, so the gate
+# costs its longest job rather than the sum of all of them.
+#
+# `scope` decides which surfaces a change can affect and every other job keys
+# off its outputs, so a docs-only PR still installs nothing and a Beside Cue PR
+# does not typecheck MercuryPitch. A skipped job reports `skipped`, not
+# `success`, which is why `gate` at the bottom is the single required check.
 
 jobs:
-  gate:
-    name: PR Gate
+  scope:
+    name: Scope
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
+    timeout-minutes: 10
+    outputs:
+      root: ${{ steps.scope.outputs.root }}
+      beside: ${{ steps.scope.outputs.beside }}
+      db: ${{ steps.scope.outputs.db }}
+      jam: ${{ steps.scope.outputs.jam }}
+      install: ${{ steps.scope.outputs.install }}
+      diff_base: ${{ steps.scope.outputs.diff_base }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      # This check has no dependency-install requirement and catches the most
-      # common generated-doc failure before the runner does expensive work.
+      # No dependency install required, and it catches the most common
+      # generated-doc failure before any other job starts work.
       - name: Check generated agent index
         run: node scripts/gen-agent-index.mjs --check
 
@@ -82,6 +103,16 @@ jobs:
                     beside=true
                     db=true
                     jam=true
+                    ;;
+                  scripts/*beside-cue*)
+                    # A Beside Cue media/prep script cannot affect the
+                    # MercuryPitch build: the app resolves `@` to its own
+                    # src (apps/beside-cue/vitest.config.ts) and shares no
+                    # artifacts with the root. Without this arm the catch-all
+                    # below sets root=true, and PR #653 — 26 of its 27 files
+                    # under apps/beside-cue — paid for the full MercuryPitch
+                    # typecheck, 921 unit files and 120 e2e tests, ~11 min.
+                    beside=true
                     ;;
                   apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
                     beside=true
@@ -136,92 +167,176 @@ jobs:
             echo "| Jam Worker | $jam |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Set up pnpm
-        if: steps.scope.outputs.install == 'true'
-        uses: pnpm/action-setup@v4
+  validate:
+    name: Validate changed files
+    needs: scope
+    if: needs.scope.outputs.install == 'true' && needs.scope.outputs.diff_base != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
         with:
-          version: 11.12.0
-
-      - name: Set up Node.js
-        if: steps.scope.outputs.install == 'true'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Install dependencies
-        if: steps.scope.outputs.install == 'true'
-        run: pnpm install --frozen-lockfile
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
 
       - name: Validate changed files without mutation
-        if: steps.scope.outputs.install == 'true' && steps.scope.outputs.diff_base != ''
         env:
-          PR_PREPARE_BASE: ${{ steps.scope.outputs.diff_base }}
+          PR_PREPARE_BASE: ${{ needs.scope.outputs.diff_base }}
         run: pnpm run pr:validate
 
-      - name: Test PR preparation helper
-        if: steps.scope.outputs.root == 'true'
-        run: pnpm run pr:prepare:test
+  lint:
+    name: Lint and typecheck
+    needs: scope
+    if: needs.scope.outputs.root == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
 
       # This is check:ci without its already-completed docs:index:check step.
       # All commands are non-mutating; CI, rather than a local hook, is the
       # authoritative formatting, lint, and typecheck gate.
       - name: Check MercuryPitch syntax and formatting
-        if: steps.scope.outputs.root == 'true'
         run: pnpm run typecheck && pnpm run lint && pnpm run fmt
 
-      - name: Test MercuryPitch units
-        if: steps.scope.outputs.root == 'true'
-        run: pnpm run test:run
+      # Gated on root alone, as it was before the split. It must not inherit
+      # the `validate` job's diff_base requirement: a tag or workflow_dispatch
+      # run has no diff base and would then never exercise this helper.
+      - name: Test PR preparation helper
+        run: pnpm run pr:prepare:test
 
+  units:
+    name: Unit tests (${{ matrix.shard }}/2)
+    needs: scope
+    if: needs.scope.outputs.root == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      # Two shards, not four: the node/jsdom project split already took the
+      # dominant cost (jsdom construction) out of this step, and past that
+      # point per-job setup starts to dominate the saving.
+      - name: Test MercuryPitch units
+        run: pnpm run test:run --shard=${{ matrix.shard }}/2
+
+  e2e:
+    name: Browser tests (${{ matrix.shard }}/4)
+    needs: scope
+    if: needs.scope.outputs.root == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      # Each shard builds its own dist rather than downloading a shared
+      # artifact. `dist` is 69 MB, so publishing it once and pulling it four
+      # times costs more wall-clock than four parallel builds do — and it would
+      # put a barrier in front of a fan-out that otherwise has none.
+      #
+      # This is also the only build: playwright.config.ts serves `dist` and no
+      # longer rebuilds it, so the bundle the `assert-*-bundle.mjs` audits in
+      # `build:e2e` check here is the bundle these tests actually run against.
       - name: Build MercuryPitch for browser tests
-        if: steps.scope.outputs.root == 'true'
         run: pnpm run build:e2e
 
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          # One key for all four shards, deliberately. On a version bump they
+          # all miss and all try to save it; GitHub keeps the first and the
+          # losers log a reserve warning. That noise is preferable to the
+          # alternatives: `lookup-only` skips the download rather than the
+          # save, and a per-shard key would quadruple the stored browsers.
+          key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
       - name: Install Chromium
-        if: steps.scope.outputs.root == 'true'
+        # --with-deps installs OS packages the cache cannot hold, so this still
+        # runs on a hit; only the browser download itself is skipped.
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Test MercuryPitch smoke paths
-        if: steps.scope.outputs.root == 'true' && github.event_name == 'pull_request'
-        run: pnpm run test:e2e --grep @smoke
+      # The whole suite, on pull requests as well as main. It used to be
+      # `--grep @smoke` on a PR and everything only after merge, which meant
+      # 626 tests first ran on code that was already merged: main went red on
+      # exercise-idle-layout.spec.ts from a change this gate had passed.
+      # Sharded, full coverage costs less wall-clock than the old smoke step.
+      # The @smoke tags stay in the specs — they are still useful locally.
+      - name: Test MercuryPitch browser paths
+        run: pnpm run test:e2e --shard=${{ matrix.shard }}/4
 
-      - name: Test all MercuryPitch browser paths
-        if: steps.scope.outputs.root == 'true' && github.event_name != 'pull_request'
-        run: pnpm run test:e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report
+          retention-days: 7
+
+  workers:
+    name: Workers
+    needs: scope
+    if: needs.scope.outputs.db == 'true' || needs.scope.outputs.jam == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
 
       - name: Typecheck DB Worker
-        if: steps.scope.outputs.db == 'true'
+        if: needs.scope.outputs.db == 'true'
         run: pnpm run typecheck:db
 
-      # The worker suites live in the root vitest project, so `pnpm test:run`
-      # above already covers them whenever root=true. A worker-only PR never
-      # sets root, though, and used to be gated by `tsc` alone — 19 db-worker
-      # test files, including the 2243-line auth suite and the node-tests that
+      # The worker suites live in the root vitest project, so the `units` job
+      # already covers them whenever root=true. A worker-only PR never sets
+      # root, though, and used to be gated by `tsc` alone — 19 db-worker test
+      # files, including the 2243-line auth suite and the node-tests that
       # replay every real migration against SQLite, did not run on the change
       # they were written to protect. Run them explicitly in that case.
       - name: Test DB Worker units
-        if: steps.scope.outputs.db == 'true' && steps.scope.outputs.root != 'true'
+        if: needs.scope.outputs.db == 'true' && needs.scope.outputs.root != 'true'
         run: pnpm run test:db
 
       - name: Typecheck Jam Worker
-        if: steps.scope.outputs.jam == 'true'
+        if: needs.scope.outputs.jam == 'true'
         run: pnpm run typecheck:jam
 
       - name: Test Jam Worker units
-        if: steps.scope.outputs.jam == 'true' && steps.scope.outputs.root != 'true'
+        if: needs.scope.outputs.jam == 'true' && needs.scope.outputs.root != 'true'
         run: pnpm run test:jam
 
+  beside-cue:
+    name: Beside Cue
+    needs: scope
+    if: needs.scope.outputs.beside == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
       - name: Check Beside Cue
-        if: steps.scope.outputs.beside == 'true'
         run: pnpm beside-cue:check
 
       - name: Test Beside Cue
-        if: steps.scope.outputs.beside == 'true'
         run: pnpm beside-cue:test
 
       - name: Build Beside Cue
-        if: steps.scope.outputs.beside == 'true'
         # beside-cue:check already typechecks every package, including the app.
         # Invoke Vite directly so the single app build does not repeat tsc.
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
@@ -229,3 +344,36 @@ jobs:
       # The Android and iOS native builds live in beside-cue-mobile.yml, which
       # runs the same Gradle gate and additionally publishes an installable APK
       # per pull request. Keeping them here too would build Android twice.
+
+  gate:
+    name: PR Gate
+    # The single required status check. Branch protection cannot name a
+    # matrix's individual jobs stably, and a job skipped by `scope` reports
+    # `skipped` rather than `success`, so neither can be required directly.
+    needs: [scope, validate, lint, units, e2e, workers, beside-cue]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any required job did not succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+
+          echo "Job results: $RESULTS"
+
+          # `skipped` is a pass: it means the scope step decided that surface
+          # could not be affected by this change. `failure` and `cancelled`
+          # are not, and neither is anything else that shows up here.
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "::error::a required job reported $result"
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "All required jobs passed."

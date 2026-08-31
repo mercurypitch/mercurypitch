@@ -30,6 +30,16 @@
   padding: 0.75rem 1rem;
   scrollbar-width: thin;
   scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+  /* Claim the two-finger gesture from the browser so a pinch magnifies the
+     score instead of the whole app. One finger still scrolls natively. */
+  touch-action: pan-x pan-y;
+}
+
+/* Spans the readable width and nothing else, so magnifying the page cannot
+   change the number the layout measures itself against. */
+.gauge {
+  width: 100%;
+  height: 0;
 }
 
 .scroll::-webkit-scrollbar {
@@ -214,7 +224,7 @@
   border: 0;
   background: transparent;
   color: var(--score-sheet-lane-label);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--sheet-zoom, 1));
   letter-spacing: 0.02em;
   white-space: nowrap;
   pointer-events: none;
@@ -236,6 +246,11 @@
 .laneNameScored {
   color: var(--score-sheet-scored-accent);
   font-weight: 600;
+}
+
+.sheet[data-layout='focused'] .laneName {
+  color: rgba(244, 234, 219, 0.72);
+  font-size: 0.8rem;
 }
 
 /* One element moves per frame. Everything else is painted and left alone. */
@@ -262,5 +277,106 @@
 @media (prefers-reduced-motion: reduce) {
   .playhead {
     box-shadow: none;
+  }
+}
+
+/* Magnification control: bottom-right, over the page, out of the reading line.
+   A native range keeps keyboard, touch drag and screen-reader support without
+   re-implementing any of them; only the dot and rail are ours. */
+.zoomBar {
+  position: absolute;
+  z-index: 6;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 999px;
+  background: rgba(20, 17, 14, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.zoomSlider {
+  width: 6.5rem;
+  height: 1rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.zoomSlider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.22);
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--score-sheet-scored-accent);
+}
+
+.zoomSlider::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.22);
+}
+
+.zoomSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--score-sheet-scored-accent);
+}
+
+.zoomSlider:focus-visible {
+  outline: 2px solid rgba(224, 164, 93, 0.9);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
+.zoomReset {
+  min-width: 2.6rem;
+  padding: 0.1rem 0.25rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: rgba(244, 234, 219, 0.72);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.zoomReset:hover,
+.zoomReset:focus-visible {
+  color: #f4eadb;
+  background: rgba(244, 234, 219, 0.08);
+}
+
+/* A coarse pointer has no hover and a bigger finger: give the rail room. */
+@media (pointer: coarse) {
+  .zoomSlider {
+    width: 8rem;
+    height: 1.75rem;
+  }
+
+  .zoomSlider::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    margin-top: -6.5px;
+  }
+
+  .zoomSlider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
   }
 }

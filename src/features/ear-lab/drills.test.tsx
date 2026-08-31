@@ -11,12 +11,13 @@ import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { CONTOUR_TIMING, LEAP_TIMING } from '@/lib/ear/timing'
+import { CONTOUR_TIMING, HAIRLINE_TIMING, LEAP_TIMING, REVEAL_HOLD, STACK_TIMING, } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { resetEarLabStore } from '@/stores/ear-lab-store'
+import { resetEarLabStore, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { ContourDrill } from './ContourDrill'
 import { GridDrill } from './GridDrill'
+import { HairlineDrill } from './HairlineDrill'
 import { LeapDrill } from './LeapDrill'
 import { StackDrill } from './StackDrill'
 
@@ -111,8 +112,15 @@ describe('Contour', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
     expect(status()).toBe('Listen…')
-    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.gapMs + 20)
+    // The second tone is scheduled only once the first has sounded in
+    // full, and the pads arm only once the second has too.
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs - 20)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.gapMs + 40)
     expect(engine.playTone).toHaveBeenCalledTimes(2)
+    expect(status()).toBe('Listen…')
+    expect(armedPads()).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs)
     expect(status()).toBe('Which way did it move?')
     expect(armedPads().map((pad) => pad.textContent)).toEqual([
       '1Up',
@@ -142,8 +150,12 @@ describe('Leap', () => {
       </Stage>
     ))
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
-    await vi.advanceTimersByTimeAsync(LEAP_TIMING.gapMs + 20)
+    await vi.advanceTimersByTimeAsync(
+      LEAP_TIMING.toneMs + LEAP_TIMING.gapMs + 20,
+    )
     expect(engine.playTone).toHaveBeenCalledTimes(2)
+    expect(armedPads()).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(LEAP_TIMING.toneMs)
     expect(armedPads()).toHaveLength(12)
     expect(pads().some((pad) => /^\d/.test(pad.textContent ?? ''))).toBe(false)
 
@@ -156,6 +168,125 @@ describe('Leap', () => {
       expect(screen.getByLabelText('Wrong')).toBeTruthy()
     }
     expect(screen.getByLabelText('Right')).toBeTruthy()
+  })
+
+  it('keeps the verdict on the Last call plate through the next round', async () => {
+    render(() => (
+      <Stage>
+        <LeapDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    const bar = screen.getByRole('switch', { name: 'Auto-advance' })
+    expect(bar.getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByTestId('ear-stage-last-call')).toBeNull()
+    await vi.advanceTimersByTimeAsync(
+      LEAP_TIMING.toneMs * 2 + LEAP_TIMING.gapMs + 20,
+    )
+    fireEvent.click(armedPads()[3])
+    const verdict = status()
+    const plate = () => screen.getByTestId('ear-stage-last-call')
+    expect(plate().textContent).toContain('Last call')
+    expect(plate().textContent).toContain('Round 1')
+    expect(plate().textContent).toContain(verdict)
+    expect(plate().textContent).toMatch(/Rating \d+ → \d+/)
+    expect(plate().getAttribute('data-verdict')).toBe(
+      verdict.startsWith('Yes') ? 'right' : 'wrong',
+    )
+
+    // The replay (on a miss) and the hold pass; round two sounds and
+    // the plate still says what round one was.
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 4000)
+    expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
+      'Round 2 of',
+    )
+    expect(status()).not.toBe(verdict)
+    expect(plate().textContent).toContain('Round 1')
+    expect(plate().textContent).toContain(verdict)
+  })
+
+  it('parks on the verdict with auto-advance off until Next, or Space', async () => {
+    setEarAutoAdvance(false)
+    render(() => (
+      <Stage>
+        <LeapDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    expect(
+      screen
+        .getByRole('switch', { name: 'Auto-advance' })
+        .getAttribute('aria-checked'),
+    ).toBe('false')
+    await vi.advanceTimersByTimeAsync(
+      LEAP_TIMING.toneMs * 2 + LEAP_TIMING.gapMs + 20,
+    )
+    fireEvent.click(armedPads()[0])
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.max + 4000)
+    expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
+      'Round 1 of',
+    )
+    const next = screen.getByRole('button', { name: /Next/ })
+    expect(next.hasAttribute('disabled')).toBe(false)
+    expect(armedPads()).toHaveLength(0)
+
+    fireEvent.keyDown(document, { key: ' ', code: 'Space' })
+    await vi.advanceTimersByTimeAsync(5)
+    expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
+      'Round 2 of',
+    )
+    expect(screen.queryByRole('button', { name: /Next/ })).toBeNull()
+  })
+})
+
+describe('Hairline', () => {
+  const armHairline = async () => {
+    await vi.advanceTimersByTimeAsync(
+      HAIRLINE_TIMING.toneMs * 2 + HAIRLINE_TIMING.gapMs + 20,
+    )
+    expect(armedPads()).toHaveLength(2)
+  }
+
+  it('says where the gap goes next on the Last call plate, and keeps it', async () => {
+    render(() => (
+      <Stage>
+        <HairlineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
+    await armHairline()
+    fireEvent.click(armedPads()[0])
+    const verdict = status()
+    const plate = () => screen.getByTestId('ear-stage-last-call')
+    expect(plate().textContent).toContain('Trial 1')
+    expect(plate().textContent).toContain(verdict)
+    expect(plate().textContent).toMatch(/Gap [\d.]+¢ → [\d.]+¢/)
+
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
+    expect(armedPads()).toHaveLength(0)
+    expect(plate().textContent).toContain('Trial 1')
+    await armHairline()
+    fireEvent.click(armedPads()[1])
+    expect(plate().textContent).toContain('Trial 2')
+  })
+
+  it('parks a threshold run the same way, Next sounding the next pair', async () => {
+    setEarAutoAdvance(false)
+    render(() => (
+      <Stage>
+        <HairlineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
+    await armHairline()
+    const tones = engine.playTone.mock.calls.length
+    fireEvent.click(armedPads()[0])
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.max + 1000)
+    expect(engine.playTone.mock.calls.length).toBe(tones)
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }))
+    await vi.advanceTimersByTimeAsync(5)
+    expect(engine.playTone.mock.calls.length).toBe(tones + 1)
+    await armHairline()
   })
 })
 
@@ -172,6 +303,9 @@ describe('Stack', () => {
     const intervals = engine.playTone.mock.calls[0][10]
     expect(Array.isArray(intervals)).toBe(true)
     expect((intervals as number[]).length).toBeGreaterThan(0)
+    // The chord rings for its whole length before the pads arm.
+    expect(status()).toBe('Listen to the stack…')
+    await vi.advanceTimersByTimeAsync(STACK_TIMING.chordMs + 20)
     expect(status()).toBe('Which quality was that?')
     expect(armedPads().length).toBeGreaterThan(2)
 

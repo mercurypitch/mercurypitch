@@ -3,7 +3,7 @@
 
 import type { Accessor } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { Pause, Play } from '@/components/icons'
+import { ChevronLeft, Pause, Play } from '@/components/icons'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import type { GuitarFirstWinCompletionAction } from './first-win-config'
@@ -138,6 +138,22 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
   return (
     <section class={styles.firstWinRoom} data-testid="guitar-night-first-win">
       <div class={styles.firstWinBrief}>
+        {/* A beginner who opened the lesson by accident needs the way out to
+            be where every way out is: the top-left corner. It used to be a
+            plain "Back" further down the panel, past the controls, which is
+            not where anyone looks for it. */}
+        <button
+          type="button"
+          class={styles.firstWinBack}
+          data-testid="guitar-night-first-win-back"
+          aria-label="Back to Guitar Night"
+          onClick={() => props.onBack()}
+        >
+          <span aria-hidden="true">
+            <ChevronLeft />
+          </span>
+          Back
+        </button>
         <p class={styles.eyebrow}>
           Learn · {props.controller.currentStepIndex() + 1} of{' '}
           {props.controller.stepCount()}
@@ -245,9 +261,6 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
         </div>
 
         <div class={styles.firstWinUtilities}>
-          <button type="button" onClick={() => props.onBack()}>
-            Back
-          </button>
           <div
             class={styles.practiceModes}
             role="group"

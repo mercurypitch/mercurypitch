@@ -6,9 +6,10 @@
 // components: the header (back, "?" help toggle, title, score), the
 // collapsible beginner help panel, the idle area (settings + description +
 // Start beneath it), the active area (content + Stop + optional auto-timer),
-// and the complete overlay with a SINGLE primary action. Exercise-specific
-// JSX is passed in via slots so each component only supplies its canvas,
-// metrics, idle placeholder and result summary.
+// and the result card with a primary retry action plus explicit voice-take
+// persistence choices. Exercise-specific JSX is passed in via slots so each
+// component only supplies its canvas, metrics, idle placeholder and result
+// summary.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
@@ -22,17 +23,22 @@ import { getDifficulty } from '@/features/practice-intelligence/difficulty-store
 import { holdMicForRoutine, releaseRoutineMicHold, } from '@/features/routines/routine-mic-hold'
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { trackEvent } from '@/lib/analytics'
 import { haptics } from '@/lib/haptics'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
+import { showNotification } from '@/stores/notifications-store'
 import { EXERCISE_HELP } from './exercise-help'
+import { keepExerciseVoiceTake } from './exercise-voice-take'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import { gradeForScore } from './feedback'
 import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
 import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
-import type { ExerciseStatus, ExerciseType } from './types'
+import type { ExerciseStatus, ExerciseType, GuidedPracticeLaunchConfig, } from './types'
+import type { ExerciseVoiceCaptureController } from './use-base-exercise'
 
 export interface AutoTimerConfig {
   /** Preset durations (seconds). Defaults to the shared ladder. */
@@ -84,8 +90,19 @@ export interface ExerciseShellProps {
   currentScore: () => number
   /** Final score 0-100 once complete (drives the result overlay color). */
   resultScore: () => number | null
+  /** Temporary local audio for this run; omitted in shell-only tests. */
+  voiceCapture?: ExerciseVoiceCaptureController
   error?: () => string | null
   onBack: () => void
+
+  /** Reviewed, launch-scoped guided dose. Never written to global settings. */
+  guidedPractice?: GuidedPracticeLaunchConfig
+  /**
+   * Confirms that a timer-finished guided run captured enough exercise-specific
+   * evidence to count toward the prescribed dose. Guided runs fail closed when
+   * this is omitted; an elapsed timer alone is not proof of a completed hold.
+   */
+  guidedCompletionReady?: () => boolean
 
   /** Settings shown in idle (note pickers, scale selects). Optional. */
   idleSettings?: JSX.Element
@@ -102,6 +119,9 @@ export interface ExerciseShellProps {
   /** Live pitch tracker drawn above activeContent. Omit for drills that plot
    *  nothing (Ear Training's listening-only rounds). */
   tracker?: ExerciseTrackerConfig
+
+  /** Preparation shown while an exercise deliberately waits before capture. */
+  countInContent?: JSX.Element
 
   /**
    * The one-line instruction for the current phase — "Listen", "Breathe",
@@ -148,10 +168,27 @@ const formatRunLength = (seconds: number): string => {
 
 export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [helpOpen, setHelpOpen] = createSignal(false)
+  const [voiceKeepState, setVoiceKeepState] = createSignal<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle')
   const [remainingMs, setRemainingMs] = createSignal(0)
+  const [guidedCompletedRepetitions, setGuidedCompletedRepetitions] =
+    createSignal(0)
+  const [lastGuidedRunCompleted, setLastGuidedRunCompleted] =
+    createSignal(false)
+  const [guidedRunNeedsEvidence, setGuidedRunNeedsEvidence] =
+    createSignal(false)
+  const [guidedStopReason, setGuidedStopReason] = createSignal<
+    'paused' | 'discomfort' | null
+  >(null)
   // Opens the slider. Sticky while Custom is the selected mode so the value
   // stays adjustable between runs, rather than collapsing after every pick.
   const [customOpen, setCustomOpen] = createSignal(false)
+  let voiceKeepGeneration = 0
+  let guidedResultCard: HTMLDivElement | undefined
+  let guidedResultFocusTimer: ReturnType<typeof setTimeout> | undefined
+  const voiceSaveInFlight = (): boolean => voiceKeepState() === 'saving'
+  useLocalSaveNavigationLock(voiceSaveInFlight, 'exercise voice-take keep')
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
@@ -166,6 +203,39 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const status = createMemo(() => props.status())
   const isActive = () => status() === 'active'
   const isComplete = () => status() === 'complete'
+  const guidedDurationSeconds = createMemo<number | null>(() => {
+    const milliseconds = props.guidedPractice?.dose.durationMilliseconds
+    return milliseconds !== null &&
+      milliseconds !== undefined &&
+      Number.isFinite(milliseconds) &&
+      milliseconds > 0
+      ? milliseconds / 1000
+      : null
+  })
+  const guidedSets = () => props.guidedPractice?.dose.sets ?? null
+  const guidedRepetitions = () => props.guidedPractice?.dose.repetitions ?? null
+  const guidedTotalRepetitions = createMemo<number | null>(() => {
+    const repetitions = guidedRepetitions()
+    const sets = guidedSets()
+    if (repetitions === null || sets === null) return null
+    return repetitions * sets
+  })
+  const guidedDoseComplete = () => {
+    const total = guidedTotalRepetitions()
+    return total !== null && guidedCompletedRepetitions() >= total
+  }
+  const voiceCaptureHeading = createMemo(() => {
+    if (voiceKeepState() === 'saving') return 'Keeping voice take'
+    if (voiceKeepState() === 'saved') return 'Voice take kept'
+    if (voiceKeepState() === 'error') return 'Could not keep voice take'
+    const captureState = props.voiceCapture?.state()
+    if (captureState === 'processing') return 'Preparing voice take'
+    if (captureState === 'ready') return 'Keep this voice take?'
+    if (captureState === 'unsupported' || captureState === 'error') {
+      return 'Replay unavailable'
+    }
+    return 'Replay discarded'
+  })
   // A finished run returns to the selector + Start screen, where a result
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
@@ -178,39 +248,209 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [prevLast, setPrevLast] = createSignal<number | null>(null)
   // The finished run's contour, shown back on the result card.
   const [runTrace, setRunTrace] = createSignal<RunTrace | null>(null)
+  let guidedTimerCompletionPending = false
   createEffect(
     on(status, (s, previous) => {
       if (s === 'active' && previous !== 'active') {
-        const stats = getExerciseStats(props.type)
-        setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
-        setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
+        clearTimeout(guidedResultFocusTimer)
+        guidedResultFocusTimer = undefined
+        guidedTimerCompletionPending = false
+        setLastGuidedRunCompleted(false)
+        setGuidedRunNeedsEvidence(false)
+        setGuidedStopReason(null)
+        voiceKeepGeneration += 1
+        setVoiceKeepState('idle')
+        if (props.guidedPractice === undefined) {
+          const stats = getExerciseStats(props.type)
+          setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
+          setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
+        } else {
+          setPrevBest(null)
+          setPrevLast(null)
+        }
       }
       // Score reveal gets a haptic on devices that support it (Android):
       // celebratory for a strong run, a light tick otherwise.
       if (s === 'complete' && previous === 'active') {
+        const finishedByGuidedTimer =
+          props.guidedPractice !== undefined && guidedTimerCompletionPending
+        const completedTimedGuidedRun =
+          finishedByGuidedTimer && props.guidedCompletionReady?.() === true
+        setLastGuidedRunCompleted(completedTimedGuidedRun)
+        setGuidedRunNeedsEvidence(
+          finishedByGuidedTimer && !completedTimedGuidedRun,
+        )
+        if (completedTimedGuidedRun) {
+          const total = guidedTotalRepetitions()
+          setGuidedCompletedRepetitions((completed) =>
+            total === null ? completed + 1 : Math.min(total, completed + 1),
+          )
+        }
+        guidedTimerCompletionPending = false
         const score = props.resultScore()
-        if (score !== null && score >= 80) haptics.success()
-        else haptics.tapLight()
+        if (
+          props.guidedPractice === undefined &&
+          score !== null &&
+          score >= 80
+        ) {
+          haptics.success()
+        } else {
+          haptics.tapLight()
+        }
         // Snapshot the contour for the result card. The trace seam is global
         // and holds whatever ran last, so the type check keeps a previous
         // drill's shape from being shown under this one's score.
         const trace = lastRunTrace()
         setRunTrace(trace?.type === props.type ? trace : null)
+        if (props.guidedPractice !== undefined) {
+          guidedResultFocusTimer = setTimeout(() => {
+            guidedResultCard?.focus()
+          }, 0)
+        }
       }
       if (s === 'active') setRunTrace(null)
     }),
   )
   const isNewBest = () => {
+    if (props.guidedPractice !== undefined) return false
     const score = props.resultScore()
     if (score === null) return false
     const best = prevBest()
     return best !== null && score > best
   }
   const deltaVsLast = () => {
+    if (props.guidedPractice !== undefined) return null
     const score = props.resultScore()
     const last = prevLast()
     if (score === null || last === null) return null
     return score - last
+  }
+
+  function keepVoiceTake(): void {
+    if (voiceSaveInFlight()) return
+    const take = props.voiceCapture?.take()
+    const exerciseTitle = props.title
+    if (take === null || take === undefined) return
+    setVoiceKeepState('saving')
+    trackEvent('voice_keep_attempt')
+    const generation = voiceKeepGeneration
+
+    void (async () => {
+      try {
+        const result = await keepExerciseVoiceTake({ exerciseTitle, take })
+        if (result.ok) {
+          trackEvent('voice_keep_success')
+          if (generation !== voiceKeepGeneration) return
+          setVoiceKeepState('saved')
+          showNotification(
+            'Exercise take kept in Hear Yourself on this device.',
+            'success',
+            { channel: 'voice-take-save' },
+          )
+          return
+        }
+
+        trackEvent('voice_keep_failure')
+        if (generation !== voiceKeepGeneration) return
+        setVoiceKeepState('error')
+        if (result.quotaExceeded || !result.roomAvailable) {
+          trackEvent('voice_storage_warning')
+          showNotification(
+            'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+            'warning',
+            { channel: 'voice-take-save' },
+          )
+        } else {
+          showNotification(
+            'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
+            'error',
+            { channel: 'voice-take-save' },
+          )
+        }
+      } catch {
+        trackEvent('voice_keep_failure')
+        if (generation !== voiceKeepGeneration) return
+        setVoiceKeepState('error')
+        showNotification(
+          'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
+          'error',
+          { channel: 'voice-take-save' },
+        )
+      }
+    })()
+  }
+
+  function tryAgain(): void {
+    if (voiceSaveInFlight()) return
+    voiceKeepGeneration += 1
+    setVoiceKeepState('idle')
+    props.onTryAgain()
+  }
+
+  function activateIdlePrimary(): void {
+    if (voiceSaveInFlight()) return
+    if (!isComplete()) {
+      props.onStart()
+      return
+    }
+    if (guidedDoseComplete() || guidedStopReason() === 'discomfort') {
+      props.onBack()
+      return
+    }
+    if (
+      props.guidedPractice !== undefined &&
+      !lastGuidedRunCompleted() &&
+      !guidedRunNeedsEvidence() &&
+      guidedStopReason() === null
+    ) {
+      return
+    }
+    tryAgain()
+  }
+
+  const idlePrimaryLabel = (): string => {
+    if (!isComplete()) return props.startLabel ?? 'Start'
+    if (guidedDoseComplete() || guidedStopReason() === 'discomfort') {
+      return 'Return to Focus reading'
+    }
+    const total = guidedTotalRepetitions()
+    if (props.guidedPractice !== undefined && total !== null) {
+      const next = Math.min(total, guidedCompletedRepetitions() + 1)
+      return lastGuidedRunCompleted()
+        ? `Next hold · ${next} of ${total}`
+        : `Retry hold · ${next} of ${total}`
+    }
+    const prescribedRun = props.guidedPractice === undefined ? repRun() : null
+    if (prescribedRun !== null) {
+      return `Start run ${prescribedRun.next} of ${prescribedRun.reps}`
+    }
+    return 'Try Again'
+  }
+
+  function reportGuidedDiscomfort(): void {
+    if (props.guidedPractice === undefined || voiceSaveInFlight()) return
+    voiceKeepGeneration += 1
+    props.voiceCapture?.discard()
+    setVoiceKeepState('idle')
+    setGuidedStopReason('discomfort')
+    queueMicrotask(() => guidedResultCard?.focus())
+  }
+
+  function reportGuidedPause(): void {
+    if (props.guidedPractice === undefined || voiceSaveInFlight()) return
+    setGuidedStopReason('paused')
+    queueMicrotask(() => guidedResultCard?.focus())
+  }
+
+  function discardVoiceTake(): void {
+    if (voiceSaveInFlight()) return
+    props.voiceCapture?.discard()
+    setVoiceKeepState('idle')
+  }
+
+  function leaveExercise(): void {
+    if (voiceSaveInFlight()) return
+    props.onBack()
   }
 
   // ── Mic toggle (header) ──
@@ -281,8 +521,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   }
   // Arm only on the 'active' transition so the autoStart path and the
   // transient 'count-in' state never trigger a premature stop.
+  const effectiveTimerSeconds = createMemo(
+    () => guidedDurationSeconds() ?? activeTimerSeconds(),
+  )
   createEffect(
-    on([status, activeTimerSeconds], ([statusValue, seconds]) => {
+    on([status, effectiveTimerSeconds], ([statusValue, seconds]) => {
       clearTimer()
       if (!props.autoTimer || statusValue !== 'active' || seconds === null) {
         return
@@ -294,6 +537,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         if (rem <= 0) {
           clearTimer()
           setRemainingMs(0)
+          if (props.guidedPractice !== undefined) {
+            guidedTimerCompletionPending = true
+          }
           props.autoTimer!.onElapse()
         } else {
           setRemainingMs(rem)
@@ -301,7 +547,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       }, 100)
     }),
   )
-  onCleanup(clearTimer)
+  onCleanup(() => {
+    clearTimer()
+    clearTimeout(guidedResultFocusTimer)
+  })
 
   // Spacebar starts/stops the exercise (and restarts from the result screen),
   // ignoring presses while a text/form control is focused so it doesn't
@@ -309,20 +558,24 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // opt out: after clicking Start (or any control) focus rests on that
   // button, and users expect Space to keep toggling the exercise — the
   // preventDefault below suppresses the native button re-activation, so
-  // there's no double-trigger.
+  // there's no double-trigger. Result voice actions opt back into native
+  // button behavior: Space on Keep or Discard must activate that decision,
+  // not silently start the next exercise run.
   onMount(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== ' ' && e.code !== 'Space') return
       // Ignore auto-repeat: holding Space would otherwise cycle
       // stop → try-again → stop… and log several spurious completed runs.
       if (e.repeat) return
-      const el = e.target as HTMLElement | null
+      const el = e.target instanceof HTMLElement ? e.target : null
       const tag = el?.tagName
       if (
         tag === 'INPUT' ||
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
-        el?.isContentEditable === true
+        el?.isContentEditable === true ||
+        (el !== null &&
+          el.closest('[data-exercise-native-space="true"]') !== null)
       ) {
         return
       }
@@ -335,7 +588,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         props.onStop()
       } else if (s === 'complete') {
         e.preventDefault()
-        props.onTryAgain()
+        activateIdlePrimary()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -424,11 +677,50 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     </div>
   )
 
+  const guidedDoseLabel = createMemo(() => {
+    const parts: string[] = []
+    const sets = guidedSets()
+    const repetitions = guidedRepetitions()
+    const seconds = guidedDurationSeconds()
+    if (sets !== null) parts.push(`${sets} ${sets === 1 ? 'set' : 'sets'}`)
+    if (repetitions !== null) {
+      parts.push(`${repetitions} ${repetitions === 1 ? 'hold' : 'holds'}`)
+    }
+    if (seconds !== null) parts.push(`${formatRunLength(seconds)} each`)
+    return parts.join(' · ')
+  })
+
+  const guidedProgressCopy = (): string => {
+    if (guidedStopReason() === 'discomfort') return 'Dose ended'
+    const total = guidedTotalRepetitions()
+    if (total === null) return 'Reviewed bounded dose'
+    if (isActive()) {
+      return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total}`
+    }
+    if (isComplete() && !lastGuidedRunCompleted()) {
+      if (guidedRunNeedsEvidence()) {
+        return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total} needs another try`
+      }
+      return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total} paused`
+    }
+    if (guidedDoseComplete()) return 'Guided dose complete'
+    return `${guidedCompletedRepetitions()} of ${total} holds complete`
+  }
+
+  const guidedStopRuleCopy = (): string =>
+    props.guidedPractice?.stopRuleId === 'guided.stop-on-discomfort-v1'
+      ? 'Stop immediately if anything feels uncomfortable.'
+      : 'Stop this guided set if anything feels uncomfortable.'
+
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
         <div class="exercise-header-left">
-          <button class="back-btn" onClick={() => props.onBack()}>
+          <button
+            class="back-btn"
+            disabled={voiceSaveInFlight()}
+            onClick={leaveExercise}
+          >
             ← Back
           </button>
           <button
@@ -458,14 +750,18 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             class="exercise-level-chip"
             title="Adaptive difficulty level (1-10) — adjusts to your recent scores"
           >
-            Lv {getDifficulty(props.type)}
+            {props.guidedPractice === undefined
+              ? `Lv ${getDifficulty(props.type)}`
+              : 'Guided'}
           </span>
           <Show when={engines}>
             <MicButton active={micOn()} onClick={toggleMic} />
           </Show>
-          <span class="exercise-score-display">
-            {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
-          </span>
+          <Show when={props.guidedPractice === undefined}>
+            <span class="exercise-score-display">
+              {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
+            </span>
+          </Show>
         </div>
       </div>
 
@@ -483,15 +779,35 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         type={props.type}
         isRunning={() => status() === 'active' || status() === 'count-in'}
         isComplete={isComplete}
-        onRunAgain={() => props.onTryAgain()}
+        onRunAgain={tryAgain}
+        transitionBlocked={voiceSaveInFlight}
       />
+
+      <Show when={props.guidedPractice !== undefined}>
+        <aside
+          class="exercise-guided-dose"
+          aria-label="Guided practice dose"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div class="exercise-guided-dose-heading">
+            <span>Focus practice</span>
+            <strong>{guidedProgressCopy()}</strong>
+          </div>
+          <p>{guidedDoseLabel()}</p>
+          <small>{guidedStopRuleCopy()}</small>
+        </aside>
+      </Show>
 
       <div
         class="exercise-canvas-area"
         classList={{ 'is-idle': isIdleLike(), 'is-active': isActive() }}
       >
+        <Show when={status() === 'count-in'}>{props.countInContent}</Show>
         <Show when={isIdleLike()}>
-          <ExerciseScoreHistory type={props.type} />
+          <Show when={props.guidedPractice === undefined}>
+            <ExerciseScoreHistory type={props.type} />
+          </Show>
           {/* Description + settings + Start live together in the centre of the
               panel before the run; they slide out of view once it's active. A
               finished run returns here with the score now in the corner chip. */}
@@ -502,42 +818,169 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                   the singer needs pace — the full card returns on the
                   segment's last run and everywhere outside routines. */}
               <div
-                class={`exercise-result-card grade-${gradeForScore(props.resultScore()!).toLowerCase()}`}
-                classList={{ 'mid-reps': repRun() !== null }}
+                ref={guidedResultCard}
+                class="exercise-result-card"
+                classList={{
+                  [`grade-${gradeForScore(props.resultScore()!).toLowerCase()}`]:
+                    props.guidedPractice === undefined,
+                  'mid-reps': repRun() !== null,
+                  'is-guided': props.guidedPractice !== undefined,
+                }}
+                role={props.guidedPractice === undefined ? undefined : 'status'}
+                aria-live={
+                  props.guidedPractice === undefined ? undefined : 'polite'
+                }
+                tabIndex={props.guidedPractice === undefined ? undefined : -1}
               >
-                <div class="exercise-result-grade">
-                  {gradeForScore(props.resultScore()!)}
-                </div>
+                <Show when={props.guidedPractice === undefined}>
+                  <div class="exercise-result-grade">
+                    {gradeForScore(props.resultScore()!)}
+                  </div>
+                </Show>
                 <div class="exercise-result-main">
-                  <div class="exercise-result-score">
-                    {props.resultScore()}%
-                    <Show when={isNewBest()}>
-                      <span class="exercise-result-best">New best!</span>
-                    </Show>
+                  <Show
+                    when={props.guidedPractice === undefined}
+                    fallback={
+                      <div class="exercise-guided-result-title">
+                        {guidedStopReason() === 'discomfort'
+                          ? 'Stopped for comfort'
+                          : lastGuidedRunCompleted()
+                            ? 'Hold complete'
+                            : guidedRunNeedsEvidence()
+                              ? 'Hold needs another try'
+                              : 'Hold paused'}
+                      </div>
+                    }
+                  >
+                    <div class="exercise-result-score">
+                      {props.resultScore()}%
+                      <Show when={isNewBest()}>
+                        <span class="exercise-result-best">New best!</span>
+                      </Show>
+                      <Show
+                        when={
+                          !isNewBest() &&
+                          deltaVsLast() !== null &&
+                          deltaVsLast() !== 0
+                        }
+                      >
+                        <span
+                          class="exercise-result-delta"
+                          classList={{ up: (deltaVsLast() ?? 0) > 0 }}
+                        >
+                          {(deltaVsLast() ?? 0) > 0 ? '+' : ''}
+                          {deltaVsLast()} vs last
+                        </span>
+                      </Show>
+                    </div>
+                  </Show>
+                  <Show
+                    when={guidedStopReason() !== 'discomfort'}
+                    fallback={
+                      <p class="exercise-guided-stop-copy">
+                        End this dose for today. No further hold is suggested.
+                      </p>
+                    }
+                  >
                     <Show
-                      when={
-                        !isNewBest() &&
-                        deltaVsLast() !== null &&
-                        deltaVsLast() !== 0
+                      when={!guidedRunNeedsEvidence()}
+                      fallback={
+                        <p class="exercise-guided-stop-copy">
+                          We did not hear enough sustained voice to count this
+                          hold. Check the microphone, then try the same hold
+                          again.
+                        </p>
                       }
                     >
-                      <span
-                        class="exercise-result-delta"
-                        classList={{ up: (deltaVsLast() ?? 0) > 0 }}
-                      >
-                        {(deltaVsLast() ?? 0) > 0 ? '+' : ''}
-                        {deltaVsLast()} vs last
-                      </span>
+                      <div class="exercise-result-summary">
+                        {props.resultSummary}
+                      </div>
                     </Show>
-                  </div>
-                  <div class="exercise-result-summary">
-                    {props.resultSummary}
-                  </div>
+                  </Show>
                   {/* The score says how well; the contour says where. */}
-                  <Show when={repRun() === null && runTrace()}>
+                  <Show
+                    when={
+                      repRun() === null &&
+                      guidedStopReason() !== 'discomfort' &&
+                      !guidedRunNeedsEvidence()
+                        ? runTrace()
+                        : null
+                    }
+                  >
                     {(trace) => <RunTraceCanvas trace={trace()} />}
                   </Show>
                 </div>
+                <Show
+                  when={
+                    props.voiceCapture !== undefined &&
+                    guidedStopReason() !== 'discomfort' &&
+                    !guidedRunNeedsEvidence()
+                  }
+                >
+                  <div class="exercise-result-voice">
+                    <div class="exercise-result-voice-copy">
+                      <strong>{voiceCaptureHeading()}</strong>
+                      <span role="status" aria-live="polite">
+                        {voiceKeepState() === 'saving'
+                          ? 'Saving locally…'
+                          : voiceKeepState() === 'saved'
+                            ? 'Available in Hear Yourself on this device.'
+                            : voiceKeepState() === 'error'
+                              ? 'Could not keep it. The temporary replay is still available.'
+                              : props.voiceCapture!.state() === 'processing'
+                                ? 'Preparing the temporary local replay…'
+                                : props.voiceCapture!.state() === 'ready'
+                                  ? 'It stays temporary unless you explicitly keep it on this device.'
+                                  : props.voiceCapture!.state() ===
+                                      'unsupported'
+                                    ? 'This browser can score the run but cannot record a replay.'
+                                    : props.voiceCapture!.state() === 'error'
+                                      ? 'No replay was captured. Your score is unchanged.'
+                                      : 'Replay discarded. Your score is unchanged.'}
+                      </span>
+                    </div>
+                    <Show
+                      when={
+                        props.voiceCapture!.state() === 'ready' ||
+                        voiceKeepState() === 'saving' ||
+                        voiceKeepState() === 'saved' ||
+                        voiceKeepState() === 'error'
+                      }
+                    >
+                      <div class="exercise-result-voice-actions">
+                        <button
+                          type="button"
+                          class="exercise-btn exercise-keep-voice"
+                          data-exercise-native-space="true"
+                          disabled={
+                            voiceKeepState() === 'saving' ||
+                            voiceKeepState() === 'saved'
+                          }
+                          onClick={keepVoiceTake}
+                        >
+                          {voiceKeepState() === 'saving'
+                            ? 'Saving'
+                            : voiceKeepState() === 'saved'
+                              ? 'Kept'
+                              : voiceKeepState() === 'error'
+                                ? 'Retry Keep'
+                                : 'Keep Take'}
+                        </button>
+                        <Show when={voiceKeepState() !== 'saved'}>
+                          <button
+                            type="button"
+                            class="exercise-btn exercise-discard-voice"
+                            data-exercise-native-space="true"
+                            disabled={voiceSaveInFlight()}
+                            onClick={discardVoiceTake}
+                          >
+                            Discard
+                          </button>
+                        </Show>
+                      </div>
+                    </Show>
+                  </div>
+                </Show>
               </div>
             </Show>
             <Show
@@ -583,27 +1026,72 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 </div>
               </Show>
               <div class="exercise-idle-launch">
-                <Show when={props.autoTimer}>
+                <Show
+                  when={props.autoTimer && props.guidedPractice === undefined}
+                >
                   <TimerToggle />
                 </Show>
                 <Show when={props.error?.() != null}>
                   <div class="exercise-error">{props.error!()}</div>
                 </Show>
-                <button
-                  class="exercise-btn exercise-btn-primary exercise-idle-start"
-                  onClick={() =>
-                    isComplete() ? props.onTryAgain() : props.onStart()
+                <Show when={!isComplete() && props.voiceCapture !== undefined}>
+                  <p class="exercise-capture-note">
+                    Scores save without audio. After the run, choose whether to
+                    keep its temporary local replay.
+                  </p>
+                </Show>
+                <Show
+                  when={
+                    props.guidedPractice !== undefined &&
+                    isComplete() &&
+                    !lastGuidedRunCompleted() &&
+                    !guidedRunNeedsEvidence() &&
+                    guidedStopReason() === null
                   }
                 >
-                  {/* Mid-reps the restart is prescribed, so the button says
-                      which run it starts; outside a multi-rep segment the
-                      Try Again / Start pair stands (e2e selectors match it). */}
-                  {isComplete()
-                    ? repRun() === null
-                      ? 'Try Again'
-                      : `Start run ${repRun()!.next} of ${repRun()!.reps}`
-                    : (props.startLabel ?? 'Start')}
-                </button>
+                  <div
+                    class="exercise-guided-stop-question"
+                    role="group"
+                    aria-label="How did stopping feel?"
+                  >
+                    <span>How did stopping feel?</span>
+                    <button
+                      type="button"
+                      class="exercise-btn exercise-guided-pause"
+                      disabled={voiceSaveInFlight()}
+                      onClick={reportGuidedPause}
+                    >
+                      It felt fine; I just paused
+                    </button>
+                    <button
+                      type="button"
+                      class="exercise-btn exercise-guided-discomfort"
+                      disabled={voiceSaveInFlight()}
+                      onClick={reportGuidedDiscomfort}
+                    >
+                      It felt uncomfortable
+                    </button>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    !(
+                      props.guidedPractice !== undefined &&
+                      isComplete() &&
+                      !lastGuidedRunCompleted() &&
+                      !guidedRunNeedsEvidence() &&
+                      guidedStopReason() === null
+                    )
+                  }
+                >
+                  <button
+                    class="exercise-btn exercise-btn-primary exercise-idle-start"
+                    disabled={voiceSaveInFlight()}
+                    onClick={activateIdlePrimary}
+                  >
+                    {idlePrimaryLabel()}
+                  </button>
+                </Show>
               </div>
             </div>
           </div>
@@ -658,7 +1146,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             style (the secondary button's background var was undefined). */}
         <Show when={isActive()}>
           <div class="exercise-active-controls">
-            <Show when={props.autoTimer && activeTimerSeconds() !== null}>
+            <Show when={props.autoTimer && effectiveTimerSeconds() !== null}>
               <span class="exercise-timer-countdown">
                 {Math.ceil(remainingMs() / 1000)}s
               </span>

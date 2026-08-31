@@ -73,7 +73,7 @@ Eight production mutations were made across the audit. **Two were caught. Six su
 
 ### The structural failure that outweighs all of it
 
-**Worker tests do not gate the workers.** `.github/workflows/pr-gate.yml` routes `workers/db-worker/*` changes to `db=true`, and the only step gated on `db=true` is `pnpm run typecheck:db`. The only step that runs vitest is `pnpm run test:run`, gated on `root=true`. So a PR touching only the DB worker **never runs** the 2243-line `auth.test.ts`, `access.test.ts`, `billing.test.ts`, or any of the five `node-tests/` SQLite integration tests. Same for `workers/jam-worker/*` → `typecheck:jam` only.
+**Worker tests did not gate the workers.** `.github/workflows/pr-gate.yml` routed `workers/db-worker/*` changes to `db=true`, and the only step gated on `db=true` was `pnpm run typecheck:db`. The only step that ran vitest was `pnpm run test:run`, gated on `root=true`. So a PR touching only the DB worker **never ran** the 2243-line `auth.test.ts`, `access.test.ts`, `billing.test.ts`, or any of the five `node-tests/` SQLite integration tests. Same for `workers/jam-worker/*` → `typecheck:jam` only. **Fixed** by §5.0's `test:db` / `test:jam` steps, which now sit in a `Workers` job of their own.
 
 **Architecture rules are comments.** `pnpm arch` exists and is in neither `pnpm check` (`run-s typecheck lint:fix fmt:write`) nor CI. Running it: **464 violations, 0 errors, 464 warnings** — 273 `no-cross-feature-import`, 99 `components-no-features`, 26 `lib-no-stores`, **22 `no-circular`**, 18 `lib-no-features`, 13 `stores-no-ui`, 10 `db-no-ui`, 3 `no-orphans`. Confirmed in `.dependency-cruiser.cjs`: every layering rule that fires is `severity: 'warn'`. Only `lib-no-components`, `no-deprecated-core`, `not-to-dev-dep` and `no-non-package-json` are errors, and none of them report violations.
 
@@ -94,7 +94,7 @@ The classic pyramid assumes the expensive-to-test layer is thin glue over a rich
 - **The domain core is pure math** (pitch detection, key detection, MIDI parsing, sheet layout, scoring, billing arithmetic). Pure unit tests there are cheap, fast, deterministic and — as the 32-red mutation proved — genuinely diagnostic. That argues for a fat base, pyramid-style.
 - **Every surviving mutation was at a seam**, not inside a function. The WAV encoder, the arc state machine, the audio-graph wiring, the checkout grant routing. Seams need _sociable_ tests: real collaborators, fakes only at the true edge. That argues for a fat middle, trophy-style.
 - **The backend is small and stateless-ish** (2 workers, D1, R2, Durable Objects) and already has a real SQL harness in `workers/db-worker/node-tests/` using `node:sqlite` and replaying all 29 real migration files. Backend integration is _cheap_ here in a way it is not for a typical service estate. Buy more of it.
-- **E2E is expensive and currently barely runs.** On `pull_request`, CI runs only `test:e2e --grep @smoke` — 59 tagged tests across 21 of 56 files. The other 35 spec files run only on push to main, i.e. after merge, where they are a notification and not a gate. A suite that does not gate should be small enough to be worth its cost as a notification.
+- **E2E is expensive and now gates.** It used to run only `test:e2e --grep @smoke` on `pull_request` — 59 tagged tests across 21 of the then-56 files, with the rest deferred to push-on-main, where a failure is a notification and not a gate. Since the gate became a job graph the whole suite runs on every PR, sharded four ways alongside the other jobs, and the four shards finish inside the wall clock the serial gate spent on a fraction of them. So the old advice — keep the suite small enough to be worth its cost as a notification — no longer applies; the constraint is now the slowest shard, which is what sharding is there to hold down. `@smoke` still tags 153 tests across 42 of 70 files and is a good local pre-push filter, but it no longer selects what CI runs.
 
 So: **trophy overall, with a deliberately over-weighted pure-unit base for `src/lib`.**
 
@@ -107,7 +107,7 @@ So: **trophy overall, with a deliberately over-weighted pure-unit base for `src/
 | **Component**                   |    15% |                ~20% | Solid components via `@solidjs/testing-library`. Accessibility contracts, state transitions, negative space (what must _not_ happen), prop-callback contracts.                                         | Query by role and accessible name. `getByTestId` requires a one-line comment saying why role is impossible.                           |
 | **Contract**                    |     5% |                 <1% | Client↔worker symbol parity, catalog parity, route→auth tables, adapter↔worker table registry. Read the other side's source off disk and assert agreement.                                             | Must fail loudly if the _parser_ stops matching (see `hybrid-adapter.test.ts:290`'s `expect(served.size).toBeGreaterThan(10)` guard). |
 | **Property**                    |     3% |                  0% | Round-trips, monotonicity, invariants over generated input: `hitTestFret(center(s,f)) === {s,f}`, `xToBeat(beatToX(b)) === b`, MIDI serialise→parse, scale-dot pitch-class membership.                 | Every property must have at least one hand-written example alongside it, so a failure is debuggable.                                  |
-| **E2E (Playwright)**            |     2% | ~5% and mostly idle | Only what a real browser can answer: service worker offline, IndexedDB across reload, `getUserMedia` with a real WAV, multi-tab jam, install/update handshake.                                         | Zero `waitForTimeout`. Zero `.count()` assertions. Every spec `@smoke`-tagged or deleted.                                             |
+| **E2E (Playwright)**            |     2% | ~5%, and now gating | Only what a real browser can answer: service worker offline, IndexedDB across reload, `getUserMedia` with a real WAV, multi-tab jam, install/update handshake.                                         | Zero `waitForTimeout`. Zero `.count()` assertions. Every spec earns its shard time or is deleted.                                     |
 
 **Why the shares.** 45% pure unit reflects that ~250k LOC of `src/lib` is where the product's correctness actually lives and where tests are effectively free (the pitch-detector suite runs in seconds). 30% sociable is the growth area — six of eight surviving mutations sit there. 15% component is a _reduction_ from today, because roughly 160 presence-only tests are component tests that should be deleted rather than replaced. 2% e2e reflects that 56 specs at ~15k lines produce one uniquely valuable spec (`db-abstraction.spec.ts` seed idempotency across reload) and one uniquely valuable helper (`e2e/helpers/tone-wav.ts` feeding a real 220 Hz WAV into Chromium via `--use-file-for-fake-audio-capture`, asserted as "A3" at `onboarding-mic.spec.ts:99`).
 
@@ -148,6 +148,37 @@ Rename `src/components/__tests__/Foo.test.tsx` → `src/components/Foo.test.tsx`
 - Property: no separate file; a `describe('properties', ...)` block inside the module's `.test.ts`.
 - Worker SQL integration: stays in `workers/db-worker/node-tests/*.test.ts` (different runtime — `node:sqlite`).
 - E2E: `src/e2e/<feature>.spec.ts`. One feature per file. No `debug*`, no `test-*`, no `*-test.spec.ts`.
+
+### 3.2b Which environment a test runs in
+
+`vitest.config.ts` defines two projects. A test lands in one or the other; it
+never runs in both, and the include/exclude sets are exact complements, so
+`--project node` and `--project jsdom` must sum to the full file count.
+
+- **`jsdom`** — the default, and where a new test goes unless someone moves it.
+  Setup is `src/tests/setup.ts` (the shared doubles plus
+  `@testing-library/jest-dom`).
+- **`node`** — the files listed in `vitest.node-tests.json`. Setup is
+  `src/tests/setup-node.ts` (shared doubles only). No document, no DOM matchers.
+
+Both load `src/tests/setup-common.ts`, which is where a new global double
+belongs unless it genuinely needs a document.
+
+Why bother: a single-project run reported `environment 555.82s` against
+`tests 212.28s` — over half the CPU spent building a document per file, most of
+them for suites that never touch one.
+
+Moving a file into the `node` list is an optimisation, not a requirement, and
+it has to be **verified by running it**, not by reading it. A static scan for
+DOM globals put 470 files on the list; 26 of them reached `Audio`, `window` or
+a canvas _through their imports_ and failed. Add the path, run
+`pnpm run test:run -- --project node`, and check both the exit code and that no
+"Errors" line appears — an unhandled rejection does not fail the file on its
+own.
+
+Every way this can be wrong is safe: a new file is absent from the list and
+gets jsdom (the superset); a listed file that grows a DOM dependency fails
+loudly under `node`; a deleted file leaves a glob matching nothing.
 
 ### 3.3 Test naming — a behaviour sentence, not a label
 
@@ -203,6 +234,82 @@ Shared setup goes in `beforeEach` only when it is genuinely shared and genuinely
 - **Ratio guard:** if a test file exceeds 4x the source LOC of its subject, that is a signal you are testing a copy, not the system. `arc-physics.test.ts` is 1458 lines for a 154-line module — 9.5x — and 32 of its 67 tests assert on logic that exists only in the test file.
 - Current offenders to split: `auth.test.ts` (2243 lines), `arc-physics.test.ts` (1458), `audio-engine.test.ts` (96 tests, 16 with no assertion), `comprehensive.spec.ts` (94 `waitForTimeout`).
 - A `describe` block of 20-30 short cohesive tests is **fine** and is not a "700-line function" — `PianoNightApp.test.tsx:217`, `guitar-night-song-library.test.tsx:149` and `useGuitarListeningController.test.tsx:243` were flagged by a line-counting heuristic and are, on reading, among the best suites in the repo.
+
+### 3.7 Timeouts — fix the cost, do not raise the ceiling
+
+The global default is Vitest's 5s; `vitest.config.ts` deliberately sets no
+`testTimeout`. Do not raise it. It is the only thing that reports a genuine
+hang, and lifting it globally delays that report for all 11,838 tests to buy
+headroom for the twenty that need it.
+
+**A timeout failure on CI and not locally is a measurement, not a flake.**
+Before touching any number, find out which kind of slow the test is:
+
+- **Accidental cost — remove it.** Work the test never needed. The premium
+  background migration fixture fsynced every commit in its chain to a real
+  file: ~2s per Drum case on CI, 12ms locally, three timeouts. `PRAGMA
+synchronous = OFF` on the fixture connections took the file from 9.99s to
+  284ms. Raising its timeout would have preserved a 350x waste.
+- **Inherent cost — give that file an explicit timeout and say why.** Spawning
+  a real process, `vi.resetModules()` plus a re-import, a DSP roundtrip, a
+  deliberate performance benchmark. `admin-studio-responsive-preview.test.ts`
+  spawns Node per case; that is the point of the file.
+
+**This machine hides the problem.** Local `/tmp` is a tmpfs and CI's is a real
+disk, so any fixture writing real files runs orders of magnitude faster here.
+Reproduce CI's cost before concluding anything:
+
+```
+TMPDIR=<path-on-a-real-disk> pnpm exec vitest run <file> --reporter=verbose
+```
+
+**Headroom rule: aim for 5x, never ship under 3x.** A shared CI runner is two
+to three times slower than a developer box, and slower still when loaded. A
+test measured at 2.5s under a 5s ceiling has already failed; it just has not
+happened yet.
+
+To find what is exposed, measure the whole suite and compare each duration
+against its file's ceiling:
+
+```
+pnpm exec vitest run --reporter=json --outputFile=/tmp/timing.json
+```
+
+Guard with `vi.setConfig({ testTimeout: N })` at the top of the file when the
+whole file is slow, or `it(name, { timeout: N }, fn)` for a single case. Both
+carry a comment naming the work being paid for — a bare number is unreviewable.
+
+### 3.8 Browser specs on a machine that is running more than one checkout
+
+Several agents test in parallel here, each in its own worktree. Two things
+about `pnpm test:e2e` are worth knowing before you trust a red result.
+
+**The server it talks to may not be yours.** `webServer.reuseExistingServer` is
+true, and it decides by asking whether the port answers — not whose build is
+behind it. The default port is now derived from the checkout path
+(`checkoutPort()` in `playwright.config.ts`), so each worktree gets its own and
+this cannot happen silently. Before that fix a sibling worktree's leftover
+`serve dist` answered first and the suite reported **71 failures across specs
+the branch had never touched**; every "page" in the traces was a directory
+listing. If you ever see failures clustered in unrelated specs, look at one
+trace's page snapshot before reading a line of source.
+
+**A red spec may just be the machine.** Playwright's local worker default is
+half the logical cores, chosen per run and blind to the other runs. Specs with
+real deadlines in them — mic capture, decode, animation — fail on contention
+first. Two rules keep this cheap:
+
+- Before calling anything a regression, re-run the spec alone. Compare
+  like with like: an isolated pass against a full-suite failure proves nothing.
+- If it passes alone and fails in the suite, dial the run down further rather
+  than chasing it. The local default is already a quarter of the cores;
+  `VITE_E2E_WORKERS=2 pnpm test:e2e` goes lower, and the same variable raises it
+  again when you are the only one testing.
+
+The control that settles it is the same suite on `origin/main`, run the same
+way. CI runners are not shared and retry twice, so a contention flake here is
+usually green there — but confirm it, do not assume it (see
+[MISTAKES.md](MISTAKES.md), "A CI-only test timeout is a measurement").
 
 ### 3.6 When a mock is allowed, and when it is banned
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
+import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReferenceSource } from './reference-port'
 
 function source(
@@ -39,6 +39,67 @@ function source(
   }
 }
 
+function mixedSource(): GuitarNightReferenceSource {
+  return source({
+    tracks: [
+      ...source().tracks,
+      {
+        id: 'track-midi-drums',
+        kind: 'percussion',
+        name: 'MIDI drums',
+        noteCount: 1,
+        notes: [],
+        percussionHits: [
+          {
+            id: 'midi-t3-e8',
+            gmKey: 36,
+            startBeat: 1.5,
+            velocity: 64,
+            source: { format: 'midi', channel: 9, midiKey: 36 },
+          },
+        ],
+      },
+      {
+        id: 'track-gp-drums',
+        kind: 'percussion',
+        name: 'Guitar Pro drums',
+        noteCount: 1,
+        notes: [],
+        percussionHits: [
+          {
+            id: 'gp-t4-b2-v0-n1',
+            gmKey: 49,
+            startBeat: 0.5,
+            velocity: 111,
+            source: {
+              format: 'guitar-pro',
+              articulationId: 97,
+              articulationIndex: 0,
+            },
+          },
+        ],
+      },
+    ],
+  })
+}
+
+function unsupportedDrumsSource(): GuitarNightReferenceSource {
+  return source({
+    tracks: [
+      source().tracks[0]!,
+      {
+        id: 'track-unsupported-drums',
+        kind: 'percussion',
+        name: 'Aux percussion',
+        noteCount: 1,
+        notes: [],
+        percussionHits: [{ gmKey: 54, startBeat: 1, velocity: 90 }],
+        droppedHitCount: 2,
+      },
+    ],
+  })
+}
+
 describe('backingParts', () => {
   it('is every playable part except the one being scored', () => {
     expect(
@@ -62,6 +123,40 @@ describe('backingParts', () => {
     expect(
       backingParts(source({ tracks: [source().tracks[0]!] }), 'track-lead'),
     ).toEqual([])
+  })
+
+  it('lists retained MIDI and Guitar Pro drums as non-pitched backing parts', () => {
+    expect(backingParts(mixedSource(), 'track-lead').slice(-2)).toEqual([
+      {
+        trackId: 'track-midi-drums',
+        name: 'MIDI drums',
+        kind: 'percussion',
+        hitCount: 1,
+        supportedHitCount: 1,
+        droppedHitCount: 0,
+      },
+      {
+        trackId: 'track-gp-drums',
+        name: 'Guitar Pro drums',
+        kind: 'percussion',
+        hitCount: 1,
+        supportedHitCount: 1,
+        droppedHitCount: 0,
+      },
+    ])
+  })
+
+  it('lists unsupported and dropped drum evidence without calling it audible', () => {
+    expect(backingParts(unsupportedDrumsSource(), 'track-lead')).toEqual([
+      {
+        trackId: 'track-unsupported-drums',
+        name: 'Aux percussion',
+        kind: 'percussion',
+        hitCount: 1,
+        supportedHitCount: 0,
+        droppedHitCount: 2,
+      },
+    ])
   })
 })
 
@@ -133,6 +228,55 @@ describe('backingMelody', () => {
   })
 })
 
+describe('backingPercussion', () => {
+  it('projects mixed MIDI and Guitar Pro drums without making pitched notes', () => {
+    expect(backingMelody(mixedSource())).toHaveLength(
+      backingMelody(source()).length,
+    )
+    expect(
+      backingPercussion(mixedSource(), { scoredTrackId: 'track-lead' }),
+    ).toEqual([
+      {
+        trackId: 'track-gp-drums',
+        sourceId: 'gp-t4-b2-v0-n1',
+        gmKey: 49,
+        startBeat: 0.5,
+        velocity: 111,
+      },
+      {
+        trackId: 'track-midi-drums',
+        sourceId: 'midi-t3-e8',
+        gmKey: 36,
+        startBeat: 1.5,
+        velocity: 64,
+      },
+    ])
+  })
+
+  it('keeps muted drum tracks out of the scheduler stream', () => {
+    expect(
+      backingPercussion(mixedSource(), {
+        scoredTrackId: 'track-lead',
+        audibleTrackIds: [],
+      }),
+    ).toEqual([])
+    expect(
+      backingPercussion(mixedSource(), {
+        scoredTrackId: 'track-lead',
+        audibleTrackIds: ['track-gp-drums'],
+      }),
+    ).toEqual([
+      {
+        trackId: 'track-gp-drums',
+        sourceId: 'gp-t4-b2-v0-n1',
+        gmKey: 49,
+        startBeat: 0.5,
+        velocity: 111,
+      },
+    ])
+  })
+})
+
 describe('scoredPartSoundsByDefault', () => {
   it('keeps a one-part tab playing itself', () => {
     expect(
@@ -149,5 +293,11 @@ describe('scoredPartSoundsByDefault', () => {
 
   it('says yes when there is no score at all', () => {
     expect(scoredPartSoundsByDefault(null)).toBe(true)
+  })
+
+  it('keeps the scored part sounding when the only drum row is silent', () => {
+    expect(
+      scoredPartSoundsByDefault(unsupportedDrumsSource(), 'track-lead'),
+    ).toBe(true)
   })
 })

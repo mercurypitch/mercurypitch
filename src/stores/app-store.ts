@@ -1281,7 +1281,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Sing along, get scored',
     description:
-      'Enable the mic to compare your voice against the vocal line — and monitor yourself over the track with the headphones toggle.',
+      'Enable the mic to compare your voice against the vocal line and monitor yourself over the track. After a scored run, replay the dry take and explicitly keep it in Hear Yourself; nothing is saved automatically.',
     targetSelector: '.sm-mic-toggle-btn',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1436,7 +1436,7 @@ const EXERCISES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Start an exercise',
     description:
-      'Each card shows the drill, its difficulty badge and tags — plus your grade, best score and play count once you have tried it. Hit Start for guided practice with live pitch feedback.',
+      'Each card shows the drill, its difficulty, and your past results. Start for live pitch feedback; after a completed run, replay the temporary recording and explicitly keep it in Hear Yourself.',
     targetSelector: '.exercise-card',
     placement: 'bottom',
     requiredTab: TAB_EXERCISES,
@@ -1620,7 +1620,7 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Choose your next room',
     description:
-      'Jump straight into any part of MercuryPitch — live practice, Karaoke, focused drills, the voice lab, or a shared Jam room. And keep an eye on the last card: something new is being tuned.',
+      'Jump straight into live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room. And keep an eye on the last card: something new is being tuned.',
     targetSelector: '.home-destinations',
     placement: 'top',
     requiredTab: TAB_HOME,
@@ -1756,6 +1756,22 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Each drill is a bench instrument. Hairline splits two tones in cents, Home names scale degrees by tap or by voice, The Grid catches a click off the lattice, and Leap, Stack and Contour cover intervals, chords and direction.',
     targetSelector: '[data-tour="ear.drills"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'The Ear Path',
+    description:
+      'A going train of milestones: the first reading, the first seal, each faculty sealed, the first rhythm take, the Field Book, the desk, thirty days of regulation. The next dark orb points at its instrument — nothing here is locked.',
+    targetSelector: '[data-tour="ear.path"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'The Field Book',
+    description:
+      'Your own separated songs, read once for the degrees the voice lands on, the phrases it sings and the roots that move under it. Drills on real music, rated on their own tracks — the Column never moves for them.',
+    targetSelector: '[data-tour="ear.fieldBook"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },

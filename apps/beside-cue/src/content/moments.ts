@@ -11,8 +11,8 @@
 // hearing the same line twice running, and a test can assert an exact string.
 
 import type { AssetSlot } from './assets'
-import type { Character, CharacterStateId, ContentPack, CueEntity, Line, } from './pack'
-import { findCharacter, findCueEntity, GENERIC_CUE_ENTITY } from './pack'
+import type { Character, CharacterStateId, ContentPack, Line, PullCharacter, } from './pack'
+import { findCharacter, findPullCharacter, GENERIC_PULL_CHARACTER, } from './pack'
 
 export type MomentId =
   | 'cue.open'
@@ -39,76 +39,42 @@ export const MOMENTS: Readonly<Record<MomentId, MomentDefinition>> = {
     characterState: 'notice',
     showsEntity: true,
     caption: 'One cue, no argument',
-    lineIds: [
-      'cue.hovering',
-      'cue.on-the-label',
-      'cue.hold-the-sleeve',
-      'cue.quick-spin',
-      'cue.your-move',
-    ],
+    lineIds: ['corky.cue-open.01', 'corky.cue-open.02', 'corky.cue-open.03'],
   },
   'turn.b-side': {
     id: 'turn.b-side',
     characterState: 'turn',
     showsEntity: false,
     caption: 'Turn toward Side B',
-    lineIds: [
-      'bside.clean-groove',
-      'bside.pressed',
-      'bside.the-craft',
-      'bside.run-out',
-      'bside.good-side',
-    ],
+    lineIds: ['corky.side-b.01', 'corky.side-b.02', 'corky.side-b.03'],
   },
   'turn.a-side': {
     id: 'turn.a-side',
     characterState: 'quiet',
     showsEntity: false,
     caption: 'The screen can go quiet now',
-    lineIds: [
-      'aside.records-do-that',
-      'aside.noted',
-      'aside.flip-when-ready',
-      'aside.beside-you',
-      'aside.tomorrow',
-    ],
+    lineIds: ['corky.not-now.01', 'corky.not-now.02', 'corky.not-now.03'],
   },
   return: {
     id: 'return',
     characterState: 'rest',
     showsEntity: false,
     caption: 'The turntable kept your place',
-    lineIds: [
-      'return.kept-your-place',
-      'return.surface-noise',
-      'return.no-groove-wore-out',
-      'return.records-wait',
-      'return.left-the-sleeve',
-    ],
+    lineIds: ['corky.return.01', 'corky.return.02', 'corky.return.03'],
   },
   'pressing.earned': {
     id: 'pressing.earned',
     characterState: 'turn',
     showsEntity: false,
     caption: 'A pressing, run of one',
-    lineIds: [
-      'pressing.hold-to-light',
-      'pressing.every-groove',
-      'pressing.run-of-one',
-      'pressing.needed-yours',
-      'pressing.listen-back',
-    ],
+    lineIds: ['corky.pressing.01', 'corky.pressing.02', 'corky.pressing.03'],
   },
   'reminder.set': {
     id: 'reminder.set',
     characterState: 'rest',
     showsEntity: false,
     caption: 'Your slot on the turntable',
-    lineIds: [
-      'reminder.at-seven',
-      'reminder.same-time',
-      'reminder.slot-is-safe',
-    ],
+    lineIds: ['corky.reminder-set.01', 'corky.reminder-set.02'],
   },
 }
 
@@ -129,8 +95,10 @@ export interface MomentPresentation {
   readonly characterState: CharacterStateId
   readonly art: AssetSlot
   readonly line: Line
-  /** Present only when the beat shows one and the pull has one. */
-  readonly entity?: CueEntity
+  /** Present only when the beat brings a Pull character into view. */
+  readonly pullCharacter?: PullCharacter
+  /** @deprecated Use `pullCharacter`; retained for V1 stage components. */
+  readonly entity?: PullCharacter
 }
 
 function itemAt<T>(items: readonly T[], index: number): T {
@@ -169,11 +137,11 @@ export function resolveMoment(
     )
   }
 
-  // A beat about a cue always shows one. Someone who named their own moment
-  // has no creature, and a blank space where Corky is plainly looking would
-  // read as a missing image rather than a design choice.
-  const entity = definition.showsEntity
-    ? (findCueEntity(pack, context.pullId) ?? GENERIC_CUE_ENTITY)
+  // A cue-arrival beat can bring the matching Pull character into focus.
+  // Someone who named their own Pull has no authored creature, and a blank
+  // space where Corky is plainly looking would read as a missing image.
+  const pullCharacter = definition.showsEntity
+    ? (findPullCharacter(pack, context.pullId) ?? GENERIC_PULL_CHARACTER)
     : undefined
 
   return {
@@ -183,6 +151,8 @@ export function resolveMoment(
     characterState: definition.characterState,
     art: character.states[definition.characterState],
     line,
-    ...(entity === undefined ? {} : { entity }),
+    ...(pullCharacter === undefined
+      ? {}
+      : { pullCharacter, entity: pullCharacter }),
   }
 }
