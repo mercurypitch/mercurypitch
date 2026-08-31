@@ -1739,6 +1739,15 @@ const AppShell: Component<AppProps> = (props) => {
       resetExerciseLaunchState()
     }
 
+    // Auto-start is a one-shot launch intent, and the mounted exercise
+    // already consumed it. The selection may survive the round trip — coming
+    // back should land on that exercise's setup screen — but an armed flag
+    // would start a fresh run over it (every exercise re-reads the prop in
+    // onMount against freshly-idle state).
+    if (prevTab === TAB_EXERCISES) {
+      setAutoStartExercise(false)
+    }
+
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
     // lingers after leaving and micActive stays stuck on — making the mic
