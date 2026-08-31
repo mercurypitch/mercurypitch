@@ -215,7 +215,6 @@ import { useFallingNotesController } from '@/features/falling-notes/useFallingNo
 import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import type { LabTab } from '@/features/lab/LabSurface'
-import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
@@ -224,6 +223,7 @@ import { usePlaybackController } from '@/features/playback/usePlaybackController
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
 import { usePracticeController } from '@/features/practice/usePracticeController'
+import { usePracticeToolsController } from '@/features/practice/usePracticeToolsController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
@@ -271,7 +271,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -1854,85 +1854,25 @@ const AppShell: Component<AppProps> = (props) => {
     isDetecting: () => (currentPitch()?.frequency ?? 0) > 0,
   })
 
-  // Sidebar "Auto-calibrate": ensure the mic is on, then sample the room.
-  const handleAutoCalibrate = async () => {
-    if (!micActive()) {
-      const ok = await practiceEngine.startMic()
-      if (!ok) {
-        showNotification('Enable your mic to auto-calibrate.', 'warning')
-        return
-      }
-    }
-    await autoCalibrateSensitivity(() => practiceEngine.getInputLevel())
-  }
-
-  // ── Octave shift ──────────────────────────────────────────
-  // One shared store operation: melody and reference grid move together,
-  // rebuilt from the store's own tracked key/scale (the app-store signals
-  // can lag behind a loaded melody).
-  const handleOctaveShift = (delta: number) => {
-    melodyStore.shiftMelodyOctave(delta)
-  }
-
-  // A loaded melody carries its own key and scale type; mirror them into the
-  // app-store signals so the sidebar pickers and share links describe the
-  // melody actually on the stage (the grid itself is aligned by loadMelody).
-  createEffect(
-    on(
-      () => melodyStore.currentMelody()?.id,
-      () => {
-        const m = melodyStore.currentMelody()
-        if (m == null) return
-        if (m.key !== '') setKeyName(m.key)
-        if (m.scaleType !== '') setScaleType(m.scaleType)
-      },
-    ),
-  )
-
-  // ── Target note for pitch display ──────────────────────────
-  const targetNote = createMemo(() => {
-    const idx = currentNoteIndex()
-    const items = melodyStore.items()
-    if (idx < 0 || idx >= items.length) return null
-    return items[idx].note
+  // ── Practice tools controller ──────────────────────────────
+  const {
+    handleAutoCalibrate,
+    handleOctaveShift,
+    targetNoteName,
+    noteAccuracyMap,
+    scoreGrade,
+    scoreLabel,
+    closeScoreOverlay,
+  } = usePracticeToolsController({
+    practiceEngine,
+    micActive,
+    currentNoteIndex,
+    setKeyName,
+    setScaleType,
+    practiceResult,
+    setPracticeResult,
+    setLiveScore,
   })
-
-  const targetNoteName = createMemo(() => {
-    const note = targetNote()
-    if (note === null) return null
-    return note.name + note.octave
-  })
-
-  // ── Accuracy heatmap ───────────────────────────────────────
-  const noteAccuracyMap = createMemo(() => {
-    void getSessionHistory().length
-    return getNoteAccuracyMap() as Map<number, number>
-  })
-
-  const scoreGrade = createMemo(() => {
-    const pr = practiceResult()
-    if (!pr) return ''
-    if (pr.score >= 90) return 'grade-perfect'
-    if (pr.score >= 80) return 'grade-excellent'
-    if (pr.score >= 65) return 'grade-good'
-    if (pr.score >= 50) return 'grade-okay'
-    return 'grade-needs-work'
-  })
-
-  const scoreLabel = createMemo(() => {
-    const pr = practiceResult()
-    if (!pr) return ''
-    if (pr.score >= 90) return 'Pitch Perfect!'
-    if (pr.score >= 80) return 'Excellent!'
-    if (pr.score >= 65) return 'Good!'
-    if (pr.score >= 50) return 'Okay!'
-    return 'Needs Work'
-  })
-
-  const closeScoreOverlay = () => {
-    setPracticeResult(null)
-    setLiveScore(null)
-  }
 
   const handleReset = () => {
     void resetPlaybackState()

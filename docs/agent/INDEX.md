@@ -104,12 +104,12 @@ These are the rules that break things when ignored.
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 600 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 500 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 450 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
+| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 450 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 400 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 350 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
-| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 300 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 200 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `share` | [useShareHandlers.ts](../../src/features/share/useShareHandlers.ts) | 200 | useShareHandlers — Share link dispatch & copy handlers Encapsulates decoding and loading of shared melodies, exercises, routines, short U... |
@@ -327,7 +327,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.3k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/App.tsx](../../src/App.tsx) | 3.9k |
+| [src/App.tsx](../../src/App.tsx) | 3.8k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.3k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.6k |

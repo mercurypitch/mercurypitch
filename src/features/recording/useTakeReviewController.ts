@@ -6,13 +6,13 @@
 // nudge timing adjustment, take commitment, and dynamic compose grid bounds.
 //
 
-import type {Accessor} from 'solid-js';
-import { createEffect, createMemo, createSignal, on  } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { createEffect, createMemo, createSignal, on } from 'solid-js'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
-import type {RecordingController} from './useRecordingController';
-import { shiftTakeFrames  } from './useRecordingController'
+import type { RecordingController } from './useRecordingController'
+import { shiftTakeFrames } from './useRecordingController'
 
 export interface UseTakeReviewControllerDeps {
   recording: Pick<
