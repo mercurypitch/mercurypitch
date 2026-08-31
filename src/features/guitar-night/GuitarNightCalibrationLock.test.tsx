@@ -288,6 +288,7 @@ function createTransport(): GuitarBackingTransportController {
     seek: vi.fn(),
     setPlaybackRate: vi.fn(async () => true),
     setMasterVolume: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
     getAudioGraph: vi.fn(() => null),
   }

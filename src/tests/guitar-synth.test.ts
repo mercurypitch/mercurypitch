@@ -236,11 +236,28 @@ describe('createGuitarVoice', () => {
     expect(ctx.createWaveShaper).not.toHaveBeenCalled()
   })
 
-  it('retains the established amp colour for standalone electric voices', () => {
+  it('retains the lightweight legacy amp on standalone electric voices', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
     createGuitarVoice(ctx, 220, 500, 'electric')
     expect(ctx.createWaveShaper).toHaveBeenCalledOnce()
     expect(ctx.createBiquadFilter).toHaveBeenCalledTimes(2)
+
+    const drive = vi.mocked(ctx.createWaveShaper).mock.results[0].value
+    const presence = vi.mocked(ctx.createBiquadFilter).mock.results[0].value
+    const cabinet = vi.mocked(ctx.createBiquadFilter).mock.results[1].value
+    expect(drive.curve).toHaveLength(1024)
+    expect(drive.oversample).toBe('2x')
+    expect(presence).toMatchObject({
+      type: 'peaking',
+      frequency: { value: 2800 },
+      Q: { value: 0.9 },
+      gain: { value: 4 },
+    })
+    expect(cabinet).toMatchObject({
+      type: 'lowpass',
+      frequency: { value: 5000 },
+      Q: { value: 0.7 },
+    })
   })
 
   it('can leave electric amp colour to a shared route-owned stage', () => {

@@ -2,6 +2,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomBand, GuitarRoomBandBeatPhase, } from './guitar-room-band'
 import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, resolveBandLoop, } from './guitar-room-band'
@@ -198,6 +199,38 @@ describe('createGuitarRoomBand', () => {
       expect.any(Number),
       0.012,
     )
+    await disposeBand(band)
+  })
+
+  it('seeds amp state before activation and updates the existing shared stage', async () => {
+    const gains: Array<
+      ReturnType<typeof fakeAudioNode> & {
+        gain: ReturnType<typeof fakeAudioParam>
+      }
+    > = []
+    const context = fakeAudioContext(gains)
+    const contextFactory = vi.fn(() => context)
+    const band = createGuitarRoomBand({
+      contextFactory,
+      activateContext: async () => undefined,
+    })
+    const initial = {
+      ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      drive: 0.22,
+      presence: -0.2,
+    }
+
+    band.setElectricAmpParameters(initial)
+    expect(contextFactory).not.toHaveBeenCalled()
+
+    const graph = await band.activate()
+    const nodeCount = gains.length
+    expect(graph?.getElectricAmpParameters()).toEqual(initial)
+
+    const edited = { ...initial, enabled: false, drive: 0.79 }
+    band.setElectricAmpParameters(edited)
+    expect(graph?.getElectricAmpParameters()).toEqual(edited)
+    expect(gains).toHaveLength(nodeCount)
     await disposeBand(band)
   })
 

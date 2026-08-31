@@ -4,6 +4,8 @@
 import type { DrumKitPlayerPort } from '@/features/drum-night/runtime/drum-runtime-types'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { triggerDrumVoice } from '@/lib/drum-voices'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
@@ -164,6 +166,8 @@ export interface GuitarRoomBand {
   activate(): Promise<GuitarSessionAudioGraph | null>
   /** Persisted room position, applied before audio opens and while it runs. */
   setMasterLevel(position: number): void
+  /** Persisted amp state, seeded before activation and smoothed while live. */
+  setElectricAmpParameters(parameters: GuitarElectricAmpParameters): void
   /** A live, pop-free gain gate for one authored melody lane. */
   setMelodyChannelLevel(channelId: string, position: number): void
   stop(): void
@@ -386,6 +390,9 @@ export function createGuitarRoomBand(
   let interval: number | null = null
   let generation = 0
   let masterLevel = 0.76
+  let electricAmpParameters: GuitarElectricAmpParameters = {
+    ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+  }
   const melodyChannelLevels = new Map<string, number>()
   const percussionPlayers = new Map<
     string,
@@ -428,6 +435,7 @@ export function createGuitarRoomBand(
     graph = createGuitarSessionAudioGraph(createdContext, {
       masterLevel,
       busLevels: { drums: 0.72 },
+      electricAmpParameters,
     })
     return graph
   }
@@ -508,6 +516,12 @@ export function createGuitarRoomBand(
       masterLevel = Math.min(1, Math.max(0, position))
       if (disposed) return
       graph?.setMasterLevel(masterLevel)
+    },
+
+    setElectricAmpParameters(parameters) {
+      electricAmpParameters = { ...parameters }
+      if (disposed) return
+      graph?.setElectricAmpParameters(electricAmpParameters)
     },
 
     setMelodyChannelLevel(channelId, position) {

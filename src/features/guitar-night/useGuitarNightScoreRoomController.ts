@@ -12,6 +12,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
@@ -65,6 +66,8 @@ interface GuitarNightScoreRoomControllerOptions {
    * part keeps playing itself.
    */
   defaultHearScore?: Accessor<boolean>
+  /** Persisted amp state; reading it must not open audio. */
+  ampParameters?: Accessor<GuitarElectricAmpParameters>
   createBand?: () => GuitarRoomBand
   requestFrame?: (callback: () => void) => number
   cancelFrame?: (handle: number) => void
@@ -239,6 +242,17 @@ export function scorePlayheadBeat(
   return secondsToBeat(loopStartSeconds + cycleSeconds)
 }
 
+function sameAmpParameters(
+  left: GuitarElectricAmpParameters,
+  right: GuitarElectricAmpParameters,
+): boolean {
+  const keys = Object.keys(left) as (keyof GuitarElectricAmpParameters)[]
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => Object.is(left[key], right[key]))
+  )
+}
+
 export function useGuitarNightScoreRoomController(
   options: GuitarNightScoreRoomControllerOptions,
 ) {
@@ -322,6 +336,18 @@ export function useGuitarNightScoreRoomController(
   // This signal changes only through `setMasterVolume`; seed the dormant graph
   // once, then let that setter schedule exactly one live ramp per gesture.
   band.setMasterLevel(untrack(masterVolume))
+  const ampParameters = options.ampParameters
+  if (ampParameters !== undefined) {
+    const initialAmpParameters = untrack(ampParameters)
+    band.setElectricAmpParameters(initialAmpParameters)
+    createEffect<GuitarElectricAmpParameters>((previous) => {
+      const next = ampParameters()
+      if (!sameAmpParameters(previous, next)) {
+        band.setElectricAmpParameters(next)
+      }
+      return next
+    }, initialAmpParameters)
+  }
   createEffect(() => {
     const hydrated = persistedMasterVolume()
     if (pendingMasterVolume !== null || hydrated === untrack(masterVolume)) {

@@ -143,6 +143,7 @@ function fakeBackingTransport() {
       return true
     }),
     setMasterVolume: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn((id, muted) => {
       trackStates = trackStates.map((track) =>
         track.id === id ? { ...track, muted } : track,

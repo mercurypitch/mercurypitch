@@ -14,6 +14,7 @@ import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
+import { GuitarNightAmpControls } from './GuitarNightAmpControls'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightHandSync } from './GuitarNightHandSync'
 import { GuitarNightInputError } from './GuitarNightInputError'
@@ -28,6 +29,7 @@ import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
+import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
@@ -142,9 +144,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let tunerTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const [tunerOpen, setTunerOpen] = createSignal(false)
+  const amp = useGuitarNightAmpSettings()
+  createEffect(() => props.transport.setElectricAmpParameters(amp.parameters()))
   const listening = useGuitarListeningController({
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
+    ampParameters: amp.parameters,
   })
   const roomTuning = createMemo(
     () => props.tuning?.() ?? standardTuning('guitar'),
@@ -517,6 +522,23 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     onCalibrate={() => void listening.calibrate()}
                   />
                 </Show>
+                <GuitarNightAmpControls
+                  parameters={amp.parameters}
+                  presetId={() => amp.settings().presetId}
+                  inputProfile={listening.inputProfile}
+                  canMonitor={listening.canAmpMonitor}
+                  monitoringEnabled={listening.ampMonitoringEnabled}
+                  monitoringActive={listening.ampMonitoringActive}
+                  onEnabled={amp.setEnabled}
+                  onPreset={amp.selectPreset}
+                  onParameter={amp.setContinuousParameter}
+                  onParameterCommit={amp.persist}
+                  onCabinet={amp.setCabinet}
+                  onMonitor={(enabled) =>
+                    void listening.setAmpMonitoringEnabled(enabled)
+                  }
+                  onReset={amp.reset}
+                />
                 <button
                   class={styles.bandUpgrade}
                   type="button"

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarBackingSession, GuitarBackingTrack, } from './guitar-backing-transport'
 import { createGuitarBackingTransport, estimateGuitarBackingPcmBytes, } from './guitar-backing-transport'
 
@@ -328,6 +329,28 @@ describe('createGuitarBackingTransport', () => {
 
     harness.transport.setMasterVolume(2)
     expect(harness.transport.getMasterVolume()).toBe(1)
+  })
+
+  it('keeps amp state dormant until activation and updates the live graph in place', async () => {
+    const harness = audioHarness()
+    const initial = {
+      ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      drive: 0.18,
+      bass: 0.35,
+    }
+
+    harness.transport.setElectricAmpParameters(initial)
+    expect(harness.contextFactory).not.toHaveBeenCalled()
+
+    await expect(harness.transport.activate()).resolves.toBe(true)
+    const graph = harness.transport.getAudioGraph()
+    const gainCount = harness.context.gains.length
+    expect(graph?.getElectricAmpParameters()).toEqual(initial)
+
+    const edited = { ...initial, drive: 0.83, enabled: false }
+    harness.transport.setElectricAmpParameters(edited)
+    expect(graph?.getElectricAmpParameters()).toEqual(edited)
+    expect(harness.context.gains).toHaveLength(gainCount)
   })
 
   it('creates and resumes one context, then sample-aligns every stem', async () => {

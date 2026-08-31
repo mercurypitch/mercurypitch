@@ -18,11 +18,13 @@
 // in evidence quality, so it is reported as `timingSource` rather than hidden;
 // nothing downstream should make fine timing claims on the coarse path.
 
-import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import { midiToFrequency } from '@/lib/frequency-to-note'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarInputTap } from '@/lib/guitar/guitar-input-node'
 import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
 import type { GuitarInputDeviceOption, GuitarInputProfileKind, GuitarInputProfileSnapshot, } from '@/lib/guitar/guitar-input-profile'
@@ -43,6 +45,8 @@ import { buildClickSchedule } from '@/lib/tap-calibration'
 import { micLatencyMsForDevice, micLatencySpreadMsForDevice, setMicLatencyMeasurementForDevice, } from '@/stores/mic-latency-store'
 import { recordGuitarDetectCost, resetGuitarAnalysisCost, } from './guitar-analysis-cost'
 import { buildGuitarTakeEvidenceReport, downloadGuitarInputEvidenceReport, guitarInputEvidenceExportEnabled, } from './guitar-input-evidence-export'
+import type { GuitarInputMonitor } from './guitar-input-monitor'
+import { createGuitarInputMonitor } from './guitar-input-monitor'
 import { guitarPerformanceAnalyserSize } from './guitar-score-tuning'
 
 const CONSUMER_ID = 'guitar-night-listening'
@@ -96,6 +100,7 @@ export interface GuitarListeningObservation {
 interface GuitarListeningControllerOptions {
   activateAudio(): Promise<boolean>
   getAudioGraph(): GuitarSessionAudioGraph | null
+  ampParameters?: Accessor<GuitarElectricAmpParameters>
 }
 
 export interface GuitarListeningStartOptions {
@@ -348,6 +353,9 @@ export function useGuitarListeningController(
   const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
   const [recordableStream, setRecordableStream] =
     createSignal<MediaStream | null>(null)
+  const [ampMonitoringEnabled, setAmpMonitoringEnabledSignal] =
+    createSignal(false)
+  const [ampMonitoringActive, setAmpMonitoringActive] = createSignal(false)
   const evidenceExportEnabled = createMemo(() =>
     guitarInputEvidenceExportEnabled(),
   )
@@ -375,6 +383,8 @@ export function useGuitarListeningController(
   )
 
   let source: MediaStreamAudioSourceNode | null = null
+  let inputMonitor: GuitarInputMonitor | null = null
+  let latestAmpParameters = options.ampParameters?.()
   let pitchAnalysers: AnalyserNode[] = []
   let pitchSplitter: ChannelSplitterNode | null = null
   let tap: GuitarInputTap | null = null
@@ -508,6 +518,45 @@ export function useGuitarListeningController(
     if (!ownsMic) return
     ownsMic = false
     micManager.release(CONSUMER_ID)
+  }
+
+  const resetAmpMonitoring = (): void => {
+    inputMonitor?.dispose()
+    inputMonitor = null
+    setAmpMonitoringEnabledSignal(false)
+    setAmpMonitoringActive(false)
+  }
+
+  createEffect(() => {
+    const parameters = options.ampParameters?.()
+    latestAmpParameters = parameters
+    if (parameters !== undefined) inputMonitor?.setParameters(parameters)
+  })
+
+  const canAmpMonitor = createMemo(
+    () =>
+      options.ampParameters !== undefined &&
+      inputProfile() === 'interface' &&
+      status() === 'listening' &&
+      recordableStream() !== null &&
+      inputMonitor !== null,
+  )
+
+  const setAmpMonitoringEnabled = (enabled: boolean): boolean => {
+    if (!enabled) {
+      inputMonitor?.setEnabled(false)
+      setAmpMonitoringEnabledSignal(false)
+      setAmpMonitoringActive(false)
+      return true
+    }
+    if (!canAmpMonitor() || inputMonitor === null) return false
+    if (latestAmpParameters !== undefined) {
+      inputMonitor.setParameters(latestAmpParameters)
+    }
+    const active = inputMonitor.setEnabled(true)
+    setAmpMonitoringEnabledSignal(active)
+    setAmpMonitoringActive(active)
+    return active
   }
 
   function handleInputLoss(message: string): void {
@@ -690,6 +739,7 @@ export function useGuitarListeningController(
 
   const stopNodes = (): void => {
     stoppingInput = true
+    resetAmpMonitoring()
     midiRefreshGeneration += 1
     completionGeneration += 1
     if (completionTimer !== 0) window.clearTimeout(completionTimer)
@@ -1095,6 +1145,18 @@ export function useGuitarListeningController(
       }
       source = nextSource
       pitchAnalysers = nextPitchAnalysers
+
+      if (
+        requestedProfile === 'interface' &&
+        latestAmpParameters !== undefined
+      ) {
+        inputMonitor = createGuitarInputMonitor({
+          context,
+          source: nextSource,
+          destination: graph.buses.monitor,
+          parameters: latestAmpParameters,
+        })
+      }
 
       // Messages arrive from the audio thread, not from a tracked scope. Keep
       // their exact frame evidence intact; the recorder applies the one
@@ -1558,6 +1620,10 @@ export function useGuitarListeningController(
     timingSource,
     latencyMs,
     health,
+    ampMonitoringEnabled,
+    ampMonitoringActive,
+    canAmpMonitor,
+    setAmpMonitoringEnabled,
     selectInputProfile,
     selectAudioInput,
     selectMidiInput,

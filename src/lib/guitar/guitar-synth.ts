@@ -3,7 +3,7 @@
 // ============================================================
 
 import { NOTE_NAMES } from '@/lib/note-utils'
-import { createGuitarElectricAmpStage } from './guitar-electric-amp'
+import { createLegacyGuitarElectricAmpStage } from './guitar-electric-amp'
 import type { GuitarNoteNotation } from './guitar-notation'
 
 /**
@@ -234,7 +234,7 @@ function createPluckVoice(
   } else if (variant === 'electric' && electricAmpRouting === 'per-voice') {
     // Standalone callers retain the established electric colour. Guitar Night
     // opts into a route-owned stage so simultaneous strings meet before drive.
-    const amp = createGuitarElectricAmpStage(ctx)
+    const amp = createLegacyGuitarElectricAmpStage(ctx)
     chainHead.connect(amp.input)
     chainHead = amp.output
     allNodes.push(...amp.nodes)

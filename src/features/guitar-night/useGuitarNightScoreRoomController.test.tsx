@@ -4,6 +4,7 @@
 import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { onPersistedWrite } from '@/lib/storage'
 import type { GuitarNightReference } from './reference-port'
@@ -68,6 +69,7 @@ function bandHarness() {
     }),
     activate: vi.fn(async () => graph),
     setMasterLevel: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setMelodyChannelLevel: vi.fn(),
     setPercussionTrackAudible: vi.fn(),
     stop: vi.fn(),
@@ -125,6 +127,35 @@ function pulseAudible(
 }
 
 describe('useGuitarNightScoreRoomController', () => {
+  it('seeds amp state without opening audio and forwards later edits live', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const initial = {
+        ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+        drive: 0.24,
+      }
+      const [ampParameters, setAmpParameters] = createSignal(initial)
+
+      useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        ampParameters,
+        createBand: () => band,
+      })
+
+      expect(band.activate).not.toHaveBeenCalled()
+      expect(band.start).not.toHaveBeenCalled()
+      expect(band.setElectricAmpParameters).toHaveBeenCalledOnce()
+      expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(initial)
+
+      const edited = { ...initial, drive: 0.71 }
+      setAmpParameters(edited)
+      await Promise.resolve()
+      expect(band.setElectricAmpParameters).toHaveBeenCalledTimes(2)
+      expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(edited)
+      dispose()
+    })
+  })
+
   it('pins and schedules one silent assessed range on exact audio boundaries', async () => {
     await createRoot(async (dispose) => {
       const { band, getOptions, setResult } = bandHarness()

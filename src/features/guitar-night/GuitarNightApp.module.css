@@ -3501,6 +3501,283 @@
   line-height: 1.35;
 }
 
+/* One quiet faceplate inside the existing room sheet. Preset and Drive stay
+   visible; the less-frequent voicing controls earn their space on request. */
+.ampControls {
+  display: grid;
+  gap: 0.65rem;
+  padding-block: 0.75rem;
+  border-block: 1px solid rgba(224, 164, 93, 0.14);
+}
+
+.ampFaceplate,
+.ampIdentity,
+.ampMonitorRow,
+.ampMonitor,
+.ampDetails > summary,
+.ampReset {
+  display: flex;
+  align-items: center;
+}
+
+.ampFaceplate {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ampIdentity {
+  min-width: 0;
+  gap: 0.55rem;
+}
+
+.ampIdentity > span:first-child {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid rgba(224, 164, 93, 0.28);
+  border-radius: 50%;
+  color: var(--amber-bright);
+  background: rgba(224, 164, 93, 0.08);
+}
+
+.ampIdentity svg,
+.ampPower svg,
+.ampMonitor svg,
+.ampReset svg {
+  width: 0.88rem;
+  height: 0.88rem;
+}
+
+.ampIdentity > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.ampIdentity strong {
+  color: var(--ivory);
+  font-size: 0.76rem;
+}
+
+.ampIdentity small,
+.ampMonitor small,
+.ampMonitorHint {
+  color: rgba(244, 234, 219, 0.54);
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
+.ampPower {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.25rem;
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.66);
+  background: transparent;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ampPower:hover,
+.ampPower:focus-visible {
+  color: var(--ivory);
+  border-color: rgba(224, 164, 93, 0.38);
+}
+
+.ampPowerActive,
+.ampPowerActive:hover,
+.ampPowerActive:focus-visible {
+  color: #1b120a;
+  border-color: var(--amber-bright);
+  background: var(--amber-bright);
+}
+
+.ampPrimaryControls,
+.ampToneGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.ampPreset,
+.ampCabinet,
+.ampRange {
+  min-width: 0;
+}
+
+.ampPreset,
+.ampCabinet {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ampPreset > span,
+.ampCabinet > span,
+.ampRange > span {
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.57rem;
+  font-weight: 650;
+}
+
+.ampPreset select,
+.ampCabinet select {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.45rem 1.8rem 0.45rem 0.58rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.48rem;
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.04);
+  font: inherit;
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+
+.ampPreset option,
+.ampCabinet option {
+  color: #1b1713;
+  background: #f4eadb;
+}
+
+.ampRange {
+  display: grid;
+  grid-template-columns: 3.7rem minmax(3.5rem, 1fr) 2.45rem;
+  align-items: center;
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+}
+
+.ampRange input {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--amber-bright);
+}
+
+.ampRange output {
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.55rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ampDetails {
+  border-top: 1px solid rgba(244, 234, 219, 0.08);
+}
+
+.ampDetails > summary {
+  min-height: var(--touch-target);
+  justify-content: space-between;
+  color: rgba(244, 234, 219, 0.66);
+  font-size: 0.62rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.ampDetails > summary:hover,
+.ampDetails > summary:focus-visible {
+  color: var(--ivory);
+}
+
+.ampDetails[open] > summary {
+  color: var(--amber-bright);
+}
+
+.ampToneGrid {
+  padding-bottom: 0.35rem;
+}
+
+.ampReset {
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  border: 0;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  font: inherit;
+  font-size: 0.59rem;
+  cursor: pointer;
+}
+
+.ampReset:hover,
+.ampReset:focus-visible {
+  color: var(--ivory);
+}
+
+.ampMonitorRow {
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.ampMonitor {
+  flex: 0 0 8.8rem;
+  min-height: var(--touch-target);
+  gap: 0.48rem;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgba(106, 202, 189, 0.22);
+  border-radius: 0.5rem;
+  color: #dcece8;
+  background: rgba(106, 202, 189, 0.055);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ampMonitor > span:last-child {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.ampMonitor strong {
+  font-size: 0.63rem;
+}
+
+.ampMonitor:hover:not(:disabled),
+.ampMonitor:focus-visible:not(:disabled),
+.ampMonitorActive {
+  border-color: rgba(106, 202, 189, 0.5);
+  color: #eafffb;
+  background: rgba(106, 202, 189, 0.13);
+}
+
+.ampMonitor:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.ampMonitorHint {
+  align-self: center;
+  max-width: 23ch;
+}
+
+@media (max-width: 440px) {
+  .ampPrimaryControls,
+  .ampToneGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ampMonitorRow {
+    display: grid;
+  }
+
+  .ampMonitor {
+    width: 100%;
+  }
+
+  .ampMonitorHint {
+    max-width: none;
+  }
+}
+
 .scoreAssessmentAction {
   display: grid;
   grid-template-columns: var(--touch-target) minmax(0, 1fr);
