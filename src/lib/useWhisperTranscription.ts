@@ -441,8 +441,13 @@ export function useWhisperTranscription(
       })
       .catch((err) => {
         // An unmount mid-init lands here. Nothing failed and nobody is left
-        // to read a message, so say nothing.
-        if (isTeardownRejection(err)) return
+        // to read a message, so say nothing — but still clear the pending
+        // request, so a controller that is somehow initialised again does not
+        // inherit a transcription the previous life had queued.
+        if (isTeardownRejection(err)) {
+          pendingStart = false
+          return
+        }
         console.error(`[${tag()}] Whisper init failed:`, err)
         pendingStart = false
         setErrorMessage(

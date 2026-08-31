@@ -1175,8 +1175,22 @@ changes), the Node version (fails under 22 and 25 alike), `--ignore-scripts`
 (the repo has no postinstall and no patches), and the TypeScript and
 `@types/node` versions (both match the lockfile pins).
 
-**CI does not hit it.** Run `33339789532` typechecked the identical file and
-tsconfig in 38s and passed. That discrepancy is unexplained and is left as a
-finding rather than papered over: `--lib ES2024` makes it pass, but changing the
-project's target library is a decision outside this plan's scope, and CI is
-currently green on it.
+**CI does hit it, and it is fixed here.** This section originally recorded the
+opposite, on the strength of run `33339789532` — a run on a _different branch_ —
+typechecking the identical file in 38s and passing. That sampling was wrong.
+This branch's own run `33343251285` failed its `Lint and typecheck` job on
+exactly `error TS2550: Property 'withResolvers' does not exist on type
+'PromiseConstructor'`, and typechecking `origin/main` directly in a detached
+worktree under Node 22 reproduces it. `main` is red on this.
+
+Fixed by raising `lib` to `ES2024` in tsconfig.json. `target` stays `ES2023`, so
+emitted code is unchanged, and the API is test-only — zero uses in product code
+— so nothing ships against a newer runtime. The tradeoff: a higher `lib` also
+lets other ES2024 APIs into shipped code unchallenged. The alternative, if that
+safety net is wanted back, is replacing the six test usages with a local helper.
+
+Why main's CI passed this step while main fails it locally is still unexplained.
+Ruled out: Node version (fails under 22 and 25), `--ignore-scripts`, the
+TypeScript and `@types/node` versions (both match the lockfile pins), and the
+added `serve` dependency (purely additive to the lockfile, zero version
+changes).

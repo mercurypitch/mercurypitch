@@ -205,6 +205,17 @@ function createStorageMock(): Storage {
     clear: () => {
       Object.keys(store).forEach((k) => delete store[k])
     },
+    // `length` and `key()` are not optional extras: code that enumerates
+    // storage needs both, and without them the enumeration silently does
+    // nothing rather than failing. `pruneOldDays` in
+    // db/services/practice-minutes.ts runs `for (let i = 0; i <
+    // localStorage.length; i++)`, and against a double with no `length` that
+    // is `0 < undefined` — false on the first check, so the loop body never
+    // ran and the prune was dead in every test that touched it.
+    get length() {
+      return Object.keys(store).length
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
   } as unknown as Storage
 }
 

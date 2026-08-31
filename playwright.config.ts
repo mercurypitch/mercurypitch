@@ -45,9 +45,12 @@ export default defineConfig({
     // CI now builds once and shares `dist` across every shard; locally,
     // `pnpm run build:e2e` is the prerequisite.
     //
-    // No `--single`: the app ships eight HTML entry points (karaoke, jam,
-    // guitar-night, piano-night, glass, mirror, vocal-range-test, index) and
-    // SPA-rewriting them all to index.html would break every one but the first.
+    // No `--single`: the app ships a document per room, not one SPA shell —
+    // see `build.rollupOptions.input` in vite.config.ts for the current list,
+    // and note `dist` emits more still (karaoke-night, jam-rooms). Specs reach
+    // them extensionlessly (`goto('/piano-night')`), which plain `serve`
+    // resolves; SPA-rewriting everything to index.html would break every entry
+    // but the first.
     command: `pnpm exec serve dist -l ${e2ePort}`,
     url: `http://localhost:${e2ePort}`,
     reuseExistingServer: true,
