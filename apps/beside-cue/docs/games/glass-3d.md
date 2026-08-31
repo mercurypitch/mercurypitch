@@ -32,6 +32,15 @@ shatter is the payoff the whole brand is named after.
   pitch stream, the vibrato detector, the driver seam, run scoring and
   the grade card. The genuinely new work is 3D geometry, a 3D shatter,
   and the wave.
+- **One prerequisite, before any 3D code.** Pitch detection currently
+  runs inside `requestAnimationFrame`. Adding a renderer would degrade
+  the game's own input exactly when frames get expensive, so the
+  detector moves off the frame loop first (§4a).
+- **Design for WebGL2; treat WebGPU as an upgrade.** Whether Android
+  System WebView exposes WebGPU is disputed by the compat tables and
+  unanswered by them, so the app now measures it and reports the answer
+  in Settings (§5.1). three.js covers both backends behind one renderer
+  object, so the answer changes performance, not architecture.
 - **Slices**: Cabinet (engine proof) → Merc moves and breaks a wall →
   Standing Wave Chamber (the first designed level) → polish → the next
   mechanic.
@@ -342,10 +351,135 @@ dominant cost of glass. Two rules follow:
    cheap. This is the single best performance property of the whole
    design, and it falls out of the fiction for free.
 
-Also: `renderer.transmissionResolutionScale` (r172+) at 0.33 on mobile,
-1.0 on desktop; `FrontSide` only; a 256² PMREM env map. Some Android
-devices have a reported bug where `transmission > 0` renders invisible —
-probe one frame at startup and fall back to the cheap material.
+The numbers behind that, read out of `WebGLRenderer.js`: the transmission
+target is built with `samples: Math.max(4, capabilities.samples)` — the
+4× MSAA is forced, not a setting — as a half-float target with
+`generateMipmaps: true`, sized by `transmissionResolutionScale`, whose
+**default is 1.0**, the full viewport. On a 1080×2400 phone that is a
+~20 MB resolved texture behind an ~83 MB MSAA renderbuffer; at 0.25 it is
+~1.3 MB and ~5.2 MB. Each transmissive fragment then costs eight
+dependent texture fetches, or twenty-four with `dispersion`, which is
+why `dispersion` stays at 0.
+
+So: `transmissionResolutionScale` 0.25 on mobile and 1.0 on desktop,
+`FrontSide` only, `dispersion: 0`, and a 256² PMREM env map.
+
+And a third rule, for the bottom of the range: **the low-end tier drops
+transmission entirely.** three.js skips the whole extra pass when no
+material has `transmission > 0`, so `transparent: true, opacity: 0.3,
+roughness: 0.05, clearcoat: 1` against the same environment map costs
+nothing beyond an ordinary transparent draw and still reads as glass.
+That also covers the reported Android bug where `transmission > 0`
+renders invisible: probe one frame at startup, and fall to this tier.
+
+---
+
+### 5.4 The settings that decide the frame on a phone
+
+Six numbers matter more than anything we will write ourselves. All of
+them are decided once, at renderer construction, and all of them are
+cheap to get wrong quietly.
+
+**Pixel ratio.** Fill cost scales as the square of the device pixel
+ratio. On a 1080×2400 panel reporting DPR 3, the CSS viewport is
+360×800, and the backing store at each cap is: 1.0 → 288k fragments,
+1.5 → 648k, 2.0 → 1.15M, native 3.0 → **2.59M**. Capping at 1.5 instead
+of native is a 4× cut in fragments, and for an effect whose edges are
+glass and light, it is close to invisible. `setPixelRatio(Math.min(dpr,
+1.5))` while the chamber runs; 2.0 is fine for the flat screens where
+the canvas is idle. Note `setPixelRatio` internally calls `setSize(…,
+false)`, so it never fights our CSS sizing and the call order does not
+matter.
+
+**Antialiasing.** MSAA is nearly free on a tile-based GPU — Arm quotes
+1–2% — but only because the multisampled buffer never leaves tile-local
+memory, and only when the geometry is light. The one measured comparison
+worth trusting (Galaxy S8, Adreno 540) shows exactly where it breaks: on
+Sponza at 153k vertices, 4× MSAA costs 1 fps out of 60; on Hairball at
+1.03M vertices it costs **16 of 35 fps**. Coverage and depth run at 4×
+the rate, so the cost tracks edges, not pixels — and a few hundred glass
+shards are all edges. Measure with the real shard geometry before
+assuming MSAA is free, and keep FXAA in reserve: the same study measured
+it at 1–2 fps regardless of scene complexity.
+
+The trap underneath it: the `antialias: true` constructor flag applies
+**only to the default framebuffer**. Any pass we render into a
+`WebGLRenderTarget` is unaffected, and needs `samples: 4` set on the
+target itself.
+
+**Transparency.** three.js sorts transparent objects back-to-front per
+draw call and never sorts _within_ one, so a `BatchedMesh` of shards has
+no internal ordering at all. Rather than fight that: sparks and glints
+use `AdditiveBlending` with `depthWrite: false`, which is
+order-independent because addition commutes; shards use `alphaHash`,
+which dithers instead of blending and therefore rides in the **opaque**
+list with early-Z and correct depth against everything (the grain it
+introduces is invisible on a shape that is on screen for 16 ms); and the
+handful of layers we actually know — room, shards, sparks, flash — get
+explicit `renderOrder` values rather than trusting a depth sort. Never
+sort particles on the CPU: it is O(n log n) plus a full index re-upload
+every frame, redone on every camera move.
+
+**Context attributes.** `powerPreference: 'default'` — a phone has one
+GPU, so there is nothing to select, and biasing the driver toward higher
+clocks on a device with a 60–90 second thermal fuse just means boosting
+harder and throttling sooner. `preserveDrawingBuffer: false`, which
+matters more on a tiler than the generic advice suggests: preserving the
+buffer across frames defeats the driver's ability to discard the colour
+attachment at end-of-tile, which is the same mechanism that makes MSAA
+cheap. If we need a screenshot for the share card, render on demand and
+call `toDataURL()` in the same tick. And use `invalidateFramebuffer` on
+depth, stencil and multisampled attachments when done with them — it is
+the WebGL2 spelling of "do not bother storing this", and it is free.
+
+**The idle loop is the thermal budget.** Time-to-first-throttle is
+60–90 seconds on a budget device, and sustained throttling costs 30–50%
+of peak. A shatter that lasts seconds is never at risk on its own — the
+risk is entirely that something kept rendering _before_ it, so the burst
+lands on an already-hot GPU. So `setAnimationLoop(null)` whenever
+nothing is animating, and render on demand. This is also why the
+chamber's calm phase must be genuinely calm rather than idly beautiful.
+Test the burst after ten minutes of real use, never on a cold device.
+
+There is no thermal signal available to us in JavaScript: Android's
+`getThermalHeadroom` is a Java API, and reaching it would mean writing a
+Capacitor plugin. Design so we do not need to know.
+
+### 5.5 Losing the GPU, and getting it back
+
+three.js already handles the ordinary case: it calls `preventDefault()`
+on `webglcontextlost` and re-initialises GL state on
+`webglcontextrestored`, re-uploading the geometry and textures it owns.
+Three things it does not do, which are ours:
+
+- **It does not tell the app.** Add a listener on `renderer.domElement`
+  so the chamber can pause, mute the ring, and show something honest
+  rather than a frozen frame.
+- **It does not restore render-target contents**, so any accumulation
+  buffer needs re-seeding.
+- **It cannot help when re-creation also fails.** There is a documented
+  Android WebView failure where `getContext` returns null after a long
+  session and only a reload recovers, so we need a one-shot
+  `window.location.reload()` escape hatch, guarded so it can fire once.
+
+Two structural rules follow. **One `WebGLRenderer` for the app
+lifetime**, not one per route: Chromium force-loses the oldest context
+once too many are alive, and a SolidJS screen that mounts a new renderer
+each visit is how we would get there. And on teardown, `dispose()` is
+not enough — it releases three's own objects but leaves the context
+alive; `forceContextLoss()` is the line that actually gives the GPU
+back.
+
+Worth knowing rather than handling: some WebView GPU losses surface as
+an app **crash** on the render thread, not as a catchable JS event. If
+this ever ships, the Play Console crash list is part of the graphics
+debugging surface.
+
+Two Capacitor settings matter here, neither of them graphics APIs:
+`webContentsDebuggingEnabled: true` in debug builds (it is what lets
+`chrome://inspect` attach to the WebView on a real device — see §8), and
+`backgroundColor` set to the canvas clear colour, so startup and
+rotation do not flash white behind a transparent canvas.
 
 ---
 
@@ -460,6 +594,15 @@ and gzips badly. Our scene _is_ one room, so that trade gives
 essentially the right reflections for nothing. PMREM output is 256²
 either way, so a real HDR would be downsampled to that regardless.
 
+### 6.4 Merc
+
+Recommendation: **a billboard of the existing 2D art**, camera-facing,
+with a soft contact shadow. It keeps the brand character exactly as
+drawn, costs no modelling, and reads as a deliberate style rather than a
+compromise. A 3D Merc can come later without changing anything else.
+
+---
+
 ### 6.5 Getting the files onto the device
 
 Three things about how Capacitor serves local files change the plan, all
@@ -481,15 +624,6 @@ verified in its source:
 Use relative asset paths (`./models/…`), never root-absolute, under a
 custom scheme; and add `.glb`/`.hdr` to Vite's `assetsInclude`, since
 they are not known asset types by default.
-
-### 6.4 Merc
-
-Recommendation: **a billboard of the existing 2D art**, camera-facing,
-with a soft contact shadow. It keeps the brand character exactly as
-drawn, costs no modelling, and reads as a deliberate style rather than a
-compromise. A 3D Merc can come later without changing anything else.
-
----
 
 ## 7. Sound
 
@@ -532,31 +666,127 @@ Everything above fires on one timeline, measured from the crack:
 | 100 / 300 / 550 | three decaying light haptics                                                                       |
 | 2500            | shards freeze, fade, dispose — and the ground keeps them                                           |
 
-Drop the device pixel ratio from 2 to ~1.25 for the 1.2s burst and
-restore it after: under shake and motion nobody sees it, and it hands
-back roughly 2.5× fill rate exactly when the frame is busiest.
+Drop the device pixel ratio from the running cap of 1.5 (§5.4) to ~1.0
+for the 1.2s burst and restore it after: under shake, slow motion and
+chromatic aberration nobody sees it, and it hands back about 2.25× the
+fill rate at exactly the frame where the budget is thinnest. Do it as a
+scripted step tied to the timeline, not as a live controller — a
+resolution controller needs about twenty frames to settle, which is most
+of the burst, and the visible pop is worse than a slightly soft second.
 
 ---
 
-## 8. Delivery slices
+## 8. The dev loop — how we will see what we are doing
+
+A 3D scene is not debuggable by reading the code, and the phone is where
+it has to be right. Four decisions, all of them cheap now and expensive
+to retrofit.
+
+**Tunables live in lil-gui, and dump back out as JSON.** Every number in
+this plan — chamber tolerances, `transmissionResolutionScale`, shard
+count, the shatter timeline — wants to be dragged rather than guessed.
+`lil-gui` is the three.js standard, has no dependencies, and is plain
+DOM, so in Solid it is a `new GUI()` in `onMount` and `gui.destroy()` in
+`onCleanup`. The part that makes it worth the dependency is `gui.save()`,
+which returns a JSON-compatible snapshot of every controller: a "copy"
+button next to the panel, and the tuned values paste straight into the
+config module. That is the same discipline as `journey-config` in the 2D
+game — the panel edits values that have a permanent home, and never
+becomes the home itself. (One gotcha: `save()` throws on duplicate
+controller names, so name them.)
+
+Not leva: it is React-only, down to its dependencies, and the Solid port
+died in 2021. Not Tweakpane either — alive but feature-frozen since 2024,
+and the Solid wrapper still targets v3.
+
+**The HUD is FPS, frame time, and `renderer.info`.** `stats-gl` covers
+the first two and handles both renderers. The draw-call, triangle and
+program counts come from `renderer.info` — and `info.programs.length` is
+the one to watch, because every material permutation is a compile stall.
+Set `renderer.info.autoReset = false` and reset once per frame ourselves;
+it resets at the top of every `render()` call by default, so with the
+transmission pass we would only ever be reading the last one.
+
+**Accept that GPU time is unmeasurable on Android and design around it.**
+Chromium's driver bug list excludes Android from the entry that exposes
+`EXT_disjoint_timer_query_webgl2`, and without a flag the extension is
+never handed out — so `stats-gl`'s GPU panel reads nothing in the app,
+and no native profiler reaches into Chrome's GPU process either. What is
+left works well enough: FPS and CPU milliseconds and `renderer.info` in
+the page, `chrome://inspect` over USB for real traces, and Perfetto only
+to ask whether the whole system is janking. GPU cost gets attributed by
+A/B — halve the resolution, drop the transmission pass, cut the shard
+count — not by measurement. This is a real argument for the A/B switches
+being wired from the start.
+
+**Shaders as TSL, not GLSL strings.** TSL is a JS node graph that
+compiles to either WGSL or GLSL, which is the same reason it survives
+whichever way §5.1 resolves — and it means shaders are ordinary modules,
+so Vite's JS hot reload applies with no shader-reload plumbing at all.
+Changing a `uniform()` node's value is a data update rather than a
+recompile; only graph-structure changes recompile. `onBeforeCompile` is
+now documented as the legacy path in three's own source. If any raw GLSL
+does appear, `vite-plugin-glsl` handles it, but it needs a hand-written
+`import.meta.hot.accept` that rebuilds the material or Vite falls back to
+a full reload and the scene state is gone.
+
+Whatever the module structure, the HMR dispose hook must call
+`setAnimationLoop(null)`, dispose geometries and materials, then
+`renderer.dispose()` **and** `renderer.forceContextLoss()` — the second
+line is the one everyone omits, and omitting it is how a morning of hot
+reloads ends with Chromium force-losing contexts.
+
+**Screenshot regression, borrowed from three.js itself.** three's own E2E
+harness injects a determinism layer before page scripts: a seeded
+`Math.random`, `Date.now` and `performance.now` pinned to 0, and
+`requestAnimationFrame` replaced by a gated one-shot that fires only once
+the page says it is ready. That is exactly the shape of the visibility
+and rAF spoofing already in our Playwright harness for the 2D game, so
+the extension is small: pin the clock, render one frame, and compare
+against a stored image. Without it, a 3D snapshot test is a coin flip.
+
+Two tools worth having installed rather than depending on: the official
+**three.js DevTools** extension, which reads a live scene graph plus
+render stats out of any page that sets `window.__THREE_DEVTOOLS__` (three
+dispatches to it already), and **WebGPU Inspector** or **Spector.js** for
+frame capture when a draw call is wrong rather than slow. Spector.js is
+pure JS instrumentation, so it is the one that works inside a remote
+Android WebView.
+
+---
+
+## 9. Delivery slices
 
 Each slice lands green (`pnpm check`, tests, and a measured frame time
 on the tablet) before the next begins.
 
-| Slice | Contains                                                              | Done when                                                                  |
-| ----- | --------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 0     | The Cabinet: room, glass, voice coupling, shatter, sound, score card  | 60fps on the tablet, shards persist, the card shows real units and a grade |
-| 1     | Merc: kinematic controller, camera, one glass wall to break to pass   | The wall breaks because of a note, and Merc walks through the hole         |
-| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall | The three chambers are playable end to end and scored                      |
-| 3     | Polish: juice pass, haptics, reduced-motion path, load time           | Passes the perf gates on a mid Android                                     |
-| 4     | The next mechanic                                                     | —                                                                          |
+| Slice | Contains                                                                                                       | Done when                                                                                                                               |
+| ----- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | The Cabinet: room, glass, voice coupling, shatter, sound, score card, plus the tuning panel and frame HUD (§8) | 60fps on the tablet, shards persist, the card shows real units and a grade, and every feel number is draggable and dumps back to config |
+| 1     | Merc: kinematic controller, camera, one glass wall to break to pass                                            | The wall breaks because of a note, and Merc walks through the hole                                                                      |
+| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                                          | The three chambers are playable end to end and scored                                                                                   |
+| 3     | Polish: juice pass, haptics, reduced-motion path, load time                                                    | Passes the perf gates on a mid Android                                                                                                  |
+| 4     | The next mechanic                                                                                              | —                                                                                                                                       |
 
 ---
 
-## 9. Risks
+## 10. Risks
 
-- **WebGPU coverage on Android WebView** decides whether the 3D world is
-  the default experience or an upgrade over the 2D one. Resolved in §5.
+- **WebGPU coverage on Android WebView** decides whether the 3D world
+  gets compute or has to fake it. No longer argued from compat tables:
+  the app measures it and reports it in Settings (§5.1), and the plan
+  targets WebGL2 either way.
+- **MSAA against shard geometry.** 4× MSAA is nearly free on a tiler
+  until the vertex count climbs, and then it is not — a measured 16 of
+  35 fps on a million-vertex scene. A few hundred shards is the case
+  where that flips. Measure with the real geometry before assuming
+  (§5.4).
+- **Heat before the burst, not during it.** The shatter is too short to
+  throttle a device on its own; what throttles it is anything that keeps
+  rendering while nothing moves. The idle loop is the thermal budget
+  (§5.4).
+- **GPU time is not measurable on Android**, so performance work is A/B
+  switches rather than a profiler (§8). Wire the switches early.
 - **Asset weight vs the APK.** Budgets in §6.
 - **Vocal load.** A room that asks for sustained high harmonics is
   tiring; chamber design must respect the 15-minute block rule and put
@@ -567,7 +797,7 @@ on the tablet) before the next begins.
 
 ---
 
-## 10. Open questions for maff
+## 11. Open questions for maff
 
 1. Camera: third-person behind Merc, or a fixed cinematic camera per
    room that frames the glass like a stage? (The stage framing is
