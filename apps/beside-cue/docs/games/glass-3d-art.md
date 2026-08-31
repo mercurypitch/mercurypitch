@@ -16,7 +16,7 @@ billboard.
 ## 0. The task list
 
 Executed one at a time, in order, each verified before the next begins.
-T4 is the only one that needs maff at the keyboard.
+T5 is the only one that needs maff at the keyboard; T2 needs his pick.
 
 | #   | Task                                                                   | State                      |
 | --- | ---------------------------------------------------------------------- | -------------------------- |
@@ -51,20 +51,20 @@ Probed 2026-09-01:
 | Blender                 | **5.2.0 LTS**, pacman `extra/blender 17:5.2.0-4` — the exact version the research targeted (first with meshopt export)   |
 | glTF exporter           | `io_scene_gltf2` present and **enabled**                                                                                 |
 | Blender MCP bridge      | `bl_ext.lab_blender_org.mcp` installed and **enabled** — this session can drive Blender directly once Blender is running |
-| Cell Fracture           | **missing** — moved to the Extensions platform in 4.2+; this is T2                                                       |
-| `@gltf-transform/cli`   | not a dependency yet — T3                                                                                                |
-| `art/` source directory | does not exist — T3                                                                                                      |
-| `.blend` git handling   | nothing in `.gitattributes` yet — T3                                                                                     |
+| Cell Fracture           | **missing** — moved to the Extensions platform in 4.2+; this is T3                                                       |
+| `@gltf-transform/cli`   | not a dependency yet — T4                                                                                                |
+| `art/` source directory | does not exist — T4                                                                                                      |
+| `.blend` git handling   | nothing in `.gitattributes` yet — T4                                                                                     |
 | Meshy MCP               | **connected** — balance 3,140 credits; costs are confirmed with maff before every paid call                              |
 | Proton Pass CLI         | `/usr/bin/pass-cli` present, if a key ever needs piping — none does today                                                |
 | KTX-Software (`ktx`)    | not installed, **deliberately** — the plan skips KTX2 until the texture count justifies a 585 KB transcoder              |
 
-**T2 — Cell Fracture.** Install from the Blender Extensions platform
+**T3 — Cell Fracture.** Install from the Blender Extensions platform
 (`blender --command extension install` headless, or the UI once), then
 verify headlessly the same way the probe above ran: `blender -b
 --python-expr` listing `addon_utils.modules()`.
 
-**T3 — repo scaffolding.**
+**T4 — repo scaffolding.**
 
 - `apps/beside-cue/art/` holds `.blend` sources plus a README stating
   the one rule: **the `.glb` in `public/models/` is generated, never
@@ -79,7 +79,7 @@ verify headlessly the same way the probe above ran: `blender -b
   `dedup → prune → weld → meshopt`. Output committed, so CI needs no
   sharp/ktx.
 
-**T4 — the bridge ritual.** maff starts Blender (a plain launch; the
+**T5 — the bridge ritual.** maff starts Blender (a plain launch; the
 add-on autoconnects), and I verify with a scene summary call. From then
 on the modelling is conversational: I write `bpy`, Blender executes it,
 screenshots come back through the bridge when needed. The `.blend` is
