@@ -1604,18 +1604,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (hydrated.status === 'processing') {
       setCurrentView('processing')
     } else {
-      // Respect the initial view from the URL hash (e.g. /mixer deep link) —
-      // but only when THIS session's stems can be staged. Entering the mixer
-      // without staging used to leave the previous song's audio running under
-      // the new song's chrome; a session with nothing to play lands on its
-      // results view, which can say so.
-      const targetView =
-        props.initialView === 'mixer' && hydrated.outputs != null
-          ? 'mixer'
-          : 'results'
+      // Respect the initial view from the URL hash (e.g. /mixer deep link)
+      const targetView = props.initialView === 'mixer' ? 'mixer' : 'results'
 
       // When deep-linking directly to mixer, populate the mixer state
-      // just like handlePracticeStart does for 'full' mode
+      // just like handlePracticeStart does for 'full' mode. Unconditionally:
+      // this used to be skipped when hydration produced no outputs, which
+      // left the mixer keyed to the PREVIOUS session — its audio kept
+      // playing under the new song's chrome. Empty stems for the right
+      // session are fine; the mixer's own load-error UI owns that case.
       if (targetView === 'mixer') {
         // One batch, because the session id is the mixer's remount key and
         // the mixer reads `stems` once, at mount. Setting the id on its own
