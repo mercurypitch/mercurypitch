@@ -23,7 +23,8 @@ import type { EarBankItem } from '@/lib/ear/banks'
 import { CHART_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
-import { barBeats, clearedSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
+import type { Subdivision } from '@/lib/ear/rhythm-take'
+import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
 import { micLatencyMs } from '@/stores/mic-latency-store'
@@ -64,6 +65,12 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     from: number
     durationMs: number
   } | null>(null)
+  /** The grid the pattern sits on, drawn with the score — reading
+   *  a gallop means seeing where its second note belongs. */
+  const [grid, setGrid] = createSignal<Subdivision | null>(null)
+  /** The take's taps in beats, so they land under the score as
+   *  they happen rather than only at the reveal. */
+  const [liveTaps, setLiveTaps] = createSignal<readonly number[]>([])
   const ledger = createTapLedger({ latencyMs: micLatencyMs })
   const raw = () => micLatencyMs() <= 0
 
@@ -71,6 +78,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   let timers: Array<ReturnType<typeof setTimeout>> = []
   let trialCancelled = false
   let takeHandle: AnchoredTake | null = null
+  /** The round's first onset, in ms: the place a take is anchored
+   *  on, and so what turns the ledger's taps into beats. */
+  let firstOnsetMs = 0
 
   const period = PULSE_TIMING.periodMs
   const countMs = PULSE_TIMING.beats * period
@@ -87,6 +97,8 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     setBar(null)
     setBeat(0)
     setBarRun(null)
+    setGrid(null)
+    setLiveTaps([])
     setScore(null)
   }
 
@@ -116,6 +128,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
         setTapCount(0)
         setBarRun(null)
         setBeats(patternBeats)
+        setGrid(finestSubdivision(item.payload))
+        setLiveTaps([])
+        firstOnsetMs = onsetsMs[0] ?? 0
         setScore(item.payload)
 
         const start = ctx.currentTime + PULSE_TIMING.leadS
@@ -167,6 +182,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
               correct: outcome.verdict.correct,
             })
             setBegun(outcome.begun)
+            setLiveTaps([])
             ledger.disarm()
             setBar(null)
             setBeat(0)
@@ -198,7 +214,9 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const onTap = (atMs: number) => {
     if (phase() !== 'answer' || !takeHandle) return
     takeHandle.tap(atMs)
-    setTapCount(ledger.taps().length)
+    const taps = ledger.taps()
+    setTapCount(taps.length)
+    setLiveTaps(anchorTaps(taps, firstOnsetMs).map((t) => t / period))
   }
 
   const ratingLine = () =>
@@ -296,6 +314,8 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           bar={bar()}
           beat={beat()}
           beats={beats()}
+          grid={grid()}
+          liveTaps={liveTaps()}
           run={barRun()}
           waiting={phase() === 'answer' && barRun() === null}
           score={score()}

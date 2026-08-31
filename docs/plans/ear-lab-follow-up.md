@@ -116,22 +116,32 @@ section, the audit script walking the new stage on phone and desktop, the
 tour where a new section appears, `pnpm check`, `pnpm run pr:validate`, the
 agent index regenerated.
 
-## Still open — the rhythm drills' notation
+## The rhythm drills' notation — built
 
-Pulse and The Chart draw a pattern as plain onset ticks on a rule, which is
-enough to tap against but is not a score. Worth a pass of its own, after
-this PR:
+Pulse and The Chart drew a pattern as plain onset ticks on a rule, which was
+enough to tap against but was not a score. All three parts are now in:
 
-- **Real notation.** Note heads, stems, beams and rests on a staff, so The
-  Chart is genuinely sight-reading and a player can carry what they learn
-  to paper. The tick marks are a placeholder for this.
-- **A richer running bar.** The progress line built here is one flat rule
-  through the beat lamps. It could carry the pattern itself — each onset
-  lighting as the line reaches it, the player's taps landing under it live
-  rather than only at the reveal.
+- **Real notation.** `src/lib/ear/rhythm-notation.ts` reads a bank pattern as
+  a score: the gap to the next onset (or to the end of the pattern) is the
+  note's value, matched to the longest written value that fits without
+  crossing a barline, and whatever is left over becomes rests. Flagged notes
+  inside one beat are beamed, with the partial beam a gallop needs, and a run
+  of thirds carries its 3. `RhythmScore.tsx` draws it on a one-line rhythm
+  staff — heads, stems, beams, dots, flags and rests. The Chart is
+  sight-reading now, and Pulse's reveal writes what the ear just heard.
+- **A richer running bar.** The rail through the beat lamps stays, and the
+  same run is drawn down the paper as a playhead. Each written note lights as
+  the line reaches it, and the player's taps land on the lower row live. Both
+  are animation delays computed from the anchored take's `{ from, durationMs }`,
+  so there is still no frame loop and a hidden tab cannot leave the paper
+  half lit.
 - **Subdivision guides.** Faint marks inside each beat for the grid the
-  pattern sits on (eighths, triplets, sixteenths), so a player reading a
-  gallop can see where the second note belongs.
+  pattern sits on (`finestSubdivision`). The Chart draws them with the score;
+  **Pulse only draws them at the reveal** — before it, the grid says how fine
+  the pattern is, which is half of what the ear is being asked for.
+
+The anchored take is untouched: the bar is still silent and still until the
+player's first tap starts it.
 
 ## Invariants the follow-up must not touch
 

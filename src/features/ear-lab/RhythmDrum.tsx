@@ -1,22 +1,35 @@
 // ============================================================
 // RhythmDrum — the rhythm drills' instrument.
 //
-// Contour's drum, turned to time: a bar (or two, when the pattern
-// crosses the barline) across the paper, a beat lamp per beat along
-// the top that steps with the click. For Pulse the paper stays blank
-// during the call — an onset drawn as it sounds would hand the eye
-// what the ear is meant to hold; The Chart is the opposite drill, so
-// it writes the pattern on the upper rule from the start (`score`)
-// and the player taps what they read. The reveal writes both rows:
-// the pattern's onsets as brass ticks on the upper rule, the
-// player's taps under them on the lower, signal where an onset was
-// met, garnet where it was missed, muted for a tap that served no
-// onset.
+// Contour's drum, turned to time: a rhythm staff across the paper —
+// one line, because nothing written here is pitched — with a beat
+// lamp per beat along the top that steps with the click, and the
+// player's own row under it. What is written is real notation: heads,
+// stems, beams, dots and rests, read off the pattern's onsets by
+// `rhythm-notation.ts`, so The Chart is sight-reading and not a row
+// of ticks.
+//
+// For Pulse the paper stays blank during the call — an onset drawn as
+// it sounds would hand the eye what the ear is meant to hold, and the
+// subdivision guides would say how fine the grid is before the player
+// has worked it out. The Chart is the opposite drill, so it writes
+// the pattern and its guides from the start (`score`, `grid`) and the
+// player taps what they read.
+//
+// Once the take is running the bar carries it: a line sweeps the
+// paper, each written note lights as the line reaches it, and the
+// player's taps land on the lower row live rather than only at the
+// reveal. The reveal writes both rows — the pattern as notation,
+// brass where an onset was met and garnet where it was missed, and
+// the taps under it, muted for one that served no onset.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
+import { beamGroups, gridFractions, readRhythm, tupletSpans, } from '@/lib/ear/rhythm-notation'
+import type { Subdivision } from '@/lib/ear/rhythm-take'
 import styles from './EarInstruments.module.css'
+import { RhythmScore } from './RhythmScore'
 
 export type DrumBar = 'count' | 'call' | 'response' | null
 
@@ -38,10 +51,16 @@ interface RhythmDrumProps {
   reveal: DrumReveal | null
   /** Beats across the paper; 4 unless the pattern spans two bars. */
   beats?: number
-  /** Onsets shown on the upper rule during the take — The Chart's
-   *  notation. Pulse leaves it unset and the paper stays blank. */
+  /** Onsets written on the staff during the take — The Chart's score.
+   *  Pulse leaves it unset and the paper stays blank. */
   score?: readonly number[] | null
-  /** The upper row's caption at the reveal; 'call' unless said. */
+  /** The grid the pattern sits on, drawn as faint guides inside each
+   *  beat. A drill that dictates only sets it at the reveal: the
+   *  guides say how fine the pattern is, which is half its answer. */
+  grid?: Subdivision | null
+  /** The player's taps so far, in beats, while the take runs. */
+  liveTaps?: readonly number[] | null
+  /** The upper row's caption; 'call' unless said. */
   upperWord?: string
   /** The player's bar, once their first tap has started it: where in
    *  the bar the anchor stood and how long is left to run. The fill is
@@ -52,11 +71,15 @@ interface RhythmDrumProps {
   waiting?: boolean
 }
 
-const BAR_LEFT = 100
-const BAR_RIGHT = 420
-const CALL_Y = 100
-const RESPONSE_Y = 160
-const RULES = [70, 100, 130, 160, 190]
+const BAR_LEFT = 132
+const BAR_RIGHT = 436
+const PAPER_LEFT = 124
+const PAPER_RIGHT = 444
+const LAMP_Y = 40
+const STAFF_Y = 112
+const TAKE_Y = 172
+const DIV_TOP = 64
+const DIV_BOTTOM = 196
 
 const BAR_WORD: Record<Exclude<DrumBar, null>, string> = {
   count: 'Count-in',
@@ -66,8 +89,31 @@ const BAR_WORD: Record<Exclude<DrumBar, null>, string> = {
 
 export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
   const beats = () => props.beats ?? 4
+  /** Two bars of notation on the same paper are written smaller. */
+  const scale = () => (beats() === 8 ? 0.82 : 1)
   const beatX = (beat: number): number =>
     BAR_LEFT + (beat / beats()) * (BAR_RIGHT - BAR_LEFT)
+
+  /** The pattern as a score: the reveal's if there is one, else what
+   *  the drill wrote for the player to read. */
+  const written = createMemo(() => {
+    const onsets = props.reveal?.onsets ?? props.score
+    if (!onsets || onsets.length === 0) return null
+    const symbols = readRhythm(onsets, beats())
+    const groups = beamGroups(symbols)
+    return { symbols, groups, tuplets: tupletSpans(symbols, groups) }
+  })
+
+  /** Every guide mark across the paper, beat by beat. */
+  const guides = createMemo(() => {
+    const grid = props.grid
+    if (!grid) return []
+    const fractions = gridFractions(grid)
+    return Array.from({ length: beats() }, (_, beat) => beat).flatMap((beat) =>
+      fractions.map((fraction) => beat + fraction),
+    )
+  })
+
   const label = () => {
     if (props.reveal) {
       const missed = props.reveal.met.filter((m) => !m).length
@@ -98,17 +144,44 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         class={styles.drum}
         data-part="drum"
       />
-      <For each={RULES}>
-        {(y) => <line x1="80" y1={y} x2="440" y2={y} class={styles.drumRule} />}
+      {/* the rhythm staff, and the row the player's take lands on */}
+      <line
+        x1={PAPER_LEFT}
+        y1={STAFF_Y}
+        x2={PAPER_RIGHT}
+        y2={STAFF_Y}
+        class={styles.staffLine}
+        data-part="staff"
+      />
+      <line
+        x1={PAPER_LEFT}
+        y1={TAKE_Y}
+        x2={PAPER_RIGHT}
+        y2={TAKE_Y}
+        class={styles.drumRule}
+        data-part="take-rule"
+      />
+      {/* the grid inside each beat: where a gallop's second note goes */}
+      <For each={guides()}>
+        {(at) => (
+          <line
+            x1={beatX(at)}
+            y1={STAFF_Y - 18}
+            x2={beatX(at)}
+            y2={STAFF_Y + 18}
+            class={styles.subdivisionGuide}
+            data-part="grid-mark"
+          />
+        )}
       </For>
       {/* beat divisions; the barline of a two-bar pattern is solid */}
       <For each={Array.from({ length: beats() + 1 }, (_, i) => i)}>
         {(beat) => (
           <line
             x1={beatX(beat)}
-            y1="62"
+            y1={DIV_TOP}
             x2={beatX(beat)}
-            y2="198"
+            y2={DIV_BOTTOM}
             class={styles.drumRule}
             stroke-dasharray={
               beat % 4 === 0 && beat > 0 && beat < beats() ? undefined : '2 5'
@@ -117,15 +190,16 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         )}
       </For>
       {/* The take's progress rail: a line through the lamps that fills
-          left to right from the tap that started the bar. */}
+          left to right from the tap that started the bar, and the same
+          run drawn down the paper as a playhead. */}
       <Show when={props.run}>
         {(run) => (
           <>
             <line
               x1={beatX(0)}
-              y1="40"
+              y1={LAMP_Y}
               x2={beatX(beats())}
-              y2="40"
+              y2={LAMP_Y}
               class={styles.progressTrack}
               data-part="progress-track"
             />
@@ -133,7 +207,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
                 box with real height, and a horizontal line has none. */}
             <rect
               x={beatX(0)}
-              y="38.75"
+              y={LAMP_Y - 1.25}
               width={beatX(beats()) - beatX(0)}
               height="2.5"
               rx="1.25"
@@ -141,6 +215,19 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
               data-part="progress-fill"
               style={{
                 '--fill-from': String(run().from),
+                '--fill-run': `${Math.max(0, run().durationMs)}ms`,
+              }}
+            />
+            <line
+              x1={beatX(0)}
+              y1={DIV_TOP}
+              x2={beatX(0)}
+              y2={DIV_BOTTOM}
+              class={styles.playhead}
+              data-part="playhead"
+              style={{
+                '--head-from': String(run().from),
+                '--head-span': `${beatX(beats()) - beatX(0)}px`,
                 '--fill-run': `${Math.max(0, run().durationMs)}ms`,
               }}
             />
@@ -152,7 +239,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         {(beat) => (
           <circle
             cx={beatX(beat - 1)}
-            cy="40"
+            cy={LAMP_Y}
             r="4"
             class={styles.beatLamp}
             classList={{
@@ -166,52 +253,67 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         )}
       </For>
 
-      <Show when={!props.reveal && props.score}>
+      <Show when={written()}>
         {(score) => (
           <>
-            <For each={score()}>
-              {(onset) => (
-                <line
-                  x1={beatX(onset)}
-                  y1={CALL_Y - 14}
-                  x2={beatX(onset)}
-                  y2={CALL_Y + 14}
-                  class={styles.onset}
-                  data-part="score-onset"
-                />
-              )}
-            </For>
-            <text x="84" y={CALL_Y - 20} class={styles.caption}>
+            <RhythmScore
+              symbols={score().symbols}
+              groups={score().groups}
+              tuplets={score().tuplets}
+              x={beatX}
+              y={STAFF_Y}
+              beats={beats()}
+              scale={scale()}
+              met={props.reveal?.met ?? null}
+              run={props.reveal ? null : props.run}
+              notePart={props.reveal ? 'onset' : 'score-onset'}
+            />
+            <text
+              x={BAR_LEFT - 10}
+              y={STAFF_Y + 4}
+              class={styles.caption}
+              text-anchor="end"
+            >
               {props.upperWord ?? 'call'}
             </text>
           </>
         )}
       </Show>
 
+      {/* the take, landing under the score as it happens */}
+      <Show when={!props.reveal && props.liveTaps?.length}>
+        <For each={props.liveTaps ?? []}>
+          {(tap) => (
+            <line
+              x1={beatX(tap)}
+              y1={TAKE_Y - 11}
+              x2={beatX(tap)}
+              y2={TAKE_Y + 11}
+              class={`${styles.tapMark} ${styles.tapMarkLive}`}
+              data-part="live-tap"
+            />
+          )}
+        </For>
+        <text
+          x={BAR_LEFT - 10}
+          y={TAKE_Y + 4}
+          class={styles.caption}
+          text-anchor="end"
+        >
+          yours
+        </text>
+      </Show>
+
       <Show when={props.reveal}>
         {(reveal) => (
           <>
-            <For each={reveal().onsets}>
-              {(onset, i) => (
-                <line
-                  x1={beatX(onset)}
-                  y1={CALL_Y - 14}
-                  x2={beatX(onset)}
-                  y2={CALL_Y + 14}
-                  class={styles.onset}
-                  classList={{ [styles.onsetMissed]: !reveal().met[i()] }}
-                  data-part="onset"
-                  data-met={reveal().met[i()]}
-                />
-              )}
-            </For>
             <For each={reveal().taps}>
               {(tap) => (
                 <line
                   x1={beatX(tap)}
-                  y1={RESPONSE_Y - 14}
+                  y1={TAKE_Y - 12}
                   x2={beatX(tap)}
-                  y2={RESPONSE_Y + 14}
+                  y2={TAKE_Y + 12}
                   class={styles.tapMark}
                   data-part="tap"
                 />
@@ -221,25 +323,32 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
               {(tap) => (
                 <line
                   x1={beatX(tap)}
-                  y1={RESPONSE_Y - 10}
+                  y1={TAKE_Y - 9}
                   x2={beatX(tap)}
-                  y2={RESPONSE_Y + 10}
+                  y2={TAKE_Y + 9}
                   class={`${styles.tapMark} ${styles.tapMarkExtra}`}
                   data-part="extra"
                 />
               )}
             </For>
-            <text x="84" y={CALL_Y - 20} class={styles.caption}>
-              {props.upperWord ?? 'call'}
-            </text>
-            <text x="84" y={RESPONSE_Y + 30} class={styles.caption}>
+            <text
+              x={BAR_LEFT - 10}
+              y={TAKE_Y + 4}
+              class={styles.caption}
+              text-anchor="end"
+            >
               yours
             </text>
             <text
               x="260"
               y="244"
-              class={`${styles.nameplate} ${styles.nameplateSignal}`}
+              class={`${styles.nameplate} ${
+                reveal().correct
+                  ? styles.nameplateSignal
+                  : styles.nameplateGarnet
+              }`}
               text-anchor="middle"
+              data-part="verdict"
             >
               {reveal().correct ? 'Clean' : 'Not quite'}
             </text>
