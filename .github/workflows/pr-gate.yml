@@ -246,8 +246,8 @@ jobs:
       # put a barrier in front of a fan-out that otherwise has none.
       #
       # This is also the only build: playwright.config.ts serves `dist` and no
-      # longer rebuilds it, so the bundle `assert-piano-night-bundle.mjs`
-      # audits here is the bundle these tests actually run against.
+      # longer rebuilds it, so the bundle the `assert-*-bundle.mjs` audits in
+      # `build:e2e` check here is the bundle these tests actually run against.
       - name: Build MercuryPitch for browser tests
         run: pnpm run build:e2e
 
@@ -259,6 +259,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
+          # One key for all four shards, deliberately. On a version bump they
+          # all miss and all try to save it; GitHub keeps the first and the
+          # losers log a reserve warning. That noise is preferable to the
+          # alternatives: `lookup-only` skips the download rather than the
+          # save, and a per-shard key would quadruple the stored browsers.
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
