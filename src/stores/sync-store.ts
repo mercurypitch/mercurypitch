@@ -1182,12 +1182,15 @@ export function stopSync(): void {
  * would otherwise re-run thousands of times per song. The boolean's
  * default equality gates all of that down to real transitions.
  */
-export const transferMoving = createMemo(
-  () =>
-    syncBusy() ||
-    syncQueue().length > 0 ||
-    syncTransfers().some(isLiveTransfer),
-)
+export const transferMoving = createRoot(() => {
+  const memo = createMemo(
+    () =>
+      syncBusy() ||
+      syncQueue().length > 0 ||
+      syncTransfers().some(isLiveTransfer),
+  )
+  return memo
+})
 
 /**
  * How long a hidden-but-connected session may sit with nothing moving
