@@ -9,7 +9,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
-import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
+import { useMelodyAuditionSynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
@@ -1361,27 +1361,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Melody audition synth ──────────────────────────────────────
-  // Optionally sound the detected notes as a monophonic synth, following the
-  // playhead, so the user can hear how the cleaned melody sounds.
-  const [melodyAudio, setMelodyAudio] = createSignal(false)
-  const melodySynth = createMelodySynth()
-  onCleanup(() => melodySynth.dispose())
-  createEffect(() => {
-    const on = melodyAudio() && audio.playing()
-    const t = audio.elapsed()
-    if (!on) {
-      melodySynth.setNote(null)
-      return
-    }
-    const notes = pitchAnalysis.offlineSegmentedNotes()
-    const active = notes.find((n) => t >= n.startSec && t < n.endSec)
-    melodySynth.setNote(active !== undefined ? active.midi : null)
+  const { melodyAudio, toggleMelodyAudio } = useMelodyAuditionSynth({
+    playing: audio.playing,
+    elapsed: audio.elapsed,
+    notes: pitchAnalysis.offlineSegmentedNotes,
   })
-  const toggleMelodyAudio = (): void => {
-    const next = !melodyAudio()
-    setMelodyAudio(next)
-    if (next) melodySynth.resume()
-  }
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
 

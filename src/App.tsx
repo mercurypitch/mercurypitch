@@ -219,6 +219,7 @@ import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
+import { useAbLoop } from '@/features/playback/useAbLoop'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
@@ -237,7 +238,6 @@ import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_S
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
-import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
@@ -1712,67 +1712,34 @@ const AppShell: Component<AppProps> = (props) => {
   // becomes the practice melody.
   const [singingSong, setSingingSong] = createSignal<SavedMidiSong | null>(null)
 
-  // ── A-B Loop state for Singing tab ──────────────────────────
-  // Loop math lives in the framework-free `ab-loop` helpers so the
-  // boundary/seek/geometry rules match the canonical stem-mixer loop.
-  const [loopEnabled, setLoopEnabled] = createSignal(false)
-  const [loopA, setLoopA] = createSignal(0)
-  const [loopB, setLoopB] = createSignal(0)
-  // Mirrors the stem-mixer's `seekedOutsideLoop`: while true (the user
-  // manually seeked outside [A, B)), we stop yanking the playhead back to A
-  // until playback re-enters the region.
-  const [seekedOutsideLoop, setSeekedOutsideLoop] = createSignal(false)
-
-  // The A-B loop state is shared across tabs, but each tab has its OWN
-  // transport: Singing and Compose both drive the shared PlaybackRuntime
-  // (currentBeat / totalBeats), while Piano runs on the separate falling-notes
-  // controller (playheadBeat / seekToBeat). Route every loop operation — set
-  // A/B, clamp, marker-drag, auto-seek-back — through the ACTIVE tab's
-  // transport so the loop tracks the playhead the user is actually watching.
-  // (Before this, all of them used the singing transport, so Set A/B read a
-  // stale singing beat and the loop-back seeked a runtime the Piano tab isn't
-  // even using — the loop simply did nothing on Piano.)
-  const loopTransport = (): {
-    beat: () => number
-    total: () => number
-    seekTo: (beat: number) => void
-  } => {
-    if (activeTab() === TAB_PIANO) {
-      return {
-        beat: pianoPerformance.transport.timeline.playheadBeat,
-        total: pianoPerformance.transport.timeline.totalBeats,
-        seekTo: pianoPerformance.transport.seekToBeat,
-      }
-    }
-    return {
-      beat: currentBeat,
-      total: totalBeats,
-      seekTo: (beat: number) => playbackRuntime.seekTo(beat),
-    }
-  }
-
-  const handleSetLoopA = () => {
-    const beat = loopTransport().beat()
-    if (beat < 0) return
-    setLoopA(Math.max(0, beat))
-    // Re-marking A at/after B empties the region — clear B and disable the
-    // loop so we don't enforce a backwards/degenerate boundary.
-    if (loopB() > 0 && beat >= loopB()) {
-      setLoopB(0)
-      setLoopEnabled(false)
-    }
-  }
-
-  const handleSetLoopB = () => {
-    const t = loopTransport()
-    const beat = clampLoopB(t.beat(), loopA(), t.total())
-    if (beat <= loopA()) return
-    setLoopB(beat)
-    // Setting B arms the loop right away (matches the stem-mixer): playback
-    // starts cycling A→B immediately, with no separate "enable loop" click.
-    setSeekedOutsideLoop(false)
-    setLoopEnabled(true)
-  }
+  // ── A-B Loop controller ──────────────────────────────────────
+  const abLoop = useAbLoop({
+    activeTab,
+    currentBeat,
+    totalBeats,
+    seekToBeat: (beat) => playbackRuntime.seekTo(beat),
+    pianoTransport: {
+      playheadBeat: pianoPerformance.transport.timeline.playheadBeat,
+      totalBeats: pianoPerformance.transport.timeline.totalBeats,
+      seekToBeat: pianoPerformance.transport.seekToBeat,
+    },
+    fallingNotes: {
+      setLoop: (a, b, enabled) => fallingNotes.setLoop(a, b, enabled),
+    },
+    onLoopLap: () => setPitchHistory([]),
+  })
+  const {
+    loopEnabled,
+    loopA,
+    loopB,
+    handleSetLoopA,
+    handleSetLoopB,
+    handleToggleLoop,
+    handleClearLoop,
+    handleMoveLoopA,
+    handleMoveLoopB,
+    handleLoopSeek,
+  } = abLoop
 
   /** The four Compose views, for the phone toolbar's icon-only tab row. */
   const COMPOSE_VIEWS = [
@@ -1866,83 +1833,6 @@ const AppShell: Component<AppProps> = (props) => {
       onClearLoop={handleClearLoop}
     />
   )
-
-  const handleToggleLoop = () => {
-    setLoopEnabled((v) => !v)
-  }
-
-  const handleClearLoop = () => {
-    setLoopEnabled(false)
-    setLoopA(0)
-    setLoopB(0)
-    setSeekedOutsideLoop(false)
-  }
-
-  // Dragging the A/B markers on the seek rail — pure bounds adjustment (the
-  // toggle still owns enabled). Clamp to the timeline and keep a minimum gap so
-  // the region can't collapse or invert. Mirrors the stem-mixer marker drag.
-  const LOOP_MIN_GAP_BEATS = 0.25
-  const handleMoveLoopA = (beat: number) => {
-    const b = loopB()
-    const upper = b > 0 ? b - LOOP_MIN_GAP_BEATS : loopTransport().total()
-    setLoopA(Math.max(0, Math.min(beat, upper)))
-  }
-  const handleMoveLoopB = (beat: number) => {
-    const lower = loopA() + LOOP_MIN_GAP_BEATS
-    setLoopB(Math.min(Math.max(beat, lower), loopTransport().total()))
-  }
-
-  // Manual seek from a tab's scrubber/overview: record whether it escaped the
-  // loop region so the auto-seek-back below stays suppressed until we're back
-  // inside [A, B). (Fixes: a manual seek past B used to be instantly reverted.)
-  // Seeks the ACTIVE tab's transport so it works on Singing, Compose and Piano.
-  const handleLoopSeek = (beat: number) => {
-    setSeekedOutsideLoop(isSeekOutsideLoop(beat, loopA(), loopB()))
-    loopTransport().seekTo(beat)
-  }
-
-  // Keep the Piano controller's own loop state in sync. Piano wraps B→A INSIDE
-  // its RAF loop (atomic with its note scheduler), so it is deliberately NOT
-  // driven by the auto-seek-back effect below: an external seek landing
-  // mid-frame there rewound the playhead while checkHits() still held the
-  // stale past-B beat, replaying the whole [A, B] span at once.
-  createEffect(() => {
-    fallingNotes.setLoop(loopA(), loopB(), loopEnabled())
-  })
-
-  // Auto-seek back to A when the playhead reaches B (loop enabled) — for the
-  // shared PlaybackRuntime (Singing + Compose only; Piano loops in-controller).
-  // Only fire while short of the track end, so we don't race the runtime's
-  // natural-end / complete handling.
-  createEffect(() => {
-    const t = loopTransport()
-    const beat = t.beat()
-    // Once playback re-enters [A, B), drop the manual-seek escape flag.
-    if (
-      seekedOutsideLoop() &&
-      loopA() < loopB() &&
-      beat >= loopA() &&
-      beat < loopB()
-    ) {
-      setSeekedOutsideLoop(false)
-    }
-    // Piano's loop wrap is owned by its controller (see setLoop above).
-    if (activeTab() === TAB_PIANO) return
-    if (
-      shouldLoopBack(beat, {
-        enabled: loopEnabled(),
-        a: loopA(),
-        b: loopB(),
-        seekedOutside: seekedOutsideLoop(),
-      }) &&
-      beat < t.total()
-    ) {
-      // Reset the pitch trail each lap so the green line shows only the current
-      // pass, not every overlaid loop iteration.
-      setPitchHistory([])
-      t.seekTo(loopA())
-    }
-  })
 
   // Karaoke backing: the "heard" (non-scored) tracks play as audio while the
   // scored track stays the reference/scored melody.

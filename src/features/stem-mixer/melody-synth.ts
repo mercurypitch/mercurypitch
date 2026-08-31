@@ -5,6 +5,9 @@
 // first enable (from a user gesture) so autoplay policies are satisfied.
 // ============================================================
 
+import type { Accessor } from 'solid-js'
+import { createEffect, createSignal, onCleanup } from 'solid-js'
+
 export interface MelodySynth {
   /** Ensure the audio graph exists and the context is running (call from a
    *  user gesture — e.g. the toggle click). */
@@ -68,5 +71,53 @@ export function createMelodySynth(level = 0.12): MelodySynth {
       gain = null
       current = null
     },
+  }
+}
+
+export interface UseMelodyAuditionSynthDeps {
+  playing: Accessor<boolean>
+  elapsed: Accessor<number>
+  notes: Accessor<
+    ReadonlyArray<{ startSec: number; endSec: number; midi: number }>
+  >
+}
+
+export interface UseMelodyAuditionSynthReturn {
+  melodyAudio: Accessor<boolean>
+  toggleMelodyAudio: () => void
+}
+
+/**
+ * Controller hook managing the state and playback synchronization of the
+ * melody audition synth following the active playhead.
+ */
+export function useMelodyAuditionSynth(
+  deps: UseMelodyAuditionSynthDeps,
+): UseMelodyAuditionSynthReturn {
+  const [melodyAudio, setMelodyAudio] = createSignal(false)
+  const melodySynth = createMelodySynth()
+  onCleanup(() => melodySynth.dispose())
+
+  createEffect(() => {
+    const on = melodyAudio() && deps.playing()
+    const t = deps.elapsed()
+    if (!on) {
+      melodySynth.setNote(null)
+      return
+    }
+    const notes = deps.notes()
+    const active = notes.find((n) => t >= n.startSec && t < n.endSec)
+    melodySynth.setNote(active !== undefined ? active.midi : null)
+  })
+
+  const toggleMelodyAudio = (): void => {
+    const next = !melodyAudio()
+    setMelodyAudio(next)
+    if (next) melodySynth.resume()
+  }
+
+  return {
+    melodyAudio,
+    toggleMelodyAudio,
   }
 }
