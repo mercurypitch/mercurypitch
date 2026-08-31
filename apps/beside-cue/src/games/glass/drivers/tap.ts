@@ -1,12 +1,18 @@
-// The tap driver: rhythm play with no microphone. Owns an AudioContext
-// purely as the conductor clock (and for game sound output) and queues
-// pointer/key taps as discrete intents stamped with the audio clock.
-// The runtime drains and judges them; the driver stays dumb hardware.
+// The tap driver: rhythm play with no microphone. It leases the app's
+// shared AudioContext (audio/shared-audio-context.ts) purely as the
+// conductor clock — and for game sound output — and queues pointer/key
+// taps as discrete intents stamped with that clock. The runtime drains
+// and judges them; the driver stays dumb hardware.
+//
+// Sharing the clock is what makes the judging honest: a tap stamped here
+// is compared against a note the stage scheduled, and two contexts would
+// have measured that gap with two different stopwatches.
 
+import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import type { DiscreteIntent, InteractionDriver } from './types'
 
 export const createTapDriver = (): InteractionDriver => {
-  let audioContext: AudioContext | null = null
+  const lease = acquireSharedAudioContext('tap-driver')
   let queue: DiscreteIntent[] = []
 
   const isUiTarget = (e: Event): boolean =>
@@ -16,7 +22,7 @@ export const createTapDriver = (): InteractionDriver => {
     if (isUiTarget(e)) return // buttons stay buttons, not beats
     queue.push({
       type: 'tap',
-      tAudio: audioContext?.currentTime ?? 0,
+      tAudio: lease.peek()?.currentTime ?? 0,
       x: e.clientX,
       y: e.clientY,
     })
@@ -25,13 +31,14 @@ export const createTapDriver = (): InteractionDriver => {
     if (e.key !== ' ' && e.key !== 'Enter') return
     if (isUiTarget(e)) return
     e.preventDefault()
-    queue.push({ type: 'tap', tAudio: audioContext?.currentTime ?? 0 })
+    queue.push({ type: 'tap', tAudio: lease.peek()?.currentTime ?? 0 })
   }
 
   return {
     async start(): Promise<void> {
-      audioContext = new AudioContext()
-      await audioContext.resume()
+      // Reached before the await so the resume rides the starting tap.
+      lease.ensure()
+      await lease.unlock()
       window.addEventListener('pointerdown', onPointer)
       window.addEventListener('keydown', onKey)
     },
@@ -40,8 +47,8 @@ export const createTapDriver = (): InteractionDriver => {
       window.removeEventListener('pointerdown', onPointer)
       window.removeEventListener('keydown', onKey)
       queue = []
-      void audioContext?.close()
-      audioContext = null
+      // Never close: the context is the app's, not this driver's.
+      lease.release()
     },
 
     latestPitch(): null {
@@ -59,7 +66,7 @@ export const createTapDriver = (): InteractionDriver => {
     },
 
     ctx(): AudioContext | null {
-      return audioContext
+      return lease.peek()
     },
   }
 }

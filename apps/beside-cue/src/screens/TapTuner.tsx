@@ -4,8 +4,13 @@
 // audio latency on Android makes honest taps register late). All the
 // math lives in games/glass/tap-latency.ts (pure, tested); this
 // component only schedules ticks and stamps taps with the audio clock.
+//
+// That clock is the app's shared AudioContext (audio/shared-audio-context.ts):
+// the latency measured here is spent judging taps in rhythm play, so both
+// have to be read from the same stopwatch.
 
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { computeTapLatency, tapOffsets } from '@/games/glass/tap-latency'
 
@@ -37,6 +42,7 @@ export function TapTuner(props: {
   const [resultMs, setResultMs] = createSignal(0)
   const [gridTaps, setGridTaps] = createSignal(0)
 
+  const lease = acquireSharedAudioContext('tap-tuner')
   let ctx: AudioContext | null = null
   let raf = 0
   let firstBeatAt = 0
@@ -77,9 +83,10 @@ export function TapTuner(props: {
 
   /** Runs inside the button click so the AudioContext starts unmuted. */
   const begin = (): void => {
-    ctx ??= new AudioContext()
-    void ctx.resume().then(() => {
-      if (ctx === null) return
+    ctx = lease.ensure()
+    if (ctx === null) return
+    void lease.unlock().then((ready) => {
+      if (!ready || ctx === null) return
       taps = []
       setTapCount(0)
       setBeatsLeft(T.calBeats)
@@ -106,8 +113,9 @@ export function TapTuner(props: {
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
-    void ctx?.close()
     ctx = null
+    // The context is the app's; closing it would cost a gesture to get back.
+    lease.release()
   })
 
   const onTap = (e: PointerEvent): void => {

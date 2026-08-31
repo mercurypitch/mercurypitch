@@ -3,4 +3,5 @@
 // ============================================================
 
 export * from './audio-session'
+export * from './shared-audio-context'
 export * from './web-audio-output'

@@ -1,6 +1,12 @@
 // ============================================================
 // Cinematic onboarding audio — one pop-free Web Audio picture clock
 // ============================================================
+//
+// The clock rides the app's shared AudioContext (audio/shared-audio-context.ts)
+// rather than opening its own, so the cinematic and everything the player
+// reaches afterwards are scheduled against a single clock.
+
+import { acquireSharedAudioContext } from '../audio/shared-audio-context'
 
 const ENVELOPE_FLOOR = 0.0001
 const ATTACK_SECONDS = 0.09
@@ -22,13 +28,12 @@ interface ActiveSource {
 }
 
 export interface CinematicOnboardingAudioClockDeps {
+  /**
+   * Test seam. Injecting a factory also transfers ownership: the clock then
+   * closes that context on dispose, where the shared one is only released.
+   */
   readonly createContext?: () => AudioContext | undefined
   readonly fetchArrayBuffer?: (url: string) => Promise<ArrayBuffer>
-}
-
-function defaultContext(): AudioContext | undefined {
-  if (typeof AudioContext === 'undefined') return undefined
-  return new AudioContext()
 }
 
 function holdThenRelease(param: AudioParam, now: number): void {
@@ -50,7 +55,11 @@ function holdThenRelease(param: AudioParam, now: number): void {
 export function createCinematicOnboardingAudioClock(
   deps: CinematicOnboardingAudioClockDeps = {},
 ): CinematicOnboardingAudioClock {
-  const makeContext = deps.createContext ?? defaultContext
+  const ownContext = deps.createContext
+  const lease =
+    ownContext === undefined
+      ? acquireSharedAudioContext('onboarding-cinematic')
+      : undefined
   const readBytes =
     deps.fetchArrayBuffer ??
     (async (url: string) => {
@@ -74,8 +83,12 @@ export function createCinematicOnboardingAudioClock(
 
   function ensureContext(): AudioContext | undefined {
     if (context !== undefined) return context
+    if (lease !== undefined) {
+      context = lease.ensure() ?? undefined
+      return context
+    }
     try {
-      context = makeContext()
+      context = ownContext?.()
     } catch {
       return undefined
     }
@@ -87,7 +100,11 @@ export function createCinematicOnboardingAudioClock(
     const audioContext = ensureContext()
     if (audioContext === undefined) return false
     try {
-      await audioContext.resume()
+      if (lease !== undefined) {
+        if (!(await lease.unlock())) return false
+      } else {
+        await audioContext.resume()
+      }
       return !disposed
     } catch {
       return false
@@ -211,6 +228,11 @@ export function createCinematicOnboardingAudioClock(
       loadedUrl = undefined
       const audioContext = context
       context = undefined
+      if (lease !== undefined) {
+        // The shared context outlives onboarding — only the claim ends.
+        lease.release()
+        return
+      }
       if (audioContext !== undefined) {
         void audioContext.close().catch(() => undefined)
       }

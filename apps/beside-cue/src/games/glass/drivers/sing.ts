@@ -1,22 +1,39 @@
 // The sing driver: mic + SwiftF0 behind the InteractionDriver seam.
 // Exactly the lifecycle the stage engine used inline — acquire mic,
-// resume an AudioContext, run the F0 stream — with the voiced gate
-// (confidence, f0 > 0) applied here so the runtime only ever sees
+// unlock the shared AudioContext, run the F0 stream — with the voiced
+// gate (confidence, f0 > 0) applied here so the runtime only ever sees
 // trustworthy pitch. No discrete intents: a voice is continuous.
+//
+// The context comes from the app's one shared clock (audio/
+// shared-audio-context.ts), so pitch samples are stamped with the same
+// currentTime the stage schedules its hums and notes against. It is
+// reached BEFORE the mic await, because on iOS only the synchronous part
+// of the tap handler can lift a suspended context, and the permission
+// prompt in front of getUserMedia can take seconds.
 
 import type { F0Stream } from '@irchiinnuss/pitch-engine'
 import { CONF_MIN, createF0Stream, hzToCents, micManager, } from '@irchiinnuss/pitch-engine'
+import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import type { DiscreteIntent, InteractionDriver, PitchSample } from './types'
 
+/** Shaped like a MicError so micErrorLine() prints this sentence verbatim. */
+const audioUnavailable = (): Error =>
+  Object.assign(
+    new Error('This device has no Web Audio, so pitch cannot be read.'),
+    { kind: 'no-audio-context' },
+  )
+
 export const createSingDriver = (micId: string): InteractionDriver => {
-  let audioContext: AudioContext | null = null
+  const lease = acquireSharedAudioContext(`sing-driver:${micId}`)
   let f0: F0Stream | null = null
 
   return {
     async start(): Promise<void> {
+      const audioContext = lease.ensure()
+      if (audioContext === null) throw audioUnavailable()
+      const unlocked = lease.unlock()
       const stream = await micManager.acquire(micId)
-      audioContext = new AudioContext()
-      await audioContext.resume()
+      await unlocked
       f0 = createF0Stream(audioContext, stream)
       f0.startTask()
     },
@@ -25,8 +42,8 @@ export const createSingDriver = (micId: string): InteractionDriver => {
       f0?.dispose()
       f0 = null
       micManager.release(micId)
-      void audioContext?.close()
-      audioContext = null
+      // Never close: the context is the app's, not this driver's.
+      lease.release()
     },
 
     latestPitch(): PitchSample | null {
@@ -36,7 +53,7 @@ export const createSingDriver = (micId: string): InteractionDriver => {
         midi: hzToCents(fr.f0) / 100,
         rms: fr.rms,
         conf: fr.conf,
-        tAudio: audioContext?.currentTime ?? 0,
+        tAudio: lease.peek()?.currentTime ?? 0,
       }
     },
 
@@ -49,7 +66,7 @@ export const createSingDriver = (micId: string): InteractionDriver => {
     },
 
     ctx(): AudioContext | null {
-      return audioContext
+      return lease.peek()
     },
   }
 }
