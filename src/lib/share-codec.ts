@@ -197,23 +197,23 @@ export function encodeExerciseForShare(
 export function encodeRoutineForShare(template: {
   id: string
   name: string
-  description: string
-  segments: Array<{
+  description?: string
+  segments?: Array<{
     type: string
     durationSec: number
-    config: Record<string, unknown>
+    config?: Record<string, unknown>
   }>
 }): string {
-  const seg = template.segments.map((s) => ({
-    k: s.type,
-    d: s.durationSec,
-    c: s.config,
+  const seg = (template?.segments ?? []).map((s) => ({
+    k: s?.type ?? 'exercise',
+    d: s?.durationSec ?? 60,
+    c: s?.config ?? {},
   }))
 
   const data: RoutineShareData = {
-    id: template.id,
-    n: template.name,
-    desc: template.description,
+    id: template?.id ?? '',
+    n: template?.name ?? '',
+    desc: template?.description ?? '',
     seg,
   }
 

@@ -215,7 +215,8 @@ export function buildMidiFile(
       trackData.push(e.type, e.note!, e.velocity!)
     }
   }
-  trackData.push(0xff, 0x2f, 0x00)
+  // End of track: delta-time 0 followed by 0xff, 0x2f, 0x00
+  trackData.push(0x00, 0xff, 0x2f, 0x00)
 
   // Header
   const header = [
