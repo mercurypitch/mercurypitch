@@ -73,7 +73,13 @@ const FACULTY_VIEW: Record<ColumnFaculty, PathView> = {
 }
 
 /** The Time drills — any take on one is the first rhythm take. */
-const RHYTHM_DRILLS = ['pulse', 'subdivide', 'drift', 'the-grid'] as const
+const RHYTHM_DRILLS = [
+  'pulse',
+  'chart',
+  'subdivide',
+  'drift',
+  'the-grid',
+] as const
 
 function any(attempted: ReadonlySet<string>, ids: readonly string[]): boolean {
   return ids.some((id) => attempted.has(id))
@@ -109,7 +115,7 @@ export function earPath(snapshot: PathSnapshot): PathMilestone[] {
     {
       id: 'first-rhythm',
       label: 'First rhythm take',
-      note: 'Pulse, Subdivide, Drift or the Grid.',
+      note: 'Pulse, The Chart, Subdivide, Drift or the Grid.',
       view: 'pulse',
       lit: any(attempted, RHYTHM_DRILLS),
     },

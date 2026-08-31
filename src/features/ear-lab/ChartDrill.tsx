@@ -1,27 +1,24 @@
 // ============================================================
-// PulseDrill — rhythm dictation: a bar of onsets, tapped back.
+// ChartDrill — rhythm reading: the pattern on the paper, tapped at
+// sight.
 //
-// A count-in, the call, then a bar that is the player's to start:
-// the soft beat keeps ticking and the first tap anchors the take —
-// that tap stands for the call's first onset, exactly on time, and
-// the rest of the call is judged by its distance from the anchor
-// (`anchored-take.ts`). The pad is live before the call ends, every
-// tap answers with a tick in the room's voice, and Space taps as
-// well as the pointer. Patterns above the middle of the bank cross
-// the barline, so the faster subdivisions come with air around them
-// rather than squeezed into one bar.
+// Pulse's mirror. Nothing is sounded but the beat: the pattern is
+// written on the drum's upper rule from the moment the round opens,
+// four clicks count the tempo in, and then the bar waits for the
+// player the same way Pulse's does — the soft rail ticks on, the
+// first tap anchors the take as the pattern's first onset, and the
+// rest is judged by its distance from the anchor (`anchored-take.ts`).
+// Ear training reversed: the eye reads, the hand keeps the time.
 //
-// Rated like the other button drills (useIdentificationController):
-// the item is the pattern, the "answer" is whether the take met it.
-// The reading on the bench is the finest subdivision the rating
-// clears, a note value rather than a percent.
+// Same bank shapes as Pulse under its own ids and rating, so the
+// bench can show where reading and dictation part ways.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show, untrack } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
-import { PULSE_BANK } from '@/lib/ear/banks'
+import { CHART_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
 import { barBeats, clearedSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
@@ -44,18 +41,19 @@ import { useIdentificationController } from './use-identification-controller'
 
 const MISS = 'miss'
 
-const PULSE_DESCRIPTION =
-  'Four clicks count you in and a bar of onsets sounds. Then the bar is yours to start: the beat keeps ticking, and your first tap — pad or Space — is the first onset, wherever you place it. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear — quarters, eighths, triplets, sixteenths.'
+const CHART_DESCRIPTION =
+  'The pattern is written on the drum — nothing sounds but the beat. Four clicks count the tempo in, then the bar is yours to start: your first tap — pad or Space — is the first written onset, wherever you place it. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
 
-export function PulseDrill(props: { onBack: () => void }): JSX.Element {
+export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
   const room = useEarRoom()
-  const drill = findIdentificationDrill('pulse')
-  if (!drill) throw new Error('pulse drill missing from catalogue')
+  const drill = findIdentificationDrill('chart')
+  if (!drill) throw new Error('chart drill missing from catalogue')
 
   const [bar, setBar] = createSignal<DrumBar>(null)
   const [beat, setBeat] = createSignal(0)
   const [beats, setBeats] = createSignal(4)
+  const [score, setScore] = createSignal<readonly number[] | null>(null)
   const [take, setTake] = createSignal<DrumReveal | null>(null)
   const [begun, setBegun] = createSignal(true)
   const [tapCount, setTapCount] = createSignal(0)
@@ -81,6 +79,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     ledger.disarm()
     setBar(null)
     setBeat(0)
+    setScore(null)
   }
 
   const later = (ms: number, fn: () => void) => {
@@ -94,7 +93,6 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   function makeTrial(item: EarBankItem): IdentificationTrial {
     const onsetsMs = item.payload.map((b) => b * period)
     const patternBeats = barBeats(item.payload)
-    const barMs = patternBeats * period
     const toleranceMs = toleranceFor(item)
     return {
       expectedId: item.itemId,
@@ -109,16 +107,15 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         setBegun(true)
         setTapCount(0)
         setBeats(patternBeats)
+        setScore(item.payload)
 
         const start = ctx.currentTime + PULSE_TIMING.leadS
         const startMs = performance.now() + PULSE_TIMING.leadS * 1000
         const level = room.volume() * audioEngine.getVolume()
         const soft = { voice: 'soft' as const, gainLevel: level * 0.6 }
-        const call = { voice: room.clickVoice(), gainLevel: level }
         const s = period / 1000
 
-        // The count-in keeps the beat; the call bar carries only its
-        // onsets, so the pattern is heard and not counted along.
+        // Only the count-in sounds — the pattern is on the paper.
         for (let k = 0; k < PULSE_TIMING.beats; k++) {
           scheduled.push(scheduleClick(ctx, start + k * s, soft))
           later(PULSE_TIMING.leadS * 1000 + k * period, () => {
@@ -126,23 +123,12 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             setBeat(k + 1)
           })
         }
-        for (const onset of onsetsMs) {
-          scheduled.push(
-            scheduleClick(ctx, start + countMs / 1000 + onset / 1000, call),
-          )
-        }
-        for (let k = 0; k < patternBeats; k++) {
-          later(PULSE_TIMING.leadS * 1000 + countMs + k * period, () => {
-            setBar('call')
-            setBeat(k + 1)
-          })
-        }
 
-        // The open bar: the rail ticks on, the first tap anchors it.
+        // The open bar follows the count-in straight away.
         takeHandle = startAnchoredTake({
           ctx,
-          openAtS: start + (countMs + barMs) / 1000,
-          openAtMs: startMs + countMs + barMs,
+          openAtS: start + countMs / 1000,
+          openAtMs: startMs + countMs,
           periodMs: period,
           beats: patternBeats,
           onsetsMs,
@@ -168,18 +154,16 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             ledger.disarm()
             setBar(null)
             setBeat(0)
+            setScore(null)
             controller.answer(outcome.verdict.correct ? item.itemId : MISS)
           },
         })
 
-        // The answer opens a breath before the call ends, so an eager
-        // first tap is the anchor and never lands on a dead pad.
+        // The answer opens a breath before the count-in ends, so an
+        // eager first tap is the anchor and never lands on a dead pad.
         await new Promise<void>((resolve) => {
           later(
-            PULSE_TIMING.leadS * 1000 +
-              countMs +
-              barMs -
-              PULSE_TIMING.armEarlyMs,
+            PULSE_TIMING.leadS * 1000 + countMs - PULSE_TIMING.armEarlyMs,
             resolve,
           )
         })
@@ -187,7 +171,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     }
   }
 
-  const controller = useIdentificationController(drill, PULSE_BANK, makeTrial, {
+  const controller = useIdentificationController(drill, CHART_BANK, makeTrial, {
     cancelAudio,
   })
 
@@ -213,7 +197,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const status = () => {
     switch (phase()) {
       case 'playing':
-        return bar() === 'count' ? 'Count-in…' : 'Listen to the call…'
+        return 'Count-in — read the chart…'
       case 'answer':
         return tapCount() === 0
           ? 'Yours — your first tap starts the bar.'
@@ -234,7 +218,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         return `Not quite — ${parts.join(', ')}.`
       }
       default:
-        return 'A bar of onsets, then a bar of yours — tap the call back.'
+        return 'A written bar over the click — tap it at sight.'
     }
   }
 
@@ -264,15 +248,15 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     consequence: `Rating ${Math.round(ratingBefore)} → ${Math.round(
       controller.rating().rating,
     )}`,
-    label: `Call ${controller.round() + 1}`,
+    label: `Chart ${controller.round() + 1}`,
   }))
 
   return (
     <EarStage
-      drillId="pulse"
-      name="Pulse"
-      measures="Time · rhythm"
-      description={PULSE_DESCRIPTION}
+      drillId="chart"
+      name="The Chart"
+      measures="Time · reading"
+      description={CHART_DESCRIPTION}
       mode={phase() === 'idle' ? 'on the bench' : 'rating run'}
       progress={progress()}
       status={status()}
@@ -297,6 +281,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           bar={bar()}
           beat={beat()}
           beats={beats()}
+          score={score()}
+          upperWord="the chart"
           reveal={phase() === 'reveal' ? take() : null}
         />
       )}
@@ -307,25 +293,15 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             <>
               <PlayPad
                 label="Begin"
-                sub={`${controller.totalRounds} calls`}
+                sub={`${controller.totalRounds} charts`}
                 keycap="Space"
                 icon={<IconPlay size={20} />}
                 onClick={() => controller.start()}
               />
-              <Show
-                when={raw()}
-                fallback={
-                  <ConsoleNote>
-                    Round trip {Math.round(micLatencyMs())} ms comes off every
-                    tap.
-                  </ConsoleNote>
-                }
-              >
-                <ConsoleNote>
-                  Your first tap anchors the bar, so a steady delay cancels
-                  itself out.
-                </ConsoleNote>
-              </Show>
+              <ConsoleNote>
+                Your first tap anchors the bar, so a steady delay cancels itself
+                out.
+              </ConsoleNote>
             </>
           }
         >
@@ -340,16 +316,14 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
                       ? take()?.correct === true
                         ? 'Clean'
                         : 'Not quite'
-                      : 'Listen'
+                      : 'Read'
                 }
                 sub={
                   phase() === 'answer'
                     ? 'first tap starts your bar'
                     : phase() === 'reveal'
-                      ? 'next call coming'
-                      : bar() === 'count'
-                        ? 'count-in'
-                        : 'the call'
+                      ? 'next chart coming'
+                      : 'count-in'
                 }
                 keycap="Space"
                 armed={phase() === 'answer'}
@@ -373,7 +347,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             <EndPlate
               kicker="Rating"
               value={String(Math.round(result().rating.rating))}
-              unit="Pulse rating"
+              unit="Chart rating"
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }
@@ -383,11 +357,11 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
                   Provisional — settling for {10 - result().rating.attempts}{' '}
-                  more calls
+                  more charts
                 </PlateBadge>
               </Show>
               <PlateLine>
-                {result().correct} of {result().total} calls tapped back clean
+                {result().correct} of {result().total} charts tapped clean
                 {cleared() ? ` · clears ${cleared()}` : ''}
                 {raw() ? ' · raw taps, round trip unmeasured' : ''}
               </PlateLine>
@@ -395,7 +369,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
                 outcomes={result().outcomes.map((outcome) => ({
                   correct: outcome.correct,
                   title:
-                    PULSE_BANK.find((i) => i.itemId === outcome.expectedId)
+                    CHART_BANK.find((i) => i.itemId === outcome.expectedId)
                       ?.name ?? outcome.expectedId,
                 }))}
               />

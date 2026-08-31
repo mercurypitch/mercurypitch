@@ -121,6 +121,17 @@ export function IconTap(p: IconProps): JSX.Element {
   )
 }
 
+/** The Chart: a ruled page with the rhythm written across it. */
+export function IconChart(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 12h18" />
+      <path d="M7 8.5v7M11 9.5v5M15 8.5v7M18 9.5v5" />
+    </svg>
+  )
+}
+
 export function IconChain(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

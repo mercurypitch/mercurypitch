@@ -5,8 +5,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { PULSE_BANK } from './banks'
-import { clearedSubdivision, finestSubdivision, judgeTake, subdivisionIndex, TOLERANCE_MS, toleranceFor, } from './rhythm-take'
+import { CHART_BANK, PULSE_BANK } from './banks'
+import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, judgeTake, subdivisionIndex, TOLERANCE_MS, toleranceFor, } from './rhythm-take'
 
 describe('finestSubdivision', () => {
   it('names the grid every onset sits on', () => {
@@ -75,6 +75,29 @@ describe('judgeTake', () => {
   })
 })
 
+describe('barBeats', () => {
+  it('reads one bar until an onset crosses the barline', () => {
+    expect(barBeats([0, 1, 2])).toBe(4)
+    expect(barBeats([0.5, 3.75])).toBe(4)
+    expect(barBeats([0, 1, 4])).toBe(8)
+    expect(barBeats([0, 4.25, 5])).toBe(8)
+  })
+})
+
+describe('anchorTaps', () => {
+  it('re-bases a take so the first tap stands exactly on the first onset', () => {
+    expect(anchorTaps([2340, 2940, 3560], 0)).toEqual([0, 600, 1220])
+    // A pattern starting off the beat keeps its shape from the anchor.
+    expect(anchorTaps([1000, 1600], 300)).toEqual([300, 900])
+    expect(anchorTaps([], 0)).toEqual([])
+  })
+
+  it('cancels a constant input delay entirely', () => {
+    const late = anchorTaps([80, 680, 1275], 0)
+    expect(judgeTake(late, [0, 600, 1200], 65, 2400).correct).toBe(true)
+  })
+})
+
 describe('clearedSubdivision', () => {
   it('climbs the rungs with the rating', () => {
     expect(clearedSubdivision(1000)).toBeNull()
@@ -89,15 +112,16 @@ describe('clearedSubdivision', () => {
 })
 
 describe('PULSE_BANK', () => {
-  it('holds sorted patterns inside one bar, seeded up the grid', () => {
+  it('holds sorted patterns inside their bar span, seeded up the grid', () => {
     const ids = new Set(PULSE_BANK.map((item) => item.itemId))
     expect(ids.size).toBe(PULSE_BANK.length)
     for (const item of PULSE_BANK) {
       expect(item.payload.length).toBeGreaterThanOrEqual(3)
-      expect(item.payload.length).toBeLessThanOrEqual(6)
+      expect(item.payload.length).toBeLessThanOrEqual(8)
+      const span = barBeats(item.payload)
       for (let i = 0; i < item.payload.length; i++) {
         expect(item.payload[i]).toBeGreaterThanOrEqual(0)
-        expect(item.payload[i]).toBeLessThan(4)
+        expect(item.payload[i]).toBeLessThan(span)
         if (i > 0) expect(item.payload[i]).toBeGreaterThan(item.payload[i - 1])
       }
     }
@@ -117,5 +141,17 @@ describe('PULSE_BANK', () => {
     expect(maxSeed('quarters')).toBeLessThan(minSeed('eighths'))
     expect(maxSeed('eighths')).toBeLessThan(minSeed('triplets'))
     expect(maxSeed('triplets')).toBeLessThan(minSeed('sixteenths'))
+  })
+
+  it('mirrors into CHART_BANK under its own ids', () => {
+    expect(CHART_BANK).toHaveLength(PULSE_BANK.length)
+    const ids = new Set(CHART_BANK.map((item) => item.itemId))
+    expect(ids.size).toBe(CHART_BANK.length)
+    for (const [i, item] of CHART_BANK.entries()) {
+      expect(item.itemId.startsWith('c-')).toBe(true)
+      expect(ids.has(PULSE_BANK[i].itemId)).toBe(false)
+      expect(item.payload).toEqual(PULSE_BANK[i].payload)
+      expect(item.seed).toBe(PULSE_BANK[i].seed)
+    }
   })
 })

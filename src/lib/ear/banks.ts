@@ -204,10 +204,14 @@ export const CONTOUR_BANK: readonly EarBankItem[] = [
 
 // ── Pulse: rhythm dictation, tapped back ────────────────────────
 
-/** Onsets in beats within one bar of four. Seeds climb with the
- *  finest subdivision in the pattern (quarters, eighths, triplets,
- *  sixteenths) and with the count of onsets; `rhythm-take.ts` reads
- *  the tolerance tier straight off the payload. */
+/** Onsets in beats; an onset at 4 or beyond crosses into a second
+ *  bar (`barBeats` in rhythm-take reads the span off the payload).
+ *  Seeds climb with the finest subdivision in the pattern (quarters,
+ *  eighths, triplets, sixteenths) and with the count of onsets;
+ *  `rhythm-take.ts` reads the tolerance tier straight off the
+ *  payload. The two-bar items give the faster subdivisions air —
+ *  a figure, then room — instead of squeezing more taps into one
+ *  bar than a pointer can land. */
 export const PULSE_BANK: readonly EarBankItem[] = [
   {
     itemId: 'p-q3',
@@ -293,7 +297,38 @@ export const PULSE_BANK: readonly EarBankItem[] = [
     seed: 1700,
     payload: [0, 0.5, 0.75, 1, 2.5],
   },
+  {
+    itemId: 'p-e-across',
+    label: '2 bars · and',
+    name: 'Over the barline',
+    seed: 1350,
+    payload: [0, 1.5, 2, 3, 4, 5.5, 6],
+  },
+  {
+    itemId: 'p-t-air',
+    label: '2 bars · triplet',
+    name: 'A triplet with air',
+    seed: 1520,
+    payload: [0, 1, 4 / 3, 5 / 3, 2, 4, 5],
+  },
+  {
+    itemId: 'p-s-air',
+    label: '2 bars · 16ths',
+    name: 'Sixteenths with air',
+    seed: 1650,
+    payload: [0, 0.25, 0.5, 1, 4, 4.25, 4.5, 5],
+  },
 ]
+
+/** The Chart reads the same patterns Pulse dictates — written on the
+ *  drum instead of sounded — so the two drills stay comparable. The
+ *  ids differ because item difficulties are stored per item: a
+ *  pattern hard to hold in the ear is not the same item as a pattern
+ *  hard to read off the paper. */
+export const CHART_BANK: readonly EarBankItem[] = PULSE_BANK.map((item) => ({
+  ...item,
+  itemId: `c-${item.itemId.slice(2)}`,
+}))
 
 // ── Echo: phrases as scale degrees, 8 the tonic above ─────────────
 //

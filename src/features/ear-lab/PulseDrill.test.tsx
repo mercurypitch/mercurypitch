@@ -1,9 +1,11 @@
 // ============================================================
-// PulseDrill on a fake engine: Begin schedules three bars of clicks
-// on the audio clock, the answer opens as the call ends, taps are
-// stamped by their own event time against the response bar, and the
-// reveal writes the call and the take on the drum — clean when every
-// onset is met, garnet where one was missed.
+// PulseDrill on a fake engine: Begin schedules the count-in, the
+// call and the wait rail on the audio clock, the answer opens a
+// breath before the call ends, the first tap anchors the take
+// wherever the player places it — Space as well as the pointer —
+// and the reveal writes the call and the take on the drum: clean
+// when every onset is met, garnet where one was missed, and a bar
+// nobody started judged as never begun.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
@@ -114,23 +116,30 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-/** Begin, and run the clock to the moment the response bar opens. */
+/** Begin, and run the clock to the downbeat after the call — the
+ *  moment the open bar starts waiting for its anchor. */
 async function beginAndListen(): Promise<{ origin: number; pad: HTMLElement }> {
   const t0 = performance.now()
   fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
   await vi.advanceTimersByTimeAsync(0)
-  // Count-in and response bars keep the beat (4 + 4), the call has 3 onsets.
-  expect(ctx.createOscillator).toHaveBeenCalledTimes(11)
+  // The count-in keeps the beat (4), the call has 3 onsets, and the
+  // wait rail holds 8 more soft beats for the anchor.
+  expect(ctx.createOscillator).toHaveBeenCalledTimes(15)
   await vi.advanceTimersByTimeAsync(LEAD)
   expect(status()).toBe('Count-in…')
   await vi.advanceTimersByTimeAsync(BAR)
   expect(status()).toBe('Listen to the call…')
-  await vi.advanceTimersByTimeAsync(BAR)
-  expect(status()).toBe('Tap it back — now.')
+  // The pad arms a breath early, so an eager first tap never dies.
+  await vi.advanceTimersByTimeAsync(BAR - PULSE_TIMING.armEarlyMs)
+  expect(status()).toBe('Yours — your first tap starts the bar.')
   const pad = screen.getByTestId('ear-tap-pad')
   expect(pad.hasAttribute('disabled')).toBe(false)
+  await vi.advanceTimersByTimeAsync(PULSE_TIMING.armEarlyMs)
   return { origin: t0 + LEAD + 2 * BAR, pad }
 }
+
+/** How long past the anchor a one-bar take is judged. */
+const JUDGE = BAR + 120 + PULSE_TIMING.tailMs + 40
 
 describe('PulseDrill', () => {
   it('says the taps are raw while the round trip is unmeasured', () => {
@@ -140,13 +149,13 @@ describe('PulseDrill', () => {
       </Stage>
     ))
     expect(status()).toContain('tap the call back')
-    expect(screen.getByText(/Round trip unmeasured/)).toBeTruthy()
+    expect(screen.getByText(/first tap anchors the bar/)).toBeTruthy()
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'raw',
     )
   })
 
-  it('meets every onset of a clean take and writes it on the drum', async () => {
+  it('anchors the take on the first tap and meets every onset from it', async () => {
     render(() => (
       <Stage>
         <PulseDrill onBack={vi.fn()} />
@@ -155,12 +164,22 @@ describe('PulseDrill', () => {
     const before = earPlayerRating('pulse').rating
     const { origin, pad } = await beginAndListen()
 
-    tapAt(pad, origin + 12)
-    tapAt(pad, origin + PERIOD - 8)
-    tapAt(pad, origin + 2 * PERIOD + 30)
-    expect(status()).toBe('Tap it back — 3 so far.')
+    // The anchor lands nowhere near the old grid — half a beat late —
+    // and the take is still clean, because the bar is the player's.
+    await vi.advanceTimersByTimeAsync(500)
+    tapAt(pad, origin + 500)
+    expect(status()).toBe('Tapping — 1 so far.')
+    // The tap answered with a tick and the bar restarted from it:
+    // one tick plus three rail beats past the fifteen from Begin and
+    // the arming cue that opened the answer.
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(20)
+    await vi.advanceTimersByTimeAsync(PERIOD)
+    tapAt(pad, origin + 500 + PERIOD - 40)
+    await vi.advanceTimersByTimeAsync(PERIOD)
+    tapAt(pad, origin + 500 + 2 * PERIOD + 60)
+    expect(status()).toBe('Tapping — 3 so far.')
 
-    await vi.advanceTimersByTimeAsync(BAR + 100 + PULSE_TIMING.tailMs + 20)
+    await vi.advanceTimersByTimeAsync(JUDGE)
     expect(status()).toBe('Clean — every onset met.')
     const drum = screen.getByRole('img', { name: /Rhythm drum/ })
     expect(drum.querySelectorAll('[data-part="onset"]')).toHaveLength(3)
@@ -187,18 +206,56 @@ describe('PulseDrill', () => {
     const before = earPlayerRating('pulse').rating
     const { origin, pad } = await beginAndListen()
 
-    // The first onset met, the second late by a quarter of a beat, the
-    // third missed altogether.
-    tapAt(pad, origin + 5)
-    tapAt(pad, origin + PERIOD + 250)
+    // The anchor stands for the first onset; the second tap lands a
+    // quarter of a beat late of the second, the third never comes.
+    await vi.advanceTimersByTimeAsync(300)
+    tapAt(pad, origin + 300)
+    await vi.advanceTimersByTimeAsync(PERIOD + 250)
+    tapAt(pad, origin + 300 + PERIOD + 250)
 
-    await vi.advanceTimersByTimeAsync(BAR + 100 + PULSE_TIMING.tailMs + 20)
+    await vi.advanceTimersByTimeAsync(JUDGE)
     expect(status()).toBe('Not quite — 2 onsets missed, 1 extra tap.')
     const drum = screen.getByRole('img', { name: /Rhythm drum/ })
     expect(
       drum.querySelectorAll('[data-part="onset"][data-met="false"]'),
     ).toHaveLength(2)
     expect(drum.querySelectorAll('[data-part="extra"]')).toHaveLength(1)
+    expect(earPlayerRating('pulse').rating).toBeLessThan(before)
+  })
+
+  it('takes the space bar as a tap, stamped by its own event time', async () => {
+    render(() => (
+      <Stage>
+        <PulseDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    const { origin } = await beginAndListen()
+
+    await vi.advanceTimersByTimeAsync(400)
+    const key = new KeyboardEvent('keydown', {
+      code: 'Space',
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    Object.defineProperty(key, 'timeStamp', { value: origin + 400 })
+    document.body.dispatchEvent(key)
+    expect(status()).toBe('Tapping — 1 so far.')
+  })
+
+  it('judges a bar nobody started as never begun', async () => {
+    render(() => (
+      <Stage>
+        <PulseDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    const before = earPlayerRating('pulse').rating
+    await beginAndListen()
+
+    await vi.advanceTimersByTimeAsync(
+      PULSE_TIMING.waitBeats * PERIOD + PULSE_TIMING.tailMs,
+    )
+    expect(status()).toBe('No take — the bar came and went untapped.')
     expect(earPlayerRating('pulse').rating).toBeLessThan(before)
   })
 

@@ -30,7 +30,9 @@ export type StageTone = 'neutral' | 'right' | 'wrong'
 export interface StageKey {
   /** `event.key` to match ('1'…'9'), or 'Space' for the space bar. */
   key: string
-  action: () => void
+  /** Handed the keydown's own timeStamp, for the rhythm drills —
+   *  most actions ignore it. */
+  action: (atMs: number) => void
 }
 
 /** The verdict the Last call plate keeps until the next one. */
@@ -225,7 +227,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
       )
       if (!match) return
       event.preventDefault()
-      match.action()
+      match.action(event.timeStamp)
     }
     document.addEventListener('keydown', onKey)
     onCleanup(() => document.removeEventListener('keydown', onKey))
@@ -433,6 +435,7 @@ export function ConsoleNote(props: { children: JSX.Element }): JSX.Element {
 interface TapPadProps {
   label: string
   sub?: string
+  keycap?: string
   /** Lit while a take is on: the pad is listening for taps. */
   armed?: boolean
   disabled?: boolean
@@ -482,6 +485,9 @@ export function TapPad(props: TapPadProps): JSX.Element {
       <span>{props.label}</span>
       <Show when={props.sub}>
         <small>{props.sub}</small>
+      </Show>
+      <Show when={props.keycap}>
+        <kbd class={styles.padKey}>{props.keycap}</kbd>
       </Show>
     </button>
   )
