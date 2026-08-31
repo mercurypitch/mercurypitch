@@ -1,0 +1,47 @@
+// ============================================================
+// Turning a failed mic acquire into a line worth reading
+// ============================================================
+//
+// The engine already classifies the failure (MicError.kind); the games
+// used to throw that away and print one generic "Microphone unavailable
+// — check permissions and retry." for every cause. That sentence sent a
+// real Android bug round the houses: Capacitor was denying the WebView's
+// audio-capture request because the app's manifest was missing
+// MODIFY_AUDIO_SETTINGS, and the screen looked exactly like a permission
+// the player had refused — while Android settings showed the microphone
+// as allowed, so "check permissions" was advice that could not work.
+//
+// So each kind gets its own line, and each line says what to DO.
+
+export interface MicErrorLike {
+  kind: string
+  message?: string
+}
+
+const isMicErrorLike = (err: unknown): err is MicErrorLike =>
+  typeof err === 'object' &&
+  err !== null &&
+  typeof (err as { kind?: unknown }).kind === 'string'
+
+/** The player-facing line for a failed mic acquire. */
+export const micErrorLine = (err: unknown): string => {
+  if (!isMicErrorLike(err)) {
+    const message =
+      err instanceof Error && err.message.length > 0 ? ` (${err.message})` : ''
+    return `The microphone did not start${message}. Try again, or restart the app.`
+  }
+  switch (err.kind) {
+    case 'permission-denied':
+      return 'Microphone access was refused. Allow the microphone for this app, then tap to start again.'
+    case 'device-busy':
+      return 'Another app is using the microphone. Close it, then tap to start again.'
+    case 'no-device':
+      return 'No microphone was found on this device.'
+    case 'held-elsewhere':
+      return 'Another MercuryPitch tab is holding the microphone. Close it, then tap to start again.'
+    default:
+      return typeof err.message === 'string' && err.message.length > 0
+        ? err.message
+        : 'The microphone did not start. Try again, or restart the app.'
+  }
+}

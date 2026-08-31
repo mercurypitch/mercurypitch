@@ -26,6 +26,7 @@ import { compileLevel } from './levels/compile'
 import type { GameFeel } from './levels/feel'
 import { applyFeel } from './levels/feel'
 import type { LevelDef } from './levels/types'
+import { micErrorLine } from './mic-error'
 import type { RunScore } from './score'
 import { computeRunScore, emptyTally, qualityFromCents, qualityFromOffset, writeBest, } from './score'
 import { readStoredTapLatency } from './tap-latency'
@@ -956,8 +957,11 @@ export const JourneyPrototype: Component<{
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setPhase('ground')
-    } catch {
-      setMicError('Microphone unavailable — check permissions and retry.')
+    } catch (err) {
+      // Say WHICH failure it was. A generic "unavailable" sent a real
+      // device bug (a manifest permission Capacitor needs) round the
+      // houses, because the screen looked identical to a denied prompt.
+      setMicError(micErrorLine(err))
     }
   }
 

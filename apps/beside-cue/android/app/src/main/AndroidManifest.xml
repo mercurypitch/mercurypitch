@@ -29,7 +29,15 @@
         </activity>
     </application>
 
-    <!-- B-side games: on-device pitch detection while a game is open -->
+    <!-- B-side games: on-device pitch detection while a game is open.
+         BOTH permissions are required, not just RECORD_AUDIO: Capacitor's
+         BridgeWebChromeClient asks for MODIFY_AUDIO_SETTINGS *and*
+         RECORD_AUDIO when the WebView requests audio capture, and it grants
+         the WebView request only if every permission in that batch comes
+         back granted. An undeclared permission can never be granted, so
+         leaving MODIFY_AUDIO_SETTINGS out makes getUserMedia fail on device
+         even while Android settings shows Microphone as allowed. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
