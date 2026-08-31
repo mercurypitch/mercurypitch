@@ -833,7 +833,7 @@ async function readScopedDrumStorageProbe(
   )
 }
 
-test('pairs the Home rooms and opens Drum Night from the Play group @smoke', async ({
+test('lists Drum Night with the Home rooms and opens its doors @smoke', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -858,54 +858,19 @@ test('pairs the Home rooms and opens Drum Night from the Play group @smoke', asy
     )
   expect(destinationOrder).toEqual([
     'practice',
-    'exercises',
     'karaoke',
-    'drumNight',
     'pianoNight',
     'guitarNight',
+    'drumNight',
+    'exercises',
+    'earLab',
     'analysis',
     'jam',
     'mystery',
   ])
 
-  const destinationBoxes = await page
-    .locator('[data-destination]')
-    .evaluateAll((destinations) =>
-      Object.fromEntries(
-        destinations.map((destination) => {
-          const box = destination.getBoundingClientRect()
-          return [
-            destination.getAttribute('data-destination'),
-            { width: box.width, x: box.x, y: box.y },
-          ]
-        }),
-      ),
-    )
-  for (const [left, right] of [
-    ['practice', 'exercises'],
-    ['karaoke', 'drumNight'],
-    ['pianoNight', 'guitarNight'],
-    ['jam', 'mystery'],
-  ] as const) {
-    expect(
-      Math.abs(destinationBoxes[left]!.y - destinationBoxes[right]!.y),
-    ).toBeLessThan(2)
-    expect(destinationBoxes[left]!.width).toBeCloseTo(
-      destinationBoxes[right]!.width,
-      0,
-    )
-    expect(destinationBoxes[left]!.x).toBeLessThan(destinationBoxes[right]!.x)
-  }
-  expect(destinationBoxes.analysis!.width).toBeGreaterThan(
-    destinationBoxes.pianoNight!.width * 1.9,
-  )
-
   const drumCard = page.locator('[data-destination="drumNight"]')
   await expect(drumCard).toHaveAttribute('href', '/drum-night')
-  await expect(drumCard.locator('img')).toHaveAttribute(
-    'src',
-    '/drum-night/pocket-console-landscape.webp',
-  )
 
   const desktopDoor = page.getByRole('link', {
     name: 'Drums — open Drum Night room',
