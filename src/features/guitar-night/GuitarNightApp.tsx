@@ -964,6 +964,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     setView('score-room')
   }
 
+  // A drums-only import opens a backing room, not a scored tab rehearsal —
+  // the door must say which one it is.
+  const rehearsalActionLabel = () =>
+    authoredReference()?.scoreMode === 'backing-only'
+      ? 'Play the drum backing'
+      : 'Practice with tab'
+
   const returnToSongs = () => {
     playbackController.pause()
     setView('song')
@@ -2416,6 +2423,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       </Show>
                       <StoppedPreparationActions
                         onDiscard={preparationController.clear}
+                        rehearsalLabel={rehearsalActionLabel()}
                         onRehearseTab={
                           authoredReference() === null
                             ? undefined
@@ -2435,6 +2443,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </button>
                   <StoppedPreparationActions
                     onDiscard={preparationController.clear}
+                    rehearsalLabel={rehearsalActionLabel()}
                     onRehearseTab={
                       authoredReference() === null ? undefined : enterScoreRoom
                     }
@@ -2464,7 +2473,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         <span aria-hidden="true">
                           <GuitarTab />
                         </span>
-                        Practice with tab
+                        {rehearsalActionLabel()}
                       </button>
                     </Show>
                   </div>
@@ -2480,7 +2489,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     <span aria-hidden="true">
                       <GuitarTab />
                     </span>
-                    Practice with tab
+                    {rehearsalActionLabel()}
                   </button>
                 </Match>
               </Switch>
