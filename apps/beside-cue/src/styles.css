@@ -1888,13 +1888,40 @@ svg {
 }
 
 .settings-screen__version {
+  display: block;
+  width: 100%;
   padding: 3rem 0 var(--safe-bottom);
+  border: 0;
+  background: none;
   color: var(--ink-soft);
   font-family: var(--font-label);
   font-size: 0.78rem;
   letter-spacing: 0.05em;
   text-align: center;
   text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* What the device says about itself: shown only when the version line is
+   tapped, so a support question has an answer without a cable. */
+.device-support {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 var(--safe-bottom);
+  color: var(--ink-soft);
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.device-support dt {
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.device-support dd {
+  margin: 0;
 }
 
 /* The film keeps generated pixels and native product controls in separate

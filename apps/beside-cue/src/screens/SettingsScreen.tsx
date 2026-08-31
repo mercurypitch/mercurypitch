@@ -1,7 +1,9 @@
 import type { JSX } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import type { DailyCuePreset } from '@/app-config'
 import { AppHeader } from '@/components/AppHeader'
+import type { DeviceSupport } from '@/platform/device-support'
+import { probeDeviceSupport } from '@/platform/device-support'
 
 interface SettingsScreenProps {
   /** Purchase surface, supplied by the shell so this screen stays store-free. */
@@ -26,6 +28,10 @@ interface SettingsScreenProps {
 
 export function SettingsScreen(props: SettingsScreenProps) {
   const [customTime, setCustomTime] = createSignal('10:00')
+  // What the device reports about itself — filled in on demand, because
+  // requesting a GPU adapter at screen load costs something and nobody
+  // needs this until they are diagnosing.
+  const [support, setSupport] = createSignal<DeviceSupport | undefined>()
 
   return (
     <main class="settings-screen app-screen">
@@ -237,7 +243,31 @@ export function SettingsScreen(props: SettingsScreenProps) {
           </p>
         ) : null}
       </section>
-      <p class="settings-screen__version">Beside Cue · version 0.1</p>
+      <button
+        class="settings-screen__version"
+        type="button"
+        onClick={() => {
+          if (support() !== undefined) {
+            setSupport(undefined)
+            return
+          }
+          void probeDeviceSupport().then(setSupport)
+        }}
+      >
+        Beside Cue · version 0.1
+      </button>
+      <Show when={support()}>
+        {(facts) => (
+          <dl class="device-support">
+            <dt>Engine</dt>
+            <dd>{facts().engine}</dd>
+            <dt>Graphics</dt>
+            <dd>{facts().graphics}</dd>
+            <dt>Microphone</dt>
+            <dd>{facts().microphone}</dd>
+          </dl>
+        )}
+      </Show>
     </main>
   )
 }
