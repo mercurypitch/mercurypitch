@@ -1711,6 +1711,33 @@ export async function twofaChallenge(
 }
 
 /**
+ * Re-check an account's own password.
+ *
+ * Exported for the passkey routes, which need sudo mode: adding a passkey from
+ * a session that last proved something hours ago must cost one fresh proof, and
+ * for most accounts the password IS the only proof they have — they have no
+ * second factor to present.
+ *
+ * Returns false, never throws, for an account with no password at all (a Google
+ * identity). The caller has to tell that case apart before asking, because
+ * asking for a password that cannot exist is a dead end.
+ */
+export async function verifyAccountPassword(
+  env: Env,
+  userId: string,
+  password: string,
+): Promise<boolean> {
+  if (password === '') return false
+  const row = await env.DB.prepare(
+    'SELECT passwordHash FROM users WHERE id = ?',
+  )
+    .bind(userId)
+    .first<{ passwordHash: string | null }>()
+  if (!row?.passwordHash) return false
+  return verifyPassword(password, row.passwordHash)
+}
+
+/**
  * Issue a session for an already-proved identity.
  *
  * Exported for twofa-routes.ts, which finishes a sign-in this file started:

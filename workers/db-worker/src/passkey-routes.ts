@@ -17,7 +17,7 @@
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse, } from '@simplewebauthn/server'
 import type { AuthenticationResponseJSON, RegistrationResponseJSON, } from '@simplewebauthn/server'
 import type { Env } from './auth'
-import { checkRateLimit, getAuth, issueSessionFor, sessionOrigin } from './auth'
+import { checkRateLimit, getAuth, issueSessionFor, sessionOrigin, verifyAccountPassword, } from './auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import { allowedOrigins, deletePasskey, findPasskey, listPasskeys, MAX_PASSKEYS_PER_USER, passkeyName, passkeySummary, passkeysConfigured, rpIdFor, savePasskey, SUDO_WINDOW_MS, touchPasskey, transportsOf, } from './passkeys'
 import { verifySecondFactor } from './twofa-routes'
@@ -87,6 +87,31 @@ function fromB64url(text: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
+ * What this account is able to prove itself with, right now.
+ *
+ * Asked BEFORE demanding anything, because the answer decides what the client
+ * can put on screen. A Google identity has no password; an account with no
+ * enrolled authenticator has no code. Demanding a proof that cannot exist is
+ * how a feature becomes a dead end with a field nobody can fill.
+ */
+async function acceptedProofs(env: Env, userId: string): Promise<string[]> {
+  const [user, totp] = await Promise.all([
+    env.DB.prepare('SELECT passwordHash FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ passwordHash: string | null }>(),
+    env.DB.prepare(
+      'SELECT userId FROM totpCredentials WHERE userId = ? AND confirmedAt IS NOT NULL',
+    )
+      .bind(userId)
+      .first<{ userId: string }>(),
+  ])
+  const accepts: string[] = []
+  if (totp !== null) accepts.push('code')
+  if (user?.passwordHash) accepts.push('password')
+  return accepts
+}
+
+/**
  * Is this session fresh enough to add a passkey on its own say-so?
  *
  * A session that just signed in has proved something within the last few
@@ -133,18 +158,35 @@ async function handleRegisterOptions(
     )
   }
 
-  // Sudo mode. A stale session may still add a passkey — it just has to
-  // present the same proof it would to disable 2FA first.
+  // Sudo mode. A stale session may still add a passkey — it just has to prove
+  // something fresh first. A second-factor code OR the account's own password:
+  // most accounts have no second factor, and demanding one of those would make
+  // this button permanently unusable for them.
   const body = await readBody(request)
   const proof = stringField(body, 'proof')
   if (!(await withinSudoWindow(env, auth.sessionId))) {
+    const accepts = await acceptedProofs(env, auth.userId)
+    // The cheap check first: a TOTP comparison is a hash, a password is 100k
+    // PBKDF2 rounds, and a six-digit code is never a password worth trying.
     const ok =
-      proof !== '' && (await verifySecondFactor(env, auth.userId, proof))
+      proof !== '' &&
+      ((accepts.includes('code') &&
+        (await verifySecondFactor(env, auth.userId, proof))) ||
+        (accepts.includes('password') &&
+          (await verifyAccountPassword(env, auth.userId, proof))))
     if (!ok) {
       return respond(
         {
-          error: 'Confirm it is you before adding a passkey',
+          // An account with neither — a Google identity that has not enrolled
+          // a second factor — genuinely cannot prove anything here. Saying so,
+          // with an empty `accepts`, lets the client offer the one thing that
+          // does work (sign in again) instead of an unfillable box.
+          error:
+            accepts.length === 0
+              ? 'Sign in again before adding a passkey'
+              : 'Confirm it is you before adding a passkey',
           reauth: true,
+          accepts,
         },
         { status: 403 },
       )

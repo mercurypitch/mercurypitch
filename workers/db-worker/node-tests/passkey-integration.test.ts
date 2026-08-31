@@ -186,6 +186,66 @@ describe('who may add one', () => {
     expect(response.status).toBe(403)
   })
 
+  it('takes the password from a stale session with no second factor', async () => {
+    // The common case by far: most accounts have no authenticator enrolled.
+    // Accepting only a 2FA code here would make this button permanently
+    // unusable for them — a dead end with a field nobody can fill.
+    const account = await register('bypassword@example.com')
+    ageSession(account.userId)
+
+    const refused = await post(
+      '/api/auth/passkey/register/options',
+      {},
+      account.token,
+    )
+    expect(refused.status).toBe(403)
+    expect(((await refused.json()) as { accepts: string[] }).accepts).toEqual([
+      'password',
+    ])
+
+    const accepted = await post(
+      '/api/auth/passkey/register/options',
+      { proof: PASSWORD },
+      account.token,
+    )
+    expect(accepted.status).toBe(200)
+  })
+
+  it('refuses a wrong password from a stale session', async () => {
+    const account = await register('badpassword@example.com')
+    ageSession(account.userId)
+    const response = await post(
+      '/api/auth/passkey/register/options',
+      { proof: 'Not-the-password-1' },
+      account.token,
+    )
+    expect(response.status).toBe(403)
+  })
+
+  it('says an account with nothing to present must sign in again', async () => {
+    // A Google identity that never enrolled a second factor. It genuinely
+    // cannot prove anything here, and an empty `accepts` is what lets the
+    // client offer the one thing that does work.
+    const account = await register('nothing@example.com')
+    sqlite
+      .prepare(`UPDATE users SET passwordHash = NULL WHERE id = ?`)
+      .run(account.userId)
+    ageSession(account.userId)
+
+    const response = await post(
+      '/api/auth/passkey/register/options',
+      {},
+      account.token,
+    )
+    expect(response.status).toBe(403)
+    const body = (await response.json()) as {
+      accepts: string[]
+      error: string
+    }
+    expect(body.accepts).toEqual([])
+    expect(body.error).toContain('Sign in again')
+  })
+
   it('stops at the cap before minting anything', async () => {
     const account = await register('full@example.com')
     for (let i = 0; i < MAX_PASSKEYS_PER_USER; i += 1) {

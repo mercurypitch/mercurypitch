@@ -388,6 +388,17 @@ so a session younger than 10 minutes (the post-login nudge) may add one
 directly; anything older must re-present the password or a 2FA code. This is
 GitHub's sudo-mode rule.
 
+**Either proof, and the server says which.** Accepting only a 2FA code would
+make the button permanently unusable for the majority who have not enrolled
+one — a 403 with a code field nobody can fill. So the refusal carries
+`accepts`, computed from what the account actually holds: `['code']`,
+`['password']`, `['code', 'password']`, or `[]` for a Google identity with no
+second factor. The client renders the field that list names, and for the empty
+case offers the only thing that works — sign in again, then add one inside the
+window. The code is tried before the password: a TOTP comparison is one hash,
+a password is 100k PBKDF2 rounds, and six digits is never a password worth
+trying.
+
 ### Other details worth keeping
 
 - **10 passkeys per account.** Unbounded rows eventually overflow

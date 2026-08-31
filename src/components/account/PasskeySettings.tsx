@@ -15,7 +15,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onMount, Show } from 'solid-js'
 import { Key, Trash2 } from '@/components/icons'
-import type { Passkey } from '@/db/services/auth-passkey-service'
+import type { Passkey, PasskeyProof } from '@/db/services/auth-passkey-service'
 import { addPasskey, fetchPasskeys, PasskeyReauthRequired, passkeysAvailable, removePasskey, } from '@/db/services/auth-passkey-service'
 import { describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
 import { showNotification } from '@/stores/notifications-store'
@@ -39,10 +39,20 @@ export const PasskeySettings: Component = () => {
   const [passkeys, setPasskeys] = createSignal<Passkey[]>([])
   const [busy, setBusy] = createSignal('')
   const [error, setError] = createSignal('')
-  // Set when the server asks the account to prove itself again. Holding the
-  // reason here is what turns a 403 into a code field rather than a dead end.
-  const [needsProof, setNeedsProof] = createSignal(false)
+  // What the server will accept as a fresh proof, once it has asked for one.
+  // Empty array = it asked and this account has nothing to give (a Google
+  // identity with no second factor), which is a different screen entirely.
+  const [needsProof, setNeedsProof] = createSignal<PasskeyProof[] | null>(null)
   const [proof, setProof] = createSignal('')
+
+  /** A code field, a password field, or neither. */
+  const proofKind = (): PasskeyProof | null => {
+    const accepts = needsProof()
+    if (accepts === null || accepts.length === 0) return null
+    // Code first when both are on offer: six digits is less to type than a
+    // password, and the account holding one is the security-minded case.
+    return accepts.includes('code') ? 'code' : 'password'
+  }
 
   onMount(() => {
     void (async () => {
@@ -65,12 +75,12 @@ export const PasskeySettings: Component = () => {
     setError('')
     try {
       setPasskeys(await addPasskey(proof().trim()))
-      setNeedsProof(false)
+      setNeedsProof(null)
       setProof('')
       showNotification('Passkey added.', 'success')
     } catch (err) {
       if (err instanceof PasskeyReauthRequired) {
-        setNeedsProof(true)
+        setNeedsProof(err.accepts)
         setError(err.message)
       } else {
         setError(describeWebAuthnError(err))
@@ -140,13 +150,22 @@ export const PasskeySettings: Component = () => {
           </ul>
         </Show>
 
-        <Show when={needsProof()}>
+        <Show when={proofKind() !== null}>
           <input
             class={styles.proofInput}
-            type="text"
-            inputmode="text"
-            autocomplete="one-time-code"
-            placeholder="123456"
+            type={proofKind() === 'password' ? 'password' : 'text'}
+            inputmode={proofKind() === 'password' ? 'text' : 'numeric'}
+            autocomplete={
+              proofKind() === 'password' ? 'current-password' : 'one-time-code'
+            }
+            placeholder={
+              proofKind() === 'password' ? 'Your password' : '123456'
+            }
+            aria-label={
+              proofKind() === 'password'
+                ? 'Your password'
+                : 'Code from your authenticator app'
+            }
             value={proof()}
             disabled={busy() !== ''}
             onInput={(e) => setProof(e.currentTarget.value)}
@@ -154,10 +173,23 @@ export const PasskeySettings: Component = () => {
           />
         </Show>
 
+        {/* Nothing to present: no password and no second factor. Signing in
+            again is the one thing that does work, so say that instead of
+            offering a box nobody can fill. */}
+        <Show when={needsProof()?.length === 0}>
+          <p class={styles.hint} data-testid="passkey-reauth-only">
+            Sign out and back in, then add a passkey within ten minutes.
+          </p>
+        </Show>
+
         <button
           type="button"
           class={styles.addButton}
-          disabled={busy() !== '' || (needsProof() && proof().trim() === '')}
+          disabled={
+            busy() !== '' ||
+            needsProof()?.length === 0 ||
+            (proofKind() !== null && proof().trim() === '')
+          }
           onClick={() => void add()}
           data-testid="passkey-add"
         >

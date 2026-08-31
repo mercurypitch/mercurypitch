@@ -25,11 +25,24 @@ export interface Passkey {
   lastUsedAt: string | null
 }
 
-/** Thrown when the server wants the account to prove itself again first. */
+/** What a stale session may present to prove itself again. */
+export type PasskeyProof = 'code' | 'password'
+
+/**
+ * Thrown when the server wants the account to prove itself again first.
+ *
+ * `accepts` is what this particular account CAN present — a Google identity
+ * has no password, an account with no authenticator has no code, and one with
+ * neither gets an empty list. The caller renders from it rather than assuming,
+ * because a field for a proof that cannot exist is a dead end.
+ */
 export class PasskeyReauthRequired extends Error {
-  constructor(message: string) {
+  readonly accepts: PasskeyProof[]
+
+  constructor(message: string, accepts: PasskeyProof[] = []) {
     super(message)
     this.name = 'PasskeyReauthRequired'
+    this.accepts = accepts
   }
 }
 
@@ -106,8 +119,13 @@ export async function fetchPasskeys(): Promise<Passkey[]> {
 export async function addPasskey(proof = ''): Promise<Passkey[]> {
   const start = await post('/api/auth/passkey/register/options', { proof })
   if (start.status === 403) {
+    const body = (await start.json().catch(() => ({}))) as {
+      error?: string
+      accepts?: PasskeyProof[]
+    }
     throw new PasskeyReauthRequired(
-      await messageOf(start, 'Confirm it is you before adding a passkey'),
+      body.error ?? 'Confirm it is you before adding a passkey',
+      body.accepts ?? [],
     )
   }
   if (!start.ok) {

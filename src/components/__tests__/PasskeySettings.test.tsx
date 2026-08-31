@@ -6,9 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // its temporal dead zone when the factory reads it.
 const mocks = vi.hoisted(() => {
   class PasskeyReauthRequired extends Error {
-    constructor(message: string) {
+    readonly accepts: string[]
+    constructor(message: string, accepts: string[] = []) {
       super(message)
       this.name = 'PasskeyReauthRequired'
+      this.accepts = accepts
     }
   }
   return {
@@ -100,24 +102,25 @@ describe('PasskeySettings', () => {
     // Sudo mode: the 403 must become a field, not a dead end.
     mocks.fetchPasskeys.mockResolvedValue([])
     mocks.addPasskey.mockRejectedValueOnce(
-      new PasskeyReauthRequired('Confirm it is you before adding a passkey'),
+      new PasskeyReauthRequired('Confirm it is you before adding a passkey', [
+        'code',
+      ]),
     )
     render(() => <PasskeySettings />)
 
     fireEvent.click(await screen.findByTestId('passkey-add'))
 
-    await waitFor(() =>
-      expect(screen.getByTestId('passkey-proof')).toBeTruthy(),
-    )
+    const field = (await screen.findByTestId(
+      'passkey-proof',
+    )) as HTMLInputElement
+    expect(field.type).toBe('text')
     expect(screen.getByTestId('passkey-error').textContent).toBe(
       'Confirm it is you before adding a passkey',
     )
 
     // And the retry carries the code.
     mocks.addPasskey.mockResolvedValueOnce([passkey()])
-    fireEvent.input(screen.getByTestId('passkey-proof'), {
-      target: { value: '123456' },
-    })
+    fireEvent.input(field, { target: { value: '123456' } })
     fireEvent.click(screen.getByTestId('passkey-add'))
 
     await waitFor(() =>
@@ -126,6 +129,47 @@ describe('PasskeySettings', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('passkey-proof')).toBeNull(),
     )
+  })
+
+  it('asks for the password when that is all the account has', async () => {
+    // The common case: no authenticator enrolled. A code field here would be
+    // a box nobody can fill.
+    mocks.fetchPasskeys.mockResolvedValue([])
+    mocks.addPasskey.mockRejectedValueOnce(
+      new PasskeyReauthRequired('Confirm it is you before adding a passkey', [
+        'password',
+      ]),
+    )
+    render(() => <PasskeySettings />)
+
+    fireEvent.click(await screen.findByTestId('passkey-add'))
+
+    const field = (await screen.findByTestId(
+      'passkey-proof',
+    )) as HTMLInputElement
+    expect(field.type).toBe('password')
+    expect(field.autocomplete).toBe('current-password')
+  })
+
+  it('sends someone with nothing to present back to sign-in', async () => {
+    // A Google identity with no second factor. There is no proof it could
+    // give, so the honest answer is the one thing that does work.
+    mocks.fetchPasskeys.mockResolvedValue([])
+    mocks.addPasskey.mockRejectedValue(
+      new PasskeyReauthRequired('Sign in again before adding a passkey', []),
+    )
+    render(() => <PasskeySettings />)
+
+    fireEvent.click(await screen.findByTestId('passkey-add'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('passkey-reauth-only')).toBeTruthy(),
+    )
+    // No field, and the button stops offering a retry that cannot succeed.
+    expect(screen.queryByTestId('passkey-proof')).toBeNull()
+    expect(
+      (screen.getByTestId('passkey-add') as HTMLButtonElement).disabled,
+    ).toBe(true)
   })
 
   it('reads a cancelled dialog as cancelled, not as a failure', async () => {
