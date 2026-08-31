@@ -191,6 +191,17 @@ ripples with your error, the glass sings back; let the note wave and it
 shatters — hit-stop, a beat of slow motion, a few hundred shards that
 tumble, settle and _stay_ on the floor. Then the score card.
 
+**Decided (maff, 2026-08-31):** the room is a **black void with one
+spotlight** — a museum case, an ad shot. Cheapest to render, most
+striking, and the most shareable single image; reflections come from a
+procedural room environment at zero asset cost. The **camera is a fixed
+cinematic stage**, per room, for the whole first build — a general 3D
+camera is a later question, asked only if the stage framing ever feels
+tight. And the **glass is a Blender asset from the start**: the Cabinet
+exists to prove the pipeline, so the pipeline is what gets proven —
+authored glass, Cell Fracture, glb export, meshopt, the lot. Nothing is
+playable until the art exists, and that is accepted.
+
 It is the Resonance Ring we already shipped and validated in 2D, so the
 game logic is a port rather than a design. Its purpose is that it
 exercises every new part of the stack exactly once: Blender fracture →
@@ -761,10 +772,20 @@ either way, so a real HDR would be downsampled to that regardless.
 
 ### 6.4 Merc
 
-Recommendation: **a billboard of the existing 2D art**, camera-facing,
-with a soft contact shadow. It keeps the brand character exactly as
-drawn, costs no modelling, and reads as a deliberate style rather than a
-compromise. A 3D Merc can come later without changing anything else.
+**Decided (maff, 2026-08-31): a real 3D model.** The billboard was the
+cheap path and it was declined — Merc gets modelled, rigged and
+animated. What that commits us to, from §6.1's export rules: actions
+stashed to NLA tracks, sampled animation, deform bones only, four bone
+influences, and a character art pass that has to exist before slice 1
+can walk. The upside is real: he is lit by the scene, he reads from any
+angle the stage framing picks, and the brand character becomes an
+asset every future 3D thing reuses.
+
+Build order still protects the schedule: the Cabinet (slice 0) has no
+Merc, so the modelling runs in parallel with the engine work, not in
+front of it. The controller in §4.1 is body-agnostic — a capsule walks
+the same whatever is drawn around it — so a placeholder capsule can
+prove slice 1's mechanics while the rig is finished.
 
 ---
 
@@ -1022,11 +1043,15 @@ games we ship today and should not wait behind a 3D decision.
 
 ## 11. Open questions for maff
 
-1. Camera: third-person behind Merc, or a fixed cinematic camera per
-   room that frames the glass like a stage? (The stage framing is
-   cheaper, more brand-consistent, and much easier to make beautiful.)
-2. Is Merc a 3D model, or a billboard of the existing 2D art standing in
-   the 3D room? The billboard keeps the brand art exactly, costs
-   nothing, and reads as deliberate.
-3. Does the 3D world live inside Beside Cue, or become its own app for
+Answered 2026-08-31, recorded where they land in the doc:
+
+1. Camera: **fixed cinematic stage** per room (§3). Revisit a general
+   camera only if the stage framing ever feels tight.
+2. Merc: **a 3D model**, modelled in parallel with the engine (§6.4).
+3. First mechanic: **the Standing Wave Chamber**, as planned (§2).
+4. The glass: **a Blender asset from the start** (§3).
+
+Still open:
+
+1. Does the 3D world live inside Beside Cue, or become its own app for
    the store? It is currently planned as a mode inside Beside Cue.
