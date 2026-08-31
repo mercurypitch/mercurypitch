@@ -5,6 +5,12 @@
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// The room mounts its whole lazy graph per case — the slowest are ~1.6s here.
+// That is the surface under test, not avoidable setup, so it gets room to run
+// on a CI box rather than a timeout that only fails when the runner is busy.
+vi.setConfig({ testTimeout: 20000 })
+
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'

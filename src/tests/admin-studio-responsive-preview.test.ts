@@ -4,7 +4,12 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// Most cases spawn a real Node process to run the validator end to end, which
+// is the point of the file and costs ~1s each here. Process startup is one of
+// the things a shared CI runner is slowest at, so the default 5s is too tight.
+vi.setConfig({ testTimeout: 30000 })
 
 /*
  * JSDOM does not calculate CSS-module layout or run Cloudflare builds. These

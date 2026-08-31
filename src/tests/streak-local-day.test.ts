@@ -12,6 +12,12 @@
 // string formatting.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// Each case resets the module registry and re-imports the routine under a
+// different TZ, which is the only way to exercise timezone-dependent module
+// init — about 2.5s of real work here, and CI runs slower still.
+vi.setConfig({ testTimeout: 20000 })
+
 import { advanceStreak, streakFieldsOf, todayDateString, } from '@/db/services/streak-service'
 
 const ORIGINAL_TZ = process.env.TZ

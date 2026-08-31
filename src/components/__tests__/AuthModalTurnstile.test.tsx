@@ -11,6 +11,11 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Mounting the modal with a Turnstile widget and waiting for the challenge to
+// settle costs ~2.3s here; the default 5s left too little room for a loaded
+// CI runner, which is two to three times slower than this.
+vi.setConfig({ testTimeout: 20000 })
+
 const mocks = vi.hoisted(() => ({
   loginWithPassword: vi.fn(),
   registerWithPassword: vi.fn(),
