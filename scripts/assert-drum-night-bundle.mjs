@@ -13,8 +13,13 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..')
 // 2026-08-31: 450k predated the merged guitar/ear shared-chunk growth and the
 // room's own sound-and-feel engine. The hard graph rules below still forbid
 // parsers and main-app stores; the byte ceiling holds the line at the new
-// measured baseline (~492k) plus slack. Trimming is queued with the
+// measured baseline (492078 bytes) plus slack. Trimming is queued with the
 // load-performance follow-up.
+//
+// Rechecked the same day against the gate-parallelisation and theme-containment
+// work: 492078 bytes, unchanged to the byte. Neither touches this graph — one
+// is CI topology, the other CSS — so the ceiling cannot come back down on their
+// account. It falls when a chunk leaves the room's static set, not before.
 const MAX_STATIC_JAVASCRIPT_BYTES = 520_000
 
 const FORBIDDEN_CHUNKS = [

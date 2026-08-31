@@ -197,8 +197,8 @@ These are the rules that break things when ignored.
 | [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 450 | Ear Lab store — readings, ratings and calibration history. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
+| [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 250 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
-| [theme-store.ts](../../src/stores/theme-store.ts) | 250 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 200 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 200 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
@@ -338,7 +338,7 @@ Grep for the symbol and read the surrounding range instead.
 
 | File | LOC |
 |---|---|
-| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.0k |
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.1k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 4.9k |
 | [src/App.tsx](../../src/App.tsx) | 4.4k |
@@ -438,7 +438,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm dev:runpod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= VITE_UVR_WORKER=1 VITE_UVR_PROXY_PORT=8790 vite` |
 | `pnpm build` | `vite build` |
 | `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
-| `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist && node scripts/assert-drum-night-bundle.mjs dist` |
+| `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_E2E_LAB_ACCESS=1 VITE_JAM_MOCK_SIGNALING=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist && node scripts/assert-drum-night-bundle.mjs dist` |
 | `pnpm build:e2e:devices` | `cross-env VITE_API_BASE_URL=http://localhost:8788 VITE_JAM_SIGNALING_URL=http://localhost:8787/api/jam VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
 | `pnpm build:dev` | `vite build --mode development` |
 | `pnpm preview` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview` |
