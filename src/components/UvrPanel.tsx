@@ -1645,16 +1645,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       // just like handlePracticeStart does for 'full' mode
       if (targetView === 'mixer' && hydrated.outputs != null) {
         console.log('[UvrPanel] populating mixer stems for deep-link')
-        setPrevView('results')
-        setMixerPracticeMode('full')
-        setMixerSessionId(hydrated.sessionId)
-        setMixerStems({
-          vocal: hydrated.outputs.vocal,
-          instrumental: hydrated.outputs.instrumental,
+        // One batch, because the session id is the mixer's remount key and
+        // the mixer reads `stems` once, at mount. Setting the id on its own
+        // line remounts immediately against the stems still sitting in the
+        // signal — the previous song's audio under the new song's chrome.
+        batch(() => {
+          setPrevView('results')
+          setMixerPracticeMode('full')
+          setMixerStems({
+            vocal: hydrated.outputs?.vocal,
+            instrumental: hydrated.outputs?.instrumental,
+          })
+          setMixerExtraStems([])
+          setMixerRequestedStems({ vocal: true, instrumental: true })
+          setMixerInitialMutedStems([])
+          setMixerSessionId(hydrated.sessionId)
         })
-        setMixerExtraStems([])
-        setMixerRequestedStems({ vocal: true, instrumental: true })
-        setMixerInitialMutedStems([])
       }
 
       console.log('[UvrPanel] setCurrentView:', targetView)
@@ -1671,33 +1677,39 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const s = await ensureHydrated(current)
     if (token !== mixerSelectionToken) return
 
-    setCurrentUvrSession(s)
-    setPrevView(currentView())
-    setMixerPracticeMode(mode)
-    setMixerSessionId(s.sessionId)
-    setMixerExtraStems([])
-    setMixerInitialMutedStems([])
+    // One batch, and the session id last: it is the mixer's remount key, and
+    // the mixer reads `stems` once, at mount. Setting it before the stems
+    // remounted against the stems still sitting in the signal, which is how a
+    // new song arrived with the previous song's audio still playing.
+    batch(() => {
+      setCurrentUvrSession(s)
+      setPrevView(currentView())
+      setMixerPracticeMode(mode)
+      setMixerExtraStems([])
+      setMixerInitialMutedStems([])
 
-    // Set stems and requestedStems based on mode
-    if (mode === 'vocal') {
-      setMixerStems({ vocal: s.outputs?.vocal })
-      setMixerRequestedStems({ vocal: true })
-    } else if (mode === 'instrumental') {
-      setMixerStems({ instrumental: s.outputs?.instrumental })
-      setMixerRequestedStems({ instrumental: true })
-    } else if (mode === 'midi') {
-      // MIDI generation needs vocal audio — always include vocal URL
-      setMixerStems({ vocal: s.outputs?.vocal })
-      setMixerRequestedStems({ midi: true })
-    } else {
-      // full: vocal + instrumental
-      setMixerStems({
-        vocal: s.outputs?.vocal,
-        instrumental: s.outputs?.instrumental,
-      })
-      setMixerRequestedStems({ vocal: true, instrumental: true })
-    }
-    setCurrentView('mixer')
+      // Set stems and requestedStems based on mode
+      if (mode === 'vocal') {
+        setMixerStems({ vocal: s.outputs?.vocal })
+        setMixerRequestedStems({ vocal: true })
+      } else if (mode === 'instrumental') {
+        setMixerStems({ instrumental: s.outputs?.instrumental })
+        setMixerRequestedStems({ instrumental: true })
+      } else if (mode === 'midi') {
+        // MIDI generation needs vocal audio — always include vocal URL
+        setMixerStems({ vocal: s.outputs?.vocal })
+        setMixerRequestedStems({ midi: true })
+      } else {
+        // full: vocal + instrumental
+        setMixerStems({
+          vocal: s.outputs?.vocal,
+          instrumental: s.outputs?.instrumental,
+        })
+        setMixerRequestedStems({ vocal: true, instrumental: true })
+      }
+      setMixerSessionId(s.sessionId)
+      setCurrentView('mixer')
+    })
 
     if (props.onPracticeStart) {
       props.onPracticeStart(mode)
@@ -1892,42 +1904,49 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const s = await ensureHydrated(raw)
     if (token !== mixerSelectionToken) return
     if (!s.outputs) return
-    setCurrentUvrSession(s)
 
-    setPrevView(currentView())
     const filter = stems || {}
     const wantsMidi = filter.midi === true
     const wantsVocal = filter.vocal !== false
     const wantsInst = filter.instrumental !== false
+    const outputs = s.outputs
 
-    // Determine practice mode
-    if (Object.keys(filter).length === 0) {
-      setMixerPracticeMode('full')
-    } else if (wantsMidi && !wantsVocal && !wantsInst) {
-      setMixerPracticeMode('midi')
-    } else if (wantsMidi) {
-      setMixerPracticeMode('midi')
-    } else if (wantsVocal && !wantsInst) {
-      setMixerPracticeMode('vocal')
-    } else if (!wantsVocal && wantsInst) {
-      setMixerPracticeMode('instrumental')
-    } else {
-      setMixerPracticeMode('full')
-    }
+    // One batch, and the session id last -- see handlePracticeStart. This
+    // path already happened to write the stems first; batching says so
+    // rather than leaving the mixer's audio resting on statement order.
+    batch(() => {
+      setCurrentUvrSession(s)
+      setPrevView(currentView())
 
-    // MIDI generation requires vocal audio — always include vocal URL when MIDI is wanted
-    setMixerStems({
-      vocal: wantsVocal || wantsMidi ? s.outputs.vocal : undefined,
-      instrumental: wantsInst ? s.outputs.instrumental : undefined,
+      // Determine practice mode
+      if (Object.keys(filter).length === 0) {
+        setMixerPracticeMode('full')
+      } else if (wantsMidi && !wantsVocal && !wantsInst) {
+        setMixerPracticeMode('midi')
+      } else if (wantsMidi) {
+        setMixerPracticeMode('midi')
+      } else if (wantsVocal && !wantsInst) {
+        setMixerPracticeMode('vocal')
+      } else if (!wantsVocal && wantsInst) {
+        setMixerPracticeMode('instrumental')
+      } else {
+        setMixerPracticeMode('full')
+      }
+
+      // MIDI generation requires vocal audio — always include vocal URL when MIDI is wanted
+      setMixerStems({
+        vocal: wantsVocal || wantsMidi ? outputs.vocal : undefined,
+        instrumental: wantsInst ? outputs.instrumental : undefined,
+      })
+      setMixerExtraStems([])
+      setMixerInitialMutedStems([])
+      setMixerRequestedStems(
+        Object.keys(filter).length > 0
+          ? { vocal: wantsVocal, instrumental: wantsInst, midi: wantsMidi }
+          : undefined,
+      )
+      setMixerSessionId(s.sessionId)
     })
-    setMixerExtraStems([])
-    setMixerInitialMutedStems([])
-    setMixerRequestedStems(
-      Object.keys(filter).length > 0
-        ? { vocal: wantsVocal, instrumental: wantsInst, midi: wantsMidi }
-        : undefined,
-    )
-    setMixerSessionId(s.sessionId)
     // Reset auto-play unless explicitly set by Shazam match flow
     // (caller should set mixerAutoPlay/mixerInitialSeekSec before calling this)
     setCurrentView('mixer')

@@ -287,6 +287,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
   const [shareToast, setShareToast] = createSignal('')
 
+  /** Where the thumb sits along its own travel, for the custom track's fill. */
+  const stageGlassFillPercent = (): number => {
+    const { min, max } = KARAOKE_STAGE_ALPHA
+    const span = max - min
+    if (span <= 0) return 0
+    return Math.round(((stageAlpha() - min) / span) * 100)
+  }
+
   const updateStageAlpha = (value: number) => {
     const alpha = persistKaraokeStageAlpha(value)
     setStageAlpha(alpha)
@@ -2459,6 +2467,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       max={KARAOKE_STAGE_ALPHA.max}
                       step={KARAOKE_STAGE_ALPHA.step}
                       value={stageAlpha()}
+                      // A custom track cannot read the input's own value, so
+                      // the filled share travels as a percentage — the same
+                      // arrangement the stem faders use with --stem-volume.
+                      style={{
+                        '--sm-stage-glass-fill': `${stageGlassFillPercent()}%`,
+                      }}
                       aria-label="Stage transparency"
                       onInput={(event) =>
                         updateStageAlpha(Number(event.currentTarget.value))
@@ -3312,9 +3326,68 @@ export const StemMixerStyles: string = `
   flex: none;
 }
 
+/* The only mixer slider that still wore the native appearance. A native range
+   paints its unfilled half in a hard-coded UA grey -- #3b3b3b under a dark
+   color-scheme -- which owes nothing to the stage palette and reads as a grey
+   plate on the glass, more or less visible depending on the backdrop behind
+   it. The stem faders and the pitch-analysis sliders already draw their own
+   track; this one now does too, from the same tokens. */
 .sm-stage-glass-slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   width: 88px;
-  accent-color: var(--accent, #58a6ff);
+  height: 14px;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+/* WebKit track */
+.sm-stage-glass-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
+  );
+}
+
+.sm-stage-glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+/* Firefox track */
+.sm-stage-glass-slider::-moz-range-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
+  );
+}
+
+.sm-stage-glass-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
 
