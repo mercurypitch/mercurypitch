@@ -60,7 +60,11 @@ export const Notifications: Component = () => {
       <For each={notifications()}>
         {(notif) => (
           <div
-            class={`${styles.notification} ${styles[notif.type]}`}
+            class={`${styles.notification} ${styles[notif.type]} ${
+              notif.secondaryAction === undefined
+                ? ''
+                : styles.notificationChoice
+            }`}
             role={notif.type === 'error' ? 'alert' : 'status'}
             aria-atomic="true"
           >
@@ -73,19 +77,35 @@ export const Notifications: Component = () => {
               </Show>
               <span class={styles.notificationText}>{notif.message}</span>
             </span>
-            {notif.action && (
-              <button
-                class={styles.actionBtn}
-                onClick={() => {
-                  notif.action!.onClick()
-                  removeNotification(notif.id)
-                }}
-              >
-                {notif.action.label}
-              </button>
-            )}
+            <Show when={notif.action !== undefined}>
+              <span class={styles.notificationActions}>
+                <button
+                  class={styles.actionBtn}
+                  type="button"
+                  onClick={() => {
+                    notif.action?.onClick()
+                    removeNotification(notif.id)
+                  }}
+                >
+                  {notif.action?.label}
+                </button>
+                <Show when={notif.secondaryAction !== undefined}>
+                  <button
+                    class={styles.secondaryActionBtn}
+                    type="button"
+                    onClick={() => {
+                      notif.secondaryAction?.onClick()
+                      removeNotification(notif.id)
+                    }}
+                  >
+                    {notif.secondaryAction?.label}
+                  </button>
+                </Show>
+              </span>
+            </Show>
             <button
               class={styles.closeBtn}
+              type="button"
               onClick={() => removeNotification(notif.id)}
               aria-label="Dismiss notification"
             >

@@ -9,6 +9,11 @@
 
 import { createSignal } from 'solid-js'
 
+export interface NotificationAction {
+  label: string
+  onClick: () => void
+}
+
 export interface Notification {
   id: number
   message: string
@@ -26,7 +31,9 @@ export interface Notification {
    */
   title?: string | null
   /** Optional action button (e.g. "Undo") rendered in the toast. */
-  action?: { label: string; onClick: () => void }
+  action?: NotificationAction
+  /** Optional quiet alternative for a two-choice notification. */
+  secondaryAction?: NotificationAction
   /**
    * Optional channel. Showing a notification with a channel first clears any
    * other notification already on that channel, so a whole *category* of toast
@@ -184,7 +191,29 @@ export function showActionNotification(
     channel: opts?.channel,
     ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
   })
-  setTimeout(() => removeNotification(id), opts?.durationMs ?? 10000)
+  scheduleRemoval(id, opts?.durationMs ?? 10000)
+  return id
+}
+
+/** Show a notification with one primary and one quieter explicit choice. */
+export function showDecisionNotification(
+  message: string,
+  type: Notification['type'],
+  action: NotificationAction,
+  secondaryAction: NotificationAction,
+  opts?: NotificationOptions,
+): number {
+  const id = ++_notifId
+  pushNotification({
+    id,
+    message,
+    type,
+    action,
+    secondaryAction,
+    channel: opts?.channel,
+    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
+  })
+  scheduleRemoval(id, opts?.durationMs ?? 10000)
   return id
 }
 

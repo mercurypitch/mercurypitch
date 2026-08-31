@@ -4,8 +4,8 @@
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
-import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
 import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
@@ -100,18 +100,16 @@ export async function loadDefaultGuitarNightReferencePort(): Promise<GuitarNight
   return module.createSavedScoreGuitarNightReferencePort()
 }
 
-function writeScoreToHistory(
-  songId: string | null,
-  mode: Exclude<HistoryMode, 'none'>,
-): void {
-  const href = withGuitarNightScore(window.location.href, songId)
-  if (mode === 'replace') window.history.replaceState(null, '', href)
-  else window.history.pushState(null, '', href)
-}
-
 export function useGuitarNightReferenceController(
   options: GuitarNightReferenceControllerOptions = {},
 ) {
+  const routeHistory = acquireStandaloneRouteHistory('guitar-night')
+  const writeScoreToHistory = (
+    songId: string | null,
+    mode: Exclude<HistoryMode, 'none'>,
+  ): void => {
+    routeHistory.write(withGuitarNightScore(window.location.href, songId), mode)
+  }
   const [port, setPort] = createSignal<GuitarNightReferencePort | null>(null)
   const [libraryState, setLibraryState] =
     createSignal<GuitarNightReferenceLibraryState>('idle')
@@ -1037,28 +1035,24 @@ export function useGuitarNightReferenceController(
   onMount(() => {
     const initialSongId = readGuitarNightScore()
     if (initialSongId !== null) void attach(initialSongId, undefined, 'none')
+    routeHistory.acceptCurrent()
 
-    const handlePopState = () => {
-      if (isLocalSaveNavigationLocked()) {
-        const current = reference()
-        writeScoreToHistory(
-          current?.kind === 'authored' ? current.songId : null,
-          'replace',
-        )
-        return
-      }
+    const handlePopState = (event: PopStateEvent) => {
+      if (routeHistory.vetoLockedPopState(event)) return
       const nextSongId = readGuitarNightScore()
       if (nextSongId === null) {
         detach('none')
-        return
+      } else {
+        void attach(nextSongId, undefined, 'none')
       }
-      void attach(nextSongId, undefined, 'none')
+      routeHistory.acceptCurrent()
     }
     window.addEventListener('popstate', handlePopState)
     onCleanup(() => window.removeEventListener('popstate', handlePopState))
   })
 
   onCleanup(() => {
+    routeHistory.release()
     disposed = true
     attachGeneration += 1
     importGeneration += 1

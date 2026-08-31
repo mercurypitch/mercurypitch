@@ -428,9 +428,14 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   context and scalar score summary, but no device identity, input-event
   timeline, event ID, or target ID. MIDI, held or partial runs, input loss,
   seek, source/track/tempo/loop changes, Jam Doctor, and free play shall not
-  yield a keepable audio take. Replay capture or persistence failure shall not
-  alter or suppress the score. IF page visibility or material recorder-timer
-  drift prevents Guitar Night from bounding the untrimmed Blob to the authored
+  yield a keepable audio take. WHEN an eligible replay first becomes ready
+  outside the Score sheet and the player has not acknowledged the discovery
+  cue, Guitar Night shall offer a non-modal **Keep take** action and an explicit
+  **Don’t ask again** choice. Choosing either action shall suppress later cues;
+  neither displaying nor merely dismissing the prompt shall persist or discard
+  the replay. Replay capture or persistence failure shall not alter or suppress
+  the score. IF page visibility or material recorder-timer drift prevents
+  Guitar Night from bounding the untrimmed Blob to the authored
   run, it shall discard only that temporary replay rather than retain or
   mislabel out-of-boundary audio. WHILE the explicit local Keep is pending,
   Guitar Night shall lock navigation; failed persistence shall retain the

@@ -283,7 +283,8 @@ describe('useGuitarNightReferenceController', () => {
     )
   })
 
-  it('restores the accepted score route when history moves during Keep', async () => {
+  it('returns to the accepted score entry when Back moves during Keep', async () => {
+    window.history.replaceState(null, '', '/guitar-night?session=session-room')
     const openReference = vi.fn((_songId, trackId, tuning) =>
       openGuitarNightReference(VELVET_RIFF, trackId, tuning),
     )
@@ -292,23 +293,34 @@ describe('useGuitarNightReferenceController', () => {
     await controller.attach(VELVET_RIFF.id)
     const openedBeforePop = openReference.mock.calls.length
 
+    const visited: string[] = []
+    const recordPop = (): void => {
+      visited.push(window.location.search)
+    }
+    window.addEventListener('popstate', recordPop)
     const releaseLock = acquireLocalSaveNavigationLock('guitar route test')
     try {
-      window.history.replaceState(
-        null,
-        '',
-        '/guitar-night?session=session-other&song=score-other',
+      window.history.back()
+      await waitFor(() =>
+        expect(visited).toEqual([
+          '?session=session-room',
+          '?session=session-room&song=gsong-velvet',
+        ]),
       )
-      window.dispatchEvent(new PopStateEvent('popstate'))
 
       expect(window.location.search).toBe(
-        '?session=session-other&song=gsong-velvet',
+        '?session=session-room&song=gsong-velvet',
       )
       expect(controller.reference()?.songId).toBe('gsong-velvet')
       expect(openReference).toHaveBeenCalledTimes(openedBeforePop)
     } finally {
       releaseLock()
+      window.removeEventListener('popstate', recordPop)
     }
+
+    window.history.back()
+    await waitFor(() => expect(controller.reference()).toBeNull())
+    expect(window.location.search).toBe('?session=session-room')
   })
 
   it('surfaces an unreadable file without attaching anything', async () => {

@@ -1278,7 +1278,7 @@ describe('DrumNightApp', () => {
     expect(dispatchBeforeUnload().defaultPrevented).toBe(true)
   })
 
-  it('keeps the standalone route mounted and restores its URL during a local save', async () => {
+  it('reverses Back and Forward without applying their Drum URL during a local save', async () => {
     renderRoom()
     const dispatchBeforeUnload = (): BeforeUnloadEvent => {
       const event = new Event('beforeunload', {
@@ -1288,17 +1288,34 @@ describe('DrumNightApp', () => {
       window.dispatchEvent(event)
       return event
     }
-    const release = acquireLocalSaveNavigationLock('drum-night route test')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
+    expect(window.location.search).toBe('?view=seat')
+    fireEvent.click(screen.getByRole('button', { name: 'Pocket view' }))
+    expect(window.location.search).toBe('')
+
+    const observed: Array<{ search: string; view: string | null }> = []
+    const recordPop = (): void => {
+      observed.push({
+        search: window.location.search,
+        view: screen.getByTestId('drum-night-shell').getAttribute('data-view'),
+      })
+    }
+    window.addEventListener('popstate', recordPop)
+    const releaseBackLock = acquireLocalSaveNavigationLock(
+      'drum-night route test',
+    )
 
     try {
       await settleMicrotasks()
       expect(dispatchBeforeUnload().defaultPrevented).toBe(true)
-      window.history.pushState(
-        {},
-        '',
-        '/hear-yourself?view=seat&drawer=kit&song=other-session',
+      window.history.back()
+      await waitFor(() =>
+        expect(observed).toEqual([
+          { search: '?view=seat', view: 'pocket' },
+          { search: '', view: 'pocket' },
+        ]),
       )
-      window.dispatchEvent(new PopStateEvent('popstate'))
 
       expect(window.location.pathname).toBe('/drum-night')
       expect(window.location.search).toBe('')
@@ -1311,7 +1328,34 @@ describe('DrumNightApp', () => {
         'false',
       )
     } finally {
-      release()
+      releaseBackLock()
+    }
+
+    window.history.back()
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-view',
+        'seat',
+      ),
+    )
+    expect(window.location.search).toBe('?view=seat')
+
+    observed.length = 0
+    const releaseForwardLock = acquireLocalSaveNavigationLock(
+      'drum-night route test',
+    )
+    try {
+      window.history.forward()
+      await waitFor(() =>
+        expect(observed).toEqual([
+          { search: '', view: 'seat' },
+          { search: '?view=seat', view: 'seat' },
+        ]),
+      )
+      expect(window.location.search).toBe('?view=seat')
+    } finally {
+      releaseForwardLock()
+      window.removeEventListener('popstate', recordPop)
     }
 
     await settleMicrotasks()
