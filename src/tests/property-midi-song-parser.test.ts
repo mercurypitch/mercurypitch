@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import type {MidiSong, MidiSongPercussionTrack, MidiSongPitchedTrack} from '@/lib/midi-song';
-import { defaultScoreTrack, gmInstrumentName, isPitchedMidiSongTrack,    parseMidiSong } from '@/lib/midi-song'
+import type {LegacyMidiSongPitchedTrack, MidiSong, MidiSongPercussionTrack, MidiSongPitchedTrack} from '@/lib/midi-song';
+import { defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, isPitchedMidiSongTrack,     normalizeMidiSong, parseMidiSong } from '@/lib/midi-song'
 
 describe('Property-Based Tests: MIDI Song Parser & GM Instruments', () => {
   it('gmInstrumentName never throws and always returns non-empty string for any integer', () => {
@@ -36,6 +36,7 @@ describe('Property-Based Tests: MIDI Song Parser & GM Instruments', () => {
               expect(typeof track.name).toBe('string')
               expect(typeof track.instrumentName).toBe('string')
               if (isPitchedMidiSongTrack(track)) {
+                expect(isPercussionMidiSongTrack(track)).toBe(false)
                 expect(Array.isArray(track.notes)).toBe(true)
                 for (const note of track.notes) {
                   expect(Number.isFinite(note.midi)).toBe(true)
@@ -46,6 +47,10 @@ describe('Property-Based Tests: MIDI Song Parser & GM Instruments', () => {
                   expect(Number.isFinite(note.duration)).toBe(true)
                   expect(note.duration).toBeGreaterThan(0)
                 }
+              } else if (isPercussionMidiSongTrack(track)) {
+                expect(isPitchedMidiSongTrack(track)).toBe(false)
+                expect(track.notes).toHaveLength(0)
+                expect(Array.isArray(track.percussionHits)).toBe(true)
               }
             }
           }
@@ -139,6 +144,67 @@ describe('Property-Based Tests: MIDI Song Parser & GM Instruments', () => {
         },
       ),
       { numRuns: 300 },
+    )
+  })
+
+  it('normalizeMidiSong upgrades legacy songs and sanitizes percussion hits safely', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            isPercussion: fc.boolean(),
+            name: fc.string(),
+            gmKey: fc.integer({ min: 0, max: 127 }),
+            startBeat: fc.double({ min: -10, max: 1000 }),
+            velocity: fc.integer({ min: -50, max: 200 }),
+          }),
+        ),
+        (rawHits) => {
+          const legacyPitched: LegacyMidiSongPitchedTrack = {
+            id: 'track-legacy-1',
+            name: 'Pitched Legacy',
+            instrumentName: 'Piano',
+            noteCount: 0,
+            notes: [],
+          }
+
+          const percTrack: MidiSongPercussionTrack = {
+            id: 'track-perc-1',
+            kind: 'percussion',
+            name: 'Drums',
+            instrumentName: 'Standard Drums',
+            noteCount: 0,
+            notes: [],
+            percussionHits: rawHits.map((h) => ({
+              gmKey: h.gmKey,
+              startBeat: h.startBeat,
+              velocity: h.velocity,
+            })),
+            droppedHitCount: 0,
+          }
+
+          const normalized = normalizeMidiSong({
+            bpm: 120,
+            tracks: [legacyPitched, percTrack],
+          })
+
+          expect(normalized.tracks).toHaveLength(2)
+          expect(isPitchedMidiSongTrack(normalized.tracks[0])).toBe(true)
+          expect(isPercussionMidiSongTrack(normalized.tracks[0])).toBe(false)
+          expect(isPercussionMidiSongTrack(normalized.tracks[1])).toBe(true)
+          expect(isPitchedMidiSongTrack(normalized.tracks[1])).toBe(false)
+
+          const percNorm = normalized.tracks[1] as MidiSongPercussionTrack
+          for (const hit of percNorm.percussionHits) {
+            expect(hit.gmKey).toBeGreaterThanOrEqual(35)
+            expect(hit.gmKey).toBeLessThanOrEqual(81)
+            expect(hit.startBeat).toBeGreaterThanOrEqual(0)
+            expect(hit.velocity).toBeGreaterThanOrEqual(1)
+            expect(hit.velocity).toBeLessThanOrEqual(127)
+          }
+        },
+      ),
+      { numRuns: 200 },
     )
   })
 })
