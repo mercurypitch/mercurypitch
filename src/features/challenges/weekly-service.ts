@@ -232,23 +232,42 @@ export async function deleteWeekly(
   }
 }
 
-/** Parse a "G4 A4 B4" note-name list into MelodyItem[] (unknown names dropped). */
-export function notesToMelodyItems(input: string): MelodyItem[] {
+export interface ParsedTargetNotes {
+  items: MelodyItem[]
+  /** Tokens that are not note names, in the order they were written. */
+  rejected: string[]
+}
+
+/**
+ * Parse a "G4 A4 B4" note-name list, keeping the tokens that failed.
+ *
+ * Callers that can tell a human — the admin form — must check `rejected`.
+ * Dropping a token silently ships a Legend a note short, which nobody sees
+ * until singers are already attempting it.
+ */
+export function parseTargetNotes(input: string): ParsedTargetNotes {
   const names = input
     .split(/[\s,]+/)
     .map((s) => s.trim())
     .filter((s) => s !== '')
   const items: MelodyItem[] = []
-  names.forEach((name, i) => {
+  const rejected: string[] = []
+  for (const name of names) {
     let midi: number
     try {
       midi = noteToMidi(name)
     } catch {
-      return
+      rejected.push(name)
+      continue
     }
-    if (!Number.isFinite(midi)) return
+    if (!Number.isFinite(midi)) {
+      rejected.push(name)
+      continue
+    }
+    // id/startBeat come from the surviving count, not the input index — a
+    // rejected token must not leave a hole in the playback positions.
     items.push({
-      id: i + 1,
+      id: items.length + 1,
       note: {
         midi,
         // midiToNoteName includes the octave ("G4"); NoteName is the bare
@@ -259,10 +278,15 @@ export function notesToMelodyItems(input: string): MelodyItem[] {
         freq: midiToFrequency(midi),
       },
       duration: 1,
-      startBeat: i,
+      startBeat: items.length,
     })
-  })
-  return items
+  }
+  return { items, rejected }
+}
+
+/** Parse a "G4 A4 B4" note-name list into MelodyItem[] (unknown names dropped). */
+export function notesToMelodyItems(input: string): MelodyItem[] {
+  return parseTargetNotes(input).items
 }
 
 /** Render MelodyItem[] back to a "G4 A4 B4" note-name list (for editing). */
