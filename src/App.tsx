@@ -229,7 +229,8 @@ import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-int
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
-import { shiftTakeFrames, useRecordingController, } from '@/features/recording/useRecordingController'
+import { useRecordingController } from '@/features/recording/useRecordingController'
+import { useTakeReviewController } from '@/features/recording/useTakeReviewController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { useShareHandlers } from '@/features/share/useShareHandlers'
@@ -246,7 +247,6 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash } from '@/lib/hash-router'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
-import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { installSelectBlurOnPointerChange } from '@/lib/select-blur'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -1072,96 +1072,29 @@ const AppShell: Component<AppProps> = (props) => {
     }),
   )
 
-  // ── Compose live recording preview (Phase 2) ───────────────
-  // Notes captured so far this take, plus the currently-held note growing with
-  // the playhead. Kept out of melodyStore until the take is finalized.
-  const liveRecordingMelody = createMemo<MelodyItem[]>(() => {
-    if (!recording.isRecording()) return []
-    const items = [...recording.recordedMelody()]
-    const prov = recording.provisionalNote()
-    if (prov != null) {
-      const dur = Math.max(0.05, currentBeat() - prov.startBeat)
-      const info = midiToNote(prov.midi)
-      items.push({
-        id: -1,
-        note: {
-          midi: prov.midi,
-          name: info.name,
-          octave: info.octave,
-          freq: midiToFreq(prov.midi),
-        },
-        duration: dur,
-        startBeat: prov.startBeat,
-      })
-    }
-    return items
+  // ── Compose live recording preview & Take review controller ─
+  const {
+    reviewAmount,
+    setReviewAmount,
+    reviewNudgeMs,
+    setReviewNudgeMs,
+    reviewMelody,
+    previewMelody,
+    commitTake,
+    composeTotalBeats,
+  } = useTakeReviewController({
+    recording,
+    currentBeat,
+    bpm,
+    keyName: keyNameSignal,
+    scaleType: scaleTypeSignal,
+    totalBeats,
   })
 
-  // ── Take review (Phase 3) ──────────────────────────────────
-  // After a take stops, re-segment its retained contour at the chosen cleanup
-  // amount (gentle: as-sung -> strong: key-snapped + quantized). This drives
-  // both the on-roll preview and what Keep commits.
-  const [reviewAmount, setReviewAmount] = createSignal(0.5)
-  // Hand-adjustable timing on top of the automatic round-trip compensation
-  // (applied at capture in useRecordingController): a measured offset can
-  // still be a few frames off, and a singer may simply have come in late.
-  // Reset per take — the last take's correction says nothing about this one.
-  const [reviewNudgeMs, setReviewNudgeMs] = createSignal(0)
-  createEffect(
-    on(
-      () => recording.pendingTake(),
-      (take) => {
-        if (take !== null) setReviewNudgeMs(0)
-      },
-    ),
-  )
-  const reviewMelody = createMemo<MelodyItem[]>(() => {
-    const take = recording.pendingTake()
-    if (take === null) return []
-    return segmentContourToMelody(
-      shiftTakeFrames(take.frames, reviewNudgeMs(), bpm()),
-      {
-        bpm: bpm(),
-        key: keyNameSignal(),
-        scaleType: scaleTypeSignal(),
-        cleanupAmount: reviewAmount(),
-      },
-    )
-  })
-
-  // The piano roll's preview channel shows the live take while recording, then
-  // the re-segmented candidate while reviewing.
-  const previewMelody = createMemo<MelodyItem[]>(() =>
-    recording.isRecording() ? liveRecordingMelody() : reviewMelody(),
-  )
-
-  const commitTake = (): void => {
-    recording.commitTake(reviewMelody())
-  }
-
-  // During recording the grid grows to follow the playhead so the take is not
-  // capped at the default arrangement length (the old 16-beat stop); during
-  // review it stays large enough to show the whole take.
   /** Name of the melody currently open, for every surface that identifies it
    *  (singing status bar, the score header, the compose header). */
   const currentMelodyName = (): string | null =>
     melodyStore.currentMelody()?.name ?? null
-
-  const composeTotalBeats = createMemo(() => {
-    const base = totalBeats()
-    const BEATS_PER_BAR = 4
-    if (recording.isRecording()) {
-      const grown =
-        (Math.floor((currentBeat() + 8) / BEATS_PER_BAR) + 1) * BEATS_PER_BAR
-      return Math.max(base, 16, grown)
-    }
-    const take = recording.pendingTake()
-    if (take !== null) {
-      const end = Math.ceil((take.endBeat + 4) / BEATS_PER_BAR) * BEATS_PER_BAR
-      return Math.max(base, 16, end)
-    }
-    return base
-  })
 
   // Track playNote IDs by melody index so noteEnd can stop individual notes
   const activeNoteIds = new Map<number, number>()
