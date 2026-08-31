@@ -71,9 +71,15 @@ function rotate(profile: number[], tonic: number): number[] {
 export function pitchClassHistogram(notes: KeyNote[]): number[] {
   const h = new Array<number>(12).fill(0)
   for (const n of notes) {
+    if (
+      !Number.isFinite(n.startSec) ||
+      !Number.isFinite(n.endSec) ||
+      !Number.isFinite(n.midi)
+    )
+      continue
     const dur = n.endSec - n.startSec
     if (dur <= 0) continue
-    h[((n.midi % 12) + 12) % 12] += dur
+    h[((Math.round(n.midi) % 12) + 12) % 12] += dur
   }
   return h
 }
@@ -86,8 +92,10 @@ function toEstimate(
   return {
     tonic,
     mode,
-    confidence,
-    keyName: NOTE_NAMES[tonic],
+    confidence: Number.isFinite(confidence)
+      ? Math.max(0, Math.min(1, confidence))
+      : 0,
+    keyName: NOTE_NAMES[tonic] ?? 'C',
     scaleType: mode === 'major' ? 'major' : 'natural-minor',
   }
 }
@@ -96,7 +104,15 @@ export function detectKeyFromHistogram(
   hist: number[],
   profiles: KeyProfileSet = AARDEN_ESSEN,
 ): KeyEstimate {
-  const total = hist.reduce((a, b) => a + b, 0)
+  const cleanHist = new Array<number>(12).fill(0)
+  let total = 0
+  for (let i = 0; i < 12; i++) {
+    const val = hist[i]
+    if (Number.isFinite(val) && val > 0) {
+      cleanHist[i] = val
+      total += val
+    }
+  }
   if (total === 0) return toEstimate(0, 'major', 0)
 
   let bestScore = -Infinity
@@ -109,7 +125,7 @@ export function detectKeyFromHistogram(
         mode === 'major' ? profiles.major : profiles.minor,
         tonic,
       )
-      const r = pearson(hist, tmpl)
+      const r = pearson(cleanHist, tmpl)
       if (r > bestScore) {
         secondScore = bestScore
         bestScore = r
