@@ -4,10 +4,12 @@
 //
 // Pulse's mirror. Nothing is sounded but the beat: the pattern is
 // written on the drum's upper rule from the moment the round opens,
-// four clicks count the tempo in, and then the bar waits for the
-// player the same way Pulse's does — the soft rail ticks on, the
-// first tap anchors the take as the pattern's first onset, and the
-// rest is judged by its distance from the anchor (`anchored-take.ts`).
+// four clicks count the tempo in, and then everything stops. The bar
+// waits for the player the same way Pulse's does — silence until the
+// first tap, which anchors the take as the pattern's first onset, and
+// the rest is judged by its distance from the anchor
+// (`anchored-take.ts`). From that tap the beat ticks under the bar and
+// the progress line fills left to right.
 // Ear training reversed: the eye reads, the hand keeps the time.
 //
 // Same bank shapes as Pulse under its own ids and rating, so the
@@ -27,7 +29,6 @@ import { PULSE_TIMING } from '@/lib/ear/timing'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { AnchoredTake } from './anchored-take'
 import { startAnchoredTake } from './anchored-take'
-import { useArmingCue } from './arming-cue'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
@@ -42,7 +43,7 @@ import { useIdentificationController } from './use-identification-controller'
 const MISS = 'miss'
 
 const CHART_DESCRIPTION =
-  'The pattern is written on the drum — nothing sounds but the beat. Four clicks count the tempo in, then the bar is yours to start: your first tap — pad or Space — is the first written onset, wherever you place it. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
+  'The pattern is written on the drum — nothing sounds but the beat. Four clicks count the tempo in, then it waits: nothing plays until your first tap — pad or Space — which is the first written onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
 
 export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -57,6 +58,12 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const [take, setTake] = createSignal<DrumReveal | null>(null)
   const [begun, setBegun] = createSignal(true)
   const [tapCount, setTapCount] = createSignal(0)
+  /** Null until the tap that starts the bar; then where the anchor
+   *  stood in it and how long the bar has left, for the drum's fill. */
+  const [barRun, setBarRun] = createSignal<{
+    from: number
+    durationMs: number
+  } | null>(null)
   const ledger = createTapLedger({ latencyMs: micLatencyMs })
   const raw = () => micLatencyMs() <= 0
 
@@ -79,6 +86,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     ledger.disarm()
     setBar(null)
     setBeat(0)
+    setBarRun(null)
     setScore(null)
   }
 
@@ -106,6 +114,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
         setTake(null)
         setBegun(true)
         setTapCount(0)
+        setBarRun(null)
         setBeats(patternBeats)
         setScore(item.payload)
 
@@ -124,10 +133,16 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           })
         }
 
+        // The count-in ends and the lamps stop: the bar is the player's
+        // and nothing is running in it until they start it.
+        later(PULSE_TIMING.leadS * 1000 + countMs, () => {
+          setBar('response')
+          setBeat(0)
+        })
+
         // The open bar follows the count-in straight away.
         takeHandle = startAnchoredTake({
           ctx,
-          openAtS: start + countMs / 1000,
           openAtMs: startMs + countMs,
           periodMs: period,
           beats: patternBeats,
@@ -142,6 +157,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             setBar('response')
             setBeat(b)
           },
+          onStart: setBarRun,
           onJudged: (outcome) => {
             setTake({
               onsets: item.payload,
@@ -154,6 +170,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             ledger.disarm()
             setBar(null)
             setBeat(0)
+            setBarRun(null)
             setScore(null)
             controller.answer(outcome.verdict.correct ? item.itemId : MISS)
           },
@@ -240,8 +257,6 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     }
   })
 
-  useArmingCue(() => phase() === 'answer')
-
   const lastCall = useLastCall(phase, () => ({
     correct: take()?.correct === true,
     line: status(),
@@ -281,6 +296,8 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           bar={bar()}
           beat={beat()}
           beats={beats()}
+          run={barRun()}
+          waiting={phase() === 'answer' && barRun() === null}
           score={score()}
           upperWord="the chart"
           reveal={phase() === 'reveal' ? take() : null}

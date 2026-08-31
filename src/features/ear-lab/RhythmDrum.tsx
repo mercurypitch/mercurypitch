@@ -43,6 +43,13 @@ interface RhythmDrumProps {
   score?: readonly number[] | null
   /** The upper row's caption at the reveal; 'call' unless said. */
   upperWord?: string
+  /** The player's bar, once their first tap has started it: where in
+   *  the bar the anchor stood and how long is left to run. The fill is
+   *  animated in CSS from those two numbers, so no frame loop is
+   *  needed and a hidden tab cannot leave it stuck part way. */
+  run?: { from: number; durationMs: number } | null
+  /** The bar is the player's and waiting for the tap that starts it. */
+  waiting?: boolean
 }
 
 const BAR_LEFT = 100
@@ -68,6 +75,8 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         ? `Rhythm drum: every onset of the ${props.upperWord ?? 'call'} met`
         : `Rhythm drum: ${missed} onset${missed === 1 ? '' : 's'} missed, ${props.reveal.extras.length} extra tap${props.reveal.extras.length === 1 ? '' : 's'}`
     }
+    if (props.waiting === true)
+      return 'Rhythm drum, your bar — tap to start it'
     return props.bar
       ? `Rhythm drum, ${BAR_WORD[props.bar].toLowerCase()}, beat ${props.beat}`
       : `Rhythm drum, ${beats() === 8 ? 'two bars' : 'one bar'} of four beats, nothing written yet`
@@ -108,19 +117,53 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
           />
         )}
       </For>
+      {/* The take's progress rail: a line through the lamps that fills
+          left to right from the tap that started the bar. */}
+      <Show when={props.run}>
+        {(run) => (
+          <>
+            <line
+              x1={beatX(0)}
+              y1="40"
+              x2={beatX(beats())}
+              y2="40"
+              class={styles.progressTrack}
+              data-part="progress-track"
+            />
+            {/* A rect, not a line: `transform-box: fill-box` needs a
+                box with real height, and a horizontal line has none. */}
+            <rect
+              x={beatX(0)}
+              y="38.75"
+              width={beatX(beats()) - beatX(0)}
+              height="2.5"
+              rx="1.25"
+              class={styles.progressFill}
+              data-part="progress-fill"
+              style={{
+                '--fill-from': String(run().from),
+                '--fill-run': `${Math.max(0, run().durationMs)}ms`,
+              }}
+            />
+          </>
+        )}
+      </Show>
       {/* the beat lamps */}
       <For each={Array.from({ length: beats() }, (_, i) => i + 1)}>
         {(beat) => (
           <circle
-            cx={beatX(beat - 1) + 4}
+            cx={beatX(beat - 1)}
             cy="40"
             r="4"
             class={styles.beatLamp}
             classList={{
               [styles.beatLampLit]: props.bar !== null && props.beat === beat,
+              [styles.beatLampPassed]:
+                props.run != null && beat <= props.beat,
             }}
             data-part="beat-lamp"
             data-lit={props.bar !== null && props.beat === beat}
+            data-passed={props.run != null && beat <= props.beat}
           />
         )}
       </For>
@@ -208,7 +251,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
       <Show when={!props.reveal && props.bar}>
         {(bar) => (
           <text x="260" y="244" class={styles.nameplate} text-anchor="middle">
-            {BAR_WORD[bar()]}
+            {props.waiting === true ? 'Yours — tap to start' : BAR_WORD[bar()]}
           </text>
         )}
       </Show>

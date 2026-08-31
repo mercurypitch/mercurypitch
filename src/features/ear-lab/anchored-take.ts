@@ -1,17 +1,23 @@
 // ============================================================
-// Anchored take — an open bar that starts on the player's first tap.
+// Anchored take — a bar that stands still until the player starts it.
 //
-// The old response bar opened on the clock and the player had to hit
-// its first beat cold; the established rhythm trainers (Perfect Ear,
-// Complete Rhythm Trainer) never do that. Here the beat keeps
-// ticking softly after the call and the bar waits: the first tap
-// anchors it — that tap IS the first onset, exactly on time — the
-// soft rail restarts from the anchor, every tap answers with its own
-// tick, and the take is judged one bar past the anchor. A take
-// nobody starts inside the wait is judged as never begun.
+// The call ends and everything stops: no click, no lamp, no clock.
+// The bar is not running and nothing is counting the player in — the
+// first tap starts it, and that tap IS the pattern's first onset,
+// exactly on time. From there the bar runs for real: the beat ticks
+// softly under the remaining onsets, the lamps step, and a progress
+// line fills left to right so the player can see where in the bar
+// they are. The rest of the take is judged by its distance from the
+// anchor, so a steady input delay cancels out entirely.
 //
-// Owns its clicks and timers; `cancel` silences and clears them all.
-// The drill owns the signals and the ledger.
+// Nothing sounds during the wait on purpose. A click there reads as
+// "the app played your first note for you" and costs the player the
+// downbeat they were about to place themselves.
+//
+// Owns its clicks and timers; `cancel` stops them all. The fill is
+// handed to the drum as a start and a duration and animated in CSS,
+// so nothing here runs a frame loop. The drill owns the signals and
+// the ledger.
 // ============================================================
 
 import type { TakeVerdict } from '@/lib/ear/rhythm-take'
@@ -37,9 +43,7 @@ interface ClickSpec {
 
 export interface AnchoredTakeOptions {
   ctx: AudioContext
-  /** The downbeat after the call, on the audio clock. */
-  openAtS: number
-  /** The same instant on the page clock. */
+  /** The instant the bar becomes the player's, on the page clock. */
   openAtMs: number
   periodMs: number
   /** Beats the pattern spans — its bar, or two across the barline. */
@@ -47,20 +51,25 @@ export interface AnchoredTakeOptions {
   onsetsMs: readonly number[]
   toleranceMs: number
   tailMs: number
-  /** Beats the soft rail holds before an untouched take is judged. */
+  /** Beats of silence held before an untouched take is judged. */
   waitBeats: number
-  /** The soft beat under the wait and under the anchored bar. */
+  /** The soft beat under the anchored bar. Silent before the anchor. */
   rail: ClickSpec
   /** The voice a tap answers with. */
   tick: ClickSpec
   ledger: TapLedger
-  /** A beat of the wait rail or the anchored bar, 1-based, cycling. */
-  onBeat: (beat: number, anchored: boolean) => void
+  /** A beat of the anchored bar, 1-based. Never fires during the wait. */
+  onBeat: (beat: number) => void
+  /** The bar has started. `from` is the fraction of the bar the anchor
+   *  already stands at (a pattern beginning off the beat starts part
+   *  way in) and `durationMs` is what is left to run — enough for the
+   *  drum to animate the fill without a frame loop of its own. */
+  onStart: (run: { from: number; durationMs: number }) => void
   onJudged: (outcome: TakeOutcome) => void
 }
 
 export interface AnchoredTake {
-  /** Feed a tap; the first one anchors the bar. Ignored once judged. */
+  /** Feed a tap; the first one starts the bar. Ignored once judged. */
   tap: (atMs: number) => void
   cancel: () => void
 }
@@ -108,21 +117,37 @@ export function startAnchoredTake(options: AnchoredTakeOptions): AnchoredTake {
     })
   }
 
-  // The wait: the rail keeps the beat, the lamps keep stepping, and
-  // the bar belongs to whichever beat the player picks up.
+  // The wait: silence, and a deadline. Nothing is scheduled and no
+  // lamp moves — the bar has not started, because the player has not.
   ledger.arm(options.openAtMs)
-  const nowMs = performance.now()
-  for (let k = 0; k < options.waitBeats; k++) {
-    clicks.push(
-      scheduleClick(ctx, options.openAtS + (k * periodMs) / 1000, options.rail),
-    )
-    later(options.openAtMs + k * periodMs - nowMs, () =>
-      options.onBeat((k % options.beats) + 1, false),
+  later(
+    options.openAtMs + options.waitBeats * periodMs - performance.now(),
+    () => judge(false),
+  )
+
+  /** The bar, from the tap that started it. */
+  function anchor(): void {
+    clear()
+    // The anchor stands where the pattern's first onset stands, so a
+    // pattern that begins off the beat starts part-way into the bar.
+    const beatAt = (beat: number) => (beat - 1) * periodMs - firstOnsetMs
+    options.onBeat(Math.floor(firstOnsetMs / periodMs) + 1)
+    for (let beat = 1; beat <= options.beats; beat++) {
+      const at = beatAt(beat)
+      if (at <= 0) continue
+      clicks.push(scheduleClick(ctx, ctx.currentTime + at / 1000, options.rail))
+      later(at, () => options.onBeat(beat))
+    }
+
+    options.onStart({
+      from: firstOnsetMs / barMs,
+      durationMs: barMs - firstOnsetMs,
+    })
+
+    later(barMs - firstOnsetMs + options.toleranceMs + options.tailMs, () =>
+      judge(true),
     )
   }
-  later(options.openAtMs + options.waitBeats * periodMs - nowMs, () =>
-    judge(false),
-  )
 
   return {
     tap: (atMs) => {
@@ -130,24 +155,7 @@ export function startAnchoredTake(options: AnchoredTakeOptions): AnchoredTake {
       ledger.tap(atMs)
       if (!anchored) {
         anchored = true
-        // The anchor: the wait rail stops, the bar restarts from this
-        // tap — beat one is now — and the verdict waits a bar plus the
-        // grace, measured from where the anchor stands in the pattern.
-        clear()
-        options.onBeat(1, true)
-        for (let k = 1; k < options.beats; k++) {
-          clicks.push(
-            scheduleClick(
-              ctx,
-              ctx.currentTime + (k * periodMs) / 1000,
-              options.rail,
-            ),
-          )
-          later(k * periodMs, () => options.onBeat(k + 1, true))
-        }
-        later(barMs - firstOnsetMs + options.toleranceMs + options.tailMs, () =>
-          judge(true),
-        )
+        anchor()
       }
       clicks.push(scheduleClick(ctx, ctx.currentTime, options.tick))
     },

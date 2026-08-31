@@ -91,6 +91,7 @@ function tapAt(pad: HTMLElement, atMs: number): void {
 }
 
 const status = () => screen.getByTestId('ear-stage-status').textContent ?? ''
+const drum = () => screen.getByRole('img', { name: /Rhythm drum/ })
 const PERIOD = PULSE_TIMING.periodMs
 const BAR = PULSE_TIMING.beats * PERIOD
 const LEAD = PULSE_TIMING.leadS * 1000
@@ -122,9 +123,10 @@ async function beginAndListen(): Promise<{ origin: number; pad: HTMLElement }> {
   const t0 = performance.now()
   fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
   await vi.advanceTimersByTimeAsync(0)
-  // The count-in keeps the beat (4), the call has 3 onsets, and the
-  // wait rail holds 8 more soft beats for the anchor.
-  expect(ctx.createOscillator).toHaveBeenCalledTimes(15)
+  // The count-in keeps the beat (4) and the call has 3 onsets. Nothing
+  // else is scheduled: the bar that follows is silent until it is
+  // started, so the count is 7 and stays 7 through the whole wait.
+  expect(ctx.createOscillator).toHaveBeenCalledTimes(7)
   await vi.advanceTimersByTimeAsync(LEAD)
   expect(status()).toBe('Count-in…')
   await vi.advanceTimersByTimeAsync(BAR)
@@ -135,6 +137,10 @@ async function beginAndListen(): Promise<{ origin: number; pad: HTMLElement }> {
   const pad = screen.getByTestId('ear-tap-pad')
   expect(pad.hasAttribute('disabled')).toBe(false)
   await vi.advanceTimersByTimeAsync(PULSE_TIMING.armEarlyMs)
+  // The open bar makes no sound of its own — the stray click that used
+  // to land here read as "the app played your first note for you".
+  expect(ctx.createOscillator).toHaveBeenCalledTimes(7)
+  expect(drum().textContent).toContain('tap to start')
   return { origin: t0 + LEAD + 2 * BAR, pad }
 }
 
@@ -169,10 +175,14 @@ describe('PulseDrill', () => {
     await vi.advanceTimersByTimeAsync(500)
     tapAt(pad, origin + 500)
     expect(status()).toBe('Tapping — 1 so far.')
-    // The tap answered with a tick and the bar restarted from it:
-    // one tick plus three rail beats past the fifteen from Begin and
-    // the arming cue that opened the answer.
-    expect(ctx.createOscillator).toHaveBeenCalledTimes(20)
+    // The tap answered with a tick, and the bar started from it: beats
+    // two, three and four now have a soft click, on top of the seven.
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(11)
+    // And the bar is running: the progress rail has appeared, set to
+    // sweep the whole bar from its start.
+    const fill = drum().querySelector<SVGElement>('[data-part="progress-fill"]')
+    expect(fill?.style.getPropertyValue('--fill-from')).toBe('0')
+    expect(fill?.style.getPropertyValue('--fill-run')).toBe(`${BAR}ms`)
     await vi.advanceTimersByTimeAsync(PERIOD)
     tapAt(pad, origin + 500 + PERIOD - 40)
     await vi.advanceTimersByTimeAsync(PERIOD)
@@ -181,14 +191,14 @@ describe('PulseDrill', () => {
 
     await vi.advanceTimersByTimeAsync(JUDGE)
     expect(status()).toBe('Clean — every onset met.')
-    const drum = screen.getByRole('img', { name: /Rhythm drum/ })
-    expect(drum.querySelectorAll('[data-part="onset"]')).toHaveLength(3)
+    const reveal = drum()
+    expect(reveal.querySelectorAll('[data-part="onset"]')).toHaveLength(3)
     expect(
-      drum.querySelectorAll('[data-part="onset"][data-met="true"]'),
+      reveal.querySelectorAll('[data-part="onset"][data-met="true"]'),
     ).toHaveLength(3)
-    expect(drum.querySelectorAll('[data-part="tap"]')).toHaveLength(3)
-    expect(drum.querySelectorAll('[data-part="extra"]')).toHaveLength(0)
-    expect(drum.textContent).toContain('Clean')
+    expect(reveal.querySelectorAll('[data-part="tap"]')).toHaveLength(3)
+    expect(reveal.querySelectorAll('[data-part="extra"]')).toHaveLength(0)
+    expect(reveal.textContent).toContain('Clean')
     expect(earPlayerRating('pulse').rating).toBeGreaterThan(before)
 
     fireEvent.click(screen.getByRole('button', { name: /Stop/ }))
@@ -215,11 +225,10 @@ describe('PulseDrill', () => {
 
     await vi.advanceTimersByTimeAsync(JUDGE)
     expect(status()).toBe('Not quite — 2 onsets missed, 1 extra tap.')
-    const drum = screen.getByRole('img', { name: /Rhythm drum/ })
     expect(
-      drum.querySelectorAll('[data-part="onset"][data-met="false"]'),
+      drum().querySelectorAll('[data-part="onset"][data-met="false"]'),
     ).toHaveLength(2)
-    expect(drum.querySelectorAll('[data-part="extra"]')).toHaveLength(1)
+    expect(drum().querySelectorAll('[data-part="extra"]')).toHaveLength(1)
     expect(earPlayerRating('pulse').rating).toBeLessThan(before)
   })
 

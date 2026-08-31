@@ -1,15 +1,16 @@
 // ============================================================
 // PulseDrill — rhythm dictation: a bar of onsets, tapped back.
 //
-// A count-in, the call, then a bar that is the player's to start:
-// the soft beat keeps ticking and the first tap anchors the take —
-// that tap stands for the call's first onset, exactly on time, and
-// the rest of the call is judged by its distance from the anchor
-// (`anchored-take.ts`). The pad is live before the call ends, every
-// tap answers with a tick in the room's voice, and Space taps as
-// well as the pointer. Patterns above the middle of the bank cross
-// the barline, so the faster subdivisions come with air around them
-// rather than squeezed into one bar.
+// A count-in, the call, and then everything stops. The bar is the
+// player's and nothing runs in it — no click, no lamp — until their
+// first tap starts it; that tap stands for the call's first onset,
+// exactly on time, and the rest is judged by its distance from the
+// anchor (`anchored-take.ts`). From the tap the beat ticks softly
+// under the bar and a progress line fills left to right. The pad is
+// live before the call ends, every tap answers with a tick in the
+// room's voice, and Space taps as well as the pointer. Patterns above
+// the middle of the bank cross the barline, so the faster
+// subdivisions come with air around them rather than squeezed in.
 //
 // Rated like the other button drills (useIdentificationController):
 // the item is the pattern, the "answer" is whether the take met it.
@@ -30,7 +31,6 @@ import { PULSE_TIMING } from '@/lib/ear/timing'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { AnchoredTake } from './anchored-take'
 import { startAnchoredTake } from './anchored-take'
-import { useArmingCue } from './arming-cue'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
@@ -45,7 +45,7 @@ import { useIdentificationController } from './use-identification-controller'
 const MISS = 'miss'
 
 const PULSE_DESCRIPTION =
-  'Four clicks count you in and a bar of onsets sounds. Then the bar is yours to start: the beat keeps ticking, and your first tap — pad or Space — is the first onset, wherever you place it. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear — quarters, eighths, triplets, sixteenths.'
+  'Four clicks count you in and a bar of onsets sounds. Then it waits: nothing plays until your first tap — pad or Space — which is the first onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear — quarters, eighths, triplets, sixteenths.'
 
 export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -59,6 +59,12 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const [take, setTake] = createSignal<DrumReveal | null>(null)
   const [begun, setBegun] = createSignal(true)
   const [tapCount, setTapCount] = createSignal(0)
+  /** Null until the tap that starts the bar; then where the anchor
+   *  stood in it and how long the bar has left, for the drum's fill. */
+  const [barRun, setBarRun] = createSignal<{
+    from: number
+    durationMs: number
+  } | null>(null)
   const ledger = createTapLedger({ latencyMs: micLatencyMs })
   const raw = () => micLatencyMs() <= 0
 
@@ -81,6 +87,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     ledger.disarm()
     setBar(null)
     setBeat(0)
+    setBarRun(null)
   }
 
   const later = (ms: number, fn: () => void) => {
@@ -108,6 +115,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         setTake(null)
         setBegun(true)
         setTapCount(0)
+        setBarRun(null)
         setBeats(patternBeats)
 
         const start = ctx.currentTime + PULSE_TIMING.leadS
@@ -137,11 +145,16 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             setBeat(k + 1)
           })
         }
+        // The call ends and the lamps stop: the bar is the player's and
+        // nothing is running in it until they start it.
+        later(PULSE_TIMING.leadS * 1000 + countMs + barMs, () => {
+          setBar('response')
+          setBeat(0)
+        })
 
-        // The open bar: the rail ticks on, the first tap anchors it.
+        // The open bar: everything stops here and the first tap starts it.
         takeHandle = startAnchoredTake({
           ctx,
-          openAtS: start + (countMs + barMs) / 1000,
           openAtMs: startMs + countMs + barMs,
           periodMs: period,
           beats: patternBeats,
@@ -156,6 +169,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             setBar('response')
             setBeat(b)
           },
+          onStart: setBarRun,
           onJudged: (outcome) => {
             setTake({
               onsets: item.payload,
@@ -168,6 +182,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             ledger.disarm()
             setBar(null)
             setBeat(0)
+            setBarRun(null)
             controller.answer(outcome.verdict.correct ? item.itemId : MISS)
           },
         })
@@ -256,8 +271,6 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     }
   })
 
-  useArmingCue(() => phase() === 'answer')
-
   const lastCall = useLastCall(phase, () => ({
     correct: take()?.correct === true,
     line: status(),
@@ -297,6 +310,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           bar={bar()}
           beat={beat()}
           beats={beats()}
+          run={barRun()}
+          waiting={phase() === 'answer' && barRun() === null}
           reveal={phase() === 'reveal' ? take() : null}
         />
       )}

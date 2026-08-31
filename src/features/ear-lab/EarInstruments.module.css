@@ -456,6 +456,50 @@
   fill: var(--inst-brass-bright);
 }
 
+/* A lamp the take's progress line has already run past. Dimmer than the
+   beat sounding now, brighter than one still ahead. */
+.beatLampPassed {
+  fill: var(--inst-brass);
+}
+
+/* The take's progress rail: the unfilled track, then the part the
+   player's bar has covered since the tap that started it. */
+.progressTrack {
+  stroke: var(--inst-line);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* The fill is the full-width rule squashed to the anchor's place in the
+   bar, then run out to full over what is left of it. Two custom
+   properties set per take (`--fill-from`, `--fill-run`) carry those, so
+   the animation is declarative: no frame loop, nothing to leak, and a
+   tab that was hidden mid-bar comes back in the right place. */
+@keyframes drumBarFill {
+  from {
+    transform: scaleX(var(--fill-from, 0));
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.progressFill {
+  fill: var(--inst-brass-bright);
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(var(--fill-from, 0));
+  animation: drumBarFill var(--fill-run, 0ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The bar still says where the take is, it just steps with the beat
+     lamps instead of sweeping. */
+  .progressFill {
+    animation: none;
+  }
+}
+
 .onset {
   stroke: var(--inst-brass);
   stroke-width: 3;
