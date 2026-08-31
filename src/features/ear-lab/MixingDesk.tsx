@@ -34,7 +34,7 @@ export function MixingDesk(props: MixingDeskProps): JSX.Element {
   const x = (i: number) => LEFT + step() * (i + 0.5)
   return (
     <svg
-      viewBox="0 0 520 240"
+      viewBox="0 0 520 266"
       role="img"
       aria-label="The mixing desk"
       data-instrument="desk"
@@ -113,11 +113,13 @@ export function MixingDesk(props: MixingDeskProps): JSX.Element {
           </g>
         )}
       </For>
+      {/* The nameplate hangs clear under the frame — inside it, the
+          strip labels sit right above and the two lines squash. */}
       <Show when={props.reveal}>
         {(reveal) => (
           <text
             x="260"
-            y="212"
+            y="250"
             text-anchor="middle"
             class={styles.nameplate}
             data-part="nameplate"
