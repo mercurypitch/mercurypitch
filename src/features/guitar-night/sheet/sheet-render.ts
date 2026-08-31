@@ -153,6 +153,45 @@ export function visibleSystemRange(input: VisibleSystemRangeInput): {
   }
 }
 
+export interface FollowScrollInput {
+  /** Only the lane geometry matters here — a structural slice of the system layout. */
+  layout: {
+    readonly lanes: readonly { top: number; height: number; scored: boolean }[]
+  }
+  systemIndex: number
+  systemHeight: number
+  focusedInset: number
+  viewportHeight: number
+  /** The scroller's real limit (`scrollHeight - clientHeight`), so the end of the song rests in place instead of overshooting. */
+  maxScrollTop: number
+  /** Scroll-space offset of the page's top (the scroller's own padding). */
+  contentInsetTop: number
+}
+
+/**
+ * Where the follow scroll should rest while a system plays.
+ *
+ * The anchor is the middle of the *scored* lane, not the system's top edge: a
+ * system magnified past the viewport holds several parts, and the reader is
+ * following exactly one of them. Centring that lane keeps the current bar row
+ * mid-view with the music around it — the next row below whenever there is
+ * one. Without a scored part the whole system's middle stands in.
+ *
+ * Clamped to the scroller's real extent, so the last rows of a song simply
+ * come to rest at the bottom of the page (the Drum Night behaviour) rather
+ * than pinning the final row to the viewport's bottom edge.
+ */
+export function followScrollTop(input: FollowScrollInput): number {
+  const systemTop = input.focusedInset + input.systemIndex * input.systemHeight
+  const scored = input.layout.lanes.find((entry) => entry.scored)
+  const anchorY =
+    scored === undefined
+      ? systemTop + input.systemHeight / 2
+      : systemTop + scored.top + scored.height / 2
+  const target = input.contentInsetTop + anchorY - input.viewportHeight / 2
+  return Math.min(Math.max(0, input.maxScrollTop), Math.max(0, target))
+}
+
 /** Read the sheet's palette off an element, with values that work unstyled. */
 export function readSheetTheme(element: Element | null): SheetTheme {
   const fallback: SheetTheme = {

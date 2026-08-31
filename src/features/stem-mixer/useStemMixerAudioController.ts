@@ -585,7 +585,6 @@ export const useStemMixerAudioController = (
       deps.stems.instrumental,
       ...extraTracks.map((t) => t.url),
     ].filter(Boolean) as string[]
-    const total = urls.length
     let loadedCount = 0
 
     // Parallel downloads share one bar, so each keeps its own byte tally and
@@ -721,7 +720,12 @@ export const useStemMixerAudioController = (
         })
       }
 
-      if (total > 0 && loadedCount === 0 && !disposed) {
+      // Deliberately not `total > 0 &&`: a session opened with no stem urls
+      // at all — evicted blobs, or a run that errored before separating —
+      // has produced no audio either, and counting the request instead of
+      // the result left that room silent behind a working transport, with
+      // no error and no retry.
+      if (loadedCount === 0 && !disposed) {
         const msg =
           'Stems could not be loaded. Audio data may have been lost after a page reload.'
         setLoadErrorLocal(msg)

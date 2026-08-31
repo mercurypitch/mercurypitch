@@ -3422,6 +3422,11 @@
   cursor: pointer;
 }
 
+.bandUpgrade:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
 .bandUpgrade strong {
   font-size: 0.7rem;
 }

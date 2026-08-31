@@ -114,7 +114,7 @@ jobs:
                     # typecheck, 921 unit files and 120 e2e tests, ~11 min.
                     beside=true
                     ;;
-                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
+                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*|packages/pitch-engine/*)
                     beside=true
                     ;;
                   src/*)

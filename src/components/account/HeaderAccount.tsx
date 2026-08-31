@@ -13,6 +13,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { lastSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HeaderAccount.module.css'
@@ -87,6 +88,17 @@ export const HeaderAccount: Component = () => {
     openAuthModal('login')
   }
 
+  /**
+   * "Sign in" for a stranger, "Welcome back" for somebody this device has seen
+   * sign in before.
+   *
+   * The pill is the affordance that survives dismissing the Home strip, so it
+   * carries the same hint in the smallest form that still says something. Only
+   * the method is known here — never a name — so there is nothing to leak on a
+   * shared machine, and the wording stays true whoever is holding it.
+   */
+  const signedInBefore = (): boolean => lastSignInMethod() !== ''
+
   function handleLogout(): void {
     setConfirming(false)
     logout()
@@ -115,11 +127,13 @@ export const HeaderAccount: Component = () => {
             <button
               class={styles.signInPill}
               onClick={openSignIn}
-              title="Sign in"
+              title={
+                signedInBefore() ? 'Welcome back — sign in again' : 'Sign in'
+              }
               data-testid="header-signin"
             >
               <UserIcon />
-              <span>Sign in</span>
+              <span>{signedInBefore() ? 'Welcome back' : 'Sign in'}</span>
             </button>
           }
         >

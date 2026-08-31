@@ -39,6 +39,30 @@ export function passkeysSupported(): boolean {
   )
 }
 
+/**
+ * Whether the browser can offer passkeys through form autofill.
+ *
+ * This is the mechanism behind "your password manager suggests the passkey":
+ * a `get()` with conditional mediation shows NOTHING on its own. The browser
+ * checks its own credential store and, if it holds one for this site, offers it
+ * in the autofill dropdown of a field tagged `autocomplete="webauthn"`. If it
+ * holds none, nothing appears and the promise simply never settles.
+ *
+ * That indirection is the point. There is no API that answers "does this person
+ * have a passkey here" — it would be a fingerprinting vector — so the browser
+ * answers it privately, to the person, and never to the page.
+ */
+export async function conditionalMediationAvailable(): Promise<boolean> {
+  if (!passkeysSupported()) return false
+  try {
+    const check = window.PublicKeyCredential.isConditionalMediationAvailable
+    if (typeof check !== 'function') return false
+    return await check.call(window.PublicKeyCredential)
+  } catch {
+    return false
+  }
+}
+
 /** Whether this device can do the biometric/PIN gesture a passkey requires. */
 export async function platformAuthenticatorAvailable(): Promise<boolean> {
   if (!passkeysSupported()) return false
@@ -127,12 +151,23 @@ export async function createCredential(
   }
 }
 
-/** Run the get ceremony and shape the assertion the way the server reads it. */
+/**
+ * Run the get ceremony and shape the assertion the way the server reads it.
+ *
+ * With `conditional`, nothing is shown until the person picks the passkey from
+ * their autofill dropdown — so the call can sit pending for the whole time a
+ * sign-in form is on screen, and MUST be given a signal that is aborted when
+ * that form goes away. An orphaned conditional request keeps the browser's
+ * autofill wired to a page that has moved on.
+ */
 export async function getCredential(
   options: Record<string, unknown>,
+  opts: { conditional?: boolean; signal?: AbortSignal } = {},
 ): Promise<Record<string, unknown>> {
   const credential = (await navigator.credentials.get({
     publicKey: toRequestOptions(options),
+    ...(opts.conditional === true ? { mediation: 'conditional' as const } : {}),
+    ...(opts.signal === undefined ? {} : { signal: opts.signal }),
   })) as PublicKeyCredential | null
   if (credential === null) throw new Error('No passkey was offered')
   const response = credential.response as AuthenticatorAssertionResponse
@@ -162,6 +197,9 @@ export async function getCredential(
  */
 export function describeWebAuthnError(err: unknown): string {
   if (err instanceof DOMException) {
+    // An aborted conditional request is the page tidying up after itself, not
+    // anything the reader did. It must never reach the screen.
+    if (err.name === 'AbortError') return ''
     if (err.name === 'NotAllowedError') return 'That was cancelled.'
     if (err.name === 'InvalidStateError') {
       return 'This device already has a passkey for your account.'

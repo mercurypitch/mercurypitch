@@ -101,7 +101,7 @@ jobs:
                 [[ -z "$file" ]] && continue
 
                 case "$file" in
-                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
+                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*|packages/pitch-engine/*)
                     beside=true
                     ;;
                   pnpm-lock.yaml|pnpm-workspace.yaml)

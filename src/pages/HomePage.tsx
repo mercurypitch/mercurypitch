@@ -8,6 +8,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createResource, createSignal, For, onMount, Show, } from 'solid-js'
+import { ReturningSignIn } from '@/components/account/ReturningSignIn'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
@@ -171,6 +172,11 @@ const HomePage: Component = () => {
           </button>
         </div>
       </div>
+
+      {/* Only ever visible to somebody signed out who has signed in on this
+          device before, after onboarding, and only until they dismiss it.
+          The component owns every one of those conditions. */}
+      <ReturningSignIn />
 
       <div class={styles.grid}>
         {/* ── Streak ─────────────────────────────────────────── */}

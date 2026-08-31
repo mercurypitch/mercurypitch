@@ -363,6 +363,24 @@ describe('the stems download once', () => {
     failed.dispose()
   })
 
+  it('says so when the session arrived carrying no stems at all', async () => {
+    // Not the same as a failed download: there is nothing to download. A
+    // session whose blobs were evicted (or that errored before separating)
+    // hydrates to empty outputs, and the mixer is opened on it anyway. With
+    // no stem urls the load has nothing to count, so the "nothing arrived"
+    // check has to be about what loaded rather than about how many were
+    // asked for — otherwise the room comes up silent, with a transport that
+    // plays nothing and no way back.
+    const empty = harness({
+      stems: { vocal: undefined, instrumental: undefined },
+    })
+    await empty.controller.loadStems()
+
+    expect(empty.controller.loadError()).toContain('could not be loaded')
+    expect(empty.notifications.join(' ')).toContain('could not be loaded')
+    empty.dispose()
+  })
+
   it('starts over cleanly when the failed load is retried', async () => {
     fetchStub.mockRejectedValueOnce(new Error('network gone'))
     fetchStub.mockRejectedValueOnce(new Error('network gone'))

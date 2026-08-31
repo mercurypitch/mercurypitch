@@ -14,6 +14,7 @@
 // and nobody needs this before they ask for a code.
 
 import { API_BASE_URL } from '@/lib/defaults'
+import { rememberSignInMethod } from '@/lib/last-sign-in'
 import type { AuthResponse, SignInOutcome } from './auth-service'
 import { adoptSession, isTwofaChallenge } from './auth-service'
 
@@ -83,8 +84,11 @@ export async function verifyLoginCode(
     throw new Error(await messageOf(res, 'That code is not valid'))
   }
   const outcome = (await res.json()) as SignInOutcome
+  // The mailed code IS the first factor, so the hint is earned here whether or
+  // not a second one is still owed. Mirrors postSignIn in auth-service.
+  rememberSignInMethod('emailcode')
   // Nothing is stored on a challenge: the code was right and bought nothing
-  // until the second factor lands. Mirrors postSignIn in auth-service.
+  // until the second factor lands.
   if (isTwofaChallenge(outcome)) return outcome
   adoptSession(outcome as AuthResponse)
   return outcome

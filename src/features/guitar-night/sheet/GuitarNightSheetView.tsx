@@ -13,7 +13,7 @@ import styles from './GuitarNightSheetView.module.css'
 import type { SheetLane, SheetLoopFragment, SheetLoopMarker, SheetPlacement, SheetSystem, } from './sheet-model'
 import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, sheetLoopFragments, sheetLoopMarkers, } from './sheet-model'
 import type { SheetMetrics, SheetRenderer, SheetSystemLayout, SheetTheme, } from './sheet-render'
-import { DEFAULT_SHEET_METRICS, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
+import { DEFAULT_SHEET_METRICS, followScrollTop, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
 import { tabSheetRenderer } from './sheet-tab-renderer'
 
 /** Backing store beyond two device pixels buys nothing a reader can see. */
@@ -327,9 +327,12 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     })
   })
 
-  // Follow the music only once it has left the page. A reader who scrolled back
-  // to study a bar keeps their place; a reader who did nothing is not left
-  // staring at a system the song finished with two rows ago.
+  // Follow the music by holding the scored part in the middle of the view.
+  // The old guard ("scroll only once the row left the page") assumed a system
+  // fits the viewport; magnified past it, every row change scrolled and the
+  // current bar row landed at the bottom edge. Re-anchoring runs only when
+  // the playhead crosses into another system, so a reader studying the row
+  // being played is never tugged mid-row.
   createEffect(() => {
     const systemIndex = playheadSystemIndex()
     const element = scroller
@@ -339,12 +342,24 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     // triggers. Tracking either would pull the reader back on every manual
     // scroll or every playhead frame within the same notation row.
     untrack(() => {
-      const height = systemHeight()
-      const top = systemIndex * height
-      const visibleTop = scrollTop()
-      const visibleBottom = visibleTop + viewportHeight()
-      if (top >= visibleTop && top + height <= visibleBottom) return
-      element.scrollTop = Math.max(0, top - height / 2)
+      // The page div starts after the scroller's own padding, which is part
+      // of the scrollable extent (and symmetric, so it bounds the far end
+      // too). Computed from geometry rather than scrollHeight: the browser
+      // still clamps the assignment to the live extent.
+      const inset =
+        element.firstElementChild instanceof HTMLElement
+          ? element.firstElementChild.offsetTop
+          : 0
+      element.scrollTop = followScrollTop({
+        layout: layout(),
+        systemIndex,
+        systemHeight: systemHeight(),
+        focusedInset: focusedInset(),
+        viewportHeight: viewportHeight(),
+        maxScrollTop:
+          inset * 2 + focusedInset() + pageHeight() - viewportHeight(),
+        contentInsetTop: inset,
+      })
     })
   })
 

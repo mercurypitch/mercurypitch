@@ -19,4 +19,14 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2022',
   },
+  // The pitch stream's detector worker imports the detector, which is big
+  // enough that Rollup splits it into a chunk — and Vite's default `iife`
+  // worker format cannot express a code-split build. ES workers are what
+  // the main app already ships, and `audioWorklet.addModule` loads its
+  // file as a module regardless, so this is the only format that serves
+  // both. Requires a module-worker-capable engine, which every WebView
+  // above our minimum is.
+  worker: {
+    format: 'es',
+  },
 }))
