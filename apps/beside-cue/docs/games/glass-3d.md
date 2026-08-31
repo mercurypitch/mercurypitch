@@ -220,38 +220,100 @@ apps/beside-cue/src/games/glass3d/
     shatter3d.ts         shard bodies: impulse from pitch accuracy, integrate
     character.ts         kinematic move/jump, coyote time, jump buffer
     objectives.ts        the node chain, ported from the 2D engine
+  runtime/               the loop, deliberately NOT in the component
+    loop.ts              fixed-step accumulator, substeps, system list
+    collide.ts           Octree + Capsule wrapper (three/addons)
   render/
-    Stage3D.tsx          Solid component: canvas ref + onMount loop
+    Stage3D.tsx          Solid component: canvas ref + onMount ONLY
     renderer.ts          backend seam (mirrors GlassRenderer.ts)
     scene.ts             camera and transform math — pure, tested
-    typegpu/
-      Renderer3D.ts      passes: scene, glass, shards, dust, post
-      shaders/           TGSL functions
+    three/
+      Renderer3D.ts      scene build, materials, the per-frame draw
+      shards.ts          the one merged shard geometry
+      glass-material.ts  the physical material and its cheap tier
+      shaders/           TSL nodes
   audio/
     glass-voice.ts       modal synthesis that tracks the target note
     shatter-sfx.ts       layered crack / body / tinkle
-  assets.ts              manifest + loader
+  input/
+    look.ts              touch-drag camera; no pointer lock on mobile
+  assets.ts              manifest + loader (GLTFLoader + MeshoptDecoder)
   probes.ts              DEV window.__w3() for the E2E harness
+  debug.ts               lil-gui bound to the config, dev-only (§8)
 ```
 
 Rules carried over from the 2D engine, deliberately:
 
-1. **Imperative loop inside a Solid component.** No declarative 3D
-   wrapper. `JourneyPrototype.tsx` proves the pattern works and stays
-   debuggable.
-2. **`sim/` never imports the renderer.** Everything with a number in it
+1. **Imperative loop, mounted from a Solid component.** No declarative
+   3D wrapper — and not because none was tried: `solid-three` has no
+   stable release since 2023 and its `main` branch has not moved since,
+   while the React equivalent it ports has four orders of magnitude more
+   use. Solid does not need one anyway. A reconciler exists to diff JSX
+   into a mutable scene graph across re-renders; Solid has no re-renders,
+   so `createEffect(() => { mesh.position.x = playerX() })` _is_ the
+   reconciler, in one line.
+2. **But the loop does not live in the component.** `JourneyPrototype.tsx`
+   is 3,184 lines — runtime, simulation, rendering and UI in one file.
+   That held for 2D and it will not hold for a scene builder plus a
+   character controller plus a render loop. `Stage3D.tsx` stays under
+   about 150 lines: canvas ref, mount, unmount, signal plumbing. The
+   loop is `runtime/loop.ts`, and it can be tested without a component
+   at all.
+3. **No entity-component system.** The libraries are healthy (bitECS,
+   koota) and the case for them is real at thousands of independently
+   behaving entities or at deep behaviour composition. We have one room,
+   a few panes, one character, and a shard burst — and the shards want a
+   flat typed-array loop, which `fracture.ts` already is. Systems are
+   just functions over the world, run in order; adding an ECS would put
+   two organising principles in the same few thousand lines. Revisit if
+   a level ever ships hundreds of independently-behaving props.
+4. **`sim/` never imports the renderer.** Everything with a number in it
    is pure and tested; the renderer only draws. This is also what makes
    a fallback possible without a second game.
-3. **One config object.** `world3d-config.ts` holds every constant, and
+5. **One config object.** `world3d-config.ts` holds every constant, and
    a level can deep-merge overrides — same as `feel` in the 2D levels.
-4. **Levels are data.** A level is JSON-shaped: rooms, props, panes,
+6. **Levels are data.** A level is JSON-shaped: rooms, props, panes,
    objectives, key. No code in a level file.
-5. **Drivers unchanged.** The 3D world consumes the same
+7. **Drivers unchanged.** The 3D world consumes the same
    `InteractionDriver` (sing/tap) — the mic pipeline, the smoothing and
    the vibrato detector come along for free.
-6. **DEV probes from day one.** `window.__w3()` reporting positions,
+8. **DEV probes from day one.** `window.__w3()` reporting positions,
    wave state, pane charge and shard counts, so the synthetic-voice E2E
    harness works here exactly as it does in 2D.
+
+### 4.1 Moving Merc through it
+
+Start with **`Octree` + `Capsule` from `three/addons`** — zero
+dependencies, official, and the whole controller in the `games_fps`
+example is about sixty lines: build the octree from the loaded room,
+sweep a capsule, treat `normal.y >= 0.15` as grounded, and run five
+substeps per frame. Static triangle-mesh collision is exactly what a
+room is.
+
+Rapier's `KinematicCharacterController` is the upgrade, and only earns
+its ~2 MB of WASM when Merc has to push dynamic shards around. Its
+sharp edges, in the order they bite: it does not rotate anything (we own
+yaw), it does not apply gravity (we own that too), it has no grounded
+flag (same normal test as above), autostep is off by default and only
+fires while already touching the floor, and snap-to-ground needs a
+downward component in the desired motion or Merc launches off every
+downhill slope. Do not use `three/addons/physics/RapierPhysics.js`
+either way — see §5.2.
+
+**The jump numbers come from the design, not from tuning.** Given a
+desired height and time to apex, `gravity = -2h / t²` and
+`v = 2h / t`, which means the two numbers in `world3d-config` are the
+two a designer can actually picture. On top of that, the forgiveness
+grammar that every good platformer shares: fall gravity 1.5–2.5× the
+rise gravity, a variable height that cuts upward velocity on release
+rather than zeroing it, ~100–150 ms of coyote time, ~100–150 ms of jump
+buffering, reduced gravity near the apex, and a nudge out of near-miss
+ledges instead of a block. Ground and air acceleration are separate
+numbers.
+
+That is deliberately the same shape as the pitch forgiveness in §2.6 —
+snap-in, pitch coyote time, the decay window. Both sets of windows live
+in the one config object, because they are one design.
 
 ---
 
@@ -734,6 +796,31 @@ not decoration.
   decay tuned to the pane's target note, amplitude driven by the
   resonance level. As the player locks on, the glass sings with them and
   the partials come into tune. This is the whole audible reward.
+
+  Concretely: four to six bandpass biquads at inharmonic ratios, driven
+  by looping filtered noise whose amplitude follows `rms`, retuned in
+  real time by ramping `filter.frequency`. Six nodes, negligible cost.
+  A rubbed wine glass is sustained rather than struck, so the first mode
+  should dominate; to swell toward the break, raise `Q` (a longer ring),
+  raise gain, steepen a `WaveShaperNode` curve with the charge for
+  buzz, and bring in a slow subharmonic and tremolo as failure
+  approaches — the vibrato detector already hands us the rate and depth
+  to pump that with.
+
+  For the ratios, the closest published struck-vessel model (STK's
+  `NextMug`) is `1 : 2.13 : 4.17 : 5.06` with gains falling
+  `1.0, 0.8, 0.6, 0.4` and a pole radius of 0.997 — but that is a
+  ceramic mug, and a real wine glass has its first two modes far closer
+  together. **Measure an actual glass with our own pitch engine.** We
+  have the best possible tool for this sitting in the repo, and the
+  numbers it gives will be truer than anything published.
+
+  Synthesis rather than samples, and for a specific reason:
+  pitch-shifting a recording by `playbackRate` holds up for about three
+  or four semitones before the formants read as a chipmunk, and this
+  tone has to follow an arbitrary sung pitch across a whole vocal
+  range. No sample set covers that.
+
 - **The break**, layered in four: the resonance swell that precedes it,
   a sharp crack transient, a shard tail of 1.5–3s, then the settle. Thick
   glass wants a dull low body _before_ the bright fragments; thin glass
@@ -743,7 +830,25 @@ not decoration.
   in an Android WebView is the real risk here, and the fix is to treat
   the audio clock as the master — which is also what §4a does for pitch.
 - **One AudioContext**, shared with the pitch pipeline that already
-  exists. Resume on the same gesture that starts the game.
+  exists. Resume on the same gesture that starts the game. This is not
+  a wish — it is a fix. Beside Cue currently constructs **five**
+  separate contexts (`audio/web-audio-output.ts`,
+  `onboarding/cinematic-onboarding-audio.ts`, `screens/TapTuner.tsx`,
+  and both glass drivers), and game audio would make six, which is the
+  number older Chrome capped a tab at. The `InteractionDriver` seam
+  already anticipates the consolidation: it exposes `ctx()`, documented
+  as being shared with game output so the stage hums through the clock
+  the input is stamped with. Doing this is small, and it unblocks
+  everything else in this section.
+- **The tone has to be distinguishable from the voice, not cancelled.**
+  Echo cancellation would tame the mic-into-speaker loop and destroy
+  pitch detection, and honest pitch means AGC, noise suppression and
+  echo cancellation all stay off — that is already locked in the
+  handoff doc. So the glass must answer in a register the detector will
+  not confuse for the singer: an octave away, or gated to the frames
+  where the voice is not the thing being measured. This is a design
+  constraint on the sound, decided here rather than discovered in a
+  feedback squeal on a tablet.
 - **Haptics are already a dependency** (`@capacitor/haptics`). One buzz
   does not sell a shatter: a rising vibration during the resonance
   build, a heavy impact exactly on the crack frame, then two or three
