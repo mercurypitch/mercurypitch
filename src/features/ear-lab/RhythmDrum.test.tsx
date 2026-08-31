@@ -25,6 +25,39 @@ describe('RhythmDrum', () => {
     expect(drum().getAttribute('aria-label')).toContain('two bars')
   })
 
+  it('shows no progress rail until the bar has been started', () => {
+    render(() => <RhythmDrum bar="response" beat={0} waiting reveal={null} />)
+    expect(drum().querySelector('[data-part="progress-fill"]')).toBeNull()
+    expect(drum().textContent).toContain('tap to start')
+    expect(
+      drum().querySelectorAll('[data-part="beat-lamp"][data-passed="true"]'),
+    ).toHaveLength(0)
+  })
+
+  it('runs the rail from the anchor and fills the lamps it has passed', () => {
+    render(() => (
+      <RhythmDrum
+        bar="response"
+        beat={2}
+        run={{ from: 0.25, durationMs: 1800 }}
+        reveal={null}
+      />
+    ))
+    // Beats one and two have sounded; three and four are still ahead.
+    expect(
+      drum().querySelectorAll('[data-part="beat-lamp"][data-passed="true"]'),
+    ).toHaveLength(2)
+    // The fill spans the whole bar and is animated down to the anchor's
+    // place, so the sweep needs no per-frame work from us.
+    const fill = drum().querySelector<SVGElement>('[data-part="progress-fill"]')
+    const track = drum().querySelector('[data-part="progress-track"]')
+    const trackSpan =
+      Number(track?.getAttribute('x2')) - Number(track?.getAttribute('x1'))
+    expect(Number(fill?.getAttribute('width'))).toBe(trackSpan)
+    expect(fill?.style.getPropertyValue('--fill-from')).toBe('0.25')
+    expect(fill?.style.getPropertyValue('--fill-run')).toBe('1800ms')
+  })
+
   it('writes a score on the upper rule before the take', () => {
     render(() => (
       <RhythmDrum

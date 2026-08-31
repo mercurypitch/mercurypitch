@@ -116,6 +116,23 @@ section, the audit script walking the new stage on phone and desktop, the
 tour where a new section appears, `pnpm check`, `pnpm run pr:validate`, the
 agent index regenerated.
 
+## Still open — the rhythm drills' notation
+
+Pulse and The Chart draw a pattern as plain onset ticks on a rule, which is
+enough to tap against but is not a score. Worth a pass of its own, after
+this PR:
+
+- **Real notation.** Note heads, stems, beams and rests on a staff, so The
+  Chart is genuinely sight-reading and a player can carry what they learn
+  to paper. The tick marks are a placeholder for this.
+- **A richer running bar.** The progress line built here is one flat rule
+  through the beat lamps. It could carry the pattern itself — each onset
+  lighting as the line reaches it, the player's taps landing under it live
+  rather than only at the reveal.
+- **Subdivision guides.** Faint marks inside each beat for the grid the
+  pattern sits on (eighths, triplets, sixteenths), so a player reading a
+  gallop can see where the second note belongs.
+
 ## Invariants the follow-up must not touch
 
 From the handoff (§4 of `docs/plans/ear-lab-handoff-2026-08-09.md`): no

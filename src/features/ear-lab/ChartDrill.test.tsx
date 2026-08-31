@@ -120,9 +120,10 @@ async function beginAndRead(): Promise<{ origin: number; pad: HTMLElement }> {
   const t0 = performance.now()
   fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
   await vi.advanceTimersByTimeAsync(0)
-  // Only the count-in (4) and the wait rail (8) sound — the chart is
-  // on the paper, not in the speaker.
-  expect(ctx.createOscillator).toHaveBeenCalledTimes(12)
+  // Only the count-in sounds (4) — the chart is on the paper, not in
+  // the speaker, and the bar that follows is silent until it is
+  // started.
+  expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
   await vi.advanceTimersByTimeAsync(LEAD)
   expect(status()).toBe('Count-in — read the chart…')
   // The pattern is already written on the upper rule.
@@ -132,6 +133,9 @@ async function beginAndRead(): Promise<{ origin: number; pad: HTMLElement }> {
   const pad = screen.getByTestId('ear-tap-pad')
   expect(pad.hasAttribute('disabled')).toBe(false)
   await vi.advanceTimersByTimeAsync(PULSE_TIMING.armEarlyMs)
+  // Nothing plays the first beat for the player any more.
+  expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
+  expect(drum().textContent).toContain('tap to start')
   return { origin: t0 + LEAD + COUNT, pad }
 }
 
