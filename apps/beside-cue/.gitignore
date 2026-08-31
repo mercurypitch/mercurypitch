@@ -1,3 +1,4 @@
 
 # onnxruntime wasm pair, synced from node_modules by scripts/sync-ort-assets.mjs
 public/ort/
+art/glass/*.opt.glb

@@ -15,7 +15,8 @@
     "test:run": "vitest run",
     "cap:sync": "pnpm build && cap sync android",
     "cap:open:android": "pnpm cap:sync && cap open android",
-    "cap:run:android": "pnpm cap:sync && cap run android"
+    "cap:run:android": "pnpm cap:sync && cap run android",
+    "assets:glass": "bash scripts/assets-glass.sh"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
@@ -35,6 +36,7 @@
     "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
+    "@gltf-transform/cli": "^4.4.2",
     "@solidjs/testing-library": "^0.8.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@types/node": "^22.0.0",
