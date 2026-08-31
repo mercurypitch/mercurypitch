@@ -818,24 +818,44 @@
   min-width: 0;
 }
 
-/* Split only when the launch column has something to say. A drill with no
-   timer has one button in it, and a lone button floating in a column beside a
-   340px dial reads as a mistake — for those the stack is both tidier and
-   already short, since the icon row is gone. A short viewport overrides this
-   and splits regardless; see short-viewport.css, where height is the scarce
-   axis and balance is not the point. */
+/* Split as soon as there is width for one, timer or not. This used to be
+   gated on `:has(.exercise-timer-field)`, on the reasoning that a timerless
+   drill has one button in its launch column and a lone button floating beside
+   a 340px dial reads as a mistake — the stack being both tidier and, with the
+   icon row gone, already short enough to fit.
+
+   The second half of that stopped being true. The launch column now also
+   carries the capture note, and a stack of dial + note + Start asks for 500px
+   of a 608px card once the placeholder above it has taken its share: Dynamic
+   Swell, Chord Stacker and Staccato Precision each ran 21px past the bottom of
+   a 1400x806 tablet, putting Start under the fold. Beside the dial the same
+   content costs the taller of the two columns instead of their sum — 401px,
+   with room to spare.
+
+   So the timer is no longer the question; it only decides how the row is
+   divided. With one, launch gets a definite column of its own and setup takes
+   the rest. Without one, the row stays content-sized so the two groups sit
+   together in the middle rather than at opposite ends of a slab. That is what
+   short-viewport.css already concluded for screens under 720px tall, for the
+   same reason; the two now agree instead of one overriding the other. */
 @media (min-width: 700px) {
-  .exercise-idle-body:has(.exercise-timer-field) {
+  .exercise-idle-body {
     flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 28px;
-    /* Definite, not shrink-to-fit. A content-sized row hands the column
-       widths to whichever child has the longest text, and one of those
-       children is the vibrato hint, whose text changes with the style you
-       pick — so picking a style re-laid-out the styles. With a definite row,
-       launch takes its fixed column and setup takes the rest, and nothing
-       inside either can move them. */
+    width: auto;
+  }
+
+  /* Definite, not shrink-to-fit. A content-sized row hands the column widths
+     to whichever child has the longest text, and one of those children is the
+     vibrato hint, whose text changes with the style you pick — so picking a
+     style re-laid-out the styles. With a definite row, launch takes its fixed
+     column and setup takes the rest, and nothing inside either can move them.
+
+     Only where there is a launch column with a width of its own to divide
+     against; see the content-sized row above for the timerless case. */
+  .exercise-idle-body:has(.exercise-timer-field) {
     width: min(100%, 980px);
   }
 
@@ -845,11 +865,25 @@
   }
 
   /* Launch takes a column of its own and fills it, so the timer chips and
-     Start line up at one width instead of each finding their own. */
+     Start line up at one width instead of each finding their own. Stretched
+     around a lone Start button it would instead make a 300px slab floating in
+     space next to the dial, so it stays gated on there being segments. */
   .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
     align-items: stretch;
     flex: 0 0 auto;
     width: min(330px, 40vw);
+  }
+
+  /* Whatever is in it, the launch column never claims more room than the
+     version of itself that has the most in it. Left uncapped it claimed more:
+     content-sized around the capture note it reaches the note's 46ch, which is
+     wider than the column a timer gets, and the width comes out of the dial
+     beside it. The dial spends width on its readout, so what it gives up in
+     width it takes back in height — see short-viewport.css, where that trade
+     ran a panel off the bottom of the screen. The note is prose and wraps for
+     free; the readout wrapping costs the panel its fit, so the note gives. */
+  .exercise-idle-launch {
+    max-width: min(330px, 40vw);
   }
 
   .exercise-idle-launch .exercise-idle-start {
