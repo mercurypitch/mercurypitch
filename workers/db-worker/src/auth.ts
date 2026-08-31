@@ -19,6 +19,7 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
+import { issueCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
 import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './email'
@@ -28,6 +29,7 @@ import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { verifyTurnstile } from './turnstile'
+import { getTotpForLogin } from './twofa'
 
 export interface Env {
   /** Where emailed links land when the request Origin is not a first-party
@@ -54,6 +56,13 @@ export interface Env {
   BACKGROUND_CAPABILITY_SECRET?: string
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
+  /** AES-256-GCM key-encryption key for TOTP secrets at rest (twofa.ts).
+   *  Deliberately NOT derived from JWT_SECRET — rotating that must never
+   *  orphan every singer's second factor. Generate a separate dev/prod value
+   *  of at least 32 random bytes and set each with
+   *  `wrangler secret put TOTP_KEK --env ...`. Unset simply means 2FA is
+   *  unavailable in this environment; nothing else notices. */
+  TOTP_KEK?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
   GOOGLE_CLIENT_ID?: string
   /** OAuth client secret — required for the redirect code flow. */
@@ -606,6 +615,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // loop. Listing and ending sessions is ordinary account-settings traffic.
   'logout-all': { max: 10, windowMs: 300_000 }, // 10/5min
   sessions: { max: 60, windowMs: 300_000 }, // 60/5min
+  // ONE budget shared by /2fa/verify, /2fa/enable and /2fa/disable, because
+  // all three accept the same proof: attacking the weakest of them must not
+  // hand out a fresh allowance. Ten is roomy for mistyping and useless
+  // against a space of 10^6 codes.
+  '2fa': { max: 10, windowMs: 900_000 }, // 10/15min per account
+  // Starting setup writes a row and mints a secret; nobody does that often.
+  '2fa-setup': { max: 20, windowMs: 3_600_000 }, // 20/h per account
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
@@ -824,10 +840,11 @@ async function issueSession(
   respond: Respond,
   isNew = false,
   origin: SessionOrigin = {},
+  provider = row.authProvider,
 ): Promise<Response> {
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   assertManagedTestAccountActive(testAccount)
-  const token = await createSession(env, row, origin)
+  const token = await createSession(env, row, origin, provider)
   return respond({
     token,
     userId: row.id,
@@ -1453,7 +1470,54 @@ async function handleLogin(
     clearRateLimit(env.DB, ip, 'login'),
     clearRateLimit(env.DB, emailSubject, 'login-email'),
   ])
+  const challenge = await twofaChallenge(env, row.id, 'password')
+  if (challenge !== null) return respond(challenge)
   return issueSession(env, row, respond, false, sessionOrigin(request))
+}
+
+/**
+ * The second-factor fork, shared by every path that proves a FIRST factor.
+ *
+ * Returns the body to answer with when this account has a confirmed TOTP
+ * credential — a short-lived ceremony token and no session — or null when
+ * there is no second factor to demand and the caller should issue one.
+ *
+ * A password, a Google identity and a mailed code are each one factor. A
+ * passkey is the exception and does not come through here: a user-verified
+ * passkey is possession and inherence in a single gesture, so demanding a
+ * TOTP code after one would be asking for a third factor, not a second.
+ */
+export async function twofaChallenge(
+  env: Env,
+  userId: string,
+  provider: string,
+): Promise<{ twofaRequired: true; ceremony: string } | null> {
+  if ((await getTotpForLogin(env, userId)) === null) return null
+  const ceremony = await issueCeremony(env.JWT_SECRET as string, {
+    purpose: '2fa',
+    userId,
+    provider,
+  })
+  return { twofaRequired: true, ceremony }
+}
+
+/**
+ * Issue a session for an already-proved identity.
+ *
+ * Exported for twofa-routes.ts, which finishes a sign-in this file started:
+ * the routes module imports downward into this one, so the dispatch for those
+ * routes lives in index.ts rather than in handleAuth, and there is no cycle.
+ */
+export async function issueSessionFor(
+  env: Env,
+  userId: string,
+  provider: string,
+  respond: Respond,
+  origin: SessionOrigin = {},
+): Promise<Response> {
+  const row = await findUserById(env.DB, userId)
+  if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return issueSession(env, row, respond, false, origin, provider)
 }
 
 /** Find-or-create the user for verified Google claims (shared by the
@@ -1565,6 +1629,9 @@ async function handleGoogle(
   }
   const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
   const { row, isNew } = await resolveGoogleUser(claims, deviceId, env)
+  // A Google identity is one factor, exactly like a password.
+  const challenge = await twofaChallenge(env, row.id, 'google')
+  if (challenge !== null) return respond(challenge)
   return issueSession(env, row, respond, isNew, sessionOrigin(request))
 }
 
@@ -1895,12 +1962,22 @@ async function handleGoogleCallback(
 
   let resolved: { row: UserRow; isNew: boolean }
   let token: string
+  let pendingTwofa: string | null = null
   try {
     // The state is HMAC-signed by this worker, and handleGoogleStart puts a
     // deviceId in it only after claimedDevice cleared that id — so this one is
     // already proved and cannot have been forged in transit.
     resolved = await resolveGoogleUser(claims, state.deviceId, env)
-    token = await createSession(env, resolved.row, sessionOrigin(request))
+    const challenge = await twofaChallenge(env, resolved.row.id, 'google')
+    if (challenge !== null) {
+      // No session yet: the browser gets the ceremony token and the client
+      // opens the code pane. Minting the session here and hoping the client
+      // asks for a code would make 2FA advisory.
+      pendingTwofa = challenge.ceremony
+      token = ''
+    } else {
+      token = await createSession(env, resolved.row, sessionOrigin(request))
+    }
   } catch (error) {
     if (error instanceof AccountSuspendedError) {
       return redirectWithError(state.returnTo, error.code)
@@ -1909,6 +1986,11 @@ async function handleGoogleCallback(
   }
   const { isNew } = resolved
 
+  if (pendingTwofa !== null) {
+    return redirect(
+      `${state.returnTo}#gauth_2fa=${encodeURIComponent(pendingTwofa)}`,
+    )
+  }
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
@@ -2734,6 +2816,10 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // keep a row naming a user id that no longer belongs to anyone — and, if
   // that id were ever reissued, would hand the new owner a live session.
   { table: 'authSessions', column: 'userId' },
+  // The second factor and its backup codes. An encrypted TOTP secret is still
+  // a credential, and an account that asked to be forgotten must not keep one.
+  { table: 'totpCredentials', column: 'userId' },
+  { table: 'recoveryCodes', column: 'userId' },
 ]
 
 /**

@@ -29,6 +29,7 @@ import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
 import { SessionList } from './SessionList'
+import { TwoFactorSettings } from './TwoFactorSettings'
 import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
@@ -416,6 +417,15 @@ export const AccountSection: Component = () => {
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <SessionList />
+          </div>
+        </Show>
+
+        {/* A second factor needs a password (or Google) to be a second OF —
+            a device identity has no first factor to add one to. Same gate as
+            the device list above, for the same reason. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <TwoFactorSettings />
           </div>
         </Show>
 

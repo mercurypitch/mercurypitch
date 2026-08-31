@@ -19,6 +19,7 @@ import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
+import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
@@ -1858,6 +1859,16 @@ async function handleRequest(
       await isAdmin(request, env),
     )
   }
+
+  // Ahead of handleAuth so the import runs one way: twofa-routes imports
+  // auth.ts for getAuth and the session issuer, and auth.ts never imports it.
+  const twofaResponse = await handleTwofaRoute(
+    request,
+    env,
+    url.pathname,
+    respond,
+  )
+  if (twofaResponse) return twofaResponse
 
   const authResponse = await handleAuth(
     request,

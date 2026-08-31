@@ -13,7 +13,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
-import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
+import { verifyTwofa } from '@/db/services/auth-mfa-service'
+import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
@@ -27,7 +28,13 @@ import { GoogleMark } from './GoogleMark'
 import { PasswordRequirements } from './PasswordRequirements'
 import { PhoneSignIn } from './PhoneSignIn'
 
-type Pane = 'login' | 'register' | 'forgot' | 'forgot-sent' | 'phone'
+type Pane =
+  | 'login'
+  | 'register'
+  | 'forgot'
+  | 'forgot-sent'
+  | 'phone'
+  | 'twofa'
 
 const TITLES: Record<Pane, string> = {
   login: 'Sign in',
@@ -35,6 +42,7 @@ const TITLES: Record<Pane, string> = {
   forgot: 'Reset your password',
   'forgot-sent': 'Check your inbox',
   phone: 'Sign in with your phone',
+  twofa: 'Enter your code',
 }
 
 export interface AuthModalProps {
@@ -67,6 +75,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   // The address the forgot-sent confirmation names (snapshotted on send,
   // so later edits to the field can't rewrite the message).
   const [sentTo, setSentTo] = createSignal('')
+  // The ceremony token a sign-in came back needing a code for. Holding it
+  // proves the first factor was accepted and nothing else — it buys no
+  // session on its own, which is exactly why the password can be forgotten
+  // the moment it is issued.
+  const [ceremony, setCeremony] = createSignal('')
+  const [twofaCode, setTwofaCode] = createSignal('')
 
   /**
    * Has anything been typed into this form?
@@ -100,6 +114,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     resetTurnstile()
     // The baseline `dirty` compares against — see close()/onBackdropClick.
     setEmailAtOpen(untrack(email))
+    // A Google redirect can come back owing a second factor. It carries the
+    // ceremony in the URL fragment, which auth-service stashes at startup;
+    // picking it up here is what turns that into a visible code prompt
+    // instead of a sign-in that silently did nothing.
+    const googleCeremony = takeGoogleTwofaChallenge()
+    if (googleCeremony !== null) {
+      setCeremony(googleCeremony)
+      setPane('twofa')
+    }
   })
 
   function close(): void {
@@ -133,6 +156,10 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     setPane(next)
     setError('')
     setShowPassword(false)
+    if (next !== 'twofa') {
+      setCeremony('')
+      setTwofaCode('')
+    }
     // The control that changes panes unmounts. Without an explicit handoff,
     // focus falls to <body> and the next Tab enters at the end of the dialog,
     // skipping every field in the newly displayed form.
@@ -205,11 +232,26 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
           props.onAuthenticated?.()
           close()
         } else if (current === 'login') {
-          await loginWithPassword(
+          const outcome = await loginWithPassword(
             credentials.email,
             credentials.password,
             token,
           )
+          if (request !== requestGeneration) return
+          if (isTwofaChallenge(outcome)) {
+            // The password was right and bought nothing. Drop it from the
+            // form before showing the next pane: it is no longer needed, and
+            // leaving it in a live input is a needless place for it to sit.
+            setPassword('')
+            setCeremony(outcome.ceremony)
+            switchPane('twofa')
+            return
+          }
+          showNotification('Signed in', 'info')
+          props.onAuthenticated?.()
+          close()
+        } else if (current === 'twofa') {
+          await verifyTwofa(ceremony(), twofaCode())
           if (request !== requestGeneration) return
           showNotification('Signed in', 'info')
           props.onAuthenticated?.()
@@ -317,6 +359,68 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   Back to sign in
                 </button>
               </div>
+            </Match>
+
+            {/* Second factor. Reached from a password sign-in, from a
+                mailed code, and from the Google redirect — the pane does not
+                care which, because the ceremony token carries that. */}
+            <Match when={pane() === 'twofa'}>
+              <p class={styles.sub}>
+                Open your authenticator app and enter the six-digit code. No
+                app to hand? One of your recovery codes works here too.
+              </p>
+              <form
+                class={styles.form}
+                onSubmit={handleSubmit}
+                data-testid="auth-twofa-form"
+              >
+                <Show when={error() !== ''}>
+                  <p
+                    class={styles.errorNote}
+                    data-testid="auth-error"
+                    role="alert"
+                  >
+                    {error()}
+                  </p>
+                </Show>
+                <label class={styles.field}>
+                  <span class={styles.fieldLabel}>Code</span>
+                  <input
+                    class={styles.input}
+                    type="text"
+                    value={twofaCode()}
+                    onInput={(e) => setTwofaCode(e.currentTarget.value)}
+                    // One-time-code autofill so iOS and Android offer the
+                    // code from the notification rather than making somebody
+                    // switch apps and retype it.
+                    autocomplete="one-time-code"
+                    inputmode="text"
+                    autofocus
+                    required
+                    disabled={busy()}
+                    data-testid="auth-twofa-code"
+                    placeholder="123456"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  class={styles.submit}
+                  disabled={busy() || twofaCode().trim() === ''}
+                  data-testid="auth-twofa-submit"
+                >
+                  {busy() ? 'Checking…' : 'Sign in'}
+                </button>
+              </form>
+              <p class={styles.switchRow}>
+                <button
+                  type="button"
+                  class={styles.linkButton}
+                  onClick={() => switchPane('login')}
+                  data-testid="auth-twofa-back"
+                >
+                  Start over
+                </button>
+              </p>
             </Match>
 
             {/* Login / register / forgot form */}

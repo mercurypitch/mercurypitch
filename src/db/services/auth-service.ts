@@ -51,6 +51,24 @@ export interface AuthResponse {
   user: AuthUserInfo
 }
 
+/**
+ * What a sign-in answers with when the account has a second factor: a
+ * short-lived ceremony token and NO session. The token grants nothing but the
+ * right to attempt one code — see verifyTwofa in auth-mfa-service.
+ */
+export interface TwofaChallenge {
+  twofaRequired: true
+  ceremony: string
+}
+
+export type SignInOutcome = AuthResponse | TwofaChallenge
+
+export function isTwofaChallenge(
+  outcome: SignInOutcome,
+): outcome is TwofaChallenge {
+  return (outcome as TwofaChallenge).twofaRequired === true
+}
+
 export interface MeResponse {
   user: AuthUserInfo
   profile: Record<string, unknown> | null
@@ -211,10 +229,29 @@ async function handleAuthResponse(
   return handleAuthErrorResponse(response.status, body, providerHint)
 }
 
+/**
+ * The routes that cannot be challenged (register, anonymous). A second factor
+ * arriving here would mean the server changed under us; failing loudly beats
+ * storing `undefined` as a token and 401-ing on every later call.
+ */
 async function postAuth(
   route: string,
   body: Record<string, unknown>,
 ): Promise<AuthResponse> {
+  const outcome = await postSignIn(route, body)
+  if (isTwofaChallenge(outcome)) {
+    throw new AuthHttpError(
+      'This account needs a second factor — sign in from the sign-in screen',
+      409,
+    )
+  }
+  return outcome
+}
+
+async function postSignIn(
+  route: string,
+  body: Record<string, unknown>,
+): Promise<SignInOutcome> {
   const res = await fetch(`${requireBaseUrl()}/api/auth/${route}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -245,7 +282,13 @@ async function postAuth(
       code !== '' ? code : undefined,
     )
   }
-  const auth = (await res.json()) as AuthResponse
+  const outcome = (await res.json()) as SignInOutcome
+  if (isTwofaChallenge(outcome)) {
+    // Deliberately no token to store and no authChanged(): the password was
+    // right, and that alone buys nothing. The caller shows the code pane.
+    return outcome
+  }
+  const auth = outcome
   setAuthToken(auth.token)
   setRequiresLogin(false)
   tokenServerVerified = true // freshly issued by this server
@@ -429,8 +472,21 @@ export async function loginWithPassword(
   email: string,
   password: string,
   cfTurnstileToken?: string,
-): Promise<AuthResponse> {
-  return postAuth('login', { email, password, cfTurnstileToken })
+): Promise<SignInOutcome> {
+  return postSignIn('login', { email, password, cfTurnstileToken })
+}
+
+/**
+ * Adopt a session the 2FA challenge produced.
+ *
+ * The ceremony finishes in auth-mfa-service, which has no business touching
+ * this module's private token state — so it hands the response back here.
+ */
+export function adoptSession(auth: AuthResponse): void {
+  setAuthToken(auth.token)
+  setRequiresLogin(false)
+  tokenServerVerified = true
+  authChanged()
 }
 
 /**
@@ -460,6 +516,8 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
 export type GoogleRedirectResult = { ok: true } | { ok: false; error: string }
 
 let googleRedirectResult: GoogleRedirectResult | null = null
+/** Set when the redirect came back asking for a second factor (see below). */
+let pendingGoogleTwofa: string | null = null
 
 /**
  * Did the redirect that just landed CREATE the account, rather than sign
@@ -546,6 +604,12 @@ export function consumeGoogleRedirect(): void {
   const params = new URLSearchParams(hash.slice(1))
   const token = params.get('gauth')
   const error = params.get('gauth_error')
+  // The account has a second factor, so the worker sent a ceremony token in
+  // place of a session. Same URL fragment as the token itself, for the same
+  // reason: a fragment never reaches a server. Stashed for the UI to pick up
+  // and open the code pane with — nothing is signed in yet.
+  const twofa = params.get('gauth_2fa')
+  if (twofa != null && twofa !== '') pendingGoogleTwofa = twofa
 
   // Read outside the sign-in branch: the Drive outcome has to survive both
   // shapes of return — the standalone connect pass, which is the only one
@@ -592,6 +656,18 @@ export function consumeGoogleRedirect(): void {
     '',
     window.location.pathname + window.location.search + returnHash,
   )
+}
+
+/**
+ * The ceremony a Google sign-in came back needing a code for, if any.
+ *
+ * One-shot, like the other redirect outcomes: reading it clears it, so a
+ * later render cannot reopen a challenge that was already answered.
+ */
+export function takeGoogleTwofaChallenge(): string | null {
+  const ceremony = pendingGoogleTwofa
+  pendingGoogleTwofa = null
+  return ceremony
 }
 
 /** One-shot result of the redirect sign-in, for UI notifications. */

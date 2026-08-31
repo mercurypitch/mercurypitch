@@ -13,9 +13,20 @@ const mocks = vi.hoisted(() => ({
   registerWithPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
+  // Real behaviour, not a constant: the modal branches on this, and a mock
+  // that always says "no" would hide a challenge these tests never see.
+  isTwofaChallenge: (outcome: unknown) =>
+    (outcome as { twofaRequired?: boolean } | null)?.twofaRequired === true,
+  takeGoogleTwofaChallenge: vi.fn((): string | null => null),
 }))
 
+const mfaMocks = vi.hoisted(() => ({ verifyTwofa: vi.fn() }))
+
 vi.mock('@/db/services/auth-service', () => mocks)
+
+vi.mock('@/db/services/auth-mfa-service', () => ({
+  verifyTwofa: (...a: unknown[]) => mfaMocks.verifyTwofa(...a),
+}))
 
 vi.mock('../account/PhoneSignIn', () => ({
   PhoneSignIn: (props: { onLinked: () => void }) => (
@@ -35,6 +46,7 @@ import { AuthModal } from '../account/AuthModal'
 beforeEach(() => {
   resetGoogleSignInPending()
   vi.clearAllMocks()
+  mocks.takeGoogleTwofaChallenge.mockReturnValue(null)
   closeAuthModal()
 })
 
@@ -332,5 +344,110 @@ describe('Continue with Google', () => {
       ).toBeTruthy(),
     )
     expect(window.location.assign).not.toHaveBeenCalled()
+  })
+})
+
+// ── The second-factor pane ───────────────────────────────────────────
+//
+// The password buying nothing on its own is the whole point of the feature,
+// so these assert on what is NOT stored as much as on what is shown.
+
+describe('the second factor', () => {
+  it('asks for a code instead of closing when the account owes one', async () => {
+    mocks.loginWithPassword.mockResolvedValue({
+      twofaRequired: true,
+      ceremony: 'ceremony-token',
+    })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
+    // The modal is still open and nothing was announced as a sign-in.
+    expect(onAuthenticated).not.toHaveBeenCalled()
+    expect(screen.getByTestId('auth-modal-overlay')).toBeTruthy()
+  })
+
+  it('spends the ceremony token, not the password, on the code', async () => {
+    mocks.loginWithPassword.mockResolvedValue({
+      twofaRequired: true,
+      ceremony: 'ceremony-token',
+    })
+    mfaMocks.verifyTwofa.mockResolvedValue({ token: 'jwt' })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    fireEvent.input(await screen.findByTestId('auth-twofa-code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-twofa-submit'))
+
+    await waitFor(() =>
+      expect(mfaMocks.verifyTwofa).toHaveBeenCalledWith(
+        'ceremony-token',
+        '123456',
+      ),
+    )
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+    expect(mocks.loginWithPassword).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the pane open and says why when the code is wrong', async () => {
+    mocks.loginWithPassword.mockResolvedValue({
+      twofaRequired: true,
+      ceremony: 'ceremony-token',
+    })
+    mfaMocks.verifyTwofa.mockRejectedValue(new Error('That code did not match'))
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    fireEvent.input(await screen.findByTestId('auth-twofa-code'), {
+      target: { value: '000000' },
+    })
+    fireEvent.click(screen.getByTestId('auth-twofa-submit'))
+
+    await waitFor(() =>
+      expect(screen.getByText('That code did not match')).toBeTruthy(),
+    )
+    expect(screen.getByTestId('auth-twofa-form')).toBeTruthy()
+    expect(onAuthenticated).not.toHaveBeenCalled()
+  })
+
+  it('picks up a challenge carried back from the Google redirect', async () => {
+    // Google's redirect lands on the app, not on a fetch this modal made, so
+    // the challenge arrives through the parked signal rather than a return
+    // value. Missing it would look like a sign-in that silently did nothing.
+    mocks.takeGoogleTwofaChallenge.mockReturnValue('google-ceremony')
+    render(() => <AuthModal />)
+
+    openAuthModal('login')
+
+    expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
   })
 })

@@ -9,6 +9,14 @@
 JWT_SECRET=dev-only-secret-change-me
 ADMIN_KEY=dev-admin-key
 
+# AES-256-GCM key-encryption key for TOTP secrets at rest (twofa.ts).
+# Deliberately NOT derived from JWT_SECRET, for the reason already written on
+# BACKGROUND_CAPABILITY_SECRET: rotating JWT_SECRET must never orphan every
+# singer's second factor. At least 32 random bytes, different per environment:
+#   openssl rand -base64 48 | tr -d '\n' | tr '+/' '-_'
+# With this unset the 2FA routes answer 503 and nothing else is affected.
+TOTP_KEK=dev-only-totp-kek-change-me
+
 # OAuth 2.0 Client ID (Web application) from Google Cloud Console.
 GOOGLE_CLIENT_ID=144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com
 

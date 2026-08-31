@@ -138,6 +138,16 @@ class AuthStatement {
     }
 
     if (
+      this.sql ===
+      'SELECT secretEnc, lastUsedStep FROM totpCredentials WHERE userId = ? AND confirmedAt IS NOT NULL'
+    ) {
+      // No account in this file enrolls 2FA, so every sign-in here takes the
+      // "no second factor" branch. The 2FA behaviour itself is covered against
+      // real SQLite in node-tests/twofa-integration.test.ts.
+      return null
+    }
+
+    if (
       this.sql === 'SELECT id FROM authSessions WHERE id = ? AND userId = ?'
     ) {
       const [id, userId] = this.values.map(String)
