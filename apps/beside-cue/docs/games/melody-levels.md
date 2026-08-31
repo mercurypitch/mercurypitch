@@ -334,8 +334,14 @@ verbs into one short do-mi-sol melody so each is met once:
 - **Improv Atrium** (`AtriumZone`): no platforms — any _in-scale_ note
   (quantized within `atrium.snapSemis`, held `stableMs`) spawns an
   ephemeral glass step ahead of Merc (`stepTtlMs` 7000, `maxSteps` 14,
-  oldest fades). First taste of improvising inside a key; the tonic is
-  a dashed "home" line. Rhythm/listen compile it to a rest.
+  oldest fades). **The steps ARE the floor**: Merc walks only as far as
+  his furthest live step (`stepReachBack` behind its edge), and only
+  while the voice is in key — silence or a stray tone stops him where
+  he stands. The room draws every scale degree as a named rung and
+  labels itself, so it reads as a keyboard rather than empty dashed
+  space. Crossing scores as the in-key share of voiced time
+  (`inKeyFullRatio` 0.7 already earns full marks — improv means some
+  searching is free). Rhythm/listen compile it to a rest.
 
 All knobs in `journey-config` (`ring`, `beam`, `atrium`, `vibrato`).
 The vibrato detector (`vibrato.ts`, pure + tested) needs fractional

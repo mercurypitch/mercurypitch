@@ -226,7 +226,7 @@ export const compileLevel = (
         a,
         hint:
           seg.hint ??
-          'The open room — any note in the key raises a step. Walk your own melody out.',
+          'The open room — only notes in its key carry you on, and each raises a step. Walk your own melody out.',
       })
       cursor = x1
       afterBoundary = true

@@ -157,6 +157,9 @@ export const JourneyPrototype: Component<{
   let flakes: { x: number; y: number; vx: number; vy: number; t: number }[] = []
   let atriumHoldMidi = -1
   let atriumHoldMs = 0
+  let atriumVoicedT = 0
+  let atriumInT = 0
+  let atriumCentsSum = 0
   // DEV: recent raw pitch samples for the __vib probe
   const rawRing: { t: number; m: number | null }[] = []
   /** Input-latency compensation, ms: the tap tuner's stored per-device
@@ -586,6 +589,9 @@ export const JourneyPrototype: Component<{
     flakes = []
     atriumHoldMidi = -1
     atriumHoldMs = 0
+    atriumVoicedT = 0
+    atriumInT = 0
+    atriumCentsSum = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -650,6 +656,9 @@ export const JourneyPrototype: Component<{
     flakes = []
     atriumHoldMidi = -1
     atriumHoldMs = 0
+    atriumVoicedT = 0
+    atriumInT = 0
+    atriumCentsSum = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -1282,7 +1291,13 @@ export const JourneyPrototype: Component<{
               best = m2
             }
           }
+          const inZone = mercWX > a.x0 - 0.3
+          if (inZone) atriumVoicedT += dt
           if (best >= 0 && bd <= C.atrium.snapSemis) {
+            if (inZone) {
+              atriumInT += dt
+              atriumCentsSum += bd * 100 * dt
+            }
             if (atriumHoldMidi === best) {
               atriumHoldMs += dt
             } else {
@@ -1301,7 +1316,18 @@ export const JourneyPrototype: Component<{
           atriumHoldMidi = -1
           atriumHoldMs = 0
         }
-        if (mercWX >= a.x1 - 0.3) advanceTo(activeIdx + 1)
+        if (mercWX >= a.x1 - 0.3) {
+          const ratio = atriumVoicedT > 0 ? atriumInT / atriumVoicedT : 0
+          tally.quality.set(
+            activeIdx,
+            Math.min(1, ratio / C.atrium.inKeyFullRatio),
+          )
+          if (atriumInT > 0) tally.centsMeans.push(atriumCentsSum / atriumInT)
+          atriumVoicedT = 0
+          atriumInT = 0
+          atriumCentsSum = 0
+          advanceTo(activeIdx + 1)
+        }
       }
     }
 
@@ -1775,10 +1801,27 @@ export const JourneyPrototype: Component<{
                   ? n.beam.x1 + 0.5
                   : mercWX
               break
-            case 'atrium':
-              // the room drifts you onward; your notes lay the floor
-              wantWX = n.a.x1 + 0.5
+            case 'atrium': {
+              // the room has no floor of its own: you walk exactly as
+              // far as the steps you have sung, and only a note IN THE
+              // KEY carries you along them
+              let ad = Infinity
+              for (const m2 of n.a.scaleMidis) {
+                ad = Math.min(ad, Math.abs(midi - m2))
+              }
+              let reach = n.a.x0
+              for (const pl of platforms) {
+                if (pl.ephemeral === true && !pl.broken && pl.x1 > reach) {
+                  reach = pl.x1
+                }
+              }
+              const edge = Math.min(
+                n.a.x1 + 0.5,
+                reach - C.atrium.stepReachBack,
+              )
+              wantWX = ad <= C.atrium.snapSemis && edge > mercWX ? edge : mercWX
               break
+            }
           }
         } else if (restIdx !== null) {
           const pl = platforms[restIdx]
@@ -2030,15 +2073,31 @@ export const JourneyPrototype: Component<{
         ctx.stroke()
       }
       ctx.setLineDash([])
-      // the home line: where the tonic waits
-      const hy = yFor(a.tonicMidi) * h
-      ctx.strokeStyle = 'rgba(126,231,255,0.22)'
+      // the key, drawn: every note that will hold your weight gets a
+      // faint rung, so the room reads as a keyboard and not a gap
+      ctx.font = "700 12px 'Saira Condensed', monospace"
       ctx.setLineDash([2, 7])
-      ctx.beginPath()
-      ctx.moveTo(ax0 + 6, hy)
-      ctx.lineTo(ax1 - 6, hy)
-      ctx.stroke()
+      for (const m of a.scaleMidis) {
+        const my = yFor(m) * h
+        if (my < -20 || my > h + 20) continue
+        const home = m === a.tonicMidi
+        ctx.strokeStyle = home
+          ? 'rgba(126,231,255,0.30)'
+          : 'rgba(126,231,255,0.14)'
+        ctx.beginPath()
+        ctx.moveTo(ax0 + 6, my)
+        ctx.lineTo(ax1 - 6, my)
+        ctx.stroke()
+        ctx.fillStyle = home
+          ? 'rgba(126,231,255,0.62)'
+          : 'rgba(126,231,255,0.32)'
+        ctx.fillText(midiToNoteNameOctave(m), ax0 + 10, my - 5)
+      }
       ctx.setLineDash([])
+      // the room says what it is — no unexplained dashed space
+      ctx.fillStyle = 'rgba(126,231,255,0.5)'
+      ctx.font = "700 13px 'Saira Condensed', monospace"
+      ctx.fillText('IMPROV ATRIUM — SING IN KEY TO LAY THE FLOOR', ax0 + 10, 26)
     }
 
     const slabH = Math.max(

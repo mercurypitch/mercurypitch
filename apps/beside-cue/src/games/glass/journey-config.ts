@@ -367,6 +367,12 @@ export const JOURNEY_CONFIG = {
     stepTtlMs: 7000,
     /** Cap on live steps (oldest fades first past it). */
     maxSteps: 14,
+    /** In-key share of voiced time that already counts as a perfect
+     * crossing — improv means some out-of-key searching is free. */
+    inKeyFullRatio: 0.7,
+    /** Merc stands this far back from his furthest step's edge — the
+     * floor you have sung IS how far the room lets you walk. */
+    stepReachBack: 0.25,
   },
 
   /** Run scoring (score.ts): real units first, pass band not finish
