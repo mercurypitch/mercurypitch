@@ -43,9 +43,27 @@ export const ReturningSignIn: Component = () => {
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
 
+  const method = (): SignInMethod | '' => lastSignInMethod()
+
+  /**
+   * The conditions this device can answer on its own, with no network.
+   *
+   * Checked first because they are false for almost everybody — a first-time
+   * visitor, a device that has never signed in — and asking the server who we
+   * are before checking them would put two round-trips on every Home load to
+   * decide not to render anything.
+   */
+  const eligible = (): boolean =>
+    cloudConfigured &&
+    // Never before somebody has actually used the app. A sign-in prompt on a
+    // first visit is asking for an account before there is anything to keep.
+    !isFirstRun() &&
+    method() !== '' &&
+    !returningPromptDismissed()
+
   createEffect(() => {
     authVersion()
-    if (!cloudConfigured) return
+    if (!eligible()) return
     void (async () => {
       try {
         // Restore only. Rendering Home must never provision an identity.
@@ -63,17 +81,7 @@ export const ReturningSignIn: Component = () => {
   const signedIn = (): boolean =>
     provider() === 'password' || provider() === 'google'
 
-  const method = (): SignInMethod | '' => lastSignInMethod()
-
-  const visible = (): boolean =>
-    cloudConfigured &&
-    resolved() &&
-    !signedIn() &&
-    // Never before somebody has actually used the app. A sign-in prompt on a
-    // first visit is asking for an account before there is anything to keep.
-    !isFirstRun() &&
-    method() !== '' &&
-    !returningPromptDismissed()
+  const visible = (): boolean => eligible() && resolved() && !signedIn()
 
   async function act(): Promise<void> {
     const current = method()

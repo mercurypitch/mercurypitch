@@ -86,14 +86,26 @@ afterEach(() => {
 })
 
 describe('when it stays out of the way', () => {
+  /**
+   * Settle whatever the effect was going to do, then assert nothing rendered.
+   *
+   * A microtask flush rather than a wait-for-the-fetch, because the cases
+   * below are exactly the ones that must NOT reach the network.
+   */
+  async function settle(): Promise<void> {
+    await Promise.resolve()
+    await Promise.resolve()
+  }
+
   it('says nothing to a visitor who has never finished onboarding', async () => {
     // The condition asked for by name: no sign-in prompt before somebody has
     // actually used the app. There is nothing to keep yet.
     mocks.isFirstRun.mockReturnValue(true)
     render(() => <ReturningSignIn />)
 
-    await waitFor(() => expect(mocks.fetchMe).toHaveBeenCalled())
+    await settle()
     expect(screen.queryByTestId('returning-signin')).toBeNull()
+    expect(mocks.fetchMe).not.toHaveBeenCalled()
   })
 
   it('says nothing on a device that has never signed in', async () => {
@@ -102,8 +114,24 @@ describe('when it stays out of the way', () => {
     mocks.lastSignInMethod.mockReturnValue('')
     render(() => <ReturningSignIn />)
 
-    await waitFor(() => expect(mocks.fetchMe).toHaveBeenCalled())
+    await settle()
     expect(screen.queryByTestId('returning-signin')).toBeNull()
+    expect(mocks.fetchMe).not.toHaveBeenCalled()
+  })
+
+  // Home renders on every load, so the common cases must cost nothing. Only a
+  // device that already passes every local condition is worth a round-trip —
+  // and that is the one case where the answer cannot be known locally.
+  it('does not ask the server who we are unless it might render', async () => {
+    mocks.isFirstRun.mockReturnValue(true)
+    render(() => <ReturningSignIn />)
+    await settle()
+    expect(mocks.restoreAuth).not.toHaveBeenCalled()
+
+    cleanup()
+    mocks.isFirstRun.mockReturnValue(false)
+    render(() => <ReturningSignIn />)
+    await waitFor(() => expect(mocks.restoreAuth).toHaveBeenCalled())
   })
 
   it('says nothing to somebody already signed in', async () => {
@@ -139,8 +167,9 @@ describe('when it stays out of the way', () => {
     mocks.returningPromptDismissed.mockReturnValue(true)
     render(() => <ReturningSignIn />)
 
-    await waitFor(() => expect(mocks.fetchMe).toHaveBeenCalled())
+    await settle()
     expect(screen.queryByTestId('returning-signin')).toBeNull()
+    expect(mocks.fetchMe).not.toHaveBeenCalled()
   })
 })
 
