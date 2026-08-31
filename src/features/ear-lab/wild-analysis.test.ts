@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { UvrSession } from '@/stores/uvr-store'
 import type { WildAnalysisDeps, WildProgress } from './wild-analysis'
-import { CHORD_RATE, chordsOf, decimate, keyOf, monoOf, noteSeconds, readWildSession, } from './wild-analysis'
+import { CHORD_RATE, chordsOf, decimate, keyOf, monoOf, noteSeconds, readWildSession, STEM_PHASE_PCT, } from './wild-analysis'
 
 vi.mock('@/db/services/uvr-service', () => ({
   getStemBlobUrl: vi.fn(async () => null),
@@ -120,16 +120,60 @@ describe('readWildSession', () => {
     expect(rate).toBe(CHORD_RATE)
     expect(mono.length).toBe(Math.floor((44_100 * 2) / 4))
     expect(progress.map((p) => p.phase)).toEqual([
-      'stems',
-      'stems',
-      'stems',
-      'stems',
+      ...Array.from({ length: progress.length - 4 }, () => 'stems'),
       'notes',
       'notes',
       'chords',
       'chords',
     ])
     expect(progress[progress.length - 1].pct).toBe(100)
+  })
+
+  it('names each stem it opens and never lets the bar go backwards', async () => {
+    const { deps: d } = deps({
+      stemUrl: async (_s, stem) => `blob:${stem}`,
+      // A stem served with a Content-Length: the reader reports fractions as
+      // the bytes land, which is what the stems phase used to throw away.
+      fetchBytes: async (_url, onProgress) => {
+        onProgress?.(0)
+        onProgress?.(0.5)
+        onProgress?.(1)
+        return new ArrayBuffer(4)
+      },
+    })
+    const progress: WildProgress[] = []
+    await readWildSession(session, d, (p) => progress.push(p))
+
+    const stems = progress.filter((p) => p.phase === 'stems')
+    expect([...new Set(stems.map((p) => p.detail))]).toEqual([
+      undefined,
+      'vocal',
+      'instrumental',
+      'bass',
+    ])
+    // Each stem moves the bar while it downloads rather than jumping once.
+    for (const stem of ['vocal', 'instrumental', 'bass']) {
+      const own = stems.filter((p) => p.detail === stem)
+      expect(new Set(own.map((p) => p.pct)).size).toBeGreaterThan(2)
+    }
+    expect(Math.max(...stems.map((p) => p.pct))).toBe(STEM_PHASE_PCT)
+    const pcts = progress.map((p) => p.pct)
+    expect(pcts).toEqual([...pcts].sort((a, b) => a - b))
+  })
+
+  it('holds the bar still for a stem the server sends without a length', async () => {
+    const { deps: d } = deps({
+      fetchBytes: async (_url, onProgress) => {
+        onProgress?.(null)
+        onProgress?.(null)
+        return new ArrayBuffer(4)
+      },
+    })
+    const progress: WildProgress[] = []
+    await readWildSession(session, d, (p) => progress.push(p))
+    const vocal = progress.filter((p) => p.detail === 'vocal')
+    // No invented motion: the slice's start, the download's end, the decode.
+    expect(vocal.map((p) => p.pct)).toEqual([0, 5, 7])
   })
 
   it('refuses a song without both stems', async () => {

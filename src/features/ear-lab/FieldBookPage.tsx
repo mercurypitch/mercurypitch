@@ -93,14 +93,30 @@ export function FieldBookPage(props: FieldBookPageProps): JSX.Element {
         )}
       </For>
       <Show when={props.pct !== null}>
-        <line
-          x1="90"
-          y1="206"
-          x2={90 + (340 * (props.pct ?? 0)) / 100}
-          y2="206"
-          class={styles.brassLine}
-          data-part="progress"
-        />
+        <g data-part="reading">
+          {/* The trough. Without it a reading that has just begun draws a
+              zero-length brass line and the page looks like nothing started —
+              which is exactly what the longest part of the reading, the stem
+              downloads, used to look like. */}
+          <line x1="90" y1="206" x2="430" y2="206" class={styles.faintLine} />
+          <line
+            x1="90"
+            y1="206"
+            x2={90 + (340 * (props.pct ?? 0)) / 100}
+            y2="206"
+            class={styles.brassLine}
+            data-part="progress"
+          />
+          <text
+            x="430"
+            y="199"
+            text-anchor="end"
+            class={styles.caption}
+            data-part="pct"
+          >
+            {props.pct}%
+          </text>
+        </g>
       </Show>
     </svg>
   )

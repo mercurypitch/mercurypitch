@@ -18,6 +18,7 @@ import { getStemBlobUrl } from '@/db/services/uvr-service'
 import { computeNNLSChroma, detectChords, simplifyChordSequence, } from '@/lib/chord-detector'
 import type { WildBook, WildChord, WildKey, WildNote } from '@/lib/ear/wild'
 import { buildWildBook, pitchClassOfName } from '@/lib/ear/wild'
+import { fetchArrayBufferWithProgress } from '@/lib/fetch-progress'
 import type { KeyEstimate, KeyNote } from '@/lib/key-detection/key-detector'
 import { detectKeyFromNotes } from '@/lib/key-detection/key-detector'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -44,11 +45,27 @@ export interface WildProgress {
   phase: WildPhase
   /** 0..100 across the whole reading. */
   pct: number
+  /**
+   * Which part of the phase is running — the stem being opened, for the one
+   * phase that has more than one thing to do. The phase word alone left the
+   * longest stretch of the whole reading saying nothing but "opening the
+   * stems" while three separate files downloaded and decoded.
+   */
+  detail?: string
 }
 
 export interface WildAnalysisDeps {
   stemUrl: (session: UvrSession, stem: UvrStemType) => Promise<string | null>
-  fetchBytes: (url: string) => Promise<ArrayBuffer>
+  /**
+   * `onProgress` is a fraction 0..1 of this one stem, or null when the
+   * server sent no Content-Length. Without it the download — the longest
+   * part of the reading on a phone or a slow link — reported nothing at all
+   * between one stem finishing and the next.
+   */
+  fetchBytes: (
+    url: string,
+    onProgress?: (fraction: number | null) => void,
+  ) => Promise<ArrayBuffer>
   decode: (bytes: ArrayBuffer) => Promise<AudioBuffer>
   detectNotes: (
     mono: Float32Array,
@@ -58,6 +75,15 @@ export interface WildAnalysisDeps {
   detectKey: (notes: KeyNote[]) => KeyEstimate
   chordFrames: (mono: Float32Array, sampleRate: number) => ChordFrame[]
 }
+
+/**
+ * Where each phase of the reading sits on the 0..100 bar. Opening the stems is
+ * the first fifth, hearing the notes runs to 70, and the chords take the rest.
+ * They live here rather than as numbers spelled out at each report so a change
+ * to one boundary cannot leave the bar jumping backwards at a hand-off.
+ */
+export const STEM_PHASE_PCT = 20
+export const NOTE_PHASE_END_PCT = 70
 
 /** Chroma analysis rate and frame: 2.7 Hz bins, a hop of 186 ms. */
 export const CHORD_RATE = 11_025
@@ -172,11 +198,13 @@ async function stemUrlOf(
 export function defaultDeps(ctx: BaseAudioContext): WildAnalysisDeps {
   return {
     stemUrl: stemUrlOf,
-    fetchBytes: async (url) => {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('That stem could not be read.')
-      return response.arrayBuffer()
-    },
+    // The mixer's streaming reader rather than a bare `response.arrayBuffer()`:
+    // it reports bytes as they land, which is the only way this phase can say
+    // anything while a multi-megabyte stem is still on the wire.
+    fetchBytes: async (url, onProgress) =>
+      fetchArrayBufferWithProgress(url, {
+        onProgress: (p) => onProgress?.(p.fraction),
+      }),
     decode: (bytes) => ctx.decodeAudioData(bytes),
     detectNotes,
     detectKey: detectKeyFromNotes,
@@ -190,21 +218,41 @@ export function defaultDeps(ctx: BaseAudioContext): WildAnalysisDeps {
 export async function loadWildStems(
   session: UvrSession,
   deps: WildAnalysisDeps,
-  onProgress?: (pct: number) => void,
+  onProgress?: (pct: number, detail?: string) => void,
 ): Promise<WildStems | null> {
-  const loadStem = async (stem: UvrStemType): Promise<AudioBuffer | null> => {
+  // Three stems share the reading's first 20%. Each one reports across its
+  // own slice, so the bar moves throughout rather than standing still at 0
+  // and then jumping to 8 — which is what a whole stem download used to look
+  // like, and why this phase read as a hang on a phone.
+  //
+  // Of each slice the download takes four fifths and the decode the last
+  // fifth. `decodeAudioData` cannot report progress, so that fifth is a step
+  // rather than a ramp; naming the stem is what keeps it from reading as a
+  // stall.
+  const SLICE = STEM_PHASE_PCT / 3
+  const loadStem = async (
+    stem: UvrStemType,
+    index: number,
+  ): Promise<AudioBuffer | null> => {
+    const base = index * SLICE
+    onProgress?.(base, stem)
     const url = await deps.stemUrl(session, stem)
     if (url === null) return null
-    const bytes = await deps.fetchBytes(url)
-    return deps.decode(bytes)
+    const bytes = await deps.fetchBytes(url, (fraction) => {
+      // A stem served without a Content-Length reports null. Holding the bar
+      // at the slice's start is honest; inventing motion is not.
+      if (fraction !== null) onProgress?.(base + fraction * SLICE * 0.8, stem)
+    })
+    onProgress?.(base + SLICE * 0.8, stem)
+    const decoded = await deps.decode(bytes)
+    onProgress?.(base + SLICE, stem)
+    return decoded
   }
-  const vocal = await loadStem('vocal')
-  onProgress?.(8)
-  const instrumental = await loadStem('instrumental')
-  onProgress?.(16)
+  const vocal = await loadStem('vocal', 0)
+  const instrumental = await loadStem('instrumental', 1)
   if (!vocal || !instrumental) return null
-  const bass = await loadStem('bass')
-  onProgress?.(20)
+  const bass = await loadStem('bass', 2)
+  onProgress?.(STEM_PHASE_PCT)
   return { vocal, instrumental, bass }
 }
 
@@ -217,12 +265,12 @@ export async function readWildSession(
   deps: WildAnalysisDeps,
   onProgress?: (progress: WildProgress) => void,
 ): Promise<WildReading> {
-  const report = (phase: WildPhase, pct: number) =>
-    onProgress?.({ phase, pct: Math.round(pct) })
+  const report = (phase: WildPhase, pct: number, detail?: string) =>
+    onProgress?.({ phase, pct: Math.round(pct), detail })
 
   report('stems', 0)
-  const stems = await loadWildStems(session, deps, (pct) =>
-    report('stems', pct),
+  const stems = await loadWildStems(session, deps, (pct, detail) =>
+    report('stems', pct, detail),
   )
   if (!stems) {
     throw new Error('This song has no vocal and instrumental stems yet.')
@@ -232,7 +280,10 @@ export async function readWildSession(
 
   const vocalMono = monoOf(vocal)
   const events = await deps.detectNotes(vocalMono, vocal.sampleRate, (pct) =>
-    report('notes', 20 + pct * 0.5),
+    report(
+      'notes',
+      STEM_PHASE_PCT + (pct / 100) * (NOTE_PHASE_END_PCT - STEM_PHASE_PCT),
+    ),
   )
   const notes = noteSeconds(events)
   const key = keyOf(
