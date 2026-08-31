@@ -41,10 +41,11 @@ describe('Home destination gallery', () => {
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
       { kind: 'page', href: '/drum-night' },
-      { kind: 'tab', tab: TAB_EXERCISES },
-      { kind: 'tab', tab: TAB_EAR_LAB },
-      { kind: 'tab', tab: TAB_ANALYSIS },
       { kind: 'tab', tab: TAB_JAM },
+      { kind: 'tab', tab: TAB_EAR_LAB },
+      { kind: 'tab', tab: TAB_VOICE_HISTORY },
+      { kind: 'tab', tab: TAB_ANALYSIS },
+      { kind: 'tab', tab: TAB_EXERCISES },
     ])
   })
 
@@ -101,8 +102,9 @@ describe('Home destination gallery', () => {
       ...container.querySelectorAll<HTMLElement>('[data-destination]'),
     ]
 
-    // Every navigable destination plus the Hear Yourself entry.
-    expect(covers).toHaveLength(HOME_DESTINATIONS.length + 1)
+    // Every destination, Hear Yourself among them — it is a veiled cover,
+    // not an extra one appended after the list.
+    expect(covers).toHaveLength(HOME_DESTINATIONS.length)
 
     for (let index = 0; index < HOME_DESTINATIONS.length; index++) {
       const cover = covers[index]!

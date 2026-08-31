@@ -29,6 +29,10 @@ export type DestinationVisual =
   | 'earLab'
   | 'analysis'
   | 'jam'
+  // Rendered by MysteryCover rather than the standard cover: it is a
+  // veiled card. It sits in this list so its place in the grid is
+  // content like every other room's, not render order.
+  | 'hearYourself'
   // Not a Home card — the Ascent lives on its own tab. The artwork
   // exists because the onboarding Map shows it beside five rooms that
   // all have cover art, and the one card without a picture reads as
@@ -95,13 +99,13 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     action: 'Enter Drum Night',
   },
   {
-    target: { kind: 'tab', tab: TAB_EXERCISES },
-    visual: 'exercises',
-    eyebrow: 'Pitch, ear and timing',
-    title: 'Exercises',
+    target: { kind: 'tab', tab: TAB_JAM },
+    visual: 'jam',
+    eyebrow: 'Sing together, live',
+    title: 'Jam Rooms',
     description:
-      'Train intervals, range, agility and control with focused musical drills.',
-    action: 'Browse exercises',
+      'Create a room, share the code, and practice together — synced playback with live pitch from every singer.',
+    action: 'Start a jam',
   },
   {
     target: { kind: 'tab', tab: TAB_EAR_LAB },
@@ -113,6 +117,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     action: 'Open the Ear Lab',
   },
   {
+    target: { kind: 'tab', tab: TAB_VOICE_HISTORY },
+    visual: 'hearYourself',
+    eyebrow: 'Private voice history',
+    title: 'Hear Yourself',
+    description:
+      'Keep tiny Glass takes on your device, return to the same practice thread, and hear the space between Earlier and Later.',
+    action: 'Open voice history',
+  },
+  {
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     visual: 'analysis',
     eyebrow: 'Voice lab',
@@ -122,13 +135,13 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     action: 'Open analysis lab',
   },
   {
-    target: { kind: 'tab', tab: TAB_JAM },
-    visual: 'jam',
-    eyebrow: 'Sing together, live',
-    title: 'Jam Rooms',
+    target: { kind: 'tab', tab: TAB_EXERCISES },
+    visual: 'exercises',
+    eyebrow: 'Pitch, ear and timing',
+    title: 'Exercises',
     description:
-      'Create a room, share the code, and practice together — synced playback with live pitch from every singer.',
-    action: 'Start a jam',
+      'Train intervals, range, agility and control with focused musical drills.',
+    action: 'Browse exercises',
   },
 ]
 
@@ -894,12 +907,15 @@ export const DestinationGallery: Component = () => {
         </svg>
 
         <For each={visibleDestinations()}>
-          {(destination) => <DestinationCover destination={destination} />}
+          {(destination) => (
+            <Show
+              when={destination.visual !== 'hearYourself'}
+              fallback={<MysteryCover />}
+            >
+              <DestinationCover destination={destination} />
+            </Show>
+          )}
         </For>
-
-        <Show when={isTabVisible(TAB_VOICE_HISTORY, practiceScope(), uiMode())}>
-          <MysteryCover />
-        </Show>
       </div>
     </section>
   )
