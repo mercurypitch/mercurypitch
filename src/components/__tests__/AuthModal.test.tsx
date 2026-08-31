@@ -32,6 +32,7 @@ const passkeyMocks = vi.hoisted(() => ({
   // in this file describes a browser without one.
   passkeysAvailable: vi.fn(async () => false),
   platformAuthenticatorAvailable: vi.fn(async () => false),
+  conditionalMediationAvailable: vi.fn(async () => false),
   signInWithPasskey: vi.fn(),
 }))
 
@@ -54,6 +55,8 @@ vi.mock('@/db/services/auth-passkey-service', () => ({
 vi.mock('@/lib/webauthn', () => ({
   platformAuthenticatorAvailable: () =>
     passkeyMocks.platformAuthenticatorAvailable(),
+  conditionalMediationAvailable: () =>
+    passkeyMocks.conditionalMediationAvailable(),
   describeWebAuthnError: (err: unknown) =>
     err instanceof Error ? err.message : 'That did not work.',
 }))
@@ -79,6 +82,7 @@ beforeEach(() => {
   mocks.takeGoogleTwofaChallenge.mockReturnValue(null)
   passkeyMocks.passkeysAvailable.mockResolvedValue(false)
   passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(false)
+  passkeyMocks.conditionalMediationAvailable.mockResolvedValue(false)
   closeAuthModal()
 })
 
@@ -710,5 +714,86 @@ describe('passkey sign-in', () => {
     )
     expect(onAuthenticated).not.toHaveBeenCalled()
     expect(screen.getByTestId('auth-modal-overlay')).toBeTruthy()
+  })
+})
+
+// ── Conditional UI ───────────────────────────────────────────────────
+//
+// The mechanism behind "your password manager offers the passkey". It shows
+// nothing by itself: the browser checks its own store and, if it holds one,
+// puts it in the email field's autofill dropdown. So the things worth pinning
+// are that it is armed without a press, that it is torn down with the form,
+// and that its abort never reaches the screen as an error.
+
+describe('passkey autofill', () => {
+  function armConditional(): void {
+    passkeyMocks.passkeysAvailable.mockResolvedValue(true)
+    passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(true)
+    passkeyMocks.conditionalMediationAvailable.mockResolvedValue(true)
+  }
+
+  it('tags the email field so the browser can offer a passkey there', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    const email = (await screen.findByTestId('auth-email')) as HTMLInputElement
+    // Without the `webauthn` token the conditional request has nowhere to
+    // surface, and the whole feature silently does nothing.
+    expect(email.getAttribute('autocomplete')).toBe('username webauthn')
+  })
+
+  it('arms itself on open, with no press', async () => {
+    armConditional()
+    passkeyMocks.signInWithPasskey.mockReturnValue(new Promise(() => {}))
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await waitFor(() =>
+      expect(passkeyMocks.signInWithPasskey).toHaveBeenCalledWith(
+        expect.objectContaining({ conditional: true }),
+      ),
+    )
+  })
+
+  it('does not arm where the browser cannot offer autofill', async () => {
+    passkeyMocks.passkeysAvailable.mockResolvedValue(true)
+    passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(true)
+    passkeyMocks.conditionalMediationAvailable.mockResolvedValue(false)
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await screen.findByTestId('auth-email')
+    expect(passkeyMocks.signInWithPasskey).not.toHaveBeenCalled()
+  })
+
+  it('aborts the request when the dialog closes', async () => {
+    // A conditional request outliving its form leaves the browser's autofill
+    // wired to a screen that has gone.
+    armConditional()
+    let captured: AbortSignal | undefined
+    passkeyMocks.signInWithPasskey.mockImplementation(
+      (opts: { signal?: AbortSignal }) => {
+        captured = opts.signal
+        return new Promise(() => {})
+      },
+    )
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await waitFor(() => expect(captured).toBeDefined())
+    expect(captured?.aborted).toBe(false)
+
+    fireEvent.click(screen.getByTestId('auth-modal-close'))
+    await waitFor(() => expect(captured?.aborted).toBe(true))
+  })
+
+  it('signs in when the reader picks the passkey out of autofill', async () => {
+    armConditional()
+    passkeyMocks.signInWithPasskey.mockResolvedValue({ token: 'jwt' })
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
   })
 })

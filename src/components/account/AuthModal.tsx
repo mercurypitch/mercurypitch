@@ -10,7 +10,7 @@
 // itself through the authVersion/authStamp signals.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, Match, onMount, Show, Switch, untrack, } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Key, Smartphone, X, } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
@@ -22,7 +22,7 @@ import { isTvDevice } from '@/lib/device-tier'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
+import { conditionalMediationAvailable, describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
 import { showNotification } from '@/stores/notifications-store'
 import { armOnboardingResume } from '@/stores/onboarding-store'
 import { authModalMode, closeAuthModal } from '@/stores/ui-store'
@@ -200,6 +200,47 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         platformAuthenticatorAvailable(),
       ])
       setPasskeyReady(serverSide && browserSide)
+    })()
+  })
+
+  /**
+   * Arm the browser's own passkey autofill for as long as the sign-in form is
+   * on screen.
+   *
+   * Nothing is shown by this. The browser checks its credential store in
+   * private and, if it holds a passkey for this site, offers it in the autofill
+   * dropdown of the email field below (which is why that field carries
+   * `autocomplete="username webauthn"`). If it holds none, nothing happens and
+   * the request simply waits — which is what makes this safe to fire on open
+   * rather than only on a press.
+   *
+   * The abort is not optional. A conditional request outliving its form leaves
+   * the browser's autofill wired to a screen that has gone.
+   */
+  createEffect(() => {
+    const open = authModalMode() != null
+    if (!open || !passkeyReady() || pane() !== 'login') return
+    const controller = new AbortController()
+    onCleanup(() => controller.abort())
+    void (async () => {
+      if (!(await conditionalMediationAvailable())) return
+      if (controller.signal.aborted) return
+      try {
+        await signInWithPasskey({
+          conditional: true,
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) return
+        showNotification('Signed in', 'info')
+        props.onAuthenticated?.()
+        close()
+      } catch (err) {
+        // An abort is this effect tidying up; anything else is worth a line,
+        // but only if the form is still the thing being looked at.
+        if (controller.signal.aborted) return
+        const message = describeWebAuthnError(err)
+        if (message !== '') setError(message)
+      }
     })()
   })
 
@@ -662,7 +703,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     type="email"
                     name="email"
                     placeholder="you@example.com"
-                    autocomplete="username"
+                    // The `webauthn` token is what lets the browser put a
+                    // passkey in this field's autofill dropdown, alongside
+                    // saved addresses. Without it the conditional request
+                    // above has nowhere to surface.
+                    autocomplete="username webauthn"
                     required
                     value={email()}
                     onInput={(e) => setEmail(e.currentTarget.value)}

@@ -159,14 +159,24 @@ export async function removePasskey(id: string): Promise<Passkey[]> {
  * afterwards: a user-verified passkey is possession and inherence in one
  * gesture, so it already is multi-factor. That is why this returns a session
  * directly where every other sign-in path returns a union.
+ *
+ * With `conditional`, the browser shows nothing and waits: the passkey appears
+ * in the autofill dropdown of a `autocomplete="webauthn"` field, and this
+ * settles only if the person picks it. Pass a signal, and abort it when the
+ * form closes — otherwise the pending request outlives the screen that armed
+ * it. Without `conditional` the system dialog opens immediately, which is only
+ * ever correct in response to somebody pressing a button.
  */
-export async function signInWithPasskey(): Promise<AuthResponse> {
+export async function signInWithPasskey(
+  opts: { conditional?: boolean; signal?: AbortSignal } = {},
+): Promise<AuthResponse> {
   const start = await fetch(
     `${requireBaseUrl()}/api/auth/passkey/login/options`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
+      ...(opts.signal === undefined ? {} : { signal: opts.signal }),
     },
   )
   if (!start.ok) {
@@ -174,7 +184,9 @@ export async function signInWithPasskey(): Promise<AuthResponse> {
   }
   const { options, ceremony } = (await start.json()) as CeremonyOptions
 
-  const response = await getCredential(options)
+  // Conditional: this resolves only when the person picks the passkey out of
+  // their autofill dropdown, which may be never. The signal is what ends it.
+  const response = await getCredential(options, opts)
 
   const finish = await post(
     '/api/auth/passkey/login/verify',
