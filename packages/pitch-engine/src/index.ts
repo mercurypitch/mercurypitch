@@ -23,6 +23,7 @@ export {
 } from './measurements'
 export type { F0Frame, VoicedFrame } from './measurements'
 export { micLevelFraction, readMicLevel } from './mic-level'
+export type { MicError, MicErrorKind } from './mic-manager'
 export { micManager } from './mic-manager'
 export { createF0Stream } from './pitch-f0-stream'
 export type { F0Stream, PitchFrame } from './pitch-f0-stream'
