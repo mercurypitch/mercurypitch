@@ -4,9 +4,18 @@
    classes/elements rendered by App.tsx and the per-tab control bars
    ============================================================ */
 
-/* Header */
+/* Header
+   The safe-area insets belong on this rule, not on a later sheet's
+   `padding-top`: `padding` is a shorthand, so every longhand a lower-priority
+   sheet had set is reset here. mobile-polish.css used to carry the inset and
+   lost it exactly that way — installed to the home screen the app draws under
+   the iOS status bar, and the title and the account/heart pills sat inside it,
+   unreadable behind the translucent strip and out of reach of a tap.
+   The fallbacks matter: an undefined --safe-top makes the calc() invalid at
+   computed-value time, which drops the padding to 0 rather than to 10px. */
 header {
-  padding: 10px 24px;
+  padding: calc(10px + var(--safe-top, 0px)) max(24px, var(--safe-right, 0px))
+    10px max(24px, var(--safe-left, 0px));
   background: var(--bg-tertiary);
   display: flex;
   align-items: center;
@@ -99,8 +108,12 @@ header h1 {
     position: relative;
     gap: 8px;
     /* reserve the top-right corner for the pinned account/heart. Wider
-       since the account button became a 44px touch target. */
-    padding: 8px 96px 8px 12px;
+       since the account button became a 44px touch target.
+       Carries the safe-area insets for the same reason the base rule does:
+       this shorthand overrides it, so leaving them out re-opens the bug. */
+    padding: calc(8px + var(--safe-top, 0px))
+      max(96px, calc(84px + var(--safe-right, 0px))) 8px
+      max(12px, var(--safe-left, 0px));
     row-gap: 4px;
   }
 
@@ -114,9 +127,13 @@ header h1 {
     position: absolute;
     /* 4 + the account button's 44px target = 48, inside the 50px band.
        It is absolutely positioned, so an overhang would land on the
-       content below rather than growing the header. */
-    top: 4px;
-    right: 10px;
+       content below rather than growing the header.
+       Absolute positioning also means the header's own safe-area padding
+       does not move it: offset from the top of the header's border box, a
+       bare 4px put the account button and the support heart squarely inside
+       the iOS status bar — visible through it, but not tappable. */
+    top: calc(4px + var(--safe-top, 0px));
+    right: max(10px, var(--safe-right, 0px));
     margin: 0;
     gap: 6px;
   }
