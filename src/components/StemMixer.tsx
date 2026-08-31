@@ -3,8 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
-import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
@@ -12,7 +11,7 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useMelodyAuditionSynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
-import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { stemMixHasSolo } from '@/features/stem-mixer/stem-mix-state'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
@@ -20,6 +19,7 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import { useStemMixerStemControls } from '@/features/stem-mixer/useStemMixerStemControls'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
@@ -38,10 +38,8 @@ import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, sele
 import { useConfirm } from '@/lib/use-confirm'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
-import type { StemSplitPart } from '@/lib/uvr-stem-split'
-import { activeStemSplits, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
+import { activeStemSplits } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
-import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
@@ -1613,118 +1611,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     runSync()
   }
 
-  // ── Volume / Mute / Solo ─────────────────────────────────────
-  // One label-keyed updater covers the named tracks AND the dynamic extras
-  // (labels are unique: Vocal/Instrumental/MIDI vs Drums/Bass/Guitar/…).
-  const setTrackByLabel = (
-    label: string,
-    update: (prev: StemTrack) => StemTrack,
-  ) => {
-    if (label === 'Vocal') setVocal(update)
-    else if (label === 'Instrumental') setInstrumental(update)
-    else if (label === 'MIDI') setMidi(update)
-    else
-      setExtras((list) => list.map((t) => (t.label === label ? update(t) : t)))
-  }
-
-  /** Commit one coherent mixer snapshot to both Solid state and Web Audio.
-   *  Every control uses this path so mute, solo, and faders cannot disagree
-   *  about which tracks should reach the master bus. */
-  const commitStemMix = (nextTracks: readonly StemTrack[]) => {
-    const hasSolo = stemMixHasSolo(nextTracks)
-    batch(() => {
-      for (const next of nextTracks) {
-        if (next.gainNode) {
-          next.gainNode.gain.value = sliderToGain(
-            stemTrackOutputLevel(next, hasSolo),
-          )
-        }
-        setTrackByLabel(next.label, (prev) => ({
-          ...prev,
-          muted: next.muted,
-          soloed: next.soloed,
-          volume: next.volume,
-        }))
-      }
-    })
-  }
-
-  const setTrackVolume = (label: string, volume: number) => {
-    commitStemMix(setStemVolume(tracks(), label, volume))
-  }
-
-  const toggleMute = (label: string) => {
-    commitStemMix(toggleStemMute(tracks(), label))
-  }
-
-  const toggleSolo = (label: string) => {
-    commitStemMix(toggleStemSolo(tracks(), label))
-  }
-
-  // ── Stem controls props bundle ─────────────────────────────────
-  // ── Add-stem pills ───────────────────────────────────────────
-  // Session part stems on this device but not yet in the mix. stemMeta
-  // is stored metadata (no blob loads); the karaoke page especially
-  // needs this — it stages vocal+instrumental with no stem-results view
-  // to go back to.
-  const [addingStem, setAddingStem] = createSignal<string | null>(null)
-  // Part stems come from the stem BLOB table, not the session's
-  // stemMeta: a full-band split writes its drums/bass/guitar/piano
-  // blobs and never touches stemMeta (which describes the original
-  // separation only), so the metadata read always returned nothing and
-  // the pills never appeared. Metadata-only query, refreshed when a
-  // background split lands.
-  const [deviceStems, { refetch: refetchDeviceStems }] = createResource(
-    () => props.sessionId,
-    listStemTypes,
-  )
-  createEffect(() => {
-    // A full-band split finishing mid-session adds parts under us.
-    activeStemSplits()
-    void refetchDeviceStems()
+  // ── Stem controls (Volume / Mute / Solo / Addable stems) ──────
+  const {
+    setTrackVolume,
+    toggleMute,
+    toggleSolo,
+    addingStem,
+    addableStems,
+    handleAddStem,
+  } = useStemMixerStemControls({
+    tracks,
+    setVocal,
+    setInstrumental,
+    setMidi,
+    setExtras,
+    getSessionId: () => props.sessionId,
+    activeStemSplits,
+    addExtraStem: audio.addExtraStem,
+    showNotification,
   })
-
-  const addableStems = (): Array<{
-    key: string
-    label: string
-    color: string
-  }> => {
-    const inMix = new Set(tracks().map((t) => t.label))
-    return (deviceStems() ?? [])
-      .filter((k): k is StemSplitPart => k in PART_STEM_DISPLAY)
-      .filter((k) => !inMix.has(PART_STEM_DISPLAY[k].label))
-      .map((k) => ({
-        key: k,
-        label: PART_STEM_DISPLAY[k].label,
-        color: PART_STEM_DISPLAY[k].color,
-      }))
-  }
-
-  const handleAddStem = async (key: string): Promise<void> => {
-    if (addingStem() !== null) return
-    setAddingStem(key)
-    try {
-      const part = key as StemSplitPart
-      const url = await getStemBlobUrl(props.sessionId, part)
-      if (url === null) {
-        showNotification(
-          "That stem isn't on this device anymore — run the full-band split again to bring it back.",
-          'warning',
-        )
-        return
-      }
-      const ok = await audio.addExtraStem({
-        label: PART_STEM_DISPLAY[part].label,
-        color: PART_STEM_DISPLAY[part].color,
-        url,
-      })
-      if (!ok) {
-        showNotification("Couldn't load that stem — try again.", 'error')
-      }
-    } finally {
-      setAddingStem(null)
-    }
-  }
 
   const stemControls = {
     vocal,

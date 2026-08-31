@@ -41,7 +41,7 @@ describe('useAbLoop', () => {
     })
   })
 
-  it('sets loop A and arms loop B correctly', () => {
+  it('sets loop A and arms loop B correctly and handles marker moving', () => {
     createRoot((dispose) => {
       const [tab] = createSignal<string>(TAB_SINGING)
       const [beat, setBeat] = createSignal(4)
@@ -76,10 +76,47 @@ describe('useAbLoop', () => {
       expect(loop.loopB()).toBe(12)
       expect(loop.loopEnabled()).toBe(true)
 
+      // Move marker A
+      loop.handleMoveLoopA(6)
+      expect(loop.loopA()).toBe(6)
+
+      // Move marker B
+      loop.handleMoveLoopB(18)
+      expect(loop.loopB()).toBe(18)
+
+      // Move marker A past B (clamped to upper bound)
+      loop.handleMoveLoopA(25)
+      expect(loop.loopA()).toBeLessThan(loop.loopB())
+
+      // Move marker B before A (clamped to lower bound)
+      loop.handleMoveLoopB(2)
+      expect(loop.loopB()).toBeGreaterThan(loop.loopA())
+
+      // Setting A at or after B resets B and disables loop
+      setBeat(20)
+      loop.handleSetLoopA()
+      expect(loop.loopA()).toBe(20)
+      expect(loop.loopB()).toBe(0)
+      expect(loop.loopEnabled()).toBe(false)
+
+      // Setting B <= A does nothing
+      setBeat(15)
+      loop.handleSetLoopB()
+      expect(loop.loopB()).toBe(0)
+      expect(loop.loopEnabled()).toBe(false)
+
       // Toggle loop off and on
       loop.handleToggleLoop()
-      expect(loop.loopEnabled()).toBe(false)
+      expect(loop.loopEnabled()).toBe(true)
       loop.handleToggleLoop()
+      expect(loop.loopEnabled()).toBe(false)
+
+      // Direct setters
+      loop.setLoopA(5)
+      loop.setLoopB(15)
+      loop.setLoopEnabled(true)
+      expect(loop.loopA()).toBe(5)
+      expect(loop.loopB()).toBe(15)
       expect(loop.loopEnabled()).toBe(true)
 
       // Clear loop
@@ -89,6 +126,67 @@ describe('useAbLoop', () => {
       expect(loop.loopB()).toBe(0)
 
       dispose()
+    })
+  })
+
+  it('handles manual seeking outside and inside the loop with auto loop-back', async () => {
+    await new Promise<void>((resolve) => {
+      createRoot(async (dispose) => {
+        const [tab] = createSignal<string>(TAB_SINGING)
+        const [beat, setBeat] = createSignal(0)
+        const [total] = createSignal(100)
+        const seekToBeat = vi.fn()
+        const pianoSeek = vi.fn()
+        const setFallingLoop = vi.fn()
+        const onLoopLap = vi.fn()
+
+        const loop = useAbLoop({
+          activeTab: tab,
+          currentBeat: beat,
+          totalBeats: total,
+          seekToBeat,
+          pianoTransport: {
+            playheadBeat: () => 0,
+            totalBeats: () => 100,
+            seekToBeat: pianoSeek,
+          },
+          fallingNotes: {
+            setLoop: setFallingLoop,
+          },
+          onLoopLap,
+        })
+
+        // Setup loop [10, 30)
+        loop.setLoopA(10)
+        loop.setLoopB(30)
+        loop.setLoopEnabled(true)
+        await Promise.resolve()
+
+        // Manual seek outside loop (e.g. to beat 50)
+        loop.handleLoopSeek(50)
+        expect(seekToBeat).toHaveBeenCalledWith(50)
+        expect(loop.seekedOutsideLoop()).toBe(true)
+
+        // Playback reaches beat 50 (still outside, no loop back)
+        setBeat(50)
+        await Promise.resolve()
+        expect(onLoopLap).not.toHaveBeenCalled()
+
+        // Manual seek inside loop (beat 15)
+        loop.handleLoopSeek(15)
+        setBeat(15)
+        await Promise.resolve()
+        expect(loop.seekedOutsideLoop()).toBe(false)
+
+        // Playhead reaches B (beat 30)
+        setBeat(30)
+        await Promise.resolve()
+        expect(onLoopLap).toHaveBeenCalled()
+        expect(seekToBeat).toHaveBeenCalledWith(10)
+
+        dispose()
+        resolve()
+      })
     })
   })
 
@@ -128,6 +226,17 @@ describe('useAbLoop', () => {
       loop.handleLoopSeek(15)
       expect(pianoSeek).toHaveBeenCalledWith(15)
       expect(seekToBeat).not.toHaveBeenCalled()
+
+      // Move marker when loopB is unset
+      loop.setLoopB(0)
+      loop.handleMoveLoopA(10)
+      expect(loop.loopA()).toBe(10)
+
+      // When tab is Piano, reaching loop B does not invoke seekToBeat (Piano loops in-controller)
+      loop.setLoopA(5)
+      loop.setLoopB(15)
+      loop.setLoopEnabled(true)
+      setPianoBeat(20)
 
       dispose()
     })

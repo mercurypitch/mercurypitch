@@ -35,7 +35,7 @@ import type { PitchNote } from './types'
  */
 export type StemLoadPhase = 'connecting' | 'downloading' | 'decoding'
 
-interface StemTrack {
+export interface StemTrack {
   label: string
   url: string
   color: string
