@@ -22,6 +22,7 @@ import type { PlayMode } from './levels/compile'
 export interface ScoreConfig {
   passPct: number
   greatPct: number
+  bronzePct: number
   centsPerfect: number
   centsZero: number
   fallPenaltyPct: number
@@ -71,6 +72,9 @@ export interface RunScore {
   great: boolean
   /** The real-unit line ("about 12¢ off target", "median 21 ms…"). */
   detail: string
+  /** The simple shareable grade (maff 2026-08-31): gold >= greatPct,
+   * silver >= passPct, bronze >= bronzePct, below that just the units. */
+  grade: 'gold' | 'silver' | 'bronze' | null
 }
 
 const median = (xs: number[]): number => {
@@ -113,7 +117,16 @@ export const computeRunScore = (
       t.falls > 0 ? `, fell ${t.falls}×` : ''
     }`
   }
-  return { pct, passed: pct >= S.passPct, great: pct >= S.greatPct, detail }
+  const passed = pct >= S.passPct
+  const great = pct >= S.greatPct
+  const grade = great
+    ? ('gold' as const)
+    : passed
+      ? ('silver' as const)
+      : pct >= S.bronzePct
+        ? ('bronze' as const)
+        : null
+  return { pct, passed, great, detail, grade }
 }
 
 // --- per-song-per-mode bests (device-local, like every other pref) ---

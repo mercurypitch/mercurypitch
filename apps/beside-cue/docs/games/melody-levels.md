@@ -304,9 +304,45 @@ off target", "median 21 ms off the beat", "9 of 11 first-try") — real
 units stay comparable across months, and once difficulty adapts, a
 percent alone stops meaning anything (the research's "never show a
 number your own adaptation pins in place"). Per-song-per-mode bests
-persist on device and show on the mode buttons. NOT YET: gating (the
-learning path itself), stars, tempo credit for sung modes, and the
-Elo/threshold rulers for when levels stop being static.
+persist on device and show on the mode buttons. The card also carries
+a simple shareable grade (maff 2026-08-31): gold >= greatPct, silver
+
+> = passPct, bronze >= `bronzePct` (55) — the `.jp-grade` chip; below
+> bronze the card just shows the units. NOT YET: gating (the
+> learning path itself), stars, tempo credit for sung modes, and the
+> Elo/threshold rulers for when levels stop being static.
+
+## 9. Workshop verbs (2026-08-31, SHIPPED)
+
+One new mechanic per song/world (maff's verb-rollout call, research
+doc §8a). The first workshop, **The Glassworks** (`the-glassworks.ts`,
+chip "Workshop", first card in the songbook), strings all three new
+verbs into one short do-mi-sol melody so each is met once:
+
+- **Resonance Ring** (pane `kind: 'ring'`): hold the pane's note to
+  raise resonance to `ring.holdCap` (0.55) — past the cap only
+  _vibrato_ pumps it the rest of the way (`ring.pumpMs`, strength from
+  the detector; `pumpTolBonus` widens tolerance while ringing so the
+  wave can't fall out). Teaches deliberate vibrato as a verb, not a
+  penalty.
+- **Steady Beam** (`BeamZone`): a light-bridge with no floor — while
+  the voice holds the beam note in band, Merc is carried across; the
+  band's drawn thickness tracks pitch variance (`beam.varThinCents`),
+  wobble past `flakeCents` sheds glass flakes. Cents collected across
+  the crossing score the node like any sung note. Platformer compiles
+  it to a stone bridge; rhythm/listen to a rest.
+- **Improv Atrium** (`AtriumZone`): no platforms — any _in-scale_ note
+  (quantized within `atrium.snapSemis`, held `stableMs`) spawns an
+  ephemeral glass step ahead of Merc (`stepTtlMs` 7000, `maxSteps` 14,
+  oldest fades). First taste of improvising inside a key; the tonic is
+  a dashed "home" line. Rhythm/listen compile it to a rest.
+
+All knobs in `journey-config` (`ring`, `beam`, `atrium`, `vibrato`).
+The vibrato detector (`vibrato.ts`, pure + tested) needs fractional
+pitch: this pass fixed the sing driver, which had been rounding
+`latestPitch().midi` to whole semitones (`centsToMidi`) — that also
+un-quantizes sung cents-scoring. 3D-next (research §8a): Standing
+Wave Chamber + Detuned World are earmarked as the 3D showcase.
 
 ## Out of scope for this pass
 

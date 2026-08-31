@@ -77,6 +77,26 @@ export const JOURNEY_CONFIG = {
   },
 
   /** The final wall pane — bigger, slower to charge. */
+  /** Resonance Ring pane — vibrato as the verb (research doc: never
+   * shipped as a game verb anywhere). Hold the note steady to make the
+   * pane ring up to holdCap; past that, only a WAVING voice (vibrato)
+   * pumps it to the burst. */
+  ring: {
+    /** Forgiving pitch band — the skill here is the wave, not cents. */
+    tolSemis: 1.2,
+    /** Rise to holdCap while simply held in-band, ms. */
+    riseMs: 1500,
+    /** Resonance the steady hold can reach; the rest is vibrato's. */
+    holdCap: 0.55,
+    /** Full-strength vibrato pump time from holdCap to burst, ms. */
+    pumpMs: 1600,
+    /** Extra pitch band while ringing — the wave itself must never
+     * fall out of tolerance. */
+    pumpTolBonus: 1.0,
+    /** Decay when neither held nor waved, ms (slow — no punishment). */
+    fallMs: 2600,
+  },
+
   wall: {
     tolSemis: 0.5,
     riseMs: 2400,
@@ -306,6 +326,49 @@ export const JOURNEY_CONFIG = {
   /** The guided range-finder on the games list: hum a comfortable note,
    * then your lowest, then your highest — the range setting is computed
    * from the measured range instead of picked as a preference. */
+  /** The vibrato detector (vibrato.ts) — the Resonance Ring's ear. */
+  vibrato: {
+    windowSec: 1.0,
+    minHz: 3.5,
+    maxHz: 8.5,
+    minDepthCents: 15,
+    maxDepthCents: 140,
+    minSamples: 20,
+    resetGapMs: 250,
+  },
+
+  /** Steady Beam — a light-bridge held up by one steady note. Stability
+   * is the verb; wobble narrows the beam and flakes shards (score, not
+   * failure). Silence over the gap sinks (existing grace applies). */
+  beam: {
+    /** Stay within this of the beam note to be carried. */
+    tolSemis: 0.9,
+    /** Cents-variance window for the beam's width/flakes, ms. */
+    varWindowMs: 600,
+    /** Mean |cents| that thins the beam to its narrowest. */
+    varThinCents: 45,
+    /** Above this instantaneous |cents|, shards flake off the beam. */
+    flakeCents: 35,
+  },
+
+  /** Improv Atrium — the open room: any note in the key raises a step
+   * at its own height; the route IS the player's melody. No fail. */
+  atrium: {
+    /** Major-scale degrees offered as steps (relative to the tonic). */
+    scaleDegrees: [0, 2, 4, 5, 7, 9, 11, 12],
+    /** Snap window around a scale tone, semitones. */
+    snapSemis: 0.6,
+    /** Hold a tone this long to raise its step, ms. */
+    stableMs: 170,
+    /** New step lands this far ahead of Merc, world units. */
+    spawnAhead: 0.85,
+    stepWidth: 1.15,
+    /** Steps are glass thoughts — they fade after this long, ms. */
+    stepTtlMs: 7000,
+    /** Cap on live steps (oldest fades first past it). */
+    maxSteps: 14,
+  },
+
   /** Run scoring (score.ts): real units first, pass band not finish
    * line — melody-levels.md §8. Feel-overridable per level. */
   score: {
@@ -313,6 +376,8 @@ export const JOURNEY_CONFIG = {
     passPct: 75,
     /** The polished-run line. */
     greatPct: 90,
+    /** The bronze floor — below it a run gets no medal, just the units. */
+    bronzePct: 55,
     /** Sung note quality: mean cents-off at/below this scores 1.0… */
     centsPerfect: 10,
     /** …and at this it scores 0 (linear between). */

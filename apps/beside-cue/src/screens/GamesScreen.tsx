@@ -292,7 +292,9 @@ export function GamesScreen(props: GamesScreenProps) {
               <span class="game-card__body">
                 <span class="game-card__name">
                   {level.title}
-                  <span class="game-card__chip">Songbook</span>
+                  <span class="game-card__chip">
+                    {level.chip ?? 'Songbook'}
+                  </span>
                 </span>
                 <span class="game-card__blurb">
                   {level.blurb ??

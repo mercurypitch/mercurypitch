@@ -5,6 +5,7 @@ import { computeRunScore, emptyTally, qualityFromCents, qualityFromOffset, } fro
 const S: ScoreConfig = {
   passPct: 75,
   greatPct: 90,
+  bronzePct: 55,
   centsPerfect: 10,
   centsZero: 70,
   fallPenaltyPct: 4,
@@ -47,6 +48,7 @@ describe('computeRunScore', () => {
     // mean 0.8 -> 80, minus 2 falls * 4
     expect(sc?.pct).toBe(72)
     expect(sc?.passed).toBe(false)
+    expect(sc?.grade).toBe('bronze')
     expect(sc?.detail).toBe('about 21¢ off target, fell 2×')
   })
 
@@ -59,6 +61,7 @@ describe('computeRunScore', () => {
     expect(sc?.pct).toBe(90)
     expect(sc?.passed).toBe(true)
     expect(sc?.great).toBe(true)
+    expect(sc?.grade).toBe('gold')
     expect(sc?.detail).toBe('about 15¢ off target')
   })
 
@@ -79,6 +82,7 @@ describe('computeRunScore', () => {
     const sc = computeRunScore('rhythm', t, S)
     expect(sc?.pct).toBe(0)
     expect(sc?.detail).toBe('1 missed')
+    expect(sc?.grade).toBeNull()
   })
 
   it('listen: counts first-try answers', () => {

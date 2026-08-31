@@ -20,7 +20,7 @@
 
 import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import { JOURNEY_CONFIG } from '../journey-config'
-import type { Node, Pane, Platform } from '../world-types'
+import type { AtriumZone, BeamZone, Node, Pane, Platform } from '../world-types'
 import type { GameFeel } from './feel'
 import type { LevelDef, MelodyDef } from './types'
 
@@ -40,6 +40,8 @@ export interface CompileOpts {
 export interface CompiledStage {
   platforms: Platform[]
   panes: Pane[]
+  beams: BeamZone[]
+  atriums: AtriumZone[]
   nodes: Node[]
   worldMax: number
   /** Pitch window, semitone offsets relative to the ground note — derived
@@ -103,6 +105,8 @@ export const compileLevel = (
 
   const platforms: Platform[] = []
   const panes: Pane[] = []
+  const beams: BeamZone[] = []
+  const atriums: AtriumZone[] = []
   const nodes: Node[] = []
 
   // The starting slab sits at the SONG'S FIRST NOTE, not the hummed note
@@ -155,11 +159,76 @@ export const compileLevel = (
         pane,
         hint:
           seg.hint ??
-          (mode === 'platformer'
-            ? `A glass wall rings at ${name(seg.at)} — press close and sing it open.`
-            : `The ${seg.kind} rings at ${name(seg.at)}. Hold its note.`),
+          (seg.kind === 'ring'
+            ? `The round pane hums at ${name(seg.at)}. Hold its note steady — then let your voice WAVE.`
+            : mode === 'platformer'
+              ? `A glass wall rings at ${name(seg.at)} — press close and sing it open.`
+              : `The ${seg.kind} rings at ${name(seg.at)}. Hold its note.`),
       })
       cursor = wx + M.paneAfter
+      afterBoundary = true
+      continue
+    }
+
+    if (seg.type === 'beam') {
+      const beats = seg.beats ?? 4
+      if (mode === 'rhythm' || mode === 'listen') {
+        cursor += beats * M.restUnit[mode]
+        afterBoundary = true
+        continue
+      }
+      const bm = midiFor(seg.at)
+      const x0 = cursor + M.noteGap[mode]
+      const x1 = x0 + beats * M.unitsPerBeat[mode]
+      if (mode === 'platformer') {
+        // keys walk — the beam is frozen solid here
+        platforms.push(platform(bm, x0, x1, { syllable: 'beam' }))
+        nodes.push({
+          t: 'land',
+          p: platforms[platforms.length - 1],
+          hint: `A frozen light-bridge — walk it at ${name(seg.at)}.`,
+        })
+      } else {
+        const beam: BeamZone = { x0, x1, midi: bm, done: false }
+        beams.push(beam)
+        nodes.push({
+          t: 'beam',
+          beam,
+          hint:
+            seg.hint ??
+            `A light-bridge, only as steady as your note — hold ${name(seg.at)} all the way across.`,
+        })
+      }
+      cursor = x1
+      afterBoundary = true
+      continue
+    }
+
+    if (seg.type === 'atrium') {
+      const beats = seg.beats ?? 8
+      if (mode === 'rhythm' || mode === 'listen') {
+        cursor += beats * M.restUnit[mode]
+        afterBoundary = true
+        continue
+      }
+      const x0 = cursor + M.phraseGap[mode]
+      const x1 = x0 + beats * M.unitsPerBeat[mode]
+      const A = (opts.feel ?? JOURNEY_CONFIG).atrium
+      const a: AtriumZone = {
+        x0,
+        x1,
+        tonicMidi: midiFor(0),
+        scaleMidis: A.scaleDegrees.map((d) => midiFor(d)),
+      }
+      atriums.push(a)
+      nodes.push({
+        t: 'atrium',
+        a,
+        hint:
+          seg.hint ??
+          'The open room — any note in the key raises a step. Walk your own melody out.',
+      })
+      cursor = x1
       afterBoundary = true
       continue
     }
@@ -207,12 +276,24 @@ export const compileLevel = (
   // any melody note, and the window must hold every rung.
   const L = (opts.feel ?? JOURNEY_CONFIG).listen
   const fanPad = mode === 'listen' ? L.gapSemis * (L.fanSize - 1) : 0
+  // an atrium offers scale steps that can top the melody's own range
+  const atriumTop =
+    atriums.length > 0
+      ? Math.max(
+          0,
+          ...atriums.flatMap((a) =>
+            a.scaleMidis.map((m2) => m2 - groundMidi - shift),
+          ),
+        )
+      : 0
   const winLo = range.lo + shift - M.windowLoPad - fanPad
-  const winHi = range.hi + shift + M.windowHiPad + fanPad
+  const winHi = Math.max(range.hi, atriumTop) + shift + M.windowHiPad + fanPad
 
   return {
     platforms,
     panes,
+    beams,
+    atriums,
     nodes,
     worldMax: cursor + M.endPad,
     windowLo: winLo,

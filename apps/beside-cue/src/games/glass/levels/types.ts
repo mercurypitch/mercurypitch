@@ -41,16 +41,31 @@ export type Segment =
   /** A sung phrase. Each melody segment starts a checkpoint (except the
    * first — the ground slab is the safe start). */
   | { type: 'melody'; melody: MelodyDef }
-  /** A resonating pane blocking the road: sing it open. */
-  | { type: 'encounter'; kind: 'gate' | 'wall'; at: number; hint?: string }
+  /** A resonating pane blocking the road: sing it open. 'ring' panes
+   * need vibrato past the hold — the Resonance Ring mechanic. */
+  | {
+      type: 'encounter'
+      kind: 'gate' | 'wall' | 'ring'
+      at: number
+      hint?: string
+    }
   /** A musical rest — empty road, a breath wide. */
   | { type: 'rest'; beats?: number }
+  /** Steady Beam: a gap crossed by holding ONE note (degree `at`) —
+   * stability is the verb. Sung modes only; a stone bridge in
+   * platformer taps, a rest in rhythm/listen. */
+  | { type: 'beam'; at: number; beats?: number; hint?: string }
+  /** Improv Atrium: an open room where any in-key note raises a step;
+   * the route is the player's own melody. Sung modes only. */
+  | { type: 'atrium'; beats?: number; hint?: string }
 
 export interface LevelDef {
   id: string
   title: string
   /** One-line card copy on the games list. */
   blurb?: string
+  /** Card chip label; defaults to "Songbook". */
+  chip?: string
   /** Intro-card body; a default is used when omitted. */
   intro?: string
   /** Done-card body; a default is used when omitted. */

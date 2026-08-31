@@ -30,7 +30,9 @@ import type { RunScore } from './score'
 import { computeRunScore, emptyTally, qualityFromCents, qualityFromOffset, writeBest, } from './score'
 import { readStoredTapLatency } from './tap-latency'
 import { resolveTheme } from './themes'
-import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
+import type { VibratoState } from './vibrato'
+import { createVibratoDetector } from './vibrato'
+import type { AtriumZone, BeamZone, Boss, Node, Pane, Platform, WhisperZone, } from './world-types'
 
 const MIC_ID = 'journey-proto'
 const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
@@ -135,6 +137,28 @@ export const JourneyPrototype: Component<{
   let nodeCentsAt = -1
   const [finalScore, setFinalScore] = createSignal<RunScore | null>(null)
   const [bestPct, setBestPct] = createSignal<number | null>(null)
+
+  // workshop mechanics (game-mechanics-research.md picks, 2026-08-31):
+  // Resonance Ring listens through the vibrato detector; Steady Beam
+  // tracks in-band steadiness; the Improv Atrium raises sung steps.
+  let beams: BeamZone[] = []
+  let atriums: AtriumZone[] = []
+  let vib = createVibratoDetector(JOURNEY_CONFIG.vibrato)
+  let vibState: VibratoState = {
+    active: false,
+    rateHz: 0,
+    depthCents: 0,
+    strength: 0,
+  }
+  let beamCentsSum = 0
+  let beamCentsT = 0
+  let beamVar: { t: number; c: number }[] = []
+  let beamFlakeAt = 0
+  let flakes: { x: number; y: number; vx: number; vy: number; t: number }[] = []
+  let atriumHoldMidi = -1
+  let atriumHoldMs = 0
+  // DEV: recent raw pitch samples for the __vib probe
+  const rawRing: { t: number; m: number | null }[] = []
   /** Input-latency compensation, ms: the tap tuner's stored per-device
    * measurement when present, else the config default. */
   let tapLatencyMs = 0
@@ -218,6 +242,7 @@ export const JourneyPrototype: Component<{
     if (activeIdx >= nodes.length) return null
     const n = nodes[activeIdx]
     if (n.t === 'land') return n.p.midi
+    if (n.t === 'beam') return n.beam.midi
     if (n.t === 'pane') return n.pane.kind === 'hidden' ? null : n.pane.midi
     if (n.t === 'boss') {
       const alive = n.boss.crystals.filter((c) => !c.broken)
@@ -344,6 +369,8 @@ export const JourneyPrototype: Component<{
       wokenMs: 0,
     }
     zones = [hush]
+    beams = []
+    atriums = []
 
     boss = {
       cx: 39.1,
@@ -479,6 +506,8 @@ export const JourneyPrototype: Component<{
     const t5 = P(g + 7, 16.8, 18.3, 'stone')
     const goal = P(g + 4, 20.3, 22.3, 'stone')
     platforms = [ground, t1, t2, t3, t4, t5, goal]
+    beams = []
+    atriums = []
 
     const gate: Pane = {
       wx: 19.5,
@@ -551,6 +580,12 @@ export const JourneyPrototype: Component<{
     tally = emptyTally()
     nodeCentsAt = -1
     setFinalScore(null)
+    beamCentsSum = 0
+    beamCentsT = 0
+    beamVar = []
+    flakes = []
+    atriumHoldMidi = -1
+    atriumHoldMs = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -572,6 +607,9 @@ export const JourneyPrototype: Component<{
       readStoredTapLatency(C.tap.calClampMs) ?? C.tap.inputLatencyMs
     platforms = cs.platforms
     panes = cs.panes
+    beams = cs.beams
+    atriums = cs.atriums
+    vib = createVibratoDetector(C.vibrato)
     nodes = cs.nodes
     worldMax = cs.worldMax
     winLo = cs.windowLo
@@ -606,6 +644,12 @@ export const JourneyPrototype: Component<{
     tally = emptyTally()
     nodeCentsAt = -1
     setFinalScore(null)
+    beamCentsSum = 0
+    beamCentsT = 0
+    beamVar = []
+    flakes = []
+    atriumHoldMidi = -1
+    atriumHoldMs = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -653,6 +697,91 @@ export const JourneyPrototype: Component<{
     const ctx = driver?.ctx() ?? null
     if (ctx !== null) playTargetHum(ctx, midiToHz(midi), C.listen.promptSeconds)
     listenPromptAt = performance.now()
+  }
+
+  /** The Improv Atrium raises a sung step: an ephemeral glass slab at
+   * the quantized pitch, a little ahead of Merc. Dedupes against any
+   * live slab at that height nearby; the oldest step fades early when
+   * the room is full. Steps never crack under rest — they just fade. */
+  const spawnAtriumStep = (a: AtriumZone, m: number): void => {
+    const A = C.atrium
+    const x0 = Math.min(
+      Math.max(mercWX + A.spawnAhead - A.stepWidth / 2, a.x0 + 0.1),
+      a.x1 - A.stepWidth + 0.6,
+    )
+    const x1 = x0 + A.stepWidth
+    for (const pl of platforms) {
+      if (pl.broken) continue
+      if (pl.x1 > x0 - 0.2 && pl.x0 < x1 + 0.2 && Math.abs(pl.midi - m) < 0.7) {
+        return
+      }
+    }
+    const live = platforms.filter((pl) => pl.ephemeral === true && !pl.broken)
+    if (live.length >= A.maxSteps) {
+      live[0].broken = true
+      live[0].respawnMs = 1e9
+    }
+    platforms.push({
+      midi: m,
+      x0,
+      x1,
+      kind: 'glass',
+      lit: true,
+      dwell: 9999,
+      integrity: 1,
+      broken: false,
+      respawnMs: 0,
+      ephemeral: true,
+      ttlMs: A.stepTtlMs,
+    })
+    hum(m, 0.3)
+  }
+
+  /** One pane charger for the flow objective AND the platformer's
+   * proximity walls. 'ring' panes (Resonance Ring): a steady hold only
+   * reaches holdCap — past it the pane pumps on VIBRATO strength, and
+   * the pitch band widens so the wave itself cannot fall out of tol. */
+  const chargePane = (
+    pane: Pane,
+    inReach: boolean,
+    midi: number | null,
+    dt: number,
+  ): void => {
+    if (pane.burstT >= 0) return
+    if (pane.kind === 'ring') {
+      const R = C.ring
+      const ringing = pane.res >= R.holdCap
+      const tol = R.tolSemis + (ringing ? R.pumpTolBonus : 0)
+      const inTol =
+        inReach && midi !== null && Math.abs(midi - pane.midi) <= tol
+      const prev = pane.res
+      if (inTol && !ringing) {
+        pane.res = Math.min(R.holdCap, pane.res + dt / R.riseMs)
+      } else if (inTol && vibState.active) {
+        pane.res = Math.min(1, pane.res + (dt / R.pumpMs) * vibState.strength)
+      } else if (!inTol) {
+        pane.res = Math.max(0, pane.res - dt / R.fallMs)
+      }
+      if (prev < R.holdCap && pane.res >= R.holdCap) {
+        setHint(
+          'It rings! Now let the note WAVE — a wobble in the voice pumps the ring.',
+        )
+      }
+    } else {
+      const cfg =
+        pane.kind === 'gate' ? C.gate : pane.kind === 'wall' ? C.wall : C.hidden
+      const inTol =
+        inReach && midi !== null && Math.abs(midi - pane.midi) <= cfg.tolSemis
+      if (inTol) {
+        pane.res = Math.min(1, pane.res + dt / cfg.riseMs)
+      } else {
+        pane.res = Math.max(0, pane.res - dt / cfg.fallMs)
+      }
+    }
+    if (pane.res >= 1) {
+      burstPane(pane)
+      rescueMs = C.pane.rescueMs
+    }
   }
 
   const hum = (midi: number, secs: number): void => {
@@ -772,7 +901,9 @@ export const JourneyPrototype: Component<{
           n.z.stir = 0
           n.z.woken = false
           n.z.wokenMs = 0
-        } else {
+        } else if (n.t === 'beam') {
+          n.beam.done = false
+        } else if (n.t === 'boss') {
           for (const c of n.boss.crystals) {
             c.res = 0
             c.broken = false
@@ -845,6 +976,17 @@ export const JourneyPrototype: Component<{
     // --- debounced, slew-clamped pitch (silence = rest, never fall) ---
     const raw = voicedMidi()
     rawMidiNow = raw
+    // the vibrato detector hears the RAW stream (smoothing would erase
+    // the wave); silence idles it until the window refills
+    if (raw !== null) {
+      vibState = vib.feed(now, raw)
+    } else if (vibState.active) {
+      vibState = { active: false, rateHz: 0, depthCents: 0, strength: 0 }
+    }
+    if (import.meta.env.DEV) {
+      rawRing.push({ t: Math.round(now), m: raw })
+      if (rawRing.length > 90) rawRing.shift()
+    }
     if (raw !== null) {
       voicedStreak += 1
       unvoicedMs = 0
@@ -952,6 +1094,8 @@ export const JourneyPrototype: Component<{
           advanceTo(activeIdx + 1)
         } else if (n0.t === 'pane' && n0.pane.burstT >= 0) {
           advanceTo(activeIdx + 1)
+        } else if (n0.t === 'beam' && n0.beam.done) {
+          advanceTo(activeIdx + 1)
         } else {
           break
         }
@@ -960,23 +1104,8 @@ export const JourneyPrototype: Component<{
       // intact pane and sing its note — it bursts, the wall opens
       for (const pane of panes) {
         if (pane.burstT >= 0) continue
-        const cfg =
-          pane.kind === 'gate'
-            ? C.gate
-            : pane.kind === 'wall'
-              ? C.wall
-              : C.hidden
         const near = Math.abs(mercWX - pane.wx) <= C.control.paneChargeUnits
-        if (
-          near &&
-          midi !== null &&
-          Math.abs(midi - pane.midi) <= cfg.tolSemis
-        ) {
-          pane.res = Math.min(1, pane.res + dt / cfg.riseMs)
-          if (pane.res >= 1) burstPane(pane)
-        } else {
-          pane.res = Math.max(0, pane.res - dt / cfg.fallMs)
-        }
+        chargePane(pane, near, midi, dt)
         if (pane.kind === 'hidden') {
           pane.reveal =
             midi === null || !near
@@ -1096,14 +1225,8 @@ export const JourneyPrototype: Component<{
           b.cleared = true
           advanceTo(activeIdx + 1)
         }
-      } else {
+      } else if (n.t === 'pane') {
         const pane = n.pane
-        const cfg =
-          pane.kind === 'gate'
-            ? C.gate
-            : pane.kind === 'wall'
-              ? C.wall
-              : C.hidden
         if (pane.kind === 'hidden') {
           pane.reveal =
             midi === null
@@ -1113,18 +1236,84 @@ export const JourneyPrototype: Component<{
                   1 - Math.abs(midi - pane.midi) / C.hidden.revealSemis,
                 )
         }
-        if (pane.burstT < 0) {
-          if (midi !== null && Math.abs(midi - pane.midi) <= cfg.tolSemis) {
-            pane.res = Math.min(1, pane.res + dt / cfg.riseMs)
-          } else {
-            pane.res = Math.max(0, pane.res - dt / cfg.fallMs)
-          }
-          if (pane.res >= 1) {
-            burstPane(pane)
-            rescueMs = C.pane.rescueMs
+        chargePane(pane, true, midi, dt)
+      } else if (n.t === 'beam') {
+        // === Steady Beam: one steady note IS the bridge ===
+        const b = n.beam
+        if (midi !== null && Math.abs(midi - b.midi) <= C.beam.tolSemis) {
+          const cents = Math.abs(midi - b.midi) * 100
+          beamVar.push({ t: now, c: cents })
+          if (mercWX > b.x0 - 0.3) {
+            beamCentsSum += cents * dt
+            beamCentsT += dt
+            // a wobble flakes shards off the beam — score, not failure
+            if (cents > C.beam.flakeCents && now - beamFlakeAt > 90) {
+              beamFlakeAt = now
+              flakes.push({
+                x: mercWX - 0.15,
+                y: yFor(b.midi) + 0.012,
+                vx: -0.25 - Math.random() * 0.3,
+                vy: 0.12 + Math.random() * 0.2,
+                t: 0,
+              })
+            }
           }
         }
+        while (beamVar.length > 0 && now - beamVar[0].t > C.beam.varWindowMs) {
+          beamVar.shift()
+        }
+        if (!b.done && mercWX >= b.x1 - 0.25) {
+          b.done = true
+          const meanC = beamCentsT > 0 ? beamCentsSum / beamCentsT : 0
+          tally.quality.set(activeIdx, qualityFromCents(meanC, C.score))
+          tally.centsMeans.push(meanC)
+          advanceTo(activeIdx + 1)
+        }
+      } else if (n.t === 'atrium') {
+        // === Improv Atrium: any note in the key raises a step ===
+        const a = n.a
+        if (midi !== null) {
+          let best = -1
+          let bd = Infinity
+          for (const m2 of a.scaleMidis) {
+            const d = Math.abs(midi - m2)
+            if (d < bd) {
+              bd = d
+              best = m2
+            }
+          }
+          if (best >= 0 && bd <= C.atrium.snapSemis) {
+            if (atriumHoldMidi === best) {
+              atriumHoldMs += dt
+            } else {
+              atriumHoldMidi = best
+              atriumHoldMs = 0
+            }
+            if (atriumHoldMs >= C.atrium.stableMs) {
+              atriumHoldMs = -1e9 // one step per hold; a new note re-arms
+              spawnAtriumStep(a, best)
+            }
+          } else {
+            atriumHoldMidi = -1
+            atriumHoldMs = 0
+          }
+        } else {
+          atriumHoldMidi = -1
+          atriumHoldMs = 0
+        }
+        if (mercWX >= a.x1 - 0.3) advanceTo(activeIdx + 1)
       }
+    }
+
+    // beam flakes drift down and fade
+    if (flakes.length > 0) {
+      for (const f of flakes) {
+        f.t += dt / 1000
+        f.x += (f.vx * dt) / 1000
+        f.y += (f.vy * dt) / 1000
+        f.vy += (0.9 * dt) / 1000
+      }
+      flakes = flakes.filter((f) => f.t < 1.1)
     }
 
     // pane burst animation (world-x shards move in world units horizontally)
@@ -1517,7 +1706,11 @@ export const JourneyPrototype: Component<{
             const pl = platforms[restIdx]
             const sitY = yFor(pl.midi) - 0.035
             mercY += (sitY - mercY) * C.view.restLerp
-            if (pl.kind === 'glass' && Math.abs(mercY - sitY) < 0.02) {
+            if (
+              pl.kind === 'glass' &&
+              pl.ephemeral !== true &&
+              Math.abs(mercY - sitY) < 0.02
+            ) {
               pl.integrity = Math.max(0, pl.integrity - dt / C.glass.crackMs)
               if (pl.integrity === 0 && !pl.broken) {
                 shatterPlatform(pl)
@@ -1528,6 +1721,13 @@ export const JourneyPrototype: Component<{
         }
       }
       for (const pl of platforms) {
+        if (pl.ephemeral === true && !pl.broken) {
+          pl.ttlMs = (pl.ttlMs ?? 0) - dt
+          if (pl.ttlMs <= 0) {
+            pl.broken = true
+            pl.respawnMs = 1e9 // a faded thought does not regrow
+          }
+        }
         if (pl.broken) {
           pl.respawnMs -= dt
           if (pl.respawnMs <= 0) {
@@ -1554,16 +1754,32 @@ export const JourneyPrototype: Component<{
         if (midi !== null && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
           const quiet = (driver?.latestLevel() ?? 0) <= C.whisper.rmsLoud
-          wantWX =
-            n.t === 'land'
-              ? (n.p.x0 + n.p.x1) / 2
-              : n.t === 'pane'
-                ? n.pane.wx - C.pane.approachBack
-                : n.t === 'whisper'
-                  ? quiet
-                    ? n.z.x1 + 0.6
-                    : mercWX // a loud voice stands still before the sleeper
-                  : bossTargetWX(n.boss)
+          switch (n.t) {
+            case 'land':
+              wantWX = (n.p.x0 + n.p.x1) / 2
+              break
+            case 'pane':
+              wantWX = n.pane.wx - C.pane.approachBack
+              break
+            case 'whisper':
+              // a loud voice stands still before the sleeper
+              wantWX = quiet ? n.z.x1 + 0.6 : mercWX
+              break
+            case 'boss':
+              wantWX = bossTargetWX(n.boss)
+              break
+            case 'beam':
+              // the beam only carries an in-band voice forward
+              wantWX =
+                Math.abs(midi - n.beam.midi) <= C.beam.tolSemis
+                  ? n.beam.x1 + 0.5
+                  : mercWX
+              break
+            case 'atrium':
+              // the room drifts you onward; your notes lay the floor
+              wantWX = n.a.x1 + 0.5
+              break
+          }
         } else if (restIdx !== null) {
           const pl = platforms[restIdx]
           wantWX = Math.min(Math.max(mercWX, pl.x0 + 0.2), pl.x1 - 0.2)
@@ -1793,6 +2009,38 @@ export const JourneyPrototype: Component<{
       beatGlow = Math.pow(1 - beatPh, 3) * C.art.beatPulseAmt
     }
 
+    // Improv Atrium rooms: a soft glass-light column with dashed walls —
+    // the open room reads as a place, not a gap
+    for (const a of atriums) {
+      const ax0 = X(a.x0)
+      const ax1 = X(a.x1)
+      if (ax1 < -40 || ax0 > w + 40) continue
+      const grad = ctx.createLinearGradient(0, 0, 0, h)
+      grad.addColorStop(0, 'rgba(126,231,255,0.10)')
+      grad.addColorStop(1, 'rgba(126,231,255,0.02)')
+      ctx.fillStyle = grad
+      ctx.fillRect(ax0, 0, ax1 - ax0, h)
+      ctx.strokeStyle = 'rgba(126,231,255,0.30)'
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([5, 9])
+      for (const bx of [ax0, ax1]) {
+        ctx.beginPath()
+        ctx.moveTo(bx, h * 0.06)
+        ctx.lineTo(bx, h * 0.97)
+        ctx.stroke()
+      }
+      ctx.setLineDash([])
+      // the home line: where the tonic waits
+      const hy = yFor(a.tonicMidi) * h
+      ctx.strokeStyle = 'rgba(126,231,255,0.22)'
+      ctx.setLineDash([2, 7])
+      ctx.beginPath()
+      ctx.moveTo(ax0 + 6, hy)
+      ctx.lineTo(ax1 - 6, hy)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
+
     const slabH = Math.max(
       C.art.platformMinPx,
       Math.min(C.art.platformMaxPx, C.art.platformUnits * unitPx),
@@ -1820,6 +2068,7 @@ export const JourneyPrototype: Component<{
       ctx.globalAlpha = 1
     }
     for (const pl of platforms) {
+      if (pl.ephemeral === true) continue
       const y = yFor(pl.midi) * h
       const x0 = X(pl.x0)
       const x1 = X(pl.x1)
@@ -1998,6 +2247,95 @@ export const JourneyPrototype: Component<{
       }
     }
 
+    // atrium steps: sung thoughts in glass — they glow, then fade out
+    for (const pl of platforms) {
+      if (pl.ephemeral !== true || pl.broken) continue
+      const y = yFor(pl.midi) * h
+      const x0 = X(pl.x0)
+      const x1 = X(pl.x1)
+      if (x1 < -40 || x0 > w + 40) continue
+      const fade = Math.max(0.18, Math.min(1, (pl.ttlMs ?? 0) / 1500))
+      ctx.globalAlpha = fade
+      ctx.beginPath()
+      ctx.roundRect(x0, y - 3, x1 - x0, slabH, 5)
+      ctx.shadowColor = P.accentGlass
+      ctx.shadowBlur = 12 * fade
+      ctx.fillStyle = P.slabGlass
+      ctx.fill()
+      ctx.shadowBlur = 0
+      if (patterns.crystal !== null) {
+        ctx.globalAlpha = 0.6 * fade
+        ctx.fillStyle = patterns.crystal
+        ctx.fill()
+      }
+      ctx.globalAlpha = fade
+      ctx.lineCap = 'round'
+      ctx.lineWidth = 2
+      ctx.strokeStyle = P.accentGlass
+      ctx.beginPath()
+      ctx.moveTo(x0 + 3, y - 3)
+      ctx.lineTo(x1 - 3, y - 3)
+      ctx.stroke()
+      ctx.fillStyle = `rgba(${P.labelRgb},0.6)`
+      ctx.font = "600 11px 'Saira Condensed', monospace"
+      ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
+      ctx.globalAlpha = 1
+    }
+
+    // Steady Beam: the light-bridge — bright and wide while the note is
+    // steady, thin when it wobbles; flakes are the wobble made visible
+    for (const b of beams) {
+      const bx0 = X(b.x0)
+      const bx1 = X(b.x1)
+      if (bx1 < -40 || bx0 > w + 40) continue
+      const by = yFor(b.midi) * h
+      const isOn =
+        activeIdx < nodes.length &&
+        nodes[activeIdx].t === 'beam' &&
+        (nodes[activeIdx] as Extract<Node, { t: 'beam' }>).beam === b
+      const sm = shownMidi
+      const carried =
+        isOn && sm !== null && Math.abs(sm - b.midi) <= C.beam.tolSemis
+      let meanVar = 0
+      if (beamVar.length > 0) {
+        for (const v of beamVar) meanVar += v.c
+        meanVar /= beamVar.length
+      }
+      const steady = carried
+        ? 1 - Math.min(1, meanVar / C.beam.varThinCents)
+        : 0
+      if (b.done || (!isOn && !carried)) {
+        // ahead or behind: a faint promise of the crossing
+        ctx.strokeStyle = `rgba(126,231,255,${b.done ? 0.28 : 0.2})`
+        ctx.lineWidth = 2
+        ctx.setLineDash([4, 8])
+        ctx.beginPath()
+        ctx.moveTo(bx0 + 2, by)
+        ctx.lineTo(bx1 - 2, by)
+        ctx.stroke()
+        ctx.setLineDash([])
+      } else {
+        const bh = carried ? 3 + 8 * steady : 2.5
+        const pulse = 0.75 + Math.sin(last / 170) * 0.25
+        ctx.globalAlpha = (carried ? 0.4 + 0.5 * steady : 0.3) * pulse
+        const grad = ctx.createLinearGradient(0, by - bh, 0, by + bh)
+        grad.addColorStop(0, 'rgba(126,231,255,0)')
+        grad.addColorStop(0.5, 'rgba(200,245,255,0.95)')
+        grad.addColorStop(1, 'rgba(126,231,255,0)')
+        ctx.fillStyle = grad
+        ctx.fillRect(bx0, by - bh, bx1 - bx0, bh * 2)
+        ctx.globalAlpha = 1
+      }
+    }
+    if (flakes.length > 0) {
+      ctx.fillStyle = 'rgba(200,245,255,0.8)'
+      for (const f of flakes) {
+        ctx.globalAlpha = Math.max(0, 1 - f.t)
+        ctx.fillRect(X(f.x), f.y * h, 3, 3)
+      }
+      ctx.globalAlpha = 1
+    }
+
     // rhythm: the approach ring contracts onto the target ring — the two
     // meeting IS the beat; tap anywhere at that moment
     if (isRhythm() && phase() === 'play' && activeIdx < nodes.length) {
@@ -2027,12 +2365,18 @@ export const JourneyPrototype: Component<{
       const gx = X(pane.wx)
       if (gx < -60 || gx > w + 60) continue
       const gy = yFor(pane.midi) * h
-      const tall = pane.kind === 'wall' ? 150 : 108
-      const wide = pane.kind === 'wall' ? 34 : 28
+      const tall = pane.kind === 'wall' ? 150 : pane.kind === 'ring' ? 64 : 108
+      const wide = pane.kind === 'wall' ? 34 : pane.kind === 'ring' ? 64 : 28
       if (pane.burstT < 0.02) {
         const hiddenGlow = pane.kind === 'hidden' ? pane.reveal : 0
         ctx.beginPath()
-        ctx.roundRect(gx - wide / 2, gy - tall / 2, wide, tall, 8)
+        ctx.roundRect(
+          gx - wide / 2,
+          gy - tall / 2,
+          wide,
+          tall,
+          pane.kind === 'ring' ? 32 : 8,
+        )
         if (patterns.crystal !== null) {
           ctx.globalAlpha =
             pane.kind === 'hidden' ? 0.3 + hiddenGlow * 0.3 : 0.5
@@ -2074,6 +2418,39 @@ export const JourneyPrototype: Component<{
           gx - wide / 2,
           gy - tall / 2 - 8,
         )
+        if (pane.kind === 'ring') {
+          // Resonance Ring: concentric arcs breathe with the resonance;
+          // once ringing, they shiver with the singer's actual vibrato
+          const R = C.ring
+          const ringing = pane.res >= R.holdCap
+          const shiver = ringing
+            ? Math.sin(last / 55) * (2.5 + vibState.depthCents / 14)
+            : 0
+          ctx.strokeStyle = '#bc8cff'
+          ctx.lineWidth = 1.5
+          for (let k = 0; k < 3; k++) {
+            const r = 42 + k * 13 + shiver * (1 + k * 0.4)
+            ctx.globalAlpha =
+              Math.max(0, 0.65 - k * 0.2) * (0.25 + pane.res * 0.75)
+            ctx.beginPath()
+            ctx.arc(gx, gy, r, 0, 6.283)
+            ctx.stroke()
+          }
+          ctx.globalAlpha = 1
+          if (ringing) {
+            // the ask, drawn: a live sine ribbon under the ring
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            for (let i = 0; i <= 20; i++) {
+              const px = gx - 20 + i * 2
+              const py = gy + tall / 2 + 16 + Math.sin(i * 0.9 + last / 90) * 4
+              if (i === 0) ctx.moveTo(px, py)
+              else ctx.lineTo(px, py)
+            }
+            ctx.stroke()
+          }
+        }
       }
       if (pane.burstT >= 0) {
         ctx.fillStyle = '#bc8cff'
@@ -2480,6 +2857,12 @@ export const JourneyPrototype: Component<{
         }
       }
       ;(
+        window as unknown as { __vibp?: () => Record<string, unknown> }
+      ).__vibp = () => ({
+        ...vibState,
+        ring: rawRing.slice(-70),
+      })
+      ;(
         window as unknown as { __world?: () => Record<string, unknown> }
       ).__world = () => ({
         platforms: platforms.map((pl) => ({
@@ -2489,7 +2872,42 @@ export const JourneyPrototype: Component<{
           lit: pl.lit,
           kind: pl.kind,
         })),
-        panes: panes.map((pn) => ({ wx: pn.wx, midi: pn.midi })),
+        panes: panes.map((pn) => ({
+          wx: pn.wx,
+          midi: pn.midi,
+          kind: pn.kind,
+          res: Math.round(pn.res * 1000) / 1000,
+          burst: pn.burstT >= 0,
+        })),
+        beams: beams.map((b) => ({ ...b })),
+        nodes: nodes.map((n) =>
+          n.t === 'land'
+            ? { t: n.t, midi: n.p.midi, lit: n.p.lit }
+            : n.t === 'pane'
+              ? {
+                  t: n.t,
+                  midi: n.pane.midi,
+                  kind: n.pane.kind,
+                  burst: n.pane.burstT >= 0,
+                }
+              : n.t === 'beam'
+                ? {
+                    t: n.t,
+                    midi: n.beam.midi,
+                    x1: n.beam.x1,
+                    done: n.beam.done,
+                  }
+                : n.t === 'atrium'
+                  ? { t: n.t, x1: n.a.x1, tonic: n.a.tonicMidi }
+                  : { t: n.t },
+        ),
+        atriums: atriums.map((a) => ({
+          x0: a.x0,
+          x1: a.x1,
+          tonicMidi: a.tonicMidi,
+        })),
+        vib: vibState.active,
+        vibDetail: { ...vibState },
         groundMidi,
         winLo,
         winHi,
@@ -2673,6 +3091,11 @@ export const JourneyPrototype: Component<{
           </p>
           <Show when={finalScore() !== null}>
             <p class="jp-score">
+              <Show when={finalScore()?.grade != null}>
+                <span class={`jp-grade jp-grade--${finalScore()?.grade ?? ''}`}>
+                  {(finalScore()?.grade ?? '').toUpperCase()}
+                </span>
+              </Show>
               Run score {finalScore()?.pct}% —{' '}
               {finalScore()?.great === true
                 ? 'a polished run.'

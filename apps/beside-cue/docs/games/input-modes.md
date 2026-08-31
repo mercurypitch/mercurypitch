@@ -58,6 +58,15 @@ Merc plays sounds; the player answers by tapping or gesturing.
   "tone-deaf test" the web playbook said doesn't exist yet — here it is,
   as a game).
 
+## Sung verbs beyond "hit the note" (2026-08-31)
+
+Vibrato is now a first-class input: `vibrato.ts` detects rate (3.5-8.5
+Hz) and depth (15-140 cents) from the raw fractional pitch stream, and
+the Resonance Ring pane makes it a required verb (hold, then wave).
+The Steady Beam makes _stability_ the verb (variance thins the
+bridge), and the Improv Atrium makes _scale-degree choice_ the verb
+(in-key notes spawn steps). See melody-levels.md §9.
+
 ## Engine seam (how this stays one game)
 
 Stages stay single-source (platform/pane/bridge layout). Each input mode

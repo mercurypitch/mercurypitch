@@ -8,6 +8,7 @@ import { FUR_ELISE } from './fur-elise'
 import { HABANERA } from './habanera'
 import { MOUNTAIN_KING } from './mountain-king'
 import { ODE_TO_JOY } from './ode-to-joy'
+import { THE_GLASSWORKS } from './the-glassworks'
 import { TWINKLE_TWINKLE } from './twinkle-twinkle'
 import type { LevelDef } from './types'
 
@@ -15,6 +16,7 @@ export { compileLevel } from './compile'
 export type { CompiledStage, CompileOpts, PlayMode } from './compile'
 export {
   FRERE_JACQUES,
+  THE_GLASSWORKS,
   FUR_ELISE,
   HABANERA,
   MOUNTAIN_KING,
@@ -24,6 +26,7 @@ export {
 export type { LevelDef, MelodyDef, Segment } from './types'
 
 export const SONGBOOK: readonly LevelDef[] = [
+  THE_GLASSWORKS,
   ODE_TO_JOY,
   TWINKLE_TWINKLE,
   FRERE_JACQUES,

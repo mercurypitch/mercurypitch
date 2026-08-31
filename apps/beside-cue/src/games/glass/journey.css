@@ -60,6 +60,32 @@
   opacity: 0.75;
 }
 
+/* the medal chip on the done card — the simple shareable grade */
+.jp-grade {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #241913;
+}
+
+.jp-grade--gold {
+  background: linear-gradient(160deg, #ffe08a, #d4a017);
+  box-shadow: 0 0 14px rgb(212 160 23 / 55%);
+}
+
+.jp-grade--silver {
+  background: linear-gradient(160deg, #e8eef4, #9fb0c0);
+}
+
+.jp-grade--bronze {
+  background: linear-gradient(160deg, #d9a06b, #9a6534);
+}
+
 /* the run-score line on the done card (score.ts) */
 .jp-score {
   margin: 0;
