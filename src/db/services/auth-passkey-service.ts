@@ -11,6 +11,7 @@
 // the caller has to ask for both.
 
 import { API_BASE_URL } from '@/lib/defaults'
+import { rememberSignInMethod } from '@/lib/last-sign-in'
 import { createCredential, getCredential } from '@/lib/webauthn'
 import type { AuthResponse } from './auth-service'
 import { adoptSession } from './auth-service'
@@ -184,6 +185,7 @@ export async function signInWithPasskey(): Promise<AuthResponse> {
     throw new Error(await messageOf(finish, 'That passkey was not accepted'))
   }
   const auth = (await finish.json()) as AuthResponse
+  rememberSignInMethod('passkey')
   adoptSession(auth)
   return auth
 }
