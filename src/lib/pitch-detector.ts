@@ -4,7 +4,9 @@
 
 import type ort from 'onnxruntime-web'
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
-import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
+import { adjustedThreshold, mpmPickThreshold, parabolicInterpolationMax, } from './pitch-detector-internals'
+import type { PitchStabiliser } from './pitch-yin-core'
+import { analyseYinBuffer, createPitchStabiliser } from './pitch-yin-core'
 import { freqToNote } from './scale-data'
 import { publishDetectionFrame } from './signal-quality'
 import type { MockOnnxModule } from './swift-f0-detector'
@@ -93,8 +95,7 @@ export class PitchDetector {
   private readonly stabilize: boolean
   private readonly telemetry: 'live' | 'off'
   private readonly yinBuffer: Float32Array
-  private pitchHistory: number[] = []
-  private readonly maxHistory = 5
+  private readonly stabiliser: PitchStabiliser
   private swiftDetector: SwiftF0Detector | null = null
   private onnxModule: typeof ort | MockOnnxModule | null = null
   private initialized: boolean = false
@@ -113,6 +114,10 @@ export class PitchDetector {
     this.stabilize = opts.stabilize
     this.telemetry = opts.telemetry
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
+    this.stabiliser = createPitchStabiliser({
+      maxHistory: 5,
+      enabled: this.stabilize,
+    })
   }
 
   /**
@@ -386,141 +391,31 @@ export class PitchDetector {
 
   // ── YIN Algorithm ─────────────────────────────────────────────
 
-  /** Core YIN analysis */
+  /**
+   * Core YIN analysis.
+   *
+   * The pass itself lives in pitch-yin-core so the AudioWorklet behind
+   * `createF0Stream` can run the same code — this module reaches SwiftF0 and
+   * from there onnxruntime-web, which an AudioWorkletGlobalScope has no way
+   * to load.
+   */
   private analyzeYIN(buffer: Float32Array): {
     frequency: number
     confidence: number
   } {
-    const halfSize = Math.floor(this.bufferSize / 2)
-
-    // Step 1: Difference function (raw, no normalization)
-    for (let tau = 0; tau < halfSize; tau++) {
-      this.yinBuffer[tau] = 0
-      for (let i = 0; i < halfSize; i++) {
-        const delta = buffer[i] - buffer[i + tau]
-        this.yinBuffer[tau] += delta * delta
-      }
-    }
-
-    // Step 2: Cumulative mean normalized difference
-    this.yinBuffer[0] = 1
-    let cumulativeSum = 0
-    for (let tau = 1; tau < halfSize; tau++) {
-      cumulativeSum += this.yinBuffer[tau]
-      this.yinBuffer[tau] *= tau / cumulativeSum
-    }
-
-    // Step 3: Absolute threshold — find first tau below threshold
-    //
-    // Bounded by the caller's frequency range, and that bound is load-bearing
-    // rather than tidy. A plucked string is rich in harmonics, so the
-    // difference function dips almost as deep at twice the true period as at
-    // the period itself; searching past the range lets YIN settle in that
-    // second dip and report an octave too low. Below the range the old code
-    // then threw the frame away at step 4 — so an unbounded search cost real
-    // notes as well as inventing wrong ones. Searching only where an answer is
-    // allowed makes the best in-range candidate win instead.
-    const threshold = adjustedThreshold(this.sensitivity)
-    const minTau = Math.max(2, Math.floor(this.sampleRate / this.maxFrequency))
-    const maxTau = Math.min(
-      halfSize,
-      Math.ceil(this.sampleRate / this.minFrequency) + 1,
-    )
-    let tauEstimate = -1
-    for (let tau = minTau; tau < maxTau; tau++) {
-      if (this.yinBuffer[tau] < threshold) {
-        // Descend into the valley to find the local minimum
-        while (
-          tau + 1 < maxTau &&
-          this.yinBuffer[tau + 1] < this.yinBuffer[tau]
-        ) {
-          tau++
-        }
-        // Also skip past any flat bottom
-        while (
-          tau + 1 < maxTau &&
-          this.yinBuffer[tau + 1] === this.yinBuffer[tau]
-        ) {
-          tau++
-        }
-        // Verify local minimum: neighbors should be >= current value
-        const isMinimum =
-          (tau <= minTau || this.yinBuffer[tau - 1] >= this.yinBuffer[tau]) &&
-          (tau + 1 >= maxTau || this.yinBuffer[tau + 1] >= this.yinBuffer[tau])
-        if (isMinimum) {
-          tauEstimate = tau
-          break
-        }
-        // Not a true minimum — keep scanning
-      }
-    }
-
-    if (tauEstimate === -1) {
-      return { frequency: 0, confidence: 0 }
-    }
-
-    // Bounding the search has one cost worth paying for: a tone ABOVE the
-    // range no longer has its own period in view, so the first dip that is in
-    // view belongs to a multiple of it, and the detector would answer with a
-    // sub-harmonic that sits comfortably inside the range. Answering with a
-    // note nobody played is worse than answering nothing, so if a shorter
-    // period explains the signal at least as well, the real pitch is out of
-    // range and this says so.
-    for (const divisor of [2, 3]) {
-      const shorterTau = Math.round(tauEstimate / divisor)
-      if (shorterTau < 2 || shorterTau >= minTau) continue
-      if (
-        this.yinBuffer[shorterTau] < threshold &&
-        this.yinBuffer[shorterTau] <= this.yinBuffer[tauEstimate] * 1.2
-      ) {
-        return { frequency: 0, confidence: 0 }
-      }
-    }
-
-    // Octave error correction: check if tau/2 (one octave up) is also a
-    // valid period candidate. If the higher-octave dip is below threshold
-    // and comparable in depth, prefer it — this avoids sub-harmonic errors
-    // where YIN locks onto 2× the actual period.
-    //
-    // The same promotion at tau·2/3 — the fifth-low flavour of this mistake,
-    // the largest error class against a real bass stem — was tried here and
-    // measured a no-op: the dip at the true period is SHALLOW (that is why
-    // the threshold search skipped it), so a gate that demands a deep dip
-    // there never fires. Fixing the fifth class needs evidence from the
-    // spectrum, not from this buffer.
-    const octaveTau = Math.round(tauEstimate / 2)
-    if (
-      octaveTau >= minTau &&
-      this.yinBuffer[octaveTau] < threshold * 1.5 &&
-      this.yinBuffer[octaveTau] < this.yinBuffer[tauEstimate] * 1.8
-    ) {
-      // Verify it's a local minimum
-      const isOctaveMin =
-        this.yinBuffer[octaveTau - 1] >= this.yinBuffer[octaveTau] &&
-        (octaveTau + 1 >= halfSize ||
-          this.yinBuffer[octaveTau + 1] >= this.yinBuffer[octaveTau])
-      if (isOctaveMin) {
-        tauEstimate = octaveTau
-      }
-    }
-
-    // Step 4: Parabolic interpolation for sub-sample accuracy
-    const betterTau = parabolicInterpolation(tauEstimate, this.yinBuffer)
-    const frequency = this.sampleRate / betterTau
-
-    // Reject frequencies outside the valid range
-    if (frequency < this.minFrequency || frequency > this.maxFrequency) {
-      return { frequency: 0, confidence: 0 }
-    }
+    const raw = analyseYinBuffer(buffer, this.yinBuffer, {
+      sampleRate: this.sampleRate,
+      sensitivity: this.sensitivity,
+      minFrequency: this.minFrequency,
+      maxFrequency: this.maxFrequency,
+    })
+    if (raw.frequency === 0) return raw
 
     // Step 5: Multi-stage stability check
-    const stableFreq = this.applyStabilityFilter(frequency)
-    // Confidence: depth of the dip at the winning tau. A value near 0
-    // means a very deep dip (high confidence); near 1 means barely below
-    // threshold (low confidence).
-    const confidence = 1 - this.yinBuffer[tauEstimate]
-
-    return { frequency: stableFreq, confidence }
+    return {
+      frequency: this.applyStabilityFilter(raw.frequency),
+      confidence: raw.confidence,
+    }
   }
 
   // ── McLeod Pitch Method (MPM) ─────────────────────────────────
@@ -643,51 +538,14 @@ export class PitchDetector {
     return { frequency: stableFreq, confidence }
   }
 
-  /** Apply weighted median filter with outlier rejection.
-   *  Detects real note changes by looking for consecutive consistent
-   *  readings at a new frequency — this avoids rejecting legitimate
-   *  note transitions (e.g., P5 = 50% jump) as outliers. */
+  /**
+   * Apply weighted median filter with outlier rejection.
+   *
+   * Shared with the AudioWorklet detector through pitch-yin-core, so a note
+   * transition is judged the same way whichever thread saw the frame.
+   */
   private applyStabilityFilter(frequency: number): number {
-    if (!this.stabilize) return frequency
-
-    this.pitchHistory.push(frequency)
-    if (this.pitchHistory.length > this.maxHistory) {
-      this.pitchHistory.shift()
-    }
-
-    if (this.pitchHistory.length < 3) {
-      return frequency
-    }
-
-    // Note-change detection: if the last two readings are consistent
-    // with each other (< 5% apart) but far from the older history
-    // (> 15% from its median), treat it as a confirmed note change.
-    const len = this.pitchHistory.length
-    const secondNewest = this.pitchHistory[len - 2]!
-    const newest = this.pitchHistory[len - 1]!
-    const lastTwoConsistent =
-      Math.abs(newest - secondNewest) / Math.min(newest, secondNewest) < 0.05
-
-    if (lastTwoConsistent && len >= 4) {
-      const oldValues = this.pitchHistory.slice(0, -2)
-      const oldSorted = [...oldValues].sort((a, b) => a - b)
-      const oldMedian = oldSorted[Math.floor(oldSorted.length / 2)]!
-      if (Math.abs(newest - oldMedian) / oldMedian > 0.15) {
-        // Confirmed note change — flush history to new frequency
-        this.pitchHistory = [newest, secondNewest]
-        return frequency
-      }
-    }
-
-    const sorted = [...this.pitchHistory].sort((a, b) => a - b)
-    const median = sorted[Math.floor(sorted.length / 2)]
-
-    // Reject outliers beyond 15% deviation from median
-    if (Math.abs(frequency - median) / median > 0.15) {
-      return median
-    }
-
-    return frequency
+    return this.stabiliser.stabilise(frequency)
   }
 
   /** Get the current sample rate */
@@ -729,7 +587,7 @@ export class PitchDetector {
 
   /** Reset pitch history (call when sound starts) */
   resetHistory(): void {
-    this.pitchHistory.length = 0
+    this.stabiliser.reset()
   }
 
   /** Get settings for display (basic implementation) */
@@ -781,9 +639,9 @@ export class PitchDetector {
   /** Get metrics (basic implementation) */
   getMetrics(): DetectorMetrics {
     return {
-      status: this.pitchHistory.length > 0 ? 'detection-active' : 'ready',
+      status: this.stabiliser.size() > 0 ? 'detection-active' : 'ready',
       lastResult: null,
-      totalDetections: this.pitchHistory.length,
+      totalDetections: this.stabiliser.size(),
       consecutiveFailures: 0,
       averageClarity: 0,
       averageFrequency: 0,

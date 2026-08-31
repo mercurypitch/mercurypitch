@@ -204,6 +204,7 @@ describe('useDryVoiceCapture', () => {
       .mockReturnValueOnce([{ t: 0.2, f0: 445, conf: 0.9, rms: 0.1 }])
     createF0StreamMock.mockReturnValue({
       startTask: vi.fn(),
+      flush: vi.fn(async () => undefined),
       takeFrames: frameWindows,
       peekFrames: vi.fn(() => []),
       latest: vi.fn(() => null),
@@ -298,6 +299,52 @@ describe('useDryVoiceCapture', () => {
     const last = result!.segments[result!.segments.length - 1]!
     expect(last.audioOffsetMs + last.durationMs).toBe(result?.durationMs)
     expect(result?.frames.map((frame) => frame.t)).toEqual([0.1, 2.1])
+  })
+
+  it('drains a window only after the analyser has handed over its frames', async () => {
+    // The analyser runs on the audio thread and posts frames across a port, so
+    // a renderer that is behind still owes the take its most recent hops. This
+    // pins both halves of that: the drain waits, and the wait does not become
+    // part of the span the segment reports.
+    let releaseFlush = (): void => undefined
+    const flushMock = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseFlush = resolve
+        }),
+    )
+    createF0StreamMock.mockReturnValue({
+      startTask: vi.fn(),
+      flush: flushMock,
+      takeFrames: frameWindows,
+      peekFrames: vi.fn(() => []),
+      latest: vi.fn(() => null),
+      latestSmoothed: vi.fn(() => null),
+      latestLevel: vi.fn(() => 0),
+      maxLevel: vi.fn(() => 0),
+      dispose: vi.fn(),
+    } satisfies F0Stream)
+
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    await controller.start()
+    vi.advanceTimersByTime(1000)
+    const pausing = controller.pauseSegment()
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(flushMock).toHaveBeenCalledOnce()
+    expect(frameWindows).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(400)
+    releaseFlush()
+    const segment = await pausing
+
+    expect(frameWindows).toHaveBeenCalledOnce()
+    expect(segment).toMatchObject({ index: 0, durationMs: 1000 })
   })
 
   it('permanently marks a take when its microphone track is interrupted', async () => {

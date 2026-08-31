@@ -16,19 +16,20 @@
 //      (@/lib/input-health).
 //
 // Deliberately not a Solid signal and deliberately not reactive. Publishers
-// run inside requestAnimationFrame at ~60 Hz, and pushing every frame through
-// a signal would re-run subscriber effects sixty times a second to move a bar
-// that only needs fifteen. Readers poll on their own schedule instead, and
-// this module stays framework-free so the watchdog beneath it can be tested
-// without a DOM.
+// run once per analysis hop or animation frame, ~60 Hz, and pushing every
+// frame through a signal would re-run subscriber effects sixty times a second
+// to move a bar that only needs fifteen. Readers poll on their own schedule
+// instead, and this module stays framework-free so the watchdog beneath it can
+// be tested without a DOM.
 
 /**
  * How long a published level stays meaningful.
  *
- * Capture loops publish every animation frame (~16 ms), so a reading older
- * than this means the loop has stopped — a backgrounded tab, a released mic,
- * a torn-down page. The honest answer then is silence, not the last number we
- * happened to see before everything went quiet.
+ * Capture loops publish about every 16 ms, so a reading older than this means
+ * the publisher has stopped — a released mic, a torn-down page, or one of the
+ * loops that still runs on requestAnimationFrame reaching a backgrounded tab.
+ * The honest answer then is silence, not the last number we happened to see
+ * before everything went quiet.
  */
 const STALE_MS = 400
 

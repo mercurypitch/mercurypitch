@@ -540,8 +540,12 @@ export function useDryVoiceCapture(
     }
   }
 
-  function finishSegment(): DryVoiceCaptureSegment {
-    const durationMs = Math.max(0, Date.now() - segmentStartedAt)
+  /**
+   * Close the open window. `endedAtMs` is passed in rather than read here so
+   * that awaiting the analyser's flush cannot lengthen the span it reports.
+   */
+  function finishSegment(endedAtMs = Date.now()): DryVoiceCaptureSegment {
+    const durationMs = Math.max(0, endedAtMs - segmentStartedAt)
     const frames = pitchStream?.takeFrames() ?? []
     const segment: DryVoiceCaptureSegment = {
       index: segments.length,
@@ -561,8 +565,14 @@ export function useDryVoiceCapture(
     const currentRecorder = recorder
     if (!(await currentRecorder.pause())) return null
     if (state() !== 'recording' || recorder !== currentRecorder) return null
+    // The analyser runs on the audio thread, so its most recent frames may
+    // still be crossing the port. Draining now would silently truncate the end
+    // of the window a busy renderer had not caught up with.
+    const endedAt = Date.now()
+    await pitchStream?.flush()
+    if (state() !== 'recording' || recorder !== currentRecorder) return null
     clearTimers()
-    const segment = finishSegment()
+    const segment = finishSegment(endedAt)
     setState('paused')
     return segment
   }
@@ -583,6 +593,9 @@ export function useDryVoiceCapture(
     if ((state() !== 'recording' && state() !== 'paused') || recorder === null)
       return null
 
+    // The end of the take is stamped before anything can await, so waiting on
+    // the analyser below cannot lengthen the window it reports.
+    const endedAt = Date.now()
     const wasRecording = state() === 'recording'
     const currentRecorder = recorder
     const context = captureContext
@@ -594,10 +607,19 @@ export function useDryVoiceCapture(
     const run = activeRun
     recorder = null
     clearTimers()
-    if (wasRecording) finishSegment()
+    // Before any await: the mic indicator must go quiet the moment recording
+    // ends, not once the analyser has finished handing over.
+    setState('processing')
+    if (wasRecording) {
+      // Same reason as pauseSegment — the audio thread's most recent frames
+      // may still be crossing the port, and draining without them truncates
+      // the end of the last window.
+      await pitchStream?.flush()
+      if (run !== activeRun) return null
+      finishSegment(endedAt)
+    }
     const capturedSegments = segments
     const fallbackDurationMs = completedDurationMs
-    setState('processing')
     releaseMic()
     disposePitchStream()
 

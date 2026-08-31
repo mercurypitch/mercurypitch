@@ -46,6 +46,7 @@ vi.mock('@/lib/mic-manager', () => ({
 vi.mock('@/lib/pitch-f0-stream', () => ({
   createF0Stream: () => ({
     startTask: mic.startTask,
+    flush: async () => undefined,
     takeFrames: () => mic.frames,
     peekFrames: () => mic.frames,
     latest: () => null,

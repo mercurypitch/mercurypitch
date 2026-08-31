@@ -47,6 +47,7 @@ vi.mock('@/lib/voice-capture', () => ({
 vi.mock('@/lib/pitch-f0-stream', () => ({
   createF0Stream: vi.fn(() => ({
     startTask: vi.fn(),
+    flush: vi.fn(async () => undefined),
     takeFrames: vi.fn(() => []),
     latest: vi.fn(() => null),
     latestSmoothed: vi.fn(() => null),

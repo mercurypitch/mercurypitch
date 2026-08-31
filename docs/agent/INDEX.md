@@ -159,12 +159,12 @@ These are the rules that break things when ignored.
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 950 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
 | [use-dry-voice-capture.ts](../../src/lib/use-dry-voice-capture.ts) | 850 | Dry Voice Capture Controller — reusable local mic recording and review Owns the full temporary-capture lifecycle but never persists a take. |
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 850 | UVR API Client - Frontend Integration |
-| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 800 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 750 | Lyrics Service — fetch, parse, and sync lyrics |
 | [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 750 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
+| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 650 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 600 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |

@@ -176,6 +176,22 @@ audibility") replays the automation and fails any truncation — never weaken it
 **Rule:** call `play()` inside the gesture, then align to the target, require one contiguous near-term buffered window per stem, re-align, and await seek settlement before opening the bus. Own every listener and timeout with pause/dispose cancellation.
 **See:** `src/features/guitar/backing/guitar-backing-stream.ts`
 
+### Measure audio on the audio thread, never on `requestAnimationFrame`
+
+**Symptom:** the guided Pitch Centre check refused good recordings on a busy
+machine — too few confident frames in a 1.8s landing window, so the reading
+came back null and its canvas drew nothing.
+**Cause:** an AnalyserNode holds only the most recent 2048 samples, so a missed
+rAF tick is a lost frame, not a late one. Measured at eight Playwright workers
+on four cores: 22-96 frames per window with gaps to 921ms, against a floor of
+18 frames and 100ms. A backgrounded tab is the same defect at 1Hz.
+**Rule:** anything whose _rate_ is part of the measurement runs in an
+AudioWorklet, hopped in render quanta — and the consumer must then _await_ a
+flush before it drains, or the frames still crossing the port are lost exactly
+when the renderer is busy (43 of 104 in one landing). Switching rAF for
+`setTimeout` does not help — it was measured and did not.
+**See:** `src/workers/pitch-f0.worklet.ts`, `src/lib/pitch-f0-stream.ts`
+
 ## Framework
 
 ### Do not destructure props
@@ -806,6 +822,19 @@ not necessarily keep their desktop tab id.
 **Rule:** mobile automation opens More when the stable tab id is absent, then
 selects the destination by its exact accessible name.
 **See:** `scripts/audit-exercises-mobile.mjs`
+
+### Unshallow before believing anything about `main`
+
+**Symptom:** a task said its other half had already landed. `git log --all`,
+`git branch -a` and a grep of every commit message all said otherwise, so the
+work was nearly redone from scratch — and `pnpm pr:validate` failed with
+`git merge-base HEAD <sha> failed` rather than saying why.
+**Cause:** cloud sessions get a shallow clone. History outside the shallow
+boundary is simply absent, so log, merge-base and ahead/behind counts answer
+confidently and wrongly.
+**Rule:** `git fetch --unshallow` before reading history, comparing against
+`origin/main`, or concluding a commit does not exist.
+**See:** [AGENTS.md](../../AGENTS.md) "Code health"
 
 ## Process
 
