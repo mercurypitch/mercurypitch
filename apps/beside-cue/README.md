@@ -106,6 +106,24 @@ about RevenueCat — only a device does that. It cannot switch on outside a
 development build: the check requires `import.meta.env.DEV`, and the fake store
 is absent from a production bundle.
 
+### Skipping the intro while developing
+
+The cinematic first run and the setup walk stand between a fresh profile and
+every screen behind them, which makes browser testing slow and makes an empty
+profile (a new browser, cleared site data) a five-minute detour:
+
+```sh
+pnpm beside-cue:dev
+# then open http://localhost:5199/?devSeed
+```
+
+`VITE_DEV_SEED=1` does the same without the query parameter. It writes what a
+finished first run would have written — one active cue with obviously
+placeholder text, and the onboarding marked seen — so the app boots straight to
+HOME. A device that already has a plan is left untouched. Same guard as the
+fake store: the check requires `import.meta.env.DEV`, and the seeder is absent
+from a production bundle.
+
 ### Verifying on a device
 
 Sideload the `beside-cue-debug-apk` artifact from any pull request. It is built
