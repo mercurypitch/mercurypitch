@@ -548,8 +548,17 @@ export default defineConfig(({ command, mode }) => {
             // local-song-library → library cycle: Guitar Night died at
             // first paint on "Cannot access 'At' before initialization"
             // (2026-08-31, melody-store reading scale-data's KEY_OFFSETS).
+            //
+            // The db bootstrap (index, seed, persistent-storage, the hybrid
+            // and server adapters) rides here too. Organic, Rollup filed it
+            // under pitch-core, which made vendor-db a hoisted static dep of
+            // EVERY pitch-core importer — a standalone room's account chip
+            // (auth-service + notifications-store) preloaded Dexie on first
+            // paint and broke Drum Night's projects-stay-lazy contract. The
+            // services pitch-core keeps (auth/user/billing) import no db
+            // code, so this direction has no cycle back.
             if (
-              /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service|services\/uvr-stem-migration|stem-blob-data|durable-write)/.test(
+              /src\/db\/(index\.|seed|persistent-storage|local-database|adapters\/(dexie-adapter|hybrid-adapter|server-adapter)|services\/uvr-read-service|services\/uvr-stem-migration|stem-blob-data|durable-write)/.test(
                 id,
               ) ||
               /src\/lib\/wav-meta/.test(id)

@@ -19,12 +19,8 @@ import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
-// Cyclic with grant-flush, which imports hasValidToken from here. Safe:
-// neither module touches the other at load time, only inside functions that
-// run long after both have initialised. The alternative was a second copy of
-// the token-expiry rule inside grant-flush.
-import { discardPendingGrants, flushGrants } from './grant-flush'
-import { authVersion, getAuthToken, getDeviceSecret, getUserId, resetUserId, setAuthToken, } from './user-service'
+import type { GrantFlushCredentials } from './grant-flush'
+import { authVersion, getAuthHeaders, getAuthToken, getDeviceSecret, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
 // so account-aware UI (e.g. the verify-email banner) can re-check /me
@@ -1045,11 +1041,21 @@ export function logout(): void {
   const payload = token != null ? decodeToken(token) : null
 
   // Anything the grant engine has evaluated but not yet written belongs to
-  // THIS identity. Flush it while the token is still valid — the flush
-  // snapshots its credentials synchronously for exactly this reason — then
-  // abandon whatever did not make it, so nothing lands on the next account.
-  void flushGrants(true)
-  discardPendingGrants()
+  // THIS identity, so its credentials are snapshotted before the token
+  // clears below. grant-flush loads lazily — a static import would chain
+  // auth-service to the whole db adapter stack and put Dexie into the first
+  // paint of every standalone room with an account chip. A surface that
+  // never ran the grant engine resolves the module with empty queues and
+  // the flush is a no-op.
+  const grantCredentials: GrantFlushCredentials = {
+    cloud: API_BASE_URL != null && API_BASE_URL !== '' && hasValidToken(),
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    userId: getUserId(),
+  }
+  void import('./grant-flush').then((grants) => {
+    void grants.flushGrants(true, grantCredentials)
+    grants.discardPendingGrants()
+  })
 
   // Clear token immediately so the UI reflects signed-out state.
   // An upgraded device can't fall back to anonymous auth — remember
