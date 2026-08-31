@@ -118,6 +118,7 @@ interface UvrPanelProps {
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
+  // ── State & Signals ──────────────────────────────────────────
   // Note: 'mixer' is excluded from the initial value because it requires stems
   // to be populated first (async hydration). handleSessionView sets 'mixer'
   // after the stems are ready.
@@ -140,6 +141,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setOnError(message)
   }
 
+  // ── Shazam Fingerprint Indexing ──────────────────────────────
   // Extract and index stem fingerprint from vocal stem audio
   const indexStemFingerprint = async (
     sessionId: string,
@@ -189,6 +191,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
 
+  // ── Modal Keyboard & Escape Handlers ─────────────────────────
   // Close modals on Escape key
   createEffect(() => {
     if (showGuide() || showClearStorageConfirm()) {
@@ -241,6 +244,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     'uvr-session-gallery-open',
     true,
   )
+  // ── Zip Import & Drag-and-Drop ───────────────────────────────
   const [importFiles, setImportFiles] = createSignal<File[]>([])
   const [importInspections, setImportInspections] = createSignal<
     { file: File; inspection: SessionZipInspection }[]
@@ -339,6 +343,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return message
   }
 
+  // ── Library Export & Archive Packaging ───────────────────────
   const openLibraryExportDialog = async (): Promise<void> => {
     if (isExporting() || libraryExportInspecting()) return
     setLibraryExportInspecting(true)
@@ -661,6 +666,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return sessions.filter((s) => s.groupId === groupId)
   }
 
+  // ── WebGPU & Device Accelerators ─────────────────────────────
   const handleForceWebGpuToggle = (force: boolean) => {
     setUvrForceWebGpu(force)
     // Destroy pipeline and re-init immediately
@@ -817,6 +823,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     })
   })
 
+  // ── Server Credits & Pricing ──────────────────────────────────
   // Live credit balance for the karaoke header pill; re-fetches whenever
   // billing-store's balanceVersion bumps (checkout returns, finished jobs).
   const [billingMe] = createResource(
@@ -937,6 +944,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return false
   }
 
+  // ── Pipeline Error Humanization & Callbacks ───────────────────
   /** A session card should never show a raw JS crash (a TypeError, a null
    *  dereference). Already-legible messages (the server 503, billing, storage)
    *  pass through untouched; an internal-looking one is replaced with guidance
@@ -1032,6 +1040,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     },
   })
 
+  // ── Auto-Resume Server Separations ───────────────────────────
   /** Re-attach to an in-flight / just-finished RunPod job by its persisted
    *  apiSessionId — no new job, no new debit. `focus` brings the processing
    *  view forward (a user-initiated fetch / re-run); omitted for the silent
@@ -1107,6 +1116,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     })
   })
 
+  // ── Separation Pipeline Execution ────────────────────────────
   const handleProcessStart = async (
     sessionId: string,
     mode?: UvrProcessingMode,
@@ -1232,6 +1242,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     })
   }
 
+  // ── Upload Batch Queue Runner ────────────────────────────────
   const enqueueAudioFiles = (files: File[]) => {
     if (
       uploadQueue.items().length > 0 &&
@@ -1415,6 +1426,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     )
   }
 
+  // ── HQ Cloud Re-run & Stem Export ────────────────────────────
   /** Re-run a completed browser separation on the cloud GPU, feeding it the
    *  original upload we keep in IndexedDB. 'same' upgrades the session in
    *  place (stems are replaced when the job lands); 'new' spawns a sibling
@@ -1547,6 +1559,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     props.onExport?.(type)
   }
 
+  // ── Session View Hydration & Practice Start ──────────────────
   const handleSessionView = async (sessionId: string) => {
     console.log(
       '[UvrPanel] handleSessionView called for:',
@@ -1818,6 +1831,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  // ── StemMixer Workspace Launch & Clear Storage ───────────────
   const handleMixStart = async (selectedStems: string[]) => {
     const current = currentUvrSession()
     if (current === null) return
@@ -1960,6 +1974,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  // ── Header Controls & Options Sheet ──────────────────────────
   /** The header's processing controls: in the header on a desk, in the
    *  options sheet on a phone. One list, two containers. */
   const headerExtras = () => (
@@ -2125,6 +2140,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     </>
   )
 
+  // ── View Render Tree (JSX) ───────────────────────────────────
   return (
     <div class="uvr-panel">
       <div
