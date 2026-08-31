@@ -106,6 +106,10 @@
   outline-offset: 3px;
 }
 
+/* Every cover is half a row: the ten of them pair off cleanly, so no card
+   needs a full row to keep the grid from leaving a hole. A cover with no
+   span at all collapses into one twelfth of the grid, so a new one must be
+   named here too. */
 .practice,
 .exercises,
 .karaoke,
@@ -113,22 +117,10 @@
 .pianoNight,
 .guitarNight,
 .jam,
+.analysis,
+.earLab,
 .mystery {
   grid-column: span 6;
-}
-
-/* Analysis is the one deliberate pause in the sequence: the instrument and
-   performance rooms pair off above it, then the deeper lab gets the full row. */
-.analysis {
-  grid-column: 1 / -1;
-}
-
-/* The Lab is a row of its own, after the rooms and Exercises have paired
-   off: a single card cannot join those pairs without leaving a hole
-   somewhere, and a cover with no span at all collapses into one twelfth
-   of the grid. */
-.earLab {
-  grid-column: 1 / -1;
 }
 
 .coverShade {
@@ -883,6 +875,7 @@
   .drumNight,
   .exercises,
   .analysis,
+  .earLab,
   .jam,
   .mystery {
     grid-column: 1 / -1;
