@@ -25,6 +25,7 @@ import os
 import random
 
 import bpy
+import mathutils
 import mathutils.noise
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -122,9 +123,31 @@ def main():
                                round(o.location.x, 5),
                                round(o.location.y, 5)))
 
-    for i, o in enumerate(shards):
+    # Centre each origin on the shard's volume -- that origin is what the
+    # exporter writes as the node translation, and what solveShatter reads
+    # as the centroid.
+    #
+    # Blender's centre-of-volume is only meaningful on a closed, correctly
+    # wound mesh, and the boolean regularly emits pieces that are neither
+    # (about a fifth of them here). It does not fail; it returns a point
+    # off in space -- one landed 0.37 m out, on a bowl 0.046 m wide -- and
+    # that shard would fly in from nowhere. The geometry still renders
+    # fine, so those fall back to the bounding-box centre, which is inside
+    # the shard by construction. Dropping them instead would throw away a
+    # fifth of the break to avoid a one-line fix.
+    fallbacks = 0
+    for o in shards:
         isolate(o)
         bpy.ops.object.origin_set(type="ORIGIN_CENTER_OF_VOLUME")
+        corners = [o.matrix_world @ mathutils.Vector(c) for c in o.bound_box]
+        lo = [min(c[i] for c in corners) for i in range(3)]
+        hi = [max(c[i] for c in corners) for i in range(3)]
+        p = o.matrix_world.translation
+        if not all(lo[i] - 1e-6 <= p[i] <= hi[i] + 1e-6 for i in range(3)):
+            bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
+            fallbacks += 1
+
+    for i, o in enumerate(shards):
         o.name = "shard_%03d" % i
         o.data.name = o.name
 
@@ -148,6 +171,7 @@ def main():
         "faces": faces,
         "generated": len(raw),
         "dropped_empty": len(dropped),
+        "origin_fallbacks": fallbacks,
     })
 
 
