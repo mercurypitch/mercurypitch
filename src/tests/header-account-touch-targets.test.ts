@@ -32,8 +32,24 @@ describe('the phone header keeps one big account target', () => {
   it('reserves the header corner the bigger target needs', () => {
     const header = readFileSync('src/components/AppHeader.css', 'utf8')
     const mobile = header.slice(header.lastIndexOf('@media (max-width: 768px)'))
-    // 44px of button from a 4px inset fits the 50px band exactly.
-    expect(mobile).toMatch(/top:\s*4px/)
-    expect(mobile).toMatch(/padding:\s*8px\s+96px\s+8px\s+12px/)
+    // 44px of button from a 4px inset fits the 50px band exactly, and the
+    // 96px right reserve is what keeps the row's own content out from under
+    // it. Both are matched loosely enough to survive the safe-area offsets
+    // added around them, and tightly enough that shrinking either one fails.
+    expect(mobile).toMatch(/top:\s*calc\(4px/)
+    expect(mobile).toMatch(/padding:\s*calc\(8px/)
+    expect(mobile).toMatch(/max\(96px,/)
+  })
+
+  it('keeps the corner clear of the iOS status bar', () => {
+    // The pills are absolutely positioned, so the header's own safe-area
+    // padding does not move them: without their own inset they render inside
+    // the status bar, visible through it and impossible to tap. This is the
+    // regression that shipped once already — the inset lived on a `padding-top`
+    // in mobile-polish.css and AppHeader.css's `padding` shorthand reset it.
+    const header = readFileSync('src/components/AppHeader.css', 'utf8')
+    const mobile = header.slice(header.lastIndexOf('@media (max-width: 768px)'))
+    expect(mobile).toMatch(/top:\s*calc\(4px\s*\+\s*var\(--safe-top/)
+    expect(mobile).toMatch(/padding:\s*calc\(8px\s*\+\s*var\(--safe-top/)
   })
 })
