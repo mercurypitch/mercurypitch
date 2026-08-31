@@ -279,12 +279,33 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   changes or the player clears the range, the percussion room shall release its
   owned A/B marks and active scheduler loop together.
 - **REQ-GN-RUNTIME-026 — Summed electric amp path:** WHEN synthesized electric
-  score notes sound together, their voices shall meet at one shared nonlinear
-  drive, presence, and asset-free cabinet-filter stage before entering the
-  guide bus. Acoustic references, tuner tones, bass voices, backing stems,
-  drums, and monitor audio shall bypass that electric stage. Creating more
-  electric voices shall not create more amp stages, and disposing the route
-  graph shall disconnect the shared stage without fetching an external asset.
+  score notes sound together, their voices shall meet at one shared,
+  asset-free staged amp before entering the guide bus. The fixed route shall
+  provide bounded input headroom, preamp and power-stage nonlinearity,
+  amp-inspired three-band voicing, presence, cabinet filtering, compensated
+  output, and a pop-free bypass. It shall not claim to be an exact named valve
+  amp or physical tone-stack model. Acoustic references, tuner tones, bass
+  voices, backing stems, drums, and monitor audio shall bypass that guide amp.
+  Creating more electric voices shall not create more amp stages, and disposing
+  the route graph shall disconnect the shared stage without fetching an
+  external asset.
+- **REQ-GN-RUNTIME-027 — Persistent room tone:** Guitar Night shall expose one
+  compact Amp surface in the score-room Session sheet and prepared-song Band
+  sheet. Preset, bypass, Drive, Bass, Mid, Treble, Presence, Output, and
+  cabinet voicing shall share one versioned, bounded setting on this device.
+  Corrupt, incomplete, or unknown-future settings shall fall back to the safe
+  default. Changing or resetting tone before Play shall not activate an audio
+  context; changing it while audio is live shall use bounded automation rather
+  than discontinuous gain steps.
+- **REQ-GN-RUNTIME-028 — Direct-input amp monitoring:** WHERE Direct input is
+  actively Listening, Guitar Night may offer one explicit **Hear my input**
+  action. The wet monitor shall branch from the already-owned source into its
+  own fixed amp stage and monitor bus, never the guide amp, detector, scoring
+  path, or take recorder. Monitoring shall default off on every mount and input
+  session, shall not persist its enabled state, and shall stop on input change,
+  loss, stop, permission failure, suspension, or unmount. Room microphone and
+  MIDI shall not enable this route. Copy shall recommend headphones, state that
+  browser latency applies, and state that saved takes remain dry.
 
 ## Tuner — `GN-TUNER-*`
 
@@ -429,9 +450,11 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SCORE-011 — Explicit private replay:** WHERE a completed authored
   live-score run uses Room mic or Direct input, Guitar Night may record the
   already-owned raw input stream between the run's scheduled start and end,
-  excluding count-in and room output buses. The prepared Blob, duration, and
-  waveform peaks shall remain temporary until the player explicitly selects
-  Keep in Hear Yourself. The kept take shall contain a versioned Guitar Night
+  excluding count-in, room output buses, and any optional wet monitor branch.
+  Amp settings or monitoring shall never colour the recorded evidence or kept
+  replay. The prepared Blob, duration, and waveform peaks shall remain
+  temporary until the player explicitly selects Keep in Hear Yourself. The
+  kept take shall contain a versioned Guitar Night
   context and scalar score summary, but no device identity, input-event
   timeline, event ID, or target ID. MIDI, held or partial runs, input loss,
   seek, source/track/tempo/loop changes, Jam Doctor, and free play shall not

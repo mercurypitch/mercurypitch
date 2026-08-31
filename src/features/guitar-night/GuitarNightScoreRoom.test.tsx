@@ -1,5 +1,7 @@
 // The tab room must open silent, on the tab's own terms, with no recording.
 // ============================================================
+// Kept together because the room-boundary assertions and exported state helpers
+// share the same authored-score fixture and lifecycle invariants.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -40,6 +42,7 @@ describe('GuitarNightScoreRoom', () => {
   afterEach(() => {
     cleanup()
     globalThis.localStorage.clear()
+    vi.restoreAllMocks()
   })
 
   it('opens silent, naming the tab and its own clock', () => {
@@ -237,6 +240,33 @@ describe('GuitarNightScoreRoom', () => {
     )
     expect(session.getByLabelText('Tempo 86 BPM')).toBeInTheDocument()
     expect(deck.getByLabelText('Tempo 86 BPM')).toBeInTheDocument()
+  })
+
+  it('keeps the shared Session amp silent while its tone is being shaped', () => {
+    const audioContext = vi.spyOn(globalThis, 'AudioContext')
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Session controls'))
+    const amp = within(screen.getByRole('region', { name: 'Guitar amp' }))
+    fireEvent.change(amp.getByLabelText('Guitar amp preset'), {
+      target: { value: 'lead' },
+    })
+    fireEvent.click(amp.getByRole('button', { name: 'Bypass guitar amp' }))
+    fireEvent.click(amp.getByText('Shape tone & cabinet'))
+    const bass = amp.getByRole('slider', { name: 'Guitar amp bass' })
+    fireEvent.input(bass, { target: { value: '-0.25' } })
+    fireEvent.change(bass, { target: { value: '-0.25' } })
+
+    expect(amp.getByLabelText('Guitar amp preset')).toHaveValue('custom')
+    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(audioContext).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Start the count-in')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Pause score')).toBeNull()
   })
 
   it('sets zero-safe A/B marks beside the rail and clears them again', () => {

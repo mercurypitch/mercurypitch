@@ -3380,6 +3380,29 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
       viewportMetrics.clientWidth + 2,
     )
 
+    const band = room.getByLabel('Band, loop, and input controls, 2 tracks')
+    await band.click()
+    const amp = room.getByRole('region', { name: 'Guitar amp' })
+    const toneDisclosure = amp.getByText('Shape tone & cabinet')
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
+    const expectAmpInsideViewport = async (): Promise<void> => {
+      const metrics = await amp.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        return {
+          left: bounds.left,
+          right: bounds.right,
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        }
+      })
+      expect(metrics.left).toBeGreaterThanOrEqual(0)
+      expect(metrics.right).toBeLessThanOrEqual(metrics.clientWidth + 1)
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+    }
+    await expectAmpInsideViewport()
+    await band.click()
+
     const controls = room.locator('button:visible, input[type="range"]:visible')
     expect(await controls.count()).toBeGreaterThanOrEqual(4)
     for (let index = 0; index < (await controls.count()); index += 1) {
@@ -3403,6 +3426,13 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     expect(narrowMetrics.scrollWidth).toBeLessThanOrEqual(
       narrowMetrics.clientWidth + 2,
     )
+    await band.click()
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeHidden()
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
+    await expectAmpInsideViewport()
+    await band.click()
     await expect(
       room.getByRole('button', { name: 'Play backing', exact: true }),
     ).toBeVisible()

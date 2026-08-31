@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
 
 class FakeAudioParam {
@@ -11,9 +12,11 @@ class FakeAudioParam {
   readonly setValueAtTime = vi.fn((value: number) => {
     this.value = value
   })
-  readonly setTargetAtTime = vi.fn((value: number) => {
-    this.value = value
-  })
+  readonly setTargetAtTime = vi.fn(
+    (value: number, _at: number, _timeConstant: number) => {
+      this.value = value
+    },
+  )
 }
 
 class FakeAudioNode {
@@ -85,24 +88,62 @@ describe('createGuitarSessionAudioGraph', () => {
       context as unknown as AudioContext,
     )
 
-    const drive = context.waveShapers[0]
-    const [presence, cabinet] = context.filters
+    const electricInput = graph.guideInputs.electric as unknown as FakeGainNode
     const guide = graph.buses.guide as unknown as FakeGainNode
     const master = graph.master as unknown as FakeGainNode
+    const ampOutputs = context.gains.filter((gain) =>
+      gain.connect.mock.calls.some(([destination]) => destination === guide),
+    )
 
-    expect(context.waveShapers).toHaveLength(1)
-    expect(context.filters).toHaveLength(2)
+    // The shared route keeps the expanded staged amp; the lightweight legacy
+    // factory is reserved for synth voices outside Guitar Night.
+    expect(context.waveShapers).toHaveLength(3)
+    expect(context.filters).toHaveLength(8)
     expect(graph.guideInputs.clean).toBe(graph.buses.guide)
-    expect(graph.guideInputs.electric).toBe(drive)
-    expect(drive.connect).toHaveBeenCalledWith(presence)
-    expect(presence.connect).toHaveBeenCalledWith(cabinet)
-    expect(cabinet.connect).toHaveBeenCalledWith(guide)
+    expect(electricInput).not.toBe(guide)
+    expect(ampOutputs).toHaveLength(1)
+    expect(electricInput.connect).not.toHaveBeenCalledWith(guide)
     expect(guide.connect).toHaveBeenCalledWith(master)
     for (const bus of ['drums', 'bass', 'stems', 'monitor'] as const) {
       expect(
         (graph.buses[bus] as unknown as FakeGainNode).connect,
       ).toHaveBeenCalledWith(master)
     }
+  })
+
+  it('seeds its dormant stage and updates the same nodes on the audio clock', () => {
+    const context = new FakeAudioContext()
+    const initial = {
+      ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      drive: 0.23,
+      mid: -0.3,
+    }
+    const graph = createGuitarSessionAudioGraph(
+      context as unknown as AudioContext,
+      { electricAmpParameters: initial },
+    )
+    const nodeCount =
+      context.gains.length + context.filters.length + context.waveShapers.length
+
+    expect(graph.getElectricAmpParameters()).toEqual(initial)
+    context.currentTime = 7
+    graph.setElectricAmpParameters({ drive: 0.81, enabled: false })
+
+    expect(graph.getElectricAmpParameters()).toMatchObject({
+      drive: 0.81,
+      enabled: false,
+      mid: -0.3,
+    })
+    expect(
+      [...context.gains, ...context.filters].some((node) =>
+        node.gain.setTargetAtTime.mock.calls.some((call) => call[1] === 7),
+      ),
+    ).toBe(true)
+    expect(
+      context.gains.length +
+        context.filters.length +
+        context.waveShapers.length,
+    ).toBe(nodeCount)
   })
 
   it('disconnects the shared amp stage with the graph', () => {
@@ -114,7 +155,12 @@ describe('createGuitarSessionAudioGraph', () => {
     graph.dispose()
     graph.dispose()
 
-    expect(context.waveShapers[0].disconnect).toHaveBeenCalledOnce()
+    for (const gain of context.gains) {
+      expect(gain.disconnect).toHaveBeenCalledOnce()
+    }
+    for (const shaper of context.waveShapers) {
+      expect(shaper.disconnect).toHaveBeenCalledOnce()
+    }
     for (const filter of context.filters) {
       expect(filter.disconnect).toHaveBeenCalledOnce()
     }

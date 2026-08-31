@@ -13,6 +13,7 @@
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarBackingTransport } from './guitar-backing-transport'
 
 const tier = vi.hoisted(() => ({ recordAnimationFrame: vi.fn() }))
@@ -45,6 +46,7 @@ function fakeTransport(): {
     seek: vi.fn(),
     setPlaybackRate: vi.fn(async () => true),
     setMasterVolume: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
     getAudioContext: () => null,
     getAudioGraph: () => null,
@@ -129,6 +131,27 @@ describe('the backing clock feeds the frame-health sampler', () => {
       // would otherwise report its own gaps as missed frames.
       expect(queued).toHaveLength(0)
       expect(tier.recordAnimationFrame).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it('forwards amp edits without activating the transport', () => {
+    const fake = fakeTransport()
+    createRoot((dispose) => {
+      const controller = useGuitarBackingTransportController({
+        createTransport: () => fake.transport,
+      })
+      const parameters = {
+        ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+        drive: 0.72,
+      }
+
+      controller.setElectricAmpParameters(parameters)
+
+      expect(fake.transport.setElectricAmpParameters).toHaveBeenCalledWith(
+        parameters,
+      )
+      expect(fake.transport.activate).not.toHaveBeenCalled()
+      dispose()
     })
   })
 })

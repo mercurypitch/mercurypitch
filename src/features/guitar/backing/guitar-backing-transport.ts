@@ -4,6 +4,8 @@
 import { clampRate } from '@/features/guitar-practice/practice-rate'
 import { decodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
@@ -84,6 +86,7 @@ export interface GuitarBackingTransport {
   seek(seconds: number): void
   setPlaybackRate(rate: number): Promise<boolean>
   setMasterVolume(position: number): void
+  setElectricAmpParameters(parameters: GuitarElectricAmpParameters): void
   setTrackMuted(id: string, muted: boolean): void
   getAudioContext(): AudioContext | null
   getAudioGraph(): GuitarSessionAudioGraph | null
@@ -333,6 +336,9 @@ export function createGuitarBackingTransport(
   let context: AudioContext | null = null
   let audioGraph: GuitarSessionAudioGraph | null = null
   let masterPosition = 0.78
+  let electricAmpParameters: GuitarElectricAmpParameters = {
+    ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+  }
   let playbackRate = 1
   let duration = 0
   let parkedOffset = 0
@@ -484,6 +490,7 @@ export function createGuitarBackingTransport(
     const created = createContext()
     const nextGraph = createGuitarSessionAudioGraph(created, {
       masterLevel: masterPosition,
+      electricAmpParameters,
     })
     context = created
     audioGraph = nextGraph
@@ -1122,6 +1129,12 @@ export function createGuitarBackingTransport(
         )
       }
       emit()
+    },
+
+    setElectricAmpParameters(parameters) {
+      electricAmpParameters = { ...parameters }
+      if (disposed) return
+      audioGraph?.setElectricAmpParameters(electricAmpParameters)
     },
 
     setTrackMuted(id, muted) {

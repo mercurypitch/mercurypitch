@@ -4,6 +4,7 @@
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { recordAnimationFrame } from '@/lib/device-tier'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarBackingLoadMode, GuitarBackingLoadProgress, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
 import { createGuitarBackingTransport } from './guitar-backing-transport'
 
@@ -123,6 +124,12 @@ export function useGuitarBackingTransportController(
     sync()
   }
 
+  const setElectricAmpParameters = (
+    parameters: GuitarElectricAmpParameters,
+  ): void => {
+    transport.setElectricAmpParameters(parameters)
+  }
+
   const setPlaybackRate = async (rate: number): Promise<boolean> => {
     const changed = await transport.setPlaybackRate(rate)
     sync()
@@ -161,6 +168,7 @@ export function useGuitarBackingTransportController(
     seek,
     setPlaybackRate,
     setMasterVolume,
+    setElectricAmpParameters,
     setTrackMuted,
     getAudioGraph,
   }

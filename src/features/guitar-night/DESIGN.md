@@ -241,7 +241,12 @@ core Learn set in
   does not create an audio context.
 - One shared output graph exposes guide, drums, bass, stems, and monitor buses
   through a master limiter. Room consumers reuse that graph instead of opening
-  competing audio clocks.
+  competing audio clocks. Electric guide voices meet before one asset-free
+  staged amp; clean references, bass, backing, drums, tuner and monitor routes
+  keep their own paths. One compact Amp faceplate appears inside both Session
+  and Band sheets: preset and Drive remain immediate, while detailed voicing
+  stays behind one disclosure. Its controls are deliberately amp-inspired,
+  not claims of an exact named circuit or cabinet.
 - Full-band sessions expose the distinct Guitar channel muted by default.
   Two-stem sessions expose only Vocals and Backing, never a synthetic Guitar
   control. Returning to Songs cancels a pending start or pauses active voices
@@ -360,6 +365,12 @@ core Learn set in
   guitar-range MPM detector. MIDI
   keeps per-voice attack/release identity and maps its high-resolution event
   timestamp onto the room clock while stating that route delay is unmeasured.
+  Direct input alone may explicitly open a separate wet monitor through the
+  selected Amp tone and the existing monitor bus. That action starts off on
+  every input session, recommends headphones, names browser latency, and never
+  enters the dry detector, score, or Hear Yourself recording path. Room mic is
+  excluded because the browser cannot prevent speaker feedback; MIDI carries
+  no audio to monitor.
   The on-demand Jam Doctor stores no audio and makes no phrase, string, fret,
   latency, or quality claim that the evidence cannot support.
 - Timestamped attacks are captured in an AudioWorklet and anchored to the

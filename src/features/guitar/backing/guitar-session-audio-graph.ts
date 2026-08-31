@@ -2,6 +2,7 @@
 // Electric guide voices meet at one amp stage; clean guide audio bypasses it.
 // ============================================================
 
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import { createGuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 
@@ -22,6 +23,11 @@ export interface GuitarSessionAudioGraph {
   readonly limiter: DynamicsCompressorNode
   setBusLevel(bus: GuitarSessionAudioBus, position: number): void
   setMasterLevel(position: number): void
+  /** Update the one post-sum electric stage without rebuilding its graph. */
+  setElectricAmpParameters(
+    parameters: Partial<GuitarElectricAmpParameters>,
+  ): void
+  getElectricAmpParameters(): GuitarElectricAmpParameters
   dispose(): void
 }
 
@@ -29,6 +35,8 @@ interface GuitarSessionAudioGraphOptions {
   destination?: AudioNode
   masterLevel?: number
   busLevels?: Partial<Record<GuitarSessionAudioBus, number>>
+  /** Seed the dormant amp before any guide voice can reach it. */
+  electricAmpParameters?: Partial<GuitarElectricAmpParameters>
 }
 
 const DEFAULT_BUS_LEVELS: Record<GuitarSessionAudioBus, number> = {
@@ -83,7 +91,10 @@ export function createGuitarSessionAudioGraph(
   // A normal guitar pickup combines its strings before the amplifier. Keep
   // that non-linearity on a dedicated electric input: the clean guide path is
   // also used by tuner/reference tones and must not inherit amp colour.
-  const electricAmp = createGuitarElectricAmpStage(context)
+  const electricAmp = createGuitarElectricAmpStage(
+    context,
+    options.electricAmpParameters,
+  )
   electricAmp.output.connect(buses.guide)
 
   const guideInputs = {
@@ -127,11 +138,16 @@ export function createGuitarSessionAudioGraph(
         now,
       )
     },
+    setElectricAmpParameters(parameters) {
+      if (disposed) return
+      electricAmp.setParameters(parameters, context.currentTime)
+    },
+    getElectricAmpParameters: () => electricAmp.getParameters(),
     dispose() {
       if (disposed) return
       disposed = true
       for (const bus of Object.values(buses)) bus.disconnect()
-      for (const node of electricAmp.nodes) node.disconnect()
+      electricAmp.dispose()
       master.disconnect()
       limiter.disconnect()
     },

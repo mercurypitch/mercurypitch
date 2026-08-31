@@ -25,6 +25,7 @@ import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { nextGuitarNightScoreCountIn } from './guitar-night-score-count-in'
 import { createGuitarNightScoreVoiceCommands } from './guitar-night-score-voice-commands'
 import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
+import { GuitarNightAmpControls } from './GuitarNightAmpControls'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
@@ -44,6 +45,7 @@ import type { GuitarNightReference } from './reference-port'
 import { buildScoreNoteStartIndex, nextScoreNoteStart, } from './score-note-index'
 import type { SheetLane } from './sheet/sheet-model'
 import { useGuitarListeningController } from './useGuitarListeningController'
+import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
 import type { GuitarNightLiveScoreState } from './useGuitarNightLiveScoreController'
 import { useGuitarNightLiveScoreController } from './useGuitarNightLiveScoreController'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
@@ -348,6 +350,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     buildScoreNoteStartIndex(props.reference().notes),
   )
   const loop = useGuitarNightLoopController({ limit: scoreLoopBeats })
+  const amp = useGuitarNightAmpSettings()
   const room = useGuitarNightScoreRoomController({
     reference: () => props.reference(),
     loop: loop.span,
@@ -357,6 +360,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     backingPercussion: () => props.backingPercussion?.() ?? [],
     audiblePercussionTrackIds: () => props.audibleBackingTrackIds?.() ?? [],
     defaultHearScore: () => props.defaultHearScore?.() ?? true,
+    ampParameters: amp.parameters,
   })
   const displayedReference = createMemo(
     () => room.displayReference() ?? props.reference(),
@@ -364,6 +368,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const listening = useGuitarListeningController({
     activateAudio: room.activateAudio,
     getAudioGraph: room.getAudioGraph,
+    ampParameters: amp.parameters,
   })
   const scoreTakeCapture = useGuitarNightTakeCapture({
     getStream: listening.recordableStream,
@@ -1754,6 +1759,24 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                     }}
                   />
                 </Show>
+
+                <GuitarNightAmpControls
+                  parameters={amp.parameters}
+                  presetId={() => amp.settings().presetId}
+                  inputProfile={listening.inputProfile}
+                  canMonitor={listening.canAmpMonitor}
+                  monitoringEnabled={listening.ampMonitoringEnabled}
+                  monitoringActive={listening.ampMonitoringActive}
+                  onEnabled={amp.setEnabled}
+                  onPreset={amp.selectPreset}
+                  onParameter={amp.setContinuousParameter}
+                  onParameterCommit={amp.persist}
+                  onCabinet={amp.setCabinet}
+                  onMonitor={(enabled) =>
+                    void listening.setAmpMonitoringEnabled(enabled)
+                  }
+                  onReset={amp.reset}
+                />
 
                 <button
                   type="button"
