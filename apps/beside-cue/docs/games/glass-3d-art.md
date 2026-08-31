@@ -21,7 +21,7 @@ T5 is the only one that needs maff at the keyboard; T2 needs his pick.
 | #   | Task                                                                   | State                      |
 | --- | ---------------------------------------------------------------------- | -------------------------- |
 | T1  | Blender ≥ 5.2 LTS, glTF exporter, Meshy MCP — all verified             | **done** — found on the PC |
-| T2  | Merc concept round: 5–6 renditions via Meshy nano-banana, maff picks   | next                       |
+| T2  | Merc concept rounds: directions, shape, material — maff picked each    | **done** — see §5          |
 | T3  | Install + enable the Cell Fracture extension                           |                            |
 | T4  | Repo scaffolding: `art/` (+ copied references), gltf-transform, script |                            |
 | T5  | Connect the Blender MCP bridge (maff starts Blender once)              | needs maff                 |
@@ -29,8 +29,8 @@ T5 is the only one that needs maff at the keyboard; T2 needs his pick.
 | T7  | Fracture it: ~150 shards, cleaned, named, origins at centroids         |                            |
 | T8  | Export both `.glb`s, run the optimize pipeline, check the budgets      |                            |
 | T9  | Pipeline test in vitest: parse the `.glb`, assert the contract         |                            |
-| T10 | Merc base model: Meshy `image_to_3d` from the chosen concept           | after T2's pick            |
-| T11 | Merc finish: Blender cleanup, rig, the animation set, export           |                            |
+| T10 | Merc base model: Meshy `multi_image_to_3d` from the capture views      | **done** — see §5          |
+| T11 | Merc finish: decimate, node-part animation set in Blender, export      | next — no skeleton, see §5 |
 
 Concepts run first (maff's call, and the right one): they need no
 Blender, they decide what everything downstream looks like, and they
@@ -270,9 +270,73 @@ left, colorless tulip glass on a matte dark plinth. Outputs in
 | 5   | Glassblown — translucent, faint orange tint, caustics on the plinth               | `merc-5-glassblown.png`       | `01a059e0-e777-7012-bd9f-e67534201519` |
 | 6   | Low-poly gem — flat-shaded facets echoing the shards                              | `merc-6-lowpoly-gem.png`      | `01a059e0-f33e-77ff-9b57-6b64eda4086a` |
 
-Pick pending — maff chooses the direction; the chosen frame becomes
-the T10 `image_to_3d` input (worth pairing with the reference stills
-via `multi_image_to_3d` if the pick keeps the current face).
+Round 1's lesson, called out by maff: the six frames varied **shape
+and material at once**, which made them impossible to compare. Every
+later round separates the two.
+
+**Round 2 — shape only, 2026-09-01, nano banana via `agy` (free).**
+Five neutral grey-clay turnaround sheets (front / three-quarter /
+side), identical staging, only the body plan differing: literal 2D
+translation, pure droplet, droplet + floating hands, chibi biped,
+tall slender. A codex round (gpt-5.6-sol, max effort) then varied the
+winner four more ways. **Pick: S3 — droplet + floating mitt hands, no
+arms, no legs, hovering** (the original nano-banana sheet, over the
+codex variations). Sheets in `~/agent-out/mercurypitch/2026-09-01/`
+and archived in `showcase-gallery/gallery-viewer/merc-3d-concepts/`.
+
+**Round 3 — material only, on the S3 shape, nano-banana-pro, 45
+credits (approved).** Five directions staged in the Cabinet:
+glassblown, liquid mercury, mercury-in-glass-shell, frosted satin,
+iridescent mercury. **Pick: 5 — liquid mercury with thin oil-film
+iridescence**, hands and body.
+
+## 5a. The capture protocol — from picked frame to Meshy model
+
+The staged beauty shot is the wrong input for 3D reconstruction (two
+subjects, dramatic light). The protocol that worked, repeatable for
+any future character:
+
+1. **Canon lock** — face canon (2D art), shape sheet (clay), material
+   frame (art round). Each picked separately.
+2. **Capture sheet** — ONE free nano-banana generation: a 2×2 grid
+   (front / back / side / three-quarter), same character every cell,
+   final material, **flat even studio light** (Meshy bakes textures
+   from the input; stage light pollutes them), plain mid-grey
+   backdrop, hands slightly out.
+3. **Deterministic slice** — `magick -crop 2x2@` cuts the grid into
+   four view images. One generation keeps the views consistent;
+   slicing is arithmetic, not vision.
+4. **QC gate** — views must agree before credits are spent; a drifted
+   sheet re-rolls free.
+5. **`multi_image_to_3d`** on the four views — meshy-6, quad
+   topology, `enable_pbr` (three.js needs metallic/roughness for
+   chrome), `remove_lighting`, GLB. The only paid step.
+6. **Texture wrong but mesh right** → `retexture` (10cr), never a
+   full re-gen.
+
+**Round 4 — the model, 2026-09-01.** Capture sheet
+`merc_capture_sheet_iridescent.jpg` → task
+`01a05a0f-cfc3-7715-849b-8722aeff3c04`, meshy-6 — billed **30
+credits** (quoted 20; PBR/multi-view extras — quote the ceiling next
+time). Output `merc-3d-v1.glb`, 9.6 MB, full PBR set, verified by
+headless-Blender turntable renders. maff approved v1. A meshy-7
+re-generation via the web app (API is meshy-6-only) can swap in
+behind the same part names later.
+
+**Rigging outcome.** Meshy auto-rig **rejects this body plan** —
+"Pose estimation failed", the humanoid detector finds no limbs on a
+droplet. The better path was already latent in the shape: hands and
+body are separate mesh islands. After a weld (`remove_doubles 1e-5`
+— glTF import splits UV-seam vertices, so loose-parts first explodes
+into ~115 fragments; weld first, then separate) the model splits into
+exactly three shells: `merc_body` (116,418 faces), `merc_hand_l`,
+`merc_hand_r` (~19k each, symmetric), origins at centroids —
+`merc-3d-v1-parts.glb`. The brand animation set (`sing`, `listen`,
+`celebrate`, `fall`) becomes **node transforms on three parts, no
+skeleton, no skinning** — authored in Blender, played as glTF
+animations in three.js for almost nothing. Face count is heavy for
+mobile; decimation happens in T8's optimize pass, not before the
+animations are proven.
 
 ---
 
