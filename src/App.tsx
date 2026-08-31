@@ -232,9 +232,10 @@ import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useTakeReviewController } from '@/features/recording/useTakeReviewController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
+import { useTabNavigationController } from '@/features/routing/useTabNavigationController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { useShareHandlers } from '@/features/share/useShareHandlers'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -271,7 +272,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -767,58 +768,6 @@ const AppShell: Component<AppProps> = (props) => {
       setGuideFromWelcome(false)
       dismissWelcome()
     }
-  }
-
-  // ── Swipe to Change Tabs ──────────────────────────────────
-  let touchStartX = 0
-  let touchStartY = 0
-
-  const handleTouchStart = (e: TouchEvent) => {
-    // Opt-in gesture (off by default) — the bottom tab bar is the primary
-    // way to switch views on a phone; accidental swipes were changing tabs.
-    if (!swipeNavEnabled()) return
-    const target = e.target as HTMLElement
-    // Allow swiping on canvas now, but still ignore buttons, inputs, and modals
-    if (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'SELECT' ||
-      target.tagName === 'BUTTON' ||
-      target.closest('button, input, select, .fn-modal-content, .library-modal')
-    ) {
-      return
-    }
-    touchStartX = e.touches[0].clientX
-    touchStartY = e.touches[0].clientY
-  }
-
-  const handleTouchEnd = (e: TouchEvent) => {
-    if (touchStartX === 0) return
-    const touchEndX = e.changedTouches[0].clientX
-    const touchEndY = e.changedTouches[0].clientY
-
-    const deltaX = touchStartX - touchEndX
-    const deltaY = touchStartY - touchEndY
-
-    // Require swiping across at least 35% of the screen width to prevent accidental tab changes
-    const swipeThreshold = window.innerWidth * 0.35
-
-    if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaY) < 80) {
-      // Swipe order follows the same canonical order the tab bar renders,
-      // filtered by scope/UI mode, so the gesture and the visible tabs can
-      // never drift out of sync.
-      const order = visibleTabOrder(practiceScope(), uiMode())
-      const currentIdx = order.indexOf(activeTab())
-      if (currentIdx !== -1) {
-        if (deltaX > 0 && currentIdx < order.length - 1) {
-          void handleTabChange(order[currentIdx + 1])
-        } else if (deltaX < 0 && currentIdx > 0) {
-          void handleTabChange(order[currentIdx - 1])
-        }
-      }
-    }
-
-    touchStartX = 0
-    touchStartY = 0
   }
 
   // ── Share handlers controller ──────────────────────────────
@@ -1374,77 +1323,26 @@ const AppShell: Component<AppProps> = (props) => {
   // Clean up pending session sequencer timeouts on unmount
   onCleanup(() => sessionSequencer.destroy())
 
-  // ── Tab-change cleanup ──────────────────────────────────────
-  // Registered as a SYNCHRONOUS listener at the setActiveTab choke point
-  // (nav clicks, hash router and the E2E bridge all funnel through it).
-  //
-  // This was a `createEffect(on(activeTab, ..., { defer: true }))` before —
-  // but with defer the initial run is skipped, so `on` never records a
-  // previous input and the FIRST tab change after load fired with
-  // prevTab === undefined, returning early: whichever tab you switched to
-  // first kept the previous tab's audio running (e.g. singing playback kept
-  // sounding under the piano tab). The listener runs before the signal
-  // flips and cannot miss a transition.
-  onTabTransition((prevTab, newTab) => {
-    closeSingingZen()
-    closeChallengeStage()
-
-    // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
-    // practice session but leaves the mic running, so without this the mic
-    // lingers after leaving and micActive stays stuck on — making the mic
-    // button look active (and react to playback) on the next visit. Mirrors
-    // the Piano/Guitar cleanup below.
-    if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
-      void resetPlaybackState()
-      if (micActive()) practiceEngine.stopMic()
-    }
-
-    // 2. Pause a running piano game (it otherwise keeps playing — and
-    // sounding — invisibly on the previous tab; pause rather than stop so
-    // coming back can resume, and discard a run still counting in) and
-    // stop the piano mic if active.
-    if (prevTab === TAB_PIANO) {
-      const pianoState = fallingNotes.gameState()
-      if (pianoState === 'playing') pianoPerformance.transport.pause()
-      else if (pianoState === 'countdown') pianoPerformance.transport.stop()
-      if (fallingNotes.isMicActive()) fallingNotes.stopMic()
-    }
-
-    // 3. Stop guitar practice if active
-    if (prevTab === TAB_GUITAR && guitarCtx.guitar.gameState() !== 'idle') {
-      guitarCtx.guitar.stopGame()
-    }
-
-    // 4. Stop every Guitar mic claim. Tuner, Riff Tracker, Sing-to-Fretboard
-    // and the manual Hero/3D control all share this controller-level arbiter.
-    // Clear the legacy PracticeEngine claim too: global controls and older
-    // Guitar entry points may still have opened it. Then hand capture back to
-    // the system default; the persisted guitar input must only redirect
-    // capture while the guitar surface is in use.
-    if (prevTab === TAB_GUITAR) {
-      guitarDrumActivationGeneration++
-      guitarCtx.drumMachine.stop()
-      guitarCtx.guitar.stopAllMic()
-      practiceEngine.stopMic()
-      guitarCtx.guitar.releaseGuitarInputDevice()
-    }
-
-    // 5. Route capture to the persisted guitar input while on the guitar tab.
-    if (newTab === TAB_GUITAR) {
-      guitarCtx.guitar.applyGuitarInputDevice()
-    }
-  })
-
-  // Booting straight into the guitar tab (deep link / restored hash) has no
-  // transition for the block above to catch — apply the persisted guitar
-  // input now.
-  if (activeTab() === TAB_GUITAR) {
-    guitarCtx.guitar.applyGuitarInputDevice()
-  }
-
-  const handleTabChange = (newTab: ActiveTab) => {
-    setActiveTab(newTab)
-  }
+  // ── Tab Navigation & Transition Controller ──────────────────
+  const { handleTouchStart, handleTouchEnd, handleTabChange } =
+    useTabNavigationController({
+      activeTab,
+      setActiveTab,
+      swipeNavEnabled,
+      practiceScope,
+      uiMode,
+      closeSingingZen,
+      closeChallengeStage,
+      resetPlaybackState,
+      practiceEngine,
+      micActive,
+      fallingNotes,
+      pianoPerformance,
+      guitarCtx,
+      onGuitarDrumActivationInc: () => {
+        guitarDrumActivationGeneration++
+      },
+    })
 
   // Compose autosave is silent: melodyStore.setMelody persists (debounced
   // inside the store), and a per-edit "Melody saved!" toast was pure noise —

@@ -6,7 +6,7 @@
 // target note resolution, historical note accuracy heatmap, and practice score grading.
 //
 
-import type {Accessor} from 'solid-js';
+import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, on } from 'solid-js'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import * as melodyStore from '@/stores/melody-store'
