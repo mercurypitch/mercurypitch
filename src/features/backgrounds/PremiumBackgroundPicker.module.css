@@ -914,8 +914,16 @@
 
   /* A bottom drawer: pinned to the bottom edge, full width, scrolling inside
      itself. The inline anchor coordinates are overridden — on a phone there
-     is no room to hang a panel off a 44px trigger. */
-  .panel {
+     is no room to hang a panel off a 44px trigger.
+     `:not(.panelEmbedded)` because an embedded picker is not a drawer. This
+     block sits after .panelEmbedded and matched at the same specificity, so
+     it was handing the embedded gallery the drawer's geometry back: the
+     `max-height` clamped it to 633px around 687px of content while
+     .panelEmbedded's `overflow: visible` still applied, and the 54px that did
+     not fit — the supporter footer — spilled out of the box and painted on
+     top of whatever followed. In Ear Lab's room panel that was the
+     "Room visibility" label, printed over "…editions in this gallery". */
+  .panel:not(.panelEmbedded) {
     top: auto !important;
     right: 8px;
     bottom: max(8px, env(safe-area-inset-bottom));
