@@ -7,12 +7,13 @@ import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, }
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { CircularProgress } from '@/features/stem-mixer/CircularProgress'
 import { useMelodyAuditionSynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { stemMixHasSolo } from '@/features/stem-mixer/stem-mix-state'
+import { StemLoadProgress } from '@/features/stem-mixer/StemLoadProgress'
 import { useStemMixerAlignmentController } from '@/features/stem-mixer/useStemMixerAlignmentController'
-import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -23,7 +24,6 @@ import { useStemMixerStemControls } from '@/features/stem-mixer/useStemMixerStem
 import { useStemMixerTransportController } from '@/features/stem-mixer/useStemMixerTransportController'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
-import { formatBytes } from '@/lib/fetch-progress'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -137,126 +137,6 @@ interface SmWindow {
   __smKeydown?: (e: KeyboardEvent) => void
   __smResizeMove?: (e: PointerEvent) => void
   __smResizeEnd?: (e: PointerEvent) => void
-}
-
-// ── Circular Progress ──────────────────────────────────────────
-
-const CircularProgress = (props: { pct: number; size?: number }) => {
-  const m = createMemo(() => {
-    const s = props.size ?? 24
-    const r = (s - 4) / 2
-    const circ = 2 * Math.PI * r
-    const offset = circ * (1 - props.pct / 100)
-    return { s, r, circ, offset }
-  })
-  return (
-    <svg
-      width={m().s}
-      height={m().s}
-      viewBox={`0 0 ${m().s} ${m().s}`}
-      class="circular-progress"
-    >
-      <circle
-        cx={m().s / 2}
-        cy={m().s / 2}
-        r={m().r}
-        fill="none"
-        stroke="var(--border, #30363d)"
-        stroke-width="2"
-      />
-      <circle
-        cx={m().s / 2}
-        cy={m().s / 2}
-        r={m().r}
-        fill="none"
-        stroke="var(--accent, #8b5cf6)"
-        stroke-width="2"
-        stroke-dasharray={String(m().circ)}
-        stroke-dashoffset={String(m().offset)}
-        stroke-linecap="round"
-        transform={`rotate(-90 ${m().s / 2} ${m().s / 2})`}
-      />
-    </svg>
-  )
-}
-
-// ── Stem Load Progress ─────────────────────────────────────────
-
-const STEM_LOAD_PHASE_LABEL: Record<StemLoadPhase, string> = {
-  connecting: 'Connecting',
-  downloading: 'Downloading',
-  decoding: 'Decoding audio',
-}
-
-/**
- * The stem download, shown honestly.
- *
- * Three things it deliberately does, all of them lessons from the version that
- * said "Loading stems... 0%" for two minutes on a television:
- *
- *  - The bar is **byte-based**, so it moves continuously instead of stepping
- *    0 / 50 / 100 as whole stems land.
- *  - When the server gave no size, the bar goes **indeterminate** rather than
- *    sitting at a number. A sliding stripe plus a climbing byte count says
- *    "working" without inventing a percentage.
- *  - `decodeAudioData` has no progress at all, so it gets its own phase label.
- *    A bar that parks at 100% while the device chews reads as a hang.
- */
-const StemLoadProgress = (props: {
-  pct: number
-  phase: StemLoadPhase
-  loadedBytes: number
-  totalBytes: number | null
-  songTitle?: string
-}) => {
-  // Only the download has a measurable share. Connecting has no bytes yet and
-  // decoding has no progress, so both run the indeterminate stripe.
-  const determinate = (): boolean =>
-    props.phase === 'downloading' && props.totalBytes !== null
-  const detail = (): string => {
-    if (props.phase === 'connecting') return 'Reaching the song library'
-    if (props.phase === 'decoding') return 'Almost ready'
-    if (props.totalBytes !== null) {
-      return `${formatBytes(props.loadedBytes)} of ${formatBytes(props.totalBytes)}`
-    }
-    return formatBytes(props.loadedBytes)
-  }
-
-  return (
-    <div class="sm-load">
-      <div class="sm-load-head">
-        <span class="sm-load-title">
-          {props.songTitle !== undefined && props.songTitle !== ''
-            ? props.songTitle
-            : 'Loading stems'}
-        </span>
-        <Show when={determinate()}>
-          <span class="sm-load-pct">{props.pct}%</span>
-        </Show>
-      </div>
-      <div
-        class="sm-load-track"
-        classList={{ 'is-indeterminate': !determinate() }}
-        role="progressbar"
-        aria-label={`${STEM_LOAD_PHASE_LABEL[props.phase]} stems`}
-        // An indeterminate progressbar is one with no aria-valuenow, which is
-        // exactly the state we are in when the server sent no Content-Length.
-        aria-valuemin={determinate() ? 0 : undefined}
-        aria-valuemax={determinate() ? 100 : undefined}
-        aria-valuenow={determinate() ? props.pct : undefined}
-        aria-valuetext={detail()}
-      >
-        <div
-          class="sm-load-fill"
-          style={determinate() ? { width: `${props.pct}%` } : undefined}
-        />
-      </div>
-      <div class="sm-load-meta">
-        <span class="sm-load-phase">{STEM_LOAD_PHASE_LABEL[props.phase]}</span>
-        <span class="sm-load-bytes">{detail()}</span>
-      </div>
-    </div>
-  )
 }
 
 // ── Component ──────────────────────────────────────────────────
