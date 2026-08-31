@@ -862,11 +862,11 @@ test('lists Drum Night with the Home rooms and opens its doors @smoke', async ({
     'pianoNight',
     'guitarNight',
     'drumNight',
-    'exercises',
-    'earLab',
-    'analysis',
     'jam',
+    'earLab',
     'mystery',
+    'analysis',
+    'exercises',
   ])
 
   const drumCard = page.locator('[data-destination="drumNight"]')

@@ -75,8 +75,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         ? `Rhythm drum: every onset of the ${props.upperWord ?? 'call'} met`
         : `Rhythm drum: ${missed} onset${missed === 1 ? '' : 's'} missed, ${props.reveal.extras.length} extra tap${props.reveal.extras.length === 1 ? '' : 's'}`
     }
-    if (props.waiting === true)
-      return 'Rhythm drum, your bar — tap to start it'
+    if (props.waiting === true) return 'Rhythm drum, your bar — tap to start it'
     return props.bar
       ? `Rhythm drum, ${BAR_WORD[props.bar].toLowerCase()}, beat ${props.beat}`
       : `Rhythm drum, ${beats() === 8 ? 'two bars' : 'one bar'} of four beats, nothing written yet`
@@ -158,8 +157,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
             class={styles.beatLamp}
             classList={{
               [styles.beatLampLit]: props.bar !== null && props.beat === beat,
-              [styles.beatLampPassed]:
-                props.run != null && beat <= props.beat,
+              [styles.beatLampPassed]: props.run != null && beat <= props.beat,
             }}
             data-part="beat-lamp"
             data-lit={props.bar !== null && props.beat === beat}
