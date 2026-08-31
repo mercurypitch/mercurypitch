@@ -150,13 +150,16 @@
 .btnPrimary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   box-shadow: 0 2px 8px var(--accent-glow, rgba(88, 166, 255, 0.3));
 }
 
+/* #79b8ff was the dark preset's own --accent-hover, pasted in. Every other
+   preset kept its accent at rest and jumped to that blue on hover — most
+   visible on cyberpunk, where purple became blue under the pointer. */
 .btnPrimary:hover {
-  background: #79b8ff;
-  border-color: #79b8ff;
+  background: var(--accent-hover, #79b8ff);
+  border-color: var(--accent-hover, #79b8ff);
   box-shadow: 0 4px 12px var(--accent-glow, rgba(88, 166, 255, 0.4));
 }
 
@@ -173,7 +176,7 @@
 .btnMuted {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
 }
 
 .btnDanger {
@@ -535,7 +538,7 @@
 }
 
 .peerDotConnecting {
-  background: #d29922;
+  background: var(--yellow, #d29922);
   animation: jamPulse 1s ease-out infinite;
 }
 
