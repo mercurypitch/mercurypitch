@@ -130,10 +130,19 @@ beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'mercurypitch-premium-migration-'))
   const databasePath = join(directory, 'premium.sqlite')
   primary = new DatabaseSync(databasePath)
+  // The migration chain commits hundreds of statements, and every commit
+  // fsyncs by default. That is real durability nobody wants from a fixture
+  // in a temp directory the afterEach deletes: it costs ~2s per Drum test on
+  // a spinning-rust CI disk, past the 5s test timeout, while the same file on
+  // a tmpfs /tmp runs in 12ms and hides the cost entirely. Durability is the
+  // only thing switched off — these connections still share one real file, so
+  // the locking the concurrency tests rely on behaves exactly as before.
+  primary.exec('PRAGMA synchronous = OFF')
   primary.exec('PRAGMA foreign_keys = ON')
   primary.exec('CREATE TABLE users (id TEXT PRIMARY KEY)')
   primary.exec(readFileSync(STUDIO_MIGRATION, 'utf8'))
   contender = new DatabaseSync(databasePath)
+  contender.exec('PRAGMA synchronous = OFF')
   contender.exec('PRAGMA foreign_keys = ON')
 })
 
