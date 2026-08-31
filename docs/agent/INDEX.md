@@ -113,9 +113,9 @@ These are the rules that break things when ignored.
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 200 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `share` | [useShareHandlers.ts](../../src/features/share/useShareHandlers.ts) | 200 | useShareHandlers — Share link dispatch & copy handlers Encapsulates decoding and loading of shared melodies, exercises, routines, short U... |
+| `tours` | [useGuideTourController.ts](../../src/features/tours/useGuideTourController.ts) | 200 | useGuideTourController — Walkthrough guide selection & launch controller Manages the guide picker dialog state, tracks transition from we... |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
-| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 50 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages

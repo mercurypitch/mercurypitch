@@ -236,6 +236,7 @@ import { useTabNavigationController } from '@/features/routing/useTabNavigationC
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { useShareHandlers } from '@/features/share/useShareHandlers'
 import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { useGuideTourController } from '@/features/tours/useGuideTourController'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -603,26 +604,17 @@ const AppShell: Component<AppProps> = (props) => {
   const [showShortcutHelp, setShowShortcutHelp] = createSignal(false)
   const toggleShortcutHelp = () => setShowShortcutHelp((v) => !v)
 
-  const [showGuideSelection, setShowGuideSelection] = createSignal(false)
-  // True when the guide picker was opened from the welcome overlay, so backing
-  // out of the picker returns to welcome instead of dropping into the app.
-  const [guideFromWelcome, setGuideFromWelcome] = createSignal(false)
-  const openGuideSelection = () => {
-    // Open the picker first so a tour surface is always up during the hand-off
-    // (tourSurfaceOpen), then hide welcome WITHOUT marking it seen — closing
-    // the picker can bring it back.
-    setGuideFromWelcome(showWelcome())
-    setShowGuideSelection(true)
-    setShowWelcome(false)
-  }
-  const closeGuideSelection = () => {
-    setShowGuideSelection(false)
-    // Backed out of the picker → slide back to the welcome screen.
-    if (guideFromWelcome()) {
-      setGuideFromWelcome(false)
-      setShowWelcome(true)
-    }
-  }
+  // ── Guide Tour Controller ──────────────────────────────────
+  const {
+    showGuideSelection,
+    setShowGuideSelection,
+    openGuideSelection,
+    closeGuideSelection,
+    startGuideTour,
+  } = useGuideTourController({
+    showWelcome,
+    setShowWelcome,
+  })
   // ── First Light onboarding ──────────────────────────────────
   // A replay (#/map) reopens the Map without re-running the first-run
   // bookkeeping, so closing it can't rewind anyone's seen-flag.
@@ -756,18 +748,6 @@ const AppShell: Component<AppProps> = (props) => {
   const openOnboardingMap = () => {
     setOnboardingReplay(true)
     openBeat('map')
-  }
-
-  const startGuideTour = (sectionIds: string[]) => {
-    // Start before closing the dialog so a tour surface stays open across the
-    // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
-    startWalkthrough(sectionIds)
-    setShowGuideSelection(false)
-    // Committed to the tour → retire the welcome for good.
-    if (guideFromWelcome()) {
-      setGuideFromWelcome(false)
-      dismissWelcome()
-    }
   }
 
   // ── Share handlers controller ──────────────────────────────
