@@ -274,10 +274,20 @@ for a 3D scene:
   is ~21ms, matching today's effective cadence at 60fps).
 - Each hop is handed to a Worker as a transferable `ArrayBuffer` — no
   SharedArrayBuffer, so no COOP/COEP headers to arrange inside the
-  Capacitor WebView — and the Worker runs the ONNX detector.
+  Capacitor WebView — and the Worker runs the same YIN detector the
+  stream uses today. (Deliberately still YIN: the package ships no model
+  weights, by the bundle rule.)
 - The Worker posts back `{ f0, conf, rms, tAudio }`; the main thread
   only ever reads the latest value, exactly as `latestSmoothed()` does
   today.
+
+**The blast radius is smaller than it looks.** The main web app does not
+import this module: it has its own fork at `src/lib/pitch-f0-stream.ts`,
+which has diverged (it carries a `peekFrames` the package copy does not).
+The only consumer of the package's `createF0Stream` is Beside Cue's sing
+driver. So this lands as a change to one game's input path, behind an
+unchanged `F0Stream` interface — not as surgery on the mirror. The two
+copies having drifted is its own problem, but not this one's.
 
 What this buys, beyond unblocking 3D: the hop becomes constant so the
 median smoothing window is a true time window; the detector leaves the
