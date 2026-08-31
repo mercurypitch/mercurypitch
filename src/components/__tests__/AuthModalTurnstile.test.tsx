@@ -21,6 +21,11 @@ const mocks = vi.hoisted(() => ({
   registerWithPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
+  // Real behaviour, not a constant: the modal branches on this, and a mock
+  // that always says "no" would hide a challenge these tests never see.
+  isTwofaChallenge: (outcome: unknown) =>
+    (outcome as { twofaRequired?: boolean } | null)?.twofaRequired === true,
+  takeGoogleTwofaChallenge: vi.fn((): string | null => null),
 }))
 
 vi.mock('@/db/services/auth-service', () => mocks)

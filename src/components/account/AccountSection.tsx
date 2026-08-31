@@ -28,6 +28,9 @@ import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
+import { PasskeySettings } from './PasskeySettings'
+import { SessionList } from './SessionList'
+import { TwoFactorSettings } from './TwoFactorSettings'
 import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
@@ -406,6 +409,33 @@ export const AccountSection: Component = () => {
               practised a few days running; free practice and your streak are
               never published. Friends you add see more.
             </p>
+          </div>
+        </Show>
+
+        {/* Where this account is signed in. Only for a real account: a
+            lazily provisioned device identity has exactly one session by
+            construction, and listing it would be a list of itself. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <SessionList />
+          </div>
+        </Show>
+
+        {/* A second factor needs a password (or Google) to be a second OF —
+            a device identity has no first factor to add one to. Same gate as
+            the device list above, for the same reason. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <TwoFactorSettings />
+          </div>
+        </Show>
+
+        {/* Passkeys. The component hides itself where the deployment has no
+            relying-party id or the browser has no authenticator, so this gate
+            only has to say "a real account". */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <PasskeySettings />
           </div>
         </Show>
 

@@ -1,0 +1,226 @@
+/* TwoFactorSettings — enrolment, the recovery-code sheet, and turning it off. */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted, #8b949e);
+}
+
+.onPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--green, #3fb950);
+  border: 1px solid currentColor;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary, #c9d1d9);
+}
+
+.subHint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-muted, #8b949e);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--red, #f85149);
+}
+
+.warnLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--yellow, #d29922);
+}
+
+/* The QR is fixed-contrast by design (see QrCode.tsx), so it needs a light
+   plate of its own — floating white-on-dark reads as a rendering fault. */
+.qrWrap {
+  align-self: flex-start;
+  padding: 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  line-height: 0;
+}
+
+.secretRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secret {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #30363d);
+  border-radius: 6px;
+  background: var(--bg-secondary, #161b22);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 12.5px;
+  letter-spacing: 0.6px;
+  color: var(--text-primary, #e6edf3);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.codeInput {
+  width: 110px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #30363d);
+  border-radius: 6px;
+  background: var(--bg-primary, #0d1117);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--text-primary, #e6edf3);
+}
+
+.codeInput:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.codeInput:disabled {
+  opacity: 0.5;
+}
+
+.primary,
+.ghost,
+.danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #30363d);
+  background: transparent;
+  cursor: pointer;
+}
+
+.primary {
+  align-self: flex-start;
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 12%, transparent);
+}
+
+.ghost {
+  color: var(--text-secondary, #c9d1d9);
+}
+
+.ghost:hover:not(:disabled) {
+  border-color: var(--text-secondary, #c9d1d9);
+}
+
+.danger {
+  align-self: flex-start;
+  color: var(--text-secondary, #c9d1d9);
+}
+
+.danger:hover:not(:disabled) {
+  border-color: var(--red, #f85149);
+  color: var(--red, #f85149);
+}
+
+.primary:disabled,
+.ghost:disabled,
+.danger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Two columns so ten codes read as a block somebody can check off, rather
+   than a long list they scroll past. */
+.codeSheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 4px 10px;
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  border: 1px solid var(--border-color, #30363d);
+  border-radius: 8px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.recoveryCode {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--text-primary, #e6edf3);
+  user-select: all;
+}
+
+.codesLow {
+  color: var(--yellow, #d29922);
+}
+
+/* Several icons in the set hardcode width/height and take no size prop, so
+   the glyph size is settled here rather than at each call site — otherwise
+   half of them would render at 24px next to 12px text. */
+.onPill svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.warnLine svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.primary svg,
+.ghost svg,
+.danger svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}

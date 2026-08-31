@@ -21,6 +21,13 @@
     "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
     // Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Local `wrangler
     // dev` (pnpm dev:db, no --env) accepts only localhost origins.
+    // The domain passkeys are minted FOR — never the API host, and never
+    // derived from the request URL: a credential bound to api.mercurypitch.com
+    // would register cleanly and then fail every sign-in from the app origin.
+    // Unset means the passkey routes answer 503, which is also what a
+    // *.workers.dev PR preview gets: workers.dev is a public suffix, so no RP
+    // id exists for it. 2FA and email codes work there regardless.
+    "PASSKEY_RP_ID": "localhost",
     "ALLOWED_ORIGINS": "localhost",
   },
   "d1_databases": [
@@ -122,6 +129,7 @@
         // Emailed links (reset/verify) from non-first-party origins (PR
         // previews) land on the dev app, never production.
         "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
+        "PASSKEY_RP_ID": "dev.mercurypitch.com",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -203,6 +211,7 @@
         // id and secret only work as a pair.
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
+        "PASSKEY_RP_ID": "mercurypitch.com",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

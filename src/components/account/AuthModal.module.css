@@ -318,9 +318,14 @@
   height: 18px;
 }
 
+/* Two ways past a password you cannot produce, at opposite ends of one row.
+   space-between rather than flex-end: side by side they read as one control
+   with a stutter in it. */
 .forgotRow {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
   margin-top: -6px;
 }
 

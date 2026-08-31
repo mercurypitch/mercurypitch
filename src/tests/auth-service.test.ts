@@ -14,7 +14,8 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import type { AuthResponse } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -622,8 +623,18 @@ describe('login and register', () => {
       user: { authProvider: 'password' },
     })
     const res = await loginWithPassword('a@b.com', 'secret123')
-    expect(res.user.authProvider).toBe('password')
+    expect(isTwofaChallenge(res)).toBe(false)
+    expect((res as AuthResponse).user.authProvider).toBe('password')
     expect(getAuthToken()).not.toBeNull()
+  })
+
+  it('stores nothing when the account owes a second factor', async () => {
+    // The password was right, and that alone must buy nothing: no token
+    // stored, and a ceremony handed back for the code pane to spend.
+    mockFetchOnce(200, { twofaRequired: true, ceremony: 'ceremony-token' })
+    const res = await loginWithPassword('a@b.com', 'secret123')
+    expect(isTwofaChallenge(res)).toBe(true)
+    expect(getAuthToken()).toBeNull()
   })
 
   it('throws the human-readable server message on bad credentials', async () => {

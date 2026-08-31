@@ -24,6 +24,9 @@
     // version binding makes the pairing auditable and cannot affect dev.
     "TURNSTILE_SECRET": "1x0000000000000000000000000000000AA",
     "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+    // No PASSKEY_RP_ID on purpose, so the passkey routes answer 503 here.
+    // workers.dev is on the Public Suffix List: no relying-party id can be
+    // minted for it, by anyone. 2FA and email-code sign-in work as normal.
     "ALLOWED_ORIGINS": "*.workers.dev",
     "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
   },

@@ -19,15 +19,26 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './email'
+import { issueCeremony, readCeremony } from './auth-ceremony'
+import type { SessionOrigin } from './auth-sessions'
+import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
+import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
+import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { verifyTurnstile } from './turnstile'
+import { getTotpForLogin } from './twofa'
 
 export interface Env {
+  /**
+   * The domain passkeys are minted FOR — mercurypitch.com, dev.mercurypitch.com,
+   * localhost. A `vars` entry per environment, never derived from the request:
+   * see rpIdFor in passkeys.ts. Unset means the passkey routes answer 503.
+   */
+  PASSKEY_RP_ID?: string
   /** Where emailed links land when the request Origin is not a first-party
    *  app origin (e.g. a PR preview on workers.dev). Set per environment in
    *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
@@ -52,6 +63,13 @@ export interface Env {
   BACKGROUND_CAPABILITY_SECRET?: string
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
+  /** AES-256-GCM key-encryption key for TOTP secrets at rest (twofa.ts).
+   *  Deliberately NOT derived from JWT_SECRET — rotating that must never
+   *  orphan every singer's second factor. Generate a separate dev/prod value
+   *  of at least 32 random bytes and set each with
+   *  `wrangler secret put TOTP_KEK --env ...`. Unset simply means 2FA is
+   *  unavailable in this environment; nothing else notices. */
+  TOTP_KEK?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
   GOOGLE_CLIENT_ID?: string
   /** OAuth client secret — required for the redirect code flow. */
@@ -131,6 +149,12 @@ export interface Env {
 export interface AuthUser {
   userId: string
   provider: string
+  /**
+   * Which device this is — the `authSessions` row the token names. Absent on
+   * a token issued before migration 0038, which is the whole reason it is
+   * optional: those must keep working until they expire.
+   */
+  sessionId?: string
   isTestAccount?: boolean
   testAccountExpiresAt?: string | null
 }
@@ -153,7 +177,7 @@ interface UserRow {
   deviceSecretHash: string | null
 }
 
-const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
+export const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 const PBKDF2_ITERATIONS = 100_000
 // Syntactically-valid PBKDF2 hash that never matches a real password. Used to
 // keep login timing constant when the email is unknown, defeating user
@@ -230,6 +254,8 @@ interface JwtPayload {
   iat: number
   exp: number
   v: number
+  /** `authSessions.id` — absent on tokens issued before migration 0038. */
+  sid?: string
 }
 
 async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
@@ -333,6 +359,23 @@ export async function getAuth(
   assertManagedTestAccountActive(testAccount)
   if (user.tokenVersion > (payload.v ?? 0)) return null
 
+  // Which device this is. A token minted before migration 0038 carries no
+  // `sid`, and is deliberately still accepted — a hard cutover would sign
+  // every singer out of an app they were using at the time. A token that DOES
+  // name a session and finds no row was signed out on that device, so it fails
+  // closed, exactly like a revoked tokenVersion.
+  if (payload.sid !== undefined) {
+    if (!(await sessionAlive(env.DB, payload.sid, payload.sub))) return null
+    // Fire-and-forget, and conditional in SQL: an idle-ish session costs one
+    // write per SESSION_TOUCH_SECONDS rather than one per request, and a
+    // failed touch must never fail the request that carried it.
+    try {
+      await touchSession(env.DB, payload.sid)
+    } catch {
+      // Ignore: "when we last saw this device" is best-effort.
+    }
+  }
+
   // Throttled last-active touch: at most one write per user per window (see
   // shouldTouchLastActive), so ongoing visits are tracked without multiplying
   // D1 writes. Awaited inside try/catch on purpose: a best-effort tracking
@@ -352,6 +395,7 @@ export async function getAuth(
   return {
     userId: payload.sub,
     provider: payload.provider,
+    ...(payload.sid === undefined ? {} : { sessionId: payload.sid }),
     isTestAccount: testAccount !== null,
     testAccountExpiresAt: testAccount?.expiresAt ?? null,
   }
@@ -563,12 +607,43 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'anonymous-day': { max: 100, windowMs: 86_400_000 }, // 100/day
   register: { max: 5, windowMs: 300_000 }, // 5/5min
   login: { max: 10, windowMs: 300_000 }, // 10/5min
+  // Per-ADDRESS, keyed by `email:<address>` rather than an IP (the limiter's
+  // subject column already carries non-IP keys — see rateLimitSubject). The
+  // per-IP cap above is a flood guard on a key that is not a person; this is
+  // what stops a named account being guessed at from rotating addresses.
+  'login-email': { max: 10, windowMs: 900_000 }, // 10/15min per address
   google: { max: 30, windowMs: 60_000 }, // 30/min
   // The OAuth callback creates a user on first sign-in, so it needs its own
   // bucket: it is reached before the generic auth limiter and a real Google
   // code exchange is the only thing standing in front of it.
   'google-callback': { max: 30, windowMs: 300_000 }, // 30/5min
   logout: { max: 30, windowMs: 60_000 }, // 30/min
+  // Signing out everywhere is a deliberate, rare act; the cap only bounds a
+  // loop. Listing and ending sessions is ordinary account-settings traffic.
+  'logout-all': { max: 10, windowMs: 300_000 }, // 10/5min
+  sessions: { max: 60, windowMs: 300_000 }, // 60/5min
+  // ONE budget shared by /2fa/verify, /2fa/enable and /2fa/disable, because
+  // all three accept the same proof: attacking the weakest of them must not
+  // hand out a fresh allowance. Ten is roomy for mistyping and useless
+  // against a space of 10^6 codes.
+  '2fa': { max: 10, windowMs: 900_000 }, // 10/15min per account
+  // Starting setup writes a row and mints a secret; nobody does that often.
+  '2fa-setup': { max: 20, windowMs: 3_600_000 }, // 20/h per account
+  // Mailed sign-in codes. /request sends mail, so it is as tight as the other
+  // mail-sending endpoints; /verify is a guess against a 10^6 space and gets
+  // the roomier IP cap, because the row's own five-attempt burn is what
+  // actually bounds guessing.
+  'email-code/request': { max: 5, windowMs: 600_000 }, // 5/10min per IP
+  'email-code-address': { max: 5, windowMs: 3_600_000 }, // 5/h per address
+  'email-code/verify': { max: 30, windowMs: 900_000 }, // 30/15min per IP
+  // Passkeys. Adding and removing one is ordinary settings traffic; the
+  // sign-in ceremony is not, and its two halves are budgeted apart. Conditional
+  // UI fires one /login/options per sign-in screen LOAD, so an office behind a
+  // single address burns those with nobody having clicked anything — which is
+  // why it gets far more room than the verify that follows a real gesture.
+  passkey: { max: 30, windowMs: 300_000 }, // 30/5min per account
+  'passkey-options': { max: 120, windowMs: 300_000 }, // 120/5min per IP
+  'passkey-verify': { max: 20, windowMs: 300_000 }, // 20/5min per IP
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
@@ -706,22 +781,74 @@ export async function checkRateLimit(
   return { allowed: true }
 }
 
+/**
+ * Forget a bucket entirely. Call after a SUCCESSFUL sign-in.
+ *
+ * The limit exists to blunt credential guessing, and signing in correctly is
+ * proof the credentials are right — counting it against the same budget locks
+ * out the one person who cannot possibly be the attacker. `login` allows ten
+ * per five minutes per IP, so one singer with a phone, a tablet and a laptop,
+ * or one household behind a single address, could lock themselves out of their
+ * own password. Failures still accumulate exactly as before, so a run of wrong
+ * passwords is refused unchanged.
+ *
+ * Best-effort: a limiter that cannot forget must never break a sign-in that
+ * has already succeeded.
+ */
+export async function clearRateLimit(
+  db: D1Database,
+  subject: string,
+  endpoint: string,
+): Promise<void> {
+  try {
+    await db
+      .prepare('DELETE FROM auth_ratelimit WHERE ip = ? AND endpoint = ?')
+      .bind(subject, endpoint)
+      .run()
+  } catch {
+    // Ignore: the sign-in already succeeded.
+  }
+}
+
 // ── Route handlers ───────────────────────────────────────────────────
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
-async function createSession(env: Env, row: UserRow): Promise<string> {
+/** What the request says about the device signing in, for the session row. */
+export function sessionOrigin(request: Request): SessionOrigin {
+  return {
+    userAgent: request.headers.get('user-agent'),
+    ip: request.headers.get('CF-Connecting-IP'),
+  }
+}
+
+/**
+ * Mint a token, and record the device it was minted for.
+ *
+ * `provider` is passed separately from `row.authProvider` because they can
+ * legitimately differ: an account whose provider is 'password' may have just
+ * signed in with a passkey or a mailed code, and the session list is more
+ * useful when it says which.
+ */
+async function createSession(
+  env: Env,
+  row: UserRow,
+  origin: SessionOrigin = {},
+  provider = row.authProvider,
+): Promise<string> {
   assertAccountActive(row)
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   assertManagedTestAccountActive(testAccount)
+  const sid = await createAuthSession(env.DB, row.id, provider, origin)
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
     {
       sub: row.id,
-      provider: row.authProvider,
+      provider,
       iat: now,
       exp: now + TOKEN_TTL_SECONDS,
       v: row.tokenVersion ?? 1,
+      sid,
     },
     env.JWT_SECRET as string,
   )
@@ -734,10 +861,12 @@ async function issueSession(
   row: UserRow,
   respond: Respond,
   isNew = false,
+  origin: SessionOrigin = {},
+  provider = row.authProvider,
 ): Promise<Response> {
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   assertManagedTestAccountActive(testAccount)
-  const token = await createSession(env, row)
+  const token = await createSession(env, row, origin, provider)
   return respond({
     token,
     userId: row.id,
@@ -854,8 +983,11 @@ interface AuthBody {
   idToken?: string
   /** Password-reset token from the emailed link (reset-password). */
   token?: string
-  /** The short code shown on a TV (device/poll, device/approve). */
+  /** The short code shown on a TV (device/poll, device/approve), or the six
+   *  digits mailed for a code sign-in (email-code/verify). */
   code?: string
+  /** The signed blob naming what is still owed (email-code/verify). */
+  ceremony?: string
   /** The secret only the device that asked for that code holds (device/poll). */
   pollToken?: string
   /** What the TV calls itself, shown to whoever approves (device/start). */
@@ -1177,6 +1309,7 @@ async function handleResetPassword(
 }
 
 async function handleAnonymous(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1202,7 +1335,7 @@ async function handleAnonymous(
     if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
       return respond({ error: 'Account requires login' }, { status: 403 })
     }
-    return issueSession(env, existing, respond)
+    return issueSession(env, existing, respond, false, sessionOrigin(request))
   }
   await createUser(env.DB, {
     id,
@@ -1215,7 +1348,7 @@ async function handleAnonymous(
   })
   await ensureProfile(env.DB, id, defaultDisplayName(id))
   const row = (await findUserById(env.DB, id)) as UserRow
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 /**
@@ -1270,7 +1403,7 @@ async function upgradeAnonymousToPassword(
   await sendVerificationEmail(request, env, anon.id, email, chosenName)
   // Upgrading an anonymous device to a password account creates a real
   // account: report isNew so the client's signup funnel event fires.
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 async function handleRegister(
@@ -1323,10 +1456,11 @@ async function handleRegister(
   )
   const row = (await findUserById(env.DB, id)) as UserRow
   await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
-  return issueSession(env, row, respond, true)
+  return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
 async function handleLogin(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1335,6 +1469,15 @@ async function handleLogin(
   if (!email || !body.password) {
     return respond({ error: 'Email and password required' }, { status: 400 })
   }
+  // Per-account throttle, on top of the per-IP one the router already applied.
+  // An IP is not a person — a household, a school music lab and an entire
+  // mobile carrier behind CGNAT all share one — so the IP cap is a flood guard
+  // and this is the limit that actually stops guessing at a named account from
+  // rotating addresses.
+  const emailSubject = `email:${email}`
+  const emailRl = await checkRateLimit(env.DB, emailSubject, 'login-email')
+  if (!emailRl.allowed) return tooMany(respond, emailRl)
+
   const row = await findUserByEmail(env.DB, email)
   // Always run a PBKDF2 verification — even when the user/hash is absent — so
   // the response time doesn't reveal whether the email is registered.
@@ -1345,7 +1488,272 @@ async function handleLogin(
   if (!row?.passwordHash || !ok) {
     return respond({ error: 'Invalid email or password' }, { status: 401 })
   }
-  return issueSession(env, row, respond)
+  // Correct credentials must not spend the budget that exists to stop people
+  // guessing them — see clearRateLimit. Failures still accumulate.
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  await Promise.all([
+    clearRateLimit(env.DB, ip, 'login'),
+    clearRateLimit(env.DB, emailSubject, 'login-email'),
+  ])
+  const challenge = await twofaChallenge(env, row.id, 'password')
+  if (challenge !== null) return respond(challenge)
+  return issueSession(env, row, respond, false, sessionOrigin(request))
+}
+
+// ── Sign in with a mailed code ───────────────────────────────────────
+//
+// The password-free path. Two requests: /request mails six digits and hands
+// back a ceremony token naming the row it wrote; /verify trades that token
+// plus the digits for a session.
+//
+// The uniform response is the whole design. A stranger who fires /request at
+// somebody else's address gets the same `{ ok: true, ceremony }` as the owner
+// would — a token addressing a code they will never read, on a row they cannot
+// reach through any other endpoint. Nothing about the answer says whether the
+// address has an account.
+
+/** Mail the code. Best-effort, and the code itself is never logged. */
+async function sendLoginCodeEmail(
+  env: Env,
+  user: UserRow,
+  code: string,
+): Promise<void> {
+  if (!user.email) return
+  try {
+    if (!env.RESEND_API_KEY) {
+      // Local wrangler has no Resend key, and a flow nobody can complete is a
+      // flow nobody tests. The code is already only good for ten minutes on
+      // one row, and this branch cannot run in an environment that mails.
+      console.log(
+        `[auth] sign-in code (email skipped, no RESEND_API_KEY): ${code}`,
+      )
+      return
+    }
+    const profile = await env.DB.prepare(
+      'SELECT displayName FROM userProfiles WHERE id = ?',
+    )
+      .bind(user.id)
+      .first<{ displayName: string | null }>()
+    await sendLoginCode(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      user.email,
+      {
+        displayName: profile?.displayName,
+        code,
+        ttlMinutes: LOGIN_CODE_TTL_MS / 60_000,
+      },
+    )
+  } catch (err) {
+    console.error(
+      `[auth] sign-in code email failed (non-fatal): ${String(err)}`,
+    )
+  }
+}
+
+/**
+ * POST /api/auth/email-code/request { email } → { ok: true, ceremony }
+ *
+ * Answers identically whether or not the address has an account. The unknown
+ * branch still generates a code and still hashes it, so the two paths differ by
+ * one INSERT rather than by any measurable work; the ceremony it signs names
+ * row 0, which AUTOINCREMENT can never produce.
+ *
+ * The mail goes through waitUntil rather than being awaited: an awaited Resend
+ * round-trip is a few hundred milliseconds that only a KNOWN address pays,
+ * which is a timing oracle that would undo the uniform body above it.
+ */
+async function handleEmailCodeRequest(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+  ctx?: ExecutionContext,
+): Promise<Response> {
+  const email = body.email?.trim().toLowerCase()
+  if (!email || !EMAIL_RE.test(email)) {
+    return respond({ error: 'Valid email required' }, { status: 400 })
+  }
+  if (isManagedTestEmail(email)) {
+    return respond({ error: 'Email address is reserved' }, { status: 400 })
+  }
+  if (!authEmailDeliveryEnabled(env)) {
+    return respond({ error: PREVIEW_EMAIL_UNAVAILABLE }, { status: 503 })
+  }
+
+  // Per-address cap on top of the per-IP one: rotating IPs must not be able to
+  // bomb one inbox. Silently, because a visible 429 would say the address is
+  // real — and because a stranger hitting this cap has nothing to gain either
+  // way, while the owner still gets an answer they can act on.
+  const addressRl = await checkRateLimit(
+    env.DB,
+    `email:${email}`,
+    'email-code-address',
+  )
+  const user = addressRl.allowed ? await findUserByEmail(env.DB, email) : null
+
+  let codeId = 0
+  if (user?.email) {
+    const minted = await mintLoginCode(env.DB, user.id, email, Date.now())
+    codeId = minted.id
+    const work = sendLoginCodeEmail(env, user, minted.code)
+    // Checked as a function rather than "is there a ctx": a runtime that hands
+    // over a context without waitUntil (a test harness, a non-CF host) must
+    // still send the mail, not throw halfway through minting a code.
+    if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(work)
+    else await work
+  } else {
+    // The decoy. Same hashing cost, no row, and a ceremony that can never
+    // match anything.
+    await hashLoginCode(generateLoginCode())
+  }
+
+  const ceremony = await issueCeremony(env.JWT_SECRET as string, {
+    purpose: 'logincode',
+    codeId,
+    email,
+  })
+  return respond({ ok: true, ceremony })
+}
+
+/**
+ * POST /api/auth/email-code/verify { ceremony, code }
+ *
+ * Typing a mailed code is proof of inbox control — the same proof the
+ * "confirm your address" link asks for — so a success also resolves any
+ * pending verification. It is still only ONE factor: an account with a
+ * confirmed TOTP credential gets the 2FA challenge here exactly as it would
+ * after a password.
+ */
+async function handleEmailCodeVerify(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const dead = { error: 'That code is not valid or has expired' }
+  const claims = await readCeremony(
+    env.JWT_SECRET as string,
+    body.ceremony,
+    'logincode',
+  )
+  const code = body.code?.trim() ?? ''
+  if (claims === null || code === '') return respond(dead, { status: 401 })
+
+  const outcome = await claimLoginCode(
+    env.DB,
+    claims.codeId ?? 0,
+    code,
+    Date.now(),
+  )
+  if (!outcome.ok) return respond(dead, { status: 401 })
+
+  const row = await findUserById(env.DB, outcome.claim.userId)
+  // The address is re-checked against the row rather than trusted from the
+  // ceremony: if the account's email changed while the code was in flight, the
+  // code was mailed to an address that no longer speaks for this account.
+  if (
+    row === null ||
+    (row.email ?? '').toLowerCase() !== outcome.claim.email.toLowerCase()
+  ) {
+    return respond(dead, { status: 401 })
+  }
+  assertAccountActive(row)
+
+  // Reading the code proved the inbox. That is the same thing the verification
+  // link proves, so a pending "confirm your address" is resolved here.
+  if (row.emailVerified !== 1) {
+    await env.DB.prepare(
+      'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
+    )
+      .bind(nowIso(), row.id)
+      .run()
+    row.emailVerified = 1
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  await Promise.all([
+    clearRateLimit(env.DB, ip, 'email-code/verify'),
+    clearRateLimit(
+      env.DB,
+      `email:${outcome.claim.email}`,
+      'email-code-address',
+    ),
+  ])
+
+  const challenge = await twofaChallenge(env, row.id, 'emailcode')
+  if (challenge !== null) return respond(challenge)
+  return issueSession(env, row, respond, false, sessionOrigin(request))
+}
+
+/**
+ * The second-factor fork, shared by every path that proves a FIRST factor.
+ *
+ * Returns the body to answer with when this account has a confirmed TOTP
+ * credential — a short-lived ceremony token and no session — or null when
+ * there is no second factor to demand and the caller should issue one.
+ *
+ * A password, a Google identity and a mailed code are each one factor. A
+ * passkey is the exception and does not come through here: a user-verified
+ * passkey is possession and inherence in a single gesture, so demanding a
+ * TOTP code after one would be asking for a third factor, not a second.
+ */
+export async function twofaChallenge(
+  env: Env,
+  userId: string,
+  provider: string,
+): Promise<{ twofaRequired: true; ceremony: string } | null> {
+  if ((await getTotpForLogin(env, userId)) === null) return null
+  const ceremony = await issueCeremony(env.JWT_SECRET as string, {
+    purpose: '2fa',
+    userId,
+    provider,
+  })
+  return { twofaRequired: true, ceremony }
+}
+
+/**
+ * Re-check an account's own password.
+ *
+ * Exported for the passkey routes, which need sudo mode: adding a passkey from
+ * a session that last proved something hours ago must cost one fresh proof, and
+ * for most accounts the password IS the only proof they have — they have no
+ * second factor to present.
+ *
+ * Returns false, never throws, for an account with no password at all (a Google
+ * identity). The caller has to tell that case apart before asking, because
+ * asking for a password that cannot exist is a dead end.
+ */
+export async function verifyAccountPassword(
+  env: Env,
+  userId: string,
+  password: string,
+): Promise<boolean> {
+  if (password === '') return false
+  const row = await env.DB.prepare(
+    'SELECT passwordHash FROM users WHERE id = ?',
+  )
+    .bind(userId)
+    .first<{ passwordHash: string | null }>()
+  if (!row?.passwordHash) return false
+  return verifyPassword(password, row.passwordHash)
+}
+
+/**
+ * Issue a session for an already-proved identity.
+ *
+ * Exported for twofa-routes.ts, which finishes a sign-in this file started:
+ * the routes module imports downward into this one, so the dispatch for those
+ * routes lives in index.ts rather than in handleAuth, and there is no cycle.
+ */
+export async function issueSessionFor(
+  env: Env,
+  userId: string,
+  provider: string,
+  respond: Respond,
+  origin: SessionOrigin = {},
+): Promise<Response> {
+  const row = await findUserById(env.DB, userId)
+  if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return issueSession(env, row, respond, false, origin, provider)
 }
 
 /** Find-or-create the user for verified Google claims (shared by the
@@ -1440,6 +1848,7 @@ async function resolveGoogleUser(
 }
 
 async function handleGoogle(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -1456,7 +1865,10 @@ async function handleGoogle(
   }
   const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
   const { row, isNew } = await resolveGoogleUser(claims, deviceId, env)
-  return issueSession(env, row, respond, isNew)
+  // A Google identity is one factor, exactly like a password.
+  const challenge = await twofaChallenge(env, row.id, 'google')
+  if (challenge !== null) return respond(challenge)
+  return issueSession(env, row, respond, isNew, sessionOrigin(request))
 }
 
 // ── Google OAuth redirect (code) flow ───────────────────────────
@@ -1786,12 +2198,22 @@ async function handleGoogleCallback(
 
   let resolved: { row: UserRow; isNew: boolean }
   let token: string
+  let pendingTwofa: string | null = null
   try {
     // The state is HMAC-signed by this worker, and handleGoogleStart puts a
     // deviceId in it only after claimedDevice cleared that id — so this one is
     // already proved and cannot have been forged in transit.
     resolved = await resolveGoogleUser(claims, state.deviceId, env)
-    token = await createSession(env, resolved.row)
+    const challenge = await twofaChallenge(env, resolved.row.id, 'google')
+    if (challenge !== null) {
+      // No session yet: the browser gets the ceremony token and the client
+      // opens the code pane. Minting the session here and hoping the client
+      // asks for a code would make 2FA advisory.
+      pendingTwofa = challenge.ceremony
+      token = ''
+    } else {
+      token = await createSession(env, resolved.row, sessionOrigin(request))
+    }
   } catch (error) {
     if (error instanceof AccountSuspendedError) {
       return redirectWithError(state.returnTo, error.code)
@@ -1800,6 +2222,11 @@ async function handleGoogleCallback(
   }
   const { isNew } = resolved
 
+  if (pendingTwofa !== null) {
+    return redirect(
+      `${state.returnTo}#gauth_2fa=${encodeURIComponent(pendingTwofa)}`,
+    )
+  }
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
@@ -2296,6 +2723,7 @@ async function handleDeviceLinkApprove(
  * cannot both collect one.
  */
 async function handleDeviceLinkPoll(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -2329,7 +2757,12 @@ async function handleDeviceLinkPoll(
   }
   const user = await findUserById(env.DB, row.userId)
   if (!user) return respond({ status: 'expired' })
-  const token = await createSession(env, user)
+  const token = await createSession(
+    env,
+    user,
+    sessionOrigin(request),
+    'device-link',
+  )
   return respond({
     status: 'linked',
     token,
@@ -2458,6 +2891,19 @@ async function handleMe(
   return respond({ user: publicUser(row, testAccount), profile: normalized })
 }
 
+/**
+ * POST /api/auth/logout — sign out THIS device, and only this one.
+ *
+ * This used to bump `tokenVersion`, which revoked every token the account had
+ * ever been issued: signing out on a phone signed out the laptop and the
+ * television with it. That behaviour still exists, honestly named, at
+ * /api/auth/logout-all.
+ *
+ * A token minted before migration 0038 carries no `sid`, so there is no row to
+ * delete and no way to end it selectively. Those fall back to the old
+ * behaviour rather than returning a cheerful `ok` that signs nobody out — the
+ * one thing a sign-out must never do.
+ */
 async function handleLogout(
   request: Request,
   env: Env,
@@ -2465,12 +2911,69 @@ async function handleLogout(
 ): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-  // Increment token version — all previously issued JWTs become invalid
-  await env.DB.prepare(
-    'UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
-  )
-    .bind(nowIso(), auth.userId)
-    .run()
+  if (auth.sessionId === undefined) {
+    return revokeEveryToken(env, auth.userId, respond)
+  }
+  await endSession(env.DB, auth.sessionId, auth.userId)
+  return respond({ ok: true, scope: 'device' })
+}
+
+/** The blunt instrument: every token this account holds stops verifying. */
+async function revokeEveryToken(
+  env: Env,
+  userId: string,
+  respond: Respond,
+): Promise<Response> {
+  await env.DB.batch([
+    env.DB.prepare(
+      'UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+    ).bind(nowIso(), userId),
+    env.DB.prepare('DELETE FROM authSessions WHERE userId = ?').bind(userId),
+  ])
+  return respond({ ok: true, scope: 'all' })
+}
+
+/** POST /api/auth/logout-all — sign out everywhere, including here. */
+async function handleLogoutAll(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return revokeEveryToken(env, auth.userId, respond)
+}
+
+/** GET /api/auth/sessions — where this account is signed in. */
+async function handleListSessions(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  return respond({
+    sessions: await listSessions(env.DB, auth.userId, auth.sessionId ?? null),
+  })
+}
+
+/**
+ * DELETE /api/auth/sessions/:id — end one device from the list.
+ *
+ * Scoped to the caller's own rows by the DELETE itself, so naming somebody
+ * else's session id finds nothing and answers 404 — it cannot be used to
+ * probe which ids exist.
+ */
+async function handleRevokeSession(
+  request: Request,
+  env: Env,
+  sessionId: string,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const ended = await endSession(env.DB, sessionId, auth.userId)
+  if (!ended) return respond({ error: 'Not found' }, { status: 404 })
   return respond({ ok: true })
 }
 
@@ -2490,6 +2993,11 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'sessionRecords', column: 'userId' },
   // Reset tokens carry the account's email; they die with the account.
   { table: 'passwordResets', column: 'userId' },
+  // So do sign-in codes: the row names the address they were mailed to.
+  { table: 'loginCodes', column: 'userId' },
+  // Public keys, but they name the account's devices; nothing about a deleted
+  // account should survive as a list of what it signed in from.
+  { table: 'webauthnCredentials', column: 'userId' },
   { table: 'challengeProgress', column: 'userId' },
   { table: 'userBadges', column: 'userId' },
   { table: 'userAchievements', column: 'userId' },
@@ -2545,6 +3053,14 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // already yields nothing (the user lookup fails), but "cannot be used" is
   // not the same as "erased".
   { table: 'deviceLinkCodes', column: 'userId' },
+  // Every device this account is signed in on. Leaving these behind would
+  // keep a row naming a user id that no longer belongs to anyone — and, if
+  // that id were ever reissued, would hand the new owner a live session.
+  { table: 'authSessions', column: 'userId' },
+  // The second factor and its backup codes. An encrypted TOTP secret is still
+  // a credential, and an account that asked to be forgotten must not keep one.
+  { table: 'totpCredentials', column: 'userId' },
+  { table: 'recoveryCodes', column: 'userId' },
 ]
 
 /**
@@ -2719,6 +3235,23 @@ export async function handleAuth(
   if (route === 'logout' && request.method === 'POST') {
     return handleLogout(request, env, respond)
   }
+  if (route === 'sessions' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'sessions')
+    if (!rl.allowed) return tooMany(respond, rl)
+    return handleListSessions(request, env, respond)
+  }
+  if (route.startsWith('sessions/') && request.method === 'DELETE') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'sessions')
+    if (!rl.allowed) return tooMany(respond, rl)
+    return handleRevokeSession(
+      request,
+      env,
+      decodeURIComponent(route.slice('sessions/'.length)),
+      respond,
+    )
+  }
   if (
     route === 'google/start' &&
     (request.method === 'GET' || request.method === 'POST')
@@ -2801,6 +3334,9 @@ export async function handleAuth(
   if (route === 'logout') {
     return handleLogout(request, env, respond)
   }
+  if (route === 'logout-all') {
+    return handleLogoutAll(request, env, respond)
+  }
   if (route === 'resend-verification') {
     return handleResendVerification(request, env, respond)
   }
@@ -2817,7 +3353,8 @@ export async function handleAuth(
   if (
     route === 'register' ||
     route === 'login' ||
-    route === 'forgot-password'
+    route === 'forgot-password' ||
+    route === 'email-code/request'
   ) {
     const validTurnstile = await verifyTurnstile(
       request,
@@ -2834,21 +3371,25 @@ export async function handleAuth(
 
   switch (route) {
     case 'anonymous':
-      return handleAnonymous(body, env, respond)
+      return handleAnonymous(request, body, env, respond)
     case 'register':
       return handleRegister(request, body, env, respond)
     case 'login':
-      return handleLogin(body, env, respond)
+      return handleLogin(request, body, env, respond)
     case 'google':
-      return handleGoogle(body, env, respond)
+      return handleGoogle(request, body, env, respond)
     case 'forgot-password':
       return handleForgotPassword(request, body, env, respond, ctx)
+    case 'email-code/request':
+      return handleEmailCodeRequest(body, env, respond, ctx)
+    case 'email-code/verify':
+      return handleEmailCodeVerify(request, body, env, respond)
     case 'reset-password':
       return handleResetPassword(body, env, respond)
     case 'device/start':
       return handleDeviceLinkStart(body, env, respond)
     case 'device/poll':
-      return handleDeviceLinkPoll(body, env, respond)
+      return handleDeviceLinkPoll(request, body, env, respond)
     case 'device/approve':
       return handleDeviceLinkApprove(request, body, env, respond)
     default:

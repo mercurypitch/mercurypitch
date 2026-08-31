@@ -91,6 +91,7 @@
     "@coderline/alphatab": "^1.8.3",
     "@huggingface/transformers": "^4.2.0",
     "@mediabunny/aac-encoder": "^1.52.2",
+    "@simplewebauthn/server": "^13.3.3",
     "dexie": "^4.4.2",
     "fflate": "^0.8.3",
     "lightningcss": "^1.32.0",
