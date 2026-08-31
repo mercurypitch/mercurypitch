@@ -274,9 +274,12 @@ export function ProgressRoute(): JSX.Element {
         snapshot={snapshot()}
         errorMessage={errorMessage()}
         emptyAction={{
-          id: 'start-practice',
-          label: 'Start a practice',
-          href: '#/singing',
+          // Exercises, not Singing: a plain Singing take never banks a
+          // progress record (only the session-mode run does), so `#/singing`
+          // sent the singer somewhere this empty state cannot be cleared from.
+          id: 'start-exercise',
+          label: 'Start an exercise',
+          href: '#/exercises',
         }}
         onRetry={() => void refetch()}
         onAction={handleAction}
