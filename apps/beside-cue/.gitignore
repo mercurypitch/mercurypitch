@@ -3,3 +3,5 @@
 public/ort/
 art/glass/*.opt.glb
 art/glass/*.blend1
+art/merc/*.blend1
+art/merc/*.opt.glb
