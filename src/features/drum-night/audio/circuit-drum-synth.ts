@@ -7,9 +7,10 @@
 // AudioContext and reused by hats and cymbals; bounded seeded variation moves
 // pitch, tone, decay, and gain without turning repeated hits into new voices.
 
-import type { DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitTrigger, DrumKitTriggerOutcome, } from '@/features/drum-night/runtime/drum-runtime-types'
+import type { DrumKitChoke, DrumKitChokeOutcome, DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitTrigger, DrumKitTriggerOutcome, } from '@/features/drum-night/runtime/drum-runtime-types'
 import { drumVoiceForMidi } from '@/lib/drum-voice-map'
 import type { DrumVoiceId } from '@/lib/drum-voices'
+import { isGeneralMidiPercussionChokeTarget } from '@/lib/percussion'
 import { fnv1a32, mulberry32 } from './drum-sample-select'
 
 export type DrumSynthModelId = 'circuit' | 'mercury-synth'
@@ -57,6 +58,7 @@ export interface CircuitDrumSynthOptions {
 export interface CircuitDrumSynth extends DrumKitPlayerPort {
   readonly synthModelId: 'circuit'
   trigger(hit: DrumKitTrigger): DrumKitTriggerOutcome
+  choke(request: DrumKitChoke): DrumKitChokeOutcome
 }
 
 /**
@@ -73,7 +75,11 @@ export interface CircuitDrumEngine {
     destination: AudioNode,
     hit: DrumKitTrigger,
   ): DrumKitTriggerOutcome
-  choke(group: string, atContextTime?: number, lane?: DrumKitPlaybackLane): void
+  choke(
+    group: string,
+    atContextTime?: number,
+    lane?: DrumKitPlaybackLane,
+  ): number
   panic(lane?: DrumKitPlaybackLane): void
   dispose(): void
 }
@@ -85,7 +91,7 @@ interface ActiveCircuitVoice {
   readonly chokeGroup: string | null
   readonly lane: DrumKitPlaybackLane
   remainingSources: number
-  released: boolean
+  releaseAt: number | null
 }
 
 interface CircuitVoicePlan {
@@ -110,11 +116,22 @@ const CHOKE_SECONDS = 0.045
 const DEFAULT_VARIATION_SEED = 0xc1ac017
 export const CIRCUIT_OPEN_HAT_CHOKE_GROUP = 'hi-hat-open'
 
+/** Stable internal release lane for a bounded General MIDI articulation. */
+export function drumKitChokeGroupForGmKey(gmKey: number): string | null {
+  if (gmKey === 46) return CIRCUIT_OPEN_HAT_CHOKE_GROUP
+  return isGeneralMidiPercussionChokeTarget(gmKey) ? `cymbal:${gmKey}` : null
+}
+
 const metallicExcitationByContext = new WeakMap<BaseAudioContext, AudioBuffer>()
 
 function clamp(value: number, minimum: number, maximum: number): number {
   if (!Number.isFinite(value)) return minimum
   return Math.min(maximum, Math.max(minimum, value))
+}
+
+/** Circuit's independently voiced response; sampled-kit curation does not own it. */
+export function circuitVelocityAmplitude(velocity: number): number {
+  return Math.pow(clamp(velocity, 1, 127) / 127, 0.72)
 }
 
 function hashString(value: string | undefined): number {
@@ -420,7 +437,7 @@ export function createCircuitDrumEngine(
       chokeGroup,
       lane,
       remainingSources: sources.length,
-      released: false,
+      releaseAt: null,
     }
     activeVoices.add(voice)
     for (const source of sources) {
@@ -439,13 +456,13 @@ export function createCircuitDrumEngine(
     voice: ActiveCircuitVoice,
     requestedAt: number | undefined,
     releaseSeconds: number,
-  ): void => {
-    if (voice.released) return
-    voice.released = true
+  ): boolean => {
     const now = atLeastNow(
       voice.context,
       requestedAt ?? voice.context.currentTime,
     )
+    if (voice.releaseAt !== null && voice.releaseAt <= now) return false
+    voice.releaseAt = now
     for (const gain of voice.gains) {
       let held = false
       try {
@@ -471,22 +488,26 @@ export function createCircuitDrumEngine(
         // A source whose natural tail already ended needs no second stop.
       }
     }
+    return true
   }
 
   const choke = (
     group: string,
     atContextTime?: number,
     lane?: DrumKitPlaybackLane,
-  ): void => {
-    if (group === '') return
+  ): number => {
+    if (group === '') return 0
+    let released = 0
     for (const voice of [...activeVoices]) {
       if (
         voice.chokeGroup === group &&
-        (lane === undefined || voice.lane === lane)
-      ) {
+        (lane === undefined || voice.lane === lane) &&
         releaseVoice(voice, atContextTime, CHOKE_SECONDS)
+      ) {
+        released += 1
       }
     }
+    return released
   }
 
   const panic = (lane?: DrumKitPlaybackLane): void => {
@@ -510,15 +531,14 @@ export function createCircuitDrumEngine(
         hit.gmKey,
         hit.sourceId,
       )
-      const amplitude = Math.pow(velocity / 127, 0.72) * variation.gainRatio
+      const amplitude = circuitVelocityAmplitude(velocity) * variation.gainRatio
       sequence += 1
       const lane = hit.lane ?? 'live'
       const at = atLeastNow(context, hit.atContextTime ?? context.currentTime)
       if (voice === 'hh-closed' || voice === 'hh-pedal') {
         choke(CIRCUIT_OPEN_HAT_CHOKE_GROUP, at, lane)
       }
-      const chokeGroup =
-        voice === 'hh-open' ? CIRCUIT_OPEN_HAT_CHOKE_GROUP : null
+      const chokeGroup = drumKitChokeGroupForGmKey(hit.gmKey)
       try {
         triggerCircuitVoice(voice, {
           context,
@@ -571,6 +591,21 @@ export function createCircuitDrumSynth(
       const destination = options.getOutput()
       if (context === null || destination === null) return 'dropped'
       return engine.trigger(context, destination, hit)
+    },
+    choke(request): DrumKitChokeOutcome {
+      if (disposed) return 'dropped'
+      const group = drumKitChokeGroupForGmKey(request.gmKey)
+      if (group === null) return 'unmapped'
+      const context = options.getAudioContext()
+      const destination = options.getOutput()
+      if (context === null || destination === null) return 'dropped'
+      return engine.choke(
+        group,
+        request.atContextTime,
+        request.lane ?? 'live',
+      ) > 0
+        ? 'choked'
+        : 'idle'
     },
     panic: (lane) => engine.panic(lane),
     dispose(): void {

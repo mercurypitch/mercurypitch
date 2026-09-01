@@ -227,6 +227,27 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   key and velocity ranges, sequence position, choke relationships, probability
   ranges, volume, tune, offset, and end. It shall reject path traversal and any
   unsupported semantic opcode rather than silently changing the instrument.
+- **REQ-DN-KIT-013 — Licensed-resource calibration truth:** WHEN the existing
+  licensed one-shots are curated or checked, each resource shall be measured and
+  calibrated independently toward a −9 dBFS transient target without letting a
+  weak sibling lower a healthy sample. One shared playback gain shall center the
+  decoded MP3 and Opus transient peaks around that target, readiness shall use
+  the worse codec error, and gain shall preserve at least −6 dBFS full-scale
+  headroom against the hotter codec. Gain shall remain within ±12 dB and use at
+  most +6 dB when a 20 ms uncontaminated noise window is unavailable. The
+  generated catalogue shall classify each resource and kit as ready, reduced,
+  or fallback; runtime selection shall prefer a matching ready layer, then a
+  matching reduced layer, and shall use the declared Mercury Synth fallback
+  instead of a fallback-quality recording. This calibration shall not claim to
+  replace the licensed source recordings with next-level kit content.
+- **REQ-DN-KIT-014 — Achieved-output evidence:** The deterministic calibration
+  report shall record decoded MP3 and Opus transient peak, full peak, and fixed
+  transient-window power for every sample, fail generation when any Opus-minus-
+  MP3 delta exceeds 2 dB, and record each codec's achieved post-calibration
+  output at MIDI velocities 64, 100, 112, and 127 using the same velocity and
+  bounded-power resolver as runtime playback. Resource power metadata shall remain absent
+  unless the complete articulation passes readiness, layer-boundary,
+  round-robin, and power-spread gates.
 
 ## Session import and canonical truth — `DN-IMPORT-*`
 
@@ -249,8 +270,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   Backing bus; they shall never become drum hits, drum notation, coaching
   targets, or kit voices.
 - **REQ-DN-IMPORT-006 — Exact source evidence:** Mapped percussion shall retain
-  available authored timing, tempo, meter, velocity, written duration, source
-  articulation, track identity, and MIDI/Guitar Pro provenance.
+  available authored timing, tempo, meter, velocity, accent, supported cymbal
+  choke articulation, written duration, source articulation, track identity,
+  and MIDI/Guitar Pro provenance.
 - **REQ-DN-IMPORT-007 — Import state truth:** Drum Night shall distinguish
   idle, loading, ready, empty, too-large, unsupported-file, no-drums,
   unsupported-mapping, and parser-error states with recovery-oriented copy.
@@ -282,9 +304,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   Drummer Seat, Coach, the session map, and authored playback shall consume one
   canonical percussion document and a reusable whole-song score index.
 - **REQ-DN-SESSION-002 — Percussion score:** Score shall render percussion
-  staff positions and noteheads, authored meter and bar boundaries, velocity
-  accents, source evidence, and the shared playhead; it shall not reinterpret
-  General MIDI drum keys as pitched melody.
+  staff positions and noteheads, authored meter and bar boundaries, source
+  velocity, authored `>`, `^`, and `—` accent marks, literal cymbal-choke
+  semantics, source evidence, and the shared playhead. It shall never infer an
+  accent from velocity or reinterpret General MIDI drum keys as pitched melody.
 - **REQ-DN-SESSION-003 — Drummer-seat reading:** Drummer Seat shall place
   authored targets on stable physical kit zones, make those zones directly
   pointer-playable, and visually distinguish the authored target from a
@@ -383,6 +406,18 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-PLAYBACK-017 — Session boundary:** WHEN the prepared groove or an
   imported document replaces the current session, Drum Night shall clear both
   A/B marks and the active transport loop before the new document plays.
+- **REQ-DN-PLAYBACK-018 — Deliberate output headroom:** The gesture-owned Drum
+  Night route shall feed every authored and live hit through one +4 dB makeup
+  stage, a −3 dB threshold, 2 dB knee, 12:1 safety compressor, and a final −1 dB
+  trim before the destination. Construction shall remain gesture-owned and
+  teardown shall disconnect every stage and close the route-owned context.
+- **REQ-DN-PLAYBACK-019 — Used-score sample preparation:** AFTER gesture-owned
+  audio activation and BEFORE an imported MIDI or Guitar Pro session starts
+  its transport, Drum Night shall prewarm at most 128 unique authored
+  General-MIDI-key/velocity pairs from that session, selected fairly across
+  distinct authored keys so many velocities on an early voice cannot starve a
+  later kit piece. Preparation failure shall not block playback; the per-hit
+  Mercury Synth fallback and readiness status shall remain truthful.
 
 ## Session-local Groove Rack editing — `DN-GROOVE-*`
 

@@ -49,7 +49,7 @@ import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangemen
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
-import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
+import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
 import { createDrumScoreIndex, createDrumSessionHumanizer, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
@@ -178,6 +178,7 @@ const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
 const INITIAL_KIT_VOLUME = 82
 const FIRST_POCKET_TEMPO_BPM = 84
+const MAX_IMPORTED_SESSION_PREWARM_HITS = 128
 const WORKSPACE_TITLES: Record<Workspace, string> = {
   groove: 'Shape the groove',
   kit: 'Choose the kit',
@@ -242,6 +243,48 @@ function formatSessionTime(seconds: number): string {
   )
   const minutes = Math.floor(bounded / 60)
   return `${minutes}:${String(bounded % 60).padStart(2, '0')}`
+}
+
+function importedSessionPrewarmHits(
+  document: DrumSessionDocument | null,
+): readonly DrumKitPrewarmHit[] {
+  if (document === null || document.sourceFormat === 'prepared') return []
+  const uniqueByGmKey = new Map<number, Map<number, DrumKitPrewarmHit>>()
+  for (const track of document.percussionTracks) {
+    for (const hit of track.percussionHits) {
+      let velocities = uniqueByGmKey.get(hit.gmKey)
+      if (velocities === undefined) {
+        velocities = new Map()
+        uniqueByGmKey.set(hit.gmKey, velocities)
+      }
+      if (!velocities.has(hit.velocity)) {
+        velocities.set(hit.velocity, {
+          gmKey: hit.gmKey,
+          velocity: hit.velocity,
+        })
+      }
+    }
+  }
+  const groups = [...uniqueByGmKey.values()].map((hits) => [...hits.values()])
+  const selected: DrumKitPrewarmHit[] = []
+  for (
+    let layerIndex = 0;
+    selected.length < MAX_IMPORTED_SESSION_PREWARM_HITS;
+    layerIndex += 1
+  ) {
+    let found = false
+    for (const group of groups) {
+      const hit = group[layerIndex]
+      if (hit === undefined) continue
+      selected.push(hit)
+      found = true
+      if (selected.length >= MAX_IMPORTED_SESSION_PREWARM_HITS) {
+        return selected
+      }
+    }
+    if (!found) return selected
+  }
+  return selected
 }
 
 /** Fixed so a groove replays with the same feel across reloads and takes. */
@@ -1372,8 +1415,18 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (snapshot.status === 'loading') {
       return `Loading ${snapshot.preparedSamples} of ${snapshot.plannedSamples} core samples · synth fallback active`
     }
-    if (snapshot.sampledReady) {
-      return `${snapshot.loadedSamples} samples ready · per-hit synth fallback remains available`
+    if (snapshot.sampledReady || snapshot.status === 'ready') {
+      const coreCopy =
+        snapshot.loadedSamples > 0
+          ? `${snapshot.loadedSamples} samples ready`
+          : 'Sample preparation complete'
+      if (snapshot.sampleStatus === 'fallback') {
+        return `${coreCopy} · some kit articulations use Mercury Synth because their samples did not pass quality calibration`
+      }
+      if (snapshot.sampleStatus === 'reduced') {
+        return `${coreCopy} · some kit articulations have reduced sample coverage; Mercury Synth covers unavailable sounds`
+      }
+      return `${coreCopy} · per-hit synth fallback remains available`
     }
     return 'Selected · samples warm after your first audio action'
   })
@@ -2586,6 +2639,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     )
     setPlayRequestPending(true)
     const selectedSource = selectedBackingSource()
+    const selectedImportedDocument =
+      selectedSource === null ? importedDocument() : null
+    const prewarmHits =
+      selectedSource === null
+        ? importedSessionPrewarmHits(selectedImportedDocument)
+        : []
     let kitActivation: Promise<boolean>
     try {
       // Cross the Web Audio boundary synchronously inside the button gesture.
@@ -2596,6 +2655,21 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     void kitActivation
       .then(async (kitReady) => {
         if (!kitReady) return false
+        if (prewarmHits.length > 0) {
+          try {
+            await player.prewarm(prewarmHits)
+          } catch {
+            // Used-score warm-up is an optimization; Mercury fallback remains
+            // the honest per-hit path when bytes or decoding are unavailable.
+          }
+        }
+        if (
+          untrack(selectedBackingSource) !== selectedSource ||
+          (selectedSource === null &&
+            untrack(importedDocument) !== selectedImportedDocument)
+        ) {
+          return true
+        }
         if (selectedSource !== null) {
           const loaded = await stemPlayAlong.load()
           if (!loaded || untrack(selectedBackingSource) !== selectedSource) {

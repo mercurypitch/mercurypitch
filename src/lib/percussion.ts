@@ -11,6 +11,15 @@
 export const GM_PERCUSSION_MIN = 35
 export const GM_PERCUSSION_MAX = 81
 
+const GM_PERCUSSION_CHOKE_TARGETS: ReadonlySet<number> = new Set([
+  49, 51, 52, 55, 57, 59,
+])
+
+/** Chokes may stop only the six bounded GM cymbal lanes Guitar Pro maps. */
+export function isGeneralMidiPercussionChokeTarget(gmKey: number): boolean {
+  return GM_PERCUSSION_CHOKE_TARGETS.has(gmKey)
+}
+
 const GENERAL_MIDI_PERCUSSION_NAMES: Readonly<Record<number, string>> = {
   35: 'Acoustic Bass Drum',
   36: 'Bass Drum 1',

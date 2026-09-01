@@ -23,6 +23,7 @@ function resource(id, kitId, { power } = {}) {
     roundRobin: 1,
     chokeGroup: null,
     chokes: [],
+    readiness: 'ready',
     ...mp3,
     ...(power === undefined ? {} : { power }),
     formats: {
@@ -57,16 +58,19 @@ function catalog() {
     kits: {
       live: {
         version: 'v1',
+        sampleStatus: 'ready',
         publishedEncodedBytes: live.encodedBytes,
         resources: [live],
       },
       'mercury-synth': {
         version: 'v1',
+        sampleStatus: 'ready',
         publishedEncodedBytes: 0,
         resources: [],
       },
       studio: {
         version: 'v1',
+        sampleStatus: 'ready',
         publishedEncodedBytes: studio.encodedBytes,
         resources: [studio],
         velcurve: {
@@ -78,6 +82,7 @@ function catalog() {
       },
       'classic-gm': {
         version: 'v1',
+        sampleStatus: 'ready',
         publishedEncodedBytes: classic.encodedBytes,
         resources: [classic],
       },
@@ -98,7 +103,9 @@ test('runtime projection retains playback metadata but excludes audit and format
   assert.equal(projections.runtime.schemaVersion, 1)
   assert.equal(projections.runtime.catalogSchemaVersion, 2)
   assert.equal(projected.power, 0.8)
+  assert.equal(projected.readiness, 'ready')
   assert.equal(projected.playbackGain, 1)
+  assert.equal(projections.runtime.kits.live.sampleStatus, 'ready')
   assert.equal('source' in projected, false)
   assert.equal('formats' in projected, false)
   assert.equal('toolchain' in projections.runtime, false)

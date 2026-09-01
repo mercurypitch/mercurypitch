@@ -15,12 +15,14 @@ interface MutableGeneratedResource {
   mimeType: string
   path: string
   power?: number
+  readiness?: unknown
   sha256: string
   [key: string]: unknown
 }
 
 interface MutableGeneratedKit {
   resources: MutableGeneratedResource[]
+  sampleStatus?: unknown
   velcurve?: unknown
   [key: string]: unknown
 }
@@ -56,11 +58,27 @@ function schemaOneCatalog(): MutableGeneratedCatalog {
     generatedCatalog,
   ) as unknown as MutableGeneratedCatalog
   catalog.schemaVersion = 1
+  const calibration = catalog.calibration as Record<string, unknown>
+  for (const field of [
+    'velocityContractVersion',
+    'targetToleranceDb',
+    'maximumUnmeasuredNoiseBoostDb',
+    'maximumAmplifiedNoiseDb',
+    'minimumSignalToNoiseDb',
+    'minimumReducedTransientPeakDb',
+    'maximumPowerSpreadDb',
+    'maximumCodecDeltaDb',
+    'minimumNoiseWindowMs',
+  ]) {
+    delete calibration[field]
+  }
   for (const kit of Object.values(catalog.kits)) {
     delete kit.velcurve
+    delete kit.sampleStatus
     for (const resource of kit.resources) {
       delete resource.formats
       delete resource.power
+      delete resource.readiness
     }
   }
   return catalog
@@ -230,6 +248,21 @@ describe('Drum Night kit catalog', () => {
     }
     expect(() => assertGeneratedDrumKitCatalog(invalidCurve)).toThrow(
       'Invalid Drum Night velocity curve',
+    )
+  })
+
+  it('rejects unknown or dishonest sample readiness', () => {
+    const invalidResource = schemaTwoCatalog()
+    invalidResource.kits.live.resources[0].readiness = 'maybe'
+    expect(() => assertGeneratedDrumKitCatalog(invalidResource)).toThrow(
+      'Invalid Drum Night kit resource',
+    )
+
+    const mismatchedKit = schemaTwoCatalog()
+    mismatchedKit.kits.live.resources[0].readiness = 'fallback'
+    mismatchedKit.kits.live.sampleStatus = 'ready'
+    expect(() => assertGeneratedDrumKitCatalog(mismatchedKit)).toThrow(
+      'Drum Night kit sample status mismatch',
     )
   })
 

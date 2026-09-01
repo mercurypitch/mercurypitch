@@ -14,7 +14,7 @@ import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { midiProgramFamily, normalizeMidiProgram, } from '@/lib/midi-program-family'
 import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
-import { guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
+import { guitarProAccent, guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
 
 /** alphaTab playback ticks per quarter note. */
 const TICKS_PER_QUARTER = 960
@@ -273,12 +273,20 @@ function percussionTrackToMidiSongTrack(
               droppedHitCount += 1
               continue
             }
+            const accent = guitarProAccent(note.accentuated as number)
             const writtenDuration = beat.playbackDuration / TICKS_PER_QUARTER
             percussionHits.push({
               id: sourceNoteId(index, staff, note),
               gmKey: resolved.gmKey,
               startBeat,
-              velocity: guitarProDynamicVelocity(note.dynamics as number),
+              velocity: guitarProDynamicVelocity(
+                note.dynamics as number,
+                accent,
+              ),
+              ...(accent === undefined ? {} : { accent }),
+              ...(resolved.articulation === undefined
+                ? {}
+                : { articulation: resolved.articulation }),
               ...(writtenDuration > 0 ? { writtenDuration } : {}),
               source: resolved.source,
             })

@@ -74,8 +74,8 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 32.6k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 30.3k | Drum Night session boundary — import, score, kit, and evidence coaching. |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 32.7k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.1k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.4k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.6k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
@@ -85,7 +85,7 @@ These are the rules that break things when ignored.
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 6.7k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.0k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
-| `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 4.9k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
+| `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 5.3k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.8k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.6k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.5k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
@@ -176,8 +176,8 @@ These are the rules that break things when ignored.
 | [device-tier.ts](../../src/lib/device-tier.ts) | 450 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 450 | Hash Router — Client-side hash-based routing |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
+| [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
-| [midi-song.ts](../../src/lib/midi-song.ts) | 400 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
@@ -364,7 +364,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.8k |
 | [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 1.8k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 1.8k |
+| [src/features/drum-night/audio/drum-kit-player.ts](../../src/features/drum-night/audio/drum-kit-player.ts) | 1.7k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.7k |
+| [src/features/guitar/backing/guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
@@ -375,7 +377,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.5k |
-| [src/features/drum-night/audio/drum-kit-player.ts](../../src/features/drum-night/audio/drum-kit-player.ts) | 1.5k |
 | [src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts](../../src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
@@ -391,7 +392,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
-| [src/features/guitar/backing/guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
@@ -452,6 +452,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:db` | `vitest run workers/db-worker` |
 | `pnpm test:jam` | `vitest run workers/jam-worker` |
 | `pnpm test:coverage` | `vitest run --coverage` |
+| `pnpm test:scripts` | `node --test scripts/*.test.mjs` |
 | `pnpm test:e2e` | `playwright test` |
 | `pnpm test:e2e:devices` | `playwright test -c playwright.devices.config.ts` |
 | `pnpm test:e2e:cloud` | `playwright test -c playwright.cloud.config.ts` |

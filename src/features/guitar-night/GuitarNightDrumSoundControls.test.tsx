@@ -74,4 +74,67 @@ describe('GuitarNightDrumSoundControls', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/Feel starts on next Play/)).toBeInTheDocument()
   })
+
+  it('states sampled-core readiness and bounded routing truth without claiming audibility', () => {
+    render(() => (
+      <GuitarNightDrumSoundControls
+        liveKit
+        playback={() => ({
+          status: 'ready',
+          playerCount: 2,
+          fallbackReady: true,
+          sampledReady: true,
+          sampleStatus: 'ready',
+          selectedFormat: 'opus',
+          routingCounts: {
+            sampled: 10,
+            synthesized: 0,
+            synthFallback: 2,
+            unmapped: 1,
+            dropped: 0,
+            unreported: 0,
+            choked: 1,
+            idle: 0,
+            unsupported: 0,
+          },
+        })}
+      />
+    ))
+
+    expect(screen.getByText(/Sampled core ready \(OPUS\)/)).toBeInTheDocument()
+    expect(screen.getByText(/2 fallback, 1 unmapped/)).toBeInTheDocument()
+    expect(screen.queryByText(/audible/i)).not.toBeInTheDocument()
+  })
+
+  it('keeps degraded auxiliary-sample truth visible when the sampled core is ready', () => {
+    render(() => (
+      <GuitarNightDrumSoundControls
+        liveKit
+        playback={() => ({
+          status: 'ready',
+          playerCount: 1,
+          fallbackReady: true,
+          sampledReady: true,
+          sampleStatus: 'fallback',
+          selectedFormat: 'mp3',
+          routingCounts: {
+            sampled: 0,
+            synthesized: 0,
+            synthFallback: 0,
+            unmapped: 0,
+            dropped: 0,
+            unreported: 0,
+            choked: 0,
+            idle: 0,
+            unsupported: 0,
+          },
+        })}
+      />
+    ))
+
+    expect(screen.getByText(/Sampled core ready \(MP3\)/)).toHaveTextContent(
+      'did not pass the sample quality check',
+    )
+    expect(screen.getByText(/Mercury Synth covers them/)).toBeInTheDocument()
+  })
 })

@@ -2220,6 +2220,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           drumSoundControls={
             <GuitarNightDrumSoundControls
               liveKit
+              playback={room.drumPlayback}
               onKitChange={room.setDrumKit}
             />
           }

@@ -69,6 +69,16 @@ workspace.
   Paused; generated Feel remains a next-Play scheduling choice. Before the
   first Play both selectors remain data-only, and sampled kits may use Mercury
   fallback while warming rather than delaying or restarting the score clock.
+- After activation, each authored Drum lane prewarms the unique GM/velocity
+  attacks its score actually uses. The retained adapter reports sampled-core
+  readiness and bounded routing decisions; `sampled`, `synthesized`, fallback,
+  unmapped, dropped, and unreported describe routing only, never proof that a
+  listener heard output.
+- Guitar Pro choked cymbals remain attacks: the mapped cymbal strikes on time
+  and its authored lane receives a GM-target release 110ms later. Closed and
+  pedal hats broadcast an open-hat release across every retained percussion
+  track. Same-time open strikes are scheduled before the closer, independently
+  of source track order.
 - The amber Play control is icon-only; its state names (Play, Pause, Resume)
   live in the accessible label and tooltip so the pedalboard never reflows
   between states.
@@ -255,7 +265,9 @@ core Learn set in
   does not create an audio context.
 - One shared output graph exposes guide, drums, bass, stems, and monitor buses
   through a master limiter. Room consumers reuse that graph instead of opening
-  competing audio clocks. Inside authored playback, all strings in one actual
+  competing audio clocks. Its Drum bus begins at unity; room master, live
+  per-track faders and gates, and the final limiter own level without restarting
+  transport. Inside authored playback, all strings in one actual
   electric-guitar track meet before one asset-free nonlinear amp, while each
   separate electric track owns a separate stage. The track mixer fader follows
   that stage, so raising or lowering a part changes its post-amp mix level and

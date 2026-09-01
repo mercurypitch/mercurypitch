@@ -6,13 +6,16 @@
 // AudioContext time, and never invents a sound for an unsupported GM key.
 
 import { isGeneralMidiDrumKey } from '../runtime/drum-pad-layout'
-import type { DrumKitPlayerPort, DrumKitTriggerOutcome, } from '../runtime/drum-runtime-types'
+import type { DrumKitChoke, DrumKitChokeOutcome, DrumKitPlayerPort, DrumKitTrigger, DrumKitTriggerOutcome, } from '../runtime/drum-runtime-types'
+import { DRUM_KIT_AUTHORED_CHOKE_TAIL_SECONDS } from '../runtime/drum-runtime-types'
 import type { DrumAuthoredSchedulingWindow, DrumTransport, } from '../runtime/drum-transport'
 import type { DrumSessionDocument } from './drum-session'
 
 export const DEFAULT_DRUM_SESSION_LOOKAHEAD_MS = 100
 /** Humanized playback needs early-shift headroom inside the lookahead. */
 export const HUMANIZED_DRUM_SESSION_LOOKAHEAD_MS = 120
+/** Feel can lead 14 ms and its bounded flam can lead another 35 ms. */
+export const MAX_DRUM_SESSION_ACTION_EARLY_MS = 49
 /** A hit carries at most one flam plus one drag grace. */
 export const MAX_DRUM_SESSION_ORNAMENTS_PER_HIT = 2
 /** Matches the player's default voice ceiling for one authored attack. */
@@ -21,6 +24,9 @@ export const MAX_DRUM_SESSION_OCCURRENCES_PER_TIMESTAMP = 48
 export const MAX_DRUM_SESSION_OCCURRENCES_PER_SCHEDULE = 256
 /** Future overlap proof stays bounded even under repeated manual scheduling. */
 export const MAX_DRUM_SESSION_DEDUPE_LEDGER = 512
+/** GP choked cymbals strike normally, then receive this bounded grab tail. */
+export const AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS =
+  DRUM_KIT_AUTHORED_CHOKE_TAIL_SECONDS
 /** Ranges, rather than individual hits, keep deferred work bounded. */
 const MAX_DRUM_SESSION_DEFERRED_RANGES = 1_024
 
@@ -32,6 +38,7 @@ export type DrumSessionSchedulerStatus =
   | 'waiting-for-audio'
 
 export type DrumSessionTriggerTruth = DrumKitTriggerOutcome | 'unreported'
+export type DrumSessionChokeTruth = DrumKitChokeOutcome | 'unreported'
 
 export interface DrumSessionTriggerCounts {
   readonly sampled: number
@@ -52,6 +59,7 @@ export interface DrumScheduledSessionOccurrence {
   readonly sourceHitId: string | null
   readonly gmKey: number
   readonly velocity: number
+  readonly articulation?: 'choke'
   readonly authoredBeat: number
   /** Monotonic across loop repetitions even though authoredBeat wraps. */
   readonly timelineBeat: number
@@ -59,6 +67,8 @@ export interface DrumScheduledSessionOccurrence {
   readonly performanceTimestampMs: number
   readonly atContextTime: number
   readonly triggerTruth: DrumSessionTriggerTruth
+  /** Release routing only; `choked` does not claim the attack was audible. */
+  readonly chokeTruth: DrumSessionChokeTruth | null
 }
 
 export interface DrumSessionSchedulerSnapshot {
@@ -91,6 +101,7 @@ export interface DrumSessionHumanizeHit {
   readonly gmKey: number
   readonly velocity: number
   readonly startBeat: number
+  readonly articulation?: 'choke'
   readonly timelineBeat: number
   readonly loopIteration: number
 }
@@ -148,7 +159,49 @@ interface IndexedSessionHit {
   readonly gmKey: number
   readonly velocity: number
   readonly startBeat: number
+  readonly articulation?: 'choke'
 }
+
+interface PendingSessionOccurrence {
+  readonly discoverySequence: number
+  readonly id: string
+  readonly sessionRevision: number
+  readonly transportRevision: number
+  readonly trackId: string
+  readonly sourceHitId: string | null
+  readonly gmKey: number
+  readonly velocity: number
+  readonly articulation?: 'choke'
+  readonly authoredBeat: number
+  readonly timelineBeat: number
+  readonly loopIteration: number
+  readonly performanceTimestampMs: number
+  readonly atContextTime: number
+  triggerTruth: DrumSessionTriggerTruth
+  chokeTruth: DrumSessionChokeTruth | null
+  mainDispatched: boolean
+}
+
+interface ResolvedTriggerAction {
+  readonly kind: 'trigger'
+  readonly atContextTime: number
+  readonly semanticTiePriority: number
+  readonly sequence: number
+  readonly request: DrumKitTrigger
+  /** Ornaments remain intentionally absent from occurrence truth. */
+  readonly occurrence: PendingSessionOccurrence | null
+}
+
+interface ResolvedChokeAction {
+  readonly kind: 'choke'
+  readonly atContextTime: number
+  readonly semanticTiePriority: number
+  readonly sequence: number
+  readonly request: DrumKitChoke
+  readonly occurrence: PendingSessionOccurrence
+}
+
+type ResolvedSessionAction = ResolvedTriggerAction | ResolvedChokeAction
 
 interface DeferredSessionRange {
   readonly fromIndex: number
@@ -171,6 +224,14 @@ function emptyTriggerCounts(): DrumSessionTriggerCounts {
 function boundedLookahead(value: number | undefined): number {
   if (!Number.isFinite(value)) return DEFAULT_DRUM_SESSION_LOOKAHEAD_MS
   return Math.min(2_000, Math.max(0, value as number))
+}
+
+function attackTiePriority(
+  gmKey: number,
+  articulation: IndexedSessionHit['articulation'],
+): number {
+  if (gmKey === 42 || gmKey === 44) return 2
+  return articulation === 'choke' ? 1 : 0
 }
 
 function indexSession(document: DrumSessionDocument): {
@@ -203,13 +264,19 @@ function indexSession(document: DrumSessionDocument): {
           gmKey: hit.gmKey,
           velocity: Math.round(hit.velocity),
           startBeat: hit.startBeat,
+          ...(hit.articulation === undefined
+            ? {}
+            : { articulation: hit.articulation }),
         }),
       )
     }
   }
   indexed.sort(
     (left, right) =>
-      left.startBeat - right.startBeat || left.sequence - right.sequence,
+      left.startBeat - right.startBeat ||
+      attackTiePriority(left.gmKey, left.articulation) -
+        attackTiePriority(right.gmKey, right.articulation) ||
+      left.sequence - right.sequence,
   )
   return {
     playable: Object.freeze(indexed),
@@ -264,12 +331,37 @@ function truthFromPlayerResult(
     : 'unreported'
 }
 
+function freezeOccurrence(
+  pending: PendingSessionOccurrence,
+): DrumScheduledSessionOccurrence {
+  return Object.freeze({
+    id: pending.id,
+    sessionRevision: pending.sessionRevision,
+    transportRevision: pending.transportRevision,
+    trackId: pending.trackId,
+    sourceHitId: pending.sourceHitId,
+    gmKey: pending.gmKey,
+    velocity: pending.velocity,
+    ...(pending.articulation === undefined
+      ? {}
+      : { articulation: pending.articulation }),
+    authoredBeat: pending.authoredBeat,
+    timelineBeat: pending.timelineBeat,
+    loopIteration: pending.loopIteration,
+    performanceTimestampMs: pending.performanceTimestampMs,
+    atContextTime: pending.atContextTime,
+    triggerTruth: pending.triggerTruth,
+    chokeTruth: pending.chokeTruth,
+  })
+}
+
 /** Schedule canonical MIDI/GP percussion without constructing audio resources. */
 export function createDrumSessionScheduler(
   options: DrumSessionSchedulerOptions,
 ): DrumSessionScheduler {
   const listeners = new Set<() => void>()
   const occurrenceKeys = new Map<string, number>()
+  const pendingActions: ResolvedSessionAction[] = []
   const defaultLookaheadMs = boundedLookahead(
     options.lookaheadMs ??
       (options.humanize === undefined
@@ -293,6 +385,8 @@ export function createDrumSessionScheduler(
   let waitingForAudioClock = false
   let suppressTransportReaction = false
   let disposed = false
+  let nextActionSequence = 0
+  let nextOccurrenceSequence = 0
 
   const emit = (): void => {
     for (const listener of listeners) listener()
@@ -308,6 +402,9 @@ export function createDrumSessionScheduler(
 
   const invalidateQueue = (panic: boolean): void => {
     occurrenceKeys.clear()
+    pendingActions.length = 0
+    nextActionSequence = 0
+    nextOccurrenceSequence = 0
     scheduledOccurrenceCount = 0
     overloadOmittedOccurrenceCount = 0
     deferredOccurrenceCount = 0
@@ -364,6 +461,81 @@ export function createDrumSessionScheduler(
       ...(truth === 'synth-fallback'
         ? { synthFallback: triggerCounts.synthFallback + 1 }
         : { [truth]: triggerCounts[truth] + 1 }),
+    }
+  }
+
+  const flushPendingActions = (
+    throughContextTime: number,
+  ): {
+    readonly occurrences: readonly DrumScheduledSessionOccurrence[]
+    readonly diagnosticChanged: boolean
+  } => {
+    pendingActions.sort(
+      (left, right) =>
+        left.atContextTime - right.atContextTime ||
+        left.semanticTiePriority - right.semanticTiePriority ||
+        left.sequence - right.sequence,
+    )
+    let dueCount = 0
+    while (dueCount < pendingActions.length) {
+      const actionContextTime =
+        pendingActions[dueCount]?.atContextTime ?? Infinity
+      // Authored windows are end-exclusive. An undiscovered hit exactly on a
+      // finite watermark may tie this action (after Feel or a choke tail), so
+      // only a terminal Infinity drain may include the boundary itself.
+      if (
+        throughContextTime !== Infinity &&
+        actionContextTime >= throughContextTime
+      ) {
+        break
+      }
+      dueCount += 1
+    }
+    const dueActions = pendingActions.splice(0, dueCount)
+    const dispatchedOccurrences: PendingSessionOccurrence[] = []
+    let diagnosticChanged = false
+    for (const action of dueActions) {
+      if (action.kind === 'choke') {
+        try {
+          action.occurrence.chokeTruth =
+            options.player.choke?.(action.request) ?? 'unreported'
+        } catch {
+          action.occurrence.chokeTruth = 'dropped'
+        }
+        if (
+          action.occurrence.mainDispatched &&
+          lastOccurrence?.id === action.occurrence.id
+        ) {
+          lastOccurrence = freezeOccurrence(action.occurrence)
+          diagnosticChanged = true
+        }
+        continue
+      }
+      let truth: DrumSessionTriggerTruth = 'dropped'
+      try {
+        truth = truthFromPlayerResult(options.player.trigger(action.request))
+      } catch {
+        // A failed grace stays decorative; a failed main is reported below.
+      }
+      if (action.occurrence !== null && !action.occurrence.mainDispatched) {
+        action.occurrence.triggerTruth = truth
+        action.occurrence.mainDispatched = true
+        incrementTruth(truth)
+        dispatchedOccurrences.push(action.occurrence)
+      }
+    }
+    dispatchedOccurrences.sort(
+      (left, right) => left.discoverySequence - right.discoverySequence,
+    )
+    const occurrences = dispatchedOccurrences.map((pending) => {
+      const occurrence = freezeOccurrence(pending)
+      scheduledOccurrenceCount += 1
+      lastOccurrence = occurrence
+      return occurrence
+    })
+    return {
+      occurrences: Object.freeze(occurrences),
+      diagnosticChanged,
     }
   }
 
@@ -622,6 +794,10 @@ export function createDrumSessionScheduler(
           occurrenceKeys.set(occurrenceKey, hitTimelineBeat)
           let playedVelocity = hit.velocity
           let playedContextTime = atContextTime
+          const earliestHumanizedContextTime = Math.max(
+            0,
+            atContextTime - MAX_DRUM_SESSION_ACTION_EARLY_MS / 1_000,
+          )
           let ornaments: DrumSessionHumanizeDecision['ornaments'] = []
           if (options.humanize !== undefined) {
             try {
@@ -629,13 +805,16 @@ export function createDrumSessionScheduler(
                 gmKey: hit.gmKey,
                 velocity: hit.velocity,
                 startBeat: hit.startBeat,
+                ...(hit.articulation === undefined
+                  ? {}
+                  : { articulation: hit.articulation }),
                 timelineBeat: hitTimelineBeat,
                 loopIteration: window.loopIteration,
               })
               if (decision !== null) {
                 if (Number.isFinite(decision.timeOffsetMs)) {
                   playedContextTime = Math.max(
-                    0,
+                    earliestHumanizedContextTime,
                     atContextTime + decision.timeOffsetMs / 1_000,
                   )
                 }
@@ -657,47 +836,8 @@ export function createDrumSessionScheduler(
             }
           }
           const hitSourceId = `authored:${hit.trackId}:${hit.sourceHitId ?? hit.sequence}`
-          for (const ornament of ornaments) {
-            if (
-              !Number.isFinite(ornament.leadMs) ||
-              !Number.isFinite(ornament.velocity)
-            ) {
-              continue
-            }
-            try {
-              options.player.trigger({
-                gmKey: hit.gmKey,
-                velocity: Math.min(
-                  127,
-                  Math.max(1, Math.round(ornament.velocity)),
-                ),
-                atContextTime: Math.max(
-                  0,
-                  playedContextTime - ornament.leadMs / 1_000,
-                ),
-                sourceId: `${hitSourceId}:ornament`,
-                lane: 'authored',
-              })
-            } catch {
-              // Ornaments are decoration; a failed grace never blocks the hit.
-            }
-          }
-          let truth: DrumSessionTriggerTruth = 'dropped'
-          try {
-            truth = truthFromPlayerResult(
-              options.player.trigger({
-                gmKey: hit.gmKey,
-                velocity: playedVelocity,
-                atContextTime: playedContextTime,
-                sourceId: hitSourceId,
-                lane: 'authored',
-              }),
-            )
-          } catch {
-            truth = 'dropped'
-          }
-          incrementTruth(truth)
-          const occurrence = Object.freeze({
+          const pendingOccurrence: PendingSessionOccurrence = {
+            discoverySequence: nextOccurrenceSequence++,
             id: occurrenceKey,
             sessionRevision: currentSessionRevision,
             transportRevision: currentTransportRevision,
@@ -705,20 +845,124 @@ export function createDrumSessionScheduler(
             sourceHitId: hit.sourceHitId,
             gmKey: hit.gmKey,
             velocity: playedVelocity,
+            ...(hit.articulation === undefined
+              ? {}
+              : { articulation: hit.articulation }),
             authoredBeat: hit.startBeat,
             timelineBeat: hitTimelineBeat,
             loopIteration: window.loopIteration,
             performanceTimestampMs,
             atContextTime: playedContextTime,
-            triggerTruth: truth,
+            triggerTruth: 'dropped',
+            chokeTruth: hit.articulation === 'choke' ? 'unreported' : null,
+            mainDispatched: false,
+          }
+          for (const ornament of ornaments) {
+            if (
+              !Number.isFinite(ornament.leadMs) ||
+              !Number.isFinite(ornament.velocity)
+            ) {
+              continue
+            }
+            const ornamentContextTime = Math.max(
+              earliestHumanizedContextTime,
+              playedContextTime - ornament.leadMs / 1_000,
+            )
+            pendingActions.push({
+              kind: 'trigger',
+              atContextTime: ornamentContextTime,
+              semanticTiePriority: attackTiePriority(
+                hit.gmKey,
+                hit.articulation,
+              ),
+              sequence: nextActionSequence++,
+              request: {
+                gmKey: hit.gmKey,
+                velocity: Math.min(
+                  127,
+                  Math.max(1, Math.round(ornament.velocity)),
+                ),
+                atContextTime: ornamentContextTime,
+                sourceId: `${hitSourceId}:ornament`,
+                lane: 'authored',
+              },
+              occurrence: null,
+            })
+          }
+          pendingActions.push({
+            kind: 'trigger',
+            atContextTime: playedContextTime,
+            semanticTiePriority: attackTiePriority(hit.gmKey, hit.articulation),
+            sequence: nextActionSequence++,
+            request: {
+              gmKey: hit.gmKey,
+              velocity: playedVelocity,
+              atContextTime: playedContextTime,
+              sourceId: hitSourceId,
+              lane: 'authored',
+            },
+            occurrence: pendingOccurrence,
           })
+          if (hit.articulation === 'choke') {
+            const chokeContextTime =
+              playedContextTime + AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS
+            pendingActions.push({
+              kind: 'choke',
+              atContextTime: chokeContextTime,
+              // A release exactly on a restrike boundary belongs to the old
+              // voice group; run it first so the new attack remains audible.
+              semanticTiePriority: -1,
+              sequence: nextActionSequence++,
+              request: {
+                gmKey: hit.gmKey,
+                atContextTime: chokeContextTime,
+                sourceId: `${hitSourceId}:choke`,
+                lane: 'authored',
+              },
+              occurrence: pendingOccurrence,
+            })
+          }
           scheduledThisPass += 1
-          scheduledOccurrenceCount += 1
-          lastOccurrence = occurrence
-          scheduled.push(occurrence)
         }
         hitIndex = groupEnd
       }
+    }
+    // rAF lookaheads overlap. Keep actions across calls until the authored
+    // horizon is far enough ahead that no unseen Feel/grace action can cross
+    // this watermark and alter choke-group order.
+    let flushThroughContextTime: number | null = null
+    if (!waitingForAudioClock && pendingActions.length > 0) {
+      if (lastWindow?.endsAt === 'duration') {
+        flushThroughContextTime = Infinity
+      } else if (lastWindow !== undefined) {
+        let horizonContextTime: number | null = null
+        try {
+          horizonContextTime = options.performanceTimestampToContextTime(
+            lastWindow.toTimestampMs,
+          )
+        } catch {
+          horizonContextTime = null
+        }
+        if (
+          horizonContextTime === null ||
+          !Number.isFinite(horizonContextTime) ||
+          horizonContextTime < 0
+        ) {
+          waitingForAudioClock = true
+        } else {
+          flushThroughContextTime =
+            horizonContextTime -
+            (options.humanize === undefined
+              ? 0
+              : MAX_DRUM_SESSION_ACTION_EARLY_MS / 1_000)
+        }
+      }
+    }
+    let diagnosticChanged = false
+    if (flushThroughContextTime !== null) {
+      const flushed = flushPendingActions(flushThroughContextTime)
+      scheduled.push(...flushed.occurrences)
+      diagnosticChanged = flushed.diagnosticChanged
     }
     deferredRanges = Object.freeze(nextDeferredRanges)
     if (
@@ -726,7 +970,8 @@ export function createDrumSessionScheduler(
       waitingForAudioClock ||
       stoppedEarly ||
       overloadOmittedOccurrenceCount > 0 ||
-      capacityTruthChanged
+      capacityTruthChanged ||
+      diagnosticChanged
     ) {
       emit()
     }

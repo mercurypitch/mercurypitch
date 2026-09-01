@@ -48,28 +48,40 @@ describe('velocityGain', () => {
       [127, 0.5],
     ] as const
 
-    expect(velocityGain('kick', 80, flatCurve, 0.5)).toBeCloseTo(1, 8)
-    expect(velocityGain('kick', 80, flatCurve, 0.9)).toBeCloseTo(
-      10 ** (-3 / 20),
+    expect(velocityGain('kick', 80, flatCurve, 1)).toBeCloseTo(0.5, 8)
+    expect(velocityGain('kick', 80, flatCurve, 0.9)).toBeCloseTo(0.5 / 0.9, 8)
+    expect(velocityGain('kick', 80, flatCurve, 0.1)).toBeCloseTo(
+      0.5 * 10 ** (3 / 20),
       8,
     )
-    expect(velocityGain('kick', 80, flatCurve, 0.1)).toBeCloseTo(
+    expect(0.9 * velocityGain('kick', 80, flatCurve, 0.9)).toBeCloseTo(0.5, 8)
+    expect(
+      velocityGain(
+        'kick',
+        1,
+        [
+          [1, 0.02],
+          [127, 1],
+        ],
+        1,
+      ),
+    ).toBeCloseTo(0.02, 8)
+  })
+
+  it('caps power correction without lifting the velocity floor', () => {
+    const fullRange = [
+      [1, 0.02],
+      [127, 1],
+    ] as const
+
+    expect(velocityGain('kick', 1, fullRange, 0.1)).toBeCloseTo(
+      0.02 * 10 ** (3 / 20),
+      8,
+    )
+    expect(velocityGain('kick', 127, fullRange, 0.1)).toBeCloseTo(
       10 ** (3 / 20),
       8,
     )
-    expect(0.5 * velocityGain('kick', 80, flatCurve, 0.5)).toBeCloseTo(0.5, 8)
-    expect(
-      0.02 *
-        velocityGain(
-          'kick',
-          1,
-          [
-            [1, 0.02],
-            [127, 1],
-          ],
-          0.02,
-        ),
-    ).toBeCloseTo(0.02, 8)
   })
 })
 

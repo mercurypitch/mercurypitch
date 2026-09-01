@@ -24,6 +24,7 @@ function resource(
     roundRobin,
     chokeGroup: null,
     chokes: [],
+    readiness: 'ready',
     path,
     mimeType: 'audio/mpeg',
     encodedBytes: 1,

@@ -6,6 +6,7 @@
 // may only expose resource paths after this validator accepts the whole catalog.
 
 import type { DrumVoiceId } from '@/lib/drum-voices'
+import { DRUM_VELOCITY_CONTRACT_VERSION } from './drum-velocity-contract.mjs'
 
 export const DRUM_KIT_CATALOG_SCHEMA_VERSION = 2
 
@@ -21,6 +22,7 @@ export type DrumKitId = (typeof DRUM_KIT_IDS)[number]
 export type SampledDrumKitId = Exclude<DrumKitId, 'mercury-synth' | 'circuit'>
 export type DrumKitEngine = 'sampled' | 'synth'
 export type DrumKitSynthModel = 'mercury' | 'circuit'
+export type DrumKitSampleStatus = 'ready' | 'reduced' | 'fallback'
 
 export const DRUM_KIT_ENCODED_FORMATS = Object.freeze([
   'mp3',
@@ -72,6 +74,8 @@ export interface DrumKitSampleResource {
   readonly roundRobin: number
   readonly chokeGroup: string | null
   readonly chokes: readonly string[]
+  /** Offline quality result; fallback resources are excluded in favor of synth. */
+  readonly readiness: DrumKitSampleStatus
   /** Content-hashed object key relative to the configured kit asset base. */
   readonly path: string
   readonly mimeType: 'audio/mpeg'
@@ -87,6 +91,7 @@ export interface DrumKitSampleResource {
 
 export interface GeneratedDrumKit {
   readonly version: string
+  readonly sampleStatus: DrumKitSampleStatus
   readonly publishedEncodedBytes: number
   readonly resources: readonly GeneratedDrumKitSampleResource[]
   readonly velcurve?: DrumKitVelocityCurves
@@ -127,6 +132,11 @@ const RESOURCE_ID = /^(classic-gm|studio|live):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
 const MIN_PLAYBACK_GAIN = 10 ** (-12 / 20)
 const MAX_PLAYBACK_GAIN = 10 ** (12 / 20)
 const PLAYBACK_GAIN_ROUNDING_TOLERANCE = 1e-8
+const SAMPLE_STATUSES: ReadonlySet<string> = new Set<DrumKitSampleStatus>([
+  'ready',
+  'reduced',
+  'fallback',
+])
 
 const DRUM_VOICE_IDS: ReadonlySet<string> = new Set<DrumVoiceId>([
   'kick',
@@ -425,11 +435,11 @@ function assertCatalogAudio(value: unknown, schemaVersion: number): void {
   }
 }
 
-function assertCatalogCalibration(value: unknown): void {
+function assertCatalogCalibration(value: unknown, schemaVersion: number): void {
   if (!isRecord(value)) {
     throw new Error('Invalid Drum Night catalog calibration')
   }
-  const fields = [
+  const legacyFields = [
     'hardOnsetThresholdDb',
     'transientFloorDb',
     'transientRelativeDb',
@@ -442,10 +452,66 @@ function assertCatalogCalibration(value: unknown): void {
     'maximumFullScalePeakDb',
     'targetTransientPeakDb',
   ] as const
+  const fields =
+    schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION
+      ? [
+          ...legacyFields,
+          'velocityContractVersion',
+          'targetToleranceDb',
+          'maximumUnmeasuredNoiseBoostDb',
+          'maximumAmplifiedNoiseDb',
+          'minimumSignalToNoiseDb',
+          'minimumReducedTransientPeakDb',
+          'maximumPowerSpreadDb',
+          'maximumCodecDeltaDb',
+          'minimumNoiseWindowMs',
+        ]
+      : legacyFields
   assertExactKeys(value, new Set(fields), 'catalog calibration')
   if (fields.some((field) => !Number.isFinite(value[field]))) {
     throw new Error('Invalid Drum Night catalog calibration')
   }
+  if (
+    schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION &&
+    (value.velocityContractVersion !== DRUM_VELOCITY_CONTRACT_VERSION ||
+      (value.maximumOnsetMs as number) < 0 ||
+      (value.maximumOnsetMs as number) > 20 ||
+      (value.maximumPlaybackGainDb as number) < 0 ||
+      (value.maximumPlaybackGainDb as number) > 12 ||
+      (value.targetToleranceDb as number) <= 0 ||
+      (value.targetToleranceDb as number) > 3 ||
+      (value.maximumUnmeasuredNoiseBoostDb as number) < 0 ||
+      (value.maximumUnmeasuredNoiseBoostDb as number) >
+        (value.maximumPlaybackGainDb as number) ||
+      (value.maximumAmplifiedNoiseDb as number) >= -40 ||
+      (value.minimumSignalToNoiseDb as number) < 24 ||
+      (value.minimumReducedTransientPeakDb as number) >
+        (value.targetTransientPeakDb as number) ||
+      (value.maximumLayerBoundaryDb as number) <= 0 ||
+      (value.maximumRoundRobinSpreadDb as number) <= 0 ||
+      (value.maximumPowerSpreadDb as number) <= 0 ||
+      (value.maximumCodecDeltaDb as number) <= 0 ||
+      (value.maximumCodecDeltaDb as number) > 3 ||
+      (value.minimumNoiseWindowMs as number) < 10 ||
+      (value.minimumNoiseWindowMs as number) > 100 ||
+      (value.maximumFullScalePeakDb as number) > -1 ||
+      (value.targetTransientPeakDb as number) >
+        (value.maximumFullScalePeakDb as number))
+  ) {
+    throw new Error('Unsafe Drum Night catalog calibration')
+  }
+}
+
+function sampleStatusForResources(
+  resources: readonly GeneratedDrumKitSampleResource[],
+): DrumKitSampleStatus {
+  if (resources.some((resource) => resource.readiness === 'fallback')) {
+    return 'fallback'
+  }
+  if (resources.some((resource) => resource.readiness === 'reduced')) {
+    return 'reduced'
+  }
+  return 'ready'
 }
 
 /** Validate generated metadata before any resource path reaches the player. */
@@ -485,7 +551,7 @@ export function assertGeneratedDrumKitCatalog(
   }
   assertCatalogToolchain(value.toolchain)
   assertCatalogAudio(value.audio, value.schemaVersion)
-  assertCatalogCalibration(value.calibration)
+  assertCatalogCalibration(value.calibration, value.schemaVersion)
   const kits = value.kits
   if (!isRecord(kits)) {
     throw new Error('Invalid Drum Night kit catalog')
@@ -512,16 +578,27 @@ export function assertGeneratedDrumKitCatalog(
       !isRecord(kit) ||
       typeof kit.version !== 'string' ||
       !/^v[1-9]\d*$/.test(kit.version) ||
+      (catalog.schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION &&
+        !SAMPLE_STATUSES.has(kit.sampleStatus)) ||
       !Array.isArray(kit.resources)
     ) {
       throw new Error(`Invalid Drum Night kit metadata: ${kitId}`)
     }
     assertExactKeys(
       kit,
-      new Set(['version', 'publishedEncodedBytes', 'resources', 'velcurve']),
+      new Set([
+        'version',
+        'sampleStatus',
+        'publishedEncodedBytes',
+        'resources',
+        'velcurve',
+      ]),
       `kit ${kitId}`,
     )
-    if (catalog.schemaVersion === 1 && kit.velcurve !== undefined) {
+    if (
+      catalog.schemaVersion === 1 &&
+      (kit.velcurve !== undefined || kit.sampleStatus !== undefined)
+    ) {
       throw new Error(`Drum Night v2 field in schema 1 kit: ${kitId}`)
     }
     if (kit.velcurve !== undefined) {
@@ -534,7 +611,12 @@ export function assertGeneratedDrumKitCatalog(
       throw new Error(`Invalid Drum Night kit byte count: ${kitId}`)
     }
     if (kitId === 'mercury-synth') {
-      if (kit.resources.length !== 0 || kit.publishedEncodedBytes !== 0) {
+      if (
+        kit.resources.length !== 0 ||
+        kit.publishedEncodedBytes !== 0 ||
+        (catalog.schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION &&
+          kit.sampleStatus !== 'ready')
+      ) {
         throw new Error('Mercury Synth must remain a zero-download kit')
       }
       continue
@@ -556,6 +638,7 @@ export function assertGeneratedDrumKitCatalog(
           'roundRobin',
           'chokeGroup',
           'chokes',
+          'readiness',
           'path',
           'mimeType',
           'encodedBytes',
@@ -610,6 +693,8 @@ export function assertGeneratedDrumKitCatalog(
           (choke) => typeof choke !== 'string' || choke.trim() === '',
         ) ||
         new Set(resource.chokes).size !== resource.chokes.length ||
+        (catalog.schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION &&
+          !SAMPLE_STATUSES.has(resource.readiness)) ||
         (resource.power !== undefined &&
           (!Number.isFinite(resource.power) ||
             resource.power <= 0 ||
@@ -638,7 +723,9 @@ export function assertGeneratedDrumKitCatalog(
       )
       if (
         catalog.schemaVersion === 1 &&
-        (resource.power !== undefined || resource.formats !== undefined)
+        (resource.power !== undefined ||
+          resource.formats !== undefined ||
+          resource.readiness !== undefined)
       ) {
         throw new Error(
           `Drum Night v2 field in schema 1 resource: ${resource.id}`,
@@ -660,6 +747,12 @@ export function assertGeneratedDrumKitCatalog(
     }
     if (encodedBytes !== kit.publishedEncodedBytes) {
       throw new Error(`Drum Night kit byte total mismatch: ${kitId}`)
+    }
+    if (
+      catalog.schemaVersion === DRUM_KIT_CATALOG_SCHEMA_VERSION &&
+      kit.sampleStatus !== sampleStatusForResources(kit.resources)
+    ) {
+      throw new Error(`Drum Night kit sample status mismatch: ${kitId}`)
     }
   }
 }

@@ -275,23 +275,93 @@ describe('scoreToMidiSong', () => {
     })
   })
 
+  it('retains authored percussion accents independently from an audible modern choke strike', () => {
+    const score = scoreFromTex('. 3.3.4 5.3.4 7.3.4 9.3.4')
+    const track = score.tracks[0]
+    const staff = track.staves[0]
+    const notes = staff.bars[0].voices[0].beats.map((beat) => beat.notes[0])
+    staff.isPercussion = true
+    const rideChoke = new alphaTab.model.InstrumentArticulation(
+      'Ride choke',
+      1,
+      51,
+    )
+    rideChoke.id = 94
+    track.percussionArticulations = [rideChoke]
+    const accents = [
+      alphaTab.model.AccentuationType.None,
+      alphaTab.model.AccentuationType.Normal,
+      alphaTab.model.AccentuationType.Heavy,
+      alphaTab.model.AccentuationType.Tenuto,
+    ]
+    notes.forEach((note, index) => {
+      note.percussionArticulation = 0
+      note.dynamics = alphaTab.model.DynamicValue.F
+      note.accentuated = accents[index]
+    })
+
+    const mapped = scoreToMidiSong(score).tracks[0]
+    if (mapped.kind !== 'percussion') throw new Error('Expected drums')
+
+    expect(
+      mapped.percussionHits.map((hit) => ({
+        gmKey: hit.gmKey,
+        velocity: hit.velocity,
+        accent: hit.accent,
+        articulation: hit.articulation,
+      })),
+    ).toEqual([
+      {
+        gmKey: 51,
+        velocity: 95,
+        accent: undefined,
+        articulation: 'choke',
+      },
+      {
+        gmKey: 51,
+        velocity: 111,
+        accent: 'normal',
+        articulation: 'choke',
+      },
+      {
+        gmKey: 51,
+        velocity: 127,
+        accent: 'heavy',
+        articulation: 'choke',
+      },
+      {
+        gmKey: 51,
+        velocity: 95,
+        accent: 'tenuto',
+        articulation: 'choke',
+      },
+    ])
+    expect(mapped.percussionHits[0]).not.toHaveProperty('accent')
+  })
+
   it('resolves legacy direct percussion ids and reports unknown ones', () => {
-    const score = scoreFromTex('. 3.3.4 5.3.4')
+    const score = scoreFromTex('. 3.3.4 5.3.4 7.3.4')
     const track = score.tracks[0]
     const staff = track.staves[0]
     const beats = staff.bars[0].voices[0].beats
     staff.isPercussion = true
     track.percussionArticulations = []
     beats[0].notes[0].percussionArticulation = 91
-    beats[1].notes[0].percussionArticulation = 32
+    beats[1].notes[0].percussionArticulation = 94
+    beats[2].notes[0].percussionArticulation = 32
 
     const mapped = scoreToMidiSong(score).tracks[0]
     if (mapped.kind !== 'percussion') throw new Error('Expected drums')
 
-    expect(mapped.percussionHits).toHaveLength(1)
+    expect(mapped.percussionHits).toHaveLength(2)
     expect(mapped.percussionHits[0]).toMatchObject({
       gmKey: 38,
       source: { articulationId: 91, label: 'Snare rim shot' },
+    })
+    expect(mapped.percussionHits[1]).toMatchObject({
+      gmKey: 51,
+      articulation: 'choke',
+      source: { articulationId: 94, label: 'Ride choke' },
     })
     expect(mapped.droppedHitCount).toBe(1)
   })

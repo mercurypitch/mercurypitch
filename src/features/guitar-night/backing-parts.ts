@@ -157,6 +157,9 @@ export function backingPercussion(
         startBeat: hit.startBeat,
         velocity: hit.velocity,
         ...(hit.id === undefined ? {} : { sourceId: hit.id }),
+        ...(hit.articulation === undefined
+          ? {}
+          : { articulation: hit.articulation }),
       })
     }
   }

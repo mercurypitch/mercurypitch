@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import type { MidiSongPercussionHit } from '@/lib/midi-song'
 import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, normalizeMidiSong, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
@@ -374,6 +375,72 @@ describe('normalizeMidiSong', () => {
       percussionHits: [{ gmKey: 38, startBeat: 0, velocity: 96 }],
       droppedHitCount: 5,
     })
+  })
+
+  it('keeps legacy strikes and normalizes optional authored percussion notation', () => {
+    const invalidAccent = {
+      gmKey: 42,
+      startBeat: 4,
+      velocity: 87,
+      accent: 'invented',
+    } as unknown as MidiSongPercussionHit
+    const invalidArticulation = {
+      gmKey: 57,
+      startBeat: 5,
+      velocity: 91,
+      articulation: 'mute-only',
+    } as unknown as MidiSongPercussionHit
+
+    const normalized = normalizeMidiSong({
+      bpm: 120,
+      tracks: [
+        {
+          id: 'drums',
+          kind: 'percussion',
+          name: 'Drums',
+          instrumentName: 'General MIDI Drum Kit',
+          noteCount: 7,
+          notes: [],
+          percussionHits: [
+            { gmKey: 36, startBeat: 0, velocity: 79 },
+            { gmKey: 38, startBeat: 1, velocity: 95, accent: 'normal' },
+            {
+              gmKey: 49,
+              startBeat: 2,
+              velocity: 127,
+              accent: 'heavy',
+              articulation: 'choke',
+            },
+            { gmKey: 51, startBeat: 3, velocity: 95, accent: 'tenuto' },
+            invalidAccent,
+            invalidArticulation,
+            {
+              gmKey: 38,
+              startBeat: 6,
+              velocity: 101,
+              articulation: 'choke',
+            },
+          ],
+          droppedHitCount: 0,
+        },
+      ],
+    })
+
+    const drums = normalized.tracks.find(isPercussionMidiSongTrack)
+    expect(drums?.percussionHits).toEqual([
+      { gmKey: 36, startBeat: 0, velocity: 79 },
+      { gmKey: 38, startBeat: 1, velocity: 95, accent: 'normal' },
+      {
+        gmKey: 49,
+        startBeat: 2,
+        velocity: 127,
+        accent: 'heavy',
+        articulation: 'choke',
+      },
+      { gmKey: 51, startBeat: 3, velocity: 95, accent: 'tenuto' },
+      { gmKey: 42, startBeat: 4, velocity: 87 },
+    ])
+    expect(drums?.droppedHitCount).toBe(2)
   })
 
   it('lets a retained GM program override misleading legacy labels', () => {

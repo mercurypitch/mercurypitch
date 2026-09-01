@@ -6,9 +6,9 @@ import { createHash, webcrypto } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumKitPlayerPort } from '../runtime/drum-runtime-types'
 import { velocityGain } from './drum-hit-dynamics'
-import { DRUM_KIT_CATALOG, drumKitResourcesForHit } from './drum-kit-manifest'
+import { DRUM_KIT_CATALOG, drumKitManifest, drumKitResourcesForHit, } from './drum-kit-manifest'
 import opusCatalog from './drum-kit-opus.generated.json'
-import { createDrumKitPlayer, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
+import { createDrumKitPlayer, drumKitPlaybackResources, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
 
 interface ParameterEvent {
   kind: 'cancel' | 'exponential' | 'hold' | 'set' | 'target'
@@ -300,6 +300,18 @@ function harness(
       failFetch = value
     },
   }
+}
+
+function baselinePlaybackResourceCount(
+  kitId: 'classic-gm' | 'live' | 'studio',
+): number {
+  return new Set(
+    [36, 38, 42, 44, 46].flatMap((gmKey) =>
+      drumKitPlaybackResources(kitId, gmKey, 104).map(
+        (resource) => resource.id,
+      ),
+    ),
+  ).size
 }
 
 describe('createDrumKitPlayer', () => {
@@ -782,6 +794,163 @@ describe('createDrumKitPlayer', () => {
     })
   })
 
+  it('reports lane-safe GM cymbal release truth without overclaiming idle or fallback', async () => {
+    const { context, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+    await player.prewarm([{ gmKey: 49, velocity: 112 }])
+
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'live' })).toBe(
+      'sampled',
+    )
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+    const liveCrash = context.sources.at(-2)!
+    const authoredCrash = context.sources.at(-1)!
+
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 11.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+    expect(liveCrash.stops).toEqual([])
+    expect(authoredCrash.stops[0]).toBeCloseTo(11.185)
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('choked')
+    expect(authoredCrash.stops[1]).toBeCloseTo(10.075)
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('idle')
+    expect(player.choke({ gmKey: 38, lane: 'authored' })).toBe('unmapped')
+
+    await player.selectKit('mercury-synth')
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('idle')
+  })
+
+  it('lets panic override a future sample choke before reopening the lane', async () => {
+    const { context, player } = harness({ maxVoices: 1 })
+    await player.activate()
+    await player.selectKit('classic-gm')
+    await player.prewarm([{ gmKey: 49, velocity: 112 }])
+
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 112,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('sampled')
+    const staleCrash = context.sources.at(-1)!
+    const staleGate = voiceChain(staleCrash).gain
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+
+    player.panic('authored')
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+
+    expect(staleCrash.stops[1]).toBeCloseTo(10.15)
+    expect(staleGate.gain.events).toContainEqual({ kind: 'hold', at: 10 })
+    expect(staleGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+    expect(context.sources.at(-1)?.starts).toEqual([10])
+    expect(context.sources.at(-1)?.stops).toEqual([])
+  })
+
+  it('chokes tracked Mercury cymbals and same-time open hats in both fallback paths', async () => {
+    vi.useFakeTimers()
+    const { context, player } = harness()
+    await player.activate()
+
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 108,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    const mercuryCrashGate = context.gains[8]!
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+    expect(mercuryCrashGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 12.11,
+    })
+    player.panic('authored')
+    expect(mercuryCrashGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+    expect(player.trigger({ gmKey: 49, velocity: 108, lane: 'authored' })).toBe(
+      'synth-fallback',
+    )
+    vi.advanceTimersByTime(151)
+    expect(mercuryCrashGate.disconnect).toHaveBeenCalledOnce()
+
+    const openHatGainIndex = context.gains.length
+    expect(
+      player.trigger({
+        gmKey: 46,
+        velocity: 104,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    const mercuryOpenHatGate = context.gains[openHatGainIndex]!
+    expect(
+      player.trigger({
+        gmKey: 42,
+        velocity: 104,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    expect(mercuryOpenHatGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 12,
+    })
+
+    await player.selectKit('classic-gm')
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 108,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+
+    player.dispose()
+    vi.runAllTimers()
+    vi.useRealTimers()
+  })
+
   it('steals the oldest live voice without allowing the active set past its cap', async () => {
     const { context, player } = harness({ maxVoices: 2 })
     await player.activate()
@@ -818,7 +987,7 @@ describe('createDrumKitPlayer', () => {
       preparedSamples: 2,
       plannedSamples: 5,
       fallbackReady: true,
-      sampledReady: true,
+      sampledReady: false,
       error: expect.stringContaining('Mercury Synth'),
     })
   })
@@ -858,13 +1027,19 @@ describe('createDrumKitPlayer', () => {
 
     const secondSelection = player.selectKit('studio')
     await Promise.all([firstSelection, secondSelection])
-    expect(fetchArrayBuffer).toHaveBeenCalledTimes(12)
+    const planned = baselinePlaybackResourceCount('studio')
+    expect(drumKitPlaybackResources('studio', 42, 96)).toEqual([])
+    expect(drumKitManifest('studio').sampleStatus).toBe('fallback')
+    expect(fetchArrayBuffer).toHaveBeenCalledTimes(
+      firstSelectionSignals.length + planned,
+    )
     expect(player.snapshot()).toMatchObject({
       selectedKitId: 'studio',
       status: 'ready',
-      sampledReady: true,
-      preparedSamples: 10,
-      plannedSamples: 10,
+      sampleStatus: 'fallback',
+      sampledReady: false,
+      preparedSamples: planned,
+      plannedSamples: planned,
       error: null,
     })
   })
@@ -938,11 +1113,12 @@ describe('createDrumKitPlayer', () => {
 
     setFailFetch(false)
     await player.retry()
+    const planned = baselinePlaybackResourceCount('studio')
     expect(player.snapshot()).toMatchObject({
       status: 'ready',
-      sampledReady: true,
-      preparedSamples: 10,
-      plannedSamples: 10,
+      sampledReady: false,
+      preparedSamples: planned,
+      plannedSamples: planned,
       error: null,
     })
 
@@ -956,7 +1132,7 @@ describe('createDrumKitPlayer', () => {
     expect(player.snapshot().preparedSamples).toBe(
       player.snapshot().plannedSamples,
     )
-    expect(player.snapshot().preparedSamples).toBe(10)
+    expect(player.snapshot().preparedSamples).toBe(planned)
   })
 
   it('distinguishes unknown GM values from unsupported auxiliary percussion', async () => {
@@ -1104,6 +1280,10 @@ describe('playback intelligence', () => {
     const { context, player } = harness()
     await player.activate()
     await player.selectKit('classic-gm')
+    await player.prewarm([
+      { gmKey: 38, velocity: 40 },
+      { gmKey: 38, velocity: 127 },
+    ])
 
     expect(player.trigger({ gmKey: 38, velocity: 40 })).toBe('sampled')
     const soft = voiceChain(context.sources[0])
@@ -1168,9 +1348,38 @@ describe('playback intelligence', () => {
 
     const buffers = new Set<AudioBuffer | null>()
     for (let index = 0; index < 8; index += 1) {
-      expect(player.trigger({ gmKey: 42, velocity: 104 })).toBe('sampled')
+      expect(player.trigger({ gmKey: 46, velocity: 104 })).toBe('sampled')
       buffers.add(context.sources[context.sources.length - 1].buffer)
     }
     expect(buffers.size).toBeGreaterThan(1)
+  })
+
+  it('prewarms and selects reduced low versus ready high velocity layers', async () => {
+    const { fetchArrayBuffer, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+    const low = drumKitPlaybackResources('classic-gm', 36, 40)
+    const high = drumKitPlaybackResources('classic-gm', 36, 112)
+    const all = drumKitManifest('classic-gm').resources.filter((resource) =>
+      resource.gmKeys.includes(36),
+    )
+    expect(low.every((resource) => resource.readiness === 'reduced')).toBe(true)
+    expect(high.every((resource) => resource.readiness === 'ready')).toBe(true)
+    const ready = high[0]!
+    const reduced = all.find((resource) => resource.readiness === 'reduced')!
+    expect(
+      fetchArrayBuffer.mock.calls.some(([url]) => url.endsWith(ready.path)),
+    ).toBe(true)
+    expect(
+      fetchArrayBuffer.mock.calls.some(([url]) => url.endsWith(reduced.path)),
+    ).toBe(false)
+
+    await player.prewarm([{ gmKey: 36, velocity: 40 }])
+    const fetchedUrls = fetchArrayBuffer.mock.calls.map(([url]) => url)
+
+    expect(fetchedUrls.some((url) => url.endsWith(ready.path))).toBe(true)
+    expect(fetchedUrls.some((url) => url.endsWith(reduced.path))).toBe(true)
+    expect(player.trigger({ gmKey: 36, velocity: 40 })).toBe('sampled')
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
   })
 })

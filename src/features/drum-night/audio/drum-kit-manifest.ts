@@ -15,6 +15,7 @@ export * from './drum-kit-catalog-schema'
 
 type DrumKitId = CatalogSchema.DrumKitId
 type DrumKitEngine = CatalogSchema.DrumKitEngine
+type DrumKitSampleStatus = CatalogSchema.DrumKitSampleStatus
 type DrumKitSynthModel = CatalogSchema.DrumKitSynthModel
 type DrumKitSampleResource = CatalogSchema.DrumKitSampleResource
 type DrumKitVelocityCurves = CatalogSchema.DrumKitVelocityCurves
@@ -28,6 +29,7 @@ type RuntimeDrumKitSampleResource = Omit<
 
 interface RuntimeDrumKit {
   readonly version: string
+  readonly sampleStatus: DrumKitSampleStatus
   readonly publishedEncodedBytes: number
   readonly resources: readonly RuntimeDrumKitSampleResource[]
   readonly velcurve?: DrumKitVelocityCurves
@@ -59,6 +61,7 @@ export interface DrumKitManifest {
   readonly engine: DrumKitEngine
   readonly synthModel: DrumKitSynthModel | null
   readonly version: string
+  readonly sampleStatus: DrumKitSampleStatus
   readonly license: DrumKitLicense
   readonly resources: readonly DrumKitSampleResource[]
   readonly publishedEncodedBytes: number
@@ -75,6 +78,15 @@ const RUNTIME_KIT_IDS = Object.freeze([
 const RUNTIME_RESOURCE_PATH =
   /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
 const SHA256 = /^[a-f0-9]{64}$/
+const SAMPLE_STATUSES: ReadonlySet<string> = new Set<DrumKitSampleStatus>([
+  'ready',
+  'reduced',
+  'fallback',
+])
+
+function isSampleStatus(value: unknown): value is DrumKitSampleStatus {
+  return typeof value === 'string' && SAMPLE_STATUSES.has(value)
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -113,10 +125,17 @@ function assertRuntimeDrumKitCatalog(
       !isRecord(kit) ||
       !hasOnlyKeys(
         kit,
-        new Set(['version', 'publishedEncodedBytes', 'resources', 'velcurve']),
+        new Set([
+          'version',
+          'sampleStatus',
+          'publishedEncodedBytes',
+          'resources',
+          'velcurve',
+        ]),
       ) ||
       typeof kit.version !== 'string' ||
       !/^v[1-9]\d*$/.test(kit.version) ||
+      !isSampleStatus(kit.sampleStatus) ||
       !Number.isSafeInteger(kit.publishedEncodedBytes) ||
       (kit.publishedEncodedBytes as number) < 0 ||
       !Array.isArray(kit.resources)
@@ -124,13 +143,18 @@ function assertRuntimeDrumKitCatalog(
       throw new Error(`Invalid Drum Night runtime kit: ${kitId}`)
     }
     if (kitId === 'mercury-synth') {
-      if (kit.resources.length !== 0 || kit.publishedEncodedBytes !== 0) {
+      if (
+        kit.resources.length !== 0 ||
+        kit.publishedEncodedBytes !== 0 ||
+        kit.sampleStatus !== 'ready'
+      ) {
         throw new Error('Mercury Synth runtime kit must remain zero-download')
       }
       continue
     }
 
     let encodedBytes = 0
+    let derivedSampleStatus: DrumKitSampleStatus = 'ready'
     for (const resource of kit.resources) {
       if (
         !isRecord(resource) ||
@@ -146,6 +170,7 @@ function assertRuntimeDrumKitCatalog(
             'roundRobin',
             'chokeGroup',
             'chokes',
+            'readiness',
             'path',
             'mimeType',
             'encodedBytes',
@@ -177,6 +202,7 @@ function assertRuntimeDrumKitCatalog(
         resource.chokes.some(
           (choke) => typeof choke !== 'string' || choke.trim() === '',
         ) ||
+        !isSampleStatus(resource.readiness) ||
         typeof resource.path !== 'string' ||
         !RUNTIME_RESOURCE_PATH.test(resource.path) ||
         !resource.path.startsWith(`${kitId}/${kit.version}/`) ||
@@ -204,9 +230,20 @@ function assertRuntimeDrumKitCatalog(
       resourceIds.add(resource.id)
       resourcePaths.add(resource.path)
       encodedBytes += resource.encodedBytes as number
+      if (resource.readiness === 'fallback') {
+        derivedSampleStatus = 'fallback'
+      } else if (
+        resource.readiness === 'reduced' &&
+        derivedSampleStatus === 'ready'
+      ) {
+        derivedSampleStatus = 'reduced'
+      }
     }
     if (encodedBytes !== kit.publishedEncodedBytes) {
       throw new Error(`Drum Night runtime byte total mismatch: ${kitId}`)
+    }
+    if (kit.sampleStatus !== derivedSampleStatus) {
+      throw new Error(`Drum Night runtime sample status mismatch: ${kitId}`)
     }
   }
 }
@@ -316,6 +353,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       engine: 'synth',
       synthModel: 'mercury',
       version: GENERATED.kits['mercury-synth'].version,
+      sampleStatus: 'ready',
       license: LICENSES.synth,
       resources: Object.freeze([]),
       publishedEncodedBytes: 0,
@@ -328,6 +366,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       engine: 'synth',
       synthModel: 'circuit',
       version: 'v1',
+      sampleStatus: 'ready',
       license: LICENSES.synth,
       resources: Object.freeze([]),
       publishedEncodedBytes: 0,
@@ -340,6 +379,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       engine: 'sampled',
       synthModel: null,
       version: GENERATED.kits['classic-gm'].version,
+      sampleStatus: GENERATED.kits['classic-gm'].sampleStatus,
       license: LICENSES.sonivox,
       resources: immutableResources('classic-gm'),
       publishedEncodedBytes: GENERATED.kits['classic-gm'].publishedEncodedBytes,
@@ -353,6 +393,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       engine: 'sampled',
       synthModel: null,
       version: GENERATED.kits.studio.version,
+      sampleStatus: GENERATED.kits.studio.sampleStatus,
       license: LICENSES.virtuosity,
       resources: immutableResources('studio'),
       publishedEncodedBytes: GENERATED.kits.studio.publishedEncodedBytes,
@@ -366,6 +407,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       engine: 'sampled',
       synthModel: null,
       version: GENERATED.kits.live.version,
+      sampleStatus: GENERATED.kits.live.sampleStatus,
       license: LICENSES.tchimera,
       resources: immutableResources('live'),
       publishedEncodedBytes: GENERATED.kits.live.publishedEncodedBytes,
