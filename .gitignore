@@ -86,3 +86,6 @@ assets/gp-samples/
 # Generated marketing stills (scripts/gen-marketing-shots.mjs). Regenerate on
 # demand; the ad crops that matter live in the campaigns repo.
 public/marketing/
+
+# Browser consoles relayed from a device on the LAN (MP_DEV_LOGS=1).
+.dev-logs/

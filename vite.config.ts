@@ -9,6 +9,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
+import { devLogRelayPlugin } from './tools/dev-log-relay'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -19,6 +20,12 @@ const isDev = process.env.NODE_ENV !== 'production'
 // automated browser cannot accept the warning, so it sees a blank page. The
 // `app-http` launch entry sets this to serve dev over plain http instead.
 const wantsPlainHttp = process.env.MP_DEV_HTTP === '1'
+
+// Relays the browser's console to `.dev-logs/` and to this server's stdout.
+// For a device whose console is out of reach — an iPhone on the LAN, where
+// the inspector needs a cable and a Mac, and where the bug being chased
+// kills the tab before anyone can open one.
+const wantsDevLogs = process.env.MP_DEV_LOGS === '1'
 
 let commitSha = 'unknown'
 try {
@@ -183,6 +190,10 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
+      // The phone's console, on this machine's disk. Serve-only, and off
+      // unless MP_DEV_LOGS=1 asks for it — on by default it would write a
+      // file on every ordinary `pnpm dev`. See tools/dev-log-relay.ts.
+      wantsDevLogs ? devLogRelayPlugin({ root: __dirname }) : [],
       isDev && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
