@@ -854,7 +854,7 @@ const LaneName: Component<LaneNameProps> = (props) => {
     if (props.lane.content === 'percussion') {
       const hits = props.lane.percussionHits?.length ?? 0
       const dropped = props.lane.droppedPercussionHits ?? 0
-      return `${props.lane.trackName} — ${hits} authored ${hits === 1 ? 'hit' : 'hits'}${dropped > 0 ? ` · ${dropped} unmapped` : ''} · reference only`
+      return `${props.lane.trackName} — ${hits} authored ${hits === 1 ? 'hit' : 'hits'}${dropped > 0 ? ` · ${dropped} unmapped` : ''} · drum notation · not scored`
     }
     return missing() > 0
       ? `${props.lane.trackName} — ${missing()} note${missing() === 1 ? '' : 's'} off this neck`

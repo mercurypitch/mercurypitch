@@ -2203,6 +2203,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           referenceController.toggleSheetTrack
                         }
                         secondaryLane={referenceController.secondaryLane}
+                        followedStageTrackId={
+                          referenceController.followedStageTrackId
+                        }
+                        onFollowStageTrack={
+                          referenceController.followTrackOnStage
+                        }
                         backingMelody={
                           referenceController.rehearsalBackingMelodyNotes
                         }
@@ -2248,8 +2254,24 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       audibleBackingTrackIds={
                         referenceController.audibleBackingTrackIds
                       }
+                      mutedBackingTrackIds={
+                        referenceController.mutedBackingTrackIds
+                      }
                       onToggleBackingTrack={
                         referenceController.toggleBackingTrack
+                      }
+                      soloedBackingTrackId={
+                        referenceController.soloedBackingTrackId
+                      }
+                      onToggleSoloBackingTrack={
+                        referenceController.toggleSoloBackingTrack
+                      }
+                      secondaryLane={referenceController.secondaryLane}
+                      followedStageTrackId={
+                        referenceController.followedStageTrackId
+                      }
+                      onFollowStageTrack={
+                        referenceController.followTrackOnStage
                       }
                     />
                   </Show>

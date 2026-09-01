@@ -59,6 +59,16 @@ workspace.
 - Inside the room, Space always toggles the backing transport — a focused
   mute chip, slider or panel button never steals the key; typing surfaces and
   modifier chords do (shared rule: `src/lib/space-playback.ts`).
+- The loaded song title visibly names its `Mix` action and opens the shared
+  Track mixer rather than adding a permanent console beside the stage. The
+  mixer keeps source track names, room level, Mute, Solo, Sheet visibility and
+  a live fader together; unity is explicit and each authored lane has modest
+  positive headroom behind the room limiter. A Drum row follows native Drum
+  notation on moving views without ever becoming Guitar scoring authority.
+- Drum Kit is a live timbre choice after the room owns audio, including while
+  Paused; generated Feel remains a next-Play scheduling choice. Before the
+  first Play both selectors remain data-only, and sampled kits may use Mercury
+  fallback while warming rather than delaying or restarting the score clock.
 - The amber Play control is icon-only; its state names (Play, Pause, Resume)
   live in the accessible label and tooltip so the pedalboard never reflows
   between states.

@@ -801,6 +801,18 @@ describe('GuitarNightStage view picker on a phone', () => {
       outOfRangeNotes: 0,
     }
 
+    const PERCUSSION_CORNER = {
+      ...CORNER,
+      trackId: 'track-drums',
+      trackName: 'Drum kit',
+      content: 'percussion' as const,
+      scoreable: false,
+      percussionHits: [
+        { gmKey: 36, startBeat: 0, velocity: 118 },
+        { gmKey: 42, startBeat: 2, velocity: 82 },
+      ],
+    }
+
     it('is absent when there is no other part to show', () => {
       render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
       expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
@@ -835,6 +847,49 @@ describe('GuitarNightStage view picker on a phone', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Sheet' }))
       expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
+    })
+
+    it('keeps percussion beside every instrument view while Sheet owns its full lane', () => {
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          secondaryLane={() => PERCUSSION_CORNER}
+          sheetLanes={() => [PERCUSSION_CORNER]}
+        />
+      ))
+
+      expect(screen.getByTestId('guitar-night-secondary-part')).toBeVisible()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+      expect(screen.getByTestId('guitar-night-secondary-part')).toBeVisible()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Neck' }))
+      expect(screen.getByTestId('guitar-night-secondary-part')).toBeVisible()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sheet' }))
+      expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
+    })
+
+    it('never turns a percussion reference into score swapping', () => {
+      const onSelectTrack = vi.fn()
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          secondaryLane={() => PERCUSSION_CORNER}
+          onSelectTrack={onSelectTrack}
+        />
+      ))
+
+      expect(
+        screen.queryByRole('button', { name: 'Read Drum kit instead' }),
+      ).toBeNull()
+      expect(screen.getByLabelText('Drum kit, 1 hit now')).toHaveAttribute(
+        'role',
+        'img',
+      )
+      expect(onSelectTrack).not.toHaveBeenCalled()
     })
 
     it('swaps the two parts when tapped', () => {

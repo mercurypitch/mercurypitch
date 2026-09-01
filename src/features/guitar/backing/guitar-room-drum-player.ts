@@ -1,10 +1,12 @@
 // ============================================================
-// Guitar room drum player — lazy kit selection behind one inert port
+// Guitar room drum player — lazy live kit selection behind one inert port
 // ============================================================
 //
 // Guitar Night owns the preference, but Drum Night owns kit playback. This
-// adapter keeps both the sample catalogue and Circuit graph out of first paint:
-// the selected implementation is imported only from a user-owned Play path.
+// adapter keeps the five-kit catalogue and graph out of first paint: desired
+// kit changes remain identity-only until a user-owned Play path imports the
+// concrete player. After activation, the same port switches live while the
+// concrete player keeps missing samples behind its synth fallback.
 
 import type { DrumKitPlayerPort } from '@/features/drum-night/runtime/drum-runtime-types'
 import type { GuitarNightDrumKitId } from '@/features/guitar-night/guitar-night-drum-sound'
@@ -15,54 +17,84 @@ export interface LazyGuitarRoomDrumPlayerOptions {
   readonly kitId: GuitarNightDrumKitId
 }
 
-function isSampleCatalogueKit(
-  kitId: GuitarNightDrumKitId,
-): kitId is Exclude<GuitarNightDrumKitId, 'circuit'> {
-  return kitId !== 'circuit'
+/** Guitar's stable host contract over Drum Night's asynchronous kit player. */
+export interface GuitarRoomDrumPlayerPort extends DrumKitPlayerPort {
+  /**
+   * Select immediately without making the room clock wait for sample warm-up.
+   * Before activation this only records identity and performs no import or I/O.
+   */
+  setKit(kitId: GuitarNightDrumKitId): void
+}
+
+interface SwitchableDrumKitPlayer extends DrumKitPlayerPort {
+  selectKit(kitId: GuitarNightDrumKitId): Promise<void>
 }
 
 /**
- * Construct an inert port. `activate` is the first runtime import and the
- * selected kit is immutable for this port, which pins one sound for the run.
+ * Construct an inert port. `activate` is the first runtime import; later kit
+ * intent delegates to the concrete player's stale-safe asynchronous switch.
  */
 export function createLazyGuitarRoomDrumPlayer(
   options: LazyGuitarRoomDrumPlayerOptions,
-): DrumKitPlayerPort {
-  let player: DrumKitPlayerPort | null = null
+): GuitarRoomDrumPlayerPort {
+  let desiredKitId = options.kitId
+  let player: SwitchableDrumKitPlayer | null = null
   let activation: Promise<boolean> | null = null
   let disposed = false
 
-  const createSelectedPlayer = async (): Promise<DrumKitPlayerPort | null> => {
-    if (options.kitId === 'circuit') {
-      const module =
-        await import('@/features/drum-night/audio/circuit-drum-synth')
-      if (disposed) return null
-      return module.createCircuitDrumSynth({
-        getAudioContext: options.getAudioContext,
-        getOutput: options.getOutput,
-      })
-    }
-    if (!isSampleCatalogueKit(options.kitId)) return null
+  const createSelectedPlayer = async (): Promise<{
+    readonly initialKitId: GuitarNightDrumKitId
+    readonly player: SwitchableDrumKitPlayer
+  } | null> => {
     const module = await import('@/features/drum-night/audio/drum-kit-player')
     if (disposed) return null
-    return module.createDrumKitPlayer({
-      getAudioContext: options.getAudioContext,
-      getOutput: options.getOutput,
-      initialKitId: options.kitId,
+    const initialKitId = desiredKitId
+    return {
+      initialKitId,
+      player: module.createDrumKitPlayer({
+        getAudioContext: options.getAudioContext,
+        getOutput: options.getOutput,
+        initialKitId,
+      }),
+    }
+  }
+
+  const applyKit = (
+    currentPlayer: SwitchableDrumKitPlayer,
+    kitId: GuitarNightDrumKitId,
+  ): void => {
+    // Selection identity changes synchronously inside the concrete player;
+    // baseline sample warming deliberately stays off the transport promise.
+    void currentPlayer.selectKit(kitId).catch(() => {
+      // Disposal and a newer selection abort older preparation. Real loading
+      // failures remain audible through the concrete player's synth fallback.
     })
   }
 
   return {
+    setKit(kitId): void {
+      if (disposed) return
+      desiredKitId = kitId
+      const currentPlayer = player
+      if (currentPlayer !== null) applyKit(currentPlayer, kitId)
+    },
     async activate(): Promise<boolean> {
       if (disposed) return false
       if (activation !== null) return await activation
       if (player !== null) return await player.activate()
       const pendingActivation = (async () => {
-        const created = await createSelectedPlayer()
-        if (created === null) return false
+        const createdSelection = await createSelectedPlayer()
+        if (createdSelection === null) return false
+        const created = createdSelection.player
         // Publish the created port before its own asynchronous activation so
         // a concurrent route disposal can await activation and retire it.
         player = created
+        // `setKit` can run in the microtask between constructing this lazy
+        // player and publishing it above. Reconcile that narrow activation
+        // race so the user's latest visible selection always wins.
+        if (desiredKitId !== createdSelection.initialKitId) {
+          applyKit(created, desiredKitId)
+        }
         return await created.activate()
       })()
       activation = pendingActivation
