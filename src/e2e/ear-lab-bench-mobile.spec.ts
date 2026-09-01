@@ -125,6 +125,11 @@ test('fits a running drill on an upright phone without a scroll @smoke', async (
   await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
     timeout: 10_000,
   })
+  // Parked on "Next", not mid-reveal: the run passes through several console
+  // heights and this is the tallest — a wrong call's line, its consequence
+  // under it, and a listen pad that has become a real button again. Measuring
+  // whichever state the clock landed on made the assertion a coin toss.
+  await expect(page.getByText('Next').first()).toBeVisible({ timeout: 20_000 })
 
   const layout = await page.evaluate(() => {
     const stage = document.querySelector('[data-testid="ear-stage"]')
@@ -201,14 +206,23 @@ test.describe('the taller phone', () => {
       .click()
     await expect(page.getByTestId('ear-stage')).toBeVisible()
 
-    await page.getByText('Practice run').click()
+    // "Begin", not "Practice run": an identification drill has no calibration
+    // to practise against, it just plays a chord.
+    await page.getByText('Begin').click()
+    // The pads are disabled while the chord sounds; the run reaches the answer
+    // phase when the first one takes a tap.
     const pads = page.locator(
       '[data-testid="ear-stage-pads"] button:not([disabled])',
     )
-    await expect(pads.first()).toBeVisible({ timeout: 10_000 })
+    await expect(pads.first()).toBeEnabled({ timeout: 20_000 })
     await pads.first().click()
     await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
       timeout: 10_000,
+    })
+    // Parked, for the same reason as the drill above: this is the console at
+    // its tallest, and the state the singer actually reads the verdict in.
+    await expect(page.getByText('Next').first()).toBeVisible({
+      timeout: 20_000,
     })
 
     const layout = await page.evaluate(() => {
@@ -237,13 +251,13 @@ test.describe('the taller phone', () => {
           keycap !== null && getComputedStyle(keycap).display !== 'none',
         labelTop: label?.getBoundingClientRect().top ?? null,
         subTop: sub?.getBoundingClientRect().top ?? null,
-        // Distinct row positions inside the verdict block: three of them was
-        // a kicker over a line over a note.
-        lastCallRows: new Set(
-          [...lastCall.children]
-            .filter((child) => child.getBoundingClientRect().height > 0)
-            .map((child) => Math.round(child.getBoundingClientRect().top)),
-        ).size,
+        // The verdict block is a grid, so its own resolved row track list is
+        // the row count — a kicker over a line over a note was three. Read off
+        // the grid rather than off the children's positions: the mark spans
+        // every row and sits 2px low, which reads as a row of its own.
+        lastCallRows: getComputedStyle(lastCall)
+          .gridTemplateRows.trim()
+          .split(/\s+/).length,
       }
     })
 

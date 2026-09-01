@@ -1131,13 +1131,13 @@
     margin-left: 0;
   }
 
-  /* Two rows, not three. The kicker says "Last call" over a line that
-     already reads as one, and the trial number it qualifies is on the bar.
-     The verdict and the measurement both stay. */
   .pads {
     gap: 8px;
   }
 
+  /* Two rows, not three. The kicker says "Last call" over a line that
+     already reads as one, and the trial number it qualifies is on the bar.
+     The verdict and the measurement both stay. */
   .lastCall {
     grid-template-areas:
       'mark line'
@@ -1305,17 +1305,9 @@
     padding: 5px 10px;
   }
 
-  /* One row instead of three. The kicker is the only part that is pure
-     chrome — the trial number is on the bar — so it is the only part that
-     goes; the verdict and the measurement both stay, side by side. */
-  .lastCall {
-    grid-template-areas: 'mark line note';
-    grid-template-columns: auto auto minmax(0, 1fr);
-    column-gap: 10px;
-    align-items: center;
-    padding: 5px 10px;
-  }
-
+  /* The kicker is the only part that is pure chrome — the trial number it
+     qualifies is on the bar — so it is the only part that goes. The verdict
+     and the measurement both stay, at a size that fits the rows they are on. */
   .lastCallKicker {
     display: none;
   }
@@ -1323,7 +1315,6 @@
   .lastCallMark {
     width: 18px;
     height: 18px;
-    margin-top: 0;
   }
 
   .lastCallLine {
@@ -1334,5 +1325,26 @@
   .lastCallNote {
     font-size: 0.72rem;
     line-height: 1.25;
+  }
+}
+
+/* The verdict on one row needs width, and only landscape has it.
+   A small phone held UPRIGHT is short enough to match the block above as
+   well — 375x553 is inside 560 — and it used to take this rule with it.
+   Three columns in 375px meant both the line and its measurement wrapped,
+   and the one-row form came out 68px tall where the two-row form above is
+   under 40: the rule written to save height was costing it. Every other
+   trim up there is about height alone and still applies at any width. */
+@media (max-height: 560px) and (min-width: 620px) {
+  .lastCall {
+    grid-template-areas: 'mark line note';
+    grid-template-columns: auto auto minmax(0, 1fr);
+    column-gap: 10px;
+    align-items: center;
+    padding: 5px 10px;
+  }
+
+  .lastCallMark {
+    margin-top: 0;
   }
 }
