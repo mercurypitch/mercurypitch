@@ -100,6 +100,14 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     if (props.controller.listenerState() === 'starting') {
       return 'Loading voice engine'
     }
+    // A deliberate stand-down while the stage mic scores a voice, not a
+    // failure: it ends when the singing does, and the pill collapses over it
+    // rather than sitting open. Only the pinned-open menu shows this line —
+    // but it has to be true, because "tap the mic to restart" was not, and
+    // the tap it asked for did nothing.
+    if (props.controller.suspendedForSinging()) {
+      return 'Voice paused while you sing'
+    }
     // Enabled but idle is a listener that STOPPED under us — the mic
     // sentinel killing a dead stream, or a backgrounded tab losing its
     // hold. Saying "Listening" over it would be a lie with no tell.

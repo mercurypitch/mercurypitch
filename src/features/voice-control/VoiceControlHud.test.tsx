@@ -29,6 +29,7 @@ function createController(
     // `idle` is a talking state — it has a sentence and a way out — so the
     // default matches the default listener state above.
     hasSomethingToSay: () => true,
+    suspendedForSinging: () => false,
     toggle: vi.fn(),
     turnOff: vi.fn(),
     ...overrides,
@@ -85,6 +86,27 @@ describe('VoiceControlHud placement', () => {
 // does not have, asked for twice because the first press only turned an
 // already-silent listener off. Nothing else in the expanded pill closed it
 // either, so on a phone it stayed pinned over the page's own controls.
+
+describe('VoiceControlHud while the stage mic has the audio', () => {
+  it('names the pause instead of asking for a tap that does nothing', () => {
+    // The suspension sets the listener to `idle`, and `idle` otherwise means
+    // the listener died under us and needs restarting. Here nothing is wrong,
+    // the mic is being held off on purpose, and it comes back by itself.
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'idle',
+          suspendedForSinging: () => true,
+        })}
+      />
+    ))
+
+    expect(screen.getByTestId('voice-control-status')).toHaveTextContent(
+      'Voice paused while you sing',
+    )
+  })
+})
 
 describe('VoiceControlHud on a device with no keyboard', () => {
   it('asks for the mic rather than a key when the listener has stopped', () => {

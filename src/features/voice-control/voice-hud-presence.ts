@@ -27,6 +27,11 @@ export interface VoiceHudPresenceSource {
   /** The last utterance's outcome, or null once it has aged out. */
   feedback: Accessor<unknown>
   listenerState: Accessor<VoiceListenerState>
+  /**
+   * Voice control deliberately standing down while a voice is being scored.
+   * Optional so the two surfaces that only read state can leave it out.
+   */
+  suspended?: Accessor<boolean>
 }
 
 /**
@@ -36,6 +41,11 @@ export interface VoiceHudPresenceSource {
  * listener state carries a sentence the singer has to be able to read and act
  * on — "Loading voice engine", "Mic unavailable", "tap the mic to restart" —
  * and collapsing over those would hide the only way out of them.
+ *
+ * The singing pause is the exception among those: it asks for nothing and
+ * ends by itself, so it collapses too. Expanded it was a bar across the
+ * header for the length of the song, which is precisely the furniture this
+ * whole mechanism exists to remove.
  *
  * Switched off collapses on the same frame rather than after the hold: that
  * is a decision, not a pause.
@@ -58,11 +68,9 @@ export function createHasSomethingToSay(
       setHasSomethingToSay(false)
       return
     }
-    if (
-      source.interim() !== '' ||
-      source.feedback() !== null ||
-      source.listenerState() !== 'listening'
-    ) {
+    const quietState =
+      source.listenerState() === 'listening' || (source.suspended?.() ?? false)
+    if (source.interim() !== '' || source.feedback() !== null || !quietState) {
       setHasSomethingToSay(true)
       return
     }

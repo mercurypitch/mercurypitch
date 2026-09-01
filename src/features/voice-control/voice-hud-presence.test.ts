@@ -19,6 +19,7 @@ interface Harness {
   setInterim: (v: string) => void
   setFeedback: (v: unknown) => void
   setListenerState: (v: VoiceListenerState) => void
+  setSuspended: (v: boolean) => void
   dispose: () => void
 }
 
@@ -31,11 +32,13 @@ function harness(): Harness {
     const [feedback, setFeedback] = createSignal<unknown>(null)
     const [listenerState, setListenerState] =
       createSignal<VoiceListenerState>('listening')
+    const [suspended, setSuspended] = createSignal(false)
     const hasSomethingToSay = createHasSomethingToSay({
       enabled,
       interim,
       feedback,
       listenerState,
+      suspended,
     })
     out = {
       hasSomethingToSay,
@@ -43,6 +46,7 @@ function harness(): Harness {
       setInterim,
       setFeedback,
       setListenerState,
+      setSuspended,
       dispose,
     }
   })
@@ -160,5 +164,45 @@ describe('the voice pill knows when it has stopped talking', () => {
       vi.advanceTimersByTime(VOICE_QUIET_HOLD_MS * 2)
     }).not.toThrow()
     expect(h.hasSomethingToSay()).toBe(true)
+  })
+
+  it('collapses over the pause that holds the mic for a singing voice', () => {
+    // The stage mic taking the audio sets the listener to `idle`, which is
+    // otherwise a talking state — and it stays that way for the length of the
+    // song. Expanded, that was a bar across the header saying "Voice stopped
+    // — tap the mic to restart" over a mic nothing was wrong with, offering a
+    // tap that did nothing.
+    const h = harness()
+    h.setListenerState('idle')
+    h.setSuspended(true)
+
+    vi.advanceTimersByTime(VOICE_QUIET_HOLD_MS + 100)
+
+    expect(h.hasSomethingToSay()).toBe(false)
+    h.dispose()
+  })
+
+  it('speaks up again the moment the pause ends badly', () => {
+    // Coming back from a pause is a fresh `start()` with no gesture behind
+    // it, which iOS refuses — and that one the singer does have to see.
+    const h = harness()
+    h.setListenerState('idle')
+    h.setSuspended(true)
+    vi.advanceTimersByTime(VOICE_QUIET_HOLD_MS + 100)
+
+    h.setSuspended(false)
+    h.setListenerState('error')
+
+    expect(h.hasSomethingToSay()).toBe(true)
+    h.dispose()
+  })
+
+  it('still shows a phrase heard during the pause', () => {
+    const h = harness()
+    h.setSuspended(true)
+    h.setInterim('next song')
+
+    expect(h.hasSomethingToSay()).toBe(true)
+    h.dispose()
   })
 })
