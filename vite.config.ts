@@ -9,6 +9,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
+import { devLogRelayPlugin } from './tools/dev-log-relay'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -19,6 +20,12 @@ const isDev = process.env.NODE_ENV !== 'production'
 // automated browser cannot accept the warning, so it sees a blank page. The
 // `app-http` launch entry sets this to serve dev over plain http instead.
 const wantsPlainHttp = process.env.MP_DEV_HTTP === '1'
+
+// Relays the browser's console to `.dev-logs/` and to this server's stdout.
+// For a device whose console is out of reach — an iPhone on the LAN, where
+// the inspector needs a cable and a Mac, and where the bug being chased
+// kills the tab before anyone can open one.
+const wantsDevLogs = process.env.MP_DEV_LOGS === '1'
 
 let commitSha = 'unknown'
 try {
@@ -183,6 +190,10 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
+      // The phone's console, on this machine's disk. Serve-only, and off
+      // unless MP_DEV_LOGS=1 asks for it — on by default it would write a
+      // file on every ordinary `pnpm dev`. See tools/dev-log-relay.ts.
+      wantsDevLogs ? devLogRelayPlugin({ root: __dirname }) : [],
       isDev && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
@@ -641,6 +652,29 @@ export default defineConfig(({ command, mode }) => {
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],
+      // Pre-bundled at server start rather than discovered mid-session.
+      //
+      // Vite optimizes a dependency the first time something imports it, and
+      // then RELOADS THE PAGE to pick up the new module graph. These three
+      // are reached only from a worker or a lazy import, so the first time
+      // they are discovered is in the middle of doing the thing that needs
+      // them — `@huggingface/transformers` while a song is downloading and
+      // decoding, which is where it cost an afternoon: the load stopped
+      // mid-sentence and a fresh document appeared at the same URL, with no
+      // error, and read exactly like the iOS content-process kill we were
+      // hunting. Declared here, they are bundled before the first request
+      // and nothing reloads.
+      //
+      // A worker's imports are a separate module graph, which is why a
+      // static `import` inside src/workers still counts as late discovery.
+      include: [
+        // src/workers/whisper-worker.ts, src/workers/voice-stt-worker.ts
+        '@huggingface/transformers',
+        // Guitar tab rendering, behind a lazy import
+        '@coderline/alphatab',
+        // Take export, behind a lazy import
+        '@mediabunny/aac-encoder',
+      ],
     },
     css: {
       transformer: 'lightningcss',
