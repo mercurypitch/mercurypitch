@@ -100,7 +100,7 @@ export const aimFromRig = (
  * subtends an angle, it does not occupy a fixed patch of uv, and near
  * the poles those two are very different things.
  */
-interface EnvLight {
+export interface EnvLight {
   dir: Vector3
   halfWidth: number
   halfHeight: number
@@ -109,6 +109,35 @@ interface EnvLight {
   color: RGB
   intensity: number
 }
+
+/**
+ * How much of `l` reaches `dir`, 0..1.
+ *
+ * Pulled out of the write loop so a test can compute the same answer for
+ * every texel by brute force and compare -- which is how the loop's
+ * bounding-box arithmetic gets checked, since that is where the wrap bug
+ * lived and no amount of staring at the map would have shown it.
+ */
+export const lightShape = (dir: Vector3, l: EnvLight): number => {
+  const along = dir.dot(l.dir)
+  if (along <= 0) return 0
+  const right = _right.crossVectors(
+    Math.abs(l.dir.y) > 0.999 ? _worldZ : _worldY,
+    l.dir,
+  )
+  if (right.lengthSq() < 1e-12) return 0
+  right.normalize()
+  const up = _up.crossVectors(l.dir, right).normalize()
+  const ax = Math.abs(Math.atan2(dir.dot(right), along))
+  const by = Math.abs(Math.atan2(dir.dot(up), along))
+  return (
+    (1 - band(ax, l.halfWidth, l.halfWidth + l.feather)) *
+    (1 - band(by, l.halfHeight, l.halfHeight + l.feather))
+  )
+}
+
+const _right = /*@__PURE__*/ new Vector3()
+const _up = /*@__PURE__*/ new Vector3()
 
 const light = (
   dir: Vector3,
@@ -130,7 +159,7 @@ const light = (
  * the pinpoints that make a curved metal surface read as wet rather
  * than as painted.
  */
-const cabinetLights = (): EnvLight[] => [
+export const cabinetLights = (): EnvLight[] => [
   // The key softbox: tall, warm, and feathered wide on purpose. Its
   // core clips to white in a mirror -- that is what a softbox does --
   // so the custard only survives in the falloff around it. At a tight
@@ -188,6 +217,9 @@ const cabinetLights = (): EnvLight[] => [
   light(new Vector3(0.86, 0.2, 0.47).normalize(), 0.014, 0.014, 0.01, COLD, 5),
 ]
 
+/** The room's exposure, exported so a reference build can match it. */
+export const envExposure = (): number => EXPOSURE
+
 /** Width of the equirect map. `/4` is the PMREM cube size — see header. */
 const ENV_WIDTH = 1024
 const ENV_HEIGHT = ENV_WIDTH / 2
@@ -242,13 +274,6 @@ const writeLight = (
   // lit at all.
   const reach = Math.hypot(l.halfWidth + l.feather, l.halfHeight + l.feather)
 
-  // A local frame for the panel. Its own "up" is world up, unless it is
-  // hanging at a pole, where world up is useless as a reference.
-  const right = new Vector3()
-  const upAxis = Math.abs(l.dir.y) > 0.999 ? _worldZ : _worldY
-  right.crossVectors(upAxis, l.dir).normalize()
-  const up = new Vector3().crossVectors(l.dir, right).normalize()
-
   const lat0 = Math.asin(Math.min(1, Math.max(-1, l.dir.y)))
   const vMin = Math.max(0, (lat0 - reach) / Math.PI + 0.5)
   const vMax = Math.min(1, (lat0 + reach) / Math.PI + 0.5)
@@ -265,20 +290,30 @@ const writeLight = (
     const cols = Math.ceil((span / (Math.PI * 2)) * w) + 1
 
     const centre = Math.round((lon0 / (Math.PI * 2) + 0.5) * (w - 1))
-    for (let k = -cols; k <= cols; k++) {
+
+    // Once the span covers the whole circle -- which it does on every row
+    // near a pole, where a fixed angle is worth all 360 degrees of
+    // longitude -- walking centre-cols..centre+cols steps PAST the row's
+    // start and visits three texels a second time. Walk the row once
+    // instead.
+    //
+    // With today's lights that changed no pixel: the revisited texels sit
+    // roughly opposite the light in longitude, where its falloff is
+    // already zero, so the second visit added zero. It is wasted work and
+    // a latent hazard rather than a bug -- a panel wide enough to still
+    // be lit on the far side of a polar row WOULD get double the
+    // intensity there, silently. The brute-force test in
+    // environment.test.ts is what would catch that.
+    const wraps = 2 * cols + 1 >= w
+    const first = wraps ? 0 : centre - cols
+    const last = wraps ? w - 1 : centre + cols
+    for (let k = first; k <= last; k++) {
       // Longitude wraps: a light at u ~ 0 spills onto the far column.
-      const x = (((centre + k) % w) + w) % w
+      const x = wraps ? k : ((k % w) + w) % w
       const u = x / (w - 1)
       envDirection(u, v, dir)
 
-      const along = dir.dot(l.dir)
-      if (along <= 0) continue
-      const ax = Math.abs(Math.atan2(dir.dot(right), along))
-      const by = Math.abs(Math.atan2(dir.dot(up), along))
-
-      const shape =
-        (1 - band(ax, l.halfWidth, l.halfWidth + l.feather)) *
-        (1 - band(by, l.halfHeight, l.halfHeight + l.feather))
+      const shape = lightShape(dir, l)
       if (shape <= 0) continue
 
       const amount = shape * l.intensity * EXPOSURE

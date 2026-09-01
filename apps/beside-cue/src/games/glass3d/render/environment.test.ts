@@ -21,7 +21,7 @@
 
 import { Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
-import { buildCabinetEnvironment, envDirection, RIG } from './environment'
+import { buildCabinetEnvironment, cabinetLights, envDirection, envExposure, lightShape, RIG, } from './environment'
 
 /** three's mapping, in reverse: a direction to the uv it samples. */
 const equirectUV = (d: Vector3): { u: number; v: number } => ({
@@ -53,6 +53,19 @@ const uvOf = (dir: Vector3): [number, number] => {
 
 /** What the map shows when you look in `dir`. */
 const lookAt = (m: Map2D, dir: Vector3): number => luma(read(m, ...uvOf(dir)))
+
+/** The base sky/floor/horizon red at a row, sampled where no light lands.
+ *
+ * The base is constant across a row by construction, so any column that
+ * no light reaches carries it -- and the darkest column in the row is
+ * always such a column when one exists. */
+const baseRed = (m: Map2D, y: number): number => {
+  let min = Infinity
+  for (let x = 0; x < m.width; x++) {
+    min = Math.min(min, m.data[(y * m.width + x) * 4]!)
+  }
+  return min
+}
 
 const build = (): Map2D => {
   // A quarter-size map for the geometry tests: the shapes are angular,
@@ -165,6 +178,47 @@ describe('the cabinet environment', () => {
     const atHorizon = ring(0)
     expect(atHorizon).toBeGreaterThan(ring(0.5) * 2)
     expect(atHorizon).toBeGreaterThan(ring(-0.5) * 2)
+  })
+
+  it('deposits each light exactly once, everywhere', () => {
+    // The write loop only visits the texels a light can reach, and that
+    // bounding-box arithmetic is the one part of this module with no
+    // other check on it. Brute force is the check: visit every texel,
+    // sum every light the slow way, and require the optimised build to
+    // match.
+    //
+    // This pins the LOOP, not the falloff -- `lightShape` is shared with
+    // the builder, so the test says nothing about whether a softbox is
+    // the right shape, only that the map contains exactly what the shape
+    // function says, once, everywhere.
+    //
+    // Worth knowing what it did and did not catch. The loop was
+    // over-running each polar row by three texels; this test passed
+    // anyway, because those texels sit opposite the light where its
+    // falloff is already zero. So the over-run was wasted work rather
+    // than a wrong map -- and this is the test that says so, and that
+    // would fail if a wider panel ever made the second visit count.
+    const m = build()
+    const lights = cabinetLights()
+    const exposure = envExposure()
+    const dir = new Vector3()
+    let worst = 0
+    for (let y = 0; y < m.height; y++) {
+      for (let x = 0; x < m.width; x++) {
+        envDirection(x / (m.width - 1), y / (m.height - 1), dir)
+        let expected = 0
+        for (const l of lights) {
+          expected += lightShape(dir, l) * l.intensity * exposure * l.color[0]
+        }
+        // Red channel only: the base layer is added underneath, so
+        // compare the delta from a row that no light reaches.
+        const i = (y * m.width + x) * 4
+        worst = Math.max(worst, Math.abs(m.data[i]! - baseRed(m, y) - expected))
+      }
+    }
+    // A texel written twice is off by a whole light. This tolerance is
+    // far below that and far above float noise.
+    expect(worst).toBeLessThan(0.01)
   })
 
   it('separates sky from floor', () => {
