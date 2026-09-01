@@ -614,7 +614,37 @@ export const useStemMixerAudioController = (
       )
     }
 
+    // Every stem's arithmetic, in order, for a device whose console cannot be
+    // read live. iOS kills the content process for memory during
+    // `decodeAudioData` — not a JavaScript error, nothing to catch, the tab
+    // simply restarts — so the only evidence of how far a load got, and of
+    // how much was resident when it died, is what was already written down.
+    // The line before a decode is therefore the one that matters: if it is
+    // the last line of a page load, the decode it announced is what killed
+    // the tab, and the megabytes are on it.
+    let residentBytes = 0
+    const trace = (line: string): void => {
+      if (!IS_DIAGNOSTIC_BUILD) return
+      console.info(`[stem-mixer] ${line}`)
+    }
+    /** Last path segment, which is what tells two stems of one song apart. */
+    const stemName = (url: string): string =>
+      url.split('?')[0].split('/').filter(Boolean).slice(-1)[0] ?? url
+    const noteDecoded = (name: string, buf: AudioBuffer): void => {
+      const bytes = decodedStemBytes(
+        buf.duration,
+        buf.sampleRate,
+        buf.numberOfChannels,
+      )
+      residentBytes += bytes
+      trace(
+        `${name} decoded ${buf.duration.toFixed(1)}s @ ${buf.sampleRate}Hz x${buf.numberOfChannels} = ` +
+          `${mb(bytes)}MB · ${mb(residentBytes)}MB resident`,
+      )
+    }
+
     const loadOne = async (url: string): Promise<AudioBuffer> => {
+      const name = stemName(url)
       // A stem the visitor has already downloaded once. R2 serves these
       // with no Cache-Control at all, so the browser re-fetched all six
       // megabytes on every open — the whole wait, paid again, for a song
@@ -628,10 +658,13 @@ export const useStemMixerAudioController = (
           fraction: 1,
         })
         publish()
+        trace(`${name} decoding ${mb(kept.byteLength)}MB from cache`)
         const cachedBuf = await ctx.decodeAudioData(kept)
         loadedCount++
+        noteDecoded(name, cachedBuf)
         return cachedBuf
       }
+      trace(`${name} downloading`)
 
       inFlight++
       let arrayBuf: ArrayBuffer
@@ -653,6 +686,7 @@ export const useStemMixerAudioController = (
       // straight to decodeAudioData, which sniffs the container itself —
       // and the stems are variously m4a and mp3 depending on the song.
       void writeCachedSongAudio(url, arrayBuf, 'application/octet-stream')
+      trace(`${name} decoding ${mb(arrayBuf.byteLength)}MB just downloaded`)
       const buf = await ctx.decodeAudioData(arrayBuf)
       // Counted after the decode, not after the download. The guard below
       // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
@@ -661,6 +695,7 @@ export const useStemMixerAudioController = (
       // all. Counting it at download time silenced that warning and left a
       // mixer with no sound and no explanation.
       loadedCount++
+      noteDecoded(name, buf)
       return buf
     }
 

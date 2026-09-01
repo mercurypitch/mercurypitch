@@ -228,6 +228,28 @@ export function clientShim(endpoint: string): string {
 `.trim()
 }
 
+/**
+ * The dev server's own reloads, named in the page's log.
+ *
+ * Vite pre-bundles a dependency the first time something imports it and then
+ * reloads the page to pick up the new module graph — for this app that
+ * happens the moment the mixer pulls in `@huggingface/transformers`, which is
+ * to say in the middle of a song load. From the page's side that is
+ * indistinguishable from the crash we are hunting: the download and decode
+ * stop mid-sentence and a fresh document appears at the same URL. It cost an
+ * hour once; it should not cost anyone a second one.
+ *
+ * An inline module script, because `import.meta.hot` only exists in a module
+ * the dev server has transformed — and it does transform inline ones.
+ */
+export const VITE_RELOAD_MARKER = `
+if (import.meta.hot) {
+  import.meta.hot.on('vite:beforeFullReload', function () {
+    console.warn('[vite] the DEV SERVER asked for a full reload — a dependency was just pre-bundled. Not a crash.');
+  });
+}
+`.trim()
+
 export interface DevLogRelayOptions {
   /** Repo root; the log directory is made under it. */
   root: string
@@ -332,6 +354,12 @@ export function devLogRelayPlugin(options: DevLogRelayOptions): Plugin {
               // boot is exactly the one worth having.
               injectTo: 'head-prepend',
               children: clientShim(endpoint),
+            },
+            {
+              tag: 'script',
+              attrs: { type: 'module' },
+              injectTo: 'head-prepend',
+              children: VITE_RELOAD_MARKER,
             },
           ],
         }

@@ -11,7 +11,7 @@
 import { EventEmitter } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
 import type { DevLogBatch } from './dev-log-relay'
-import { clientShim, devLogRelayPlugin, formatLogLine, parseBatch, } from './dev-log-relay'
+import { clientShim, devLogRelayPlugin, formatLogLine, parseBatch, VITE_RELOAD_MARKER, } from './dev-log-relay'
 
 describe('parsing a batch off the wire', () => {
   it('takes a well-formed batch', () => {
@@ -267,5 +267,44 @@ describe('the plugin itself', () => {
     // head-prepend: a console call during boot is the one worth having.
     expect(out.tags[0].injectTo).toBe('head-prepend')
     expect(out.tags[0].children).toContain('sendBeacon')
+  })
+})
+
+// ============================================================
+// The dev server's own reloads say so
+// ============================================================
+//
+// Vite pre-bundles a dependency the first time something imports it and then
+// reloads the page. For this app that happens when the mixer pulls in
+// `@huggingface/transformers` — in the middle of a song load, where it is
+// indistinguishable from the crash being hunted.
+
+describe('naming the dev server’s own reloads', () => {
+  it('listens for the reload Vite is about to do', () => {
+    expect(VITE_RELOAD_MARKER).toContain('vite:beforeFullReload')
+    expect(VITE_RELOAD_MARKER).toContain('import.meta.hot')
+    // It has to read as "not the bug" at a glance, in a file being skimmed
+    // for the moment a page died.
+    expect(VITE_RELOAD_MARKER).toContain('Not a crash')
+  })
+
+  it('goes in as a module, which is the only way hot exists', () => {
+    const plugin = devLogRelayPlugin({ root: '/repo' })
+    const transform = plugin.transformIndexHtml
+    if (typeof transform !== 'object' || transform === null) {
+      throw new Error('expected an object form with an order')
+    }
+    const out = (
+      transform.handler as unknown as (html: string) => {
+        tags: Array<{
+          injectTo: string
+          children: string
+          attrs?: Record<string, unknown>
+        }>
+      }
+    ).call(plugin, '<html></html>')
+    const marker = out.tags.find((t) => t.children.includes('import.meta.hot'))
+    expect(marker?.attrs?.type).toBe('module')
+    expect(marker?.injectTo).toBe('head-prepend')
   })
 })
