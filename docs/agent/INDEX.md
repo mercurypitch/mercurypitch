@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 27.7k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.3k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
-| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.4k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
+| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.6k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.6k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.1k | Voice History — local listening desk for kept voice takes |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 6.9k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -369,12 +369,12 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.6k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 1.6k |
 | [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.6k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.6k |
 | [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.5k |
 | [src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts](../../src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts) | 1.5k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |

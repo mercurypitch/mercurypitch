@@ -43,6 +43,43 @@ export const PROD_DOMAIN =
 export const DEV_DOMAIN =
   import.meta.env.VITE_DEV_DOMAIN ?? 'dev.mercurypitch.com'
 
+/**
+ * Whether a page on `hostname` may write diagnostics to its console.
+ *
+ * `IS_DEV` alone is not the answer: the dev site is a *production* build
+ * served from another domain, so a trace that only exists under `pnpm dev`
+ * cannot be read off the phone it was written for. So: the local dev server,
+ * a PR preview, and the dev domain — and nothing else. An unrecognised host
+ * stays quiet, because a visitor's console is not a debugging surface.
+ *
+ * A function so the rule can be tested; the constant below is the wiring.
+ */
+export function isDiagnosticHost(input: {
+  isDev: boolean
+  isPreview: boolean
+  /** `null` where there is no location at all. */
+  hostname: string | null
+  devDomain: string
+}): boolean {
+  if (input.isDev || input.isPreview) return true
+  return input.hostname !== null && input.hostname === input.devDomain
+}
+
+/**
+ * Whether this page may write diagnostics to the console. `location` is
+ * guarded rather than assumed: this module is imported from workers and from
+ * Vitest, where it may not be a Window's.
+ */
+export const IS_DIAGNOSTIC_BUILD: boolean = isDiagnosticHost({
+  isDev: IS_DEV,
+  isPreview: IS_PR_PREVIEW,
+  // `globalThis.location`, not the bare global: the lint rule is right that
+  // an unqualified `location` is ambiguous, and this module is loaded in
+  // workers as well as in the page.
+  hostname: globalThis.location?.hostname ?? null,
+  devDomain: DEV_DOMAIN,
+})
+
 /** When set, the app connects to a remote API instead of local IndexedDB. */
 export const API_BASE_URL: string | undefined = import.meta.env
   .VITE_API_BASE_URL
