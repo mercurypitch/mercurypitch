@@ -1083,9 +1083,70 @@ games we ship today and should not wait behind a 3D decision.
 | 0     | The Cabinet: room, glass, voice coupling, shatter, score card                                | **Landed** (#688). Tuning panel and frame HUD were dropped on maff's call — iteration happens in a desktop browser, so a panel would have been UI built to avoid a keyboard |
 | 0b    | Sound (§7): the ring, the pump, the shatter                                                  | **Landed.** Modal ring over noise, tremolo from the vibrato detector, four-layer break, all on the shared AudioContext lease                                                |
 | 1     | The Hallway: Merc's surface + face, the move clip, 3/4 chase camera, one pane broken to pass | **Landed** as a playable scene. No touch controller — the traversal is scripted and the voice is the only input, which fits the game                                        |
+| 1b    | The wave, made reachable and visible (§6.5)                                                  | **Landed.** Own vibrato band, a rate gauge while ringing, and a chip that reports fps and f0 rate as well as the backend                                                    |
 | 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                        | The three chambers are playable end to end and scored                                                                                                                       |
 | 3     | Polish: juice pass, haptics, reduced-motion path, load time                                  | Passes the perf gates on a mid Android                                                                                                                                      |
 | 4     | The next mechanic                                                                            | —                                                                                                                                                                           |
+
+---
+
+## 6.5 The wave the player actually makes
+
+The first device test of slice 1 returned one sentence that invalidated
+the band: _"the glass is there, I cannot 'wave' it, is it vibrato? to
+shatter it? Doesn't happen but maybe I am just weak."_
+
+He was not weak. `sim/vibrato-reach.test.ts` puts synthetic singers
+through the real signal path — the engine's five-point median
+(`latestSmoothed`) and Stage3D polling one f0 frame per simulation step —
+and the 2D band (`journey-config.ts`: 3.5–8.5 Hz, 15–140 cents) rejects
+outright everything a first-time player does:
+
+| What the player does           | 2D band     | Why                                     |
+| ------------------------------ | ----------- | --------------------------------------- |
+| Deliberate wobble, 2–3 Hz      | **refused** | Below `minHz`. This is the common case  |
+| Timid wobble, ±10¢             | **refused** | Below `minDepthCents`                   |
+| Enthusiastic swing, ±180¢      | **refused** | Above `maxDepthCents`                   |
+| Trained vibrato, 5.5 Hz ±40¢   | accepted    | The band was fitted to this             |
+
+That band was fitted to a trained vibrato, which is the right band for a
+singing exercise and the wrong one for a game verb. So the 3D world keeps
+its own in `world3d-config.ts` — 2.2–9.5 Hz, 12–220 cents — for the same
+reason every other feel number lives there.
+
+The upper depth bound is not taste. It is exactly
+`(ring.tolSemis + ring.pumpTolBonus) * 100`: swing wider than the pitch
+band and the note leaves tolerance, so resonance decays whatever the ear
+says. A cap above that would promise a pump the simulation then refuses,
+and the test pins the two together.
+
+Widening alone would not have fixed the report, because the actual
+complaint was not "too hard" but "I cannot tell what is happening". Two
+things answer that:
+
+- **A rate gauge, while ringing only.** The accepted band drawn as a
+  place, and the player's measured wave as a dot inside or outside it,
+  with the numbers beside it. The player is being asked for something
+  they cannot see themselves doing; this is that thing, measured.
+- **A coach line that diagnoses rather than repeats.** "Waver faster",
+  "Waver wider", "Too wide — stay on the note" — but only once a wave has
+  actually been measured. A reading of zero means the window has not
+  filled or the mic hears nothing, and correcting a wave that was never
+  heard sends the player to fix the wrong thing.
+
+The guard that keeps the mechanic honest is pinned in the same file: a
+steady note, with up to 10 cents of jitter, still stops dead at
+`holdCap`, and a 1 Hz wobble is an unsteady hold rather than a wave.
+
+### The chip
+
+It said `WebGPU` and nothing else, which answers the one question nobody
+asks when the thing feels slow. It now reads
+`WebGPU · 58fps · 47Hz` — backend, drawn frames, and **f0 frames**. The
+third number is the one worth having: on a phone the interesting failure
+is a renderer that is fine and an audio thread that is starved, and those
+are indistinguishable from "slow" without it. Counted by change of
+`tAudio`, not by reads, since one f0 frame is polled many times per step.
 
 ---
 

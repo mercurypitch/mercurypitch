@@ -11,7 +11,6 @@ import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
-import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { createGlassTone } from '../audio/glass-tone'
@@ -109,7 +108,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
 
     const begin = (): void => {
       const ring = createResonance(TARGET_MIDI)
-      const vib = createVibratoDetector(JOURNEY_CONFIG.vibrato)
+      const vib = createVibratoDetector(cfg.vibrato)
       let launches: readonly ShardLaunch[] | null = null
       let breakAt = 0
       let elapsed = 0
