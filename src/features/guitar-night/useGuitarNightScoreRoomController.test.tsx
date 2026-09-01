@@ -1529,6 +1529,29 @@ describe('scoreToBandMelody', () => {
   it('has nothing to sound without a score', () => {
     expect(scoreToBandMelody(null)).toEqual([])
   })
+
+  it('keeps the selected track family and authored strike intensity', () => {
+    const selected = reference({
+      instrumentFamily: 'neutral',
+      notes: [
+        {
+          ...reference().notes[0]!,
+          velocity: 37,
+        },
+      ],
+    })
+
+    expect(scoreToBandMelody(selected)).toEqual([
+      {
+        midi: 64,
+        startBeat: 0,
+        durationBeats: 1,
+        velocity: 37,
+        instrumentFamily: 'neutral',
+        channelId: 'guitar-night-score',
+      },
+    ])
+  })
 })
 
 describe('the tab room sounds the tab', () => {
@@ -1565,6 +1588,32 @@ describe('the tab room sounds the tab', () => {
       })
       await room.start()
       expect(getOptions()?.melodyVariant).toBe('bass')
+      dispose()
+    })
+  })
+
+  it('does not turn a selected neutral score track into an electric guitar', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const selected = reference({
+        instrumentFamily: 'neutral',
+        notes: [{ ...reference().notes[0]!, velocity: 37 }],
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => selected,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+
+      expect(getOptions()?.melody).toEqual([
+        expect.objectContaining({
+          instrumentFamily: 'neutral',
+          velocity: 37,
+        }),
+      ])
       dispose()
     })
   })

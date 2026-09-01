@@ -384,6 +384,8 @@ export interface GuitarNote {
   startBeat: number
   duration: number
   targetFreq: number
+  /** Authored strike intensity, 1–127, when the score supplied it. */
+  velocity?: number
   isBacking?: boolean
   trackId?: string
   /** Source-authored notation. Absent for plain MIDI and measured notes. */
@@ -397,6 +399,7 @@ export function melodyToGuitarNotes(
     startBeat: number
     duration: number
     targetFreq?: number
+    velocity?: number
     id?: string
     /** Explicit fingering (Guitar Pro imports); auto-placed when omitted. */
     stringIndex?: number
@@ -418,6 +421,12 @@ export function melodyToGuitarNotes(
       startBeat: item.startBeat,
       duration: item.duration,
       targetFreq: item.targetFreq ?? 440 * Math.pow(2, (item.midi - 69) / 12),
+      ...(typeof item.velocity === 'number' &&
+      Number.isInteger(item.velocity) &&
+      item.velocity >= 1 &&
+      item.velocity <= 127
+        ? { velocity: item.velocity }
+        : {}),
       ...(item.notation === undefined ? {} : { notation: item.notation }),
     }
   })

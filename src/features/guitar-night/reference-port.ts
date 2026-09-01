@@ -15,6 +15,8 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, instrumentTuningFromSource, liftIntoTuningRange, MAX_PLAYABLE_FRET, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import type { MidiProgramFamily } from '@/lib/midi-program-family'
+import { resolveMidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiSongNote, MidiSongPercussionHit, MidiTempoChange, } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
@@ -27,6 +29,10 @@ export interface GuitarNightReferenceSourceTrack {
   kind?: 'pitched' | 'percussion'
   name: string
   instrumentName?: string
+  /** Zero-based GM program retained when the authored source supplied one. */
+  sourceProgram?: number
+  /** Honest playback family retained from the imported score. */
+  instrumentFamily?: MidiProgramFamily
   noteCount: number
   notes: readonly MidiSongNote[]
   percussionHits?: readonly MidiSongPercussionHit[]
@@ -100,6 +106,8 @@ export interface GuitarNightReference {
   trackId: string
   /** Human-readable scored part, or "No scored part" in backing-only mode. */
   trackName: string
+  /** Resolved authored source family; absent for measured references. */
+  instrumentFamily?: MidiProgramFamily
   tempoBpm: number
   /** Authored only: tempo events in the score's beat time. */
   tempoChanges?: readonly MidiTempoChange[]
@@ -226,6 +234,7 @@ interface StageNoteInput {
   midi: number
   startBeat: number
   duration: number
+  velocity?: number
   stringIndex?: number
   fret?: number
   authoredFingering?: boolean
@@ -316,6 +325,12 @@ export function toStageNotes(
       startBeat: input.startBeat,
       duration: input.duration,
       targetFreq: 440 * Math.pow(2, (input.midi - 69) / 12),
+      ...(typeof input.velocity === 'number' &&
+      Number.isInteger(input.velocity) &&
+      input.velocity >= 1 &&
+      input.velocity <= 127
+        ? { velocity: input.velocity }
+        : {}),
       ...(input.notation === undefined ? {} : { notation: input.notation }),
     })
   }
@@ -329,6 +344,7 @@ export interface PlacedReferenceTrack {
   trackId: string
   trackName: string
   instrument: StringedInstrument
+  instrumentFamily: MidiProgramFamily
   /** The rows the notes were placed on. */
   tuning: InstrumentTuning
   /** The source-authored setup, when the file named one. */
@@ -367,6 +383,7 @@ export function placeReferenceTrack(
       midi: note.midi,
       startBeat: note.startBeat,
       duration: note.duration,
+      velocity: note.velocity,
       stringIndex: note.stringIndex,
       fret: note.fret,
       authoredFingering: note.authoredFingering,
@@ -380,6 +397,7 @@ export function placeReferenceTrack(
     trackId: track.id,
     trackName: track.name,
     instrument,
+    instrumentFamily: resolveMidiProgramFamily(track),
     tuning: stageTuning,
     ...(sourceTuning === undefined ? {} : { sourceTuning }),
     notes: placed.notes,
@@ -435,6 +453,7 @@ export function openGuitarNightReference(
       title: source.name,
       trackId: placed.trackId,
       trackName: placed.trackName,
+      instrumentFamily: placed.instrumentFamily,
       tempoBpm,
       tempoChanges: source.tempoChanges,
       tuning: placed.tuning,

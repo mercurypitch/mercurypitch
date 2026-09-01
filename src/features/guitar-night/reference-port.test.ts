@@ -94,6 +94,29 @@ describe('openGuitarNightReference', () => {
     ])
   })
 
+  it('keeps authored velocity and lets an explicit neutral program override stale guitar metadata', () => {
+    const result = openGuitarNightReference(
+      source({
+        tracks: [
+          {
+            id: 'track-lead',
+            name: 'Lead guitar',
+            instrumentName: 'Distortion Guitar',
+            sourceProgram: 48,
+            instrumentFamily: 'electric-guitar',
+            noteCount: 1,
+            notes: [{ midi: 64, startBeat: 0, duration: 1, velocity: 37 }],
+          },
+        ],
+      }),
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.instrumentFamily).toBe('neutral')
+    expect(result.reference.notes[0]?.velocity).toBe(37)
+  })
+
   it('keeps an authored harmonic row when its sounding pitch differs', () => {
     const harmonicSource = source({
       tracks: [

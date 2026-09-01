@@ -181,10 +181,14 @@ core Learn set in
   never offered.
 - The stage shows only traceable reference notes: authored score events or
   confidence-bearing measured events bound to the active recording. Authored
-  tempo maps, tracks, Guitar Pro fingering, source tuning/name/capo, chord
-  labels, and techniques are attached only when the saved representation
-  really carries them; meter and sections are not claimed. MIDI notes without
-  authored fingering are placed by the shared helper.
+  tempo maps, tracks, note velocity, zero-based GM program, resolved program
+  family, Guitar Pro fingering, source tuning/name/capo, chord labels, and
+  techniques are attached only when the saved representation really carries
+  them; meter and sections are not claimed. An explicit GM program is stronger
+  evidence than a track name or tuning: programs 24–25 are acoustic guitar,
+  26–31 electric guitar, 32–39 bass, and every other explicit program is
+  neutral. A missing program stays missing rather than becoming piano program
+  zero. MIDI notes without authored fingering are placed by the shared helper.
 - Authored score beat time is derived from the tab room's canonical audio
   clock, never from render frames. Beat-to-seconds and seconds-to-beat mapping
   both use the complete persisted tempo map; changing the opening tempo scales
@@ -241,12 +245,25 @@ core Learn set in
   does not create an audio context.
 - One shared output graph exposes guide, drums, bass, stems, and monitor buses
   through a master limiter. Room consumers reuse that graph instead of opening
-  competing audio clocks. Electric guide voices meet before one asset-free
-  staged amp; clean references, bass, backing, drums, tuner and monitor routes
-  keep their own paths. One compact Amp faceplate appears inside both Session
-  and Band sheets: preset and Drive remain immediate, while detailed voicing
-  stays behind one disclosure. Its controls are deliberately amp-inspired,
-  not claims of an exact named circuit or cabinet.
+  competing audio clocks. Inside authored playback, all strings in one actual
+  electric-guitar track meet before one asset-free nonlinear amp, while each
+  separate electric track owns a separate stage. The track mixer fader follows
+  that stage, so raising or lowering a part changes its post-amp mix level and
+  not its distortion. Bass keeps its bass voice; acoustic guitar stays clean;
+  neutral or unsupported pitched programs use a clean generic score tone.
+  Vocals, strings, keyboards, synths, backing stems, drums, tuner, and monitor
+  routes never inherit an authored electric-track amp. Authored MIDI note-on
+  velocity and Guitar Pro dynamics shape strike level; legacy or synthetic
+  notes without velocity keep the established unity default.
+- One compact Amp faceplate appears inside both Session and Band sheets: preset
+  and Drive remain immediate, while detailed voicing stays behind one
+  disclosure. Studio clean, Edge, Crunch, and Lead are calibrated starting
+  points with conservative headroom, approximately matched reference energy,
+  and progressively more mid focus and high-frequency restraint as drive
+  rises. The fixture protects that intent; it does not establish Guitar Rig,
+  named plug-in, physical amplifier, or cabinet fidelity. Owner audition on
+  representative chordal and multi-track MIDI/Guitar Pro songs remains the
+  musical-quality gate before those presets are treated as finished.
 - Full-band sessions expose the distinct Guitar channel muted by default.
   Two-stem sessions expose only Vocals and Backing, never a synthetic Guitar
   control. Returning to Songs cancels a pending start or pauses active voices

@@ -4,12 +4,13 @@
 import type { DrumKitPlayerPort } from '@/features/drum-night/runtime/drum-runtime-types'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { triggerDrumVoice } from '@/lib/drum-voices'
-import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
-import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
+import type { GuitarElectricAmpParameters, GuitarElectricAmpStage, } from '@/lib/guitar/guitar-electric-amp'
+import { createGuitarElectricAmpStage, DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop } from '@/lib/guitar/loop-span'
+import type { MidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
 import { sliderToGain } from '@/lib/volume-curve'
@@ -38,6 +39,10 @@ export interface GuitarRoomBandNote {
   midi: number
   startBeat: number
   durationBeats: number
+  /** Authored strike intensity, 1–127, when the score supplied it. */
+  velocity?: number
+  /** Honest source family used by the shared band router. */
+  instrumentFamily?: MidiProgramFamily
   /**
    * The timbre this note is sounded with, when it differs from the run's. A
    * room sounding several parts at once has a bass line and four guitars in
@@ -190,6 +195,11 @@ export interface GuitarRoomBandOptions {
   createPercussionPlayer?: (
     options: GuitarRoomBandPercussionPlayerOptions,
   ) => DrumKitPlayerPort
+  /** Test seam; production gives every authored guitar track its own stage. */
+  createElectricAmpStage?: (
+    context: BaseAudioContext,
+    initial?: Partial<GuitarElectricAmpParameters>,
+  ) => GuitarElectricAmpStage
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
 }
@@ -358,13 +368,56 @@ function soundNote(
 
   const releaseAt = at + audibleDurationSeconds
   const RELEASE_SECONDS = 0.09
-  voice.gain.gain.setValueAtTime(1, releaseAt)
+  const strikeGain = guitarRoomBandVelocityGain(note.velocity)
+  voice.gain.gain.setValueAtTime(strikeGain, at)
+  voice.gain.gain.setValueAtTime(strikeGain, releaseAt)
   voice.gain.gain.linearRampToValueAtTime(0.0001, releaseAt + RELEASE_SECONDS)
   voice.gain.connect(destination)
 
   const disposeIn =
     (releaseAt + RELEASE_SECONDS - graph.context.currentTime) * 1000
   window.setTimeout(() => voice.dispose(), Math.max(0, disposeIn) + 60)
+}
+
+/**
+ * Preserve authored dynamics without turning a quiet score marking into
+ * silence. Legacy and synthetic notes have no velocity and retain unity.
+ */
+export function guitarRoomBandVelocityGain(
+  velocity: number | undefined,
+): number {
+  if (
+    velocity === undefined ||
+    !Number.isInteger(velocity) ||
+    velocity < 1 ||
+    velocity > 127
+  ) {
+    return 1
+  }
+  const normalized = velocity / 127
+  return 0.12 + 0.88 * normalized ** 1.4
+}
+
+function guitarVariantForFamily(
+  family: MidiProgramFamily | undefined,
+  fallback: GuitarVariant,
+): GuitarVariant {
+  if (family === 'bass') return 'bass'
+  if (family === 'electric-guitar') return 'electric'
+  // An unsupported authored family gets a clean, generic score tone. It must
+  // never become distorted merely because Guitar Night historically defaulted
+  // every pitched part to an electric guitar.
+  if (family === 'acoustic-guitar' || family === 'neutral') return 'acoustic'
+  return fallback
+}
+
+function isElectricGuitarFamily(
+  family: MidiProgramFamily | undefined,
+  variant: GuitarVariant,
+): boolean {
+  return family === undefined
+    ? variant === 'electric'
+    : family === 'electric-guitar'
 }
 
 async function defaultActivateContext(context: AudioContext): Promise<void> {
@@ -402,6 +455,7 @@ export function createGuitarRoomBand(
     guide: Record<GuitarGuideInput, GainNode>
     drums: GainNode
     melodyChannels: Map<string, Partial<Record<GuitarGuideInput, GainNode>>>
+    electricAmpStages: Map<string, GuitarElectricAmpStage>
     percussionTracks: Map<string, GainNode>
   } | null = null
   const callbackTimers = new Set<number>()
@@ -410,6 +464,8 @@ export function createGuitarRoomBand(
 
   const createPercussionPlayer =
     options.createPercussionPlayer ?? createLazyMercurySynthPlayer
+  const createElectricAmpStage =
+    options.createElectricAmpStage ?? createGuitarElectricAmpStage
 
   const percussionChannelForTrack = (
     trackId: string,
@@ -475,6 +531,7 @@ export function createGuitarRoomBand(
     const release = new Promise<void>((resolve) => {
       window.setTimeout(() => {
         for (const node of outputs) node.disconnect()
+        for (const stage of output.electricAmpStages.values()) stage.dispose()
         for (const node of output.percussionTracks.values()) {
           node.disconnect(output.drums)
         }
@@ -522,6 +579,10 @@ export function createGuitarRoomBand(
       electricAmpParameters = { ...parameters }
       if (disposed) return
       graph?.setElectricAmpParameters(electricAmpParameters)
+      const now = context?.currentTime ?? 0
+      for (const stage of runOutput?.electricAmpStages.values() ?? []) {
+        stage.setParameters(electricAmpParameters, now)
+      }
     },
 
     setMelodyChannelLevel(channelId, position) {
@@ -572,6 +633,7 @@ export function createGuitarRoomBand(
         string,
         Partial<Record<GuitarGuideInput, GainNode>>
       >()
+      const electricAmpStages = new Map<string, GuitarElectricAmpStage>()
       const percussionTrackOutputs = new Map<string, GainNode>()
       const runPercussionPlayers = new Map<string, DrumKitPlayerPort>()
       const initiallyAudibleTracks = startOptions.audiblePercussionTrackIds
@@ -604,6 +666,7 @@ export function createGuitarRoomBand(
         guide: guideOutput,
         drums: drumsOutput,
         melodyChannels,
+        electricAmpStages,
         percussionTracks: percussionTrackOutputs,
       }
       let percussionActivations: readonly boolean[]
@@ -745,9 +808,17 @@ export function createGuitarRoomBand(
             beatToSeconds(note.startBeat + note.durationBeats) -
             beatToSeconds(note.startBeat)
           const channelId = note.channelId ?? 'score'
-          const variant = note.variant ?? melodyVariant
-          const guideInput: GuitarGuideInput =
-            variant === 'electric' ? 'electric' : 'clean'
+          const variant = guitarVariantForFamily(
+            note.instrumentFamily,
+            note.variant ?? melodyVariant,
+          )
+          const electricGuitar = isElectricGuitarFamily(
+            note.instrumentFamily,
+            variant,
+          )
+          const guideInput: GuitarGuideInput = electricGuitar
+            ? 'electric'
+            : 'clean'
           let channelOutputs = melodyChannels.get(channelId)
           if (channelOutputs === undefined) {
             channelOutputs = {}
@@ -759,12 +830,28 @@ export function createGuitarRoomBand(
             channelOutput.gain.value = sliderToGain(
               melodyChannelLevels.get(channelId) ?? 1,
             )
-            channelOutput.connect(guideOutput[guideInput])
+            // A track fader belongs after its amp. Putting it before a
+            // nonlinear stage changes distortion when the player only meant
+            // to change mix level.
+            channelOutput.connect(guideOutput.clean)
             channelOutputs[guideInput] = channelOutput
+          }
+          let destination: AudioNode = channelOutput
+          if (electricGuitar) {
+            let stage = electricAmpStages.get(channelId)
+            if (stage === undefined) {
+              stage = createElectricAmpStage(
+                currentGraph.context,
+                electricAmpParameters,
+              )
+              stage.output.connect(channelOutput)
+              electricAmpStages.set(channelId, stage)
+            }
+            destination = stage.input
           }
           soundNote(
             currentGraph,
-            channelOutput,
+            destination,
             note,
             noteAt,
             noteDurationSeconds,

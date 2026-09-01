@@ -98,7 +98,7 @@ describe('createGuitarSessionAudioGraph', () => {
     // The shared route keeps the expanded staged amp; the lightweight legacy
     // factory is reserved for synth voices outside Guitar Night.
     expect(context.waveShapers).toHaveLength(3)
-    expect(context.filters).toHaveLength(8)
+    expect(context.filters).toHaveLength(9)
     expect(graph.guideInputs.clean).toBe(graph.buses.guide)
     expect(electricInput).not.toBe(guide)
     expect(ampOutputs).toHaveLength(1)

@@ -81,10 +81,14 @@ describe('parseMidiSongViaProject', () => {
 
   it('restarts a pitch struck again before it was released', () => {
     const song = parse(
-      buildMidi([...noteOn(60, 0), ...noteOn(60, 480), ...noteOff(60, 480)]),
+      buildMidi([
+        ...noteOn(60, 0, 0, 55),
+        ...noteOn(60, 480, 0, 113),
+        ...noteOff(60, 480),
+      ]),
     )
     expect(song?.tracks[0].notes).toEqual([
-      { midi: 60, startBeat: 1, duration: 1 },
+      { midi: 60, startBeat: 1, duration: 1, velocity: 113 },
     ])
   })
 
@@ -103,7 +107,9 @@ describe('parseMidiSongViaProject', () => {
     expect(song?.tracks[0]).toMatchObject({
       name: 'Track 1',
       instrumentName: 'Unknown Instrument',
+      instrumentFamily: 'neutral',
     })
+    expect(song?.tracks[0].sourceProgram).toBeUndefined()
   })
 
   it('names a nameless track after its instrument when it has one', () => {
@@ -113,7 +119,34 @@ describe('parseMidiSongViaProject', () => {
     expect(song?.tracks[0]).toMatchObject({
       name: 'Steel Guitar',
       instrumentName: 'Steel Guitar',
+      sourceProgram: 25,
+      instrumentFamily: 'acoustic-guitar',
     })
+  })
+
+  it('retains explicit GM programs and classifies only guitar and bass ranges', () => {
+    const song = parse(
+      buildMidi(
+        [0x00, 0xc0, 30, ...noteOn(60), ...noteOff(60, 480)],
+        [0x00, 0xc0, 33, ...noteOn(40), ...noteOff(40, 480)],
+        [0x00, 0xc0, 48, ...noteOn(64), ...noteOff(64, 480)],
+        [0x00, 0xc0, 52, ...noteOn(67), ...noteOff(67, 480)],
+        [0x00, 0xc0, 80, ...noteOn(72), ...noteOff(72, 480)],
+      ),
+    )
+
+    expect(
+      song?.tracks.map((track) => ({
+        sourceProgram: track.sourceProgram,
+        instrumentFamily: track.instrumentFamily,
+      })),
+    ).toEqual([
+      { sourceProgram: 30, instrumentFamily: 'electric-guitar' },
+      { sourceProgram: 33, instrumentFamily: 'bass' },
+      { sourceProgram: 48, instrumentFamily: 'neutral' },
+      { sourceProgram: 52, instrumentFamily: 'neutral' },
+      { sourceProgram: 80, instrumentFamily: 'neutral' },
+    ])
   })
 
   it('treats an empty track name as no name at all', () => {
