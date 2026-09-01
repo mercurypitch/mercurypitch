@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { CIRCUIT_DRUM_SYNTH_MODEL, circuitHitVariation, circuitMetallicExcitation, createCircuitDrumEngine, createCircuitDrumSynth, } from './circuit-drum-synth'
+import { CIRCUIT_DRUM_SYNTH_MODEL, circuitHitVariation, circuitMetallicExcitation, circuitVelocityAmplitude, createCircuitDrumEngine, createCircuitDrumSynth, } from './circuit-drum-synth'
 
 interface ParameterEvent {
   readonly kind: 'cancel' | 'exponential' | 'hold' | 'set' | 'target'
@@ -183,6 +183,12 @@ describe('Circuit drum model', () => {
     expect(first.gainRatio).toBeLessThanOrEqual(1.04)
   })
 
+  it('preserves Circuit velocity response independently from sampled-kit curation', () => {
+    expect(circuitVelocityAmplitude(1)).toBeCloseTo((1 / 127) ** 0.72, 10)
+    expect(circuitVelocityAmplitude(80)).toBeCloseTo((80 / 127) ** 0.72, 10)
+    expect(circuitVelocityAmplitude(127)).toBe(1)
+  })
+
   it('caches one dense finite metallic excitation per AudioContext', () => {
     const firstContext = new FakeAudioContext()
     const secondContext = new FakeAudioContext()
@@ -279,6 +285,68 @@ describe('createCircuitDrumEngine', () => {
     expect(authoredOpenHat?.stops).toHaveLength(2)
   })
 
+  it('releases an explicit GM cymbal target only in the requested lane', () => {
+    const context = new FakeAudioContext()
+    const destination = new FakeAudioNode()
+    const engine = createCircuitDrumEngine()
+    const hostContext = context as unknown as BaseAudioContext
+    const hostDestination = destination as unknown as AudioNode
+
+    engine.trigger(hostContext, hostDestination, {
+      gmKey: 49,
+      velocity: 108,
+      atContextTime: 11,
+      lane: 'live',
+    })
+    engine.trigger(hostContext, hostDestination, {
+      gmKey: 49,
+      velocity: 108,
+      atContextTime: 11,
+      lane: 'authored',
+    })
+
+    expect(engine.choke('cymbal:49', 11.11, 'authored')).toBe(1)
+    expect(engine.choke('cymbal:49', 11.12, 'authored')).toBe(0)
+    expect(engine.choke('cymbal:49', 11.13, 'live')).toBe(1)
+  })
+
+  it('lets panic override a future choke before reopening the lane', () => {
+    const context = new FakeAudioContext()
+    const destination = new FakeAudioNode()
+    const engine = createCircuitDrumEngine()
+    const hostContext = context as unknown as BaseAudioContext
+    const hostDestination = destination as unknown as AudioNode
+
+    engine.trigger(hostContext, hostDestination, {
+      gmKey: 49,
+      velocity: 108,
+      atContextTime: 12,
+      lane: 'authored',
+    })
+    const staleCrash = context.bufferSources[0]!
+    const staleGate = context.gains[0]!
+
+    expect(engine.choke('cymbal:49', 12.11, 'authored')).toBe(1)
+    engine.panic('authored')
+    engine.trigger(hostContext, hostDestination, {
+      gmKey: 49,
+      velocity: 108,
+      lane: 'authored',
+    })
+
+    expect(staleCrash.stops).toContain(10.105)
+    expect(staleGate.gain.events).toContainEqual({
+      kind: 'hold',
+      at: 10,
+    })
+    expect(staleGate.gain.events).toContainEqual({
+      kind: 'target',
+      at: 10,
+      value: 0.0001,
+    })
+    expect(context.bufferSources[1]?.starts).toEqual([10])
+  })
+
   it('tears down active sources and rejects hits after disposal', () => {
     const context = new FakeAudioContext()
     const destination = new FakeAudioNode()
@@ -324,5 +392,24 @@ describe('createCircuitDrumSynth', () => {
     output = fakeOutput as unknown as AudioNode
     expect(player.activate()).toBe(true)
     expect(player.trigger({ gmKey: 36, velocity: 100 })).toBe('synthesized')
+  })
+
+  it('reports choked, idle, and unmapped GM-target release truth', () => {
+    const context = new FakeAudioContext()
+    const output = new FakeAudioNode()
+    const player = createCircuitDrumSynth({
+      getAudioContext: () => context as unknown as AudioContext,
+      getOutput: () => output as unknown as AudioNode,
+    })
+
+    player.trigger({
+      gmKey: 49,
+      velocity: 110,
+      lane: 'authored',
+    })
+
+    expect(player.choke?.({ gmKey: 49, lane: 'authored' })).toBe('choked')
+    expect(player.choke?.({ gmKey: 49, lane: 'authored' })).toBe('idle')
+    expect(player.choke?.({ gmKey: 38, lane: 'authored' })).toBe('unmapped')
   })
 })

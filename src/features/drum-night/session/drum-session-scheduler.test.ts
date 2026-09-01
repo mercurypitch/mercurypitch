@@ -7,6 +7,7 @@ import type { DrumRuntimeClock } from '../runtime/drum-transport'
 import { createDrumTransport } from '../runtime/drum-transport'
 import { drumSongFixture, percussionTrackFixture, readyDocumentFixture, } from './drum-session.test-fixtures'
 import { createDrumSessionScheduler } from './drum-session-scheduler'
+import { AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS, MAX_DRUM_SESSION_ACTION_EARLY_MS, } from './drum-session-scheduler'
 
 class FakeClock implements DrumRuntimeClock {
   private timestampMs = 0
@@ -124,7 +125,8 @@ describe('Drum Night session scheduler', () => {
       transport,
       player,
       lookaheadMs: 600,
-      performanceTimestampToContextTime: () => 10,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
     })
 
     scheduler.setSession(readyDocumentFixture())
@@ -140,6 +142,227 @@ describe('Drum Night session scheduler', () => {
     expect(scheduler.snapshot().lastOccurrence?.triggerTruth).toBe(
       'synthesized',
     )
+  })
+
+  it('strikes an authored choked cymbal before scheduling its lane-safe release', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const order: string[] = []
+    const player = {
+      ...playerFixture('sampled'),
+      trigger: vi.fn<DrumKitPlayerPort['trigger']>(() => {
+        order.push('trigger')
+        return 'sampled'
+      }),
+      choke: vi.fn<NonNullable<DrumKitPlayerPort['choke']>>(() => {
+        order.push('choke')
+        return 'choked'
+      }),
+    } satisfies DrumKitPlayerPort
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: () => 10,
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                {
+                  id: 'grabbed-crash',
+                  gmKey: 49,
+                  startBeat: 0,
+                  velocity: 118,
+                  articulation: 'choke',
+                },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+
+    expect(order).toEqual(['trigger', 'choke'])
+    expect(player.choke).toHaveBeenCalledWith({
+      gmKey: 49,
+      atContextTime: 10 + AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS,
+      sourceId: 'authored:drums:grabbed-crash:choke',
+      lane: 'authored',
+    })
+    expect(scheduler.snapshot().lastOccurrence).toMatchObject({
+      articulation: 'choke',
+      triggerTruth: 'sampled',
+      chokeTruth: 'choked',
+    })
+  })
+
+  it('schedules a group choke after every same-GM attack inside its authored tail', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const actionOrder: string[] = []
+    const activeCrashSources: string[] = []
+    const player = {
+      ...playerFixture('sampled'),
+      trigger: vi.fn<DrumKitPlayerPort['trigger']>((hit) => {
+        actionOrder.push(`trigger:${hit.sourceId}:${hit.atContextTime}`)
+        if (hit.gmKey === 49 && hit.sourceId !== undefined) {
+          activeCrashSources.push(hit.sourceId)
+        }
+        return 'sampled'
+      }),
+      choke: vi.fn<NonNullable<DrumKitPlayerPort['choke']>>((request) => {
+        actionOrder.push(
+          `choke:${request.sourceId}:${activeCrashSources.join(',')}:${request.atContextTime}`,
+        )
+        return 'choked'
+      }),
+    } satisfies DrumKitPlayerPort
+    let contextReady = false
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: (timestampMs) =>
+        contextReady ? 10 + timestampMs / 1_000 : null,
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          bpm: 120,
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                {
+                  id: 'grabbed-crash',
+                  gmKey: 49,
+                  startBeat: 0,
+                  velocity: 118,
+                  articulation: 'choke',
+                },
+                {
+                  id: 'following-crash',
+                  gmKey: 49,
+                  startBeat: 0.1,
+                  velocity: 112,
+                },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+    transport.start()
+
+    contextReady = true
+    const occurrences = scheduler.schedule(600)
+
+    expect(actionOrder).toEqual([
+      'trigger:authored:drums:grabbed-crash:10',
+      'trigger:authored:drums:following-crash:10.05',
+      'choke:authored:drums:grabbed-crash:choke:authored:drums:grabbed-crash,authored:drums:following-crash:10.11',
+    ])
+    expect(player.choke).toHaveBeenCalledWith({
+      gmKey: 49,
+      atContextTime: 10 + AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS,
+      sourceId: 'authored:drums:grabbed-crash:choke',
+      lane: 'authored',
+    })
+    expect(
+      occurrences.find(
+        (occurrence) => occurrence.sourceHitId === 'grabbed-crash',
+      ),
+    ).toMatchObject({
+      triggerTruth: 'sampled',
+      chokeTruth: 'choked',
+    })
+  })
+
+  it('holds a choke release until the next horizon reveals every earlier same-GM attack', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const actionOrder: string[] = []
+    const activeCrashSources: string[] = []
+    const player = {
+      ...playerFixture('sampled'),
+      trigger: vi.fn<DrumKitPlayerPort['trigger']>((hit) => {
+        const sourceId = hit.sourceId ?? 'unknown'
+        actionOrder.push(`trigger:${sourceId}`)
+        if (hit.gmKey === 49) activeCrashSources.push(sourceId)
+        return 'sampled'
+      }),
+      choke: vi.fn<NonNullable<DrumKitPlayerPort['choke']>>(() => {
+        actionOrder.push(`choke:${activeCrashSources.join(',')}`)
+        return 'choked'
+      }),
+    } satisfies DrumKitPlayerPort
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 100,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
+      humanize: (hit) => ({
+        timeOffsetMs: 0,
+        velocity: hit.velocity,
+        ornaments: [],
+      }),
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          bpm: 120,
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                {
+                  id: 'grabbed-crash',
+                  gmKey: 49,
+                  startBeat: 0,
+                  velocity: 118,
+                  articulation: 'choke',
+                },
+                {
+                  id: 'horizon-crash',
+                  gmKey: 49,
+                  startBeat: 0.21,
+                  velocity: 112,
+                },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+    expect(actionOrder).toEqual(['trigger:authored:drums:grabbed-crash'])
+
+    clock.advance(80)
+
+    expect(actionOrder).toEqual([
+      'trigger:authored:drums:grabbed-crash',
+      'trigger:authored:drums:horizon-crash',
+      'choke:authored:drums:grabbed-crash,authored:drums:horizon-crash',
+    ])
+    expect(player.choke).toHaveBeenCalledWith({
+      gmKey: 49,
+      atContextTime: 10 + AUTHORED_CYMBAL_CHOKE_TAIL_SECONDS,
+      sourceId: 'authored:drums:grabbed-crash:choke',
+      lane: 'authored',
+    })
+    expect(scheduler.snapshot()).toMatchObject({
+      scheduledOccurrenceCount: 2,
+      triggerCounts: { sampled: 2 },
+      lastOccurrence: {
+        sourceHitId: 'horizon-crash',
+        triggerTruth: 'sampled',
+      },
+    })
   })
 
   it('invalidates authored audio without releasing a concurrent live lane', () => {
@@ -161,7 +384,8 @@ describe('Drum Night session scheduler', () => {
     const scheduler = createDrumSessionScheduler({
       transport,
       player,
-      performanceTimestampToContextTime: () => 10,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
     })
 
     scheduler.setSession(readyDocumentFixture())
@@ -528,7 +752,7 @@ describe('Drum Night session scheduler', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({ clock, countInBeats: 0 })
     const player = playerFixture()
-    const mapper = vi.fn(() => 10)
+    const mapper = vi.fn((timestampMs: number) => 10 + timestampMs / 1_000)
     const scheduler = createDrumSessionScheduler({
       transport,
       player,
@@ -569,7 +793,8 @@ describe('Drum Night session scheduler', () => {
     transport.start()
 
     expect(player.trigger).toHaveBeenCalledTimes(48)
-    expect(mapper).toHaveBeenCalledTimes(48)
+    // One extra conversion establishes the safe action-queue watermark.
+    expect(mapper).toHaveBeenCalledTimes(49)
     expect(scheduler.snapshot()).toMatchObject({
       indexedHitCount: 500_001,
       playableHitCount: 500_001,
@@ -668,6 +893,61 @@ describe('Drum Night session scheduler', () => {
     expect(player.trigger.mock.calls[1]?.[0].atContextTime).toBeCloseTo(30.05)
   })
 
+  it('drops a watermark-held action on pause before scheduling a fresh resume occurrence', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 100,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
+      humanize: (hit) => ({
+        timeOffsetMs: 0,
+        velocity: hit.velocity,
+        ornaments: [],
+      }),
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          bpm: 120,
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                {
+                  id: 'held-hat',
+                  gmKey: 42,
+                  startBeat: 0.19,
+                  velocity: 70,
+                  writtenDuration: 1,
+                },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+    expect(player.trigger).not.toHaveBeenCalled()
+    transport.pause()
+    clock.advance(1_000)
+    transport.start()
+    clock.advance(60)
+
+    expect(player.trigger).toHaveBeenCalledOnce()
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: 'authored:drums:held-hat',
+        atContextTime: 11.095,
+      }),
+    )
+    expect(player.panic.mock.calls.length).toBeGreaterThanOrEqual(3)
+    expect(scheduler.snapshot().scheduledOccurrenceCount).toBe(1)
+  })
+
   it('reports unsupported and fallback truth without substituting a snare', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({ clock, countInBeats: 0 })
@@ -676,7 +956,8 @@ describe('Drum Night session scheduler', () => {
       transport,
       player,
       lookaheadMs: 100,
-      performanceTimestampToContextTime: () => 10,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
     })
     const song = drumSongFixture({
       percussionTracks: [
@@ -725,7 +1006,8 @@ describe('Drum Night session scheduler', () => {
     const scheduler = createDrumSessionScheduler({
       transport,
       player,
-      performanceTimestampToContextTime: () => (contextReady ? 10 : null),
+      performanceTimestampToContextTime: (timestampMs) =>
+        contextReady ? 10 + timestampMs / 1_000 : null,
     })
 
     scheduler.setSession(readyDocumentFixture())
@@ -798,6 +1080,254 @@ describe('humanize hook', () => {
       10.012,
       6,
     )
+  })
+
+  it('executes reversed open and closed hats in their humanized time order', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: () => 10,
+      humanize: (hit) => ({
+        timeOffsetMs: hit.gmKey === 46 ? 20 : -20,
+        velocity: hit.velocity,
+        ornaments: [],
+      }),
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                { id: 'closed', gmKey: 42, startBeat: 0, velocity: 90 },
+                { id: 'open', gmKey: 46, startBeat: 0, velocity: 100 },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+
+    expect(
+      player.trigger.mock.calls.map(([hit]) => [
+        hit.sourceId,
+        hit.atContextTime,
+      ]),
+    ).toEqual([
+      ['authored:drums:closed', 9.98],
+      ['authored:drums:open', 10.02],
+    ])
+  })
+
+  it.each([
+    {
+      first: { id: 'first-closed', gmKey: 42 },
+      horizon: { id: 'horizon-open', gmKey: 46 },
+      expected: ['authored:drums:horizon-open', 'authored:drums:first-closed'],
+    },
+    {
+      first: { id: 'first-open', gmKey: 46 },
+      horizon: { id: 'horizon-closed', gmKey: 42 },
+      expected: ['authored:drums:horizon-closed', 'authored:drums:first-open'],
+    },
+  ])(
+    'holds $first.id until the next horizon reveals earlier $horizon.id',
+    ({ first, horizon, expected }) => {
+      const clock = new FakeClock()
+      const transport = createDrumTransport({ clock, countInBeats: 0 })
+      const player = playerFixture('sampled')
+      const scheduler = createDrumSessionScheduler({
+        transport,
+        player,
+        lookaheadMs: 100,
+        performanceTimestampToContextTime: (timestampMs) =>
+          10 + timestampMs / 1_000,
+        humanize: (hit) => ({
+          timeOffsetMs: hit.startBeat > 0.2 ? -30 : 0,
+          velocity: hit.velocity,
+          ornaments: [],
+        }),
+      })
+      scheduler.setSession(
+        readyDocumentFixture({
+          song: drumSongFixture({
+            bpm: 120,
+            percussionTracks: [
+              percussionTrackFixture({
+                hits: [
+                  { ...first, startBeat: 0.19, velocity: 90 },
+                  { ...horizon, startBeat: 0.22, velocity: 100 },
+                ],
+              }),
+            ],
+          }),
+        }),
+      )
+
+      transport.start()
+      expect(player.trigger).not.toHaveBeenCalled()
+
+      clock.advance(60)
+
+      const calls = player.trigger.mock.calls.map(([hit]) => hit)
+      expect(calls.map((hit) => hit.sourceId)).toEqual(expected)
+      expect(calls[0]?.atContextTime).toBeCloseTo(10.08, 6)
+      expect(calls[1]?.atContextTime).toBeCloseTo(10.095, 6)
+    },
+  )
+
+  it('holds an action exactly on the finite watermark for a tied next-horizon closer', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 100,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
+      humanize: (hit) => ({
+        timeOffsetMs: hit.gmKey === 46 ? -MAX_DRUM_SESSION_ACTION_EARLY_MS : 0,
+        velocity: hit.velocity,
+        ornaments: [],
+      }),
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          bpm: 120,
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                {
+                  id: 'watermark-closed',
+                  gmKey: 42,
+                  startBeat: 0.102,
+                  velocity: 90,
+                },
+                {
+                  id: 'next-horizon-open',
+                  gmKey: 46,
+                  startBeat: 0.2,
+                  velocity: 100,
+                },
+                {
+                  id: 'duration-anchor',
+                  gmKey: 36,
+                  startBeat: 1,
+                  velocity: 80,
+                },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+    expect(player.trigger).not.toHaveBeenCalled()
+
+    clock.advance(16)
+
+    const calls = player.trigger.mock.calls.map(([hit]) => hit)
+    expect(calls.map((hit) => hit.sourceId)).toEqual([
+      'authored:drums:next-horizon-open',
+      'authored:drums:watermark-closed',
+    ])
+    expect(calls[0]?.atContextTime).toBeCloseTo(10.051, 6)
+    expect(calls[1]?.atContextTime).toBeCloseTo(10.051, 6)
+  })
+
+  it('executes a later source ornament before an earlier source main hit', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: () => 10,
+      humanize: (hit) =>
+        hit.gmKey === 38
+          ? {
+              timeOffsetMs: 30,
+              velocity: hit.velocity,
+              ornaments: [{ leadMs: 50, velocity: 54 }],
+            }
+          : {
+              timeOffsetMs: 20,
+              velocity: hit.velocity,
+              ornaments: [],
+            },
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [
+                { id: 'kick', gmKey: 36, startBeat: 0, velocity: 100 },
+                { id: 'snare', gmKey: 38, startBeat: 0, velocity: 110 },
+              ],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+
+    const calls = player.trigger.mock.calls.map(([hit]) => hit)
+    expect(calls.map((hit) => hit.sourceId)).toEqual([
+      'authored:drums:snare:ornament',
+      'authored:drums:kick',
+      'authored:drums:snare',
+    ])
+    expect(calls[0]?.atContextTime).toBeCloseTo(9.98, 6)
+    expect(calls[1]?.atContextTime).toBeCloseTo(10.02, 6)
+    expect(calls[2]?.atContextTime).toBeCloseTo(10.03, 6)
+  })
+
+  it('clamps an injected hook to the action-queue early watermark contract', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: () => 10,
+      humanize: (hit) => ({
+        timeOffsetMs: -1_000,
+        velocity: hit.velocity,
+        ornaments: [{ leadMs: 1_000, velocity: 54 }],
+      }),
+    })
+    scheduler.setSession(
+      readyDocumentFixture({
+        song: drumSongFixture({
+          percussionTracks: [
+            percussionTrackFixture({
+              hits: [{ id: 'kick', gmKey: 36, startBeat: 0, velocity: 100 }],
+            }),
+          ],
+        }),
+      }),
+    )
+
+    transport.start()
+
+    const earliest = 10 - MAX_DRUM_SESSION_ACTION_EARLY_MS / 1_000
+    expect(player.trigger).toHaveBeenCalledTimes(2)
+    for (const [hit] of player.trigger.mock.calls) {
+      expect(hit.atContextTime).toBeCloseTo(earliest, 6)
+    }
   })
 
   it('keeps authored values when the hook throws or returns null', () => {

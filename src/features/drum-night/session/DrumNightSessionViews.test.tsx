@@ -203,6 +203,91 @@ describe('DrumScoreSheet', () => {
     expect(liveRegions[0]).toHaveTextContent('Bar 1')
   })
 
+  it('draws only authored accent and choke notation, never a velocity-inferred mark', () => {
+    const session = readySessionFixture({
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              { id: 'loud', gmKey: 38, startBeat: 0, velocity: 127 },
+              {
+                id: 'normal',
+                gmKey: 38,
+                startBeat: 0.5,
+                velocity: 95,
+                accent: 'normal',
+              },
+              {
+                id: 'heavy',
+                gmKey: 49,
+                startBeat: 1,
+                velocity: 127,
+                accent: 'heavy',
+              },
+              {
+                id: 'tenuto',
+                gmKey: 51,
+                startBeat: 1.5,
+                velocity: 95,
+                accent: 'tenuto',
+              },
+              {
+                id: 'choke',
+                gmKey: 57,
+                startBeat: 2,
+                velocity: 111,
+                articulation: 'choke',
+              },
+            ],
+          }),
+        ],
+      }),
+    })
+
+    const view = render(() => (
+      <DrumScoreSheet session={() => session} playheadBeat={() => 0} />
+    ))
+
+    const loudHit = view.container.querySelector(
+      '[data-gm-key="38"][data-velocity="127"]',
+    )
+    expect(loudHit).not.toHaveAttribute('data-accent')
+    expect(loudHit?.querySelector('text')).toBeNull()
+    expect(
+      view.container.querySelector('[data-accent="normal"] text'),
+    ).toHaveTextContent('>')
+    expect(
+      view.container.querySelector('[data-accent="heavy"] text'),
+    ).toHaveTextContent('^')
+    expect(
+      view.container.querySelector('[data-accent="tenuto"] text'),
+    ).toHaveTextContent('—')
+    expect(
+      view.container.querySelector('[data-articulation="choke"] text'),
+    ).toHaveTextContent('choke')
+
+    const legend = screen.getByRole('list', {
+      name: 'Authored drum notation in displayed score',
+    })
+    expect(legend).toHaveTextContent('>Normal accent')
+    expect(legend).toHaveTextContent('^Heavy accent')
+    expect(legend).toHaveTextContent('—Tenuto')
+    expect(legend).toHaveTextContent('chokeCymbal strike, then stop')
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      /Only authored accent marks are shown: > means normal, \^ means heavy, and — means tenuto.*audible cymbal strike that stops early/i,
+    )
+
+    const semanticEvents = screen
+      .getByText('Read this score window as an event list')
+      .closest('details')
+    expect(semanticEvents).toHaveTextContent('normal accent (>)')
+    expect(semanticEvents).toHaveTextContent('heavy accent (^)')
+    expect(semanticEvents).toHaveTextContent('tenuto (—)')
+    expect(semanticEvents).toHaveTextContent(
+      'choke articulation: audible cymbal strike, then early stop',
+    )
+  })
+
   it('renders the next page as a dimmed look-ahead row and hides it on the last page', () => {
     // 24 quarter-note beats of snares = 6 bars in 4/4: two 4-bar pages.
     const hits = Array.from({ length: 24 }, (_, beat) => ({

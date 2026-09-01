@@ -39,13 +39,15 @@ interface GuitarSessionAudioGraphOptions {
   electricAmpParameters?: Partial<GuitarElectricAmpParameters>
 }
 
-const DEFAULT_BUS_LEVELS: Record<GuitarSessionAudioBus, number> = {
+export const GUITAR_SESSION_DEFAULT_BUS_LEVELS: Readonly<
+  Record<GuitarSessionAudioBus, number>
+> = Object.freeze({
   guide: 0.72,
-  drums: 0.78,
+  drums: 1,
   bass: 0.68,
   stems: 1,
   monitor: 0.74,
-}
+})
 
 function clamp(value: number): number {
   return Math.min(1, Math.max(0, value))
@@ -103,7 +105,8 @@ export function createGuitarSessionAudioGraph(
   } satisfies Record<GuitarGuideInput, AudioNode>
 
   for (const bus of Object.keys(buses) as GuitarSessionAudioBus[]) {
-    const level = options.busLevels?.[bus] ?? DEFAULT_BUS_LEVELS[bus]
+    const level =
+      options.busLevels?.[bus] ?? GUITAR_SESSION_DEFAULT_BUS_LEVELS[bus]
     buses[bus].gain.value = sliderToGain(clamp(level))
     buses[bus].connect(master)
   }

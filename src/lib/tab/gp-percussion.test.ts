@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { guitarProDynamicVelocity, resolveGuitarProPercussion, } from './gp-percussion'
+import { guitarProAccent, guitarProDynamicVelocity, resolveGuitarProPercussion, } from './gp-percussion'
 
 const modernTrack = {
   percussionArticulations: [
@@ -80,6 +80,74 @@ describe('resolveGuitarProPercussion', () => {
     })
   })
 
+  it.each([
+    [29, 59],
+    [94, 51],
+    [95, 55],
+    [96, 52],
+    [97, 49],
+    [98, 57],
+  ])(
+    'retains legacy choke identity %i as a choked GM %i strike',
+    (id, gmKey) => {
+      expect(
+        resolveGuitarProPercussion({ percussionArticulations: [] }, id),
+      ).toMatchObject({
+        gmKey,
+        articulation: 'choke',
+        source: { articulationId: id },
+      })
+    },
+  )
+
+  it('recognizes modern chokes by exact articulation id or output identity', () => {
+    expect(
+      resolveGuitarProPercussion(
+        {
+          percussionArticulations: [
+            {
+              ...modernTrack.percussionArticulations[0],
+              id: 94,
+              outputMidiNumber: 51,
+            },
+          ],
+        },
+        0,
+      ),
+    ).toMatchObject({ gmKey: 51, articulation: 'choke' })
+    expect(
+      resolveGuitarProPercussion(
+        {
+          percussionArticulations: [
+            {
+              ...modernTrack.percussionArticulations[0],
+              outputMidiNumber: 95,
+            },
+          ],
+        },
+        0,
+      ),
+    ).toMatchObject({ gmKey: 55, articulation: 'choke' })
+  })
+
+  it('does not infer a choke from a free-form modern label', () => {
+    const resolved = resolveGuitarProPercussion(
+      {
+        percussionArticulations: [
+          {
+            ...modernTrack.percussionArticulations[0],
+            elementType: 'Ride choke',
+            outputMidiNumber: 51,
+          },
+        ],
+      },
+      0,
+    )
+
+    expect(resolved).toMatchObject({ gmKey: 51 })
+    expect(resolved).not.toHaveProperty('articulation')
+  })
+
   it('drops an out-of-range modern index instead of treating it as legacy', () => {
     expect(resolveGuitarProPercussion(modernTrack, 91)).toBeNull()
   })
@@ -113,6 +181,18 @@ describe('resolveGuitarProPercussion', () => {
   })
 })
 
+describe('guitarProAccent', () => {
+  it('maps only alphaTab Normal, Heavy, and Tenuto accent identities', () => {
+    expect([0, 1, 2, 3, 999].map(guitarProAccent)).toEqual([
+      undefined,
+      'normal',
+      'heavy',
+      'tenuto',
+      undefined,
+    ])
+  })
+})
+
 describe('guitarProDynamicVelocity', () => {
   it('matches alphaTab dynamics and uses mezzo-forte for unknown values', () => {
     expect(
@@ -124,5 +204,13 @@ describe('guitarProDynamicVelocity', () => {
       95, 95, 95, 111, 95, 111, 1, 87, 111,
     ])
     expect(guitarProDynamicVelocity(999)).toBe(79)
+  })
+
+  it('matches alphaTab accent steps and clamps heavy attacks', () => {
+    expect(guitarProDynamicVelocity(5, 'normal')).toBe(111)
+    expect(guitarProDynamicVelocity(5, 'heavy')).toBe(127)
+    expect(guitarProDynamicVelocity(5, 'tenuto')).toBe(95)
+    expect(guitarProDynamicVelocity(999, 'normal')).toBe(95)
+    expect(guitarProDynamicVelocity(7, 'heavy')).toBe(127)
   })
 })

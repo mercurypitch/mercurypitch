@@ -7,6 +7,7 @@
 //
 //   node scripts/curate-drum-night-kits.mjs
 //   node scripts/curate-drum-night-kits.mjs --check
+//   node scripts/curate-drum-night-kits.mjs --recalibrate-existing
 //   node scripts/curate-drum-night-kits.mjs --publish-plan
 
 import { Buffer } from 'node:buffer'
@@ -17,6 +18,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { calibrateDrumKitResources, drumKitCalibrationMetadata, projectCalibratedResources, } from './drum-kit-calibration.mjs'
 import { serializeDrumKitCatalogProjections, serializeDrumKitGeneratedJson, } from './drum-kit-catalog-projections.mjs'
 import { DRUM_KIT_OPUS_BITRATE, DRUM_KIT_OPUS_CHANNELS, DRUM_KIT_OPUS_MIME_TYPE, DRUM_KIT_OPUS_SAMPLE_RATE, encodeDrumKitOpusCatalog, verifyDrumKitOpusCatalog, } from './drum-kit-opus.mjs'
 
@@ -34,6 +36,10 @@ const generatedRuntimeProjectionPath = resolve(
 const generatedOpusProjectionPath = resolve(
   repo,
   'src/features/drum-night/audio/drum-kit-opus.generated.json',
+)
+const generatedCalibrationReportPath = resolve(
+  repo,
+  'src/features/drum-night/audio/drum-kit-calibration.generated.json',
 )
 const publishPlanPath = resolve(publicRoot, 'publish-plan.json')
 const sonivoxPath = resolve(
@@ -64,11 +70,7 @@ const TRANSIENT_RELATIVE_DB = -35
 const MAXIMUM_ONSET_MS = 5
 const ONSET_PREROLL_MS = 2
 const TRANSIENT_WINDOW_MS = 250
-const MAXIMUM_PLAYBACK_GAIN_DB = 12
-const MAXIMUM_LAYER_BOUNDARY_DB = 2
-const MAXIMUM_ROUND_ROBIN_SPREAD_DB = 1.5
-const MAXIMUM_FULL_SCALE_PEAK_DB = -6
-const TARGET_TRANSIENT_PEAK_DB = -9
+const MINIMUM_NOISE_WINDOW_MS = 20
 const STATIC_PUBLIC_FILES = Object.freeze([
   'README.md',
   'classic-gm/APACHE-2.0.txt',
@@ -80,12 +82,19 @@ const STATIC_PUBLIC_FILES = Object.freeze([
 const args = new Set(process.argv.slice(2))
 const checkOnly = args.has('--check')
 const planOnly = args.has('--publish-plan')
+const recalibrateOnly = args.has('--recalibrate-existing')
 const unknownArgs = [...args].filter(
-  (argument) => argument !== '--check' && argument !== '--publish-plan',
+  (argument) =>
+    argument !== '--check' &&
+    argument !== '--publish-plan' &&
+    argument !== '--recalibrate-existing',
 )
-if (unknownArgs.length > 0 || (checkOnly && planOnly)) {
+if (
+  unknownArgs.length > 0 ||
+  [checkOnly, planOnly, recalibrateOnly].filter(Boolean).length > 1
+) {
   throw new Error(
-    'Usage: node scripts/curate-drum-night-kits.mjs [--check|--publish-plan]',
+    'Usage: node scripts/curate-drum-night-kits.mjs [--check|--recalibrate-existing|--publish-plan]',
   )
 }
 
@@ -780,11 +789,37 @@ function analyzeAudio(inputPath, workDirectory, label) {
   for (let frame = transientOnsetFrame; frame < transientEndFrame; frame += 1) {
     if (framePeaks[frame] > transientPeak) transientPeak = framePeaks[frame]
   }
+  const rmsDb = (firstSampleFrame, finalSampleFrame) => {
+    const firstSample = Math.max(0, firstSampleFrame * CHANNELS)
+    const finalSample = Math.min(samples.length, finalSampleFrame * CHANNELS)
+    if (finalSample <= firstSample) return null
+    let sumSquares = 0
+    for (let index = firstSample; index < finalSample; index += 1) {
+      sumSquares += samples[index] ** 2
+    }
+    const rms = Math.sqrt(sumSquares / (finalSample - firstSample))
+    return rms > 0 ? gainToDb(rms) : null
+  }
+  const transientFirstSampleFrame = transientOnsetFrame * samplesPerFrame
+  const transientFinalSampleFrame = Math.min(
+    sampleFrames,
+    transientEndFrame * samplesPerFrame,
+  )
+  const noiseFloorDb =
+    transientFirstSampleFrame >=
+    Math.ceil((MINIMUM_NOISE_WINDOW_MS / 1_000) * SAMPLE_RATE)
+      ? rmsDb(0, transientFirstSampleFrame)
+      : null
   return {
     hardOnsetMs: hardOnsetFrame * millisecondsPerFrame,
     transientOnsetMs: transientOnsetFrame * millisecondsPerFrame,
     transientPeakDb: gainToDb(transientPeak),
     fullPeakDb: gainToDb(fullPeak),
+    transientPowerDb: rmsDb(
+      transientFirstSampleFrame,
+      transientFinalSampleFrame,
+    ),
+    noiseFloorDb,
   }
 }
 
@@ -904,134 +939,20 @@ async function curateZone(zone, workDirectory, outputRoot) {
   }
 }
 
-function average(values) {
-  return values.reduce((sum, value) => sum + value, 0) / values.length
-}
-
-function velocityGain(velocity) {
-  return 0.12 + 0.88 * (Math.min(127, Math.max(1, velocity)) / 127) ** 1.25
-}
-
-function groupResourcesByArticulation(resources) {
-  return Object.groupBy(
-    resources,
-    (resource) => `${resource.kitId}:${resource.articulation}`,
-  )
-}
-
 function calibrateResources(resources) {
-  const playbackGains = new Map()
-  for (const [groupName, group] of Object.entries(
-    groupResourcesByArticulation(resources),
-  )) {
-    const minimumTargetDb = Math.max(
-      ...group.map(
-        (resource) =>
-          resource.analysis.transientPeakDb - MAXIMUM_PLAYBACK_GAIN_DB,
-      ),
-    )
-    const maximumTargetDb = Math.min(
-      ...group.flatMap((resource) => [
-        resource.analysis.transientPeakDb + MAXIMUM_PLAYBACK_GAIN_DB,
-        MAXIMUM_FULL_SCALE_PEAK_DB -
-          (resource.analysis.fullPeakDb - resource.analysis.transientPeakDb),
-      ]),
-    )
-    if (minimumTargetDb > maximumTargetDb + 0.001) {
-      throw new Error(
-        `No safe ±${MAXIMUM_PLAYBACK_GAIN_DB} dB calibration target for ${groupName}: ${minimumTargetDb.toFixed(2)}..${maximumTargetDb.toFixed(2)} dBFS`,
-      )
-    }
-    const targetDb = Math.max(
-      minimumTargetDb,
-      Math.min(TARGET_TRANSIENT_PEAK_DB, maximumTargetDb),
-    )
-    for (const resource of group) {
-      const playbackGainDb = targetDb - resource.analysis.transientPeakDb
-      playbackGains.set(
-        resource.id,
-        Number(dbToGain(playbackGainDb).toFixed(8)),
-      )
-    }
-  }
-  const calibrated = resources.map((resource) => ({
-    ...resource,
-    playbackGain: playbackGains.get(resource.id),
-  }))
-  validateCalibration(calibrated)
-  return calibrated.map(({ analysis: _analysis, ...resource }) => resource)
+  return calibrateDrumKitResources(resources)
 }
 
-function effectivePeakDb(resource, velocity) {
-  return (
-    resource.analysis.transientPeakDb +
-    gainToDb(resource.playbackGain) +
-    gainToDb(velocityGain(velocity))
-  )
-}
-
-function validateCalibration(resources) {
-  for (const resource of resources) {
-    assertOnsetContract(resource.analysis, resource.id)
-    const playbackGainDb = gainToDb(resource.playbackGain)
-    if (
-      !Number.isFinite(playbackGainDb) ||
-      Math.abs(playbackGainDb) > MAXIMUM_PLAYBACK_GAIN_DB + 0.01
-    ) {
-      throw new Error(
-        `Playback gain contract failed for ${resource.id}: ${playbackGainDb.toFixed(2)} dB`,
-      )
-    }
-    const fullScalePeakDb = resource.analysis.fullPeakDb + playbackGainDb
-    if (fullScalePeakDb > MAXIMUM_FULL_SCALE_PEAK_DB + 0.01) {
-      throw new Error(
-        `Peak headroom contract failed for ${resource.id}: ${fullScalePeakDb.toFixed(2)} dBFS`,
-      )
-    }
+function sampleStatus(resources) {
+  if (
+    resources.some((resource) => resource.readiness === 'fallback') === true
+  ) {
+    return 'fallback'
   }
-
-  for (const [groupName, group] of Object.entries(
-    groupResourcesByArticulation(resources),
-  )) {
-    const layers = Object.values(
-      Object.groupBy(
-        group,
-        (resource) => `${resource.velocityMin}:${resource.velocityMax}`,
-      ),
-    ).sort((left, right) => left[0].velocityMin - right[0].velocityMin)
-    for (const layer of layers) {
-      const peaks = layer.map(
-        (resource) =>
-          resource.analysis.transientPeakDb + gainToDb(resource.playbackGain),
-      )
-      const spread = Math.max(...peaks) - Math.min(...peaks)
-      if (spread > MAXIMUM_ROUND_ROBIN_SPREAD_DB + 0.01) {
-        throw new Error(
-          `Round-robin calibration failed for ${groupName}: ${spread.toFixed(2)} dB`,
-        )
-      }
-    }
-    for (let index = 1; index < layers.length; index += 1) {
-      const lowerLayer = layers[index - 1]
-      const upperLayer = layers[index]
-      const lowerPeak = average(
-        lowerLayer.map((resource) =>
-          effectivePeakDb(resource, resource.velocityMax),
-        ),
-      )
-      const upperPeak = average(
-        upperLayer.map((resource) =>
-          effectivePeakDb(resource, resource.velocityMin),
-        ),
-      )
-      const boundaryDelta = Math.abs(upperPeak - lowerPeak)
-      if (boundaryDelta > MAXIMUM_LAYER_BOUNDARY_DB + 0.01) {
-        throw new Error(
-          `Velocity boundary calibration failed for ${groupName}: ${boundaryDelta.toFixed(2)} dB`,
-        )
-      }
-    }
+  if (resources.some((resource) => resource.readiness === 'reduced') === true) {
+    return 'reduced'
   }
+  return 'ready'
 }
 
 function generatedCatalog(resources) {
@@ -1061,20 +982,19 @@ function generatedCatalog(resources) {
       maximumOnsetMs: MAXIMUM_ONSET_MS,
       onsetPrerollMs: ONSET_PREROLL_MS,
       transientWindowMs: TRANSIENT_WINDOW_MS,
-      maximumPlaybackGainDb: MAXIMUM_PLAYBACK_GAIN_DB,
-      maximumLayerBoundaryDb: MAXIMUM_LAYER_BOUNDARY_DB,
-      maximumRoundRobinSpreadDb: MAXIMUM_ROUND_ROBIN_SPREAD_DB,
-      maximumFullScalePeakDb: MAXIMUM_FULL_SCALE_PEAK_DB,
-      targetTransientPeakDb: TARGET_TRANSIENT_PEAK_DB,
+      minimumNoiseWindowMs: MINIMUM_NOISE_WINDOW_MS,
+      ...drumKitCalibrationMetadata(),
     },
     kits: {
       'mercury-synth': {
         version: KIT_VERSION,
+        sampleStatus: 'ready',
         publishedEncodedBytes: 0,
         resources: [],
       },
       'classic-gm': {
         version: KIT_VERSION,
+        sampleStatus: sampleStatus(grouped['classic-gm'] ?? []),
         publishedEncodedBytes: (grouped['classic-gm'] ?? []).reduce(
           (sum, resource) => sum + resource.encodedBytes,
           0,
@@ -1083,6 +1003,7 @@ function generatedCatalog(resources) {
       },
       studio: {
         version: KIT_VERSION,
+        sampleStatus: sampleStatus(grouped.studio ?? []),
         publishedEncodedBytes: (grouped.studio ?? []).reduce(
           (sum, resource) => sum + resource.encodedBytes,
           0,
@@ -1091,6 +1012,7 @@ function generatedCatalog(resources) {
       },
       live: {
         version: KIT_VERSION,
+        sampleStatus: sampleStatus(grouped.live ?? []),
         publishedEncodedBytes: (grouped.live ?? []).reduce(
           (sum, resource) => sum + resource.encodedBytes,
           0,
@@ -1101,22 +1023,84 @@ function generatedCatalog(resources) {
   }
 }
 
+function applyCalibrationToCatalog(catalog, calibration) {
+  const calibratedById = new Map(
+    projectCalibratedResources(calibration.resources).map((resource) => [
+      resource.id,
+      resource,
+    ]),
+  )
+  const kits = Object.fromEntries(
+    Object.entries(catalog.kits).map(([kitId, kit]) => {
+      if (kitId === 'mercury-synth') {
+        return [kitId, { ...kit, sampleStatus: 'ready' }]
+      }
+      const resources = kit.resources.map((resource) => {
+        const calibrated = calibratedById.get(resource.id)
+        if (calibrated === undefined) {
+          throw new Error(`Missing Drum Night calibration: ${resource.id}`)
+        }
+        const { power: _previousPower, ...withoutPower } = resource
+        return {
+          ...withoutPower,
+          playbackGain: calibrated.playbackGain,
+          readiness: calibrated.readiness,
+          ...(calibrated.power === undefined
+            ? {}
+            : { power: calibrated.power }),
+        }
+      })
+      return [
+        kitId,
+        {
+          ...kit,
+          sampleStatus: sampleStatus(
+            calibration.resources.filter(
+              (resource) => resource.kitId === kitId,
+            ),
+          ),
+          resources,
+        },
+      ]
+    }),
+  )
+  return {
+    ...catalog,
+    calibration: {
+      hardOnsetThresholdDb: HARD_ONSET_THRESHOLD_DB,
+      transientFloorDb: TRANSIENT_FLOOR_DB,
+      transientRelativeDb: TRANSIENT_RELATIVE_DB,
+      maximumOnsetMs: MAXIMUM_ONSET_MS,
+      onsetPrerollMs: ONSET_PREROLL_MS,
+      transientWindowMs: TRANSIENT_WINDOW_MS,
+      minimumNoiseWindowMs: MINIMUM_NOISE_WINDOW_MS,
+      ...drumKitCalibrationMetadata(),
+    },
+    kits,
+  }
+}
+
 async function writeGeneratedMetadata(
   catalog,
+  calibrationReport,
   sourceCatalogPath,
   runtimeProjectionPath,
   opusProjectionPath,
+  calibrationReportPath,
   outputRoot,
 ) {
-  const [serialized, projections] = await Promise.all([
+  const [serialized, serializedReport, projections] = await Promise.all([
     serializeDrumKitGeneratedJson(catalog),
+    serializeDrumKitGeneratedJson(calibrationReport),
     serializeDrumKitCatalogProjections(catalog),
   ])
   ensureDirectory(dirname(sourceCatalogPath))
+  ensureDirectory(dirname(calibrationReportPath))
   ensureDirectory(outputRoot)
   writeFileSync(sourceCatalogPath, serialized)
   writeFileSync(runtimeProjectionPath, projections.runtime)
   writeFileSync(opusProjectionPath, projections.opus)
+  writeFileSync(calibrationReportPath, serializedReport)
   writeFileSync(resolve(outputRoot, 'catalog.json'), serialized)
 }
 
@@ -1372,87 +1356,7 @@ async function verifyGeneratedProjections(
   }
 }
 
-async function verifyCatalog({
-  outputRoot = publicRoot,
-  sourceCatalogPath = generatedCatalogPath,
-  runtimeProjectionPath = generatedRuntimeProjectionPath,
-  opusProjectionPath = generatedOpusProjectionPath,
-  requirePublishPlan = true,
-} = {}) {
-  assertRequiredPublicFiles(outputRoot)
-  const outputCatalogPath = resolve(outputRoot, 'catalog.json')
-  const outputApacheLicensePath = resolve(
-    outputRoot,
-    'classic-gm/APACHE-2.0.txt',
-  )
-  if (!existsSync(outputApacheLicensePath)) {
-    throw new Error('The canonical Apache 2.0 license text is missing')
-  }
-  const apacheLicense = readFileSync(outputApacheLicensePath)
-  if (
-    apacheLicense.byteLength !== APACHE_LICENSE_BYTES ||
-    sha256(apacheLicense) !== APACHE_LICENSE_SHA256
-  ) {
-    throw new Error(
-      `The Apache 2.0 license must be the canonical ${APACHE_LICENSE_BYTES}-byte ASF text (${APACHE_LICENSE_SHA256})`,
-    )
-  }
-  if (!existsSync(sourceCatalogPath) || !existsSync(outputCatalogPath)) {
-    throw new Error('Generated drum kit catalogs are missing')
-  }
-  const generated = readFileSync(sourceCatalogPath)
-  const published = readFileSync(outputCatalogPath)
-  if (!generated.equals(published)) {
-    throw new Error('Source and public drum kit catalogs differ')
-  }
-  const catalog = JSON.parse(generated.toString('utf8'))
-  if (
-    catalog.schemaVersion !== 2 ||
-    catalog.toolchain?.ffmpeg !== EXPECTED_FFMPEG_VERSION ||
-    catalog.toolchain?.fluidsynth !== EXPECTED_FLUIDSYNTH_VERSION ||
-    catalog.toolchain?.fluidsynthChorus !== false ||
-    catalog.toolchain?.fluidsynthReverb !== false ||
-    catalog.toolchain?.fluidsynthGain !== 1 ||
-    catalog.toolchain?.fluidsynthRenderSampleRate !== 48_000 ||
-    catalog.toolchain?.fluidsynthRenderFormat !== 's16' ||
-    catalog.audio?.sampleRate !== SAMPLE_RATE ||
-    catalog.audio?.channels !== CHANNELS ||
-    catalog.audio?.bitrate !== BITRATE ||
-    catalog.audio?.formats?.mp3?.mimeType !== 'audio/mpeg' ||
-    catalog.audio?.formats?.mp3?.sampleRate !== SAMPLE_RATE ||
-    catalog.audio?.formats?.mp3?.channels !== CHANNELS ||
-    catalog.audio?.formats?.mp3?.bitrate !== BITRATE ||
-    catalog.audio?.formats?.opus?.mimeType !== DRUM_KIT_OPUS_MIME_TYPE ||
-    catalog.audio?.formats?.opus?.sampleRate !== DRUM_KIT_OPUS_SAMPLE_RATE ||
-    catalog.audio?.formats?.opus?.channels !== DRUM_KIT_OPUS_CHANNELS ||
-    catalog.audio?.formats?.opus?.bitrate !== DRUM_KIT_OPUS_BITRATE ||
-    catalog.audio?.formats?.opus?.vbr !== true ||
-    catalog.audio?.formats?.opus?.application !== 'audio' ||
-    catalog.audio?.formats?.opus?.frameDurationMs !== 20 ||
-    catalog.calibration?.hardOnsetThresholdDb !== HARD_ONSET_THRESHOLD_DB ||
-    catalog.calibration?.transientFloorDb !== TRANSIENT_FLOOR_DB ||
-    catalog.calibration?.transientRelativeDb !== TRANSIENT_RELATIVE_DB ||
-    catalog.calibration?.maximumOnsetMs !== MAXIMUM_ONSET_MS ||
-    catalog.calibration?.onsetPrerollMs !== ONSET_PREROLL_MS ||
-    catalog.calibration?.transientWindowMs !== TRANSIENT_WINDOW_MS ||
-    catalog.calibration?.maximumPlaybackGainDb !== MAXIMUM_PLAYBACK_GAIN_DB ||
-    catalog.calibration?.maximumLayerBoundaryDb !== MAXIMUM_LAYER_BOUNDARY_DB ||
-    catalog.calibration?.maximumRoundRobinSpreadDb !==
-      MAXIMUM_ROUND_ROBIN_SPREAD_DB ||
-    catalog.calibration?.maximumFullScalePeakDb !==
-      MAXIMUM_FULL_SCALE_PEAK_DB ||
-    catalog.calibration?.targetTransientPeakDb !== TARGET_TRANSIENT_PEAK_DB
-  ) {
-    throw new Error(
-      'Drum Night catalog toolchain or calibration metadata drifted',
-    )
-  }
-  await verifyGeneratedProjections(
-    catalog,
-    runtimeProjectionPath,
-    opusProjectionPath,
-  )
-
+function analyzeCatalogResources(catalog, outputRoot) {
   let totalBytes = 0
   const analyzedResources = []
   const expectedZones = new Map(
@@ -1505,12 +1409,45 @@ async function verifyCatalog({
         if (data.byteLength > 2 * 1024 * 1024) {
           throw new Error(`Per-resource budget exceeded: ${resource.path}`)
         }
-        const analysis = analyzeAudio(
+        const mp3Analysis = analyzeAudio(
           path,
           verificationDirectory,
-          resource.id.replaceAll(':', '-'),
+          `${resource.id.replaceAll(':', '-')}-mp3`,
         )
-        analyzedResources.push({ ...resource, analysis })
+        const opusFormat = resource.formats?.opus
+        const opusPath = resolve(outputRoot, opusFormat?.path ?? '')
+        if (
+          typeof opusFormat?.path !== 'string' ||
+          opusFormat.path.endsWith('.opus') !== true ||
+          !opusPath.startsWith(`${outputRoot}/`) ||
+          !existsSync(opusPath) ||
+          !lstatSync(opusPath).isFile() ||
+          lstatSync(opusPath).isSymbolicLink()
+        ) {
+          throw new Error(`Missing or unsafe Opus resource: ${resource.id}`)
+        }
+        const opusAnalysis = analyzeAudio(
+          opusPath,
+          verificationDirectory,
+          `${resource.id.replaceAll(':', '-')}-opus`,
+        )
+        const codecDelta = Object.fromEntries(
+          ['transientPeakDb', 'fullPeakDb', 'transientPowerDb'].map((field) => [
+            field,
+            opusAnalysis[field] - mp3Analysis[field],
+          ]),
+        )
+        analyzedResources.push({
+          ...resource,
+          analysis: {
+            ...mp3Analysis,
+            codecs: {
+              mp3: mp3Analysis,
+              opus: opusAnalysis,
+              opusMinusMp3: codecDelta,
+            },
+          },
+        })
         kitBytes += data.byteLength
       }
       if (kitBytes !== kit.publishedEncodedBytes) {
@@ -1523,12 +1460,145 @@ async function verifyCatalog({
         `Kit resource closure mismatch: expected ${expectedZones.size}, verified ${verifiedResourceIds.size}`,
       )
     }
-    validateCalibration(analyzedResources)
+    return { analyzedResources, totalBytes }
   } finally {
     rmSync(verificationDirectory, { recursive: true, force: true })
   }
+}
+
+function assertCatalogCalibrationMatches(catalog, calibration) {
+  const expectedById = new Map(
+    projectCalibratedResources(calibration.resources).map((resource) => [
+      resource.id,
+      resource,
+    ]),
+  )
+  for (const [kitId, kit] of Object.entries(catalog.kits)) {
+    if (kitId === 'mercury-synth') {
+      if (kit.sampleStatus !== 'ready') {
+        throw new Error('Mercury Synth sample status drifted')
+      }
+      continue
+    }
+    for (const resource of kit.resources) {
+      const expected = expectedById.get(resource.id)
+      if (
+        expected === undefined ||
+        resource.playbackGain !== expected.playbackGain ||
+        resource.readiness !== expected.readiness ||
+        (resource.power ?? null) !== (expected.power ?? null)
+      ) {
+        throw new Error(`Drum Night calibration drifted: ${resource.id}`)
+      }
+    }
+    const expectedStatus = sampleStatus(
+      calibration.resources.filter((resource) => resource.kitId === kitId),
+    )
+    if (kit.sampleStatus !== expectedStatus) {
+      throw new Error(`Drum Night sample status drifted: ${kitId}`)
+    }
+  }
+}
+
+async function verifyCatalog({
+  outputRoot = publicRoot,
+  sourceCatalogPath = generatedCatalogPath,
+  runtimeProjectionPath = generatedRuntimeProjectionPath,
+  opusProjectionPath = generatedOpusProjectionPath,
+  calibrationReportPath = generatedCalibrationReportPath,
+  requirePublishPlan = true,
+} = {}) {
+  assertRequiredPublicFiles(outputRoot)
+  const outputCatalogPath = resolve(outputRoot, 'catalog.json')
+  const outputApacheLicensePath = resolve(
+    outputRoot,
+    'classic-gm/APACHE-2.0.txt',
+  )
+  if (!existsSync(outputApacheLicensePath)) {
+    throw new Error('The canonical Apache 2.0 license text is missing')
+  }
+  const apacheLicense = readFileSync(outputApacheLicensePath)
+  if (
+    apacheLicense.byteLength !== APACHE_LICENSE_BYTES ||
+    sha256(apacheLicense) !== APACHE_LICENSE_SHA256
+  ) {
+    throw new Error(
+      `The Apache 2.0 license must be the canonical ${APACHE_LICENSE_BYTES}-byte ASF text (${APACHE_LICENSE_SHA256})`,
+    )
+  }
+  if (!existsSync(sourceCatalogPath) || !existsSync(outputCatalogPath)) {
+    throw new Error('Generated drum kit catalogs are missing')
+  }
+  const generated = readFileSync(sourceCatalogPath)
+  const published = readFileSync(outputCatalogPath)
+  if (!generated.equals(published)) {
+    throw new Error('Source and public drum kit catalogs differ')
+  }
+  const catalog = JSON.parse(generated.toString('utf8'))
+  const expectedCalibrationMetadata = {
+    hardOnsetThresholdDb: HARD_ONSET_THRESHOLD_DB,
+    transientFloorDb: TRANSIENT_FLOOR_DB,
+    transientRelativeDb: TRANSIENT_RELATIVE_DB,
+    maximumOnsetMs: MAXIMUM_ONSET_MS,
+    onsetPrerollMs: ONSET_PREROLL_MS,
+    transientWindowMs: TRANSIENT_WINDOW_MS,
+    minimumNoiseWindowMs: MINIMUM_NOISE_WINDOW_MS,
+    ...drumKitCalibrationMetadata(),
+  }
+  if (
+    catalog.schemaVersion !== 2 ||
+    catalog.toolchain?.ffmpeg !== EXPECTED_FFMPEG_VERSION ||
+    catalog.toolchain?.fluidsynth !== EXPECTED_FLUIDSYNTH_VERSION ||
+    catalog.toolchain?.fluidsynthChorus !== false ||
+    catalog.toolchain?.fluidsynthReverb !== false ||
+    catalog.toolchain?.fluidsynthGain !== 1 ||
+    catalog.toolchain?.fluidsynthRenderSampleRate !== 48_000 ||
+    catalog.toolchain?.fluidsynthRenderFormat !== 's16' ||
+    catalog.audio?.sampleRate !== SAMPLE_RATE ||
+    catalog.audio?.channels !== CHANNELS ||
+    catalog.audio?.bitrate !== BITRATE ||
+    catalog.audio?.formats?.mp3?.mimeType !== 'audio/mpeg' ||
+    catalog.audio?.formats?.mp3?.sampleRate !== SAMPLE_RATE ||
+    catalog.audio?.formats?.mp3?.channels !== CHANNELS ||
+    catalog.audio?.formats?.mp3?.bitrate !== BITRATE ||
+    catalog.audio?.formats?.opus?.mimeType !== DRUM_KIT_OPUS_MIME_TYPE ||
+    catalog.audio?.formats?.opus?.sampleRate !== DRUM_KIT_OPUS_SAMPLE_RATE ||
+    catalog.audio?.formats?.opus?.channels !== DRUM_KIT_OPUS_CHANNELS ||
+    catalog.audio?.formats?.opus?.bitrate !== DRUM_KIT_OPUS_BITRATE ||
+    catalog.audio?.formats?.opus?.vbr !== true ||
+    catalog.audio?.formats?.opus?.application !== 'audio' ||
+    catalog.audio?.formats?.opus?.frameDurationMs !== 20 ||
+    JSON.stringify(catalog.calibration) !==
+      JSON.stringify(expectedCalibrationMetadata)
+  ) {
+    throw new Error(
+      'Drum Night catalog toolchain or calibration metadata drifted',
+    )
+  }
+  await verifyGeneratedProjections(
+    catalog,
+    runtimeProjectionPath,
+    opusProjectionPath,
+  )
 
   const opusTotalsByKit = verifyDrumKitOpusCatalog(catalog, outputRoot)
+  const { analyzedResources, totalBytes } = analyzeCatalogResources(
+    catalog,
+    outputRoot,
+  )
+  const calibration = calibrateResources(analyzedResources)
+  assertCatalogCalibrationMatches(catalog, calibration)
+  if (!existsSync(calibrationReportPath)) {
+    throw new Error('Generated Drum Night calibration report is missing')
+  }
+  const expectedCalibrationReport = await serializeDrumKitGeneratedJson(
+    calibration.report,
+  )
+  if (
+    readFileSync(calibrationReportPath, 'utf8') !== expectedCalibrationReport
+  ) {
+    throw new Error('Generated Drum Night calibration report drifted')
+  }
 
   const unreferencedAudio = listFiles(outputRoot).filter((path) => {
     if (path.endsWith('.mp3') !== true && path.endsWith('.opus') !== true) {
@@ -1565,6 +1635,30 @@ async function verifyCatalog({
   return { catalog, opusTotalsByKit, totalBytes }
 }
 
+async function recalibrateExistingCatalog() {
+  if (!existsSync(generatedCatalogPath)) {
+    throw new Error('Generated Drum Night kit catalog is missing')
+  }
+  const currentCatalog = JSON.parse(readFileSync(generatedCatalogPath, 'utf8'))
+  const { analyzedResources } = analyzeCatalogResources(
+    currentCatalog,
+    publicRoot,
+  )
+  const calibration = calibrateResources(analyzedResources)
+  const catalog = applyCalibrationToCatalog(currentCatalog, calibration)
+  await writeGeneratedMetadata(
+    catalog,
+    calibration.report,
+    generatedCatalogPath,
+    generatedRuntimeProjectionPath,
+    generatedOpusProjectionPath,
+    generatedCalibrationReportPath,
+    publicRoot,
+  )
+  makePublishPlan(publicRoot)
+  return verifyCatalog()
+}
+
 if (checkOnly) {
   assertExpectedToolchain()
   const result = await verifyCatalog()
@@ -1581,6 +1675,15 @@ if (planOnly) {
   await verifyCatalog()
   globalThis.console.log(
     `wrote ${relative(repo, publishPlanPath)} with ${plan.objects.length} inert upload records`,
+  )
+  process.exit(0)
+}
+
+if (recalibrateOnly) {
+  assertExpectedToolchain()
+  const result = await recalibrateExistingCatalog()
+  globalThis.console.log(
+    `recalibrated and verified ${result.totalBytes} encoded bytes without rewriting licensed audio`,
   )
   process.exit(0)
 }
@@ -1615,6 +1718,10 @@ const stagedOpusProjectionPath = resolve(
   stagingDirectory,
   'drum-kit-opus.generated.json',
 )
+const stagedCalibrationReportPath = resolve(
+  stagingDirectory,
+  'drum-kit-calibration.generated.json',
+)
 try {
   copyStaticPublicFiles(stagedPublicRoot)
   const resources = []
@@ -1625,19 +1732,27 @@ try {
     )
     resources.push(await curateZone(zone, workDirectory, stagedPublicRoot))
   }
-  const calibratedResources = calibrateResources(resources)
-  const { catalog } = encodeDrumKitOpusCatalog(
-    generatedCatalog(calibratedResources),
+  const initialCalibration = calibrateResources(resources)
+  const encoded = encodeDrumKitOpusCatalog(
+    generatedCatalog(projectCalibratedResources(initialCalibration.resources)),
     {
       inputRoot: stagedPublicRoot,
       outputRoot: stagedPublicRoot,
     },
   )
+  const { analyzedResources } = analyzeCatalogResources(
+    encoded.catalog,
+    stagedPublicRoot,
+  )
+  const calibration = calibrateResources(analyzedResources)
+  const catalog = applyCalibrationToCatalog(encoded.catalog, calibration)
   await writeGeneratedMetadata(
     catalog,
+    calibration.report,
     stagedSourceCatalogPath,
     stagedRuntimeProjectionPath,
     stagedOpusProjectionPath,
+    stagedCalibrationReportPath,
     stagedPublicRoot,
   )
   copyFileSync(
@@ -1650,6 +1765,7 @@ try {
     sourceCatalogPath: stagedSourceCatalogPath,
     runtimeProjectionPath: stagedRuntimeProjectionPath,
     opusProjectionPath: stagedOpusProjectionPath,
+    calibrationReportPath: stagedCalibrationReportPath,
   })
   installCuratedTree(stagedPublicRoot, [
     {
@@ -1664,9 +1780,13 @@ try {
       stagedPath: stagedOpusProjectionPath,
       destinationPath: generatedOpusProjectionPath,
     },
+    {
+      stagedPath: stagedCalibrationReportPath,
+      destinationPath: generatedCalibrationReportPath,
+    },
   ])
   globalThis.console.log(
-    `curated, transactionally installed, and verified ${calibratedResources.length} resources (${result.totalBytes} encoded bytes)`,
+    `curated, transactionally installed, and verified ${calibration.resources.length} resources (${result.totalBytes} encoded bytes)`,
   )
 } finally {
   rmSync(workDirectory, { recursive: true, force: true })

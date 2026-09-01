@@ -75,6 +75,7 @@ function mixedSource(): GuitarNightReferenceSource {
             gmKey: 49,
             startBeat: 0.5,
             velocity: 111,
+            articulation: 'choke',
             source: {
               format: 'guitar-pro',
               articulationId: 97,
@@ -313,6 +314,7 @@ describe('backingPercussion', () => {
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,
+        articulation: 'choke',
       },
       {
         trackId: 'track-midi-drums',
@@ -343,6 +345,7 @@ describe('backingPercussion', () => {
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,
+        articulation: 'choke',
       },
     ])
   })

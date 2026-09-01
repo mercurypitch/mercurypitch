@@ -3,26 +3,42 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { createDrumNightAudioSession } from './drum-night-audio-session'
+import { createDrumNightAudioSession, DRUM_NIGHT_OUTPUT_COMPRESSOR, DRUM_NIGHT_OUTPUT_MAKEUP_DB, DRUM_NIGHT_OUTPUT_SAFETY_DB, } from './drum-night-audio-session'
 
 function audioHarness() {
-  const disconnect = vi.fn()
-  const connect = vi.fn()
-  const setValueAtTime = vi.fn()
-  const output = {
-    connect,
-    disconnect,
-    gain: { setValueAtTime },
+  const makeParam = () => ({ setValueAtTime: vi.fn() })
+  const makeup = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    gain: makeParam(),
   } as unknown as GainNode
+  const safety = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    gain: makeParam(),
+  } as unknown as GainNode
+  const compressor = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    threshold: makeParam(),
+    knee: makeParam(),
+    ratio: makeParam(),
+    attack: makeParam(),
+    release: makeParam(),
+  } as unknown as DynamicsCompressorNode
   const close = vi.fn(async () => undefined)
   const context = {
     close,
-    createGain: vi.fn(() => output),
+    createDynamicsCompressor: vi.fn(() => compressor),
+    createGain: vi
+      .fn<() => GainNode>()
+      .mockReturnValueOnce(makeup)
+      .mockReturnValueOnce(safety),
     currentTime: 0,
     destination: {} as AudioDestinationNode,
     state: 'running',
   } as unknown as AudioContext
-  return { close, connect, context, disconnect, output, setValueAtTime }
+  return { close, compressor, context, makeup, safety }
 }
 
 describe('createDrumNightAudioSession', () => {
@@ -37,9 +53,51 @@ describe('createDrumNightAudioSession', () => {
     expect(session.performanceTimestampToContextTime(1_000)).toBeNull()
     expect(createContext).not.toHaveBeenCalled()
     expect(session.contextForGesture()).toBe(harness.context)
-    expect(session.outputForGesture()).toBe(harness.output)
+    expect(session.outputForGesture()).toBe(harness.makeup)
     expect(createContext).toHaveBeenCalledOnce()
-    expect(harness.connect).toHaveBeenCalledWith(harness.context.destination)
+    expect(harness.makeup.connect).toHaveBeenCalledWith(harness.compressor)
+    expect(harness.compressor.connect).toHaveBeenCalledWith(harness.safety)
+    expect(harness.safety.connect).toHaveBeenCalledWith(
+      harness.context.destination,
+    )
+  })
+
+  it('applies bounded makeup before compression and a final safety trim', () => {
+    const harness = audioHarness()
+    const session = createDrumNightAudioSession({
+      createContext: () => harness.context,
+    })
+
+    session.outputForGesture()
+
+    expect(harness.makeup.gain.setValueAtTime).toHaveBeenCalledWith(
+      10 ** (DRUM_NIGHT_OUTPUT_MAKEUP_DB / 20),
+      0,
+    )
+    expect(harness.compressor.threshold.setValueAtTime).toHaveBeenCalledWith(
+      DRUM_NIGHT_OUTPUT_COMPRESSOR.thresholdDb,
+      0,
+    )
+    expect(harness.compressor.knee.setValueAtTime).toHaveBeenCalledWith(
+      DRUM_NIGHT_OUTPUT_COMPRESSOR.kneeDb,
+      0,
+    )
+    expect(harness.compressor.ratio.setValueAtTime).toHaveBeenCalledWith(
+      DRUM_NIGHT_OUTPUT_COMPRESSOR.ratio,
+      0,
+    )
+    expect(harness.compressor.attack.setValueAtTime).toHaveBeenCalledWith(
+      DRUM_NIGHT_OUTPUT_COMPRESSOR.attackSeconds,
+      0,
+    )
+    expect(harness.compressor.release.setValueAtTime).toHaveBeenCalledWith(
+      DRUM_NIGHT_OUTPUT_COMPRESSOR.releaseSeconds,
+      0,
+    )
+    expect(harness.safety.gain.setValueAtTime).toHaveBeenCalledWith(
+      10 ** (DRUM_NIGHT_OUTPUT_SAFETY_DB / 20),
+      0,
+    )
   })
 
   it('maps performance timestamps against an already-active context without reacquiring it', () => {
@@ -54,7 +112,7 @@ describe('createDrumNightAudioSession', () => {
     session.contextForGesture()
 
     expect(session.activeContext()).toBe(harness.context)
-    expect(session.activeOutput()).toBe(harness.output)
+    expect(session.activeOutput()).toBe(harness.makeup)
     expect(session.performanceTimestampToContextTime(2_250)).toBe(12.75)
     expect(createContext).toHaveBeenCalledOnce()
   })
@@ -69,7 +127,9 @@ describe('createDrumNightAudioSession', () => {
     await session.dispose()
     await session.dispose()
 
-    expect(harness.disconnect).toHaveBeenCalledOnce()
+    expect(harness.makeup.disconnect).toHaveBeenCalledOnce()
+    expect(harness.compressor.disconnect).toHaveBeenCalledOnce()
+    expect(harness.safety.disconnect).toHaveBeenCalledOnce()
     expect(harness.close).toHaveBeenCalledOnce()
     expect(session.contextForGesture()).toBeNull()
     expect(session.activeContext()).toBeNull()
@@ -100,8 +160,8 @@ describe('createDrumNightAudioSession', () => {
 
     expect(session.contextForGesture()).toBeNull()
     expect(session.contextForGesture()).toBe(harness.context)
-    expect(session.outputForGesture()).toBe(harness.output)
+    expect(session.outputForGesture()).toBe(harness.makeup)
     expect(createContext).toHaveBeenCalledTimes(2)
-    expect(harness.connect).toHaveBeenCalledOnce()
+    expect(harness.makeup.connect).toHaveBeenCalledOnce()
   })
 })

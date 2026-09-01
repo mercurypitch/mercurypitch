@@ -6,19 +6,19 @@
 // creates one bounded graph with live/authored lanes and starts an optional
 // baseline warm-up; trigger falls back to synth while any sample is missing.
 
-import type { DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
+import type { DrumKitChoke, DrumKitChokeOutcome, DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitPrewarmHit, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
 import { drumVoiceForMidi } from '@/lib/drum-voice-map'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
 import type { DrumKitAuthoredFamily } from '../runtime/drum-pad-layout'
 import { DRUM_KIT_AUTHORED_FAMILIES, drumKitAuthoredFamily, } from '../runtime/drum-pad-layout'
-import { createCircuitDrumEngine } from './circuit-drum-synth'
+import { CIRCUIT_OPEN_HAT_CHOKE_GROUP, createCircuitDrumEngine, drumKitChokeGroupForGmKey, } from './circuit-drum-synth'
 import { brightnessCutoffHz, measureOnsetSeconds, microVariation, velocityGain, } from './drum-hit-dynamics'
 import type { DrumKitFormatSession, DrumKitRuntimeFormat, } from './drum-kit-format'
 import { createDrumKitFormatSession, resolveDrumKitEncodingAssetUrl, } from './drum-kit-format'
 import type { DrumKitResourceEncoding } from './drum-kit-manifest'
-import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, } from './drum-kit-manifest'
-import { DRUM_KIT_CATALOG, drumKitManifest, drumKitResourcesForHit, resolveDrumKitVelocityCurve, } from './drum-kit-manifest'
+import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, DrumKitSampleStatus, } from './drum-kit-manifest'
+import { DRUM_KIT_CATALOG, drumKitManifest, resolveDrumKitVelocityCurve, } from './drum-kit-manifest'
 import { createDrumSampleSelector, fnv1a32, mulberry32, } from './drum-sample-select'
 
 export type DrumKitLoadStatus = 'error' | 'idle' | 'loading' | 'ready'
@@ -29,17 +29,13 @@ export type DrumKitTriggerResult =
   | 'synth-fallback'
   | 'unmapped'
 
-export interface DrumKitPrewarmHit {
-  readonly gmKey: number
-  readonly velocity: number
-}
-
 export interface DrumKitPlayerSnapshot {
   readonly selectedKitId: DrumKitId
+  readonly sampleStatus: DrumKitSampleStatus
   readonly status: DrumKitLoadStatus
   /** Audio is gesture-activated and the synth fallback can accept hits. */
   readonly fallbackReady: boolean
-  /** At least one resource from the selected sampled kit is decoded. */
+  /** Every baseline kick/snare/hat resource is decoded for the pinned format. */
   readonly sampledReady: boolean
   readonly loadedSamples: number
   readonly preparedSamples: number
@@ -60,7 +56,7 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
     hits: readonly DrumKitPrewarmHit[],
     signal?: AbortSignal,
   ): Promise<void>
-  choke(group: string, atContextTime?: number): void
+  choke(request: DrumKitChoke): DrumKitChokeOutcome
   setVolume(volume: number): void
   /** Optional for injected legacy players; the concrete player always provides it. */
   setLaneVolume?(lane: DrumKitPlaybackLane, volume: number): void
@@ -132,7 +128,18 @@ interface SampleVoice {
   resourceId: string
   chokeGroup: string | null
   lane: DrumKitPlaybackLane
-  releasing: boolean
+  releaseAt: number | null
+  cleaned: boolean
+}
+
+interface FallbackVoice {
+  sequence: number
+  context: BaseAudioContext
+  gain: GainNode
+  chokeGroup: string | null
+  lane: DrumKitPlaybackLane
+  releaseAt: number | null
+  cleanupTimer: ReturnType<typeof globalThis.setTimeout> | null
   cleaned: boolean
 }
 
@@ -148,6 +155,7 @@ const LANE_LEVEL_TIME_CONSTANT_SECONDS = 0.012
 const CHOKE_RELEASE_SECONDS = 0.045
 const PANIC_RELEASE_SECONDS = 0.12
 const RELEASE_SLACK_SECONDS = 0.03
+const FALLBACK_VOICE_TAIL_SECONDS = 0.9
 const BASELINE_HITS = Object.freeze([
   Object.freeze({ gmKey: 36, velocity: 104 }),
   Object.freeze({ gmKey: 38, velocity: 104 }),
@@ -159,6 +167,48 @@ const LOAD_ERROR =
   'This drum kit could not finish loading. Mercury Synth remains available.'
 const CONTEXT_ERROR =
   'The drum kit needs an active audio session. Mercury Synth remains available.'
+
+function velocityLayerDistance(
+  resource: DrumKitSampleResource,
+  velocity: number,
+): number {
+  if (velocity < resource.velocityMin) return resource.velocityMin - velocity
+  if (velocity > resource.velocityMax) return velocity - resource.velocityMax
+  return 0
+}
+
+function playbackReadyResources(
+  resources: readonly DrumKitSampleResource[],
+  velocity: number,
+): readonly DrumKitSampleResource[] {
+  const boundedVelocity = clamp(velocity, 1, 127)
+  const nearestDistance = Math.min(
+    ...resources.map((resource) =>
+      velocityLayerDistance(resource, boundedVelocity),
+    ),
+  )
+  const nearest = resources.filter(
+    (resource) =>
+      velocityLayerDistance(resource, boundedVelocity) === nearestDistance,
+  )
+  const ready = nearest.filter((resource) => resource.readiness === 'ready')
+  if (ready.length > 0) return ready
+  return nearest.filter((resource) => resource.readiness === 'reduced')
+}
+
+/** Audited full-articulation pool shared by prewarm and synchronous playback. */
+export function drumKitPlaybackResources(
+  kitId: DrumKitId,
+  gmKey: number,
+  velocity: number,
+): readonly DrumKitSampleResource[] {
+  return playbackReadyResources(
+    drumKitManifest(kitId).resources.filter((resource) =>
+      resource.gmKeys.includes(gmKey),
+    ),
+    velocity,
+  )
+}
 
 function clamp(value: number, minimum: number, maximum: number): number {
   if (!Number.isFinite(value)) return minimum
@@ -410,6 +460,7 @@ export function createDrumKitPlayer(
   const retainedSampleCounts = new Map<string, number>()
   const inFlight = new Map<string, Promise<AudioBuffer>>()
   const voices = new Map<number, SampleVoice>()
+  const fallbackVoices = new Map<number, FallbackVoice>()
   const selectionSeed = options.selectionSeed ?? 0xd1a7
   const sampleSelector = createDrumSampleSelector(selectionSeed)
   const hitRandom = mulberry32(fnv1a32(selectionSeed, 0x9e3779b9))
@@ -455,6 +506,13 @@ export function createDrumKitPlayer(
 
   const selectedManifest = (): DrumKitManifest => drumKitManifest(selectedKitId)
 
+  /** One eligibility pool feeds readiness, prewarm, and synchronous selection. */
+  const playbackPoolForGmKey = (
+    gmKey: number,
+    velocity: number,
+  ): readonly DrumKitSampleResource[] =>
+    drumKitPlaybackResources(selectedKitId, gmKey, velocity)
+
   const selectedLoadedSamples = (): number => {
     let count = 0
     for (const cached of cache.values()) {
@@ -478,12 +536,20 @@ export function createDrumKitPlayer(
   const currentSnapshot = (): DrumKitPlayerSnapshot => {
     const loadedSamples = selectedLoadedSamples()
     refreshPreparedSamples()
+    const coreResourcePools = BASELINE_HITS.map((hit) =>
+      playbackPoolForGmKey(hit.gmKey, hit.velocity),
+    )
     return Object.freeze({
       selectedKitId,
+      sampleStatus: selectedManifest().sampleStatus,
       status,
       fallbackReady: graph !== null && !disposed,
       sampledReady:
-        selectedManifest().engine === 'sampled' && loadedSamples > 0,
+        selectedManifest().engine === 'sampled' &&
+        coreResourcePools.every(
+          (pool) =>
+            pool.length > 0 && pool.every(({ id }) => hasSelectedSample(id)),
+        ),
       loadedSamples,
       preparedSamples,
       plannedSamples,
@@ -597,18 +663,113 @@ export function createDrumKitPlayer(
     voice: SampleVoice,
     at: number,
     releaseSeconds: number,
-  ): void => {
-    if (voice.cleaned || voice.releasing) return
-    voice.releasing = true
-    if (voices.get(voice.sequence) === voice) voices.delete(voice.sequence)
+  ): boolean => {
+    if (voice.cleaned || (voice.releaseAt !== null && voice.releaseAt <= at)) {
+      return false
+    }
+    voice.releaseAt = at
     holdParameter(voice.gain.gain, at)
     try {
       voice.gain.gain.setTargetAtTime(0, at, releaseSeconds / 5)
     } catch {
       cleanVoice(voice)
-      return
+      return true
     }
     safeStop(voice.source, at + releaseSeconds + RELEASE_SLACK_SECONDS)
+    return true
+  }
+
+  const cleanFallbackVoice = (voice: FallbackVoice): void => {
+    if (voice.cleaned) return
+    voice.cleaned = true
+    if (fallbackVoices.get(voice.sequence) === voice) {
+      fallbackVoices.delete(voice.sequence)
+    }
+    if (voice.cleanupTimer !== null) {
+      globalThis.clearTimeout(voice.cleanupTimer)
+      voice.cleanupTimer = null
+    }
+    safeDisconnect(voice.gain)
+  }
+
+  const scheduleFallbackCleanup = (
+    voice: FallbackVoice,
+    atContextTime: number,
+  ): void => {
+    if (voice.cleanupTimer !== null) {
+      globalThis.clearTimeout(voice.cleanupTimer)
+    }
+    const delayMilliseconds = Math.max(
+      10,
+      (atContextTime - voice.context.currentTime) * 1_000,
+    )
+    voice.cleanupTimer = globalThis.setTimeout(() => {
+      voice.cleanupTimer = null
+      if (
+        voice.context.state === 'suspended' &&
+        voice.context.currentTime + 0.001 < atContextTime
+      ) {
+        scheduleFallbackCleanup(voice, atContextTime)
+        return
+      }
+      cleanFallbackVoice(voice)
+    }, delayMilliseconds)
+  }
+
+  const releaseFallbackVoice = (
+    voice: FallbackVoice,
+    at: number,
+    releaseSeconds: number,
+  ): boolean => {
+    if (voice.cleaned || (voice.releaseAt !== null && voice.releaseAt <= at)) {
+      return false
+    }
+    voice.releaseAt = at
+    holdParameter(voice.gain.gain, at)
+    try {
+      voice.gain.gain.setTargetAtTime(0, at, releaseSeconds / 5)
+    } catch {
+      cleanFallbackVoice(voice)
+      return true
+    }
+    scheduleFallbackCleanup(voice, at + releaseSeconds + RELEASE_SLACK_SECONDS)
+    return true
+  }
+
+  const voiceIsActiveAt = (
+    voice: Pick<SampleVoice, 'cleaned' | 'releaseAt'>,
+    at: number,
+  ): boolean =>
+    !voice.cleaned && (voice.releaseAt === null || voice.releaseAt > at)
+
+  const enforceVoiceLimit = (at: number): void => {
+    while (true) {
+      const activeSamples = [...voices.values()].filter((voice) =>
+        voiceIsActiveAt(voice, at),
+      )
+      const activeFallbacks = [...fallbackVoices.values()].filter((voice) =>
+        voiceIsActiveAt(voice, at),
+      )
+      if (activeSamples.length + activeFallbacks.length < maxVoices) return
+      const oldestSample = activeSamples[0]
+      const oldestFallback = activeFallbacks[0]
+      if (
+        oldestFallback === undefined ||
+        (oldestSample !== undefined &&
+          oldestSample.sequence < oldestFallback.sequence)
+      ) {
+        if (
+          oldestSample === undefined ||
+          !releaseVoice(oldestSample, at, CHOKE_RELEASE_SECONDS)
+        ) {
+          return
+        }
+      } else if (
+        !releaseFallbackVoice(oldestFallback, at, CHOKE_RELEASE_SECONDS)
+      ) {
+        return
+      }
+    }
   }
 
   const closeMaster = (activeGraph: PlayerGraph, at: number): void => {
@@ -695,6 +856,10 @@ export function createDrumKitPlayer(
     for (const voice of voices.values()) {
       if (lane !== undefined && voice.lane !== lane) continue
       releaseVoice(voice, at, PANIC_RELEASE_SECONDS)
+    }
+    for (const voice of fallbackVoices.values()) {
+      if (lane !== undefined && voice.lane !== lane) continue
+      releaseFallbackVoice(voice, at, PANIC_RELEASE_SECONDS)
     }
   }
 
@@ -1065,9 +1230,7 @@ export function createDrumKitPlayer(
   const resourcesForHits = (
     hits: readonly DrumKitPrewarmHit[],
   ): readonly DrumKitSampleResource[] =>
-    hits.flatMap((hit) =>
-      drumKitResourcesForHit(selectedKitId, hit.gmKey, hit.velocity),
-    )
+    hits.flatMap((hit) => playbackPoolForGmKey(hit.gmKey, hit.velocity))
 
   const warmMiss = (resource: DrumKitSampleResource): void => {
     void prepareResources([resource], undefined, false).catch(
@@ -1082,12 +1245,9 @@ export function createDrumKitPlayer(
     velocity: number,
   ): DrumKitSampleResource | null => {
     if (selectedKitId === 'mercury-synth') return null
-    // The full articulation pool, regardless of authored velocity bands: the
-    // selector targets the band center itself, so a hit may deliberately
-    // borrow a neighboring layer for variation.
-    const pool = drumKitManifest(selectedKitId).resources.filter((resource) =>
-      resource.gmKeys.includes(gmKey),
-    )
+    // Stay in the nearest authored velocity layer, then prefer ready over
+    // reduced material. Fallback-quality resources yield to Mercury Synth.
+    const pool = playbackPoolForGmKey(gmKey, velocity)
     const curve =
       pool.length === 0
         ? undefined
@@ -1105,22 +1265,33 @@ export function createDrumKitPlayer(
     group: string,
     atContextTime?: number,
     lane?: DrumKitPlaybackLane,
-  ): void => {
+  ): number => {
     const activeGraph = graph
-    if (activeGraph === null || group === '') return
+    if (activeGraph === null || group === '') return 0
     const at = Math.max(
       activeGraph.context.currentTime,
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
-    circuitEngine.choke(group, at, lane)
+    let released = circuitEngine.choke(group, at, lane)
     for (const voice of voices.values()) {
       if (
         voice.chokeGroup === group &&
-        (lane === undefined || voice.lane === lane)
-      ) {
+        (lane === undefined || voice.lane === lane) &&
         releaseVoice(voice, at, CHOKE_RELEASE_SECONDS)
+      ) {
+        released += 1
       }
     }
+    for (const voice of fallbackVoices.values()) {
+      if (
+        voice.chokeGroup === group &&
+        (lane === undefined || voice.lane === lane) &&
+        releaseFallbackVoice(voice, at, CHOKE_RELEASE_SECONDS)
+      ) {
+        released += 1
+      }
+    }
+    return released
   }
 
   const playSample = (
@@ -1138,12 +1309,7 @@ export function createDrumKitPlayer(
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
     for (const group of resource.chokes) chokeInternal(group, at, lane)
-    if (voices.size >= maxVoices) {
-      const oldest = voices.values().next().value as SampleVoice | undefined
-      if (oldest !== undefined) {
-        releaseVoice(oldest, at, CHOKE_RELEASE_SECONDS)
-      }
-    }
+    enforceVoiceLimit(at)
     let voice: SampleVoice | null = null
     try {
       const boundedVelocity = clamp(velocity, 1, 127)
@@ -1190,9 +1356,9 @@ export function createDrumKitPlayer(
         filter,
         gain,
         resourceId: resource.id,
-        chokeGroup: resource.chokeGroup,
+        chokeGroup: drumKitChokeGroupForGmKey(gmKey) ?? resource.chokeGroup,
         lane,
-        releasing: false,
+        releaseAt: null,
         cleaned: false,
       }
       voice = startedVoice
@@ -1232,18 +1398,43 @@ export function createDrumKitPlayer(
       activeGraph.context.currentTime,
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
+    if (voice === 'hh-closed' || voice === 'hh-pedal') {
+      chokeInternal(CIRCUIT_OPEN_HAT_CHOKE_GROUP, at, lane)
+    }
+    enforceVoiceLimit(at)
+    let fallbackVoice: FallbackVoice | null = null
     try {
       openLane(activeGraph, lane, at)
       openMaster(activeGraph, at)
+      const gain = activeGraph.context.createGain()
+      gain.gain.setValueAtTime(1, activeGraph.context.currentTime)
+      gain.connect(triggerDestination(activeGraph, lane, gmKey))
+      const startedVoice: FallbackVoice = {
+        sequence: ++voiceSequence,
+        context: activeGraph.context,
+        gain,
+        chokeGroup: drumKitChokeGroupForGmKey(gmKey),
+        lane,
+        releaseAt: null,
+        cleanupTimer: null,
+        cleaned: false,
+      }
+      fallbackVoice = startedVoice
+      fallbackVoices.set(startedVoice.sequence, startedVoice)
+      scheduleFallbackCleanup(
+        startedVoice,
+        at + FALLBACK_VOICE_TAIL_SECONDS + RELEASE_SLACK_SECONDS,
+      )
       triggerDrumVoice(
         voice,
         activeGraph.context,
         at,
         clamp(velocity, 1, 127) / 127,
-        triggerDestination(activeGraph, lane, gmKey),
+        gain,
       )
       return 'synth-fallback'
     } catch {
+      if (fallbackVoice !== null) cleanFallbackVoice(fallbackVoice)
       return 'dropped'
     }
   }
@@ -1339,6 +1530,7 @@ export function createDrumKitPlayer(
       selectionAbort.abort()
       panicInternal()
       circuitEngine.dispose()
+      for (const voice of fallbackVoices.values()) cleanFallbackVoice(voice)
       const activeGraph = graph
       graph = null
       cache.clear()
@@ -1403,8 +1595,20 @@ export function createDrumKitPlayer(
       }
       await prepareResources(resourcesForHits(hits), signal)
     },
-    choke(group: string, atContextTime?: number): void {
-      chokeInternal(group, atContextTime)
+    choke(request: DrumKitChoke): DrumKitChokeOutcome {
+      const gmKey = normalizeGeneralMidiPercussionKey(request.gmKey)
+      if (gmKey === null) return 'unmapped'
+      const group = drumKitChokeGroupForGmKey(gmKey)
+      if (group === null) return 'unmapped'
+      if (graph === null || disposed) return 'dropped'
+      const released = chokeInternal(
+        group,
+        request.atContextTime,
+        request.lane ?? 'live',
+      )
+      if (released > 0) return 'choked'
+      if (selectedManifest().synthModel === 'circuit') return 'idle'
+      return drumVoiceForMidi(gmKey) === null ? 'unsupported' : 'idle'
     },
     setVolume(nextVolume: number): void {
       volume = clamp(nextVolume, 0, 1)

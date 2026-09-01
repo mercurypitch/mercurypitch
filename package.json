@@ -27,6 +27,7 @@
     "test:db": "vitest run workers/db-worker",
     "test:jam": "vitest run workers/jam-worker",
     "test:coverage": "vitest run --coverage",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:devices": "playwright test -c playwright.devices.config.ts",
     "test:e2e:cloud": "playwright test -c playwright.cloud.config.ts",

@@ -8,7 +8,8 @@
 // concrete player. After activation, the same port switches live while the
 // concrete player keeps missing samples behind its synth fallback.
 
-import type { DrumKitPlayerPort } from '@/features/drum-night/runtime/drum-runtime-types'
+import type { DrumKitPlayerSnapshot } from '@/features/drum-night/audio/drum-kit-player'
+import type { DrumKitChoke, DrumKitChokeOutcome, DrumKitPlayerPort, DrumKitPrewarmHit, } from '@/features/drum-night/runtime/drum-runtime-types'
 import type { GuitarNightDrumKitId } from '@/features/guitar-night/guitar-night-drum-sound'
 
 export interface LazyGuitarRoomDrumPlayerOptions {
@@ -24,10 +25,32 @@ export interface GuitarRoomDrumPlayerPort extends DrumKitPlayerPort {
    * Before activation this only records identity and performs no import or I/O.
    */
   setKit(kitId: GuitarNightDrumKitId): void
+  choke?(request: DrumKitChoke): DrumKitChokeOutcome | undefined
+  prewarm?(hits: readonly DrumKitPrewarmHit[]): Promise<void>
+  snapshot?(): GuitarRoomDrumPlayerSnapshot
+  subscribe?(listener: () => void): () => void
 }
 
 interface SwitchableDrumKitPlayer extends DrumKitPlayerPort {
   selectKit(kitId: GuitarNightDrumKitId): Promise<void>
+  prewarm?(hits: readonly DrumKitPrewarmHit[]): Promise<void>
+  snapshot?(): DrumKitPlayerSnapshot
+  subscribe?(listener: () => void): () => void
+}
+
+export type GuitarRoomDrumPlayerSnapshot = Pick<
+  DrumKitPlayerSnapshot,
+  | 'selectedKitId'
+  | 'status'
+  | 'fallbackReady'
+  | 'sampledReady'
+  | 'preparedSamples'
+  | 'plannedSamples'
+  | 'selectedFormat'
+  | 'error'
+> & {
+  /** Null before lazy activation, when Guitar has not imported the catalogue. */
+  readonly sampleStatus: DrumKitPlayerSnapshot['sampleStatus'] | null
 }
 
 /**
@@ -41,6 +64,25 @@ export function createLazyGuitarRoomDrumPlayer(
   let player: SwitchableDrumKitPlayer | null = null
   let activation: Promise<boolean> | null = null
   let disposed = false
+  let unsubscribePlayer: (() => void) | null = null
+  const listeners = new Set<() => void>()
+
+  const emit = (): void => {
+    if (disposed) return
+    for (const listener of listeners) listener()
+  }
+
+  const inertSnapshot = (): GuitarRoomDrumPlayerSnapshot => ({
+    selectedKitId: desiredKitId,
+    sampleStatus: null,
+    status: 'idle',
+    fallbackReady: false,
+    sampledReady: false,
+    preparedSamples: 0,
+    plannedSamples: 0,
+    selectedFormat: null,
+    error: null,
+  })
 
   const createSelectedPlayer = async (): Promise<{
     readonly initialKitId: GuitarNightDrumKitId
@@ -75,6 +117,7 @@ export function createLazyGuitarRoomDrumPlayer(
     setKit(kitId): void {
       if (disposed) return
       desiredKitId = kitId
+      emit()
       const currentPlayer = player
       if (currentPlayer !== null) applyKit(currentPlayer, kitId)
     },
@@ -89,6 +132,7 @@ export function createLazyGuitarRoomDrumPlayer(
         // Publish the created port before its own asynchronous activation so
         // a concurrent route disposal can await activation and retire it.
         player = created
+        unsubscribePlayer = created.subscribe?.(emit) ?? null
         // `setKit` can run in the microtask between constructing this lazy
         // player and publishing it above. Reconcile that narrow activation
         // race so the user's latest visible selection always wins.
@@ -105,10 +149,23 @@ export function createLazyGuitarRoomDrumPlayer(
       }
     },
     trigger: (hit) => player?.trigger(hit) ?? 'dropped',
+    choke: (request) => player?.choke?.(request) ?? 'dropped',
+    async prewarm(hits): Promise<void> {
+      await player?.prewarm?.(hits)
+    },
+    snapshot: () => player?.snapshot?.() ?? inertSnapshot(),
+    subscribe(listener): () => void {
+      if (disposed) return () => undefined
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
     panic: (lane) => player?.panic(lane),
     async dispose(): Promise<void> {
       if (disposed) return
       disposed = true
+      unsubscribePlayer?.()
+      unsubscribePlayer = null
+      listeners.clear()
       try {
         await activation
       } finally {

@@ -2,6 +2,8 @@
 // ============================================================
 
 import type { HumanizedEvent, HumanizeInputEvent, HumanizeOptions, } from '@/features/drum-night/groove/groove-humanize'
+import type { DrumKitChokeOutcome, DrumKitTrigger, DrumKitTriggerOutcome, } from '@/features/drum-night/runtime/drum-runtime-types'
+import { DRUM_KIT_AUTHORED_CHOKE_TAIL_SECONDS } from '@/features/drum-night/runtime/drum-runtime-types'
 import type { GuitarNightDrumKitId, GuitarNightDrumSoundPreference, } from '@/features/guitar-night/guitar-night-drum-sound'
 import { readGuitarNightDrumSound } from '@/features/guitar-night/guitar-night-drum-sound'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
@@ -37,6 +39,44 @@ interface GuitarRoomHumanizerModule {
 }
 
 const GENERATED_RHYTHM_TRACK_ID = '__guitar-night-generated-rhythm__'
+const MAX_DRUM_ROUTING_COUNT = 1_000_000
+/** Humanized hits can move 14 ms early and a flam can lead by another 35 ms. */
+const GUITAR_ROOM_DRUM_MAX_EARLY_SECONDS = 0.06
+
+type ScheduledDrumAction =
+  | {
+      readonly kind: 'choke'
+      readonly atContextTime: number
+      readonly priority: 2
+      readonly sequence: number
+      readonly gmKey: number
+      readonly sourceId: string
+      readonly reportOutcome: boolean
+    }
+  | {
+      readonly kind: 'strike'
+      readonly atContextTime: number
+      readonly priority: 0 | 1 | 2
+      readonly sequence: number
+      readonly player: GuitarRoomDrumPlayerPort
+      readonly trigger: DrumKitTrigger
+      readonly hatChokeSourceId: string | null
+      readonly catchTriggerError: boolean
+    }
+
+function emptyDrumRoutingCounts(): GuitarRoomDrumRoutingCounts {
+  return {
+    sampled: 0,
+    synthesized: 0,
+    synthFallback: 0,
+    unmapped: 0,
+    dropped: 0,
+    unreported: 0,
+    choked: 0,
+    idle: 0,
+    unsupported: 0,
+  }
+}
 
 const GUITAR_ROOM_DRUM_GM_KEYS: Readonly<Record<DrumVoiceId, number>> =
   Object.freeze({
@@ -97,6 +137,8 @@ export interface GuitarRoomBandPercussionHit {
   velocity: number
   /** Stable imported-event identity retained at the shared kit boundary. */
   sourceId?: string
+  /** Choked cymbals still strike, then receive a short authored release. */
+  articulation?: 'choke'
 }
 
 /** One exercise pulse exposed while it is inside the Web Audio look-ahead. */
@@ -192,6 +234,30 @@ export interface GuitarRoomBandStartResult {
   completedAtSeconds: number | null
 }
 
+export interface GuitarRoomDrumRoutingCounts {
+  readonly sampled: number
+  readonly synthesized: number
+  readonly synthFallback: number
+  readonly unmapped: number
+  readonly dropped: number
+  readonly unreported: number
+  readonly choked: number
+  readonly idle: number
+  readonly unsupported: number
+}
+
+export interface GuitarRoomDrumPlaybackSnapshot {
+  readonly status: 'idle' | 'warming' | 'ready' | 'error'
+  readonly playerCount: number
+  readonly fallbackReady: boolean
+  /** True only when every retained sampled player reports its core decoded. */
+  readonly sampledReady: boolean
+  readonly sampleStatus: 'ready' | 'reduced' | 'fallback' | null
+  readonly selectedFormat: 'mp3' | 'opus' | null
+  /** Bounded routing decisions; these values never claim audible output. */
+  readonly routingCounts: GuitarRoomDrumRoutingCounts
+}
+
 export interface GuitarRoomBand {
   start(options: GuitarRoomBandStartOptions): Promise<GuitarRoomBandStartResult>
   /** Change one authored drum part's run-scoped gate without restarting time. */
@@ -216,6 +282,8 @@ export interface GuitarRoomBand {
   setMelodyChannelAudible?(channelId: string, audible: boolean): void
   /** Switch every retained drum player in place, including while paused. */
   setDrumKit?(kitId: GuitarNightDrumKitId): void
+  drumPlaybackSnapshot?(): GuitarRoomDrumPlaybackSnapshot
+  subscribeDrumPlayback?(listener: () => void): () => void
   stop(): void
   getAudioGraph(): GuitarSessionAudioGraph | null
   dispose(): Promise<void>
@@ -300,6 +368,22 @@ export function groupPercussionHitsByBeat(
     const bucket = byBeat.get(beat)
     if (bucket === undefined) byBeat.set(beat, [hit])
     else bucket.push(hit)
+  }
+  for (const bucket of byBeat.values()) {
+    bucket.sort(
+      (left, right) =>
+        left.startBeat - right.startBeat ||
+        (left.gmKey === 42 || left.gmKey === 44
+          ? 2
+          : left.articulation === 'choke'
+            ? 1
+            : 0) -
+          (right.gmKey === 42 || right.gmKey === 44
+            ? 2
+            : right.articulation === 'choke'
+              ? 1
+              : 0),
+    )
   }
   return byBeat
 }
@@ -473,8 +557,11 @@ export function createGuitarRoomBand(
       player: GuitarRoomDrumPlayerPort
       kitId: GuitarNightDrumKitId
       role: 'authored' | 'generated'
+      unsubscribeStatus: (() => void) | null
     }
   >()
+  const drumPlaybackListeners = new Set<() => void>()
+  let drumRoutingCounts = emptyDrumRoutingCounts()
   let runOutput: {
     guide: Record<GuitarGuideInput, GainNode>
     drums: GainNode
@@ -496,6 +583,80 @@ export function createGuitarRoomBand(
     options.readDrumSoundPreference ?? readGuitarNightDrumSound
   const loadHumanizer = options.loadHumanizer ?? loadGuitarRoomHumanizer
 
+  const emitDrumPlayback = (): void => {
+    if (disposed) return
+    for (const listener of drumPlaybackListeners) listener()
+  }
+
+  const incrementDrumRouting = (
+    outcome: DrumKitTriggerOutcome | DrumKitChokeOutcome | undefined,
+  ): void => {
+    const key =
+      outcome === undefined
+        ? 'unreported'
+        : outcome === 'synth-fallback'
+          ? 'synthFallback'
+          : outcome
+    drumRoutingCounts = {
+      ...drumRoutingCounts,
+      [key]: Math.min(MAX_DRUM_ROUTING_COUNT, drumRoutingCounts[key] + 1),
+    }
+    emitDrumPlayback()
+  }
+
+  const drumPlaybackSnapshot = (): GuitarRoomDrumPlaybackSnapshot => {
+    const snapshots = [...percussionPlayers.values()].flatMap(({ player }) => {
+      const snapshot = player.snapshot?.()
+      return snapshot === undefined ? [] : [snapshot]
+    })
+    const playerCount = percussionPlayers.size
+    const statuses = snapshots.map((snapshot) => snapshot.status)
+    const status =
+      playerCount === 0
+        ? 'idle'
+        : statuses.includes('error')
+          ? 'error'
+          : snapshots.length < playerCount ||
+              statuses.some((value) => value === 'idle' || value === 'loading')
+            ? 'warming'
+            : 'ready'
+    const formats = new Set(
+      snapshots
+        .map((snapshot) => snapshot.selectedFormat)
+        .filter((format): format is 'mp3' | 'opus' => format !== null),
+    )
+    const sampleStatusRank = { ready: 0, reduced: 1, fallback: 2 } as const
+    const sampleStatuses = snapshots.map((snapshot) => snapshot.sampleStatus)
+    const sampleStatus =
+      playerCount === 0 ||
+      snapshots.length !== playerCount ||
+      sampleStatuses.some((value) => value === null)
+        ? null
+        : (sampleStatuses.reduce<'ready' | 'reduced' | 'fallback'>(
+            (worst, value) =>
+              value !== null &&
+              sampleStatusRank[value] > sampleStatusRank[worst]
+                ? value
+                : worst,
+            'ready',
+          ) ?? null)
+    return Object.freeze({
+      status,
+      playerCount,
+      fallbackReady:
+        playerCount > 0 &&
+        snapshots.length === playerCount &&
+        snapshots.every((snapshot) => snapshot.fallbackReady),
+      sampledReady:
+        playerCount > 0 &&
+        snapshots.length === playerCount &&
+        snapshots.every((snapshot) => snapshot.sampledReady),
+      sampleStatus,
+      selectedFormat: formats.size === 1 ? ([...formats][0] ?? null) : null,
+      routingCounts: Object.freeze({ ...drumRoutingCounts }),
+    })
+  }
+
   const percussionChannelForTrack = (
     trackId: string,
     currentGraph: GuitarSessionAudioGraph,
@@ -511,6 +672,7 @@ export function createGuitarRoomBand(
       return existing
     }
     if (existing !== undefined) {
+      existing.unsubscribeStatus?.()
       existing.output.disconnect()
       void existing.player.dispose()
       percussionPlayers.delete(trackId)
@@ -519,11 +681,13 @@ export function createGuitarRoomBand(
       output: currentGraph.context.createGain(),
       kitId,
       role,
+      unsubscribeStatus: null,
     } as {
       output: GainNode
       player: GuitarRoomDrumPlayerPort
       kitId: GuitarNightDrumKitId
       role: 'authored' | 'generated'
+      unsubscribeStatus: (() => void) | null
     }
     holder.player = createPercussionPlayer({
       getAudioContext: () => context,
@@ -531,6 +695,8 @@ export function createGuitarRoomBand(
       kitId,
       role,
     })
+    holder.unsubscribeStatus =
+      holder.player.subscribe?.(emitDrumPlayback) ?? null
     percussionPlayers.set(trackId, holder)
     return holder
   }
@@ -541,7 +707,6 @@ export function createGuitarRoomBand(
     context = createdContext
     graph = createGuitarSessionAudioGraph(createdContext, {
       masterLevel,
-      busLevels: { drums: 0.72 },
       electricAmpParameters,
     })
     return graph
@@ -698,6 +863,14 @@ export function createGuitarRoomBand(
       }
     },
 
+    drumPlaybackSnapshot,
+
+    subscribeDrumPlayback(listener) {
+      if (disposed) return () => undefined
+      drumPlaybackListeners.add(listener)
+      return () => drumPlaybackListeners.delete(listener)
+    },
+
     async start(startOptions) {
       if (disposed) {
         return {
@@ -707,6 +880,8 @@ export function createGuitarRoomBand(
         }
       }
       stop()
+      drumRoutingCounts = emptyDrumRoutingCounts()
+      emitDrumPlayback()
       const currentGeneration = generation
       const drumSound = readDrumSoundPreference()
       const drumKitId = requestedDrumKitId ?? drumSound.kitId
@@ -793,6 +968,7 @@ export function createGuitarRoomBand(
       }
       for (const [trackId, channel] of percussionPlayers) {
         if (runPercussionPlayers.has(trackId)) continue
+        channel.unsubscribeStatus?.()
         channel.output.disconnect()
         void channel.player.dispose()
         percussionPlayers.delete(trackId)
@@ -830,6 +1006,20 @@ export function createGuitarRoomBand(
       if (percussionActivations.some((activated) => !activated)) {
         stop()
         throw new Error('The selected drum player could not activate.')
+      }
+      for (const [trackId, player] of runPercussionPlayers) {
+        if (trackId === GENERATED_RHYTHM_TRACK_ID) continue
+        const unique = new Map<string, { gmKey: number; velocity: number }>()
+        for (const hit of startOptions.percussion ?? []) {
+          if (hit.trackId !== trackId) continue
+          unique.set(`${hit.gmKey}:${hit.velocity}`, {
+            gmKey: hit.gmKey,
+            velocity: hit.velocity,
+          })
+        }
+        void player.prewarm?.([...unique.values()]).catch(() => {
+          // The player's synth fallback and snapshot own warm-up failure truth.
+        })
       }
 
       const tempoBpm = resolveGuitarRoomBandTempoBpm(startOptions.tempoBpm)
@@ -1014,7 +1204,122 @@ export function createGuitarRoomBand(
         }
       }
 
-      const soundPercussionBucket = (
+      const broadcastAuthoredChoke = (
+        gmKey: number,
+        atContextTime: number,
+        sourceId: string,
+        reportOutcome: boolean,
+      ): void => {
+        for (const player of runPercussionPlayers.values()) {
+          let outcome: DrumKitChokeOutcome | undefined
+          try {
+            outcome = player.choke?.({
+              gmKey,
+              atContextTime,
+              sourceId,
+              lane: 'authored',
+            })
+          } catch {
+            outcome = 'dropped'
+          }
+          if (reportOutcome) incrementDrumRouting(outcome)
+        }
+      }
+
+      let scheduledDrumActionSequence = 0
+      const pendingDrumActions: ScheduledDrumAction[] = []
+
+      const queueDrumStrike = (options: {
+        atContextTime: number
+        gmKey: number
+        articulation?: 'choke'
+        player: GuitarRoomDrumPlayerPort
+        trigger: DrumKitTrigger
+        hatChokeSourceId: string | null
+        authoredChokeSourceId?: string
+        catchTriggerError: boolean
+      }): void => {
+        pendingDrumActions.push({
+          kind: 'strike',
+          atContextTime: options.atContextTime,
+          priority:
+            options.gmKey === 42 || options.gmKey === 44
+              ? 2
+              : options.articulation === 'choke'
+                ? 1
+                : 0,
+          sequence: scheduledDrumActionSequence++,
+          player: options.player,
+          trigger: options.trigger,
+          hatChokeSourceId: options.hatChokeSourceId,
+          catchTriggerError: options.catchTriggerError,
+        })
+        if (
+          options.articulation === 'choke' &&
+          options.authoredChokeSourceId !== undefined
+        ) {
+          pendingDrumActions.push({
+            kind: 'choke',
+            atContextTime:
+              options.atContextTime + DRUM_KIT_AUTHORED_CHOKE_TAIL_SECONDS,
+            priority: 2,
+            sequence: scheduledDrumActionSequence++,
+            gmKey: options.gmKey,
+            sourceId: options.authoredChokeSourceId,
+            reportOutcome: true,
+          })
+        }
+      }
+
+      const flushDrumActions = (throughContextTime: number): void => {
+        pendingDrumActions.sort(
+          (left, right) =>
+            left.atContextTime - right.atContextTime ||
+            left.priority - right.priority ||
+            left.sequence - right.sequence,
+        )
+        let dueCount = 0
+        while (
+          dueCount < pendingDrumActions.length &&
+          (pendingDrumActions[dueCount]?.atContextTime ?? Infinity) <=
+            throughContextTime
+        ) {
+          const action = pendingDrumActions[dueCount]
+          dueCount += 1
+          if (action === undefined) continue
+          if (action.kind === 'choke') {
+            broadcastAuthoredChoke(
+              action.gmKey,
+              action.atContextTime,
+              action.sourceId,
+              action.reportOutcome,
+            )
+            continue
+          }
+          if (action.hatChokeSourceId !== null) {
+            broadcastAuthoredChoke(
+              46,
+              action.atContextTime,
+              action.hatChokeSourceId,
+              false,
+            )
+          }
+          let outcome: DrumKitTriggerOutcome | undefined
+          if (action.catchTriggerError) {
+            try {
+              outcome = action.player.trigger(action.trigger)
+            } catch {
+              outcome = 'dropped'
+            }
+          } else {
+            outcome = action.player.trigger(action.trigger)
+          }
+          incrementDrumRouting(outcome)
+        }
+        if (dueCount > 0) pendingDrumActions.splice(0, dueCount)
+      }
+
+      const queuePercussionBucket = (
         exerciseIndex: number,
         at: number,
         earliestStartBeat = exerciseIndex,
@@ -1035,12 +1340,29 @@ export function createGuitarRoomBand(
           if (percussionPlayer === undefined) continue
           const hitAt =
             at + beatToSeconds(hit.startBeat) - beatToSeconds(exerciseIndex)
-          percussionPlayer.trigger({
-            gmKey: hit.gmKey,
-            velocity: hit.velocity,
+          const sourceId = hit.sourceId ?? `${hit.trackId}:${hit.startBeat}`
+          queueDrumStrike({
             atContextTime: hitAt,
-            lane: 'authored',
-            ...(hit.sourceId === undefined ? {} : { sourceId: hit.sourceId }),
+            gmKey: hit.gmKey,
+            ...(hit.articulation === undefined
+              ? {}
+              : { articulation: hit.articulation }),
+            player: percussionPlayer,
+            trigger: {
+              gmKey: hit.gmKey,
+              velocity: hit.velocity,
+              atContextTime: hitAt,
+              lane: 'authored',
+              ...(hit.sourceId === undefined ? {} : { sourceId: hit.sourceId }),
+            },
+            hatChokeSourceId:
+              hit.gmKey === 42 || hit.gmKey === 44
+                ? `${sourceId}:hat-choke`
+                : null,
+            ...(hit.articulation === 'choke'
+              ? { authoredChokeSourceId: `${sourceId}:choke` }
+              : {}),
+            catchTriggerError: true,
           })
         }
       }
@@ -1066,7 +1388,7 @@ export function createGuitarRoomBand(
         return hits
       }
 
-      const soundRhythmBeat = (
+      const queueRhythmBeat = (
         preset: GuitarRoomRhythmPreset | null,
         exerciseIndex: number,
         iteration: number,
@@ -1138,21 +1460,41 @@ export function createGuitarRoomBand(
             beatToSeconds(exerciseIndex) +
             shapedHit.timeOffsetMs / 1000
           const sourceId = `guitar-generated:${preset?.id ?? 'default'}:${iteration}:${exerciseIndex}:${index}`
+          const gmKey = GUITAR_ROOM_DRUM_GM_KEYS[hit.voice]
           for (const ornament of shapedHit.ornaments) {
-            player.trigger({
-              gmKey: GUITAR_ROOM_DRUM_GM_KEYS[hit.voice],
-              velocity: ornament.velocity,
-              atContextTime: hitAt - ornament.leadMs / 1000,
-              sourceId: `${sourceId}:${ornament.kind}`,
-              lane: 'authored',
+            const ornamentAt = hitAt - ornament.leadMs / 1000
+            queueDrumStrike({
+              atContextTime: ornamentAt,
+              gmKey,
+              player,
+              trigger: {
+                gmKey,
+                velocity: ornament.velocity,
+                atContextTime: ornamentAt,
+                sourceId: `${sourceId}:${ornament.kind}`,
+                lane: 'authored',
+              },
+              hatChokeSourceId:
+                gmKey === 42 || gmKey === 44
+                  ? `${sourceId}:${ornament.kind}:hat-choke`
+                  : null,
+              catchTriggerError: false,
             })
           }
-          player.trigger({
-            gmKey: GUITAR_ROOM_DRUM_GM_KEYS[hit.voice],
-            velocity: shapedHit.velocity,
+          queueDrumStrike({
             atContextTime: hitAt,
-            sourceId,
-            lane: 'authored',
+            gmKey,
+            player,
+            trigger: {
+              gmKey,
+              velocity: shapedHit.velocity,
+              atContextTime: hitAt,
+              sourceId,
+              lane: 'authored',
+            },
+            hatChokeSourceId:
+              gmKey === 42 || gmKey === 44 ? `${sourceId}:hat-choke` : null,
+            catchTriggerError: false,
           })
         }
       }
@@ -1198,7 +1540,7 @@ export function createGuitarRoomBand(
         ) {
           partialNotesScheduled = true
           soundBucket(startBeat, firstExerciseAt, startBeat)
-          soundPercussionBucket(startBeat, firstExerciseAt, startBeat)
+          queuePercussionBucket(startBeat, firstExerciseAt, startBeat)
         }
 
         while (
@@ -1249,18 +1591,18 @@ export function createGuitarRoomBand(
               drumsOutput,
             )
           } else if (activeRhythmPreset !== null) {
-            soundRhythmBeat(
+            queueRhythmBeat(
               activeRhythmPreset,
               exerciseIndex,
               loopIteration,
               at,
             )
           } else {
-            soundRhythmBeat(null, exerciseIndex, loopIteration, at)
+            queueRhythmBeat(null, exerciseIndex, loopIteration, at)
           }
 
           soundBucket(exerciseIndex, at)
-          soundPercussionBucket(exerciseIndex, at)
+          queuePercussionBucket(exerciseIndex, at)
           startOptions.onExerciseBeatScheduled?.({
             beatIndex: exerciseIndex,
             iteration: loopIteration,
@@ -1288,6 +1630,12 @@ export function createGuitarRoomBand(
             nextExerciseBeat += 1
           }
         }
+
+        flushDrumActions(
+          loop === null && nextExerciseBeat >= durationBeats
+            ? Infinity
+            : nextExerciseAt - GUITAR_ROOM_DRUM_MAX_EARLY_SECONDS,
+        )
 
         if (
           loop === null &&
@@ -1322,10 +1670,14 @@ export function createGuitarRoomBand(
       disposed = true
       void releaseRunOutput()
       await Promise.all([...pendingReleases])
+      for (const holder of percussionPlayers.values()) {
+        holder.unsubscribeStatus?.()
+      }
       await Promise.all(
         [...percussionPlayers.values()].map(({ player }) => player.dispose()),
       )
       percussionPlayers.clear()
+      drumPlaybackListeners.clear()
       graph?.dispose()
       graph = null
       const ownedContext = context

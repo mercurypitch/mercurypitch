@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
-import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
+import { createGuitarSessionAudioGraph, GUITAR_SESSION_DEFAULT_BUS_LEVELS, } from './guitar-session-audio-graph'
 
 class FakeAudioParam {
   value = 0
@@ -82,6 +82,22 @@ class FakeAudioContext {
 }
 
 describe('createGuitarSessionAudioGraph', () => {
+  it('keeps the default drum bus at unity and honors an explicit override', () => {
+    const defaultContext = new FakeAudioContext()
+    const defaultGraph = createGuitarSessionAudioGraph(
+      defaultContext as unknown as AudioContext,
+    )
+    const overrideContext = new FakeAudioContext()
+    const overrideGraph = createGuitarSessionAudioGraph(
+      overrideContext as unknown as AudioContext,
+      { busLevels: { drums: 0.5 } },
+    )
+
+    expect(GUITAR_SESSION_DEFAULT_BUS_LEVELS.drums).toBe(1)
+    expect(defaultGraph.buses.drums.gain.value).toBe(1)
+    expect(overrideGraph.buses.drums.gain.value).toBe(0.25)
+  })
+
   it('routes only the electric guide input through one summed amp stage', () => {
     const context = new FakeAudioContext()
     const graph = createGuitarSessionAudioGraph(

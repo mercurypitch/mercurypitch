@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { generalMidiPercussionName, normalizeGeneralMidiPercussionKey, normalizeGuitarProPercussionKey, } from './percussion'
+import { generalMidiPercussionName, isGeneralMidiPercussionChokeTarget, normalizeGeneralMidiPercussionKey, normalizeGuitarProPercussionKey, } from './percussion'
 
 describe('normalizeGeneralMidiPercussionKey', () => {
   it('keeps the bounded General MIDI map unchanged', () => {
@@ -28,6 +28,16 @@ describe('normalizeGuitarProPercussionKey', () => {
   it('keeps ordinary GM articulations and drops unknown identities', () => {
     expect(normalizeGuitarProPercussionKey(38)).toBe(38)
     expect(normalizeGuitarProPercussionKey(32)).toBeNull()
+  })
+})
+
+describe('isGeneralMidiPercussionChokeTarget', () => {
+  it('accepts only the six bounded cymbal lanes used by authored chokes', () => {
+    expect(
+      [49, 51, 52, 55, 57, 59].every(isGeneralMidiPercussionChokeTarget),
+    ).toBe(true)
+    expect(isGeneralMidiPercussionChokeTarget(46)).toBe(false)
+    expect(isGeneralMidiPercussionChokeTarget(81)).toBe(false)
   })
 })
 

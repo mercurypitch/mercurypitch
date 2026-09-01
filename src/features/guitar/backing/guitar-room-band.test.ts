@@ -198,9 +198,438 @@ describe('groupPercussionHitsByBeat', () => {
       ]).size,
     ).toBe(0)
   })
+
+  it('keeps true time primary but orders same-time open hats before closers', () => {
+    const grouped = groupPercussionHitsByBeat([
+      { trackId: 'closer', gmKey: 42, startBeat: 1, velocity: 100 },
+      { trackId: 'open', gmKey: 46, startBeat: 1, velocity: 100 },
+      {
+        trackId: 'choked-first-in-source',
+        gmKey: 49,
+        startBeat: 1,
+        velocity: 110,
+        articulation: 'choke',
+      },
+      { trackId: 'ordinary-crash', gmKey: 49, startBeat: 1, velocity: 110 },
+      { trackId: 'earlier', gmKey: 44, startBeat: 0.75, velocity: 100 },
+    ])
+
+    expect(grouped.get(0)?.map((hit) => hit.trackId)).toEqual(['earlier'])
+    expect(grouped.get(1)?.map((hit) => hit.trackId)).toEqual([
+      'open',
+      'ordinary-crash',
+      'choked-first-in-source',
+      'closer',
+    ])
+  })
 })
 
 describe('createGuitarRoomBand', () => {
+  it('keeps the Guitar room drum bus at unity instead of hiding attenuation', async () => {
+    const band = createGuitarRoomBand({
+      contextFactory: () => fakeAudioContext(),
+      activateContext: async () => undefined,
+    })
+
+    const graph = await band.activate()
+
+    expect(graph?.buses.drums.gain.value).toBe(1)
+    await disposeBand(band)
+  })
+
+  it('broadcasts a same-time hat close across track players after the open strike', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const routed: string[] = []
+    const players: Array<{
+      prewarm: ReturnType<typeof vi.fn>
+    }> = []
+    let playerIndex = 0
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createPercussionPlayer: () => {
+        const index = playerIndex++
+        const port = {
+          setKit: vi.fn(),
+          activate: vi.fn(() => true),
+          trigger: vi.fn((hit: DrumKitTrigger) => {
+            routed.push(`trigger:${index}:${hit.gmKey}`)
+            return 'synthesized' as const
+          }),
+          choke: vi.fn((request: { gmKey: number }) => {
+            routed.push(`choke:${index}:${request.gmKey}`)
+            return 'choked' as const
+          }),
+          prewarm: vi.fn(async () => undefined),
+          snapshot: vi.fn(() => ({
+            selectedKitId: 'studio' as const,
+            status: 'ready' as const,
+            sampleStatus:
+              index === 0 ? ('ready' as const) : ('reduced' as const),
+            fallbackReady: true,
+            sampledReady: true,
+            preparedSamples: 4,
+            plannedSamples: 4,
+            selectedFormat: 'opus' as const,
+            error: null,
+          })),
+          subscribe: vi.fn(() => () => undefined),
+          panic: vi.fn(),
+          dispose: vi.fn(),
+        }
+        players.push(port)
+        return port
+      },
+      scheduleAheadSeconds: 4,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 1,
+      exercisePulse: false,
+      percussion: [
+        { trackId: 'closed-first', gmKey: 42, startBeat: 0, velocity: 100 },
+        { trackId: 'open-second', gmKey: 46, startBeat: 0, velocity: 100 },
+        {
+          trackId: 'open-second',
+          gmKey: 49,
+          startBeat: 0.5,
+          velocity: 116,
+          articulation: 'choke',
+        },
+      ],
+    })
+
+    expect(routed).toEqual([
+      'trigger:1:46',
+      'choke:0:46',
+      'choke:1:46',
+      'trigger:0:42',
+      'trigger:1:49',
+      'choke:0:49',
+      'choke:1:49',
+    ])
+    expect(players[0]?.prewarm).toHaveBeenCalledWith([
+      { gmKey: 42, velocity: 100 },
+    ])
+    expect(players[1]?.prewarm).toHaveBeenCalledWith([
+      { gmKey: 46, velocity: 100 },
+      { gmKey: 49, velocity: 116 },
+    ])
+    expect(band.drumPlaybackSnapshot?.()).toMatchObject({
+      status: 'ready',
+      sampleStatus: 'reduced',
+      sampledReady: true,
+      selectedFormat: 'opus',
+      routingCounts: {
+        synthesized: 3,
+        choked: 2,
+      },
+    })
+
+    await disposeBand(band)
+  })
+
+  it.each([
+    {
+      name: 'same-time generated closer after imported open',
+      generatedVoice: 'hh-closed' as const,
+      generatedBeat: 0,
+      generatedOffsetMs: 0,
+      importedGmKey: 46,
+      importedBeat: 0,
+      expected: [
+        'trigger:authored:46:5.090',
+        'choke:generated:46:5.090',
+        'choke:authored:46:5.090',
+        'trigger:generated:42:5.090',
+      ],
+    },
+    {
+      name: 'same-time imported closer after generated open',
+      generatedVoice: 'hh-open' as const,
+      generatedBeat: 0,
+      generatedOffsetMs: 0,
+      importedGmKey: 42,
+      importedBeat: 0,
+      expected: [
+        'trigger:generated:46:5.090',
+        'choke:generated:46:5.090',
+        'choke:authored:46:5.090',
+        'trigger:authored:42:5.090',
+      ],
+    },
+    {
+      name: 'humanized generated closer after an earlier imported open',
+      generatedVoice: 'hh-closed' as const,
+      generatedBeat: 0,
+      generatedOffsetMs: 5,
+      importedGmKey: 46,
+      importedBeat: 0,
+      expected: [
+        'trigger:authored:46:5.090',
+        'choke:generated:46:5.095',
+        'choke:authored:46:5.095',
+        'trigger:generated:42:5.095',
+      ],
+    },
+    {
+      name: 'humanized generated open before a later imported closer',
+      generatedVoice: 'hh-open' as const,
+      generatedBeat: 0,
+      generatedOffsetMs: -5,
+      importedGmKey: 42,
+      importedBeat: 0,
+      expected: [
+        'trigger:generated:46:5.085',
+        'choke:generated:46:5.090',
+        'choke:authored:46:5.090',
+        'trigger:authored:42:5.090',
+      ],
+    },
+    {
+      name: 'later generated closer after fractional imported open',
+      generatedVoice: 'hh-closed' as const,
+      generatedBeat: 0.5,
+      generatedOffsetMs: 0,
+      importedGmKey: 46,
+      importedBeat: 0.25,
+      expected: [
+        'trigger:authored:46:5.215',
+        'choke:generated:46:5.340',
+        'choke:authored:46:5.340',
+        'trigger:generated:42:5.340',
+      ],
+    },
+    {
+      name: 'earlier imported closer before fractional generated open',
+      generatedVoice: 'hh-open' as const,
+      generatedBeat: 0.5,
+      generatedOffsetMs: 0,
+      importedGmKey: 42,
+      importedBeat: 0.25,
+      expected: [
+        'choke:generated:46:5.215',
+        'choke:authored:46:5.215',
+        'trigger:authored:42:5.215',
+        'trigger:generated:46:5.340',
+      ],
+    },
+  ])('$name', async (scenario) => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const routed: string[] = []
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createPercussionPlayer: (options) => ({
+        setKit: vi.fn(),
+        activate: vi.fn(() => true),
+        trigger: vi.fn((hit: DrumKitTrigger) => {
+          routed.push(
+            `trigger:${options.role}:${hit.gmKey}:${(hit.atContextTime ?? 0).toFixed(3)}`,
+          )
+          return 'synth-fallback' as const
+        }),
+        choke: vi.fn((request: { gmKey: number; atContextTime?: number }) => {
+          routed.push(
+            `choke:${options.role}:${request.gmKey}:${(request.atContextTime ?? 0).toFixed(3)}`,
+          )
+          return 'idle' as const
+        }),
+        panic: vi.fn(),
+        dispose: vi.fn(),
+      }),
+      readDrumSoundPreference: () => ({
+        kitId: 'mercury-synth',
+        feelId: 'rock',
+      }),
+      loadHumanizer: async () => ({
+        humanizeDrumEvents: (events) =>
+          events.map((event) => ({
+            timeOffsetMs: scenario.generatedOffsetMs,
+            velocity: event.velocity,
+            ornaments: [],
+          })),
+      }),
+      scheduleAheadSeconds: 2,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 1,
+      feel: 'groove',
+      rhythmPreset: {
+        id: 'cross-source-hat-order',
+        label: 'Test',
+        detail: 'Test',
+        beatsPerPattern: 1,
+        hits: [
+          {
+            beatOffset: scenario.generatedBeat,
+            voice: scenario.generatedVoice,
+            velocity: 0.7,
+          },
+        ],
+      },
+      percussion: [
+        {
+          trackId: 'authored-drums',
+          gmKey: scenario.importedGmKey,
+          startBeat: scenario.importedBeat,
+          velocity: 100,
+        },
+      ],
+    })
+
+    expect(routed).toEqual(scenario.expected)
+    await disposeBand(band)
+  })
+
+  it('holds a late fractional hit until the next humanized beat establishes true order', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const routed: string[] = []
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createPercussionPlayer: (options) => ({
+        setKit: vi.fn(),
+        activate: vi.fn(() => true),
+        trigger: vi.fn((hit: DrumKitTrigger) => {
+          routed.push(
+            `trigger:${options.role}:${hit.gmKey}:${(hit.atContextTime ?? 0).toFixed(3)}`,
+          )
+          return 'synth-fallback' as const
+        }),
+        choke: vi.fn((request: { gmKey: number; atContextTime?: number }) => {
+          routed.push(
+            `choke:${options.role}:${request.gmKey}:${(request.atContextTime ?? 0).toFixed(3)}`,
+          )
+          return 'idle' as const
+        }),
+        panic: vi.fn(),
+        dispose: vi.fn(),
+      }),
+      readDrumSoundPreference: () => ({
+        kitId: 'mercury-synth',
+        feelId: 'rock',
+      }),
+      loadHumanizer: async () => ({
+        humanizeDrumEvents: (events) =>
+          events.map((event) => ({
+            timeOffsetMs: -10,
+            velocity: event.velocity,
+            ornaments: [],
+          })),
+      }),
+      scheduleAheadSeconds: 0.12,
+      schedulerIntervalMs: 24,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 2,
+      feel: 'groove',
+      rhythmPreset: {
+        id: 'cross-bucket-hat-order',
+        label: 'Test',
+        detail: 'Test',
+        beatsPerPattern: 2,
+        hits: [{ beatOffset: 1, voice: 'hh-closed', velocity: 0.7 }],
+      },
+      percussion: [
+        {
+          trackId: 'authored-drums',
+          gmKey: 46,
+          startBeat: 0.99,
+          velocity: 100,
+        },
+      ],
+    })
+
+    expect(routed).toEqual([])
+    await vi.advanceTimersByTimeAsync(500)
+    expect(routed).toEqual([
+      'choke:generated:46:5.580',
+      'choke:authored:46:5.580',
+      'trigger:generated:42:5.580',
+      'trigger:authored:46:5.585',
+    ])
+
+    await disposeBand(band)
+  })
+
+  it('queues an authored choke release after intervening same-cymbal attacks', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const routed: string[] = []
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createPercussionPlayer: () => ({
+        setKit: vi.fn(),
+        activate: vi.fn(() => true),
+        trigger: vi.fn((hit: DrumKitTrigger) => {
+          routed.push(
+            `trigger:${hit.sourceId}:${(hit.atContextTime ?? 0).toFixed(3)}`,
+          )
+          return 'synth-fallback' as const
+        }),
+        choke: vi.fn(
+          (request: { atContextTime?: number; sourceId?: string }) => {
+            routed.push(
+              `choke:${request.sourceId}:${(request.atContextTime ?? 0).toFixed(3)}`,
+            )
+            return 'choked' as const
+          },
+        ),
+        panic: vi.fn(),
+        dispose: vi.fn(),
+      }),
+      scheduleAheadSeconds: 2,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 1,
+      exercisePulse: false,
+      percussion: [
+        {
+          trackId: 'authored-drums',
+          gmKey: 49,
+          startBeat: 0,
+          velocity: 110,
+          sourceId: 'choked-crash',
+          articulation: 'choke',
+        },
+        {
+          trackId: 'authored-drums',
+          gmKey: 49,
+          startBeat: 0.1,
+          velocity: 100,
+          sourceId: 'later-crash',
+        },
+      ],
+    })
+
+    expect(routed).toEqual([
+      'trigger:choked-crash:5.090',
+      'trigger:later-crash:5.140',
+      'choke:choked-crash:choke:5.200',
+    ])
+    await disposeBand(band)
+  })
+
   it('anchors a live gain before destructive cancellation', () => {
     const parameter = fakeAudioParam()
     parameter.value = 0.43

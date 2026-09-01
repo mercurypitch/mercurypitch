@@ -25,6 +25,23 @@ function playerPort() {
     selectKit: vi.fn(
       async (_kitId: GuitarNightDrumKitId): Promise<void> => undefined,
     ),
+    choke: vi.fn(() => 'idle' as const),
+    prewarm: vi.fn(async () => undefined),
+    snapshot: vi.fn(() => ({
+      selectedKitId: 'studio' as const,
+      sampleStatus: 'ready' as const,
+      status: 'ready' as const,
+      fallbackReady: true,
+      sampledReady: true,
+      loadedSamples: 5,
+      preparedSamples: 5,
+      plannedSamples: 5,
+      selectedFormat: 'opus' as const,
+      decodedBytes: 1_024,
+      publishedEncodedBytes: 512,
+      error: null,
+    })),
+    subscribe: vi.fn((_listener: () => void) => () => undefined),
   }
 }
 
@@ -150,5 +167,46 @@ describe('createLazyGuitarRoomDrumPlayer', () => {
     await disposal
     expect(port.dispose).toHaveBeenCalledOnce()
     await expect(player.activate()).resolves.toBe(false)
+  })
+
+  it('forwards GM chokes, used-score prewarm, and truthful readiness only after activation', async () => {
+    let publishSnapshot = (): void => undefined
+    const port = playerPort()
+    port.subscribe.mockImplementation((listener) => {
+      publishSnapshot = listener
+      return () => undefined
+    })
+    samplePlayer.createDrumKitPlayer.mockReturnValue(port)
+    const player = createLazyGuitarRoomDrumPlayer({
+      getAudioContext: () => ({}) as AudioContext,
+      getOutput: () => ({}) as AudioNode,
+      kitId: 'studio',
+    })
+    const listener = vi.fn()
+    player.subscribe?.(listener)
+
+    expect(player.snapshot?.()).toMatchObject({
+      selectedKitId: 'studio',
+      status: 'idle',
+      fallbackReady: false,
+      sampledReady: false,
+    })
+    expect(player.choke?.({ gmKey: 49, lane: 'authored' })).toBe('dropped')
+
+    await player.activate()
+    expect(player.choke?.({ gmKey: 49, lane: 'authored' })).toBe('idle')
+    expect(port.choke).toHaveBeenCalledWith({ gmKey: 49, lane: 'authored' })
+    await player.prewarm?.([{ gmKey: 49, velocity: 116 }])
+    expect(port.prewarm).toHaveBeenCalledWith([{ gmKey: 49, velocity: 116 }])
+    expect(player.snapshot?.()).toMatchObject({
+      status: 'ready',
+      sampleStatus: 'ready',
+      fallbackReady: true,
+      sampledReady: true,
+      selectedFormat: 'opus',
+    })
+
+    publishSnapshot()
+    expect(listener).toHaveBeenCalledOnce()
   })
 })

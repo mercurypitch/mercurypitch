@@ -7,10 +7,11 @@ for the whole selected-kit plan; it never mixes codecs per hit. Assets are not
 precached by the service worker and are safe to move behind a configured media
 origin while their content-hashed object keys remain unchanged.
 
-`catalog.json` is the machine-readable byte, hash, articulation, provenance,
-and license companion. `publish-plan.json` is inert metadata for a later,
-reviewed Cloudflare R2 upload; it does not contain credentials or execute a
-deployment.
+`catalog.json` is the machine-readable byte, hash, articulation, and pinned
+source-provenance companion. Licence identity is declared in the app-owned kit
+manifest and the `LICENSE.md` / `NOTICE` files inside each sampled-kit folder.
+`publish-plan.json` is inert metadata for a later, reviewed Cloudflare R2
+upload; it does not contain credentials or execute a deployment.
 
 Rebuild and verify from the repository root:
 

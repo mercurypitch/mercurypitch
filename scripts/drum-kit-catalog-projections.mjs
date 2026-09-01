@@ -21,6 +21,7 @@ const GENERATED_KIT_IDS = Object.freeze([
   'live',
 ])
 const SAMPLED_KIT_IDS = new Set(['classic-gm', 'studio', 'live'])
+const SAMPLE_STATUSES = new Set(['ready', 'reduced', 'fallback'])
 const SHA256 = /^[a-f0-9]{64}$/
 const GENERATED_JSON_CONFIG_TARGET = fileURLToPath(
   new URL(
@@ -87,6 +88,7 @@ function projectRuntimeResource(resource, expectedKitId) {
     !Number.isInteger(resource.roundRobin) ||
     (resource.chokeGroup !== null && typeof resource.chokeGroup !== 'string') ||
     !Array.isArray(resource.chokes) ||
+    !SAMPLE_STATUSES.has(resource.readiness) ||
     !Number.isFinite(resource.playbackGain) ||
     !isRecord(resource.source) ||
     !isRecord(resource.formats)
@@ -113,6 +115,7 @@ function projectRuntimeResource(resource, expectedKitId) {
     roundRobin: resource.roundRobin,
     chokeGroup: resource.chokeGroup,
     chokes: resource.chokes,
+    readiness: resource.readiness,
     path: resource.path,
     mimeType: resource.mimeType,
     encodedBytes: resource.encodedBytes,
@@ -128,6 +131,7 @@ function projectKit(catalog, kitId, resourceIds, opusByResourceId) {
     !isRecord(kit) ||
     typeof kit.version !== 'string' ||
     kit.version.length === 0 ||
+    !SAMPLE_STATUSES.has(kit.sampleStatus) ||
     !Number.isSafeInteger(kit.publishedEncodedBytes) ||
     kit.publishedEncodedBytes < 0 ||
     !Array.isArray(kit.resources)
@@ -162,6 +166,7 @@ function projectKit(catalog, kitId, resourceIds, opusByResourceId) {
   }
   return {
     version: kit.version,
+    sampleStatus: kit.sampleStatus,
     publishedEncodedBytes: kit.publishedEncodedBytes,
     resources,
     ...(kit.velcurve === undefined ? {} : { velcurve: kit.velcurve }),

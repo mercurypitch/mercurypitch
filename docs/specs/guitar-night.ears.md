@@ -995,6 +995,30 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   shall restore track levels to unity without changing Mute or Solo. The
   downstream room limiter shall remain the final safety boundary, and the
   phone dialog shall preserve 44px controls without horizontal overflow.
+- **REQ-GN-SONG-029 — Authored cymbal choke truth:** WHEN Guitar Pro retains a
+  supported choked-cymbal articulation, Guitar Night shall sound its mapped GM
+  strike at the authored time and schedule a lane-scoped release exactly 110ms
+  later. It shall never turn that articulation into a silent stop command or
+  derive the release from notation duration.
+- **REQ-GN-SONG-030 — Cross-track hi-hat domain:** WHEN authored or generated
+  GM 42 or 44 sounds, Guitar Night shall first route a GM 46 release to every
+  retained percussion-track player on the authored lane. At one exact score
+  time, open and ordinary strikes shall be scheduled before the closing hat so
+  source array order cannot leave an open hat ringing; distinct authored times
+  shall retain their true order.
+- **REQ-GN-SONG-031 — Lazy readiness and routing truth:** AFTER gesture-owned
+  drum-player activation, Guitar Night shall prewarm the unique GM/velocity
+  attacks used by each authored score without blocking or restarting transport.
+  The retained player shall expose sampled-core readiness and bounded per-hit
+  routing outcomes, distinguishing sampled, selected-synth, fallback, unmapped,
+  dropped, and unreported attacks. GM-target release truth shall distinguish a
+  released voice, an idle capable target, an unsupported fallback, an unmapped
+  key, and a dropped route; none of these fields shall claim audible output.
+- **REQ-GN-SONG-032 — Unity drum bus:** WHEN the Guitar room creates its shared
+  output graph, its Drum bus shall begin at unity. Room master, per-track
+  `−∞..+6 dB` faders, mute/solo gates, and the final limiter shall remain the
+  only level controls, and changing any of them or a live kit shall not restart
+  or retime transport.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

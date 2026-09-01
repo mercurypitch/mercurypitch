@@ -10,13 +10,9 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
-import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, GuitarRoomDrumPlaybackSnapshot, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
-import {
-  GUITAR_TRACK_MIX_DEFAULT_DB,
-  guitarTrackMixDbToGain,
-  normalizeGuitarTrackMixDb,
-} from '@/features/guitar/backing/guitar-track-mix'
+import { GUITAR_TRACK_MIX_DEFAULT_DB, guitarTrackMixDbToGain, normalizeGuitarTrackMixDb, } from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
@@ -283,6 +279,13 @@ export function useGuitarNightScoreRoomController(
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle))
 
   const band = options.createBand?.() ?? createGuitarRoomBand()
+  const [drumPlayback, setDrumPlayback] =
+    createSignal<GuitarRoomDrumPlaybackSnapshot | null>(
+      band.drumPlaybackSnapshot?.() ?? null,
+    )
+  const unsubscribeDrumPlayback = band.subscribeDrumPlayback?.(() => {
+    setDrumPlayback(band.drumPlaybackSnapshot?.() ?? null)
+  })
   const [persistedMasterVolume, persistMasterVolume] =
     createPersistedSignal<number>(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, 0.76, {
       validator: (value): value is number =>
@@ -1295,6 +1298,7 @@ export function useGuitarNightScoreRoomController(
   }
 
   onCleanup(() => {
+    unsubscribeDrumPlayback?.()
     flushMasterVolumePersistence()
     startGeneration += 1
     stopFrames()
@@ -1350,6 +1354,8 @@ export function useGuitarNightScoreRoomController(
     resetTrackLevels,
     /** Switch retained Guitar-room drums in place, without transport churn. */
     setDrumKit,
+    /** Readiness and routing truth; never evidence that output was audible. */
+    drumPlayback,
     /** Whether the room sounds the score; its gain changes during playback. */
     hearScore,
     setHearScore,

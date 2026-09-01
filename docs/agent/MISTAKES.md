@@ -418,6 +418,16 @@ leaves there too. Treat a circular-chunk warning as a failed build and run a
 production browser boot test before pushing.
 **See:** `vite.config.ts` `manualChunks`.
 
+### Keep Drum Night runtime helpers out of parser-owned modules
+
+**Symptom:** Drum Night's production bundle suddenly loaded `midi-song` and
+`piano-project` on first paint after adding one six-key cymbal predicate.
+**Cause:** the audio engine made a value import from `midi-song.ts`; that module
+also owns parser/projector entry points, so Rollup retained their static graph.
+**Rule:** put dependency-free percussion identity helpers in `percussion.ts`.
+Runtime audio may import parser DTOs only with `import type`.
+**See:** `src/lib/percussion.ts`, `scripts/assert-drum-night-bundle.mjs`
+
 ### Move timed note fields as one compositor track
 
 **Symptom:** a small falling-note scene dropped near 20 fps on a tablet while

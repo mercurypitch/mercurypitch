@@ -27,6 +27,28 @@ type SafariAudioWindow = typeof globalThis & {
   webkitAudioContext?: typeof AudioContext
 }
 
+export const DRUM_NIGHT_OUTPUT_MAKEUP_DB = 4
+export const DRUM_NIGHT_OUTPUT_SAFETY_DB = -1
+export const DRUM_NIGHT_OUTPUT_COMPRESSOR = Object.freeze({
+  thresholdDb: -3,
+  kneeDb: 2,
+  ratio: 12,
+  attackSeconds: 0.002,
+  releaseSeconds: 0.12,
+})
+
+function dbToGain(decibels: number): number {
+  return 10 ** (decibels / 20)
+}
+
+function disconnectNode(node: AudioNode | null): void {
+  try {
+    node?.disconnect()
+  } catch {
+    // A closed or partially-created graph may already have detached the node.
+  }
+}
+
 function createBrowserAudioContext(): AudioContext {
   const AudioContextConstructor =
     globalThis.AudioContext ??
@@ -42,36 +64,79 @@ export function createDrumNightAudioSession(
   options: DrumNightAudioSessionOptions = {},
 ): DrumNightAudioSession {
   let context: AudioContext | null = null
-  let output: GainNode | null = null
+  let makeup: GainNode | null = null
+  let compressor: DynamicsCompressorNode | null = null
+  let safety: GainNode | null = null
   let disposed = false
 
   const ensureSession = (): boolean => {
     if (disposed) return false
-    if (context !== null && output !== null && context.state !== 'closed') {
+    if (
+      context !== null &&
+      makeup !== null &&
+      compressor !== null &&
+      safety !== null &&
+      context.state !== 'closed'
+    ) {
       return true
     }
 
     let nextContext: AudioContext | null = null
-    let nextOutput: GainNode | null = null
+    let nextMakeup: GainNode | null = null
+    let nextCompressor: DynamicsCompressorNode | null = null
+    let nextSafety: GainNode | null = null
     try {
       nextContext = (options.createContext ?? createBrowserAudioContext)()
-      nextOutput = nextContext.createGain()
-      nextOutput.gain.setValueAtTime(1, nextContext.currentTime)
-      nextOutput.connect(nextContext.destination)
+      nextMakeup = nextContext.createGain()
+      nextCompressor = nextContext.createDynamicsCompressor()
+      nextSafety = nextContext.createGain()
+      nextMakeup.gain.setValueAtTime(
+        dbToGain(DRUM_NIGHT_OUTPUT_MAKEUP_DB),
+        nextContext.currentTime,
+      )
+      nextCompressor.threshold.setValueAtTime(
+        DRUM_NIGHT_OUTPUT_COMPRESSOR.thresholdDb,
+        nextContext.currentTime,
+      )
+      nextCompressor.knee.setValueAtTime(
+        DRUM_NIGHT_OUTPUT_COMPRESSOR.kneeDb,
+        nextContext.currentTime,
+      )
+      nextCompressor.ratio.setValueAtTime(
+        DRUM_NIGHT_OUTPUT_COMPRESSOR.ratio,
+        nextContext.currentTime,
+      )
+      nextCompressor.attack.setValueAtTime(
+        DRUM_NIGHT_OUTPUT_COMPRESSOR.attackSeconds,
+        nextContext.currentTime,
+      )
+      nextCompressor.release.setValueAtTime(
+        DRUM_NIGHT_OUTPUT_COMPRESSOR.releaseSeconds,
+        nextContext.currentTime,
+      )
+      nextSafety.gain.setValueAtTime(
+        dbToGain(DRUM_NIGHT_OUTPUT_SAFETY_DB),
+        nextContext.currentTime,
+      )
+      nextMakeup.connect(nextCompressor)
+      nextCompressor.connect(nextSafety)
+      nextSafety.connect(nextContext.destination)
       context = nextContext
-      output = nextOutput
+      makeup = nextMakeup
+      compressor = nextCompressor
+      safety = nextSafety
       return true
     } catch {
-      try {
-        nextOutput?.disconnect()
-      } catch {
-        // A partially-created graph has no remaining live route owner.
-      }
+      disconnectNode(nextMakeup)
+      disconnectNode(nextCompressor)
+      disconnectNode(nextSafety)
       if (nextContext !== null && nextContext.state !== 'closed') {
         void nextContext.close().catch(() => undefined)
       }
       context = null
-      output = null
+      makeup = null
+      compressor = null
+      safety = null
       return false
     }
   }
@@ -81,13 +146,13 @@ export function createDrumNightAudioSession(
       return ensureSession() ? context : null
     },
     outputForGesture(): AudioNode | null {
-      return ensureSession() ? output : null
+      return ensureSession() ? makeup : null
     },
     activeContext(): AudioContext | null {
       return context !== null && context.state !== 'closed' ? context : null
     },
     activeOutput(): AudioNode | null {
-      return context !== null && context.state !== 'closed' ? output : null
+      return context !== null && context.state !== 'closed' ? makeup : null
     },
     performanceTimestampToContextTime(timestampMs: number): number | null {
       const activeContext =
@@ -100,15 +165,17 @@ export function createDrumNightAudioSession(
     async dispose(): Promise<void> {
       if (disposed) return
       disposed = true
-      const activeOutput = output
+      const activeMakeup = makeup
+      const activeCompressor = compressor
+      const activeSafety = safety
       const activeContext = context
-      output = null
+      makeup = null
+      compressor = null
+      safety = null
       context = null
-      try {
-        activeOutput?.disconnect()
-      } catch {
-        // A closed context has already detached its output graph.
-      }
+      disconnectNode(activeMakeup)
+      disconnectNode(activeCompressor)
+      disconnectNode(activeSafety)
       if (activeContext !== null && activeContext.state !== 'closed') {
         await activeContext.close().catch(() => undefined)
       }

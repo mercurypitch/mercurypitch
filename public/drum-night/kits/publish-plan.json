@@ -4,13 +4,13 @@
   "executesUploads": false,
   "configurableBaseExample": "https://media.mercurypitch.com/drum-night/kits/",
   "note": "Review this object list, bucket, domain, CORS, and cache headers before translating it into any Cloudflare upload command.",
-  "totalBytes": 9349507,
+  "totalBytes": 9353389,
   "objects": [
     {
       "objectKey": "catalog.json",
       "localPath": "public/drum-night/kits/catalog.json",
-      "encodedBytes": 169073,
-      "sha256": "eae55eee65e7f6bdfc390d0ce43361a2f1acb2adeceb4a626fd3ad54c90b2b5c",
+      "encodedBytes": 172821,
+      "sha256": "78da21db1cd15cf2b1a66da60cafc00e436039a7379ce92dc2f55cc7621a89fd",
       "mimeType": "application/json",
       "cacheControl": "public, max-age=300"
     },
@@ -1073,8 +1073,8 @@
     {
       "objectKey": "README.md",
       "localPath": "public/drum-night/kits/README.md",
-      "encodedBytes": 1660,
-      "sha256": "875e698c8bf4454724d09d0301dfd896eba5299617b5caf859399c1a06e7b23e",
+      "encodedBytes": 1794,
+      "sha256": "000ede17b16adafa16579639749fe3d72382c1f7b36b8a44b99f93e2ad4b5275",
       "mimeType": "text/markdown; charset=utf-8",
       "cacheControl": "public, max-age=300"
     },

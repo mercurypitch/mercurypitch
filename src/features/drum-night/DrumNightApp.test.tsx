@@ -343,6 +343,7 @@ function playerHarness(
   let options: DrumKitPlayerOptions | null = null
   let snapshot: DrumKitPlayerSnapshot = {
     selectedKitId: initialKitId,
+    sampleStatus: drumKitManifest(initialKitId).sampleStatus,
     status: 'idle',
     fallbackReady: false,
     sampledReady: false,
@@ -398,6 +399,7 @@ function playerHarness(
     const sampled = drumKitManifest(kitId).engine === 'sampled'
     updateSnapshot({
       selectedKitId: kitId,
+      sampleStatus: drumKitManifest(kitId).sampleStatus,
       status: snapshot.fallbackReady && sampled ? 'loading' : 'idle',
       sampledReady: false,
       loadedSamples: 0,
@@ -428,7 +430,7 @@ function playerHarness(
     selectedKit: () => drumKitManifest(snapshot.selectedKitId),
     selectKit,
     retry,
-    prewarm: vi.fn(async () => undefined),
+    prewarm: vi.fn<DrumKitPlayer['prewarm']>(async () => undefined),
     choke: vi.fn(),
     setVolume: vi.fn(),
     setLaneVolume,
@@ -445,6 +447,7 @@ function playerHarness(
     snapshot = {
       ...snapshot,
       selectedKitId: nextKitId,
+      sampleStatus: drumKitManifest(nextKitId).sampleStatus,
       publishedEncodedBytes: drumKitManifest(nextKitId).publishedEncodedBytes,
     }
     return player
@@ -2597,7 +2600,39 @@ describe('DrumNightApp', () => {
     ).toBeVisible()
 
     room.player.updateSnapshot({
+      status: 'ready',
+      sampledReady: true,
+      loadedSamples: 5,
+      sampleStatus: 'fallback',
+    })
+    expect(
+      within(drawer).getByText(
+        /some kit articulations use Mercury Synth because their samples did not pass quality calibration/i,
+      ),
+    ).toBeVisible()
+
+    room.player.updateSnapshot({ sampleStatus: 'reduced' })
+    expect(
+      within(drawer).getByText(
+        /some kit articulations have reduced sample coverage/i,
+      ),
+    ).toBeVisible()
+
+    room.player.updateSnapshot({
+      status: 'ready',
+      sampledReady: false,
+      loadedSamples: 0,
+      sampleStatus: 'fallback',
+    })
+    expect(
+      within(drawer).getByText(
+        /Sample preparation complete · some kit articulations use Mercury Synth because their samples did not pass quality calibration/i,
+      ),
+    ).toBeVisible()
+
+    room.player.updateSnapshot({
       status: 'error',
+      sampledReady: false,
       error: 'warm-up failed',
     })
     expect(
@@ -4136,6 +4171,100 @@ describe('DrumNightApp', () => {
         'Bar 2 · 6/8 · beat 1',
       ),
     ).toBeVisible()
+  })
+
+  it('prewarms a bounded deduplicated imported score before starting its transport', async () => {
+    const kickVelocities = Array.from({ length: 127 }, (_, index) => ({
+      id: `kick-prewarm-${index}`,
+      gmKey: 36,
+      startBeat: index * 0.25,
+      velocity: index + 1,
+    }))
+    const snareVelocities = Array.from({ length: 127 }, (_, index) => ({
+      id: `snare-prewarm-${index}`,
+      gmKey: 38,
+      startBeat: 32 + index * 0.25,
+      velocity: index + 1,
+    }))
+    const lateCrash = {
+      id: 'late-crash-prewarm',
+      gmKey: 57,
+      startBeat: 64,
+      velocity: 120,
+    }
+    const ready = readySessionFixture({
+      title: 'Prewarm Study',
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              kickVelocities[0]!,
+              ...kickVelocities,
+              ...snareVelocities,
+              lateCrash,
+            ],
+          }),
+        ],
+      }),
+    })
+    const room = renderRoom({ importSession: importSessionHarness(ready) })
+    const prewarmGate = deferred<undefined>()
+    room.player.player.prewarm.mockImplementation(() => prewarmGate.promise)
+
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Prewarm Study take clock',
+      })[0],
+    )
+
+    await waitFor(() => expect(room.player.player.prewarm).toHaveBeenCalled())
+    const requested = room.player.player.prewarm.mock.calls[0]?.[0] ?? []
+    expect(requested).toHaveLength(128)
+    expect(
+      new Set(requested.map((hit) => `${hit.gmKey}:${hit.velocity}`)).size,
+    ).toBe(128)
+    expect(requested[0]).toEqual({ gmKey: 36, velocity: 1 })
+    expect(requested).toContainEqual({ gmKey: 57, velocity: 120 })
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'false',
+    )
+
+    prewarmGate.resolve(undefined)
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+  })
+
+  it('abandons a stale imported-score start after awaited prewarm', async () => {
+    const first = readySessionFixture({ title: 'First Import' })
+    const replacement = readySessionFixture({ title: 'Replacement Import' })
+    const importSession = importSessionHarness(first)
+    const room = renderRoom({ importSession })
+    const prewarmGate = deferred<undefined>()
+    room.player.player.prewarm.mockImplementation(() => prewarmGate.promise)
+
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Import take clock',
+      })[0],
+    )
+    await waitFor(() => expect(room.player.player.prewarm).toHaveBeenCalled())
+
+    importSession.setState(replacement)
+    prewarmGate.resolve(undefined)
+    await settleMicrotasks()
+
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'false',
+    )
+    expect(room.player.trigger).not.toHaveBeenCalled()
   })
 
   it('schedules authored drums only after Play and discloses bounded routing truth', async () => {

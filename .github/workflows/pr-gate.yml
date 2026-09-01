@@ -203,8 +203,8 @@ jobs:
       # Gated on root alone, as it was before the split. It must not inherit
       # the `validate` job's diff_base requirement: a tag or workflow_dispatch
       # run has no diff base and would then never exercise this helper.
-      - name: Test PR preparation helper
-        run: pnpm run pr:prepare:test
+      - name: Test repository scripts
+        run: pnpm run test:scripts
 
   units:
     name: Unit tests (${{ matrix.shard }}/2)
