@@ -20,12 +20,12 @@ import { ColourDrill } from './ColourDrill'
 import { CritiqueDrill } from './CritiqueDrill'
 import { renderHouseLoop, renderSongMix, songExcerptStart } from './desk-render'
 import type { DeskSource } from './desk-store'
-import { deskSourceState, ensureDeskSource } from './desk-store'
+import { deskSourceState, ensureDeskSource, reportDeskProgress, } from './desk-store'
 import { IconDesk, IconGears, IconLoupe } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, PlayPad, } from './EarStage'
 import { MixingDesk } from './MixingDesk'
 import { WeightDrill } from './WeightDrill'
-import { defaultDeps, loadWildStems } from './wild-analysis'
+import { defaultDeps, loadWildStems, STEM_PHASE_PCT } from './wild-analysis'
 import { fieldBookSessions, songName, wildReadingState } from './wild-store'
 
 interface DeskViewProps {
@@ -38,13 +38,24 @@ type DeskKind = 'colour' | 'weight' | 'critique'
 export async function songSource(
   ctx: BaseAudioContext,
   session: UvrSession | undefined,
+  onProgress?: (pct: number | null, note: string) => void,
 ): Promise<DeskSource | null> {
   if (!session) return null
   const read = wildReadingState(session.sessionId).reading
+  // Opening the stems is nearly all of the desk's wait; the mix render that
+  // follows is one offline pass over a short excerpt. So the stems phase —
+  // reported by loadWildStems on its own 0..STEM_PHASE_PCT scale — takes the
+  // first nine tenths of the bar.
   const stems = read
     ? read.stems
-    : await loadWildStems(session, defaultDeps(ctx))
+    : await loadWildStems(session, defaultDeps(ctx), (pct, detail) =>
+        onProgress?.(
+          Math.round((pct / STEM_PHASE_PCT) * 90),
+          detail !== undefined ? `opening the ${detail}` : 'opening the stems',
+        ),
+      )
   if (!stems) return null
+  onProgress?.(90, 'rendering the mix')
   const start = songExcerptStart(
     stems.instrumental.duration,
     DESK_TIMING.songExcerptS,
@@ -74,7 +85,7 @@ export function DeskView(props: DeskViewProps): JSX.Element {
       const ctx = audioEngine.getAudioContext()
       if (!ctx) return
       await ensureDeskSource({
-        song: () => songSource(ctx, fieldBookSessions()[0]),
+        song: () => songSource(ctx, fieldBookSessions()[0], reportDeskProgress),
         house: async () => ({
           buffer: await renderHouseLoop(ctx.sampleRate),
           label: 'the house loop',
@@ -87,8 +98,11 @@ export function DeskView(props: DeskViewProps): JSX.Element {
     const current = state()
     switch (current.status) {
       case 'idle':
-      case 'rendering':
         return 'Rendering the desk’s source…'
+      case 'rendering':
+        return current.pct === null
+          ? 'Rendering the desk’s source…'
+          : `Rendering the desk’s source — ${current.note} · ${current.pct}%`
       case 'error':
         return current.error
       case 'ready':

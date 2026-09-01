@@ -338,4 +338,31 @@
   .docked.raised {
     bottom: auto;
   }
+
+  /* Docked in the app header, where the row is the account glyph, the
+     supporter badge and perhaps an install button — a phone's whole budget
+     for the right of that row is about a hundred and thirty pixels. So the
+     pill keeps its controls and gives up its width: no border or card of its
+     own, no padding, and the transcript capped rather than allowed to push
+     the account glyph off the screen. The listening ring on the mic is the
+     state signal that survives at any width. */
+  .docked {
+    gap: 0.15rem;
+    padding: 0;
+    border-color: transparent;
+    background: none;
+  }
+
+  .docked .status {
+    max-width: 6.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A millisecond count is a desk measurement; there is no room for it here
+     and nothing is decided by it mid-song. */
+  .docked .latency {
+    display: none;
+  }
 }

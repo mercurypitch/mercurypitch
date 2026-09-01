@@ -3238,6 +3238,19 @@ const AppShell: Component<AppProps> = (props) => {
               {/* Version + support (Ko-fi) double-pill, pinned to the far
                 right of the header row (after the nav tabs) */}
               <div class="header-support">
+                {/* On a phone the voice pill lives here, beside the account
+                    glyph, rather than floating over the bottom-left corner.
+                    Down there it sat on top of whatever the page had put in
+                    that corner — in the Ear Lab, the answer console, which
+                    paid 46px of a 390px stage to clear it. The header is
+                    fixed chrome and occludes nothing. */}
+                <Show when={isNarrow()}>
+                  <VoiceControlHud
+                    controller={voiceControl}
+                    onShowCommands={() => setShowVoiceHelp(true)}
+                    placement="docked"
+                  />
+                </Show>
                 {/* Renders nothing unless the browser can actually install the
                   app and has not already, so it only ever crowds this row in
                   the one case where it is worth the space. */}
@@ -4352,8 +4365,12 @@ const AppShell: Component<AppProps> = (props) => {
         {/* Follows the mic, not the tab, so it belongs to the shell too. */}
         <PracticeTimerPill />
         {/* Shares the bottom-left corner with the timer pill and raises
-            itself above it when both are visible. */}
-        <Show when={labTab() === null || voiceControl.enabled()}>
+            itself above it when both are visible.
+            A phone puts the pill in the header instead — see `header-support`
+            above — because down here it covers the bottom of whatever page is
+            open. The lab surfaces render no header at all, so there it is
+            still the only place the pill can be, on any width. */}
+        <Show when={labTab() === null ? !isNarrow() : voiceControl.enabled()}>
           <VoiceControlHud
             controller={voiceControl}
             onShowCommands={() => setShowVoiceHelp(true)}

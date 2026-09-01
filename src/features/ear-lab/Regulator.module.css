@@ -151,10 +151,14 @@
   }
 }
 
-/* On a phone the bench scrolls, so the Regulator keeps its full height. */
+/* On a phone the bench scrolls, so nothing here has to fit a viewport — but
+   the Regulator is the first thing on it, and at 200px wide the glass alone
+   was two thirds of the porthole before a single word of the bench. The
+   column is tall and thin, so narrowing it shortens it in proportion:
+   the same instrument, a third less of the scroll. */
 @container (max-width: 860px) {
   .svg {
-    max-width: 200px;
+    max-width: 160px;
     max-height: none;
   }
 }

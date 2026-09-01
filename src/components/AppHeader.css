@@ -108,11 +108,13 @@ header h1 {
     position: relative;
     gap: 8px;
     /* reserve the top-right corner for the pinned account/heart. Wider
-       since the account button became a 44px touch target.
+       since the account button became a 44px touch target, and wider again
+       for the voice pill, which docks here on a phone rather than floating
+       over the bottom-left of the page.
        Carries the safe-area insets for the same reason the base rule does:
        this shorthand overrides it, so leaving them out re-opens the bug. */
     padding: calc(8px + var(--safe-top, 0px))
-      max(96px, calc(84px + var(--safe-right, 0px))) 8px
+      max(128px, calc(116px + var(--safe-right, 0px))) 8px
       max(12px, var(--safe-left, 0px));
     row-gap: 4px;
   }

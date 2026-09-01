@@ -33,12 +33,21 @@ describe('the phone header keeps one big account target', () => {
     const header = readFileSync('src/components/AppHeader.css', 'utf8')
     const mobile = header.slice(header.lastIndexOf('@media (max-width: 768px)'))
     // 44px of button from a 4px inset fits the 50px band exactly, and the
-    // 96px right reserve is what keeps the row's own content out from under
-    // it. Both are matched loosely enough to survive the safe-area offsets
-    // added around them, and tightly enough that shrinking either one fails.
+    // right reserve is what keeps the row's own content out from under the
+    // corner. Both are matched loosely enough to survive the safe-area
+    // offsets added around them, and tightly enough that shrinking either
+    // one fails. The reserve is a number rather than a pattern because it
+    // has to cover whatever is pinned there — three controls once the voice
+    // pill docked into the corner beside the account glyph, which is why it
+    // is no longer 96.
     expect(mobile).toMatch(/top:\s*calc\(4px/)
     expect(mobile).toMatch(/padding:\s*calc\(8px/)
-    expect(mobile).toMatch(/max\(96px,/)
+    const reserve = /max\((\d+)px,\s*calc\((\d+)px/.exec(mobile)
+    expect(reserve, 'no right reserve on the phone header').not.toBe(null)
+    expect(
+      Number(reserve?.[1]),
+      'the corner reserve is too narrow for what is pinned in it',
+    ).toBeGreaterThanOrEqual(128)
   })
 
   it('keeps the corner clear of the iOS status bar', () => {

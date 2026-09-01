@@ -42,7 +42,9 @@ function stateWord(state: WildReadingState): string {
     case 'unread':
       return 'Unread'
     case 'reading':
-      return 'Reading…'
+      // The number matters more than the word: a bare "Reading…" on a long
+      // song is indistinguishable from a hang.
+      return `Reading… ${state.progress?.pct ?? 0}%`
     case 'error':
       return 'Could not be read'
     case 'ready': {

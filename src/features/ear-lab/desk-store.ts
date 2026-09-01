@@ -22,9 +22,23 @@ export interface DeskSourceState {
   status: DeskSourceStatus
   source: DeskSource | null
   error: string
+  /**
+   * 0..100 through the render, and what it is doing. Null and empty when
+   * there is nothing to report — the house loop renders in one step. The
+   * song path opens three stems first, which is seconds of silence on a
+   * phone unless it says so.
+   */
+  pct: number | null
+  note: string
 }
 
-const IDLE: DeskSourceState = { status: 'idle', source: null, error: '' }
+const IDLE: DeskSourceState = {
+  status: 'idle',
+  source: null,
+  error: '',
+  pct: null,
+  note: '',
+}
 const [state, setState] = createSignal<DeskSourceState>(IDLE)
 let inFlight: Promise<DeskSource> | null = null
 
@@ -38,11 +52,26 @@ export interface DeskLoaders {
   house: () => Promise<DeskSource>
 }
 
+/** What the render is doing, for the loader to call as it goes. Ignored
+ *  unless a render is running, so a late report cannot overwrite the
+ *  finished state. */
+export function reportDeskProgress(pct: number | null, note: string): void {
+  setState((current) =>
+    current.status === 'rendering' ? { ...current, pct, note } : current,
+  )
+}
+
 /** The source, rendered on first call; shared by the desk's page and
  *  its drills. A failed song falls back to the house loop. */
 export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
   if (inFlight) return inFlight
-  setState({ status: 'rendering', source: null, error: '' })
+  setState({
+    status: 'rendering',
+    source: null,
+    error: '',
+    pct: null,
+    note: '',
+  })
   inFlight = (async () => {
     let source: DeskSource | null = null
     try {
@@ -53,7 +82,7 @@ export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
     return source ?? (await loaders.house())
   })()
     .then((source) => {
-      setState({ status: 'ready', source, error: '' })
+      setState({ status: 'ready', source, error: '', pct: null, note: '' })
       return source
     })
     .catch((error: unknown) => {
@@ -61,6 +90,8 @@ export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
       setState({
         status: 'error',
         source: null,
+        pct: null,
+        note: '',
         error:
           error instanceof Error
             ? error.message
@@ -73,7 +104,7 @@ export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
 
 export function primeDeskSource(source: DeskSource): void {
   inFlight = Promise.resolve(source)
-  setState({ status: 'ready', source, error: '' })
+  setState({ status: 'ready', source, error: '', pct: null, note: '' })
 }
 
 export function resetDeskStore(): void {

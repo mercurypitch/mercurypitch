@@ -871,6 +871,32 @@
   }
 }
 
+/* A short screen — a phone in Safari's chrome, or any phone on its side.
+   The room's own furniture is fixed at both ends of a stage that scrolls
+   between them: on a 553px screen the app header, the session bar, the
+   bridge and the tab bar leave the stage 321px, and every pixel taken back
+   here is a pixel of the bench. Nothing drops below the 44px touch target. */
+@media (max-height: 700px) {
+  .sessionBar {
+    min-height: 48px;
+    padding: 5px 12px;
+  }
+
+  .sessionTitle {
+    font-size: 0.96rem;
+  }
+
+  .bridge {
+    min-height: 58px;
+    padding: 4px 8px;
+  }
+
+  .bridgeButton,
+  .primary {
+    min-height: 48px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rack,
   .chip,

@@ -68,6 +68,12 @@ const DRILLS: {
   },
 ]
 
+const STEM_WORD: Record<string, string> = {
+  vocal: 'opening the vocal',
+  instrumental: 'opening the instrumental',
+  bass: 'opening the bass',
+}
+
 function phaseWord(progress: WildProgress | null): string {
   switch (progress?.phase) {
     case 'notes':
@@ -75,7 +81,14 @@ function phaseWord(progress: WildProgress | null): string {
     case 'chords':
       return 'reading the chords'
     default:
-      return 'opening the stems'
+      // The stems phase is three separate files; naming the one in hand is
+      // what tells a slow download apart from a stall.
+      return (
+        STEM_WORD[progress?.detail ?? ''] ??
+        (progress?.detail !== undefined
+          ? `opening the ${progress.detail}`
+          : 'opening the stems')
+      )
   }
 }
 
@@ -130,7 +143,7 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
       case 'unread':
         return 'Opening the song…'
       case 'reading':
-        return `Reading the song — ${phaseWord(current.progress)}…`
+        return `Reading the song — ${phaseWord(current.progress)} · ${current.progress?.pct ?? 0}%`
       case 'error':
         return current.error
       case 'ready': {
