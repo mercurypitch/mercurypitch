@@ -13,12 +13,27 @@ import type { V2OnboardingDirectorProps, V2OnboardingMutationResult, } from './V
 import { V2OnboardingDirector } from './V2OnboardingDirector'
 import styles from './V2OnboardingDirector.module.css'
 import type { V2OnboardingMediaStageProps } from './V2OnboardingMediaStage'
+import type { V2OnboardingPlatterPreviewProps } from './V2OnboardingPlatterPreview'
 
 const mediaStageHarness = vi.hoisted(() => ({
   props: undefined as
     | Pick<
         V2OnboardingMediaStageProps,
         'request' | 'mode' | 'onPresentationSettled' | 'onVideoEnded'
+      >
+    | undefined,
+}))
+
+const platterHarness = vi.hoisted(() => ({
+  props: undefined as
+    | Pick<
+        V2OnboardingPlatterPreviewProps,
+        | 'base'
+        | 'phase'
+        | 'token'
+        | 'foreground'
+        | 'reducedMotion'
+        | 'onStopped'
       >
     | undefined,
 }))
@@ -37,6 +52,29 @@ vi.mock('./V2OnboardingMediaStage', () => ({
       <div
         data-testid="v2-media-stage"
         data-v2-media-target={props.request?.targetId}
+        aria-hidden="true"
+      />
+    )
+  },
+}))
+
+vi.mock('./V2OnboardingPlatterPreview', () => ({
+  V2OnboardingPlatterPreview: (props: V2OnboardingPlatterPreviewProps) => {
+    createEffect(() => {
+      platterHarness.props = {
+        base: props.base,
+        phase: props.phase,
+        token: props.token,
+        foreground: props.foreground,
+        reducedMotion: props.reducedMotion,
+        onStopped: props.onStopped,
+      }
+    })
+    return (
+      <div
+        data-v2-platter-preview=""
+        data-platter-phase={props.phase}
+        data-platter-token={props.token}
         aria-hidden="true"
       />
     )
@@ -263,6 +301,14 @@ function endCurrentMedia(token: string): void {
   props.onVideoEnded?.({ targetId, token })
 }
 
+function finishCurrentPlatterStop(): void {
+  const props = platterHarness.props
+  if (props === undefined || props.phase !== 'stopping') {
+    throw new Error('Expected a stopping V2 platter preview.')
+  }
+  props.onStopped(props.token)
+}
+
 async function reachPullChoice(): Promise<void> {
   await advance(1_300)
   fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
@@ -301,6 +347,7 @@ describe('V2OnboardingDirector', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mediaStageHarness.props = undefined
+    platterHarness.props = undefined
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn(() => ({
@@ -945,15 +992,16 @@ describe('V2OnboardingDirector', () => {
     render(() => <V2OnboardingDirector {...probe.props} />)
 
     await reachStopHold()
-    expect(
-      document.querySelector('[data-record-spinning="true"]'),
-    ).not.toBeNull()
+    expect(platterHarness.props?.phase).toBe('spinning')
     fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
     await Promise.resolve()
     await Promise.resolve()
 
     expect(probe.onSavePlan).toHaveBeenCalledTimes(1)
-    expect(document.querySelector('[data-record-spinning="true"]')).toBeNull()
+    expect(platterHarness.props?.phase).toBe('stopping')
+    expect(
+      screen.getByRole('heading', { name: 'Saving your plan…' }),
+    ).toBeVisible()
     expect(probe.onSavePlan).toHaveBeenCalledWith({
       pullId: 'scrolling',
       pullLabel: 'Endless scrolling',
@@ -961,6 +1009,12 @@ describe('V2OnboardingDirector', () => {
       bSideSuggestionId: 'bside.guitar-riff',
       bSideText: 'Play one guitar riff.',
     })
+
+    finishCurrentPlatterStop()
+    expect(platterHarness.props?.phase).toBe('stopped')
+    expect(
+      screen.getByRole('heading', { name: 'Your plan is saved.' }),
+    ).toBeVisible()
 
     await advance(950)
     fireEvent.click(screen.getByRole('radio', { name: /Evening/u }))
@@ -989,11 +1043,60 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
 
     expect(probe.onSavePlan).not.toHaveBeenCalled()
+    expect(platterHarness.props?.phase).toBe('stopping')
+    finishCurrentPlatterStop()
     await advance(950)
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
     await advance(1_300)
     expect(probe.onSetReminder).not.toHaveBeenCalled()
     expect(probe.onComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('resumes the mounted platter and requires a fresh stop after a save failure', async () => {
+    const probe = createDirectorProbe()
+    probe.onSavePlan
+      .mockResolvedValueOnce({
+        ok: false,
+        message: 'Could not save this plan.',
+      })
+      .mockResolvedValueOnce({ ok: true })
+    render(() => <V2OnboardingDirector {...probe.props} />)
+
+    await reachStopHold()
+    const mountedPlatter = document.querySelector('[data-v2-platter-preview]')
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    const failedToken = platterHarness.props?.token
+    const failedCallback = platterHarness.props?.onStopped
+    if (failedToken === undefined || failedCallback === undefined) {
+      throw new Error('Expected the first correlated platter stop.')
+    }
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not save this plan.',
+    )
+    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(document.querySelector('[data-v2-platter-preview]')).toBe(
+      mountedPlatter,
+    )
+    failedCallback(failedToken)
+    expect(platterHarness.props?.phase).toBe('spinning')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    expect(platterHarness.props?.phase).toBe('stopping')
+    expect(platterHarness.props?.token).not.toBe(failedToken)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(
+      screen.getByRole('heading', { name: 'Saving your plan…' }),
+    ).toBeVisible()
+
+    finishCurrentPlatterStop()
+    expect(
+      screen.getByRole('heading', { name: 'Your plan is saved.' }),
+    ).toBeVisible()
+    expect(probe.onSavePlan).toHaveBeenCalledTimes(2)
   })
 
   it('lets a replay return immediately without invoking persistence', async () => {

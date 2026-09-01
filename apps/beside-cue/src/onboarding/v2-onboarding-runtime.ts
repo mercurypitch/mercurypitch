@@ -70,6 +70,12 @@ export interface V2OnboardingSpinReadiness {
   readonly notBeforeMs: number
 }
 
+export interface V2OnboardingStopCommit {
+  readonly token: string
+  readonly platterStatus: 'stopping' | 'stopped'
+  readonly planStatus: 'pending' | 'saved' | 'write-free'
+}
+
 export interface V2OnboardingPendingSave {
   readonly requestId: number
   readonly plan: V2OnboardingPlanDraft
@@ -89,6 +95,7 @@ export interface V2OnboardingRuntimeState {
   readonly nextRequestId: number
   readonly presentation?: V2OnboardingPresentation
   readonly spinReadiness?: V2OnboardingSpinReadiness
+  readonly stopCommit?: V2OnboardingStopCommit
   readonly selectedPull?: V2OnboardingPullChoice
   readonly selectedCueContext?: V2OnboardingCueContextChoice
   readonly selectedSideB?: V2OnboardingSideBChoice
@@ -142,6 +149,7 @@ export type V2OnboardingRuntimeEvent =
       readonly nowMs: number
     }
   | { readonly type: 'STOP_AND_SAVE' }
+  | { readonly type: 'PLATTER_STOPPED'; readonly token: string }
   | { readonly type: 'PLAN_SAVE_SUCCEEDED'; readonly requestId: number }
   | {
       readonly type: 'PLAN_SAVE_FAILED'
@@ -283,6 +291,10 @@ function presentationToken(
   return `v2-presentation:${String(generation)}:${phase}`
 }
 
+function platterStopToken(generation: number): string {
+  return `v2-platter-stop:${String(generation)}`
+}
+
 function enterPhase(
   state: V2OnboardingRuntimeState,
   phase: V2OnboardingPhase,
@@ -296,7 +308,26 @@ function enterPhase(
       ? { phase, token: presentationToken(generation, phase) }
       : undefined,
     spinReadiness: undefined,
+    stopCommit:
+      phase === 'B06_STOP_SAVE_HOLD' || phase === 'B06_SAVE_COMMIT'
+        ? state.stopCommit
+        : undefined,
   }
+}
+
+function completeStopCommitIfReady(
+  state: V2OnboardingRuntimeState,
+): V2OnboardingRuntimeState {
+  const commit = state.stopCommit
+  if (
+    state.phase !== 'B06_SAVE_COMMIT' ||
+    commit === undefined ||
+    commit.platterStatus !== 'stopped' ||
+    commit.planStatus === 'pending'
+  ) {
+    return state
+  }
+  return enterPhase(state, 'B07_SAVED_ACK')
 }
 
 function enterSpin(
@@ -344,12 +375,6 @@ function freezePlan(
   })
 }
 
-function completeWithoutWrite(
-  state: V2OnboardingRuntimeState,
-): V2OnboardingTransition {
-  return noEffect(enterPhase(state, 'B07_SAVED_ACK'))
-}
-
 export function createV2OnboardingRuntimeState(options: {
   readonly sessionKind: V2OnboardingSessionKind
   readonly motionMode: V2OnboardingMotionMode
@@ -394,6 +419,8 @@ export function reduceV2OnboardingRuntime(
           ...state,
           pendingSave: undefined,
           pendingReminder: undefined,
+          stopCommit: undefined,
+          frozenPlan: undefined,
           saveError: undefined,
           reminderError: undefined,
         },
@@ -523,44 +550,96 @@ export function reduceV2OnboardingRuntime(
     if (state.phase !== 'B06_STOP_SAVE_HOLD') return noEffect(state)
     const plan = state.frozenPlan ?? freezePlan(state)
     if (plan === undefined) return noEffect(state)
+    if (
+      state.stopCommit?.planStatus !== undefined &&
+      state.stopCommit.planStatus !== 'pending'
+    ) {
+      return noEffect(state)
+    }
+    const committing = enterPhase(state, 'B06_SAVE_COMMIT')
+    const stopCommit: V2OnboardingStopCommit = {
+      token: state.stopCommit?.token ?? platterStopToken(committing.generation),
+      platterStatus: state.stopCommit?.platterStatus ?? 'stopping',
+      planStatus: state.sessionKind === 'first-run' ? 'pending' : 'write-free',
+    }
     if (state.sessionKind !== 'first-run') {
-      return completeWithoutWrite({ ...state, frozenPlan: plan })
+      return noEffect(
+        completeStopCommitIfReady({
+          ...committing,
+          frozenPlan: plan,
+          stopCommit,
+          saveError: undefined,
+        }),
+      )
     }
     const requestId = state.nextRequestId + 1
     const pendingSave = { requestId, plan }
     return {
       state: {
-        ...enterPhase(state, 'B06_SAVE_COMMIT'),
+        ...committing,
         nextRequestId: requestId,
         frozenPlan: plan,
         pendingSave,
+        stopCommit,
         saveError: undefined,
       },
       effects: [{ type: 'SAVE_PLAN', requestId, plan }],
     }
   }
 
-  if (event.type === 'PLAN_SAVE_SUCCEEDED') {
+  if (event.type === 'PLATTER_STOPPED') {
+    const commit = state.stopCommit
     if (
-      state.phase !== 'B06_SAVE_COMMIT' ||
-      state.pendingSave?.requestId !== event.requestId
+      (state.phase !== 'B06_SAVE_COMMIT' &&
+        state.phase !== 'B06_STOP_SAVE_HOLD') ||
+      commit === undefined ||
+      commit.token !== event.token ||
+      commit.platterStatus === 'stopped'
     ) {
       return noEffect(state)
     }
     return noEffect(
-      enterPhase({ ...state, pendingSave: undefined }, 'B07_SAVED_ACK'),
+      completeStopCommitIfReady({
+        ...state,
+        stopCommit: { ...commit, platterStatus: 'stopped' },
+      }),
+    )
+  }
+
+  if (event.type === 'PLAN_SAVE_SUCCEEDED') {
+    const commit = state.stopCommit
+    if (
+      state.phase !== 'B06_SAVE_COMMIT' ||
+      state.pendingSave?.requestId !== event.requestId ||
+      commit === undefined ||
+      commit.planStatus !== 'pending'
+    ) {
+      return noEffect(state)
+    }
+    return noEffect(
+      completeStopCommitIfReady({
+        ...state,
+        pendingSave: undefined,
+        stopCommit: { ...commit, planStatus: 'saved' },
+      }),
     )
   }
 
   if (event.type === 'PLAN_SAVE_FAILED') {
+    const commit = state.stopCommit
     if (
       state.phase !== 'B06_SAVE_COMMIT' ||
-      state.pendingSave?.requestId !== event.requestId
+      state.pendingSave?.requestId !== event.requestId ||
+      commit === undefined ||
+      commit.planStatus !== 'pending'
     ) {
       return noEffect(state)
     }
     return noEffect({
-      ...enterPhase({ ...state, pendingSave: undefined }, 'B06_STOP_SAVE_HOLD'),
+      ...enterPhase(
+        { ...state, pendingSave: undefined, stopCommit: undefined },
+        'B06_STOP_SAVE_HOLD',
+      ),
       saveError: event.message,
     })
   }
@@ -642,6 +721,19 @@ export function reduceV2OnboardingRuntime(
   }
 
   if (event.type === 'BACK') {
+    if (state.phase === 'B06_STOP_SAVE_HOLD') {
+      return noEffect(
+        enterPhase(
+          {
+            ...state,
+            frozenPlan: undefined,
+            stopCommit: undefined,
+            saveError: undefined,
+          },
+          'B05_SIDE_B_CHOICE_HOLD',
+        ),
+      )
+    }
     if (state.phase === 'B04_CUE_CONTEXT_HOLD') {
       return noEffect(enterPhase(state, 'B03_PULL_CHOICE_HOLD'))
     }

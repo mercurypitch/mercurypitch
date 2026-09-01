@@ -22,12 +22,21 @@ function finishPresentation(
   return send(state, { type: 'PRESENTATION_COMPLETED', token, nowMs })
 }
 
+function finishPlatterStop(
+  state: V2OnboardingRuntimeState,
+): V2OnboardingRuntimeState {
+  const token = state.stopCommit?.token
+  if (token === undefined) throw new Error('Expected a stop commit token.')
+  return send(state, { type: 'PLATTER_STOPPED', token })
+}
+
 function reachPullChoice(
   sessionKind: V2OnboardingRuntimeState['sessionKind'] = 'first-run',
+  motionMode: V2OnboardingRuntimeState['motionMode'] = 'normal',
 ): V2OnboardingRuntimeState {
   let state = createV2OnboardingRuntimeState({
     sessionKind,
-    motionMode: 'normal',
+    motionMode,
   })
   state = finishPresentation(state)
   state = send(state, { type: 'BEGIN' })
@@ -38,8 +47,9 @@ function reachPullChoice(
 
 function reachStopHold(
   sessionKind: V2OnboardingRuntimeState['sessionKind'] = 'first-run',
+  motionMode: V2OnboardingRuntimeState['motionMode'] = 'normal',
 ): V2OnboardingRuntimeState {
-  let state = reachPullChoice(sessionKind)
+  let state = reachPullChoice(sessionKind, motionMode)
   state = send(state, {
     type: 'SELECT_PULL',
     choice: {
@@ -191,6 +201,11 @@ describe('V2 onboarding runtime', () => {
     ])
     expect(transition.state.phase).toBe('B06_SAVE_COMMIT')
     expect(Object.isFrozen(transition.state.frozenPlan)).toBe(true)
+    expect(transition.state.stopCommit).toEqual({
+      token: expect.stringMatching(/^v2-platter-stop:\d+$/),
+      platterStatus: 'stopping',
+      planStatus: 'pending',
+    })
 
     const rapid = reduceV2OnboardingRuntime(transition.state, {
       type: 'STOP_AND_SAVE',
@@ -199,23 +214,53 @@ describe('V2 onboarding runtime', () => {
     expect(rapid.effects).toEqual([])
   })
 
-  it('ignores stale save results and retries the same frozen draft after failure', () => {
+  it('waits for a correlated platter stop after the plan save succeeds', () => {
+    const transition = reduceV2OnboardingRuntime(reachStopHold(), {
+      type: 'STOP_AND_SAVE',
+    })
+    const pending = transition.state
+    const token = pending.stopCommit?.token
+    if (token === undefined) throw new Error('Expected a stop commit token.')
+
+    let state = send(pending, {
+      type: 'PLAN_SAVE_SUCCEEDED',
+      requestId: 1,
+    })
+    expect(state.phase).toBe('B06_SAVE_COMMIT')
+    expect(state.pendingSave).toBeUndefined()
+    expect(state.stopCommit?.planStatus).toBe('saved')
+    expect(
+      send(state, { type: 'PLATTER_STOPPED', token: `${token}:stale` }),
+    ).toBe(state)
+
+    state = finishPlatterStop(state)
+    expect(state.phase).toBe('B07_SAVED_ACK')
+    expect(state.stopCommit).toBeUndefined()
+  })
+
+  it('invalidates an unfinished stop when save fails and requires both fresh retry completions', () => {
     let transition = reduceV2OnboardingRuntime(reachStopHold(), {
       type: 'STOP_AND_SAVE',
     })
     const pending = transition.state
+    const oldToken = pending.stopCommit?.token
+    if (oldToken === undefined) throw new Error('Expected a stop commit token.')
     expect(send(pending, { type: 'PLAN_SAVE_SUCCEEDED', requestId: 99 })).toBe(
       pending,
     )
 
-    const state = send(pending, {
+    let state = send(pending, {
       type: 'PLAN_SAVE_FAILED',
       requestId: 1,
       message: 'Could not save this plan.',
     })
     expect(state.phase).toBe('B06_STOP_SAVE_HOLD')
     expect(state.saveError).toBe('Could not save this plan.')
+    expect(state.stopCommit).toBeUndefined()
     const frozen = state.frozenPlan
+    expect(send(state, { type: 'PLATTER_STOPPED', token: oldToken })).toBe(
+      state,
+    )
 
     transition = reduceV2OnboardingRuntime(state, { type: 'STOP_AND_SAVE' })
     expect(transition.effects[0]).toMatchObject({
@@ -223,15 +268,62 @@ describe('V2 onboarding runtime', () => {
       requestId: 2,
       plan: frozen,
     })
+    const newToken = transition.state.stopCommit?.token
+    if (newToken === undefined) throw new Error('Expected a retry stop token.')
+    expect(newToken).not.toBe(oldToken)
+
+    state = send(transition.state, {
+      type: 'PLAN_SAVE_SUCCEEDED',
+      requestId: 2,
+    })
+    expect(state.phase).toBe('B06_SAVE_COMMIT')
+    expect(send(state, { type: 'PLATTER_STOPPED', token: oldToken })).toBe(
+      state,
+    )
+    state = send(state, { type: 'PLATTER_STOPPED', token: newToken })
+    expect(state.phase).toBe('B07_SAVED_ACK')
   })
 
-  it('keeps replay and developer navigation permanently write-free', () => {
+  it('invalidates an already completed stop when save fails before retry', () => {
+    let transition = reduceV2OnboardingRuntime(reachStopHold(), {
+      type: 'STOP_AND_SAVE',
+    })
+    const oldToken = transition.state.stopCommit?.token
+    if (oldToken === undefined) throw new Error('Expected a stop commit token.')
+    let state = finishPlatterStop(transition.state)
+    expect(state.stopCommit?.platterStatus).toBe('stopped')
+
+    state = send(state, {
+      type: 'PLAN_SAVE_FAILED',
+      requestId: 1,
+      message: 'Try again.',
+    })
+    expect(state.phase).toBe('B06_STOP_SAVE_HOLD')
+    expect(state.stopCommit).toBeUndefined()
+
+    transition = reduceV2OnboardingRuntime(state, { type: 'STOP_AND_SAVE' })
+    expect(transition.state.stopCommit).toMatchObject({
+      platterStatus: 'stopping',
+      planStatus: 'pending',
+    })
+    expect(transition.state.stopCommit?.token).not.toBe(oldToken)
+    state = finishPlatterStop(transition.state)
+    expect(state.phase).toBe('B06_SAVE_COMMIT')
+
+    state = send(state, { type: 'PLAN_SAVE_SUCCEEDED', requestId: 2 })
+    expect(state.phase).toBe('B07_SAVED_ACK')
+  })
+
+  it('waits for the platter stop in reduced, replay and developer sessions without writing', () => {
     for (const sessionKind of ['replay', 'developer-review'] as const) {
-      const transition = reduceV2OnboardingRuntime(reachStopHold(sessionKind), {
-        type: 'STOP_AND_SAVE',
-      })
+      const transition = reduceV2OnboardingRuntime(
+        reachStopHold(sessionKind, 'reduced'),
+        { type: 'STOP_AND_SAVE' },
+      )
       expect(transition.effects).toEqual([])
-      expect(transition.state.phase).toBe('B07_SAVED_ACK')
+      expect(transition.state.phase).toBe('B06_SAVE_COMMIT')
+      expect(transition.state.stopCommit?.planStatus).toBe('write-free')
+      expect(finishPlatterStop(transition.state).phase).toBe('B07_SAVED_ACK')
     }
 
     const firstRun = reachStopHold('first-run')
@@ -273,11 +365,58 @@ describe('V2 onboarding runtime', () => {
     ).toBe(restarted)
   })
 
+  it('keeps Back and review resets free of prior platter-stop callbacks', () => {
+    let transition = reduceV2OnboardingRuntime(reachStopHold(), {
+      type: 'STOP_AND_SAVE',
+    })
+    const firstToken = transition.state.stopCommit?.token
+    if (firstToken === undefined)
+      throw new Error('Expected a stop commit token.')
+    const failedCommit = send(transition.state, {
+      type: 'PLAN_SAVE_FAILED',
+      requestId: 1,
+      message: 'Try again.',
+    })
+    expect(failedCommit.stopCommit).toBeUndefined()
+
+    let state = send(failedCommit, { type: 'BACK' })
+    expect(state.phase).toBe('B05_SIDE_B_CHOICE_HOLD')
+    expect(state.stopCommit).toBeUndefined()
+    expect(state.frozenPlan).toBeUndefined()
+    expect(send(state, { type: 'PLATTER_STOPPED', token: firstToken })).toBe(
+      state,
+    )
+
+    transition = reduceV2OnboardingRuntime(reachStopHold('developer-review'), {
+      type: 'STOP_AND_SAVE',
+    })
+    const reviewToken = transition.state.stopCommit?.token
+    if (reviewToken === undefined) {
+      throw new Error('Expected a review stop commit token.')
+    }
+    state = send(transition.state, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_STOP_SAVE_HOLD',
+    })
+    expect(state.stopCommit).toBeUndefined()
+    expect(send(state, { type: 'PLATTER_STOPPED', token: reviewToken })).toBe(
+      state,
+    )
+
+    transition = reduceV2OnboardingRuntime(state, { type: 'STOP_AND_SAVE' })
+    expect(transition.state.stopCommit?.token).not.toBe(reviewToken)
+    state = send(transition.state, { type: 'REVIEW_REPLAY' })
+    expect(state.phase).toBe('B00_BRAND_REVEAL')
+    expect(state.stopCommit).toBeUndefined()
+  })
+
   it('correlates reminder writes and keeps failure optional and retryable', () => {
     let state = reduceV2OnboardingRuntime(reachStopHold(), {
       type: 'STOP_AND_SAVE',
     }).state
     state = send(state, { type: 'PLAN_SAVE_SUCCEEDED', requestId: 1 })
+    expect(state.phase).toBe('B06_SAVE_COMMIT')
+    state = finishPlatterStop(state)
     state = finishPresentation(state)
     expect(state.phase).toBe('B07_REMINDER_HOLD')
     state = send(state, { type: 'SELECT_REMINDER', localTime: '20:30' })

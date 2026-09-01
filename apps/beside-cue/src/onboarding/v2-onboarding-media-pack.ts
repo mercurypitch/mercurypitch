@@ -17,10 +17,16 @@ export interface V2OnboardingPullMedia {
   readonly end?: V2OnboardingLoadableResource
 }
 
+export interface V2OnboardingRecordMedia {
+  /** Exact stopped plate beneath the deterministic native platter layer. */
+  readonly stoppedAuthority: V2OnboardingStillResource
+}
+
 export interface V2OnboardingMediaPack {
   readonly revision: string
   readonly brand: V2OnboardingBrandResource
   readonly poster?: V2OnboardingStillResource
+  readonly record?: V2OnboardingRecordMedia
   readonly pulls: Readonly<Record<string, V2OnboardingPullMedia | undefined>>
 }
 
@@ -50,6 +56,7 @@ export const V2_ONBOARDING_PREVIEW_MEDIA_PACK: V2OnboardingMediaPack =
     revision: 'corky-v2-preview-v0.2',
     brand: Object.freeze({ kind: 'brand', alt: '' }),
     poster: TABLE_READY,
+    record: Object.freeze({ stoppedAuthority: TABLE_READY }),
     pulls: Object.freeze({
       scrolling: Object.freeze({
         present: Object.freeze({
