@@ -9,6 +9,7 @@ import type { RangeFit } from '@/games/glass/range-finder'
 import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
+import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
 
@@ -21,6 +22,7 @@ type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
 type PlayPick =
   | 'journey'
   | 'trials'
+  | 'cabinet3d'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -110,23 +112,28 @@ export function GamesScreen(props: GamesScreenProps) {
       when={playing() === null}
       fallback={
         <div class="games-stage">
-          <JourneyPrototype
-            variant={playing() === 'trials' ? 'trials' : 'journey'}
-            level={levelPick()?.level}
-            control={levelPick()?.control}
-            rangeBias={rangeBias()}
-            theme={stageTheme()}
-          />
-          <button
-            class="games-leave"
-            type="button"
-            onClick={() => setPlaying(null)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m15 5-7 7 7 7" />
-            </svg>
-            Leave
-          </button>
+          <Show when={playing() === 'cabinet3d'}>
+            <Stage3D onExit={() => setPlaying(null)} />
+          </Show>
+          <Show when={playing() !== 'cabinet3d'}>
+            <JourneyPrototype
+              variant={playing() === 'trials' ? 'trials' : 'journey'}
+              level={levelPick()?.level}
+              control={levelPick()?.control}
+              rangeBias={rangeBias()}
+              theme={stageTheme()}
+            />
+            <button
+              class="games-leave"
+              type="button"
+              onClick={() => setPlaying(null)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 5-7 7 7 7" />
+              </svg>
+              Leave
+            </button>
+          </Show>
         </div>
       }
     >
@@ -161,6 +168,33 @@ export function GamesScreen(props: GamesScreenProps) {
             <span class="game-card__blurb">
               Hum to climb the platforms, shatter the gate, cross the melody
               bridge.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('cabinet3d')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Cabinet
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              One wine glass under one light. Hold the note until it rings, then
+              let your voice waver until it goes.
             </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
