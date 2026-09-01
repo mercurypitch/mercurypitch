@@ -179,6 +179,30 @@ function harness() {
   return { written, handler, plugin }
 }
 
+/** The same, through the preview server's hook — a built bundle's route in. */
+function previewHarness() {
+  const written: Array<{ file: string; line: string }> = []
+  const plugin = devLogRelayPlugin({
+    root: '/repo',
+    now: () => new Date('2026-09-01T10:00:00.000Z'),
+    write: (file, line) => written.push({ file, line }),
+    log: () => {},
+  })
+  let handler: ((req: unknown, res: unknown) => void) | null = null
+  const server = {
+    middlewares: {
+      use: (_path: string, fn: (req: unknown, res: unknown) => void) => {
+        handler = fn
+      },
+    },
+  }
+  ;(
+    plugin.configurePreviewServer as unknown as (s: typeof server) => void
+  ).call(plugin, server)
+  if (handler === null) throw new Error('no preview middleware was registered')
+  return { written, handler }
+}
+
 describe('the middleware', () => {
   const batch: DevLogBatch = {
     loadId: 'ab12cd',
@@ -266,10 +290,26 @@ describe('the middleware', () => {
 })
 
 describe('the plugin itself', () => {
-  it('exists only while serving', () => {
-    // In a build there is no relay, no endpoint and no injected script — the
-    // shim reads every console call in the app and must never ship.
-    expect(devLogRelayPlugin({ root: '/repo' }).apply).toBe('serve')
+  it('takes the same batches from a served build', () => {
+    // The dev server is not the thing being debugged. Vite serves an app as
+    // thousands of unbundled modules, which is its own weight on a phone, so
+    // a bug that only appears there is a different bug from one on the built
+    // site. `vite preview` serves the real bundle and still reports.
+    const h = previewHarness()
+    const x = exchange(
+      'POST',
+      JSON.stringify({
+        loadId: 'ab12cd',
+        entries: [{ level: 'info', text: 'from the built bundle' }],
+      }),
+    )
+    h.handler(x.req, x.res)
+    x.send()
+
+    expect(h.written.map((w) => w.line).join('')).toContain(
+      'from the built bundle',
+    )
+    expect(x.res.statusCode).toBe(204)
   })
 
   it('injects the shim ahead of the app', () => {

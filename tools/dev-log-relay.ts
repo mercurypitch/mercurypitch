@@ -16,14 +16,37 @@
 // during teardown — which is the difference between "the page vanished" and
 // "the page vanished right after these four lines".
 //
-// `apply: 'serve'`, so none of it exists in a build. The shim is injected
-// into the HTML the dev server hands out and nowhere else.
+// It also runs against a production build, because the dev server is not the
+// thing being debugged. Vite serves an app as thousands of unbundled ES
+// modules, which is its own weight on a phone, and a bug that only shows up
+// there is a different bug from one on the built site. `vite preview` with
+// this plugin serves the real bundle and still reports.
+//
+// Either way it exists only when MP_DEV_LOGS=1 is set — never in a normal
+// build, and never in CI or a deploy, which do not set it. The shim reads
+// every console call in the app, so that gate is the whole safety of it.
 //
 // Tests: tools/dev-log-relay.test.ts
 
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
+
+/**
+ * The slice of node's http types this middleware touches. Written out rather
+ * than imported so the same handler can serve the dev server and the preview
+ * server, whose middleware signatures Vite types separately.
+ */
+interface IncomingLike {
+  method?: string
+  on(event: 'data', listener: (chunk: Buffer | string) => void): void
+  on(event: 'end', listener: () => void): void
+}
+
+interface ServerResponseLike {
+  statusCode: number
+  end(): void
+}
 
 /** Where the batches land, relative to the repo root. Gitignored. */
 export const DEV_LOG_DIR = '.dev-logs'
@@ -333,84 +356,101 @@ export function devLogRelayPlugin(options: DevLogRelayOptions): Plugin {
 
   const seenLoads = new Set<string>()
 
+  /**
+   * The same handler for the dev server and the preview server. A build
+   * being served by `vite preview` is the closest thing to the deployed site
+   * that can still write to this machine's disk.
+   */
+  const handler = (req: IncomingLike, res: ServerResponseLike): void => {
+    if (req.method !== 'POST') {
+      res.statusCode = 405
+      res.end()
+      return
+    }
+    let raw = ''
+    let tooBig = false
+    req.on('data', (chunk: Buffer | string) => {
+      if (tooBig) return
+      raw += String(chunk)
+      if (raw.length > MAX_BODY_BYTES) {
+        tooBig = true
+        raw = ''
+        res.statusCode = 413
+        res.end()
+      }
+    })
+    req.on('end', () => {
+      if (tooBig) return
+      let parsed: DevLogBatch | null = null
+      try {
+        parsed = parseBatch(JSON.parse(raw))
+      } catch {
+        parsed = null
+      }
+      if (parsed === null) {
+        res.statusCode = 400
+        res.end()
+        return
+      }
+      const file = fileFor(now())
+      // A load banner once, so a reload — or a crash and a reload, which is
+      // what this was built to catch — is visible as a new id rather than as
+      // a gap someone has to notice.
+      if (!seenLoads.has(parsed.loadId)) {
+        seenLoads.add(parsed.loadId)
+        const banner = `\n=== load ${parsed.loadId} · ${now().toISOString()} · ${parsed.url ?? '?'}\n=== ${parsed.agent ?? 'unknown device'}\n`
+        write(file, banner)
+        emit(banner)
+      }
+      for (const entry of parsed.entries) {
+        const line = `${formatLogLine(parsed, entry)}\n`
+        write(file, line)
+        emit(line)
+      }
+      res.statusCode = 204
+      res.end()
+    })
+  }
+
+  /** A built bundle has no HMR, so its reload marker would never fire. */
+  let isBuild = false
+
   return {
     name: 'mercurypitch:dev-log-relay',
-    apply: 'serve',
+
+    configResolved(config) {
+      isBuild = config.command === 'build'
+    },
 
     configureServer(server) {
-      server.middlewares.use(endpoint, (req, res) => {
-        if (req.method !== 'POST') {
-          res.statusCode = 405
-          res.end()
-          return
-        }
-        let raw = ''
-        let tooBig = false
-        req.on('data', (chunk: Buffer | string) => {
-          if (tooBig) return
-          raw += String(chunk)
-          if (raw.length > MAX_BODY_BYTES) {
-            tooBig = true
-            raw = ''
-            res.statusCode = 413
-            res.end()
-          }
-        })
-        req.on('end', () => {
-          if (tooBig) return
-          let parsed: DevLogBatch | null = null
-          try {
-            parsed = parseBatch(JSON.parse(raw))
-          } catch {
-            parsed = null
-          }
-          if (parsed === null) {
-            res.statusCode = 400
-            res.end()
-            return
-          }
-          const file = fileFor(now())
-          // A load banner once, so a reload — or a crash and a reload, which
-          // is what this was built to catch — is visible as a new id rather
-          // than as a gap someone has to notice.
-          if (!seenLoads.has(parsed.loadId)) {
-            seenLoads.add(parsed.loadId)
-            const banner = `\n=== load ${parsed.loadId} · ${now().toISOString()} · ${parsed.url ?? '?'}\n=== ${parsed.agent ?? 'unknown device'}\n`
-            write(file, banner)
-            emit(banner)
-          }
-          for (const entry of parsed.entries) {
-            const line = `${formatLogLine(parsed, entry)}\n`
-            write(file, line)
-            emit(line)
-          }
-          res.statusCode = 204
-          res.end()
-        })
-      })
+      server.middlewares.use(endpoint, handler)
+    },
+
+    configurePreviewServer(server) {
+      server.middlewares.use(endpoint, handler)
     },
 
     transformIndexHtml: {
       order: 'pre',
       handler(html) {
-        return {
-          html,
-          tags: [
-            {
-              tag: 'script',
-              // First in <head>, before any module: a console call during
-              // boot is exactly the one worth having.
-              injectTo: 'head-prepend',
-              children: clientShim(endpoint),
-            },
-            {
-              tag: 'script',
-              attrs: { type: 'module' },
-              injectTo: 'head-prepend',
-              children: VITE_RELOAD_MARKER,
-            },
-          ],
+        const tags = [
+          {
+            tag: 'script',
+            // First in <head>, before any module: a console call during
+            // boot is exactly the one worth having.
+            injectTo: 'head-prepend' as const,
+            children: clientShim(endpoint),
+          },
+        ]
+        if (!isBuild) {
+          tags.push({
+            tag: 'script',
+            attrs: { type: 'module' },
+            injectTo: 'head-prepend' as const,
+            children: VITE_RELOAD_MARKER,
+          } as (typeof tags)[number])
         }
+        return { html, tags }
       },
     },
   }
