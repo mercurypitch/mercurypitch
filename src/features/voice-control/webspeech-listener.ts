@@ -221,19 +221,33 @@ export function createWebSpeechListener(
   // iOS suspends a backgrounded document and does not always tell the
   // recognizer, so a tab returning from the app switcher, from a lock, or
   // from the back/forward cache can hold a session that will never speak
-  // again. Returning to visibility is the cheapest moment to notice.
+  // again — `live` stays true over a recognizer that stopped existing, which
+  // is the shape of "it just does not hear me any more".
+  //
+  // Nothing here can ask a session whether it is still alive, and the only
+  // proof is a result the room may never produce. So a page that was put away
+  // replaces its session rather than trusting it. The cost is one restart the
+  // singer cannot see — a respawn after a healthy session says nothing (see
+  // `hasBeenLive`) — against a mic that is otherwise deaf until the tab is
+  // reloaded.
 
   const onVisibility = () => {
+    // `visibilitychange` only fires on a transition, so arriving here at
+    // `visible` means the document was hidden until a moment ago.
     if (!started || document.visibilityState !== 'visible') return
-    if (isSilent()) {
-      spinUp()
-      return
-    }
-    // A session that never confirmed cannot have survived the suspension.
-    if (!live) {
-      discard()
-      spinUp()
-    }
+    clearRestartTimer()
+    spinUp()
+  }
+
+  const onPageShow = (event: Event) => {
+    // `persisted` is the back/forward-cache tell: the document was frozen
+    // whole and thawed with its JS state intact, which is exactly the case
+    // where a stale `live` looks healthy. iOS does not reliably fire
+    // `visibilitychange` for it, so it is listened for separately.
+    if (!started) return
+    if ((event as { persisted?: boolean }).persisted !== true) return
+    clearRestartTimer()
+    spinUp()
   }
 
   const spinUp = () => {
@@ -364,6 +378,7 @@ export function createWebSpeechListener(
       started = true
       fastEnds = 0
       document.addEventListener('visibilitychange', onVisibility)
+      window.addEventListener('pageshow', onPageShow)
       spinUp()
     },
     stop: () => {
@@ -372,6 +387,7 @@ export function createWebSpeechListener(
       clearRestartTimer()
       stopListeningForGesture()
       document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pageshow', onPageShow)
       discard()
       callbacks.onInterim('')
       callbacks.onStateChange('idle')

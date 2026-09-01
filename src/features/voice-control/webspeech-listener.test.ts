@@ -263,6 +263,53 @@ describe('getting back what iOS took away', () => {
     expect(FakeRecognition.instances.length).toBeGreaterThan(afterEnd)
   })
 
+  it('replaces a session that still calls itself live after a suspension', () => {
+    // The reported symptom: the mic goes quiet and stays quiet. iOS froze
+    // the document, the recognizer died inside the freeze, and no end and no
+    // error came back — so from in here the session still looks healthy and
+    // every recovery path that trusts `live` steps over it.
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    const stale = h.latest()
+
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(stale.aborted).toBe(true)
+    expect(FakeRecognition.instances).toHaveLength(2)
+  })
+
+  it('replaces the session a back/forward restore thawed', () => {
+    // Walking out to Karaoke Night and back is two documents, and Safari may
+    // hand the first one back from the bfcache with its JS state intact —
+    // including a `live` flag over a recognizer that stopped existing.
+    // `visibilitychange` is not reliably fired for this, so `pageshow` is.
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    const stale = h.latest()
+
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true }),
+    )
+
+    expect(stale.aborted).toBe(true)
+    expect(FakeRecognition.instances).toHaveLength(2)
+    h.latest().confirm()
+    expect(h.last().state).toBe('listening')
+  })
+
+  it('ignores the pageshow of an ordinary load', () => {
+    // Every navigation fires `pageshow`; only a restore carries `persisted`.
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+
+    window.dispatchEvent(new Event('pageshow'))
+
+    expect(FakeRecognition.instances).toHaveLength(1)
+  })
+
   it('respawns a session that ends while it is meant to be listening', () => {
     const h = harness()
     h.listener.start()
@@ -300,6 +347,9 @@ describe('stopping means stopped', () => {
     FakeRecognition.startThrows = null
     window.dispatchEvent(new Event('pointerdown'))
     document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true }),
+    )
     vi.advanceTimersByTime(60_000)
 
     expect(FakeRecognition.instances).toHaveLength(1)
