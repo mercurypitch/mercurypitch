@@ -122,6 +122,26 @@ describe('the client shim', () => {
   it('posts where it was told to', () => {
     expect(clientShim('/__elsewhere')).toContain("'/__elsewhere'")
   })
+
+  it('separates a page that left from a page that was killed', () => {
+    // The whole ambiguity of this hunt: a fresh document at the same URL
+    // reads identically whether iOS killed the tab or the app navigated.
+    // iOS fires beforeunload for one and not the other.
+    expect(shim).toContain("addEventListener('beforeunload'")
+    expect(shim).toContain('it was not killed')
+  })
+
+  it('names whoever sent it away', () => {
+    expect(shim).toContain("['assign', 'replace', 'reload']")
+    expect(shim).toContain('new Error')
+  })
+
+  it('keeps a pulse, so silence is distinguishable from a stall', () => {
+    // A one-second timer firing three seconds late is a blocked main thread,
+    // which is a different bug from running out of memory while idle.
+    expect(shim).toContain('[heartbeat]')
+    expect(shim).toContain('was blocked for')
+  })
 })
 
 /** A node request/response pair thin enough to drive the middleware. */

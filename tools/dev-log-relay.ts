@@ -223,6 +223,54 @@ export function clientShim(endpoint: string): string {
     if (document.visibilityState === 'hidden') flushNow();
   });
 
+  // Was it killed, or did it leave? A fresh document at the same URL looks
+  // identical either way in a log of console lines, and the two have nothing
+  // in common to fix. iOS fires beforeunload when the page navigates and does
+  // not fire it when the content process is killed, so its presence or
+  // absence in the last lines before a new load id is the answer.
+  window.addEventListener('beforeunload', function () {
+    push('nav', ['beforeunload — this page is LEAVING, it was not killed']);
+    flushNow();
+  });
+
+  // And if it left, who sent it. A stack here names the caller.
+  try {
+    ['assign', 'replace', 'reload'].forEach(function (name) {
+      var original = window.location[name].bind(window.location);
+      window.location[name] = function () {
+        try {
+          push('nav', [
+            'location.' + name + '(' + (arguments[0] || '') + ')',
+            new Error('called from').stack || '',
+          ]);
+          flushNow();
+        } catch (err) {}
+        return original.apply(null, arguments);
+      };
+    });
+  } catch (err) {
+    // Some engines refuse to let these be replaced. beforeunload still tells
+    // us whether the page left; only the culprit's name is lost.
+  }
+
+  // A heartbeat, for the seconds where nothing is logged and the tab dies
+  // anyway. Its drift is the useful part: a one-second timer that fires three
+  // seconds late means the main thread was blocked, which is a different bug
+  // from a process running out of memory while idle.
+  var beats = 0;
+  var lastBeat = Date.now();
+  setInterval(function () {
+    var now = Date.now();
+    var drift = now - lastBeat - 1000;
+    lastBeat = now;
+    beats++;
+    if (drift > 250) {
+      push('warn', ['[heartbeat] the main thread was blocked for ' + drift + 'ms']);
+    } else if (beats % 5 === 0) {
+      push('log', ['[heartbeat] ' + ((now - START) / 1000).toFixed(1) + 's, still here']);
+    }
+  }, 1000);
+
   push('info', ['[dev-log] page load ' + LOAD_ID + ' — ' + navigator.userAgent]);
 })();
 `.trim()
