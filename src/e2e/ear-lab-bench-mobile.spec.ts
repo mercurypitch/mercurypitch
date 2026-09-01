@@ -281,4 +281,45 @@ test.describe('the taller phone', () => {
       'an answer pad is under the 44px touch target',
     ).toBeGreaterThanOrEqual(44)
   })
+
+  test('keeps the voice pill in the header, off the page @smoke', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+    })
+    await page.goto('/')
+    await dismissOverlays(page)
+
+    const pill = page.getByTestId('voice-control-pill')
+    await expect(pill).toBeVisible()
+
+    const placed = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="voice-control-pill"]')
+      const header = document.querySelector('header')
+      if (el === null || header === null) return null
+      return {
+        placement: el.getAttribute('data-placement'),
+        inHeader: header.contains(el),
+        bottom: el.getBoundingClientRect().bottom,
+        viewportHeight: window.innerHeight,
+      }
+    })
+
+    expect(placed, 'could not find the voice pill').not.toBe(null)
+    if (placed === null) return
+
+    // In the header rather than fixed over the bottom-left corner, where it
+    // sat on whatever the page had put there — and where the Ear Lab console
+    // paid 46px of a 390px stage to avoid it.
+    expect(placed.placement).toBe('docked')
+    expect(
+      placed.inHeader,
+      'the voice pill is not in the app header on a phone',
+    ).toBe(true)
+    expect(
+      placed.bottom,
+      'the voice pill still hangs over the bottom of the page',
+    ).toBeLessThan(placed.viewportHeight / 2)
+  })
 })
