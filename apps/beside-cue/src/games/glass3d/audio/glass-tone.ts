@@ -73,14 +73,22 @@ export const createGlassTone = (targetHz: number): GlassTone => {
   let tremoloDepth: GainNode | null = null
   let filters: BiquadFilterNode[] = []
   let noise: AudioBufferSourceNode | null = null
+  let lfo: OscillatorNode | null = null
   let broken = false
 
   /** Two seconds of looped white noise — the excitation for everything
-   * here, ring and break alike. One buffer, reused. */
+   * here, ring and break alike. One buffer, reused, which the code did
+   * not actually do: every burst built its own, so a single shatter cut
+   * nineteen two-second buffers and ran two million Math.random() calls
+   * inside the frame that was also launching eighty shards. Noise is
+   * noise; the same two seconds serve every voice. */
+  let noiseCache: AudioBuffer | null = null
   const noiseBuffer = (c: AudioContext): AudioBuffer => {
+    if (noiseCache !== null) return noiseCache
     const buf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate)
     const data = buf.getChannelData(0)
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+    noiseCache = buf
     return buf
   }
 
@@ -151,7 +159,11 @@ export const createGlassTone = (targetHz: number): GlassTone => {
 
       // Tremolo: an LFO scaled by the player's vibrato strength, added
       // onto the ring gain. Depth 0 = a steady sine of nothing.
-      const lfo = c.createOscillator()
+      //
+      // Held in a variable rather than left anonymous because shatter()
+      // has to be able to silence it: this is a SECOND writer on
+      // ringGain.gain, and the scheduled one cannot cancel it.
+      lfo = c.createOscillator()
       lfo.frequency.value = TREMOLO_HZ
       tremoloDepth = c.createGain()
       tremoloDepth.gain.value = 0
@@ -187,8 +199,23 @@ export const createGlassTone = (targetHz: number): GlassTone => {
 
       // Layer 4 first in code, first to matter: the ring must not keep
       // singing over its own wreckage. Fast settle, not a cut.
+      //
+      // Two writers reach ringGain.gain: the scheduler, and the tremolo
+      // LFO connected to it as an a-rate input. cancelScheduledValues
+      // only silences the first. Left alone, the second kept driving the
+      // param up and down at TREMOLO_HZ for as long as the stage was
+      // mounted -- a wobble that outlived the glass, and the reason the
+      // sound never stopped after a break. Depth to zero, then the
+      // oscillator itself, so nothing is left pushing on it.
       ringGain?.gain.cancelScheduledValues(t)
       ringGain?.gain.setTargetAtTime(0, t, 0.05)
+      tremoloDepth?.gain.cancelScheduledValues(t)
+      tremoloDepth?.gain.setValueAtTime(0, t)
+      try {
+        lfo?.stop(t + 0.2)
+      } catch {
+        // Never started, or the context went away with the page.
+      }
 
       // Layer 1, the crack: bright, sharp, and centred well above the
       // ring so it reads as breakage rather than a louder note.
@@ -223,12 +250,19 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       } catch {
         // Never started, or the context already went away with the page.
       }
+      try {
+        lfo?.stop()
+      } catch {
+        // Never started, or the context already went away with the page.
+      }
       master?.disconnect()
       master = null
       ringGain = null
       tremoloDepth = null
       filters = []
       noise = null
+      lfo = null
+      noiseCache = null
       ctx = null
       lease.release()
     },

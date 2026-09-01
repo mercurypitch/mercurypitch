@@ -5,16 +5,16 @@
 // this component feeds it mic pitch through the sing driver and renders
 // the three asks. The mic stops the moment the last note locks.
 
-import { midiToNoteNameOctave, playTargetHum } from '@irchiinnuss/pitch-engine'
+import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
+import { createGameVoice } from '@/games/glass/game-voice'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import type { RangeFit } from '@/games/glass/range-finder'
 import { computeRangeFit, createSteadyDetector, } from '@/games/glass/range-finder'
 
 const RF = JOURNEY_CONFIG.rangeFinder
-const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 const name = (midi: number): string => midiToNoteNameOctave(Math.round(midi))
 
 type Step = 'comfy' | 'low' | 'high' | 'result' | 'error'
@@ -65,8 +65,7 @@ export function RangeFinder(props: {
   let silenceStart: number | null = null
 
   const hum = (midi: number): void => {
-    const ctx = driver?.ctx() ?? null
-    if (ctx !== null) playTargetHum(ctx, midiToHz(midi), RF.humSeconds)
+    voice.note(midi, RF.humSeconds)
   }
 
   const stopDriver = (): void => {
@@ -120,8 +119,13 @@ export function RangeFinder(props: {
     }
   }
 
+  // The same instrument the games play, so a note demonstrated here and
+  // the same note in a level are recognisably one sound.
+  const voice = createGameVoice('range-finder-voice')
+
   onMount(() => {
     driver = createSingDriver('range-finder')
+    voice.start()
     driver
       .start()
       .then(() => {
@@ -134,6 +138,7 @@ export function RangeFinder(props: {
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
+    voice.dispose()
     stopDriver()
   })
 
