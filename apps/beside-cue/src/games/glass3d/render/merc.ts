@@ -9,18 +9,34 @@
 // painting. He is lit by the same rig as the glass, which is what makes
 // him belong in the room.
 //
-// The face is the one thing a material cannot supply: it is painted in
-// the concept art, not sculpted, so an untextured droplet has no eyes.
-// It rides as a decal — a small alpha-mapped plane parented to the body
-// node, drawn by canvas code rather than shipped as a file. A decal
-// because that makes expression a runtime variable (§6.4a): the same
-// plane can blink, listen, and wince when the glass goes.
+// The face belongs to the ASSET, not to this file. That is a reversal,
+// and it is worth saying why so nobody re-adds what was removed.
+//
+// This module used to paint a face onto a small plane and float it in
+// front of him, because the Meshy export has no textures and a chrome
+// droplet cannot show an expression. The trouble is that the sculpt
+// carries a face of its own -- eye sockets and a mouth, pressed into the
+// body -- so he had two, at different sizes, in different places. It was
+// invisible while he was a dark lump and obvious the moment the room
+// got lit.
+//
+// Removing the plane is not enough on its own, and a roughness sweep is
+// what settled it: from mirror (0.15) through matte (0.55), and from
+// full metal down to 0.2, the sculpted sockets never stop being faint
+// white-on-white outlines. That is not a tuning failure, it is what a
+// mirror IS -- it shows the room, not its own shape, so shallow relief
+// has nothing to shade. No material setting recovers a face carved into
+// chrome.
+//
+// So the eyes have to be their own geometry with their own dark
+// material, which is how games have always done stylised eyes, and they
+// have to come out of Blender inside the glb. This file's job is to
+// dress the body and stay out of the way of anything the file already
+// dresses itself -- see `applyBody` below.
 
-import type { AnimationClip, Object3D, Texture } from 'three'
-import { AnimationMixer, CanvasTexture, DoubleSide, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
+import type { AnimationClip, Material, Mesh, Object3D, Texture } from 'three'
+import { AnimationMixer, Box3, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
 import { loadMerc } from '../assets'
-
-const INK = '#241913'
 
 /**
  * The body: mercury. Full metal, near-mirror, and a thin-film layer for
@@ -55,45 +71,6 @@ export const mercMaterial = (
     envMapIntensity: 1.25,
   })
 
-/**
- * The face, drawn. Two tall friendly ink ovals with a highlight, and a
- * small open smile — the concept sheet's face, reduced to what a decal
- * can carry. 256px is plenty for something a hand's width across.
- */
-const faceTexture = (): CanvasTexture => {
-  const size = 256
-  const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
-  const g = canvas.getContext('2d')
-  if (g !== null) {
-    g.clearRect(0, 0, size, size)
-
-    const eye = (cx: number): void => {
-      g.fillStyle = INK
-      g.beginPath()
-      g.ellipse(cx, 108, 26, 38, 0, 0, Math.PI * 2)
-      g.fill()
-      g.fillStyle = 'rgba(255,255,255,0.9)'
-      g.beginPath()
-      g.ellipse(cx + 8, 94, 8, 11, 0, 0, Math.PI * 2)
-      g.fill()
-    }
-    eye(86)
-    eye(170)
-
-    g.strokeStyle = INK
-    g.lineWidth = 10
-    g.lineCap = 'round'
-    g.beginPath()
-    g.arc(128, 158, 30, Math.PI * 0.2, Math.PI * 0.8)
-    g.stroke()
-  }
-  const tex = new CanvasTexture(canvas)
-  tex.colorSpace = SRGBColorSpace
-  return tex
-}
-
 export interface MercActor {
   /** The root to add to the scene. Scaled so Merc stands `height` tall. */
   root: Object3D
@@ -122,40 +99,36 @@ export const createMerc = async (
   const { scene, clips } = await loadMerc()
 
   const bodyMaterial = mercMaterial(envMap)
-  let body: Mesh | null = null
+  // Mercury goes on what the file left bare, and ONLY on that. The
+  // export carries no materials today, so every mesh gets it -- but the
+  // moment eyes arrive as their own geometry with their own dark
+  // material, painting mercury over everything would turn them back into
+  // chrome and undo the fix. Deferring to the asset is what lets the
+  // model gain parts without this file being edited again.
   scene.traverse((o) => {
     const mesh = o as Mesh
-    if (mesh.isMesh === true) {
-      mesh.material = bodyMaterial
-      if (mesh.name === 'merc_body') body = mesh
-    }
+    if (mesh.isMesh !== true) return
+    const existing = mesh.material as Material | Material[] | undefined
+    const bare =
+      existing === undefined ||
+      (Array.isArray(existing) ? existing.length === 0 : !existing.isMaterial)
+    if (bare) mesh.material = bodyMaterial
   })
 
-  // Scale to the asked-for height, and lift so the body's lowest point
-  // hovers just off the floor -- he floats, that is the body plan.
-  const RAW_HEIGHT = 1.65
-  const RAW_MIN_Y = -0.689
-  const s = height / RAW_HEIGHT
+  // Scale to the asked-for height and lift so his lowest point hovers
+  // just off the floor -- he floats, that is the body plan.
+  //
+  // Measured rather than hardcoded. The old constants (1.65 tall, base
+  // at -0.689) were true of one export, and every re-rig, every added
+  // eye, every shape key that moves a vertex makes them a little less
+  // true -- silently, as a character who sinks into the floor or drifts
+  // above it. Box3 asks the model instead.
+  const bounds = new Box3().setFromObject(scene)
+  const size = bounds.getSize(new Vector3())
+  const rawHeight = size.y > 1e-6 ? size.y : 1
+  const s = height / rawHeight
   scene.scale.setScalar(s)
-  scene.position.y = -RAW_MIN_Y * s + height * 0.1
-
-  // The face decal, parented to the body NODE so every clip that moves
-  // the body carries the face with it. The model faces +z after the
-  // Y-up export (Blender -y forward). Slightly proud of the surface and
-  // depth-tested but not depth-written, so it hugs the curve without
-  // z-fighting it.
-  const faceMaterial = new MeshBasicMaterial({
-    map: faceTexture(),
-    transparent: true,
-    side: DoubleSide,
-    depthWrite: false,
-  })
-  const face = new Mesh(new PlaneGeometry(0.62, 0.62), faceMaterial)
-  // Proud of the surface (body z tops out at 0.62): let into it, the
-  // depth test eats the decal's edges where the droplet curves away.
-  face.position.set(0, 0.28, 0.66)
-  face.renderOrder = 1
-  if (body !== null) (body as Mesh).add(face)
+  scene.position.y = -bounds.min.y * s + height * 0.1
 
   const mixer = new AnimationMixer(scene)
   const byName = new Map<string, AnimationClip>(clips.map((c) => [c.name, c]))
@@ -185,9 +158,6 @@ export const createMerc = async (
     dispose(): void {
       mixer.stopAllAction()
       bodyMaterial.dispose()
-      faceMaterial.map?.dispose()
-      faceMaterial.dispose()
-      face.geometry.dispose()
       scene.traverse((o) => {
         const mesh = o as Mesh
         if (mesh.isMesh === true) mesh.geometry.dispose()
