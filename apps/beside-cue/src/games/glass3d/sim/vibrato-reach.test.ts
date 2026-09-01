@@ -70,14 +70,19 @@ const record = (v: Voice, seconds: number, seed = 7): number[] => {
     const t = i / v.frameHz
     const gauss = (rand() + rand() + rand() + rand() + rand() + rand() - 3) / 3
     const cents =
-      v.depthCents * Math.sin(2 * Math.PI * v.rateHz * t) + v.jitterCents * gauss
+      v.depthCents * Math.sin(2 * Math.PI * v.rateHz * t) +
+      v.jitterCents * gauss
     out.push(smooth(69 + cents / 100))
   }
   return out
 }
 
 /** Sing at the glass for `seconds` and report whether it broke. */
-const singAt = (v: Voice, seconds = 8, seed = 7): { broke: boolean; res: number } => {
+const singAt = (
+  v: Voice,
+  seconds = 8,
+  seed = 7,
+): { broke: boolean; res: number } => {
   const frames = record(v, seconds, seed)
   const vib = createVibratoDetector(WORLD3D_CONFIG.vibrato)
   const ring = createResonance(69)
@@ -85,7 +90,8 @@ const singAt = (v: Voice, seconds = 8, seed = 7): { broke: boolean; res: number 
   const steps = Math.round(seconds * SIM_HZ)
   for (let i = 0; i < steps; i++) {
     const now = i * dt
-    const midi = frames[Math.min(frames.length - 1, Math.floor(now * v.frameHz))]
+    const midi =
+      frames[Math.min(frames.length - 1, Math.floor(now * v.frameHz))]
     const wave = vib.feed(now * 1000, midi)
     stepResonance(
       ring,
@@ -129,10 +135,7 @@ describe('a steady note still will not break it', () => {
   // The whole mechanic rests on this: holding stops at holdCap, and no
   // amount of jitter, drift or endurance gets past it.
   it.each([0, 3, 6, 10])('held with %s cents of jitter', (jitterCents) => {
-    const { broke, res } = singAt(
-      { ...VOICE, depthCents: 0, jitterCents },
-      20,
-    )
+    const { broke, res } = singAt({ ...VOICE, depthCents: 0, jitterCents }, 20)
     expect(broke).toBe(false)
     expect(res).toBeCloseTo(WORLD3D_CONFIG.ring.holdCap, 2)
   })

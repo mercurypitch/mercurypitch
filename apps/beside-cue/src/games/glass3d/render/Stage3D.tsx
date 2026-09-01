@@ -133,9 +133,7 @@ export const Stage3D = (props: Stage3DProps) => {
    * thread that is starved -- and those are indistinguishable from
    * "slow". */
   const chipLine = createMemo(() =>
-    fps() === 0
-      ? backend()
-      : `${backend()} · ${fps()}fps · ${pitchHz()}Hz`,
+    fps() === 0 ? backend() : `${backend()} · ${fps()}fps · ${pitchHz()}Hz`,
   )
 
   onMount(() => {

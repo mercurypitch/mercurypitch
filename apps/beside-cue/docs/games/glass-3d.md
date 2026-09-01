@@ -1102,12 +1102,12 @@ through the real signal path — the engine's five-point median
 and the 2D band (`journey-config.ts`: 3.5–8.5 Hz, 15–140 cents) rejects
 outright everything a first-time player does:
 
-| What the player does           | 2D band     | Why                                     |
-| ------------------------------ | ----------- | --------------------------------------- |
-| Deliberate wobble, 2–3 Hz      | **refused** | Below `minHz`. This is the common case  |
-| Timid wobble, ±10¢             | **refused** | Below `minDepthCents`                   |
-| Enthusiastic swing, ±180¢      | **refused** | Above `maxDepthCents`                   |
-| Trained vibrato, 5.5 Hz ±40¢   | accepted    | The band was fitted to this             |
+| What the player does         | 2D band     | Why                                    |
+| ---------------------------- | ----------- | -------------------------------------- |
+| Deliberate wobble, 2–3 Hz    | **refused** | Below `minHz`. This is the common case |
+| Timid wobble, ±10¢           | **refused** | Below `minDepthCents`                  |
+| Enthusiastic swing, ±180¢    | **refused** | Above `maxDepthCents`                  |
+| Trained vibrato, 5.5 Hz ±40¢ | accepted    | The band was fitted to this            |
 
 That band was fitted to a trained vibrato, which is the right band for a
 singing exercise and the wrong one for a game verb. So the 3D world keeps
