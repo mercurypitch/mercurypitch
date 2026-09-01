@@ -793,8 +793,25 @@ simpler, faster and depends on nothing.
 `RoomEnvironment` is about 5 KB of source that builds a room out of
 emissive boxes and feeds it to the PMREM generator; a 1k HDR is ~1.4 MB
 and gzips badly. Our scene _is_ one room, so that trade gives
-essentially the right reflections for nothing. PMREM output is 256²
-either way, so a real HDR would be downsampled to that regardless.
+essentially the right reflections for nothing.
+
+**Corrected 2026-09-01 — "PMREM output is 256² either way" is false, and
+believing it cost us Merc's reflections.** three sizes the PMREM from
+the SOURCE: `_setSizeFromTexture` takes `cubeSize = width / 4` for an
+equirect input (`renderers/common/extras/PMREMGenerator.js`). The first
+map was 128 px wide, so every reflection in both stages was resolved on
+a 32² cubemap, and a mirror-roughness droplet came back as a dull lump.
+Procedural is still right — but it has to be authored at 1024×512, which
+is three's own documented ideal for the 256² output, and
+`environment.test.ts` now asserts it.
+
+**Also corrected: the map's vertical axis.** three's equirect convention
+is `v = 0.5 + asin(d.y)/π`, and a `DataTexture` has `flipY = false`, so
+row 0 of the array is straight DOWN. The first map was painted with row
+0 at the top of the sky, which hung the key softbox under the floor —
+silently, since nothing in three validates where a light ends up. The
+rig is now described as world directions (`RIG`) that both the map and
+the stages' `SpotLight`s consume, so the two cannot drift apart again.
 
 ### 6.4 Merc
 

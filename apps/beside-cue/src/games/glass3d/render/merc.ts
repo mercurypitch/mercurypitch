@@ -16,7 +16,7 @@
 // because that makes expression a runtime variable (§6.4a): the same
 // plane can blink, listen, and wince when the glass goes.
 
-import type { AnimationClip, Object3D } from 'three'
+import type { AnimationClip, Object3D, Texture } from 'three'
 import { AnimationMixer, CanvasTexture, DoubleSide, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import { loadMerc } from '../assets'
 
@@ -26,16 +26,33 @@ const INK = '#241913'
  * The body: mercury. Full metal, near-mirror, and a thin-film layer for
  * the oil-slick shimmer the concept sheet has. Everything visible on
  * him is the room, bent — exactly like the glass, one register shinier.
+ *
+ * The environment is passed in rather than inherited from the scene,
+ * and that is not a style preference. three resolves the strength of
+ * image-based lighting as `material.envMap ? material.envMapIntensity :
+ * scene.environmentIntensity` (`nodes/accessors/MaterialProperties.js`),
+ * so a material with no `envMap` of its own has its `envMapIntensity`
+ * silently ignored — which is what happened to the 1.15 that was meant
+ * to make Merc read shinier than the glass around him. Handing him the
+ * texture makes the number mean something again.
+ *
+ * `roughness` is a liquid's, not a polished solid's. At 0.12 he was a
+ * ball bearing; mercury holds a sharp enough reflection to show the
+ * horizon line, and now that there is a horizon in the map to show,
+ * that is worth spending.
  */
-export const mercMaterial = (): MeshPhysicalMaterial =>
+export const mercMaterial = (
+  envMap: Texture | null = null,
+): MeshPhysicalMaterial =>
   new MeshPhysicalMaterial({
     color: 0xf4f7f8,
     metalness: 1,
-    roughness: 0.12,
-    iridescence: 0.9,
+    roughness: 0.06,
+    iridescence: 0.85,
     iridescenceIOR: 1.65,
     iridescenceThicknessRange: [120, 480],
-    envMapIntensity: 1.15,
+    envMap,
+    envMapIntensity: 1.25,
   })
 
 /**
@@ -94,11 +111,17 @@ export interface MercActor {
  * `height` is his standing height in metres — the raw asset is ~1.65
  * units tall (Meshy normalises to its own box), which is the size of a
  * person, and he is a creature that fits beside a wine glass.
+ *
+ * `envMap` is the room he reflects. Pass the stage's own environment;
+ * without it he falls back to the scene's, at the scene's strength.
  */
-export const createMerc = async (height = 0.55): Promise<MercActor> => {
+export const createMerc = async (
+  height = 0.55,
+  envMap: Texture | null = null,
+): Promise<MercActor> => {
   const { scene, clips } = await loadMerc()
 
-  const bodyMaterial = mercMaterial()
+  const bodyMaterial = mercMaterial(envMap)
   let body: Mesh | null = null
   scene.traverse((o) => {
     const mesh = o as Mesh
