@@ -57,6 +57,7 @@ optimize () {
 optimize art/glass/glass-preview.glb  art/glass/glass.opt.glb
 optimize art/glass/shards-preview.glb art/glass/shards.opt.glb
 optimize art/merc/merc-preview.glb    art/merc/merc.opt.glb
+optimize art/pane/pane-shards-preview.glb art/pane/pane-shards.opt.glb
 
 # The runtime loads these from public/. Copying is part of the build
 # rather than something to remember: an optimized asset nobody ships is
@@ -65,4 +66,5 @@ mkdir -p public/games/glass3d
 cp art/glass/glass.opt.glb  public/games/glass3d/glass.glb
 cp art/glass/shards.opt.glb public/games/glass3d/shards.glb
 cp art/merc/merc.opt.glb    public/games/glass3d/merc.glb
+cp art/pane/pane-shards.opt.glb public/games/glass3d/pane-shards.glb
 echo "copied to public/games/glass3d/"
