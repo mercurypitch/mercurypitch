@@ -1,3 +1,4 @@
+import { buildLabel } from '@/build-info'
 import { BrandMark } from '@/components/BrandMark'
 import { MascotStage } from '@/components/MascotStage'
 
@@ -10,7 +11,7 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
     <main class="welcome-screen app-screen">
       <div class="welcome-screen__top">
         <BrandMark />
-        <p class="release-stamp">Beside Cue · version 0.1</p>
+        <p class="release-stamp">Beside Cue · {buildLabel()}</p>
       </div>
       <div class="welcome-screen__copy">
         <p class="screen-kicker">One Pull. One chosen turn.</p>

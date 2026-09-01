@@ -441,13 +441,13 @@ backend.
 
 ### 5.2 The stack
 
-| Layer                                | Choice                                                            | Why                                                                                                                                                                                                                                                                            |
-| ------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Scene, assets, materials             | **three.js r185**, `WebGPURenderer` with its automatic backend    | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers WebGPU and WebGL2, and r185 asks for `featureLevel: 'compatibility'` by default, which reaches devices without Vulkan 1.1                                 |
-| Shaders                              | **TSL**                                                           | Compiles to WGSL or GLSL from one source, so the shatter shader is written once and survives whichever backend the device gives us. Also makes shaders ordinary JS modules, which is most of §8                                                                                |
-| Shard motion                         | **Solved once at the break, animated by one `uProgress` uniform** | See below — this is the finding that removes the need for compute at all. The impulse still comes from how well the note was sung; what changes is that it is solved once rather than integrated every frame                                                                   |
-| Custom GPU compute, if it ever comes | **TypeGPU**, sharing three's `GPUDevice` by hand                  | `new WebGPURenderer({ device })` and `tgpu.initFromDevice({ device })` both exist, so one device can serve both. Not `@typegpu/three` — see below                                                                                                                              |
-| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                      | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
+| Layer                                | Choice                                                         | Why                                                                                                                                                                                                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scene, assets, materials             | **three.js r185**, `WebGPURenderer` with its automatic backend | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers WebGPU and WebGL2, and r185 asks for `featureLevel: 'compatibility'` by default, which reaches devices without Vulkan 1.1                                 |
+| Shaders                              | **TSL**                                                        | Compiles to WGSL or GLSL from one source, so the shatter shader is written once and survives whichever backend the device gives us. Also makes shaders ordinary JS modules, which is most of §8                                                                                |
+| Shard motion                         | **Solved once at the break; CPU-driven `BatchedMesh` for now** | See below — this is the finding that removes the need for compute at all. The impulse still comes from how well the note was sung; what changes is that it is solved once rather than integrated every frame                                                                   |
+| Custom GPU compute, if it ever comes | **TypeGPU**, sharing three's `GPUDevice` by hand               | `new WebGPURenderer({ device })` and `tgpu.initFromDevice({ device })` both exist, so one device can serve both. Not `@typegpu/three` — see below                                                                                                                              |
+| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                   | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
 
 **The shatter needs no GPU compute, and that is the most useful thing
 the research turned up.** A shatter is deterministic, a few seconds long,
@@ -461,16 +461,42 @@ ballistic anyway, so nothing is lost visually. Persistent GPU state —
 ping-pong simulation, transform feedback — only earns its keep if shards
 must bounce, pile and re-scatter, and they do not.
 
-**Do not adopt `@typegpu/three`, at least not for this.** It is real,
-official and elegant (it compiles TypeGPU functions into TSL nodes, so
-no shared device is even needed), but its own docs say adopting it makes
-the app work only on WebGPU-enabled devices — it **disables three's
-WebGL2 fallback**. The tracking issue for that has been open for a year.
-Trading the fifth of Android and all of iOS below 26 for shader
-ergonomics, on an effect that does not need compute, is the wrong way
-round. It is 3.9 KB gzipped and the interop is non-contagious, so
-bolting it on later — if the debris field ever grows into something
-genuinely simulated, and if that issue lands — stays cheap.
+**TypeGPU: yes to the device, no to `@typegpu/three`.** maff asked for
+TypeGPU directly — he has shipped it in `chaos-master` (compute-heavy
+IFS flame pipelines) and in this repo's own `/glass` route — so the
+question was re-checked against current facts on 2026-09-01 rather than
+left on the original citation.
+
+What is still true: `@typegpu/three` **disables three's WebGL2
+fallback**, making the app WebGPU-only. Issue
+[#1637](https://github.com/software-mansion/TypeGPU/issues/1637) has
+been open since 2025-08-21 and was last touched 2026-08-18; the caution
+is still in the docs verbatim. `@typegpu/gl` shipped in alpha
+(0.12.3) and can target WebGL2/GLSL, but its own docs say it does not
+implement the full API and never mention three.js.
+
+What is newly confirmed, and is the path: **sharing one `GPUDevice` by
+hand works, and preserves the fallback.** `new WebGPURenderer({ device
+})` and `tgpu.initFromDevice({ device })` both accept an injected
+device, and — verified in three's `WebGPUBackend.js` source — _neither
+library destroys a device it did not create_, so the two lifecycle
+contracts agree. This repo already has the exact shape that needs:
+`src/lib/gpu/webgpu-device.ts` hands out a shared device, and
+`src/features/glass/renderer/GlassRenderer.ts` already probes support,
+dynamically imports the GPU backend and silently falls back.
+
+The real cost is not the wiring: a material authored through
+`@typegpu/three`'s `toTSL()` cannot run on the WebGL branch, so every
+such material needs a second implementation. That is what #1637 exists
+to remove, and it has not.
+
+**So: no TypeGPU in slice 0, and nothing in slice 0 wants it.** The
+shatter needs no compute (below), and the Cabinet has one glass, one
+plinth and one light. TypeGPU earns its place the moment there is
+compute worth doing — glass dust, a particle field, a real fluid — and
+at that point it goes in on the WebGPU branch only, through the shared
+device, with the WebGL branch simply not drawing that effect. That is
+degrading one effect, not maintaining two renderers.
 
 That does leave the TypeGPU mandate (`glass-handoff-2026-07-17.md`
 Decision 9) satisfied only on the desktop-web funnel, where the existing
