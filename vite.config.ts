@@ -487,6 +487,18 @@ export default defineConfig(({ command, mode }) => {
             // make that payload a static dependency of the standalone room.
             if (id.includes('/src/lib/use-scroll-lock.')) return 'scroll-lock'
             if (id.includes('/src/lib/use-viewport.')) return 'viewport'
+            // App-wide navigation and standalone Night rooms share this
+            // Solid-only save registry. Left organic, the app import can file
+            // it under `advanced`, making an explicit local Keep pull the
+            // complete library/DB graph into Piano Night's first paint.
+            if (id.includes('/src/lib/local-save-navigation-lock.')) {
+              return 'local-save-navigation-lock'
+            }
+            // MediaRecorder take capture and waveform inspection are browser-
+            // only leaves shared by standalone Night rooms and app-owned
+            // vocal surfaces. Keep them out of `advanced`, whose StemMixer
+            // importer otherwise makes Drum Night preload stores and media.
+            if (id.includes('/src/lib/voice-capture.')) return 'voice-capture'
             // Persisted standalone-room preferences need only Solid and
             // localStorage. Keeping this primitive inside the broad
             // pitch-core chunk makes any standalone setting inherit the main

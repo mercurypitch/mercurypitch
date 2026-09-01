@@ -311,6 +311,7 @@ describe('useGuitarNightLiveScoreController', () => {
         return true
       })
       const completeTakeAt = vi.fn(() => true)
+      const beginReplayCapture = vi.fn()
       const controller = useGuitarNightLiveScoreController({
         listeningStatus,
         inputKind: () => 'microphone',
@@ -326,6 +327,7 @@ describe('useGuitarNightLiveScoreController', () => {
         armTakeAt,
         completeTakeAt,
         completeTakeNow: () => false,
+        beginReplayCapture,
       })
       let observedCaptureActive = false
       createEffect(() => {
@@ -343,6 +345,10 @@ describe('useGuitarNightLiveScoreController', () => {
       expect(controller.display()?.phase).toBe('active')
       expect(controller.inputKind()).toBe('microphone')
       expect(controller.startedAt()).toEqual(expect.any(Number))
+      expect(beginReplayCapture).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'live-1' }),
+        'microphone',
+      )
 
       setRoomStatus('playing')
       setCurrentTake(take([attack(0), attack(1), attack(2)]))
@@ -378,6 +384,7 @@ describe('useGuitarNightLiveScoreController', () => {
       const [currentTake, setCurrentTake] =
         createSignal<GuitarTakeSnapshot | null>(null)
       const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+      const discardReplayCapture = vi.fn()
       const controller = useGuitarNightLiveScoreController({
         listeningStatus: () => 'listening',
         inputKind: () => 'microphone',
@@ -407,6 +414,7 @@ describe('useGuitarNightLiveScoreController', () => {
         },
         completeTakeAt: () => true,
         completeTakeNow: () => false,
+        discardReplayCapture,
       })
 
       await controller.start({ start: 0, end: 4 })
@@ -417,6 +425,7 @@ describe('useGuitarNightLiveScoreController', () => {
       expect(controller.grade()).toBeNull()
 
       controller.hold()
+      expect(discardReplayCapture).toHaveBeenCalledWith('live-1')
       expect(controller.state()).toBe('paused')
       expect(controller.captureActive()).toBe(false)
       expect(controller.score()).toBe(100)
@@ -475,6 +484,7 @@ describe('useGuitarNightLiveScoreController', () => {
         createSignal<GuitarTakeSnapshot | null>(null)
       const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
       const stopInput = vi.fn()
+      const finishReplayCapture = vi.fn()
       const completeTakeNow = vi.fn(() => {
         // pinEnd publishes before completion, and a rejected attack may update
         // recorder diagnostics while the transport advances in the same turn.
@@ -530,6 +540,7 @@ describe('useGuitarNightLiveScoreController', () => {
         },
         completeTakeAt: () => true,
         completeTakeNow,
+        finishReplayCapture,
       })
 
       expect(await controller.start({ start: 0, end: 4 })).toBe(true)
@@ -545,6 +556,7 @@ describe('useGuitarNightLiveScoreController', () => {
       expect(controller.finish()).toBe(true)
 
       expect(completeTakeNow).toHaveBeenCalledOnce()
+      expect(finishReplayCapture).toHaveBeenCalledWith('live-stopped')
       expect(stopInput).not.toHaveBeenCalled()
       expect(controller.finishing()).toBe(true)
       expect(controller.captureActive()).toBe(true)

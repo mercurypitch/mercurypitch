@@ -218,6 +218,31 @@
   border-radius: 999px;
 }
 
+.scoreNotationLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 8px 0 0;
+  padding: 0;
+  color: var(--session-muted);
+  font-size: 0.72rem;
+  list-style: none;
+}
+
+.scoreNotationLegend li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--session-line);
+  border-radius: 999px;
+}
+
+.scoreNotationLegend span {
+  color: var(--session-amber);
+  font-weight: 820;
+}
+
 .scoreBar .barLine,
 .barLine {
   stroke: rgb(238 231 219 / 44%);
@@ -237,13 +262,24 @@
   vector-effect: non-scaling-stroke;
 }
 
-.scoreEvent .noteStem,
-.scoreEvent .accentMark {
+.scoreEvent .noteStem {
   fill: none;
 }
 
+.scoreEvent .accentMark,
+.scoreEvent .chokeMark {
+  fill: var(--session-amber);
+  stroke: none;
+  font-weight: 820;
+}
+
 .scoreEvent .accentMark {
-  color: var(--session-amber);
+  font-size: 17px;
+}
+
+.scoreEvent .chokeMark {
+  font-size: 8px;
+  letter-spacing: 0.04em;
 }
 
 .scoreEvent.isActive {
@@ -852,7 +888,8 @@
   .scoreLoopContext,
   .semanticEvents,
   .mappingNotice,
-  .scoreMeterSummary {
+  .scoreMeterSummary,
+  .scoreNotationLegend {
     display: none;
   }
 

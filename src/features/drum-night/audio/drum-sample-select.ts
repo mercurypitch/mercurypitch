@@ -9,12 +9,14 @@
 // simply grow the pool (curated power values can later replace the range
 // centers without changing this interface).
 
-import type { DrumKitSampleResource } from './drum-kit-manifest'
+import { velocityCurveTarget } from './drum-hit-dynamics'
+import type { DrumKitSampleResource, DrumVelocityCurve, } from './drum-kit-manifest'
 
 export interface DrumSampleSelector {
   pick(
     pool: readonly DrumKitSampleResource[],
     velocity: number,
+    curve?: DrumVelocityCurve,
   ): DrumKitSampleResource | null
   reset(): void
 }
@@ -55,7 +57,10 @@ function velocityUnit(velocity: number): number {
 }
 
 function rangeCenter(resource: DrumKitSampleResource): number {
-  return velocityUnit((resource.velocityMin + resource.velocityMax) / 2)
+  return (
+    resource.power ??
+    velocityUnit((resource.velocityMin + resource.velocityMax) / 2)
+  )
 }
 
 /** Mean gap between adjacent distinct centers; 0 for a single center. */
@@ -82,7 +87,7 @@ export function createDrumSampleSelector(seed: number): DrumSampleSelector {
   let beforePreviousId: string | null = null
 
   return {
-    pick(pool, velocity) {
+    pick(pool, velocity, curve) {
       if (pool.length === 0) return null
       if (pool.length === 1) {
         beforePreviousId = previousId
@@ -96,7 +101,13 @@ export function createDrumSampleSelector(seed: number): DrumSampleSelector {
       )
       const centers = sorted.map(rangeCenter)
       const sigma = jitterSigma(centers)
-      const target = velocityUnit(velocity)
+      const usesMeasuredPower = sorted.some(
+        (resource) => resource.power !== undefined,
+      )
+      const target =
+        curve === undefined && !usesMeasuredPower
+          ? velocityUnit(velocity)
+          : velocityCurveTarget(sorted[0].articulation, velocity, curve)
       let best: DrumKitSampleResource | null = null
       let bestScore = Number.POSITIVE_INFINITY
       for (let index = 0; index < sorted.length; index += 1) {

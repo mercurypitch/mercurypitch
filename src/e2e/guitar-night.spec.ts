@@ -1429,6 +1429,40 @@ test('keeps the first-win stage dominant across phone orientations @smoke', asyn
     await expect(page.getByTestId('guitar-night-first-win')).toBeVisible()
     await expectStageFirstLayout(0.55, '32.0000')
 
+    const introOptions = page.locator('details').filter({
+      has: page.getByText('Adjust intro', { exact: true }),
+    })
+    await introOptions.locator('summary').click()
+    const drumSound = page.getByTestId('guitar-night-drum-sound-controls')
+    await expect(drumSound).toBeVisible()
+    const drumSelects = drumSound.getByRole('combobox')
+    for (let index = 0; index < (await drumSelects.count()); index += 1) {
+      const bounds = await drumSelects.nth(index).boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds?.height).toBeGreaterThanOrEqual(44)
+    }
+    const pickerMetrics = await drumSound.evaluate((fieldset) => {
+      const bounds = fieldset.getBoundingClientRect()
+      const labels = [...fieldset.querySelectorAll('label, small')]
+      return {
+        bottom: bounds.bottom,
+        left: bounds.left,
+        minimumSupportingFontPx: Math.min(
+          ...labels.map((label) =>
+            Number.parseFloat(getComputedStyle(label).fontSize),
+          ),
+        ),
+        right: bounds.right,
+        top: bounds.top,
+      }
+    })
+    expect(pickerMetrics.left).toBeGreaterThanOrEqual(0)
+    expect(pickerMetrics.right).toBeLessThanOrEqual(390)
+    expect(pickerMetrics.top).toBeGreaterThanOrEqual(0)
+    expect(pickerMetrics.bottom).toBeLessThanOrEqual(844)
+    expect(pickerMetrics.minimumSupportingFontPx).toBeGreaterThanOrEqual(10.8)
+    await introOptions.locator('summary').click()
+
     const loopPractice = page.getByRole('button', {
       name: 'Loop',
       exact: true,
@@ -1678,26 +1712,74 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
   ).toHaveCount(0)
   await expect(
     sheet
-      .getByText('Studio Drums — 3 authored hits · reference only', {
-        exact: true,
-      })
+      .getByText(
+        'Studio Drums — 3 authored hits · drum notation · not scored',
+        {
+          exact: true,
+        },
+      )
       .first(),
   ).toBeVisible()
 
   await room.getByTestId('guitar-night-session-trigger').click()
-  let arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  let arrangement = page.getByRole('dialog', {
+    name: /^Track mixer for /,
+  })
   await expect(arrangement).toBeVisible()
+  await arrangement.evaluate((dialog) => {
+    dialog.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        code: 'Space',
+        key: ' ',
+      }),
+    )
+  })
+  await expect(
+    room.getByRole('button', { name: 'Start drum backing', exact: true }),
+  ).toBeVisible()
   await expect(
     arrangement.getByRole('group', { name: 'Arrangement parts' }),
   ).toBeVisible()
   const drumPart = arrangement
     .getByTestId('guitar-night-session-track')
     .filter({ hasText: 'Studio Drums' })
-  await expect(drumPart).toBeDisabled()
-  await expect(arrangement.getByLabel('Mute Studio Drums')).toBeEnabled()
+  await expect(drumPart).toBeEnabled()
+  const muteDrums = arrangement.getByLabel('Mute Studio Drums')
+  await expect(muteDrums).toBeEnabled()
+  await muteDrums.click()
+  await expect(arrangement.getByLabel('Unmute Studio Drums')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  const soloDrums = arrangement.getByLabel('Solo Studio Drums')
+  await expect(soloDrums).toBeEnabled()
+  await soloDrums.click()
+  await expect(
+    arrangement.getByLabel('Turn off solo for Studio Drums'),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(arrangement.getByLabel('Unmute Studio Drums')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await arrangement.getByLabel('Turn off solo for Studio Drums').click()
+  await expect(arrangement.getByLabel('Solo Studio Drums')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await expect(arrangement.getByLabel('Unmute Studio Drums')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await arrangement.getByLabel('Unmute Studio Drums').click()
+  await expect(arrangement.getByLabel('Mute Studio Drums')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
   await arrangement.getByLabel('Hide Studio Drums on the sheet').click()
   await arrangement
-    .getByRole('button', { name: 'Close the session details' })
+    .getByRole('button', { name: 'Close the track mixer' })
     .click()
   await expect(
     room.getByText(
@@ -1707,11 +1789,19 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
   ).toBeVisible()
 
   await room.getByTestId('guitar-night-session-trigger').click()
-  arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  arrangement = page.getByRole('dialog', { name: /^Track mixer for / })
   await arrangement.getByLabel('Show Studio Drums on the sheet').click()
   await arrangement
-    .getByRole('button', { name: 'Close the session details' })
+    .getByTestId('guitar-night-session-track')
+    .filter({ hasText: 'Studio Drums' })
     .click()
+  await expect(sheet).toBeVisible()
+  await room.getByRole('button', { name: 'Neck', exact: true }).click()
+  await expect(room.getByTestId('guitar-night-secondary-part')).toHaveAttribute(
+    'data-track-kind',
+    'percussion',
+  )
+  await room.getByRole('button', { name: 'Sheet', exact: true }).click()
   await expect(sheet).toBeVisible()
 
   const timeline = room.getByTestId('guitar-night-percussion-loop-range')
@@ -1880,6 +1970,69 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
   await expect(
     room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
   ).toBeVisible({ timeout: 5_000 })
+
+  await room.getByTestId('guitar-night-session-trigger').click()
+  let liveMixer = page.getByRole('dialog', { name: /^Track mixer for / })
+  let liveKit = liveMixer.getByRole('combobox', {
+    name: 'Guitar Night drum kit',
+    exact: true,
+  })
+  await expect(liveKit).toBeEnabled()
+  await liveKit.selectOption('circuit')
+  await expect(liveKit).toHaveValue('circuit')
+  await expect(
+    room.getByRole('button', { name: 'Pause drum backing', exact: true }),
+  ).toBeVisible()
+  await expect(
+    room.getByRole('status').filter({ hasText: /^Counting in/ }),
+  ).toHaveCount(0)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(1)
+  await liveMixer.getByRole('button', { name: 'Close the track mixer' }).click()
+
+  await room
+    .getByRole('button', { name: 'Pause drum backing', exact: true })
+    .click()
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Backing paused' }),
+  ).toBeVisible()
+  const pausedBeforeKitChange = Number(await position.inputValue())
+  await room.getByTestId('guitar-night-session-trigger').click()
+  liveMixer = page.getByRole('dialog', { name: /^Track mixer for / })
+  liveKit = liveMixer.getByRole('combobox', {
+    name: 'Guitar Night drum kit',
+    exact: true,
+  })
+  await expect(liveKit).toBeEnabled()
+  await liveKit.selectOption('studio')
+  await expect(liveKit).toHaveValue('studio')
+  await expect(
+    room.getByRole('button', { name: 'Resume drum backing', exact: true }),
+  ).toBeVisible()
+  expect(Number(await position.inputValue())).toBeCloseTo(
+    pausedBeforeKitChange,
+    2,
+  )
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(1)
+  await liveMixer.getByRole('button', { name: 'Close the track mixer' }).click()
+  await room
+    .getByRole('button', { name: 'Resume drum backing', exact: true })
+    .click()
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
+  ).toBeVisible({ timeout: 5_000 })
+
   const runningRailBox = await position.boundingBox()
   expect(runningRailBox).not.toBeNull()
   await page.mouse.move(
@@ -3380,6 +3533,29 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
       viewportMetrics.clientWidth + 2,
     )
 
+    const band = room.getByLabel('Band, loop, and input controls, 2 tracks')
+    await band.click()
+    const amp = room.getByRole('region', { name: 'Guitar amp' })
+    const toneDisclosure = amp.getByText('Shape tone & cabinet')
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
+    const expectAmpInsideViewport = async (): Promise<void> => {
+      const metrics = await amp.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        return {
+          left: bounds.left,
+          right: bounds.right,
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        }
+      })
+      expect(metrics.left).toBeGreaterThanOrEqual(0)
+      expect(metrics.right).toBeLessThanOrEqual(metrics.clientWidth + 1)
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+    }
+    await expectAmpInsideViewport()
+    await band.click()
+
     const controls = room.locator('button:visible, input[type="range"]:visible')
     expect(await controls.count()).toBeGreaterThanOrEqual(4)
     for (let index = 0; index < (await controls.count()); index += 1) {
@@ -3403,6 +3579,13 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     expect(narrowMetrics.scrollWidth).toBeLessThanOrEqual(
       narrowMetrics.clientWidth + 2,
     )
+    await band.click()
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeHidden()
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
+    await expectAmpInsideViewport()
+    await band.click()
     await expect(
       room.getByRole('button', { name: 'Play backing', exact: true }),
     ).toBeVisible()

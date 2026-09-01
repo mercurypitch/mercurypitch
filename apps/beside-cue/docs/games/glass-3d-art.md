@@ -79,6 +79,22 @@ verify headlessly the same way the probe above ran: `blender -b
   `dedup → prune → weld → meshopt`. Output committed, so CI needs no
   sharp/ktx.
 
+  **As built, the pipeline stops at `weld`.** meshopt was measured and
+  dropped: it needs a 28.6 KB WASM decoder and `wasm-unsafe-eval` in a
+  CSP the app deliberately does not grant (`script-src 'self'`).
+  `quantize` replaced it for a while — no decoder, read natively by
+  three's loader, ~30% off everything — and was then dropped too, on
+  maff's call: it is the only lossy step in the chain, the assets ship
+  inside a native bundle rather than over the wire, and a few hundred KB
+  of geometry is not what makes an install big. dedup/prune/weld stay
+  because they only remove data that was redundant.
+
+  When compression does become the question — worlds, not one glass —
+  the first move is textures, not geometry: KTX2/Basis stays compressed
+  in VRAM and cuts texture memory by roughly 10x, which is the number
+  that actually hurts a phone. Draco or meshopt on the geometry is the
+  smaller half of the win.
+
 **T5 — the bridge ritual.** maff starts Blender (a plain launch; the
 add-on autoconnects), and I verify with a scene summary call. From then
 on the modelling is conversational: I write `bpy`, Blender executes it,

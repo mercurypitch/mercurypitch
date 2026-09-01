@@ -42,6 +42,12 @@ coverage/
 
 public/assets/
 
+# Drum kit curator transaction residue after an interrupted process. The
+# curator verifies and cleans these paths during a successful run.
+public/drum-night/.drum-kits-stage-*/
+public/drum-night/.drum-kits-backup-*/
+src/features/drum-night/audio/*.generated.json.backup-*
+
 **/**/*.patch
 
 # Local DevSecOps audit telemetry (semgrep/gitleaks/nuclei/eslint scan output)

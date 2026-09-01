@@ -43,6 +43,51 @@ describe('saved MIDI songs', () => {
     ).toEqual(tempoChanges)
   })
 
+  it('keeps authored velocity and program-family truth through readSource', async () => {
+    const { saveMidiSong } = await import('@/stores/saved-midi-songs-store')
+    const saved = saveMidiSong(
+      'Choir study',
+      {
+        bpm: 96,
+        tracks: [
+          {
+            id: 'voice-track',
+            kind: 'pitched',
+            name: 'Lead guitar',
+            instrumentName: 'Voice Oohs',
+            sourceProgram: 53,
+            instrumentFamily: 'neutral',
+            noteCount: 1,
+            notes: [{ midi: 72, startBeat: 0, duration: 1, velocity: 87 }],
+          },
+        ],
+      },
+      'voice-track',
+      [],
+    )
+
+    expect(
+      JSON.parse(localStorage.getItem('pitchperfect_guitar_songs') ?? '[]')[0]
+        .tracks[0],
+    ).toMatchObject({
+      sourceProgram: 53,
+      instrumentFamily: 'neutral',
+      notes: [{ velocity: 87 }],
+    })
+
+    vi.resetModules()
+    const { createSavedScoreGuitarNightReferencePort } =
+      await import('@/features/guitar-night/saved-score-reference-port')
+    expect(
+      createSavedScoreGuitarNightReferencePort().readSource(saved.id)
+        ?.tracks[0],
+    ).toMatchObject({
+      sourceProgram: 53,
+      instrumentFamily: 'neutral',
+      notes: [{ velocity: 87 }],
+    })
+  })
+
   it('normalizes a pre-percussion saved track as explicitly pitched', async () => {
     localStorage.setItem(
       'pitchperfect_guitar_songs',

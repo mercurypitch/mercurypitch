@@ -19,9 +19,12 @@ import { loadPlayAlongBandPreparationPort, usePlayAlongBandPreparationController
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { barIndexAtBeat } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
+import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import { createPersistedSignal } from '@/lib/storage'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
@@ -40,15 +43,18 @@ import { drumPatternGridHits } from './patterns'
 import type { HydratedDrumProject } from './persistence/drum-project'
 import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerOptions, } from './persistence/drum-project-controller'
 import type { DrumTakeHistoryController, DrumTakeHistoryControllerOptions, } from './persistence/drum-take-history-controller'
+import type { DrumTakeSummary } from './persistence/drum-take-summary'
 import type { DrumPlayAlongBusId, DrumPlayAlongMixPreset, DrumPlayAlongSnapshot, DrumStemPlayAlongSnapshot, } from './play-along'
 import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangement-player'
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
-import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
+import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
 import { createDrumScoreIndex, createDrumSessionHumanizer, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import type { DrumPerformanceTakeCaptureController, DrumPerformanceTakeCaptureDependencies, } from './useDrumPerformanceTakeCaptureController'
+import { useDrumPerformanceTakeCaptureController } from './useDrumPerformanceTakeCaptureController'
 
 const PremiumBackgroundPicker = lazy(() =>
   import('@/features/backgrounds/PremiumBackgroundPicker').then((module) => ({
@@ -145,6 +151,9 @@ interface DrumNightAppProps {
   readonly createTakeHistoryController?: (
     options?: DrumTakeHistoryControllerOptions,
   ) => DrumTakeHistoryController
+  readonly createTakeCaptureController?: (
+    options: DrumPerformanceTakeCaptureDependencies,
+  ) => DrumPerformanceTakeCaptureController
   /** Optional observer for the route-owned imported-session lifecycle. */
   readonly onReadySessionChange?: (document: DrumSessionDocument | null) => void
   readonly runtimeOptions?: Omit<DrumNightRuntimeOptions, 'player'>
@@ -169,6 +178,7 @@ const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
 const INITIAL_KIT_VOLUME = 82
 const FIRST_POCKET_TEMPO_BPM = 84
+const MAX_IMPORTED_SESSION_PREWARM_HITS = 128
 const WORKSPACE_TITLES: Record<Workspace, string> = {
   groove: 'Shape the groove',
   kit: 'Choose the kit',
@@ -233,6 +243,48 @@ function formatSessionTime(seconds: number): string {
   )
   const minutes = Math.floor(bounded / 60)
   return `${minutes}:${String(bounded % 60).padStart(2, '0')}`
+}
+
+function importedSessionPrewarmHits(
+  document: DrumSessionDocument | null,
+): readonly DrumKitPrewarmHit[] {
+  if (document === null || document.sourceFormat === 'prepared') return []
+  const uniqueByGmKey = new Map<number, Map<number, DrumKitPrewarmHit>>()
+  for (const track of document.percussionTracks) {
+    for (const hit of track.percussionHits) {
+      let velocities = uniqueByGmKey.get(hit.gmKey)
+      if (velocities === undefined) {
+        velocities = new Map()
+        uniqueByGmKey.set(hit.gmKey, velocities)
+      }
+      if (!velocities.has(hit.velocity)) {
+        velocities.set(hit.velocity, {
+          gmKey: hit.gmKey,
+          velocity: hit.velocity,
+        })
+      }
+    }
+  }
+  const groups = [...uniqueByGmKey.values()].map((hits) => [...hits.values()])
+  const selected: DrumKitPrewarmHit[] = []
+  for (
+    let layerIndex = 0;
+    selected.length < MAX_IMPORTED_SESSION_PREWARM_HITS;
+    layerIndex += 1
+  ) {
+    let found = false
+    for (const group of groups) {
+      const hit = group[layerIndex]
+      if (hit === undefined) continue
+      selected.push(hit)
+      found = true
+      if (selected.length >= MAX_IMPORTED_SESSION_PREWARM_HITS) {
+        return selected
+      }
+    }
+    if (!found) return selected
+  }
+  return selected
 }
 
 /** Fixed so a groove replays with the same feel across reloads and takes. */
@@ -448,6 +500,9 @@ function PocketStage(props: PocketStageProps): JSX.Element {
 }
 
 export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
+  useBeforeUnloadGuard(isLocalSaveNavigationLocked)
+  const routeHistory = acquireStandaloneRouteHistory('drum-night')
+  onCleanup(routeHistory.release)
   const [view, setView] = createSignal<StageView>('pocket')
   const [workspace, setWorkspace] = createSignal<Workspace>('groove')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -535,6 +590,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     getAudioContext: audioSession.contextForGesture,
     getOutput: audioSession.outputForGesture,
     initialKitId: selectedKitId(),
+  })
+  const takeCapture = (
+    props.createTakeCaptureController ?? useDrumPerformanceTakeCaptureController
+  )({
+    getStream: () => player.liveCaptureStream?.() ?? null,
+    getAudioContext: audioSession.activeContext,
   })
   const applyLiveKitLevel = (level: number): void => {
     if (player.setLaneVolume !== undefined) player.setLaneVolume('live', level)
@@ -639,11 +700,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         window.location.href,
         sessionId,
       )
-      if (mode === 'replace') {
-        window.history.replaceState({ drumNight: true }, '', nextLocation)
-      } else {
-        window.history.pushState({ drumNight: true }, '', nextLocation)
-      }
+      routeHistory.write(nextLocation, mode)
     },
     onBackingWillRelease: () => stemPlayAlong.configure(null),
   })
@@ -809,6 +866,22 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   )
   const [takeFinishPreparing, setTakeFinishPreparing] = createSignal(false)
   const isPlaying = createMemo(() => transportIsRunning(transport()))
+  const liveReplayCaptureEligible = createMemo((): boolean => {
+    const state = transport()
+    return (
+      state.phase === 'playing' &&
+      state.recording &&
+      !usingStemBacking() &&
+      activeDocument().sourceFormat === 'prepared'
+    )
+  })
+  createEffect(() => {
+    if (liveReplayCaptureEligible()) {
+      untrack(takeCapture.startPlayback)
+    } else {
+      untrack(takeCapture.pausePlayback)
+    }
+  })
   const clickStatusCopy = createMemo(() => {
     const snapshot = clickSnapshot()
     if (!snapshot.enabled) return 'Off by default'
@@ -963,6 +1036,49 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const omittedTakeHitCount = createMemo(
     () => transport().recordedHitOmissionCount,
   )
+  let replayEvidenceStartOccurrenceCount = 0
+  const takeOccurrenceCount = (): number =>
+    runtime.recordedHits().length + omittedTakeHitCount()
+  const markReplayEvidenceBoundary = (): void => {
+    replayEvidenceStartOccurrenceCount = takeOccurrenceCount()
+  }
+  const clearTakeRecording = (): void => {
+    runtime.clearRecording()
+    replayEvidenceStartOccurrenceCount = 0
+  }
+  const captureReplayTakeEvidence = (): {
+    readonly capturedHits: readonly DrumCapturedHit[]
+    readonly omittedCaptureHitCount: number
+  } => {
+    const currentHits = runtime.recordedHits()
+    const currentOccurrenceCount = currentHits.length + omittedTakeHitCount()
+    const startOccurrenceCount =
+      replayEvidenceStartOccurrenceCount <= currentOccurrenceCount
+        ? replayEvidenceStartOccurrenceCount
+        : 0
+    // Transport hit IDs are contiguous within one take. The retained count
+    // plus bounded omissions therefore equals the last issued hit ID, letting
+    // this slice stay exact even after the ring buffer evicts segment hits.
+    const retainedSegmentHits = currentHits.filter(
+      (hit) => hit.id > startOccurrenceCount,
+    )
+    return {
+      capturedHits: retainedSegmentHits.map((hit) => ({
+        id: `runtime-${hit.id}`,
+        source: hit.source,
+        gmKey: hit.gmKey,
+        velocity: hit.velocity,
+        beat: hit.transportBeat,
+        pass: hit.loopIteration,
+      })),
+      omittedCaptureHitCount: Math.max(
+        0,
+        currentOccurrenceCount -
+          startOccurrenceCount -
+          retainedSegmentHits.length,
+      ),
+    }
+  }
   const takeHitCountCopy = createMemo(() => {
     const retained = retainedTakeHitCount()
     const omitted = omittedTakeHitCount()
@@ -1013,6 +1129,41 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       loopRange: loopRange.span(),
     }),
   )
+  const liveReplayConfigurationSignature = createMemo(() =>
+    JSON.stringify({
+      project: liveProjectSignature(),
+      speedScale: transport().speedScale,
+      selectedKitId: kitSnapshot().selectedKitId,
+      liveKitLevel: kitVolume(),
+      liveKitMuted: liveKitMuted(),
+    }),
+  )
+  let replayConfigurationSignature: string | null = null
+  let replayConfigurationBoundaryQueued = false
+  const resetReplayCaptureForConfigurationChange = (): void => {
+    if (!takeCapture.dismiss()) return
+    markReplayEvidenceBoundary()
+    if (liveReplayCaptureEligible()) takeCapture.startPlayback()
+  }
+  createEffect(() => {
+    const nextSignature = liveReplayConfigurationSignature()
+    const previousSignature = replayConfigurationSignature
+    replayConfigurationSignature = nextSignature
+    if (
+      previousSignature === null ||
+      nextSignature === previousSignature ||
+      projectStateApplying ||
+      replayConfigurationBoundaryQueued
+    ) {
+      return
+    }
+    replayConfigurationBoundaryQueued = true
+    queueMicrotask(() => {
+      replayConfigurationBoundaryQueued = false
+      if (routeDisposed) return
+      untrack(resetReplayCaptureForConfigurationChange)
+    })
+  })
   const sessionTitle = createMemo(
     () => selectedBackingSource()?.title ?? readySession().title,
   )
@@ -1264,8 +1415,18 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (snapshot.status === 'loading') {
       return `Loading ${snapshot.preparedSamples} of ${snapshot.plannedSamples} core samples · synth fallback active`
     }
-    if (snapshot.sampledReady) {
-      return `${snapshot.loadedSamples} samples ready · per-hit synth fallback remains available`
+    if (snapshot.sampledReady || snapshot.status === 'ready') {
+      const coreCopy =
+        snapshot.loadedSamples > 0
+          ? `${snapshot.loadedSamples} samples ready`
+          : 'Sample preparation complete'
+      if (snapshot.sampleStatus === 'fallback') {
+        return `${coreCopy} · some kit articulations use Mercury Synth because their samples did not pass quality calibration`
+      }
+      if (snapshot.sampleStatus === 'reduced') {
+        return `${coreCopy} · some kit articulations have reduced sample coverage; Mercury Synth covers unavailable sounds`
+      }
+      return `${coreCopy} · per-hit synth fallback remains available`
     }
     return 'Selected · samples warm after your first audio action'
   })
@@ -1322,11 +1483,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const nextLocation = `${url.pathname}${url.search}${url.hash}`
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
     if (nextLocation === currentLocation) return
-    if (mode === 'replace') {
-      window.history.replaceState({ drumNight: true }, '', nextLocation)
-    } else {
-      window.history.pushState({ drumNight: true }, '', nextLocation)
-    }
+    routeHistory.write(nextLocation, mode)
   }
 
   const invalidateSourceIntent = (): number => {
@@ -1447,7 +1604,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     startBandSeparation(pending.sessionId)
   }
 
-  const syncStateFromUrl = (): void => {
+  const syncStateFromUrl = (event?: PopStateEvent): void => {
+    if (event !== undefined && routeHistory.vetoLockedPopState(event)) return
     const params = new URLSearchParams(window.location.search)
     const nextSongSessionId = readDrumPlayAlongSession()
     const requestedView = params.get('view')
@@ -1498,6 +1656,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     ) {
       selectPreparedSession(nextSongSessionId, 'none')
     }
+    routeHistory.acceptCurrent()
   }
 
   const showToast = (message: string): void => {
@@ -1637,7 +1796,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     reconcile(() => songController.clearSession('replace'))
     reconcile(() => stemPlayAlong.configure(null))
     reconcile(() => runtime.stop())
-    reconcile(() => runtime.clearRecording())
+    reconcile(clearTakeRecording)
     reconcile(() => runtime.setSpeedScale(1))
     reconcile(() => sessionScheduler.setSession(document))
     reconcile(() => authoredPlayAlong.setSession(document))
@@ -1684,6 +1843,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           change.currentProject?.id ?? null,
         )
         takeHistoryController()?.invalidatePendingTake()
+        if (change.reason !== 'create') takeCapture.dismiss()
       },
     }
     const pending = (async () => {
@@ -2048,6 +2208,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const capturedHits = [...capturedSessionHits()]
     const omittedCaptureHitCount = omittedTakeHitCount()
     if (capturedHits.length + omittedCaptureHitCount < 1) return
+    const replayEvidence = captureReplayTakeEvidence()
     const scoreIndex = sessionScoreIndex() ?? undefined
     const tempoBpm = transport().localTempoBpm
     const speedScale = transport().speedScale
@@ -2096,11 +2257,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         ) {
           return
         }
-        let summary
+        const summaryId = createDrumPersistenceId('drum-take')
+        const completedAt = new Date().toISOString()
+        let summary: DrumTakeSummary
         try {
           summary = buildDrumTakeSummary({
-            id: createDrumPersistenceId('drum-take'),
-            completedAt: new Date().toISOString(),
+            id: summaryId,
+            completedAt,
             project: durableProject,
             document,
             capturedHits,
@@ -2118,7 +2281,32 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           }
           throw error
         }
+        let replaySummary: DrumTakeSummary | null = null
+        if (
+          replayEvidence.capturedHits.length +
+            replayEvidence.omittedCaptureHitCount >
+          0
+        ) {
+          try {
+            replaySummary = buildDrumTakeSummary({
+              id: createDrumPersistenceId('drum-replay-segment'),
+              completedAt,
+              project: durableProject,
+              document,
+              capturedHits: replayEvidence.capturedHits,
+              omittedCaptureHitCount: replayEvidence.omittedCaptureHitCount,
+              tempoBpm,
+              speedScale,
+              ...(scoreIndex === undefined ? {} : { scoreIndex }),
+            })
+          } catch {
+            // Replay metadata is optional. The full scalar summary still owns
+            // the durable Drum history commit below.
+          }
+        }
         takeFinishEvidence = evidence
+        if (replaySummary === null) takeCapture.dismiss()
+        else takeCapture.finish(replaySummary, durableProject.title)
         const saved = await historyController.finish(summary)
         if (
           !saved ||
@@ -2127,7 +2315,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         ) {
           return
         }
-        runtime.clearRecording()
+        clearTakeRecording()
         setRecordingChoiceMade(false)
         takeFinishEvidence = null
         showToast('Take saved on this device.')
@@ -2152,7 +2340,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           takeFinishEvidence === evidence &&
           rawTakeEvidenceMatches(evidence)
         ) {
-          runtime.clearRecording()
+          clearTakeRecording()
           setRecordingChoiceMade(false)
           takeFinishEvidence = null
           return
@@ -2161,6 +2349,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         // begun. Keep that live evidence and return the Finish surface to its
         // ready state instead of leaving the stale Saved branch on screen.
         controller.invalidatePendingTake()
+        takeCapture.dismiss()
         takeFinishEvidence = null
       })
       .catch(() => {
@@ -2174,8 +2363,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const controller = takeHistoryController()
     if (controller?.finishState().kind !== 'error') return
     controller.invalidatePendingTake()
+    takeCapture.dismiss()
     takeFinishEvidence = null
-    runtime.clearRecording()
+    clearTakeRecording()
     setRecordingChoiceMade(false)
     showToast('Unsaved take discarded. Start another whenever you are ready.')
   }
@@ -2217,10 +2407,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         takeHistoryController()?.setActiveProject(null)
         takeHistoryController()?.invalidatePendingTake()
         setProjectSavePromptOpen(false)
-        showToast('Drum projects and take history erased from this device.')
+        showToast(
+          'Drum projects and summary history erased. Hear Yourself replays stay there.',
+        )
       })
       .catch(() => {
-        showToast('Drum projects and take history could not be erased.')
+        showToast('Drum projects and summary history could not be erased.')
       })
       .finally(() => finishProjectIntent(intentGeneration))
   }
@@ -2409,6 +2601,23 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     if (playRequestPending()) return
+    const finishedSummary =
+      !usingStemBacking() &&
+      takeHistoryController()?.finishState().kind === 'saved'
+    const replayState = takeCapture.state()
+    if (
+      finishedSummary &&
+      (replayState === 'processing' ||
+        replayState === 'ready' ||
+        replayState === 'saving')
+    ) {
+      showToast(
+        replayState === 'processing'
+          ? 'Wait for the live-kit replay, or choose Not now before starting another take.'
+          : 'Keep the live-kit replay or choose Not now before starting another take.',
+      )
+      return
+    }
     if (
       !usingStemBacking() &&
       takeHistoryController()?.finishState().kind === 'saved'
@@ -2417,6 +2626,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       // starts the next take. At that boundary the same history controller
       // returns to Ready without touching its already-durable history row.
       takeHistoryController()?.invalidatePendingTake()
+      takeCapture.dismiss()
       takeFinishEvidence = null
     }
     if (!usingStemBacking() && !recordingChoiceMade()) {
@@ -2429,6 +2639,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     )
     setPlayRequestPending(true)
     const selectedSource = selectedBackingSource()
+    const selectedImportedDocument =
+      selectedSource === null ? importedDocument() : null
+    const prewarmHits =
+      selectedSource === null
+        ? importedSessionPrewarmHits(selectedImportedDocument)
+        : []
     let kitActivation: Promise<boolean>
     try {
       // Cross the Web Audio boundary synchronously inside the button gesture.
@@ -2439,6 +2655,21 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     void kitActivation
       .then(async (kitReady) => {
         if (!kitReady) return false
+        if (prewarmHits.length > 0) {
+          try {
+            await player.prewarm(prewarmHits)
+          } catch {
+            // Used-score warm-up is an optimization; Mercury fallback remains
+            // the honest per-hit path when bytes or decoding are unavailable.
+          }
+        }
+        if (
+          untrack(selectedBackingSource) !== selectedSource ||
+          (selectedSource === null &&
+            untrack(importedDocument) !== selectedImportedDocument)
+        ) {
+          return true
+        }
         if (selectedSource !== null) {
           const loaded = await stemPlayAlong.load()
           if (!loaded || untrack(selectedBackingSource) !== selectedSource) {
@@ -2602,7 +2833,19 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     if (finishState === 'saved') {
+      const replayState = takeCapture.state()
+      if (
+        replayState === 'processing' ||
+        replayState === 'ready' ||
+        replayState === 'saving'
+      ) {
+        showToast(
+          'Keep the live-kit replay or choose Not now before arming another take.',
+        )
+        return
+      }
       takeHistoryController()?.invalidatePendingTake()
+      takeCapture.dismiss()
       takeFinishEvidence = null
     }
     const recording = !transport().recording
@@ -2872,7 +3115,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     showToast(
       manifest.engine === 'sampled'
         ? `${manifest.name} selected. Samples warm only after audio is active.`
-        : 'Mercury Synth selected. No sample download is needed.',
+        : `${manifest.name} selected. No sample download is needed.`,
     )
     void player.selectKit(kitId)
   }
@@ -3066,13 +3309,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       scheduledBackingSource = backingSource
       takeFinishEvidence = null
       takeHistoryController()?.invalidatePendingTake()
+      takeCapture.dismiss()
       // An imported document owns its own take evidence and practice range.
       // Crossing that boundary must never coach or loop against the previous
       // document, even when the old loop happens to fit the new duration.
       runtime.stop()
       loopRange.setSpan(null)
       runtime.setSpeedScale(1)
-      runtime.clearRecording()
+      clearTakeRecording()
       setRecordingChoiceMade(false)
       setRecoveryLoopActive(false)
       if (backingSource !== null) {
@@ -3565,6 +3809,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       onFinishTake={finishTake}
                       onRetryFinish={retryFinishTake}
                       onDiscardFailedTake={discardFailedTake}
+                      replay={{
+                        state: takeCapture.state(),
+                        message: takeCapture.message(),
+                      }}
+                      onKeepReplay={() => {
+                        void takeCapture.keep().then((kept) => {
+                          if (kept) {
+                            showToast('Live-kit replay kept in Hear Yourself.')
+                          }
+                        })
+                      }}
+                      onDismissReplay={() => {
+                        takeCapture.dismiss()
+                      }}
                       onLoadHistory={loadTakeHistory}
                       onRetryHistory={retryTakeHistory}
                     />
@@ -4359,6 +4617,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       onFinishTake={finishTake}
                       onRetryFinish={retryFinishTake}
                       onDiscardFailedTake={discardFailedTake}
+                      replay={{
+                        state: takeCapture.state(),
+                        message: takeCapture.message(),
+                      }}
+                      onKeepReplay={() => {
+                        void takeCapture.keep().then((kept) => {
+                          if (kept) {
+                            showToast('Live-kit replay kept in Hear Yourself.')
+                          }
+                        })
+                      }}
+                      onDismissReplay={() => {
+                        takeCapture.dismiss()
+                      }}
                       onLoadHistory={loadTakeHistory}
                       onRetryHistory={retryTakeHistory}
                     />

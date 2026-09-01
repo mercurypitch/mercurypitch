@@ -739,6 +739,14 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     },
   )
   const secondaryLane = createMemo(() => props.secondaryLane?.() ?? null)
+  const visibleSecondaryLane = createMemo(() => {
+    const lane = secondaryLane()
+    if (lane === null || mode() === 'sheet') return null
+    // Moving Tab already expresses pitched frets, but it has no native place
+    // for a drum part. Keep percussion beside it rather than forging frets.
+    if (mode() === 'tab' && lane.content !== 'percussion') return null
+    return lane
+  })
   const activeView = createMemo<GuitarNightStageView>(() => {
     const currentMode = mode()
     if (currentMode !== 'flow') return currentMode
@@ -1446,16 +1454,18 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           />
         </Show>
 
-        {/* The corner part belongs to the moving views. Tab is already a tab
-            strip and Sheet already stacks every part, so neither needs it. */}
-        <Show when={mode() !== 'tab' && mode() !== 'sheet' && secondaryLane()}>
+        {/* Sheet already owns every part. Moving Tab owns pitched frets only,
+            so a percussion-native reference remains beside it. */}
+        <Show when={visibleSecondaryLane()}>
           {(lane) => (
             <GuitarNightSecondaryPart
               lane={lane}
               playheadBeat={() => actualPlayheadBeat() ?? 0}
               narrowViewport={narrowViewport}
               layoutKey={() => activeView()}
-              {...(props.onSelectTrack === undefined
+              {...(props.onSelectTrack === undefined ||
+              lane().scoreable === false ||
+              lane().content === 'percussion'
                 ? {}
                 : { onSwap: props.onSelectTrack })}
             />

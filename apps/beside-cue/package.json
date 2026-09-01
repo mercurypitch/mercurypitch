@@ -30,7 +30,8 @@
     "@irchiinnuss/pitch-engine": "workspace:*",
     "@revenuecat/purchases-capacitor": "^13.4.0",
     "@revenuecat/purchases-capacitor-ui": "^13.4.0",
-    "solid-js": "^1.9.12"
+    "solid-js": "^1.9.12",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.0",
@@ -40,6 +41,7 @@
     "@solidjs/testing-library": "^0.8.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@types/node": "^22.0.0",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "eslint": "9.39.1",
     "fake-indexeddb": "^6.2.5",

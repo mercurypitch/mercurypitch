@@ -275,7 +275,7 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
   },
   [TAB_VOICE_HISTORY]: {
     id: 'tab-voice-history',
-    ariaLabel: 'Hear Yourself voice history',
+    ariaLabel: 'Hear Yourself take history',
     icon: () => (
       <svg
         viewBox="0 0 24 24"

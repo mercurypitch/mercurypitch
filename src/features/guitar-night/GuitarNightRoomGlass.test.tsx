@@ -38,6 +38,7 @@ function idleTransport(): GuitarBackingTransport {
     seek: vi.fn(),
     setPlaybackRate: vi.fn(async () => true),
     setMasterVolume: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
     getAudioContext: () => null,
     getAudioGraph: () => null,

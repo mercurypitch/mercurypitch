@@ -1970,6 +1970,51 @@
   text-overflow: ellipsis;
 }
 
+.performanceTakeCard {
+  margin: 4px 0 24px;
+  padding: 16px;
+  border: 1px solid rgb(99 223 235 / 22%);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgb(99 223 235 / 8%), rgb(0 0 0 / 14%));
+}
+
+.performanceTakeCard > span {
+  color: var(--cyan);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.performanceTakeCard h3 {
+  margin: 7px 0 0;
+  color: var(--ivory);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.performanceTakeCard p {
+  margin: 8px 0 0;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.performanceTakeCard > .textButton {
+  min-height: 44px;
+  margin-top: 10px;
+}
+
+.performanceTakeActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.performanceTakeActions button {
+  min-height: 44px;
+}
+
 .previewRow > span,
 .roomSwatch > div {
   display: flex;

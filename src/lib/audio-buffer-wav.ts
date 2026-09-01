@@ -20,6 +20,62 @@ function writeAscii(view: DataView, offset: number, value: string): void {
   }
 }
 
+function createMonoPcmWavBuffer(
+  frameCount: number,
+  sampleRate: number,
+): {
+  bytes: ArrayBuffer
+  view: DataView
+} {
+  const pcmBytes = frameCount * PCM_BYTES_PER_SAMPLE
+  const bytes = new ArrayBuffer(WAV_HEADER_BYTES + pcmBytes)
+  const view = new DataView(bytes)
+
+  writeAscii(view, 0, 'RIFF')
+  view.setUint32(4, 36 + pcmBytes, true)
+  writeAscii(view, 8, 'WAVE')
+  writeAscii(view, 12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * PCM_BYTES_PER_SAMPLE, true)
+  view.setUint16(32, PCM_BYTES_PER_SAMPLE, true)
+  view.setUint16(34, 16, true)
+  writeAscii(view, 36, 'data')
+  view.setUint32(40, pcmBytes, true)
+  return { bytes, view }
+}
+
+function writePcmSample(view: DataView, offset: number, sample: number): void {
+  const clamped = Math.max(-1, Math.min(1, Number(sample) || 0))
+  view.setInt16(
+    offset,
+    clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff),
+    true,
+  )
+}
+
+/** Encode an already-mono sample array as signed 16-bit PCM RIFF/WAVE. */
+export function encodeMonoPcmSamplesToWav(
+  samples: Float32Array,
+  sampleRate: number,
+): ArrayBuffer {
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+    throw new Error('The PCM sample rate must be positive.')
+  }
+  const { bytes, view } = createMonoPcmWavBuffer(
+    samples.length,
+    Math.round(sampleRate),
+  )
+  let outputOffset = WAV_HEADER_BYTES
+  for (let frame = 0; frame < samples.length; frame += 1) {
+    writePcmSample(view, outputOffset, samples[frame] ?? 0)
+    outputOffset += PCM_BYTES_PER_SAMPLE
+  }
+  return bytes
+}
+
 /** Encode all channels, mixed to mono, as signed 16-bit PCM in a RIFF/WAVE. */
 export function encodeAudioBufferToMonoPcmWav(
   buffer: AudioBuffer,
@@ -38,23 +94,7 @@ export function encodeAudioBufferToMonoPcmWav(
     Math.max(startFrame, Math.ceil(range.endFrame ?? buffer.length)),
   )
   const frameCount = endFrame - startFrame
-  const pcmBytes = frameCount * PCM_BYTES_PER_SAMPLE
-  const bytes = new ArrayBuffer(WAV_HEADER_BYTES + pcmBytes)
-  const view = new DataView(bytes)
-
-  writeAscii(view, 0, 'RIFF')
-  view.setUint32(4, 36 + pcmBytes, true)
-  writeAscii(view, 8, 'WAVE')
-  writeAscii(view, 12, 'fmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, buffer.sampleRate, true)
-  view.setUint32(28, buffer.sampleRate * PCM_BYTES_PER_SAMPLE, true)
-  view.setUint16(32, PCM_BYTES_PER_SAMPLE, true)
-  view.setUint16(34, 16, true)
-  writeAscii(view, 36, 'data')
-  view.setUint32(40, pcmBytes, true)
+  const { bytes, view } = createMonoPcmWavBuffer(frameCount, buffer.sampleRate)
 
   const channels = Array.from(
     { length: buffer.numberOfChannels },
@@ -64,12 +104,7 @@ export function encodeAudioBufferToMonoPcmWav(
   for (let frame = startFrame; frame < endFrame; frame += 1) {
     let sample = 0
     for (const channel of channels) sample += channel[frame] ?? 0
-    sample = Math.max(-1, Math.min(1, sample / channels.length))
-    view.setInt16(
-      outputOffset,
-      sample < 0 ? Math.round(sample * 0x8000) : Math.round(sample * 0x7fff),
-      true,
-    )
+    writePcmSample(view, outputOffset, sample / channels.length)
     outputOffset += PCM_BYTES_PER_SAMPLE
   }
 

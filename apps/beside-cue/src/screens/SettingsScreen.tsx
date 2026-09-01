@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { DailyCuePreset } from '@/app-config'
+import { buildLabel } from '@/build-info'
 import { AppHeader } from '@/components/AppHeader'
 import type { DeviceSupport } from '@/platform/device-support'
 import { probeDeviceSupport } from '@/platform/device-support'
@@ -254,7 +255,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
           void probeDeviceSupport().then(setSupport)
         }}
       >
-        Beside Cue · version 0.1
+        Beside Cue · {buildLabel()}
       </button>
       <Show when={support()}>
         {(facts) => (

@@ -187,18 +187,21 @@ export interface ZenTakeRecord extends DbEntity {
 
 // ── Voice History ──────────────────────────────────────────────
 
-/** A local real-voice recording explicitly kept by the singer. */
+/** A local replayable performance explicitly kept by the musician. */
 export type VoiceTakeSource =
   | 'glass'
   | 'exercise'
   | 'legend'
   | 'karaoke'
+  | 'guitar-night'
+  | 'piano-night'
+  | 'drum-night'
   | 'freeform'
   | 'guided'
 
 /**
  * Lightweight, list-safe metadata. The audio payload deliberately lives in
- * voiceTakeAudio so rendering history never hydrates every recording.
+ * voiceTakeAudio so rendering history never hydrates every replay.
  */
 export interface VoiceTakeRecord extends DbEntity {
   source: VoiceTakeSource

@@ -236,22 +236,45 @@ describe('createGuitarVoice', () => {
     expect(ctx.createWaveShaper).not.toHaveBeenCalled()
   })
 
-  it('electric variant creates overdrive waveshaper and cab filter', () => {
+  it('retains the lightweight legacy amp on standalone electric voices', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
     createGuitarVoice(ctx, 220, 500, 'electric')
-    expect(ctx.createWaveShaper).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(ctx.createBiquadFilter).mock.calls.length).toBe(2)
+    expect(ctx.createWaveShaper).toHaveBeenCalledOnce()
+    expect(ctx.createBiquadFilter).toHaveBeenCalledTimes(2)
+
+    const drive = vi.mocked(ctx.createWaveShaper).mock.results[0].value
+    const presence = vi.mocked(ctx.createBiquadFilter).mock.results[0].value
+    const cabinet = vi.mocked(ctx.createBiquadFilter).mock.results[1].value
+    expect(drive.curve).toHaveLength(1024)
+    expect(drive.oversample).toBe('2x')
+    expect(presence).toMatchObject({
+      type: 'peaking',
+      frequency: { value: 2800 },
+      Q: { value: 0.9 },
+      gain: { value: 4 },
+    })
+    expect(cabinet).toMatchObject({
+      type: 'lowpass',
+      frequency: { value: 5000 },
+      Q: { value: 0.7 },
+    })
   })
 
-  it('reuses the immutable overdrive curve across dense electric voices', () => {
+  it('can leave electric amp colour to a shared route-owned stage', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
-    createGuitarVoice(ctx, 220, 500, 'electric')
-    createGuitarVoice(ctx, 246.94, 500, 'electric')
+    createGuitarVoice(ctx, 220, 500, 'electric', undefined, 'shared')
 
-    const createWaveShaper = vi.mocked(ctx.createWaveShaper)
-    const first = createWaveShaper.mock.results[0]?.value as WaveShaperNode
-    const second = createWaveShaper.mock.results[1]?.value as WaveShaperNode
-    expect(first.curve).toBe(second.curve)
+    expect(ctx.createWaveShaper).not.toHaveBeenCalled()
+    expect(ctx.createBiquadFilter).not.toHaveBeenCalled()
+  })
+
+  it('does not multiply amp nodes across shared electric voices', () => {
+    const ctx = mockAudioContext() as unknown as BaseAudioContext
+    createGuitarVoice(ctx, 220, 500, 'electric', undefined, 'shared')
+    createGuitarVoice(ctx, 246.94, 500, 'electric', undefined, 'shared')
+
+    expect(ctx.createWaveShaper).not.toHaveBeenCalled()
+    expect(ctx.createBiquadFilter).not.toHaveBeenCalled()
   })
 
   it('dispose stops the source and disconnects nodes', () => {
@@ -476,6 +499,15 @@ describe('melodyToGuitarNotes', () => {
     ])
 
     expect(notes[0].notation).toBe(notation)
+  })
+
+  it('keeps only bounded authored velocity', () => {
+    expect(
+      melodyToGuitarNotes([
+        { midi: 60, startBeat: 0, duration: 1, velocity: 37 },
+        { midi: 62, startBeat: 1, duration: 1, velocity: 0 },
+      ]).map((note) => note.velocity),
+    ).toEqual([37, undefined])
   })
 
   it('returns empty array for empty input', () => {

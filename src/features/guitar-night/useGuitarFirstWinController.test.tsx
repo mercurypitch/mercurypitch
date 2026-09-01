@@ -21,6 +21,7 @@ function createBandHarness(expectedHitTimesMs = [1_000, 1_500, 2_000, 2_500]) {
     }),
     activate: vi.fn(async () => null),
     setMasterLevel: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setMelodyChannelLevel: vi.fn(),
     setPercussionTrackAudible: vi.fn(),
     stop: vi.fn(),

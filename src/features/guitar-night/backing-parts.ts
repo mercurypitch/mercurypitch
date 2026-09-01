@@ -11,8 +11,9 @@
 import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
-import type { GuitarNightReferenceSource } from './reference-port'
-import { suggestReferenceInstrument } from './reference-port'
+import type { MidiProgramFamily } from '@/lib/midi-program-family'
+import { resolveMidiProgramFamily } from '@/lib/midi-program-family'
+import type { GuitarNightReferenceSource, GuitarNightReferenceSourceTrack, } from './reference-port'
 
 export interface BackingPartSelection {
   /** The part the player is being graded on. Never sounded as backing. */
@@ -30,7 +31,7 @@ export type BackingPart =
       trackId: string
       name: string
       kind: 'pitched'
-      variant: GuitarVariant
+      instrumentFamily: MidiProgramFamily
       noteCount: number
     }
   | {
@@ -72,7 +73,7 @@ export function backingParts(
       trackId: track.id,
       name: track.name,
       kind: 'pitched',
-      variant: variantForTrack(source, track.id),
+      instrumentFamily: instrumentFamilyForTrack(track),
       noteCount: track.notes.length,
     })
   }
@@ -96,16 +97,26 @@ export function backingMelody(
     if (track.id === selection.scoredTrackId) continue
     if (audible !== undefined && !audible.includes(track.id)) continue
 
-    const variant = variantForTrack(source, track.id)
+    const instrumentFamily = instrumentFamilyForTrack(track)
+    const variant = variantForFamily(instrumentFamily)
     for (const note of track.notes) {
       if (!Number.isFinite(note.midi) || !Number.isFinite(note.startBeat)) {
         continue
       }
+      const velocity =
+        typeof note.velocity === 'number' &&
+        Number.isInteger(note.velocity) &&
+        note.velocity >= 1 &&
+        note.velocity <= 127
+          ? note.velocity
+          : undefined
       notes.push({
         midi: note.midi,
         startBeat: note.startBeat,
         durationBeats: Math.max(0, note.duration),
-        variant,
+        ...(variant === undefined ? {} : { variant }),
+        instrumentFamily,
+        ...(velocity === undefined ? {} : { velocity }),
         channelId: track.id,
       })
     }
@@ -146,6 +157,9 @@ export function backingPercussion(
         startBeat: hit.startBeat,
         velocity: hit.velocity,
         ...(hit.id === undefined ? {} : { sourceId: hit.id }),
+        ...(hit.articulation === undefined
+          ? {}
+          : { articulation: hit.articulation }),
       })
     }
   }
@@ -167,11 +181,17 @@ export function scoredPartSoundsByDefault(
   )
 }
 
-function variantForTrack(
-  source: GuitarNightReferenceSource,
-  trackId: string,
-): GuitarVariant {
-  return suggestReferenceInstrument(source, trackId)?.instrument === 'bass'
-    ? 'bass'
-    : 'electric'
+function instrumentFamilyForTrack(
+  track: GuitarNightReferenceSourceTrack,
+): MidiProgramFamily {
+  return resolveMidiProgramFamily(track)
+}
+
+function variantForFamily(
+  instrumentFamily: MidiProgramFamily,
+): GuitarVariant | undefined {
+  if (instrumentFamily === 'acoustic-guitar') return 'acoustic'
+  if (instrumentFamily === 'electric-guitar') return 'electric'
+  if (instrumentFamily === 'bass') return 'bass'
+  return undefined
 }

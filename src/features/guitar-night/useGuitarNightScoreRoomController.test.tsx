@@ -4,6 +4,8 @@
 import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
+import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { onPersistedWrite } from '@/lib/storage'
 import type { GuitarNightReference } from './reference-port'
@@ -68,6 +70,7 @@ function bandHarness() {
     }),
     activate: vi.fn(async () => graph),
     setMasterLevel: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setMelodyChannelLevel: vi.fn(),
     setPercussionTrackAudible: vi.fn(),
     stop: vi.fn(),
@@ -82,6 +85,15 @@ function bandHarness() {
       result = next
     },
   }
+}
+
+function directMixBandHarness() {
+  const harness = bandHarness()
+  harness.band.setMelodyChannelGain = vi.fn()
+  harness.band.setMelodyChannelAudible = vi.fn()
+  harness.band.setPercussionTrackGain = vi.fn()
+  harness.band.setDrumKit = vi.fn()
+  return harness
 }
 
 /** Frames only refresh the signal; the test pumps them by hand. */
@@ -125,6 +137,35 @@ function pulseAudible(
 }
 
 describe('useGuitarNightScoreRoomController', () => {
+  it('seeds amp state without opening audio and forwards later edits live', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const initial = {
+        ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+        drive: 0.24,
+      }
+      const [ampParameters, setAmpParameters] = createSignal(initial)
+
+      useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        ampParameters,
+        createBand: () => band,
+      })
+
+      expect(band.activate).not.toHaveBeenCalled()
+      expect(band.start).not.toHaveBeenCalled()
+      expect(band.setElectricAmpParameters).toHaveBeenCalledOnce()
+      expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(initial)
+
+      const edited = { ...initial, drive: 0.71 }
+      setAmpParameters(edited)
+      await Promise.resolve()
+      expect(band.setElectricAmpParameters).toHaveBeenCalledTimes(2)
+      expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(edited)
+      dispose()
+    })
+  })
+
   it('pins and schedules one silent assessed range on exact audio boundaries', async () => {
     await createRoot(async (dispose) => {
       const { band, getOptions, setResult } = bandHarness()
@@ -1498,6 +1539,29 @@ describe('scoreToBandMelody', () => {
   it('has nothing to sound without a score', () => {
     expect(scoreToBandMelody(null)).toEqual([])
   })
+
+  it('keeps the selected track family and authored strike intensity', () => {
+    const selected = reference({
+      instrumentFamily: 'neutral',
+      notes: [
+        {
+          ...reference().notes[0]!,
+          velocity: 37,
+        },
+      ],
+    })
+
+    expect(scoreToBandMelody(selected)).toEqual([
+      {
+        midi: 64,
+        startBeat: 0,
+        durationBeats: 1,
+        velocity: 37,
+        instrumentFamily: 'neutral',
+        channelId: 'guitar-night-score',
+      },
+    ])
+  })
 })
 
 describe('the tab room sounds the tab', () => {
@@ -1534,6 +1598,32 @@ describe('the tab room sounds the tab', () => {
       })
       await room.start()
       expect(getOptions()?.melodyVariant).toBe('bass')
+      dispose()
+    })
+  })
+
+  it('does not turn a selected neutral score track into an electric guitar', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const selected = reference({
+        instrumentFamily: 'neutral',
+        notes: [{ ...reference().notes[0]!, velocity: 37 }],
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => selected,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+
+      expect(getOptions()?.melody).toEqual([
+        expect.objectContaining({
+          instrumentFamily: 'neutral',
+          velocity: 37,
+        }),
+      ])
       dispose()
     })
   })
@@ -1655,6 +1745,216 @@ describe('the tab room sounds the tab', () => {
       vi.useRealTimers()
       localStorage.removeItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)
     }
+  })
+
+  it('keeps track faders isolated by song and resets only the current song', () => {
+    createRoot((dispose) => {
+      const { band } = directMixBandHarness()
+      const frames = frameHarness()
+      const [currentReference, setCurrentReference] = createSignal(
+        reference({
+          tracks: [
+            { id: 'track-lead', name: 'Lead guitar', noteCount: 2 },
+            { id: 'track-bass', name: 'Bass', noteCount: 1 },
+          ],
+        }),
+      )
+      const room = useGuitarNightScoreRoomController({
+        reference: currentReference,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      room.setTrackLevelDb('track-lead', -6)
+      room.setTrackLevelDb('track-bass', 6)
+      expect(room.trackLevelDb('track-lead')).toBe(-6)
+      expect(room.trackLevelDb('track-bass')).toBe(6)
+
+      setCurrentReference(reference({ songId: 'gsong-2' }))
+      expect(room.trackLevelDb('track-lead')).toBe(0)
+      room.setTrackLevelDb('track-lead', -12)
+
+      setCurrentReference(
+        reference({
+          tracks: [
+            { id: 'track-lead', name: 'Lead guitar', noteCount: 2 },
+            { id: 'track-bass', name: 'Bass', noteCount: 1 },
+          ],
+        }),
+      )
+      expect(room.trackLevelDb('track-lead')).toBe(-6)
+      expect(room.trackLevelDb('track-bass')).toBe(6)
+      room.resetTrackLevels()
+      expect(room.trackLevelDb('track-lead')).toBe(0)
+      expect(room.trackLevelDb('track-bass')).toBe(0)
+
+      setCurrentReference(reference({ songId: 'gsong-2' }))
+      expect(room.trackLevelDb('track-lead')).toBe(-12)
+      dispose()
+    })
+  })
+
+  it('restores scored, pitched, and drum faders after every live mask', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = directMixBandHarness()
+      const frames = frameHarness()
+      const [audible, setAudible] = createSignal<readonly string[]>([
+        'track-bass',
+        'track-drums',
+      ])
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tracks: [
+              { id: 'track-lead', name: 'Lead guitar', noteCount: 2 },
+              { id: 'track-bass', name: 'Bass', noteCount: 1 },
+              {
+                id: 'track-drums',
+                name: 'Drums',
+                kind: 'percussion',
+                hitCount: 1,
+                supportedHitCount: 1,
+                droppedHitCount: 0,
+              },
+            ],
+          }),
+        backingMelody: () => [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 1,
+            channelId: 'track-bass',
+          },
+        ],
+        backingPercussion: () => [
+          {
+            trackId: 'track-drums',
+            gmKey: 36,
+            startBeat: 0,
+            velocity: 96,
+          },
+        ],
+        audibleBackingTrackIds: audible,
+        audiblePercussionTrackIds: audible,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await Promise.resolve()
+
+      room.setTrackLevelDb('track-lead', -6)
+      room.setTrackLevelDb('track-bass', 6)
+      room.setTrackLevelDb('track-drums', 3)
+      const melodyGain = vi.mocked(band.setMelodyChannelGain!)
+      const melodyAudible = vi.mocked(band.setMelodyChannelAudible!)
+      const drumGain = vi.mocked(band.setPercussionTrackGain!)
+      const leadGain = 10 ** (-6 / 20)
+      const bassGain = 10 ** (6 / 20)
+      const drumsGain = 10 ** (3 / 20)
+
+      room.setHearScore(false)
+      room.setHearScore(true)
+      expect(
+        melodyGain.mock.calls
+          .filter(([channelId]) => channelId === GUITAR_NIGHT_SCORE_CHANNEL)
+          .slice(-2)
+          .map(([, gain]) => gain),
+      ).toEqual([leadGain, leadGain])
+      expect(
+        melodyAudible.mock.calls
+          .filter(([channelId]) => channelId === GUITAR_NIGHT_SCORE_CHANNEL)
+          .slice(-2),
+      ).toEqual([
+        [GUITAR_NIGHT_SCORE_CHANNEL, false],
+        [GUITAR_NIGHT_SCORE_CHANNEL, true],
+      ])
+
+      setAudible([])
+      setAudible(['track-bass', 'track-drums'])
+      expect(
+        melodyGain.mock.calls
+          .filter(([channelId]) => channelId === 'track-bass')
+          .slice(-2)
+          .map(([, gain]) => gain),
+      ).toEqual([bassGain, bassGain])
+      expect(
+        melodyAudible.mock.calls
+          .filter(([channelId]) => channelId === 'track-bass')
+          .slice(-2),
+      ).toEqual([
+        ['track-bass', false],
+        ['track-bass', true],
+      ])
+      expect(drumGain.mock.calls.slice(-2).map(([, gain]) => gain)).toEqual([
+        drumsGain,
+        drumsGain,
+      ])
+      expect(
+        vi.mocked(band.setPercussionTrackAudible).mock.calls.slice(-2),
+      ).toEqual([
+        ['track-drums', false],
+        ['track-drums', true],
+      ])
+      dispose()
+    })
+  })
+
+  it('changes faders while paused and switches kits without transport churn', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = directMixBandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tracks: [
+              { id: 'track-lead', name: 'Lead guitar', noteCount: 2 },
+              { id: 'track-bass', name: 'Bass', noteCount: 1 },
+            ],
+          }),
+        backingMelody: () => [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 1,
+            channelId: 'track-bass',
+          },
+        ],
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      room.setTrackLevelDb('track-bass', 4)
+      room.setDrumKit('studio')
+      expect(band.setDrumKit).toHaveBeenLastCalledWith('studio')
+      expect(band.start).not.toHaveBeenCalled()
+      expect(band.stop).not.toHaveBeenCalled()
+
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 11)
+      const startsBeforeLiveSwitch = vi.mocked(band.start).mock.calls.length
+      const stopsBeforeLiveSwitch = vi.mocked(band.stop).mock.calls.length
+      room.setDrumKit('circuit')
+      expect(band.setDrumKit).toHaveBeenLastCalledWith('circuit')
+      expect(band.start).toHaveBeenCalledTimes(startsBeforeLiveSwitch)
+      expect(band.stop).toHaveBeenCalledTimes(stopsBeforeLiveSwitch)
+
+      room.pause()
+      const startsWhilePaused = vi.mocked(band.start).mock.calls.length
+      const stopsWhilePaused = vi.mocked(band.stop).mock.calls.length
+      room.setTrackLevelDb('track-bass', 2)
+      room.setDrumKit('live')
+      expect(room.trackLevelDb('track-bass')).toBe(2)
+      expect(band.setMelodyChannelGain).toHaveBeenCalledWith(
+        'track-bass',
+        10 ** (2 / 20),
+      )
+      expect(band.setDrumKit).toHaveBeenLastCalledWith('live')
+      expect(band.start).toHaveBeenCalledTimes(startsWhilePaused)
+      expect(band.stop).toHaveBeenCalledTimes(stopsWhilePaused)
+      dispose()
+    })
   })
 
   describe('the rest of the band', () => {
@@ -1876,6 +2176,84 @@ describe('the tab room sounds the tab', () => {
         expect(room.percussionBackingLive()).toBe(false)
         await room.start()
         expect(getOptions()?.audiblePercussionTrackIds).toEqual(['track-drums'])
+        dispose()
+      })
+    })
+
+    it('keeps a masked drum gate closed through retained M changes under another Solo', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const [audible, setAudible] = createSignal<readonly string[]>([
+          'track-drums-a',
+        ])
+        let muted: readonly string[] = []
+        let soloed: string | null = 'track-drums-a'
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingPercussion: () => [
+            {
+              trackId: 'track-drums-a',
+              gmKey: 36,
+              startBeat: 0,
+              velocity: 100,
+            },
+            {
+              trackId: 'track-drums-b',
+              gmKey: 38,
+              startBeat: 1,
+              velocity: 96,
+            },
+          ],
+          audiblePercussionTrackIds: audible,
+        })
+
+        await room.start()
+        getOptions()?.onBeat?.(0, 'count-in', 10)
+        expect(room.percussionBackingLive()).toBe(true)
+        vi.mocked(band.setPercussionTrackAudible).mockClear()
+
+        const toggleMutedB = (): void => {
+          room.setPercussionTrackAudible(
+            'track-drums-b',
+            guitarTrackAudibleAfterMuteToggle('track-drums-b', muted, soloed),
+          )
+          muted = muted.includes('track-drums-b')
+            ? muted.filter((trackId) => trackId !== 'track-drums-b')
+            : [...muted, 'track-drums-b']
+          setAudible(['track-drums-a'])
+        }
+
+        toggleMutedB()
+        expect(muted).toEqual(['track-drums-b'])
+        toggleMutedB()
+        expect(muted).toEqual([])
+        toggleMutedB()
+        expect(muted).toEqual(['track-drums-b'])
+
+        const maskedBGates = vi
+          .mocked(band.setPercussionTrackAudible)
+          .mock.calls.filter(([trackId]) => trackId === 'track-drums-b')
+          .map(([, isAudible]) => isAudible)
+        expect(maskedBGates.length).toBeGreaterThanOrEqual(3)
+        expect(maskedBGates.every((isAudible) => isAudible === false)).toBe(
+          true,
+        )
+
+        soloed = null
+        setAudible(['track-drums-a'])
+        expect(muted).toEqual(['track-drums-b'])
+        expect(band.setPercussionTrackAudible).toHaveBeenLastCalledWith(
+          'track-drums-b',
+          false,
+        )
+        expect(band.setPercussionTrackAudible).toHaveBeenCalledWith(
+          'track-drums-a',
+          true,
+        )
         dispose()
       })
     })

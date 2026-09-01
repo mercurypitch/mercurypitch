@@ -10,6 +10,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import type { MidiSongPercussionAccent } from '@/lib/midi-song'
 import type { DrumScoreDocument, DrumScoreEvent, DrumScoreIndex, DrumScoreWindow, } from './drum-score'
 import { createDrumScoreIndex, drumScoreEventsNearBeat, drumScoreNextEvent, drumScoreWindow, drumScoreWindowBeatX, } from './drum-score'
 import type { DrumSessionImportState } from './drum-session'
@@ -61,6 +62,25 @@ interface ScoreLoopContext {
   readonly lead: string
   readonly detail: string
 }
+
+interface ScoreNotationLegendEntry {
+  readonly key: MidiSongPercussionAccent | 'choke'
+  readonly glyph: string
+  readonly label: string
+}
+
+const SCORE_ACCENT_GLYPHS: Readonly<Record<MidiSongPercussionAccent, string>> =
+  {
+    normal: '>',
+    heavy: '^',
+    tenuto: '—',
+  }
+
+const SCORE_ACCENT_LEGEND: readonly ScoreNotationLegendEntry[] = [
+  { key: 'normal', glyph: '>', label: 'Normal accent' },
+  { key: 'heavy', glyph: '^', label: 'Heavy accent' },
+  { key: 'tenuto', glyph: '—', label: 'Tenuto' },
+]
 
 function finiteLoopMark(value: number | null | undefined): number | null {
   return value !== null && value !== undefined && Number.isFinite(value)
@@ -168,8 +188,47 @@ function writtenDuration(event: DrumScoreEvent): string {
     : `written duration ${Math.round(duration * 100) / 100} quarter-note beats`
 }
 
+function authoredNotation(event: DrumScoreEvent): string {
+  const details: string[] = []
+  const accent = event.hit.accent
+  if (accent !== undefined) {
+    const label = accent === 'tenuto' ? 'tenuto' : `${accent} accent`
+    details.push(`${label} (${SCORE_ACCENT_GLYPHS[accent]})`)
+  }
+  if (event.hit.articulation === 'choke') {
+    details.push('choke articulation: audible cymbal strike, then early stop')
+  }
+  return details.length === 0 ? '' : `, authored notation ${details.join(', ')}`
+}
+
 function eventDescription(event: DrumScoreEvent): string {
-  return `${event.voice.label}, bar ${event.barIndex + 1}, quarter-note position ${formattedQuarterPosition(event)}, velocity ${event.hit.velocity}, ${writtenDuration(event)}, ${sourceEvidence(event)}`
+  return `${event.voice.label}, bar ${event.barIndex + 1}, quarter-note position ${formattedQuarterPosition(event)}, velocity ${event.hit.velocity}, ${writtenDuration(event)}, ${sourceEvidence(event)}${authoredNotation(event)}`
+}
+
+function scoreNotationLegend(
+  events: readonly DrumScoreEvent[],
+): readonly ScoreNotationLegendEntry[] {
+  const accents = new Set(
+    events
+      .map((event) => event.hit.accent)
+      .filter(
+        (accent): accent is MidiSongPercussionAccent => accent !== undefined,
+      ),
+  )
+  const entries = SCORE_ACCENT_LEGEND.filter((entry) =>
+    accents.has(entry.key as MidiSongPercussionAccent),
+  )
+  if (events.some((event) => event.hit.articulation === 'choke')) {
+    return [
+      ...entries,
+      {
+        key: 'choke',
+        glyph: 'choke',
+        label: 'Cymbal strike, then stop',
+      },
+    ]
+  }
+  return entries
 }
 
 interface ScoreNoteheadProps {
@@ -190,6 +249,8 @@ function ScoreNotehead(props: ScoreNoteheadProps): JSX.Element {
       classList={{ [styles.isActive]: props.active }}
       data-gm-key={props.event.hit.gmKey}
       data-velocity={props.event.hit.velocity}
+      data-accent={props.event.hit.accent}
+      data-articulation={props.event.hit.articulation}
       aria-hidden="true"
     >
       <Switch>
@@ -215,11 +276,27 @@ function ScoreNotehead(props: ScoreNoteheadProps): JSX.Element {
             : `M${props.x - radius()} ${y()}V${stemEndY()}`
         }
       />
-      <Show when={props.event.hit.velocity >= 108}>
-        <path
-          class={styles.accentMark}
-          d={`M${props.x - 7} ${y() - 55}L${props.x} ${y() - 60}L${props.x + 7} ${y() - 55}`}
-        />
+      <Show when={props.event.hit.accent} keyed>
+        {(accent) => (
+          <text
+            class={styles.accentMark}
+            x={props.x}
+            y={y() - 49}
+            text-anchor="middle"
+          >
+            {SCORE_ACCENT_GLYPHS[accent]}
+          </text>
+        )}
+      </Show>
+      <Show when={props.event.hit.articulation === 'choke'}>
+        <text
+          class={styles.chokeMark}
+          x={props.x}
+          y={y() - 64}
+          text-anchor="middle"
+        >
+          choke
+        </text>
       </Show>
     </g>
   )
@@ -470,6 +547,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
             {(currentWindow) => {
               const omitted = omissionCopy(currentScore, currentWindow)
               const meters = meterMarks(currentScore, currentWindow)
+              const notationLegend = scoreNotationLegend(currentWindow.events)
               const loopMarks = createMemo(() => ({
                 a: finiteLoopMark(props.markA?.()),
                 b: finiteLoopMark(props.markB?.()),
@@ -579,6 +657,9 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                           {currentWindow.endBarIndex + 1}, with{' '}
                           {currentWindow.events.length} indexed authored
                           percussion hits. Note size reflects source velocity.
+                          Only authored accent marks are shown: &gt; means
+                          normal, ^ means heavy, and — means tenuto. A literal
+                          choke marks an audible cymbal strike that stops early.
                           The cyan line follows the shared session playhead.
                           <Show when={projectedLoopContext() !== null}>
                             {' '}
@@ -812,6 +893,22 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                       )}
                     </For>
                   </ul>
+
+                  <Show when={notationLegend.length > 0}>
+                    <ul
+                      class={styles.scoreNotationLegend}
+                      aria-label="Authored drum notation in displayed score"
+                    >
+                      <For each={notationLegend}>
+                        {(entry) => (
+                          <li>
+                            <span aria-hidden="true">{entry.glyph}</span>
+                            {entry.label}
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </Show>
 
                   <details class={styles.semanticEvents}>
                     <summary>Read this score window as an event list</summary>

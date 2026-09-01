@@ -43,6 +43,10 @@ exact room boundary as playback, while Jam Doctor remains an explicit,
 separate diagnostic review. The initial score is notes-only: unmeasured route
 delay never becomes a timing grade, and unsupported acoustic chords or fast
 passages are excluded rather than counted as mistakes.
+Completed Room mic and Direct input score runs may also prepare one temporary
+dry replay from the already-owned stream. The replay remains separate from
+score evidence and becomes durable only after the player explicitly keeps it
+in Hear Yourself.
 
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
 were merged through
@@ -220,8 +224,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   replace the provisional metadata for the same event but shall not append a
   duplicate or change either clock. Evidence before the take or after its end
   shall be excluded; bounded truncation shall be recorded. Stop shall complete
-  the take, while failed activation or disposal shall cancel it. Guitar Night
-  shall neither retain raw input audio nor persist Capture v0 takes.
+  the take, while failed activation or disposal shall cancel it. Raw input
+  audio shall neither enter nor be retained by this evidence take, and Guitar
+  Night shall not persist Capture v0 takes. A separate optional score replay
+  may follow `REQ-GN-SCORE-011` without becoming event evidence.
 - **REQ-GN-RUNTIME-019 — Explicit input routes:** Guitar Night shall present
   room microphone, direct interface, and MIDI as explicit Listening routes.
   The selected route and device may persist locally, but access shall begin
@@ -272,6 +278,46 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   second count-in. Scrubbing before Play shall remain silent. WHEN the reference
   changes or the player clears the range, the percussion room shall release its
   owned A/B marks and active scheduler loop together.
+- **REQ-GN-RUNTIME-026 — Track-scoped summed electric amp path:** WHEN notes
+  from one actual electric-guitar score track sound together, every string
+  voice in that track shall sum into exactly one shared, asset-free nonlinear
+  amp. Separate electric-guitar tracks shall keep separate amp stages so their
+  signals do not intermodulate across track boundaries. Each track's mixer
+  fader and mute gate shall sit after its amp, so changing the mix level shall
+  not change that track's drive. The fixed route shall provide bounded input
+  headroom, preamp and power-stage nonlinearity, amp-inspired three-band
+  voicing, presence, cabinet filtering, compensated output, and a pop-free
+  bypass. It shall not claim to be an exact named valve amp or physical
+  tone-stack model. Acoustic-guitar, bass, and neutral score tracks, tuner
+  tones, backing stems, drums, and monitor audio shall bypass every authored
+  electric-track amp. Creating more voices within one electric track shall not
+  create more amp stages, and disposing the run shall disconnect every
+  track-owned stage without fetching an external asset.
+- **REQ-GN-RUNTIME-027 — Persistent room tone:** Guitar Night shall expose one
+  compact Amp surface in the score-room Session sheet and prepared-song Band
+  sheet. Preset, bypass, Drive, Bass, Mid, Treble, Presence, Output, and
+  cabinet voicing shall share one versioned, bounded setting on this device.
+  Corrupt, incomplete, or unknown-future settings shall fall back to the safe
+  default. Changing or resetting tone before Play shall not activate an audio
+  context; changing it while audio is live shall use bounded automation rather
+  than discontinuous gain steps. The curated Studio clean, Edge, Crunch, and
+  Lead presets shall keep conservative headroom, approximately matched
+  reference energy, and an intentional progression toward denser,
+  mid-focused, darker high-drive voicings under the deterministic calibration
+  fixture. Those measurements are regression bounds, not evidence of Guitar
+  Rig, named commercial plug-in, cabinet, or hardware fidelity. Owner audition
+  with representative chordal and multi-track MIDI/Guitar Pro material shall
+  remain the musical-quality acceptance gate; numeric calibration alone shall
+  not mark a preset complete.
+- **REQ-GN-RUNTIME-028 — Direct-input amp monitoring:** WHERE Direct input is
+  actively Listening, Guitar Night may offer one explicit **Hear my input**
+  action. The wet monitor shall branch from the already-owned source into its
+  own fixed amp stage and monitor bus, never the guide amp, detector, scoring
+  path, or take recorder. Monitoring shall default off on every mount and input
+  session, shall not persist its enabled state, and shall stop on input change,
+  loss, stop, permission failure, suspension, or unmount. Room microphone and
+  MIDI shall not enable this route. Copy shall recommend headphones, state that
+  browser latency applies, and state that saved takes remain dry.
 
 ## Tuner — `GN-TUNER-*`
 
@@ -346,8 +392,10 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SCORE-001 — Explicit scored take:** WHERE an authored score is
   staged and Listening is already active, WHEN the player selects Play,
   Guitar Night shall begin one continuous live-score take without requesting
-  input permission, opening Jam Doctor, or creating another input recorder.
-  Play without active Listening shall remain an ordinary unscored rehearsal.
+  input permission, opening Jam Doctor, or creating another input acquisition
+  or analysis recorder. A passive replay recorder may observe the already-owned
+  stream under `REQ-GN-SCORE-011`. Play without active Listening shall remain
+  an ordinary unscored rehearsal.
 - **REQ-GN-SCORE-002 — Independent contract:** Live score shall use a neutral,
   framework-free scoring boundary with no Jam Doctor diagnosis, recovery,
   history, or persistence dependency. Opening, closing, or clearing Jam Doctor
@@ -406,9 +454,35 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   percentage, judged/hit/missed/skipped counts, best streak, pinned range,
   track, and input kind. A held take may appear as an explicitly partial result
   for the current session but shall not enter history. Only canonical completed
-  cumulative results may persist, with bounded scalar-only history and no raw
-  audio, event timeline, or device identifier. Play again shall start a fresh
-  scored run; phrase diagnosis shall remain a distinct, explicit action.
+  cumulative results may enter this automatic ledger, with bounded scalar-only
+  history and no raw audio, event timeline, or device identifier. A separately
+  and explicitly kept replay may follow `REQ-GN-SCORE-011`. Play again shall
+  start a fresh scored run; phrase diagnosis shall remain a distinct, explicit
+  action.
+- **REQ-GN-SCORE-011 — Explicit private replay:** WHERE a completed authored
+  live-score run uses Room mic or Direct input, Guitar Night may record the
+  already-owned raw input stream between the run's scheduled start and end,
+  excluding count-in, room output buses, and any optional wet monitor branch.
+  Amp settings or monitoring shall never colour the recorded evidence or kept
+  replay. The prepared Blob, duration, and waveform peaks shall remain
+  temporary until the player explicitly selects Keep in Hear Yourself. The
+  kept take shall contain a versioned Guitar Night
+  context and scalar score summary, but no device identity, input-event
+  timeline, event ID, or target ID. MIDI, held or partial runs, input loss,
+  seek, source/track/tempo/loop changes, Jam Doctor, and free play shall not
+  yield a keepable audio take. WHEN an eligible replay first becomes ready
+  outside the Score sheet and the player has not acknowledged the discovery
+  cue, Guitar Night shall offer a non-modal **Keep take** action and an explicit
+  **Don’t ask again** choice. Choosing either action shall suppress later cues;
+  neither displaying nor merely dismissing the prompt shall persist or discard
+  the replay. Replay capture or persistence failure shall not alter or suppress
+  the score. IF page visibility or material recorder-timer drift prevents
+  Guitar Night from bounding the untrimmed Blob to the authored
+  run, it shall discard only that temporary replay rather than retain or
+  mislabel out-of-boundary audio. WHILE the explicit local Keep is pending,
+  Guitar Night shall lock navigation; failed persistence shall retain the
+  temporary replay for Retry, and a successful Keep shall store audio only on
+  this device.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
@@ -864,13 +938,87 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SONG-022 — Readable mixed drum lane:** WHEN a saved reference mixes
   pitched and percussion tracks, the Sheet view shall expose each authored
   drum track as a separately hideable, non-scoreable GM reference lane while
-  retaining a pitched track as the only eligible score authority.
+  retaining a pitched track as the only eligible score authority. The track
+  mixer shall let the player follow one mapped Drum lane on the moving stage;
+  Highway, Grid, Tab, and Neck shall render a percussion-native time window
+  rather than frets, and Sheet shall continue to show its complete visible
+  lanes. Following or hiding percussion shall never change Guitar scoring.
 - **REQ-GN-SONG-023 — Shared drum-player boundary:** WHEN an authored drum part
   starts, Guitar Night shall lazily acquire a drum player, schedule exact GM
   identity and velocity on the room AudioContext clock, and route each track
   through its live mute gate. A failed player activation shall abort the run
   without exposing a false Playing state; pitched-only rooms shall not load or
   construct this drum path.
+- **REQ-GN-SONG-024 — Authored pitched-source truth:** WHEN MIDI or Guitar Pro
+  supplies a pitched track, Guitar Night shall retain each authored note's
+  bounded velocity where present, the source's zero-based GM program where
+  present, and the resolved program family through canonical projection, local
+  persistence, and `readSource`. Programs 24–25 shall resolve as acoustic
+  guitar, 26–31 as electric guitar, 32–39 as bass, and every other explicit GM
+  program as neutral. An explicit program shall win over track name, tuning,
+  or stale stored family. A genuinely absent program shall remain absent rather
+  than become program zero; only unambiguous legacy instrument names may supply
+  a fallback family.
+- **REQ-GN-SONG-025 — Family-safe authored playback:** WHEN an authored pitched
+  note sounds, its retained velocity shall shape its strike level; legacy or
+  synthetic notes without velocity shall retain their established default
+  level. Electric-guitar tracks alone shall enter the track-scoped amp required
+  by `REQ-GN-RUNTIME-026`; bass shall use the bass voice, acoustic guitar shall
+  use a clean guitar voice, and neutral or unsupported pitched families shall
+  use a clean generic score tone. Vocals, strings, keyboards, synths, and other
+  unrelated pitched tracks shall never acquire electric-guitar distortion from
+  their name, pitch range, or Guitar Night's historical fallback.
+- **REQ-GN-SONG-026 — Guitar-owned drum sound:** Guitar Night shall expose a
+  compact local kit and generated-groove feel preference without importing the
+  Drum Night catalogue, sample metadata, or humanizer on first paint. A player
+  may choose Mercury Synth, Circuit, Classic GM, Studio, or Live before Play,
+  while Playing, or while Paused. A pre-Play choice shall remain audio-inert;
+  after activation the retained route-owned player shall switch live without
+  restarting the reference clock, and a sampled kit may state that Mercury
+  fallback sounds while its bytes warm. An unsaved room shall keep the
+  existing zero-download Mercury Synth and straight-grid defaults.
+- **REQ-GN-SONG-027 — Generated feel boundary:** WHEN an optional shipped feel
+  is selected, Guitar Night shall apply one run-pinned deterministic humanizer
+  only to its generated groove attacks. Imported MIDI and Guitar Pro
+  percussion shall retain authored timing and velocity, count-in and click
+  shall remain unhumanized, and score/reference clocks and expected-hit
+  evidence shall remain unchanged. Sample loading or per-hit fallback shall
+  never block the route transport.
+- **REQ-GN-SONG-028 — Discoverable authored-track mixer:** WHERE a MIDI or
+  Guitar Pro arrangement is loaded, the room title shall visibly disclose one
+  bounded Track mixer containing the overall room level and one stable row per
+  authored track. Every playable pitched and percussion row shall retain its
+  source identity, independent Mute/Solo state, Sheet visibility, and a live
+  `−∞..+6 dB` fader whose default is `0 dB`. Fader, master, Mute, Solo, and
+  backing-bus changes shall use pop-free gain ramps without restarting or
+  retiming playback; masks shall not overwrite a retained fader value. Reset
+  shall restore track levels to unity without changing Mute or Solo. The
+  downstream room limiter shall remain the final safety boundary, and the
+  phone dialog shall preserve 44px controls without horizontal overflow.
+- **REQ-GN-SONG-029 — Authored cymbal choke truth:** WHEN Guitar Pro retains a
+  supported choked-cymbal articulation, Guitar Night shall sound its mapped GM
+  strike at the authored time and schedule a lane-scoped release exactly 110ms
+  later. It shall never turn that articulation into a silent stop command or
+  derive the release from notation duration.
+- **REQ-GN-SONG-030 — Cross-track hi-hat domain:** WHEN authored or generated
+  GM 42 or 44 sounds, Guitar Night shall first route a GM 46 release to every
+  retained percussion-track player on the authored lane. At one exact score
+  time, open and ordinary strikes shall be scheduled before the closing hat so
+  source array order cannot leave an open hat ringing; distinct authored times
+  shall retain their true order.
+- **REQ-GN-SONG-031 — Lazy readiness and routing truth:** AFTER gesture-owned
+  drum-player activation, Guitar Night shall prewarm the unique GM/velocity
+  attacks used by each authored score without blocking or restarting transport.
+  The retained player shall expose sampled-core readiness and bounded per-hit
+  routing outcomes, distinguishing sampled, selected-synth, fallback, unmapped,
+  dropped, and unreported attacks. GM-target release truth shall distinguish a
+  released voice, an idle capable target, an unsupported fallback, an unmapped
+  key, and a dropped route; none of these fields shall claim audible output.
+- **REQ-GN-SONG-032 — Unity drum bus:** WHEN the Guitar room creates its shared
+  output graph, its Drum bus shall begin at unity. Room master, per-track
+  `−∞..+6 dB` faders, mute/solo gates, and the final limiter shall remain the
+  only level controls, and changing any of them or a live kit shall not restart
+  or retime transport.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

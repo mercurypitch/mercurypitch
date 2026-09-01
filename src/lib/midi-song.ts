@@ -8,7 +8,10 @@
 
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import type { MidiProgramFamily } from '@/lib/midi-program-family'
+import { normalizeMidiProgram, resolveMidiProgramFamily, } from '@/lib/midi-program-family'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
+import { isGeneralMidiPercussionChokeTarget } from '@/lib/percussion'
 
 export {
   createBeatClock,
@@ -22,6 +25,8 @@ export interface MidiSongNote {
   midi: number
   startBeat: number
   duration: number
+  /** Authored strike intensity, 1–127. Absent on legacy or synthetic notes. */
+  velocity?: number
   /** Original tab fingering (Guitar Pro imports only): 0-based, high string first. */
   stringIndex?: number
   /** Original tab fret (Guitar Pro imports only). */
@@ -56,6 +61,17 @@ export interface MidiSongPercussionSource {
   technique?: number
 }
 
+/** Authored percussion emphasis retained independently from attack velocity. */
+export type MidiSongPercussionAccent = 'normal' | 'heavy' | 'tenuto'
+
+/** Authored percussion articulation that changes the strike's release. */
+export type MidiSongPercussionArticulation = 'choke'
+
+/** Chokes may stop only the six bounded GM cymbal lanes Guitar Pro maps. */
+export function isMidiSongPercussionChokeTarget(gmKey: number): boolean {
+  return isGeneralMidiPercussionChokeTarget(gmKey)
+}
+
 /** A one-shot drum articulation. Duration is notation, never sound length. */
 export interface MidiSongPercussionHit {
   id?: string
@@ -64,6 +80,10 @@ export interface MidiSongPercussionHit {
   startBeat: number
   /** Authored attack intensity, 1–127. */
   velocity: number
+  /** Authored GP emphasis. Absence means no accent, regardless of velocity. */
+  accent?: MidiSongPercussionAccent
+  /** A choked cymbal still strikes, then stops early. Absence is a normal hit. */
+  articulation?: MidiSongPercussionArticulation
   /** Written duration for a future staff renderer; playback stays one-shot. */
   writtenDuration?: number
   source?: MidiSongPercussionSource
@@ -83,6 +103,10 @@ interface MidiSongTrackBase {
 export interface MidiSongPitchedTrack extends MidiSongTrackBase {
   kind: 'pitched'
   notes: MidiSongNote[]
+  /** Zero-based General MIDI program retained from the authored source. */
+  sourceProgram?: number
+  /** Honest playback family derived from source evidence. */
+  instrumentFamily?: MidiProgramFamily
   /** Authored open pitches before capo, highest string first. */
   sourceTuning?: readonly number[]
   /** Authored tuning name when the file carried one. */
@@ -99,6 +123,8 @@ export interface MidiSongPercussionTrack extends MidiSongTrackBase {
   sourceTuning?: never
   sourceTuningName?: never
   sourceCapo?: never
+  sourceProgram?: never
+  instrumentFamily?: never
   percussionHits: MidiSongPercussionHit[]
   /** Source articulations dropped because no honest GM mapping existed. */
   droppedHitCount: number
@@ -177,19 +203,69 @@ export function normalizeMidiSong(song: MidiSongNormalizationInput): MidiSong {
     ...song,
     tracks: song.tracks.map((track) => {
       if (track.kind !== 'percussion') {
-        return { ...track, kind: 'pitched' as const }
+        const sourceProgram = normalizeMidiProgram(track.sourceProgram)
+        const instrumentFamily = resolveMidiProgramFamily({
+          sourceProgram: track.sourceProgram,
+          instrumentFamily: track.instrumentFamily,
+          instrumentName: track.instrumentName,
+        })
+        const normalizedTrack: MidiSongPitchedTrack = {
+          ...track,
+          kind: 'pitched' as const,
+          notes: track.notes.map((note) => {
+            const velocity =
+              typeof note.velocity === 'number' &&
+              Number.isInteger(note.velocity) &&
+              note.velocity >= 1 &&
+              note.velocity <= 127
+                ? note.velocity
+                : undefined
+            const normalized = { ...note, velocity }
+            if (velocity === undefined) delete normalized.velocity
+            return normalized
+          }),
+          sourceProgram,
+          instrumentFamily,
+        }
+        if (sourceProgram === undefined) delete normalizedTrack.sourceProgram
+        return normalizedTrack
       }
-      const hits = (track.percussionHits ?? []).filter(
-        (hit) =>
-          Number.isInteger(hit.gmKey) &&
-          hit.gmKey >= 35 &&
-          hit.gmKey <= 81 &&
-          Number.isFinite(hit.startBeat) &&
-          hit.startBeat >= 0 &&
-          Number.isInteger(hit.velocity) &&
-          hit.velocity >= 1 &&
-          hit.velocity <= 127,
-      )
+      const hits: MidiSongPercussionHit[] = []
+      for (const hit of track.percussionHits ?? []) {
+        if (
+          !Number.isInteger(hit.gmKey) ||
+          hit.gmKey < 35 ||
+          hit.gmKey > 81 ||
+          !Number.isFinite(hit.startBeat) ||
+          hit.startBeat < 0 ||
+          !Number.isInteger(hit.velocity) ||
+          hit.velocity < 1 ||
+          hit.velocity > 127
+        ) {
+          continue
+        }
+
+        const articulation = (
+          hit as MidiSongPercussionHit & { articulation?: unknown }
+        ).articulation
+        if (
+          articulation !== undefined &&
+          (articulation !== 'choke' ||
+            !isMidiSongPercussionChokeTarget(hit.gmKey))
+        ) {
+          continue
+        }
+
+        const normalizedHit: MidiSongPercussionHit = { ...hit }
+        if (
+          normalizedHit.accent !== 'normal' &&
+          normalizedHit.accent !== 'heavy' &&
+          normalizedHit.accent !== 'tenuto'
+        ) {
+          delete normalizedHit.accent
+        }
+        hits.push(normalizedHit)
+      }
       return {
         ...track,
         kind: 'percussion' as const,

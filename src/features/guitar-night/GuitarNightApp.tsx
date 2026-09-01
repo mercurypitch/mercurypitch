@@ -29,7 +29,9 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import { cloudSplitBlocker, cloudSplitBlockerHeading, } from '@/lib/uvr-cloud-preflight'
@@ -208,6 +210,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     createSignal<GuitarNightAuthIntent | null>(null)
   const [googleSeparationReturn, setGoogleSeparationReturn] =
     createSignal<GuitarNightGoogleSeparationIntent | null>(null)
+  useBeforeUnloadGuard(isLocalSaveNavigationLocked)
   // A successful sign-in reconciles account state asynchronously. Keep a
   // non-reactive revision of the backing lease so that leaving or selecting
   // another song can invalidate that delayed continuation without reading a
@@ -2200,6 +2203,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           referenceController.toggleSheetTrack
                         }
                         secondaryLane={referenceController.secondaryLane}
+                        followedStageTrackId={
+                          referenceController.followedStageTrackId
+                        }
+                        onFollowStageTrack={
+                          referenceController.followTrackOnStage
+                        }
                         backingMelody={
                           referenceController.rehearsalBackingMelodyNotes
                         }
@@ -2245,8 +2254,24 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       audibleBackingTrackIds={
                         referenceController.audibleBackingTrackIds
                       }
+                      mutedBackingTrackIds={
+                        referenceController.mutedBackingTrackIds
+                      }
                       onToggleBackingTrack={
                         referenceController.toggleBackingTrack
+                      }
+                      soloedBackingTrackId={
+                        referenceController.soloedBackingTrackId
+                      }
+                      onToggleSoloBackingTrack={
+                        referenceController.toggleSoloBackingTrack
+                      }
+                      secondaryLane={referenceController.secondaryLane}
+                      followedStageTrackId={
+                        referenceController.followedStageTrackId
+                      }
+                      onFollowStageTrack={
+                        referenceController.followTrackOnStage
                       }
                     />
                   </Show>

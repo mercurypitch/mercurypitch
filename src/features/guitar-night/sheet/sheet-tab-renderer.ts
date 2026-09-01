@@ -10,6 +10,7 @@
 import type { GuitarSlideType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { MidiSongPercussionHit } from '@/lib/midi-song'
+import { percussionNotationForGmKey } from '@/lib/percussion-notation'
 import type { SheetLane } from './sheet-model'
 import { beatFractionInSystem } from './sheet-model'
 import type { SheetLaneLayout, SheetMetrics, SheetRenderer, SheetSystemPaintArgs, SheetTheme, } from './sheet-render'
@@ -19,8 +20,11 @@ const NOTE_LABEL_CHAR_WIDTH = 0.62
 const NOTE_LABEL_PADDING = 3
 
 function laneHeight(lane: SheetLane, metrics: SheetMetrics): number {
-  const lines =
-    lane.content === 'percussion' ? 5 : Math.max(1, lane.tuning.stringCount)
+  if (lane.content === 'percussion') {
+    // One row above the five-line staff keeps cymbal noteheads inside the lane.
+    return metrics.labelHeight + 5 * metrics.rowHeight
+  }
+  const lines = Math.max(1, lane.tuning.stringCount)
   return metrics.labelHeight + (lines - 1) * metrics.rowHeight
 }
 
@@ -52,7 +56,10 @@ function paintLane(
 ): void {
   const { ctx, metrics, theme, system, placement } = args
   const { lane } = laneLayout
-  const staffTop = laneLayout.top + metrics.labelHeight
+  const staffTop =
+    laneLayout.top +
+    metrics.labelHeight +
+    (lane.content === 'percussion' ? metrics.rowHeight : 0)
   const lines =
     lane.content === 'percussion' ? 5 : Math.max(1, lane.tuning.stringCount)
   const staffBottom = staffTop + (lines - 1) * metrics.rowHeight
@@ -147,30 +154,15 @@ function paintStaff(
   ctx.fillStyle = input.scored ? theme.scoredAccent : theme.laneLabel
   ctx.font = `${Math.max(8, metrics.rowHeight - 4)}px ui-monospace, SFMono-Regular, Menlo, monospace`
   for (let line = 0; line < lines; line += 1) {
+    // A percussion staff encodes voice height in the notation itself. Guitar
+    // string labels remain useful; invented semantic drum rows would not.
     const label =
       input.lane.content === 'percussion'
-        ? ['CY', 'HH', 'T', 'SN', 'K'][line]
+        ? undefined
         : input.lane.tuning.labels[line]
     if (label === undefined) continue
     ctx.fillText(label, contentLeft - 6, staffTop + line * metrics.rowHeight)
   }
-}
-
-function percussionRow(gmKey: number): number {
-  if (gmKey === 35 || gmKey === 36) return 4
-  if (gmKey >= 37 && gmKey <= 40) return 3
-  if (gmKey === 42 || gmKey === 44 || gmKey === 46) return 1
-  if (
-    gmKey === 41 ||
-    gmKey === 43 ||
-    gmKey === 45 ||
-    gmKey === 47 ||
-    gmKey === 48 ||
-    gmKey === 50
-  ) {
-    return 2
-  }
-  return 0
 }
 
 /** Draw one authored GM attack without ever turning it into a pitched note. */
@@ -187,25 +179,44 @@ function paintPercussionHit(
   },
 ): void {
   const { hit, metrics, theme } = input
+  const voice = percussionNotationForGmKey(hit.gmKey)
   const x =
     input.contentLeft +
     beatFractionInSystem(input.system, hit.startBeat) * input.contentWidth
-  const y = input.staffTop + percussionRow(hit.gmKey) * metrics.rowHeight
-  const fontSize = Math.max(8, metrics.rowHeight - 4)
-  const label = `${hit.gmKey}`
-  const width = label.length * fontSize * NOTE_LABEL_CHAR_WIDTH
+  const y =
+    input.staffTop +
+    2 * metrics.rowHeight -
+    voice.staffStep * (metrics.rowHeight / 2)
+  const radius = 2.4 + (Math.max(1, Math.min(127, hit.velocity)) / 127) * 1.5
 
-  ctx.fillStyle = theme.noteBackdrop
-  ctx.fillRect(
-    x - width / 2 - NOTE_LABEL_PADDING,
-    y - fontSize / 2 - 1,
-    width + NOTE_LABEL_PADDING * 2,
-    fontSize + 2,
-  )
   ctx.fillStyle = theme.mutedNoteText
-  ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`
-  ctx.textAlign = 'center'
-  ctx.fillText(label, x, y)
+  ctx.strokeStyle = theme.mutedNoteText
+  ctx.lineWidth = 1.25
+  ctx.beginPath()
+  if (voice.notehead === 'cross') {
+    ctx.moveTo(x - radius, y - radius)
+    ctx.lineTo(x + radius, y + radius)
+    ctx.moveTo(x + radius, y - radius)
+    ctx.lineTo(x - radius, y + radius)
+    ctx.stroke()
+  } else if (voice.notehead === 'diamond') {
+    ctx.moveTo(x, y - radius)
+    ctx.lineTo(x + radius, y)
+    ctx.lineTo(x, y + radius)
+    ctx.lineTo(x - radius, y)
+    ctx.closePath()
+    ctx.fill()
+  } else {
+    ctx.ellipse(x, y, radius, radius * 0.72, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const stemEndY =
+    y + (voice.stemDirection === 'up' ? -1 : 1) * metrics.rowHeight * 1.75
+  ctx.beginPath()
+  ctx.moveTo(x + (voice.stemDirection === 'up' ? radius : -radius), y)
+  ctx.lineTo(x + (voice.stemDirection === 'up' ? radius : -radius), stemEndY)
+  ctx.stroke()
 }
 
 function paintBarLines(

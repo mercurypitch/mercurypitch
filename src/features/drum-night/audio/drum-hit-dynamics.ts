@@ -10,8 +10,10 @@
 // leading padding can never shift hit timing.
 
 import type { DrumVoiceId } from '@/lib/drum-voices'
+import type { DrumVelocityCurve } from './drum-kit-manifest'
+import { drumVelocityUnit, resolveDrumHitGain, resolveDrumVelocityTarget, } from './drum-velocity-contract.mjs'
 
-/** Articulations struck on metal — shallower velocity curve, wider detune. */
+/** Articulations struck on metal use wider pitch variation. */
 const METAL_ARTICULATIONS: ReadonlySet<DrumVoiceId> = new Set([
   'hh-closed',
   'hh-pedal',
@@ -19,10 +21,6 @@ const METAL_ARTICULATIONS: ReadonlySet<DrumVoiceId> = new Set([
   'crash',
   'ride',
 ])
-
-const GAIN_FLOOR = 0.02
-const DRUM_EXPONENT = 2
-const METAL_EXPONENT = 1.6
 
 const BRIGHTNESS_BASE_HZ = 1200
 const BRIGHTNESS_OCTAVES = 4
@@ -45,23 +43,33 @@ export interface DrumHitVariation {
   readonly startOffsetSec: number
 }
 
-function velocityUnit(velocity: number): number {
-  const bounded = Number.isFinite(velocity)
-    ? Math.min(127, Math.max(1, velocity))
-    : 1
-  return (bounded - 1) / 126
+export function velocityUnit(velocity: number): number {
+  return drumVelocityUnit(velocity)
 }
 
-/** Velocity to linear gain; unity at 127, GAIN_FLOOR at 1. */
+/** Piecewise-linear velocity response, or the shipped family curve by default. */
+export function velocityCurveTarget(
+  articulation: DrumVoiceId,
+  velocity: number,
+  curve?: DrumVelocityCurve,
+): number {
+  return resolveDrumVelocityTarget(articulation, velocity, curve)
+}
+
+/**
+ * Velocity gain, or bounded compensation for measured sample power.
+ *
+ * `samplePower` is normalized to the strongest safely calibrated sibling in
+ * one articulation. Only the correction is capped: multiplying the whole
+ * gain by the cap would make velocity-1 hits almost as loud as accents.
+ */
 export function velocityGain(
   articulation: DrumVoiceId,
   velocity: number,
+  curve?: DrumVelocityCurve,
+  samplePower?: number,
 ): number {
-  const exponent = METAL_ARTICULATIONS.has(articulation)
-    ? METAL_EXPONENT
-    : DRUM_EXPONENT
-  const shaped = Math.pow(velocityUnit(velocity), exponent)
-  return GAIN_FLOOR + (1 - GAIN_FLOOR) * shaped
+  return resolveDrumHitGain(articulation, velocity, curve, samplePower)
 }
 
 /** Lowpass cutoff bridging velocity layers; null bypasses the filter. */

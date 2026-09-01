@@ -330,3 +330,215 @@
     transform: none;
   }
 }
+
+/* The 3D stage. The canvas fills the screen and everything else floats
+   over it; the room is meant to be dark, so the HUD stays minimal. */
+.stage3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--ink, #241913);
+}
+
+.stage3d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The backend readout. Top RIGHT: the Leave pill is fixed to the top
+   left on z-index 50, so a HUD anchored there is behind it and invisible
+   — which is exactly what happened to the first version of this. */
+.stage3d__chip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 20;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--custard, #f2c84b);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* The charge meter and its one line of coaching, at the bottom of the
+   frame so the glass keeps the middle of the screen. */
+.stage3d__meter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
+  z-index: 20;
+  width: min(20rem, 78vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.stage3d__track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 14%);
+  overflow: hidden;
+}
+
+.stage3d__track i {
+  display: block;
+  height: 100%;
+  background: var(--custard, #f2c84b);
+  transition: width 80ms linear;
+}
+
+/* The hold ceiling. Past this mark only vibrato moves the bar, so the
+   bar stopping there is the rule working rather than the game hanging. */
+.stage3d__track b {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 55%);
+}
+
+.stage3d__coach {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 72%);
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+/* Ringing: the bar is full as far as holding can take it and the scene
+   is waiting for a wobble. Both the mark and the words say so. */
+.stage3d__meter.is-ringing .stage3d__coach {
+  color: var(--custard, #f2c84b);
+  animation: stage3d-ask 1.1s ease-in-out infinite;
+}
+
+@keyframes stage3d-ask {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage3d__meter.is-ringing .stage3d__coach {
+    animation: none;
+  }
+}
+
+.stage3d__gate,
+.stage3d__card {
+  position: absolute;
+  left: 50%;
+  /* Low enough to leave the whole glass in frame — at 18% it covered the
+     stem and the foot, which is most of what makes a wine glass legible
+     as one. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 3.5rem);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  max-width: min(28rem, 84vw);
+  text-align: center;
+  border-radius: 0.75rem;
+  /* Opaque enough to read against the glass. The stage behind this is
+     bright where the subject is, and 45% black over a lit wine glass is
+     dark grey text on a light grey blur. */
+  background: rgb(10 14 15 / 88%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(8px);
+}
+
+.stage3d__gate button {
+  padding: 0.6rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  color: #241913;
+  background: var(--custard, #f2c84b);
+}
+
+.stage3d__error {
+  font-size: 0.85rem;
+  color: var(--orange, #c93513);
+}
+
+.stage3d__card span {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--custard, #f2c84b);
+}
+
+/* The wave gauge. Only on screen while the glass is ringing, which is
+   the only moment the player is being asked for something they cannot
+   see themselves doing. */
+.stage3d__wave {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.stage3d__band {
+  position: relative;
+  flex: 1;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: rgb(255 245 221 / 12%);
+  overflow: visible;
+}
+
+/* The accepted band, drawn as a place rather than described as a range. */
+.stage3d__band i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: rgb(0 119 125 / 55%);
+}
+
+/* Where the player's wave actually is. */
+.stage3d__band b {
+  position: absolute;
+  top: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-left: -0.275rem;
+  border-radius: 50%;
+  background: var(--paper);
+  transform: translateY(-50%);
+  transition: left 90ms linear;
+}
+
+.is-heard .stage3d__band b {
+  background: var(--custard);
+  box-shadow: 0 0 0 0.22rem rgb(242 200 75 / 30%);
+}
+
+.stage3d__wavenum {
+  min-width: 7.5ch;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: rgb(255 245 221 / 60%);
+}
+
+.is-heard .stage3d__wavenum {
+  color: var(--custard);
+}

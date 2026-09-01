@@ -101,4 +101,26 @@ describe('Notifications', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
     expect(notifications()).toHaveLength(0)
   })
+
+  it('offers and runs a quiet second choice without hiding the primary action', () => {
+    const keep = vi.fn()
+    const neverAsk = vi.fn()
+    setNotifications([
+      {
+        id: 6,
+        message: 'Your guitar replay is ready.',
+        type: 'info',
+        action: { label: 'Keep take', onClick: keep },
+        secondaryAction: { label: 'Don’t ask again', onClick: neverAsk },
+      },
+    ])
+
+    render(() => <Notifications />)
+
+    expect(screen.getByRole('button', { name: 'Keep take' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Don’t ask again' }))
+    expect(neverAsk).toHaveBeenCalledOnce()
+    expect(keep).not.toHaveBeenCalled()
+    expect(notifications()).toHaveLength(0)
+  })
 })

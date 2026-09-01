@@ -6,8 +6,8 @@
 // GP/GPX files store a direct articulation id in the same Note property. Zero
 // is a valid modern index, so truthiness is never used to distinguish them.
 
-import type { MidiSongPercussionSource } from '@/lib/midi-song'
-import { generalMidiPercussionName, normalizeGuitarProPercussionKey, } from '@/lib/percussion'
+import type { MidiSongPercussionAccent, MidiSongPercussionArticulation, MidiSongPercussionSource, } from '@/lib/midi-song'
+import { generalMidiPercussionName, isGeneralMidiPercussionChokeTarget, normalizeGuitarProPercussionKey, } from '@/lib/percussion'
 
 export interface GuitarProInstrumentArticulationLike {
   id: number
@@ -24,7 +24,16 @@ export interface GuitarProPercussionTrackLike {
 
 export interface ResolvedGuitarProPercussion {
   gmKey: number
+  articulation?: MidiSongPercussionArticulation
   source: MidiSongPercussionSource
+}
+
+const GUITAR_PRO_CHOKE_IDENTITIES: ReadonlySet<number> = new Set([
+  29, 94, 95, 96, 97, 98,
+])
+
+function isGuitarProChokeIdentity(value: number): boolean {
+  return GUITAR_PRO_CHOKE_IDENTITIES.has(value)
 }
 
 const LEGACY_ARTICULATION_LABELS: Readonly<Record<number, string>> = {
@@ -84,6 +93,9 @@ function directLegacyArticulation(
   if (gmKey === null) return null
   return {
     gmKey,
+    ...(isGuitarProChokeIdentity(articulationId)
+      ? { articulation: 'choke' as const }
+      : {}),
     source: {
       format: 'guitar-pro',
       articulationId,
@@ -117,6 +129,11 @@ export function resolveGuitarProPercussion(
   const label = articulation.elementType.trim()
   return {
     gmKey,
+    ...(isGeneralMidiPercussionChokeTarget(gmKey) &&
+    (isGuitarProChokeIdentity(articulation.id) ||
+      isGuitarProChokeIdentity(articulation.outputMidiNumber))
+      ? { articulation: 'choke' as const }
+      : {}),
     source: {
       format: 'guitar-pro',
       articulationId: articulation.id,
@@ -130,8 +147,21 @@ export function resolveGuitarProPercussion(
   }
 }
 
-/** alphaTab's authored dynamic converted to the velocity its player uses. */
-export function guitarProDynamicVelocity(dynamic: number): number {
+/** Preserve the three authored alphaTab accent identities without inference. */
+export function guitarProAccent(
+  accentuation: number,
+): MidiSongPercussionAccent | undefined {
+  if (accentuation === 1) return 'normal'
+  if (accentuation === 2) return 'heavy'
+  if (accentuation === 3) return 'tenuto'
+  return undefined
+}
+
+/** alphaTab's authored dynamic and accent converted to its playback velocity. */
+export function guitarProDynamicVelocity(
+  dynamic: number,
+  accent?: MidiSongPercussionAccent,
+): number {
   const direct: Readonly<Record<number, number>> = {
     0: 15,
     1: 31,
@@ -160,5 +190,6 @@ export function guitarProDynamicVelocity(dynamic: number): number {
     24: 87,
     25: 111,
   }
-  return direct[dynamic] ?? 79
+  const adjustment = accent === 'normal' ? 16 : accent === 'heavy' ? 32 : 0
+  return Math.min(127, Math.max(1, (direct[dynamic] ?? 79) + adjustment))
 }

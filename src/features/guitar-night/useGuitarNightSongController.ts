@@ -4,6 +4,7 @@
 import { onCleanup, onMount } from 'solid-js'
 import type { PlayAlongLibraryState, PlayAlongSelectionState, } from '@/features/play-along/useSongController'
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
+import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import { readGuitarNightSession, withGuitarNightSession } from './session-link'
 import type { GuitarNightBackingLease, GuitarNightSongPort } from './song-port'
 
@@ -28,18 +29,19 @@ export async function loadDefaultGuitarNightSongPort(): Promise<GuitarNightSongP
   )
 }
 
-function writeSessionToHistory(
-  sessionId: string | null,
-  mode: 'push' | 'replace',
-): void {
-  const href = withGuitarNightSession(window.location.href, sessionId)
-  if (mode === 'replace') window.history.replaceState(null, '', href)
-  else window.history.pushState(null, '', href)
-}
-
 export function useGuitarNightSongController(
   options: GuitarNightSongControllerOptions = {},
 ) {
+  const routeHistory = acquireStandaloneRouteHistory('guitar-night')
+  const writeSessionToHistory = (
+    sessionId: string | null,
+    mode: 'push' | 'replace',
+  ): void => {
+    routeHistory.write(
+      withGuitarNightSession(window.location.href, sessionId),
+      mode,
+    )
+  }
   const controller = usePlayAlongSongController<'guitar'>({
     loadSongPort: options.loadSongPort ?? loadDefaultGuitarNightSongPort,
     initialSessionId: readGuitarNightSession(),
@@ -53,19 +55,24 @@ export function useGuitarNightSongController(
       options.onRouteSession?.(initialSessionId)
       void controller.stageSession(initialSessionId, 'none')
     }
+    routeHistory.acceptCurrent()
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (routeHistory.vetoLockedPopState(event)) return
       const nextSessionId = readGuitarNightSession()
       if (nextSessionId === null) {
         controller.clearSession('none')
-        return
+      } else {
+        options.onRouteSession?.(nextSessionId)
+        void controller.stageSession(nextSessionId, 'none')
       }
-      options.onRouteSession?.(nextSessionId)
-      void controller.stageSession(nextSessionId, 'none')
+      routeHistory.acceptCurrent()
     }
     window.addEventListener('popstate', handlePopState)
     onCleanup(() => window.removeEventListener('popstate', handlePopState))
   })
+
+  onCleanup(routeHistory.release)
 
   return controller
 }

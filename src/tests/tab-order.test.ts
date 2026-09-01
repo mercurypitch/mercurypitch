@@ -164,11 +164,13 @@ describe('simple mode after the regrouping', () => {
     expect(isTabVisible(TAB_PATH, 'all', 'simple')).toBe(true)
   })
 
-  it('keeps Hear Yourself reachable for singers', () => {
+  it('keeps Hear Yourself reachable for every replay-owning practice scope', () => {
     expect(isTabVisible(TAB_VOICE_HISTORY, 'singing', 'simple')).toBe(true)
     expect(visibleTabOrder('singing', 'simple')).toContain(TAB_VOICE_HISTORY)
-    expect(isTabVisible(TAB_VOICE_HISTORY, 'guitar', 'simple')).toBe(false)
-    expect(isTabVisible(TAB_VOICE_HISTORY, 'piano', 'simple')).toBe(false)
+    expect(isTabVisible(TAB_VOICE_HISTORY, 'guitar', 'simple')).toBe(true)
+    expect(visibleTabOrder('guitar', 'simple')).toContain(TAB_VOICE_HISTORY)
+    expect(isTabVisible(TAB_VOICE_HISTORY, 'piano', 'simple')).toBe(true)
+    expect(visibleTabOrder('piano', 'simple')).toContain(TAB_VOICE_HISTORY)
   })
 
   it('still hides the Play and Studio surfaces', () => {

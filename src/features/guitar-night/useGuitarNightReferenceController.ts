@@ -5,6 +5,7 @@ import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
 import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
@@ -99,18 +100,16 @@ export async function loadDefaultGuitarNightReferencePort(): Promise<GuitarNight
   return module.createSavedScoreGuitarNightReferencePort()
 }
 
-function writeScoreToHistory(
-  songId: string | null,
-  mode: Exclude<HistoryMode, 'none'>,
-): void {
-  const href = withGuitarNightScore(window.location.href, songId)
-  if (mode === 'replace') window.history.replaceState(null, '', href)
-  else window.history.pushState(null, '', href)
-}
-
 export function useGuitarNightReferenceController(
   options: GuitarNightReferenceControllerOptions = {},
 ) {
+  const routeHistory = acquireStandaloneRouteHistory('guitar-night')
+  const writeScoreToHistory = (
+    songId: string | null,
+    mode: Exclude<HistoryMode, 'none'>,
+  ): void => {
+    routeHistory.write(withGuitarNightScore(window.location.href, songId), mode)
+  }
   const [port, setPort] = createSignal<GuitarNightReferencePort | null>(null)
   const [libraryState, setLibraryState] =
     createSignal<GuitarNightReferenceLibraryState>('idle')
@@ -217,10 +216,73 @@ export function useGuitarNightReferenceController(
     })
   })
 
+  /**
+   * Every authored lane the moving stage may follow, regardless of which rows
+   * the reader hid from the full sheet. Follow is a stage choice; rebuilding
+   * from the canonical source keeps it independent from sheet visibility.
+   */
+  const stageFollowLanes = createMemo<readonly SheetLane[]>(() => {
+    const current = reference()
+    const source = sheetSource()
+    if (current === null || source === null) return []
+    return sheetLanesFromSource(source, {
+      scoredTrackId: current.trackId,
+      scoredTuning: current.tuning,
+    })
+  })
+
+  const [followedStageTrack, setFollowedStageTrack] = createSignal<{
+    songId: string
+    trackId: string | null
+  }>({ songId: '', trackId: null })
+
+  const stageFollowCandidates = createMemo<readonly SheetLane[]>(() => {
+    const current = reference()
+    if (current === null) return []
+    return stageFollowLanes().filter((lane) => lane.trackId !== current.trackId)
+  })
+
+  /** A validated non-scoring Follow choice for the song on stage right now. */
+  const followedStageTrackId = createMemo<string | null>(() => {
+    const current = reference()
+    const followed = followedStageTrack()
+    if (
+      current === null ||
+      followed.songId !== current.songId ||
+      followed.trackId === null
+    ) {
+      return null
+    }
+    return stageFollowCandidates().some(
+      (lane) => lane.trackId === followed.trackId,
+    )
+      ? followed.trackId
+      : null
+  })
+
+  const followTrackOnStage = (trackId: string | null): void => {
+    const current = reference()
+    if (current === null) return
+    if (trackId === null) {
+      setFollowedStageTrack({ songId: current.songId, trackId: null })
+      return
+    }
+    // The scored lane is already the stage authority. Unknown and same-track
+    // requests cannot become a truthful separate Follow choice.
+    if (
+      trackId === current.trackId ||
+      !stageFollowCandidates().some((lane) => lane.trackId === trackId)
+    ) {
+      return
+    }
+    setFollowedStageTrack({ songId: current.songId, trackId })
+  }
+
   // The part in the corner of the moving views. It is the part you were reading
   // before, so tapping the corner and tapping it again puts you back — which is
-  // what "swap between the two easily" asks for. Before any swap it is simply
-  // the first other part on the page.
+  // what "swap between the two easily" asks for. A deliberate Follow choice
+  // outranks that pitched swap path and may be percussion without ever becoming
+  // score authority.
   const [previousScoredTrack, setPreviousScoredTrack] = createSignal<{
     songId: string
     trackId: string
@@ -229,19 +291,29 @@ export function useGuitarNightReferenceController(
   const secondaryLane = createMemo<SheetLane | null>(() => {
     const current = reference()
     if (current === null) return null
-    const others = sheetLanes().filter(
-      (lane) => lane.trackId !== current.trackId && lane.scoreable !== false,
-    )
-    if (others.length === 0) return null
+    const candidates = stageFollowCandidates()
+    if (candidates.length === 0) return null
+
+    const followedTrackId = followedStageTrackId()
+    if (followedTrackId !== null) {
+      const followed = candidates.find(
+        (lane) => lane.trackId === followedTrackId,
+      )
+      if (followed !== undefined) return followed
+    }
+
+    const pitched = candidates.filter((lane) => lane.scoreable !== false)
 
     const previous = previousScoredTrack()
     if (previous !== null && previous.songId === current.songId) {
-      const swappedBack = others.find(
+      const swappedBack = pitched.find(
         (lane) => lane.trackId === previous.trackId,
       )
       if (swappedBack !== undefined) return swappedBack
     }
-    return others[0] ?? null
+    return (
+      pitched[0] ?? candidates.find((lane) => lane.scoreable === false) ?? null
+    )
   })
 
   // Which other parts the room plays under the player. Muted rather than
@@ -1036,20 +1108,24 @@ export function useGuitarNightReferenceController(
   onMount(() => {
     const initialSongId = readGuitarNightScore()
     if (initialSongId !== null) void attach(initialSongId, undefined, 'none')
+    routeHistory.acceptCurrent()
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (routeHistory.vetoLockedPopState(event)) return
       const nextSongId = readGuitarNightScore()
       if (nextSongId === null) {
         detach('none')
-        return
+      } else {
+        void attach(nextSongId, undefined, 'none')
       }
-      void attach(nextSongId, undefined, 'none')
+      routeHistory.acceptCurrent()
     }
     window.addEventListener('popstate', handlePopState)
     onCleanup(() => window.removeEventListener('popstate', handlePopState))
   })
 
   onCleanup(() => {
+    routeHistory.release()
     disposed = true
     attachGeneration += 1
     importGeneration += 1
@@ -1081,6 +1157,8 @@ export function useGuitarNightReferenceController(
     nudgeScoreOnRecording,
     sheetVisibleTrackIds,
     toggleSheetTrack,
+    followedStageTrackId,
+    followTrackOnStage,
     secondaryLane,
     backingPartList,
     mutedBackingTrackIds: mutedBacking,

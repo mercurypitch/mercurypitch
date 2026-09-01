@@ -22,6 +22,7 @@ export interface DrumTakeHistoryHostProps extends Omit<
   readonly eligible: boolean
   readonly unavailableReason?: string
   readonly preparing: boolean
+  readonly replay: DrumTakeHistoryView['replay']
 }
 
 function countedBeat(beat: number): number {
@@ -110,6 +111,7 @@ export function DrumTakeHistoryHost(
       finish: props.preparing
         ? { kind: 'saving' }
         : (props.controller?.finishState() ?? { kind: 'idle' }),
+      replay: props.replay,
       history: historyView,
     }
   })
@@ -121,6 +123,8 @@ export function DrumTakeHistoryHost(
       onFinishTake={props.onFinishTake}
       onRetryFinish={props.onRetryFinish}
       onDiscardFailedTake={props.onDiscardFailedTake}
+      onKeepReplay={props.onKeepReplay}
+      onDismissReplay={props.onDismissReplay}
       onLoadHistory={props.onLoadHistory}
       onRetryHistory={props.onRetryHistory}
     />

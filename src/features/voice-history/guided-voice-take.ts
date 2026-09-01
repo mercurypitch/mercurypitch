@@ -9,6 +9,7 @@
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
+import { takeSupportsVoiceAnalysis } from '@/lib/domain/performance-take'
 import type { GuidedFocusReading, GuidedPersistedAssessmentContext, GuidedProtocolIdentity, GuidedQualityCheckId, GuidedQualityGateResult, GuidedQualityRequirement, GuidedResolvedQualityObservation, GuidedTaskConfiguration, } from '@/lib/guided-voice'
 import { buildGuidedComparisonFingerprint, evaluateGuidedQualityGate, isGuidedIdentifier, PITCH_CENTRE_PILOT_DEFINITION_V1, } from '@/lib/guided-voice'
 import { isPersistedPitchCentrePilotFocus } from '@/lib/guided-voice/pitch-centre-assessment'
@@ -360,13 +361,15 @@ export function parseGuidedVoiceTakeContext(
 /**
  * A guided take may enter Twin Trails or Practice Loom only after its entire
  * persisted context validates against the row metadata and shared contracts.
- * Other sources retain their existing comparison behavior.
+ * Instrument Night replays stay in All Takes because vocal Atlas and Loom
+ * analysis do not describe guitar, piano, or drum evidence.
  */
 export function isVoiceTakeComparisonEligible(
   record: GuidedVoiceTakeRecordInput,
 ): boolean {
   return (
-    record.source !== 'guided' || parseGuidedVoiceTakeContext(record) !== null
+    takeSupportsVoiceAnalysis(record.source) &&
+    (record.source !== 'guided' || parseGuidedVoiceTakeContext(record) !== null)
   )
 }
 

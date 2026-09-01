@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import type { MidiSongPercussionHit } from '@/lib/midi-song'
 import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, normalizeMidiSong, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
@@ -134,8 +135,18 @@ describe('parseMidiSong', () => {
     expect(song!.tracks).toHaveLength(1)
     const notes = song!.tracks[0].notes
     expect(notes).toHaveLength(2)
-    expect(notes[0]).toEqual({ midi: 60, startBeat: 0, duration: 1 })
-    expect(notes[1]).toEqual({ midi: 64, startBeat: 2, duration: 1 })
+    expect(notes[0]).toEqual({
+      midi: 60,
+      startBeat: 0,
+      duration: 1,
+      velocity: 100,
+    })
+    expect(notes[1]).toEqual({
+      midi: 64,
+      startBeat: 2,
+      duration: 1,
+      velocity: 100,
+    })
   })
 
   it('reads tempo from the set-tempo meta event', () => {
@@ -170,9 +181,17 @@ describe('parseMidiSong', () => {
     expect(song!.tracks).toHaveLength(2)
     expect(song!.tracks[0].name).toBe('Lead Guitar')
     expect(song!.tracks[0].instrumentName).toBe('Distortion Guitar')
+    expect(song!.tracks[0]).toMatchObject({
+      sourceProgram: 30,
+      instrumentFamily: 'electric-guitar',
+    })
     expect(song!.tracks[0].noteCount).toBe(1)
     expect(song!.tracks[1].name).toBe('Bass')
     expect(song!.tracks[1].instrumentName).toBe('Fingered Bass')
+    expect(song!.tracks[1]).toMatchObject({
+      sourceProgram: 33,
+      instrumentFamily: 'bass',
+    })
     expect(song!.tracks[1].noteCount).toBe(2)
   })
 
@@ -317,8 +336,11 @@ describe('normalizeMidiSong', () => {
           id: 'legacy-guitar',
           name: 'Guitar',
           instrumentName: 'Steel Guitar',
-          noteCount: 1,
-          notes: [{ midi: 64, startBeat: 0, duration: 1 }],
+          noteCount: 2,
+          notes: [
+            { midi: 64, startBeat: 0, duration: 1, velocity: 94 },
+            { midi: 67, startBeat: 1, duration: 1, velocity: 0 },
+          ],
         },
         {
           id: 'drums',
@@ -338,13 +360,108 @@ describe('normalizeMidiSong', () => {
       ],
     })
 
-    expect(normalized.tracks[0].kind).toBe('pitched')
+    expect(normalized.tracks[0]).toMatchObject({
+      kind: 'pitched',
+      instrumentFamily: 'acoustic-guitar',
+      notes: [
+        { midi: 64, startBeat: 0, duration: 1, velocity: 94 },
+        { midi: 67, startBeat: 1, duration: 1 },
+      ],
+    })
     const drums = normalized.tracks.find(isPercussionMidiSongTrack)
     expect(drums).toMatchObject({
       notes: [],
       noteCount: 1,
       percussionHits: [{ gmKey: 38, startBeat: 0, velocity: 96 }],
       droppedHitCount: 5,
+    })
+  })
+
+  it('keeps legacy strikes and normalizes optional authored percussion notation', () => {
+    const invalidAccent = {
+      gmKey: 42,
+      startBeat: 4,
+      velocity: 87,
+      accent: 'invented',
+    } as unknown as MidiSongPercussionHit
+    const invalidArticulation = {
+      gmKey: 57,
+      startBeat: 5,
+      velocity: 91,
+      articulation: 'mute-only',
+    } as unknown as MidiSongPercussionHit
+
+    const normalized = normalizeMidiSong({
+      bpm: 120,
+      tracks: [
+        {
+          id: 'drums',
+          kind: 'percussion',
+          name: 'Drums',
+          instrumentName: 'General MIDI Drum Kit',
+          noteCount: 7,
+          notes: [],
+          percussionHits: [
+            { gmKey: 36, startBeat: 0, velocity: 79 },
+            { gmKey: 38, startBeat: 1, velocity: 95, accent: 'normal' },
+            {
+              gmKey: 49,
+              startBeat: 2,
+              velocity: 127,
+              accent: 'heavy',
+              articulation: 'choke',
+            },
+            { gmKey: 51, startBeat: 3, velocity: 95, accent: 'tenuto' },
+            invalidAccent,
+            invalidArticulation,
+            {
+              gmKey: 38,
+              startBeat: 6,
+              velocity: 101,
+              articulation: 'choke',
+            },
+          ],
+          droppedHitCount: 0,
+        },
+      ],
+    })
+
+    const drums = normalized.tracks.find(isPercussionMidiSongTrack)
+    expect(drums?.percussionHits).toEqual([
+      { gmKey: 36, startBeat: 0, velocity: 79 },
+      { gmKey: 38, startBeat: 1, velocity: 95, accent: 'normal' },
+      {
+        gmKey: 49,
+        startBeat: 2,
+        velocity: 127,
+        accent: 'heavy',
+        articulation: 'choke',
+      },
+      { gmKey: 51, startBeat: 3, velocity: 95, accent: 'tenuto' },
+      { gmKey: 42, startBeat: 4, velocity: 87 },
+    ])
+    expect(drums?.droppedHitCount).toBe(2)
+  })
+
+  it('lets a retained GM program override misleading legacy labels', () => {
+    const normalized = normalizeMidiSong({
+      bpm: 120,
+      tracks: [
+        {
+          id: 'strings-called-guitar',
+          name: 'Lead guitar',
+          instrumentName: 'Electric Guitar',
+          sourceProgram: 48,
+          instrumentFamily: 'electric-guitar',
+          noteCount: 1,
+          notes: [{ midi: 64, startBeat: 0, duration: 1 }],
+        },
+      ],
+    })
+
+    expect(normalized.tracks[0]).toMatchObject({
+      sourceProgram: 48,
+      instrumentFamily: 'neutral',
     })
   })
 })

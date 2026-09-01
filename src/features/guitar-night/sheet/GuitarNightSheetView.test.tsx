@@ -209,7 +209,7 @@ describe('GuitarNightSheetView', () => {
 
     expect(
       screen.getByText(
-        'Drum kit — 2 authored hits · 1 unmapped · reference only',
+        'Drum kit — 2 authored hits · 1 unmapped · drum notation · not scored',
       ),
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Drum kit/ })).toBeNull()
