@@ -324,14 +324,38 @@ export function readDeviceProbe(): DeviceProbe {
   }
 }
 
+/** A forced verdict; `null` on either half means "detect that one". */
+interface DeviceOverrides {
+  tier: DeviceTier | null
+  deviceClass: DeviceClass | null
+}
+
+/** Where a seen override is kept so it outlives the URL that carried it. */
+const OVERRIDE_KEY = 'mp_device_override'
+
+/** Best-effort `sessionStorage` — absent in workers, throws in private mode. */
+function sessionStore(): Storage | null {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage
+  } catch {
+    return null
+  }
+}
+
 /**
  * `?perf=low` / `?device=tv` force a verdict for testing on hardware you do
  * not have. Read once at boot and remembered for the session.
+ *
+ * "Remembered" has to mean across reloads, not just across this document. The
+ * hash router rewrites the URL as soon as you navigate, taking the query
+ * string with it — and the bug these overrides exist to reproduce is one
+ * where iOS kills the tab and reloads it, at which point the URL that carried
+ * the override is long gone. So the first sighting is written to
+ * `sessionStorage`: it survives a reload, and it dies with the tab, so it
+ * cannot leak into a later session and quietly make a desktop pretend to be a
+ * phone. `?device=desktop` is how you turn it back off.
  */
-function readUrlOverrides(): {
-  tier: DeviceTier | null
-  deviceClass: DeviceClass | null
-} {
+function readUrlOverrides(): DeviceOverrides {
   if (typeof window === 'undefined') return { tier: null, deviceClass: null }
   let params: URLSearchParams
   try {
@@ -341,7 +365,7 @@ function readUrlOverrides(): {
   }
   const perf = params.get('perf')
   const device = params.get('device')
-  return {
+  const seen: DeviceOverrides = {
     tier:
       perf === 'low' || perf === 'balanced' || perf === 'high' ? perf : null,
     deviceClass:
@@ -349,6 +373,40 @@ function readUrlOverrides(): {
         ? device
         : null,
   }
+
+  const store = sessionStore()
+  if (store === null) return seen
+  if (seen.tier === null && seen.deviceClass === null) {
+    // Nothing in the URL — fall back to whatever this tab was last told.
+    try {
+      const held: unknown = JSON.parse(store.getItem(OVERRIDE_KEY) ?? 'null')
+      if (held !== null && typeof held === 'object') {
+        const { tier, deviceClass } = held as Record<string, unknown>
+        return {
+          tier:
+            tier === 'low' || tier === 'balanced' || tier === 'high'
+              ? tier
+              : null,
+          deviceClass:
+            deviceClass === 'tv' ||
+            deviceClass === 'mobile' ||
+            deviceClass === 'desktop'
+              ? deviceClass
+              : null,
+        }
+      }
+    } catch {
+      // Corrupt or unreadable: detection is the right answer anyway.
+    }
+    return seen
+  }
+
+  try {
+    store.setItem(OVERRIDE_KEY, JSON.stringify(seen))
+  } catch {
+    // A full or blocked store costs the reload-survival, nothing else.
+  }
+  return seen
 }
 
 let detectedClass: DeviceClass = 'desktop'

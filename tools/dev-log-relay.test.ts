@@ -122,6 +122,33 @@ describe('the client shim', () => {
   it('posts where it was told to', () => {
     expect(clientShim('/__elsewhere')).toContain("'/__elsewhere'")
   })
+
+  it('separates a page that left from a page that was killed', () => {
+    // The whole ambiguity of this hunt: a fresh document at the same URL
+    // reads identically whether iOS killed the tab or the app navigated.
+    // iOS fires beforeunload for one and not the other.
+    expect(shim).toContain("addEventListener('beforeunload'")
+    expect(shim).toContain('it was not killed')
+  })
+
+  it('names whoever sent it away', () => {
+    expect(shim).toContain("['assign', 'replace', 'reload']")
+    expect(shim).toContain('new Error')
+  })
+
+  it('announces itself, so the app’s own traces turn on with it', () => {
+    // A built bundle served over the LAN is at an IP that matches no host the
+    // diagnostic gate knows, so without this flag the one build worth
+    // debugging is the silent one.
+    expect(shim).toContain('__MP_DEV_LOG_RELAY__ = true')
+  })
+
+  it('keeps a pulse, so silence is distinguishable from a stall', () => {
+    // A one-second timer firing three seconds late is a blocked main thread,
+    // which is a different bug from running out of memory while idle.
+    expect(shim).toContain('[heartbeat]')
+    expect(shim).toContain('was blocked for')
+  })
 })
 
 /** A node request/response pair thin enough to drive the middleware. */
@@ -157,6 +184,30 @@ function harness() {
   )
   if (handler === null) throw new Error('no middleware was registered')
   return { written, handler, plugin }
+}
+
+/** The same, through the preview server's hook — a built bundle's route in. */
+function previewHarness() {
+  const written: Array<{ file: string; line: string }> = []
+  const plugin = devLogRelayPlugin({
+    root: '/repo',
+    now: () => new Date('2026-09-01T10:00:00.000Z'),
+    write: (file, line) => written.push({ file, line }),
+    log: () => {},
+  })
+  let handler: ((req: unknown, res: unknown) => void) | null = null
+  const server = {
+    middlewares: {
+      use: (_path: string, fn: (req: unknown, res: unknown) => void) => {
+        handler = fn
+      },
+    },
+  }
+  ;(
+    plugin.configurePreviewServer as unknown as (s: typeof server) => void
+  ).call(plugin, server)
+  if (handler === null) throw new Error('no preview middleware was registered')
+  return { written, handler }
 }
 
 describe('the middleware', () => {
@@ -246,10 +297,26 @@ describe('the middleware', () => {
 })
 
 describe('the plugin itself', () => {
-  it('exists only while serving', () => {
-    // In a build there is no relay, no endpoint and no injected script — the
-    // shim reads every console call in the app and must never ship.
-    expect(devLogRelayPlugin({ root: '/repo' }).apply).toBe('serve')
+  it('takes the same batches from a served build', () => {
+    // The dev server is not the thing being debugged. Vite serves an app as
+    // thousands of unbundled modules, which is its own weight on a phone, so
+    // a bug that only appears there is a different bug from one on the built
+    // site. `vite preview` serves the real bundle and still reports.
+    const h = previewHarness()
+    const x = exchange(
+      'POST',
+      JSON.stringify({
+        loadId: 'ab12cd',
+        entries: [{ level: 'info', text: 'from the built bundle' }],
+      }),
+    )
+    h.handler(x.req, x.res)
+    x.send()
+
+    expect(h.written.map((w) => w.line).join('')).toContain(
+      'from the built bundle',
+    )
+    expect(x.res.statusCode).toBe(204)
   })
 
   it('injects the shim ahead of the app', () => {

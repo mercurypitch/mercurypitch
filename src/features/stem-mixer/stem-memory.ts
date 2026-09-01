@@ -132,6 +132,47 @@ export function fitStems(input: StemFitInput): StemFit {
   return { allowed, skipped: input.pending - allowed, projectedBytes }
 }
 
+// ── Streamed playback ────────────────────────────────────────
+//
+// The other way to hold a stem: decode a few seconds at a time and schedule
+// them (see `streaming-stem-voice.ts`). Then what is resident is the window
+// and the lookahead, which does not grow with the song — a four-minute stem
+// and a forty-minute one cost the same.
+
+/**
+ * Long enough that a phone schedules ~15 source nodes a minute per stem
+ * rather than one per AAC packet, short enough that the lookahead is cheap.
+ */
+export const STREAMED_WINDOW_SECONDS = 4
+/** Windows allowed to be scheduled but not yet finished. */
+export const STREAMED_LOOKAHEAD_WINDOWS = 2
+
+/**
+ * Bytes one streamed stem holds resident for playback, excluding the peak
+ * envelope the waveform draws from (which is counted separately, because it
+ * is the part that scales with duration).
+ */
+export function streamedStemBytes(
+  sampleRate: number,
+  channels: number,
+): number {
+  if (
+    !Number.isFinite(sampleRate) ||
+    !Number.isFinite(channels) ||
+    sampleRate <= 0 ||
+    channels <= 0
+  ) {
+    return 0
+  }
+  return Math.round(
+    STREAMED_WINDOW_SECONDS *
+      STREAMED_LOOKAHEAD_WINDOWS *
+      sampleRate *
+      channels *
+      BYTES_PER_SAMPLE,
+  )
+}
+
 /** Megabytes, for a log line or a sentence. */
 export function mb(bytes: number): number {
   return Math.round(bytes / (1024 * 1024))

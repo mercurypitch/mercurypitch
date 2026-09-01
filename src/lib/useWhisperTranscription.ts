@@ -18,6 +18,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { deleteTranscriptionFromDb, loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/whisper-transcription-db-service'
+import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { deduplicateWhisperSegments, WHISPER_CHUNK_SEC, WHISPER_OVERLAP_SEC, WHISPER_SAMPLE_RATE, } from '@/lib/transcription-alignment-utils'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { resampleTo16kHz, WHISPER_SERVICE_DESTROYED_MESSAGE, WhisperService, } from '@/lib/whisper-service'
@@ -418,6 +419,19 @@ export function useWhisperTranscription(
   const initWhisper = () => {
     if (serviceRef != null) return
     setStatus('loading')
+    // Bracketed in the log on purpose. Between these two lines the worker
+    // fetches ~40 MB of ONNX weights and hands them to a WASM runtime that
+    // copies them again — the heaviest thing this app does without being
+    // asked. A phone log that stops between "started" and "ready" was killed
+    // by this, and says so without needing a profiler attached.
+    const startedAt = Date.now()
+    const traceInit = (what: string): void => {
+      if (!IS_DIAGNOSTIC_BUILD) return
+      console.info(
+        `[whisper] model load ${what} after ${String(Date.now() - startedAt)}ms`,
+      )
+    }
+    traceInit('started')
     const service = new WhisperService()
     serviceRef = service
     // Forward status changes from the service, but NOT while actively
@@ -437,6 +451,7 @@ export function useWhisperTranscription(
         // A load that finished after this hook moved on (song switched, room
         // closed) must not publish 'ready' or start transcribing over it.
         if (serviceRef !== service) return
+        traceInit('ready')
         setStatus('ready')
         if (pendingStart) {
           pendingStart = false

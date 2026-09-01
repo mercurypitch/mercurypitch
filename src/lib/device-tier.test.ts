@@ -272,3 +272,58 @@ describe('performanceMode persistence', () => {
     expect(mod.performanceMode()).toBe('auto')
   })
 })
+
+// ============================================================
+// `?device=mobile` has to outlive the URL that carried it
+// ============================================================
+//
+// The hash router rewrites the URL as soon as you navigate, and the query
+// string goes with it. Worse, the bug these overrides exist to reproduce is
+// one where iOS kills the tab and reloads it — so by the time the interesting
+// second load starts, the URL that said "pretend to be a phone" is gone and
+// the machine goes back to being a desktop, silently.
+
+describe('the ?device override across reloads', () => {
+  /** A fresh module is a fresh page load: the override is read once at boot. */
+  const boot = async (search: string) => {
+    vi.resetModules()
+    history.replaceState(null, '', `/${search}`)
+    const mod = await import('./device-tier')
+    mod.initDeviceTier()
+    return mod
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear()
+    history.replaceState(null, '', '/')
+  })
+
+  it('takes the verdict from the URL', async () => {
+    expect((await boot('?device=mobile')).deviceClass()).toBe('mobile')
+  })
+
+  it('keeps it on a reload that has lost the query string', async () => {
+    await boot('?device=mobile')
+    // The crash-reload: same tab, same session, no query left.
+    expect((await boot('')).deviceClass()).toBe('mobile')
+  })
+
+  it('lets the URL turn it back off', async () => {
+    await boot('?device=mobile')
+    expect((await boot('?device=desktop')).deviceClass()).toBe('desktop')
+    // And that sticks too, rather than reviving the older override.
+    expect((await boot('')).deviceClass()).toBe('desktop')
+  })
+
+  it('detects normally when nothing was ever forced', async () => {
+    // A desktop user agent, which is what jsdom reports.
+    expect((await boot('')).deviceClass()).toBe('desktop')
+  })
+
+  it('ignores a corrupted held override', async () => {
+    sessionStorage.setItem('mp_device_override', '{"deviceClass":"toaster"}')
+    expect((await boot('')).deviceClass()).toBe('desktop')
+    sessionStorage.setItem('mp_device_override', 'not json')
+    expect((await boot('')).deviceClass()).toBe('desktop')
+  })
+})

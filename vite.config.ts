@@ -190,11 +190,19 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
-      // The phone's console, on this machine's disk. Serve-only, and off
-      // unless MP_DEV_LOGS=1 asks for it — on by default it would write a
-      // file on every ordinary `pnpm dev`. See tools/dev-log-relay.ts.
+      // The phone's console, on this machine's disk. Off unless MP_DEV_LOGS=1
+      // asks for it — on by default it would write a file on every ordinary
+      // `pnpm dev`, and the shim reads every console call in the app, so that
+      // gate is the whole safety of it. It covers `vite preview` too: the dev
+      // server hands out thousands of unbundled modules, which is its own
+      // weight on a phone, so a bug seen only there is a different bug from
+      // one on the built site. See tools/dev-log-relay.ts.
       wantsDevLogs ? devLogRelayPlugin({ root: __dirname }) : [],
-      isDev && !wantsPlainHttp ? ssl() : [],
+      // A built bundle served over plain http is not a secure context, so it
+      // gets no service worker and no Cache Storage — which is not the site
+      // being reproduced. Certificates for the preview server too when it is
+      // carrying logs.
+      (isDev || wantsDevLogs) && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's

@@ -16,14 +16,37 @@
 // during teardown — which is the difference between "the page vanished" and
 // "the page vanished right after these four lines".
 //
-// `apply: 'serve'`, so none of it exists in a build. The shim is injected
-// into the HTML the dev server hands out and nowhere else.
+// It also runs against a production build, because the dev server is not the
+// thing being debugged. Vite serves an app as thousands of unbundled ES
+// modules, which is its own weight on a phone, and a bug that only shows up
+// there is a different bug from one on the built site. `vite preview` with
+// this plugin serves the real bundle and still reports.
+//
+// Either way it exists only when MP_DEV_LOGS=1 is set — never in a normal
+// build, and never in CI or a deploy, which do not set it. The shim reads
+// every console call in the app, so that gate is the whole safety of it.
 //
 // Tests: tools/dev-log-relay.test.ts
 
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
+
+/**
+ * The slice of node's http types this middleware touches. Written out rather
+ * than imported so the same handler can serve the dev server and the preview
+ * server, whose middleware signatures Vite types separately.
+ */
+interface IncomingLike {
+  method?: string
+  on(event: 'data', listener: (chunk: Buffer | string) => void): void
+  on(event: 'end', listener: () => void): void
+}
+
+interface ServerResponseLike {
+  statusCode: number
+  end(): void
+}
 
 /** Where the batches land, relative to the repo root. Gitignored. */
 export const DEV_LOG_DIR = '.dev-logs'
@@ -104,6 +127,11 @@ export function parseBatch(body: unknown): DevLogBatch | null {
 export function clientShim(endpoint: string): string {
   return `
 (function () {
+  // Announce the relay before any app module is evaluated. \`IS_DIAGNOSTIC_BUILD\`
+  // reads this: a built bundle served over the LAN is at an IP that matches no
+  // known host, so without it the one build worth debugging is the silent one.
+  window.__MP_DEV_LOG_RELAY__ = true;
+
   var LOAD_ID = Math.random().toString(36).slice(2, 8) + '-' + (Date.now() % 100000);
   var START = Date.now();
   var queue = [];
@@ -223,6 +251,54 @@ export function clientShim(endpoint: string): string {
     if (document.visibilityState === 'hidden') flushNow();
   });
 
+  // Was it killed, or did it leave? A fresh document at the same URL looks
+  // identical either way in a log of console lines, and the two have nothing
+  // in common to fix. iOS fires beforeunload when the page navigates and does
+  // not fire it when the content process is killed, so its presence or
+  // absence in the last lines before a new load id is the answer.
+  window.addEventListener('beforeunload', function () {
+    push('nav', ['beforeunload — this page is LEAVING, it was not killed']);
+    flushNow();
+  });
+
+  // And if it left, who sent it. A stack here names the caller.
+  try {
+    ['assign', 'replace', 'reload'].forEach(function (name) {
+      var original = window.location[name].bind(window.location);
+      window.location[name] = function () {
+        try {
+          push('nav', [
+            'location.' + name + '(' + (arguments[0] || '') + ')',
+            new Error('called from').stack || '',
+          ]);
+          flushNow();
+        } catch (err) {}
+        return original.apply(null, arguments);
+      };
+    });
+  } catch (err) {
+    // Some engines refuse to let these be replaced. beforeunload still tells
+    // us whether the page left; only the culprit's name is lost.
+  }
+
+  // A heartbeat, for the seconds where nothing is logged and the tab dies
+  // anyway. Its drift is the useful part: a one-second timer that fires three
+  // seconds late means the main thread was blocked, which is a different bug
+  // from a process running out of memory while idle.
+  var beats = 0;
+  var lastBeat = Date.now();
+  setInterval(function () {
+    var now = Date.now();
+    var drift = now - lastBeat - 1000;
+    lastBeat = now;
+    beats++;
+    if (drift > 250) {
+      push('warn', ['[heartbeat] the main thread was blocked for ' + drift + 'ms']);
+    } else if (beats % 5 === 0) {
+      push('log', ['[heartbeat] ' + ((now - START) / 1000).toFixed(1) + 's, still here']);
+    }
+  }, 1000);
+
   push('info', ['[dev-log] page load ' + LOAD_ID + ' — ' + navigator.userAgent]);
 })();
 `.trim()
@@ -285,84 +361,101 @@ export function devLogRelayPlugin(options: DevLogRelayOptions): Plugin {
 
   const seenLoads = new Set<string>()
 
+  /**
+   * The same handler for the dev server and the preview server. A build
+   * being served by `vite preview` is the closest thing to the deployed site
+   * that can still write to this machine's disk.
+   */
+  const handler = (req: IncomingLike, res: ServerResponseLike): void => {
+    if (req.method !== 'POST') {
+      res.statusCode = 405
+      res.end()
+      return
+    }
+    let raw = ''
+    let tooBig = false
+    req.on('data', (chunk: Buffer | string) => {
+      if (tooBig) return
+      raw += String(chunk)
+      if (raw.length > MAX_BODY_BYTES) {
+        tooBig = true
+        raw = ''
+        res.statusCode = 413
+        res.end()
+      }
+    })
+    req.on('end', () => {
+      if (tooBig) return
+      let parsed: DevLogBatch | null = null
+      try {
+        parsed = parseBatch(JSON.parse(raw))
+      } catch {
+        parsed = null
+      }
+      if (parsed === null) {
+        res.statusCode = 400
+        res.end()
+        return
+      }
+      const file = fileFor(now())
+      // A load banner once, so a reload — or a crash and a reload, which is
+      // what this was built to catch — is visible as a new id rather than as
+      // a gap someone has to notice.
+      if (!seenLoads.has(parsed.loadId)) {
+        seenLoads.add(parsed.loadId)
+        const banner = `\n=== load ${parsed.loadId} · ${now().toISOString()} · ${parsed.url ?? '?'}\n=== ${parsed.agent ?? 'unknown device'}\n`
+        write(file, banner)
+        emit(banner)
+      }
+      for (const entry of parsed.entries) {
+        const line = `${formatLogLine(parsed, entry)}\n`
+        write(file, line)
+        emit(line)
+      }
+      res.statusCode = 204
+      res.end()
+    })
+  }
+
+  /** A built bundle has no HMR, so its reload marker would never fire. */
+  let isBuild = false
+
   return {
     name: 'mercurypitch:dev-log-relay',
-    apply: 'serve',
+
+    configResolved(config) {
+      isBuild = config.command === 'build'
+    },
 
     configureServer(server) {
-      server.middlewares.use(endpoint, (req, res) => {
-        if (req.method !== 'POST') {
-          res.statusCode = 405
-          res.end()
-          return
-        }
-        let raw = ''
-        let tooBig = false
-        req.on('data', (chunk: Buffer | string) => {
-          if (tooBig) return
-          raw += String(chunk)
-          if (raw.length > MAX_BODY_BYTES) {
-            tooBig = true
-            raw = ''
-            res.statusCode = 413
-            res.end()
-          }
-        })
-        req.on('end', () => {
-          if (tooBig) return
-          let parsed: DevLogBatch | null = null
-          try {
-            parsed = parseBatch(JSON.parse(raw))
-          } catch {
-            parsed = null
-          }
-          if (parsed === null) {
-            res.statusCode = 400
-            res.end()
-            return
-          }
-          const file = fileFor(now())
-          // A load banner once, so a reload — or a crash and a reload, which
-          // is what this was built to catch — is visible as a new id rather
-          // than as a gap someone has to notice.
-          if (!seenLoads.has(parsed.loadId)) {
-            seenLoads.add(parsed.loadId)
-            const banner = `\n=== load ${parsed.loadId} · ${now().toISOString()} · ${parsed.url ?? '?'}\n=== ${parsed.agent ?? 'unknown device'}\n`
-            write(file, banner)
-            emit(banner)
-          }
-          for (const entry of parsed.entries) {
-            const line = `${formatLogLine(parsed, entry)}\n`
-            write(file, line)
-            emit(line)
-          }
-          res.statusCode = 204
-          res.end()
-        })
-      })
+      server.middlewares.use(endpoint, handler)
+    },
+
+    configurePreviewServer(server) {
+      server.middlewares.use(endpoint, handler)
     },
 
     transformIndexHtml: {
       order: 'pre',
       handler(html) {
-        return {
-          html,
-          tags: [
-            {
-              tag: 'script',
-              // First in <head>, before any module: a console call during
-              // boot is exactly the one worth having.
-              injectTo: 'head-prepend',
-              children: clientShim(endpoint),
-            },
-            {
-              tag: 'script',
-              attrs: { type: 'module' },
-              injectTo: 'head-prepend',
-              children: VITE_RELOAD_MARKER,
-            },
-          ],
+        const tags = [
+          {
+            tag: 'script',
+            // First in <head>, before any module: a console call during
+            // boot is exactly the one worth having.
+            injectTo: 'head-prepend' as const,
+            children: clientShim(endpoint),
+          },
+        ]
+        if (!isBuild) {
+          tags.push({
+            tag: 'script',
+            attrs: { type: 'module' },
+            injectTo: 'head-prepend' as const,
+            children: VITE_RELOAD_MARKER,
+          } as (typeof tags)[number])
         }
+        return { html, tags }
       },
     },
   }
