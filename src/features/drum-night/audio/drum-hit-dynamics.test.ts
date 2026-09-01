@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { brightnessCutoffHz, measureOnsetSeconds, microVariation, velocityGain, } from './drum-hit-dynamics'
+import { brightnessCutoffHz, measureOnsetSeconds, microVariation, velocityCurveTarget, velocityGain, } from './drum-hit-dynamics'
 import { mulberry32 } from './drum-sample-select'
 
 describe('velocityGain', () => {
@@ -24,6 +24,52 @@ describe('velocityGain', () => {
   it('clamps out-of-range velocities', () => {
     expect(velocityGain('kick', 200)).toBeCloseTo(1, 5)
     expect(velocityGain('kick', -5)).toBeCloseTo(0.02, 5)
+  })
+
+  it('interpolates a validated kit curve without changing the legacy default', () => {
+    const curve = [
+      [1, 0.08],
+      [64, 0.6],
+      [127, 1],
+    ] as const
+
+    expect(velocityCurveTarget('kick', 1, curve)).toBeCloseTo(0.08, 8)
+    expect(velocityCurveTarget('kick', 64, curve)).toBeCloseTo(0.6, 8)
+    expect(velocityCurveTarget('kick', 32.5, curve)).toBeCloseTo(0.34, 8)
+    expect(velocityGain('kick', 64)).toBeCloseTo(
+      0.02 + 0.98 * ((64 - 1) / 126) ** 2,
+      8,
+    )
+  })
+
+  it('closes a measured sample-power gap by at most three decibels', () => {
+    const flatCurve = [
+      [1, 0.5],
+      [127, 0.5],
+    ] as const
+
+    expect(velocityGain('kick', 80, flatCurve, 0.5)).toBeCloseTo(1, 8)
+    expect(velocityGain('kick', 80, flatCurve, 0.9)).toBeCloseTo(
+      10 ** (-3 / 20),
+      8,
+    )
+    expect(velocityGain('kick', 80, flatCurve, 0.1)).toBeCloseTo(
+      10 ** (3 / 20),
+      8,
+    )
+    expect(0.5 * velocityGain('kick', 80, flatCurve, 0.5)).toBeCloseTo(0.5, 8)
+    expect(
+      0.02 *
+        velocityGain(
+          'kick',
+          1,
+          [
+            [1, 0.02],
+            [127, 1],
+          ],
+          0.02,
+        ),
+    ).toBeCloseTo(0.02, 8)
   })
 })
 

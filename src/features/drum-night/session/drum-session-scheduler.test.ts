@@ -116,6 +116,32 @@ describe('Drum Night session scheduler', () => {
     },
   )
 
+  it('reports an explicitly selected synth model as successful authored playback, not fallback', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('synthesized')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: () => 10,
+    })
+
+    scheduler.setSession(readyDocumentFixture())
+    transport.start()
+
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({ lane: 'authored' }),
+    )
+    expect(scheduler.snapshot().triggerCounts).toMatchObject({
+      synthesized: 2,
+      synthFallback: 0,
+    })
+    expect(scheduler.snapshot().lastOccurrence?.triggerTruth).toBe(
+      'synthesized',
+    )
+  })
+
   it('invalidates authored audio without releasing a concurrent live lane', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({ clock, countInBeats: 0 })
@@ -682,6 +708,7 @@ describe('Drum Night session scheduler', () => {
       sourceDroppedHitCount: 2,
       triggerCounts: {
         sampled: 0,
+        synthesized: 0,
         synthFallback: 0,
         unmapped: 1,
         dropped: 0,

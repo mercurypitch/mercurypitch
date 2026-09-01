@@ -35,6 +35,8 @@ export type DrumSessionTriggerTruth = DrumKitTriggerOutcome | 'unreported'
 
 export interface DrumSessionTriggerCounts {
   readonly sampled: number
+  /** An explicitly selected zero-byte synth model rendered the attack. */
+  readonly synthesized: number
   readonly synthFallback: number
   readonly unmapped: number
   readonly dropped: number
@@ -158,6 +160,7 @@ interface DeferredSessionRange {
 function emptyTriggerCounts(): DrumSessionTriggerCounts {
   return {
     sampled: 0,
+    synthesized: 0,
     synthFallback: 0,
     unmapped: 0,
     dropped: 0,
@@ -253,6 +256,7 @@ function truthFromPlayerResult(
   result: DrumKitTriggerOutcome | undefined,
 ): DrumSessionTriggerTruth {
   return result === 'sampled' ||
+    result === 'synthesized' ||
     result === 'synth-fallback' ||
     result === 'unmapped' ||
     result === 'dropped'

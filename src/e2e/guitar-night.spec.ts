@@ -1429,6 +1429,40 @@ test('keeps the first-win stage dominant across phone orientations @smoke', asyn
     await expect(page.getByTestId('guitar-night-first-win')).toBeVisible()
     await expectStageFirstLayout(0.55, '32.0000')
 
+    const introOptions = page.locator('details').filter({
+      has: page.getByText('Adjust intro', { exact: true }),
+    })
+    await introOptions.locator('summary').click()
+    const drumSound = page.getByTestId('guitar-night-drum-sound-controls')
+    await expect(drumSound).toBeVisible()
+    const drumSelects = drumSound.getByRole('combobox')
+    for (let index = 0; index < (await drumSelects.count()); index += 1) {
+      const bounds = await drumSelects.nth(index).boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds?.height).toBeGreaterThanOrEqual(44)
+    }
+    const pickerMetrics = await drumSound.evaluate((fieldset) => {
+      const bounds = fieldset.getBoundingClientRect()
+      const labels = [...fieldset.querySelectorAll('label, small')]
+      return {
+        bottom: bounds.bottom,
+        left: bounds.left,
+        minimumSupportingFontPx: Math.min(
+          ...labels.map((label) =>
+            Number.parseFloat(getComputedStyle(label).fontSize),
+          ),
+        ),
+        right: bounds.right,
+        top: bounds.top,
+      }
+    })
+    expect(pickerMetrics.left).toBeGreaterThanOrEqual(0)
+    expect(pickerMetrics.right).toBeLessThanOrEqual(390)
+    expect(pickerMetrics.top).toBeGreaterThanOrEqual(0)
+    expect(pickerMetrics.bottom).toBeLessThanOrEqual(844)
+    expect(pickerMetrics.minimumSupportingFontPx).toBeGreaterThanOrEqual(10.8)
+    await introOptions.locator('summary').click()
+
     const loopPractice = page.getByRole('button', {
       name: 'Loop',
       exact: true,

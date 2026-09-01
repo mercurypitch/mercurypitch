@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumKitPlayerPort } from '../runtime/drum-runtime-types'
 import { velocityGain } from './drum-hit-dynamics'
 import { DRUM_KIT_CATALOG, drumKitResourcesForHit } from './drum-kit-manifest'
+import opusCatalog from './drum-kit-opus.generated.json'
 import { createDrumKitPlayer, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
 
 interface ParameterEvent {
@@ -67,6 +68,15 @@ class FakeBufferSourceNode extends FakeAudioNode {
   readonly startOffsets: number[] = []
   readonly stops: number[] = []
   onended: (() => void) | null = null
+  readonly endedListeners: Array<() => void> = []
+
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ): void {
+    if (type !== 'ended' || typeof listener !== 'function') return
+    this.endedListeners.push(listener as () => void)
+  }
 
   start(at = 0, offset = 0): void {
     if (this.throwOnStart) throw new Error('source start failed')
@@ -84,6 +94,15 @@ class FakeOscillatorNode extends FakeAudioNode {
   readonly frequency = new FakeAudioParam()
   readonly starts: number[] = []
   readonly stops: number[] = []
+  readonly endedListeners: Array<() => void> = []
+
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ): void {
+    if (type !== 'ended' || typeof listener !== 'function') return
+    this.endedListeners.push(listener as () => void)
+  }
 
   start(at = 0): void {
     this.starts.push(at)
@@ -204,20 +223,42 @@ class FakeAudioContext {
 const ALL_RESOURCES = DRUM_KIT_CATALOG.flatMap((kit) => kit.resources)
 
 function resourceForUrl(url: string) {
-  const resource = ALL_RESOURCES.find((candidate) =>
-    url.endsWith(candidate.path),
-  )
-  if (resource === undefined) throw new Error(`Unknown test resource: ${url}`)
-  return resource
+  for (const resource of ALL_RESOURCES) {
+    const encoding = Object.values(resource.formats).find(
+      (candidate) => candidate !== undefined && url.endsWith(candidate.path),
+    )
+    if (encoding !== undefined) return { encoding, resource }
+  }
+  for (const [resourceId, projected] of Object.entries(opusCatalog.encodings)) {
+    if (!url.endsWith(projected.path)) continue
+    const resource = ALL_RESOURCES.find(
+      (candidate) => candidate.id === resourceId,
+    )
+    if (resource === undefined) break
+    return {
+      encoding: {
+        ...projected,
+        mimeType: opusCatalog.mimeType,
+      },
+      resource,
+    }
+  }
+  throw new Error(`Unknown test resource: ${url}`)
 }
 
 function harness(
   options: {
     decodedLength?: number
     failFetch?: boolean
-    initialKitId?: 'classic-gm' | 'live' | 'mercury-synth' | 'studio'
+    initialKitId?:
+      | 'circuit'
+      | 'classic-gm'
+      | 'live'
+      | 'mercury-synth'
+      | 'studio'
     maxDecodedBytes?: number
     maxVoices?: number
+    opusSupported?: boolean
     suspended?: boolean
   } = {},
 ) {
@@ -230,13 +271,14 @@ function harness(
   const fetchArrayBuffer = vi.fn(async (url: string, signal: AbortSignal) => {
     if (signal.aborted) throw new DOMException('Cancelled', 'AbortError')
     if (failFetch) throw new TypeError('offline')
-    return new ArrayBuffer(resourceForUrl(url).encodedBytes)
+    return new ArrayBuffer(resourceForUrl(url).encoding.encodedBytes)
   })
   const player = createDrumKitPlayer({
     getAudioContext,
     getOutput,
     fetchArrayBuffer,
     verifyResource: async () => true,
+    probeOpusSupport: async () => options.opusSupported ?? false,
     ...(options.initialKitId === undefined
       ? {}
       : { initialKitId: options.initialKitId }),
@@ -313,6 +355,51 @@ describe('createDrumKitPlayer', () => {
       kind: 'exponential',
       value: 1,
       at: 11.004,
+    })
+  })
+
+  it('routes the explicit Circuit model through live and authored lanes without sample I/O', async () => {
+    const { context, fetchArrayBuffer, player } = harness({
+      initialKitId: 'circuit',
+    })
+    await expect(player.activate()).resolves.toBe(true)
+
+    expect(fetchArrayBuffer).not.toHaveBeenCalled()
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'circuit',
+      selectedFormat: null,
+      status: 'ready',
+    })
+
+    expect(player.trigger({ gmKey: 38, velocity: 104 })).toBe('synthesized')
+    const liveCircuitGains = context.gains.slice(8, 10)
+    expect(liveCircuitGains).toHaveLength(2)
+    expect(
+      liveCircuitGains.every((gain) =>
+        gain.connections.includes(context.gains[1]),
+      ),
+    ).toBe(true)
+
+    expect(player.trigger({ gmKey: 38, velocity: 104, lane: 'authored' })).toBe(
+      'synthesized',
+    )
+    const authoredCircuitGains = context.gains.slice(10, 12)
+    expect(
+      authoredCircuitGains.every((gain) =>
+        gain.connections.includes(context.gains[4]),
+      ),
+    ).toBe(true)
+
+    player.panic('live')
+    expect(liveCircuitGains[0].gain.events).toContainEqual({
+      kind: 'target',
+      value: 0.0001,
+      at: 10,
+    })
+    expect(authoredCircuitGains[0].gain.events).not.toContainEqual({
+      kind: 'target',
+      value: 0.0001,
+      at: 10,
     })
   })
 
@@ -534,6 +621,7 @@ describe('createDrumKitPlayer', () => {
           )
         }),
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await slowPlayer.activate()
     const selection = slowPlayer.selectKit('studio')
@@ -587,6 +675,64 @@ describe('createDrumKitPlayer', () => {
     const rampGain = voiceGain.gain.events[1].value as number
     expect(rampGain).toBeGreaterThanOrEqual(nominalGain * 10 ** (-0.75 / 20))
     expect(rampGain).toBeLessThanOrEqual(nominalGain * 10 ** (0.75 / 20))
+  })
+
+  it('pins Opus for every resource when the gesture-owned decoder probe succeeds', async () => {
+    const { fetchArrayBuffer, player } = harness({ opusSupported: true })
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'classic-gm',
+      selectedFormat: 'opus',
+      status: 'ready',
+      preparedSamples: 5,
+      plannedSamples: 5,
+    })
+    expect(fetchArrayBuffer).toHaveBeenCalledTimes(5)
+    expect(
+      fetchArrayBuffer.mock.calls.every(([url]) =>
+        String(url).endsWith('.opus'),
+      ),
+    ).toBe(true)
+  })
+
+  it('discards a partial Opus cache and reaches ready with one complete MP3 plan', async () => {
+    const context = new FakeAudioContext()
+    const requestedUrls: string[] = []
+    let opusRequest = 0
+    const fetchArrayBuffer = vi.fn(async (url: string) => {
+      requestedUrls.push(url)
+      const { encoding } = resourceForUrl(url)
+      if (url.endsWith('.opus')) {
+        opusRequest += 1
+        if (opusRequest === 2) throw new TypeError('Opus request failed')
+      }
+      return new ArrayBuffer(encoding.encodedBytes)
+    })
+    const player = createDrumKitPlayer({
+      getAudioContext: () => context as unknown as AudioContext,
+      getOutput: () => context.destination as unknown as AudioNode,
+      fetchArrayBuffer,
+      verifyResource: async () => true,
+      probeOpusSupport: async () => true,
+      loadConcurrency: 1,
+    })
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(requestedUrls.filter((url) => url.endsWith('.opus'))).toHaveLength(5)
+    expect(requestedUrls.filter((url) => url.endsWith('.mp3'))).toHaveLength(5)
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'classic-gm',
+      selectedFormat: 'mp3',
+      status: 'ready',
+      loadedSamples: 5,
+      preparedSamples: 5,
+      plannedSamples: 5,
+      error: null,
+    })
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
   })
 
   it('cleans a failed sample source before falling back to synth', async () => {
@@ -684,7 +830,7 @@ describe('createDrumKitPlayer', () => {
     const fetchArrayBuffer = vi.fn((url: string, signal: AbortSignal) => {
       const resource = resourceForUrl(url)
       if (!holdFirstSelection) {
-        return Promise.resolve(new ArrayBuffer(resource.encodedBytes))
+        return Promise.resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       }
       firstSelectionSignals.push(signal)
       return new Promise<ArrayBuffer>((_resolve, reject) => {
@@ -700,6 +846,7 @@ describe('createDrumKitPlayer', () => {
       getOutput: () => context.destination as unknown as AudioNode,
       fetchArrayBuffer,
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await player.activate()
 
@@ -729,12 +876,13 @@ describe('createDrumKitPlayer', () => {
     let resolveTarget: (() => void) | undefined
     const fetchArrayBuffer = vi.fn((url: string, signal: AbortSignal) => {
       const resource = resourceForUrl(url)
-      if (resource.id !== target.id) {
-        return Promise.resolve(new ArrayBuffer(resource.encodedBytes))
+      if (resource.resource.id !== target.id) {
+        return Promise.resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       }
       targetSignal = signal
       return new Promise<ArrayBuffer>((resolve) => {
-        resolveTarget = () => resolve(new ArrayBuffer(resource.encodedBytes))
+        resolveTarget = () =>
+          resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       })
     })
     const player = createDrumKitPlayer({
@@ -742,6 +890,7 @@ describe('createDrumKitPlayer', () => {
       getOutput: () => context.destination as unknown as AudioNode,
       fetchArrayBuffer,
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await player.activate()
     await player.selectKit('classic-gm')

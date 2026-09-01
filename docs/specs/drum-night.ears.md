@@ -176,9 +176,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Drum sound catalog — `DN-KIT-*`
 
-- **REQ-DN-KIT-001 — Four flavors:** The first sound catalog shall offer
-  Mercury Synth, Classic GM, Studio, and Live as four independently selectable
-  kit flavors.
+- **REQ-DN-KIT-001 — Five flavors:** The sound catalog shall offer Mercury
+  Synth, Circuit, Classic GM, Studio, and Live as independently selectable kit
+  flavors. Mercury Synth and Circuit shall remain zero-download synthesis;
+  the other flavors may use optional gesture-loaded samples.
 - **REQ-DN-KIT-002 — Zero-byte floor:** Mercury Synth shall remain an
   immediate local synthesis option with no sample download.
 - **REQ-DN-KIT-003 — Lazy sampled kits:** WHEN a sampled kit is selected, Drum
@@ -200,6 +201,32 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-KIT-008 — Local kit preference:** WHEN a user selects a kit, Drum
   Night may retain that kit identifier locally and restore it on a later visit
   without activating audio or downloading samples.
+- **REQ-DN-KIT-009 — Explicit synth identity:** WHEN Circuit is selected, Drum
+  Night shall use the owned circuit-inspired synth model with seeded, bounded
+  parameter movement and a context-cached metallic excitation. Circuit shall
+  report each rendered attack as successful explicit synthesis rather than
+  sample fallback, including on authored playback. Circuit shall
+  never become the implicit fallback for a failed sampled hit; sampled-kit
+  failure shall continue to use Mercury Synth.
+- **REQ-DN-KIT-010 — Versioned dynamic metadata:** The generated catalogue
+  shall validate its schema before exposing any resource path, reject unknown
+  future versions, retain MP3 as the exact compatibility record, and may carry
+  bounded resource power measured after the resource playback-gain calibration,
+  kit/articulation velocity curves, and additional content-hashed format
+  records. Missing fields in the legacy schema shall preserve the established
+  selection and gain response.
+- **REQ-DN-KIT-011 — One codec per kit plan:** WHEN a sampled kit activates,
+  Drum Night shall prove Opus support through the same `decodeAudioData` path
+  used for playback, cache that result for the audio session, and select Opus
+  only if every resource in the plan supplies a valid Opus record. Otherwise
+  the complete plan shall use MP3. WHEN an Opus resource fails, the player
+  shall discard partial Opus cache state before retrying that plan in MP3; one
+  kit plan shall not mix codecs per hit.
+- **REQ-DN-KIT-012 — Fail-closed offline ingest:** WHEN an SFZ source is
+  curated offline, the importer shall preserve supported group inheritance,
+  key and velocity ranges, sequence position, choke relationships, probability
+  ranges, volume, tune, offset, and end. It shall reject path traversal and any
+  unsupported semantic opcode rather than silently changing the instrument.
 
 ## Session import and canonical truth — `DN-IMPORT-*`
 
@@ -492,9 +519,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   replay the user separately kept in Hear Yourself.
 - **REQ-DN-PERSIST-016 — Live-kit-only replay lane:** WHILE Take events are
   armed and the transport phase is playing, Drum Night may capture the kit
-  player's live lane after its live level. Sampled and synth-fallback live hits
-  shall reach that lane; authored drums, arrangement or stem backing, click,
-  microphone input, and other route output shall not.
+  player's live lane after its live level. Sampled, explicitly synthesized, and
+  synth-fallback live hits shall reach that lane; authored drums, arrangement
+  or stem backing, click, microphone input, and other route output shall not.
 - **REQ-DN-PERSIST-017 — Transport-segment pooling:** A temporary replay shall
   start with the first eligible playing segment, pause outside playing and
   through count-in, and resume across later play/replay or loop segments until

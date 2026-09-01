@@ -11,7 +11,9 @@ function resource(
   velocityMin: number,
   velocityMax: number,
   roundRobin: number,
+  power?: number,
 ): DrumKitSampleResource {
+  const path = `classic-gm/v1/${id}.mp3`
   return {
     id,
     kitId: 'classic-gm',
@@ -22,12 +24,20 @@ function resource(
     roundRobin,
     chokeGroup: null,
     chokes: [],
-    path: `classic-gm/v1/${id}.mp3`,
+    path,
     mimeType: 'audio/mpeg',
     encodedBytes: 1,
     sha256: id,
+    power,
+    formats: {
+      mp3: {
+        path,
+        mimeType: 'audio/mpeg',
+        encodedBytes: 1,
+        sha256: id,
+      },
+    },
     playbackGain: 1,
-    source: { commit: 'c', path: 'p', sha256: 's', transforms: 't' },
   }
 }
 
@@ -110,6 +120,39 @@ describe('createDrumSampleSelector', () => {
       expect(softLow).toBeGreaterThan(80)
       expect(hardHigh).toBeGreaterThan(80)
     }
+  })
+
+  it('uses measured power and the kit velocity curve when both are present', () => {
+    const quiet = resource('kick-power-low', 1, 127, 1, 0.2)
+    const loud = resource('kick-power-high', 1, 127, 2, 0.8)
+    const curve = [
+      [1, 0.2],
+      [64, 0.8],
+      [127, 1],
+    ] as const
+    const selector = createDrumSampleSelector(41)
+
+    const picks = Array.from(
+      { length: 64 },
+      () => selector.pick([quiet, loud], 64, curve)?.id,
+    )
+
+    expect(picks.filter((id) => id === loud.id).length).toBeGreaterThan(48)
+  })
+
+  it('targets measured power with the default articulation curve', () => {
+    const matched = resource('kick-power-matched', 1, 127, 1, 0.25)
+    const tooLoud = resource('kick-power-loud', 1, 127, 2, 0.55)
+    let matchedPicks = 0
+
+    for (let seed = 1; seed <= 128; seed += 1) {
+      const selector = createDrumSampleSelector(seed)
+      if (selector.pick([matched, tooLoud], 64)?.id === matched.id) {
+        matchedPicks += 1
+      }
+    }
+
+    expect(matchedPicks).toBeGreaterThan(90)
   })
 
   it('reset clears recency state without changing the seedable stream shape', () => {

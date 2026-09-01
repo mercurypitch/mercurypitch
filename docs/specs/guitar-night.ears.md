@@ -964,6 +964,19 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   use a clean generic score tone. Vocals, strings, keyboards, synths, and other
   unrelated pitched tracks shall never acquire electric-guitar distortion from
   their name, pitch range, or Guitar Night's historical fallback.
+- **REQ-GN-SONG-026 — Guitar-owned drum sound:** Guitar Night shall expose a
+  compact local kit and generated-groove feel preference without importing the
+  Drum Night catalogue, sample metadata, or humanizer on first paint. A player
+  may choose Mercury Synth, Circuit, Classic GM, Studio, or Live before Play;
+  an unsaved room shall keep the existing zero-download Mercury Synth and
+  straight-grid defaults.
+- **REQ-GN-SONG-027 — Generated feel boundary:** WHEN an optional shipped feel
+  is selected, Guitar Night shall apply one run-pinned deterministic humanizer
+  only to its generated groove attacks. Imported MIDI and Guitar Pro
+  percussion shall retain authored timing and velocity, count-in and click
+  shall remain unhumanized, and score/reference clocks and expected-hit
+  evidence shall remain unchanged. Sample loading or per-hit fallback shall
+  never block the route transport.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

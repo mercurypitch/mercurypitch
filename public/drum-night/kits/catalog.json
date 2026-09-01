@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedBy": "scripts/curate-drum-night-kits.mjs",
   "toolchain": {
     "ffmpeg": "n9.0.1",
@@ -14,7 +14,24 @@
     "mimeType": "audio/mpeg",
     "sampleRate": 44100,
     "channels": 2,
-    "bitrate": "112k"
+    "bitrate": "112k",
+    "formats": {
+      "mp3": {
+        "mimeType": "audio/mpeg",
+        "sampleRate": 44100,
+        "channels": 2,
+        "bitrate": "112k"
+      },
+      "opus": {
+        "mimeType": "audio/ogg; codecs=opus",
+        "sampleRate": 48000,
+        "channels": 2,
+        "bitrate": "64k",
+        "vbr": true,
+        "application": "audio",
+        "frameDurationMs": 20
+      }
+    }
   },
   "calibration": {
     "hardOnsetThresholdDb": -60,
@@ -53,6 +70,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "5e6af5cf2fd58afdde35c5757b92aaab8073b5673f969a69193a26ef584c2bbc",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/5e6af5cf2fd58afd-kick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "5e6af5cf2fd58afdde35c5757b92aaab8073b5673f969a69193a26ef584c2bbc"
+            },
+            "opus": {
+              "path": "classic-gm/v1/84bf755c25bb6262-kick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10219,
+              "sha256": "84bf755c25bb6262f168df3b6b943983aa364996fdc8b819b1da80053fbc25e3"
+            }
+          },
           "playbackGain": 3.39761483,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -75,6 +106,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "a0a1b4c2c8e5ef6c26c77374ea3d5ad4db6df2615bd078da43a6c28b4e75722b",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/a0a1b4c2c8e5ef6c-kick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "a0a1b4c2c8e5ef6c26c77374ea3d5ad4db6df2615bd078da43a6c28b4e75722b"
+            },
+            "opus": {
+              "path": "classic-gm/v1/42917187e3cbafe1-kick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11536,
+              "sha256": "42917187e3cbafe144cfe714a5063293edafdad65a87ab865bde0757fec6d662"
+            }
+          },
           "playbackGain": 0.9065311,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -97,6 +142,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "8b26185a443844e23b30e352ed707b5eede54fa339c675f9c612cb24382e44ff",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/8b26185a443844e2-sidestick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "8b26185a443844e23b30e352ed707b5eede54fa339c675f9c612cb24382e44ff"
+            },
+            "opus": {
+              "path": "classic-gm/v1/232d1fd89de6376f-sidestick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8413,
+              "sha256": "232d1fd89de6376fbd65ed2305c8f25e869abec86ef61c396c2a73995a6f866c"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -119,6 +178,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "966527d8f3d498cdd57773db623e535aed2385e42b93e0ceeef213138f42264a",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/966527d8f3d498cd-sidestick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "966527d8f3d498cdd57773db623e535aed2385e42b93e0ceeef213138f42264a"
+            },
+            "opus": {
+              "path": "classic-gm/v1/db9a08c46b0b3f54-sidestick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9706,
+              "sha256": "db9a08c46b0b3f5427f192745c14fcfd2e2e9e0606c066b81505c19798fdaa62"
+            }
+          },
           "playbackGain": 1.10402162,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -141,6 +214,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "38f167b1244e2288a6d2ab2849906c55291d3a7b0cf8eca827f9312c6ba67edc",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/38f167b1244e2288-snare-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "38f167b1244e2288a6d2ab2849906c55291d3a7b0cf8eca827f9312c6ba67edc"
+            },
+            "opus": {
+              "path": "classic-gm/v1/ec1c4bbf1ce05ca2-snare-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8749,
+              "sha256": "ec1c4bbf1ce05ca2dfe7f5c5e3087c882855ab982f8ded9e0ed39750b5b55efc"
+            }
+          },
           "playbackGain": 3.88626836,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -163,6 +250,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "dde56439c834ad13f29ba72f864827de74a71a4551d8dbf68eea79c426e7db4c",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/dde56439c834ad13-snare-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "dde56439c834ad13f29ba72f864827de74a71a4551d8dbf68eea79c426e7db4c"
+            },
+            "opus": {
+              "path": "classic-gm/v1/0b45a1ff0b0da082-snare-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9819,
+              "sha256": "0b45a1ff0b0da082c9e2437480b87172c0f730225ca6d0203c05a324fabf7b2b"
+            }
+          },
           "playbackGain": 1.03044225,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -185,6 +286,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "2f062ae795c464adce43db29885831dd362ec288cb12e035f401e683cb34479b",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/2f062ae795c464ad-clap-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "2f062ae795c464adce43db29885831dd362ec288cb12e035f401e683cb34479b"
+            },
+            "opus": {
+              "path": "classic-gm/v1/498a57c83712bac7-clap-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8357,
+              "sha256": "498a57c83712bac73e31898461c5dce01a5083a6785c5daed6b03a5a2e991f43"
+            }
+          },
           "playbackGain": 3.10544436,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -207,6 +322,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "9f22ea03543ed5c81e180330f6e2d81b088046d21885c43bd9c85852e760edf5",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/9f22ea03543ed5c8-clap-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "9f22ea03543ed5c81e180330f6e2d81b088046d21885c43bd9c85852e760edf5"
+            },
+            "opus": {
+              "path": "classic-gm/v1/2a88026c500c05f3-clap-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9606,
+              "sha256": "2a88026c500c05f34b951f7d7af7d321c5055a2b6a16c0c5a65f13baeca2ea07"
+            }
+          },
           "playbackGain": 0.88072542,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -229,6 +358,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 61117,
           "sha256": "6288bcb8460f7a3d8229c67ac8037ff168adf35c09f4b1387604ff686f56b4bf",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/6288bcb8460f7a3d-tom-low-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 61117,
+              "sha256": "6288bcb8460f7a3d8229c67ac8037ff168adf35c09f4b1387604ff686f56b4bf"
+            },
+            "opus": {
+              "path": "classic-gm/v1/0a0df13b0c4a238a-tom-low-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17497,
+              "sha256": "0a0df13b0c4a238a091edbf140cab7c440fac0ddae8c7e1af283629a5d75b37f"
+            }
+          },
           "playbackGain": 3.49130565,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -251,6 +394,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 61117,
           "sha256": "789050c33b54eaff492a8a92d3a87ae0945c4c47eb904de83610cb8e785e18c0",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/789050c33b54eaff-tom-low-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 61117,
+              "sha256": "789050c33b54eaff492a8a92d3a87ae0945c4c47eb904de83610cb8e785e18c0"
+            },
+            "opus": {
+              "path": "classic-gm/v1/e9d9736b1061ae57-tom-low-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16974,
+              "sha256": "e9d9736b1061ae577dcb1902cb4278af397c1626cc3764553f168ba7e227365a"
+            }
+          },
           "playbackGain": 0.9520281,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -273,6 +430,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "f32d8d68b45261dffad72117b1a48742af6694e03c76b74aa07f1813d3b41639",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/f32d8d68b45261df-hh-closed-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "f32d8d68b45261dffad72117b1a48742af6694e03c76b74aa07f1813d3b41639"
+            },
+            "opus": {
+              "path": "classic-gm/v1/01d7fbf383c3d537-hh-closed-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5997,
+              "sha256": "01d7fbf383c3d537f9b103de7773c34c30a4f73a7cf1938c4de0dd1de41865ac"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -295,6 +466,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "642b32508e84630dda806093aaacccadf674716df7435729639370c6f8a90a91",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/642b32508e84630d-hh-closed-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "642b32508e84630dda806093aaacccadf674716df7435729639370c6f8a90a91"
+            },
+            "opus": {
+              "path": "classic-gm/v1/878b47152f4a99da-hh-closed-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6275,
+              "sha256": "878b47152f4a99dab69d951bc661ef2c3af940ae13d067f4f0681b525530e061"
+            }
+          },
           "playbackGain": 1.02897584,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -317,6 +502,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "582edc87358c6c826ef0a29bafb9b81df8f79c4faa76a04956736b0e0f097525",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/582edc87358c6c82-hh-pedal-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "582edc87358c6c826ef0a29bafb9b81df8f79c4faa76a04956736b0e0f097525"
+            },
+            "opus": {
+              "path": "classic-gm/v1/6505bd3791063bab-hh-pedal-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5977,
+              "sha256": "6505bd3791063babea4abe84817d1234aa8efa43519a931252f42cb856794e24"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -339,6 +538,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 51243,
           "sha256": "0d5f894e4ef947c9654b917c0e973b38d4541e514cba9e9b95f2d463ca2dd8ad",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/0d5f894e4ef947c9-hh-pedal-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 51243,
+              "sha256": "0d5f894e4ef947c9654b917c0e973b38d4541e514cba9e9b95f2d463ca2dd8ad"
+            },
+            "opus": {
+              "path": "classic-gm/v1/147940f8c0c4b216-hh-pedal-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6327,
+              "sha256": "147940f8c0c4b2165686752ccd5162ec15d1e9d702668009e7960f9be0a1b3a0"
+            }
+          },
           "playbackGain": 1.04528345,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -361,6 +574,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 86352,
           "sha256": "e2981a70a071508f0444ae480a8f52007f1f31193b987a0b978965dbba7180c8",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/e2981a70a071508f-hh-open-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 86352,
+              "sha256": "e2981a70a071508f0444ae480a8f52007f1f31193b987a0b978965dbba7180c8"
+            },
+            "opus": {
+              "path": "classic-gm/v1/197ca00547deeee6-hh-open-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 22365,
+              "sha256": "197ca00547deeee6b57152c2bff29d8c6ca263efd0ec609e5909bf5328b07218"
+            }
+          },
           "playbackGain": 3.22640561,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -383,6 +610,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 86352,
           "sha256": "311d2703fc3abf8bc6b16e2e7247a7d2df933695f3dbd29c401154b8e3a2ba1b",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/311d2703fc3abf8b-hh-open-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 86352,
+              "sha256": "311d2703fc3abf8bc6b16e2e7247a7d2df933695f3dbd29c401154b8e3a2ba1b"
+            },
+            "opus": {
+              "path": "classic-gm/v1/cf3953dd0a08e419-hh-open-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 23078,
+              "sha256": "cf3953dd0a08e419567ece5982bb26cda52d0aad41b8b2a5f20e3d2e87ea8b79"
+            }
+          },
           "playbackGain": 0.82445782,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -405,6 +646,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 59654,
           "sha256": "671e12159e6550adbb5e5c37b1bafc99594d8e2acbadcee78aca32301f8db3f1",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/671e12159e6550ad-tom-mid-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 59654,
+              "sha256": "671e12159e6550adbb5e5c37b1bafc99594d8e2acbadcee78aca32301f8db3f1"
+            },
+            "opus": {
+              "path": "classic-gm/v1/7fa1d13d708e713a-tom-mid-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 20739,
+              "sha256": "7fa1d13d708e713ab2f006743a326e08543558a0b7a81391a59cd824494185ca"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -427,6 +682,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 59654,
           "sha256": "13e52462163613a2ce362685d6d31c46cd0b44f3370a43095c59356ba673e2a4",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/13e52462163613a2-tom-mid-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 59654,
+              "sha256": "13e52462163613a2ce362685d6d31c46cd0b44f3370a43095c59356ba673e2a4"
+            },
+            "opus": {
+              "path": "classic-gm/v1/5b8b6efb64ada440-tom-mid-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 20058,
+              "sha256": "5b8b6efb64ada440dba5c9a021137f1bbaea2d74f6b6d8dc66d4c994b4360256"
+            }
+          },
           "playbackGain": 1.09116871,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -449,6 +718,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "3f1e108b0923534ec047ee47561246df731ed537ac4c0421d2e49a6df9d4ef0b",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/3f1e108b0923534e-tom-high-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "3f1e108b0923534ec047ee47561246df731ed537ac4c0421d2e49a6df9d4ef0b"
+            },
+            "opus": {
+              "path": "classic-gm/v1/16a38969359f32f5-tom-high-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 21727,
+              "sha256": "16a38969359f32f50c4670fda708eeead3ef5dc15b15bdd0abc24fef7a42c6ab"
+            }
+          },
           "playbackGain": 3.1855115,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -471,6 +754,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 58557,
           "sha256": "10fe81a40336bd0be297b6eab8ca4ee137ddfc9a9d5b4565511fce0d50907d8b",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/10fe81a40336bd0b-tom-high-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 58557,
+              "sha256": "10fe81a40336bd0be297b6eab8ca4ee137ddfc9a9d5b4565511fce0d50907d8b"
+            },
+            "opus": {
+              "path": "classic-gm/v1/16a8bcf2d22cee24-tom-high-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 21774,
+              "sha256": "16a8bcf2d22cee24f83cccc1500dc890a49be25457a0ada37997b15891533c92"
+            }
+          },
           "playbackGain": 0.85061278,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -493,6 +790,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 128409,
           "sha256": "c1eb60a270cedd386bada7945d2e23bb7a6c43196ec3adfde26d26e8cc7248a7",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/c1eb60a270cedd38-crash-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 128409,
+              "sha256": "c1eb60a270cedd386bada7945d2e23bb7a6c43196ec3adfde26d26e8cc7248a7"
+            },
+            "opus": {
+              "path": "classic-gm/v1/637f2765093fdb3a-crash-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 22952,
+              "sha256": "637f2765093fdb3a8f494313cdd2ad4c66c2a73ef430ba2c4971e36c1c73c144"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -515,6 +826,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 128409,
           "sha256": "63aa2dd17c0df8adc0da79e80a698de446e4d06c741b282b0c6ba8b46c321778",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/63aa2dd17c0df8ad-crash-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 128409,
+              "sha256": "63aa2dd17c0df8adc0da79e80a698de446e4d06c741b282b0c6ba8b46c321778"
+            },
+            "opus": {
+              "path": "classic-gm/v1/97fd6a07d32628e9-crash-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 23625,
+              "sha256": "97fd6a07d32628e9e0a01b62e570760b9c9dbd58484c43ffd11eb67f4a040672"
+            }
+          },
           "playbackGain": 1.09612415,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -537,6 +862,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 128409,
           "sha256": "3f39ee681262c12c9819abfb0d7c58b5902684eeccdbd265d695d9f0bd04a7bf",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/3f39ee681262c12c-ride-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 128409,
+              "sha256": "3f39ee681262c12c9819abfb0d7c58b5902684eeccdbd265d695d9f0bd04a7bf"
+            },
+            "opus": {
+              "path": "classic-gm/v1/86176801e57abe07-ride-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 27894,
+              "sha256": "86176801e57abe07a7afb8e247f6871cf168a9d7ee7366273dbaf9749efa6ef2"
+            }
+          },
           "playbackGain": 3.52860054,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -559,6 +898,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 128409,
           "sha256": "836a92996d4b7246231c194263c37d6d8078fc8f19f3f1bb6c8d7fa659de639e",
+          "formats": {
+            "mp3": {
+              "path": "classic-gm/v1/836a92996d4b7246-ride-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 128409,
+              "sha256": "836a92996d4b7246231c194263c37d6d8078fc8f19f3f1bb6c8d7fa659de639e"
+            },
+            "opus": {
+              "path": "classic-gm/v1/39d79e2011a37d84-ride-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 28739,
+              "sha256": "39d79e2011a37d84e5f80f3be6afc3d1c10eb3d9fb6bd89a4cf494e8fb5d660f"
+            }
+          },
           "playbackGain": 0.96695734,
           "source": {
             "commit": "@coderline/alphatab@1.8.3",
@@ -587,6 +940,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 30032,
           "sha256": "d89b5dc87359b20e5ef0d0049c05efa7d36f9a78025b9eaefeef3bac0743edfb",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/d89b5dc87359b20e-kick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 30032,
+              "sha256": "d89b5dc87359b20e5ef0d0049c05efa7d36f9a78025b9eaefeef3bac0743edfb"
+            },
+            "opus": {
+              "path": "studio/v1/25d1a0f3fc618362-kick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11393,
+              "sha256": "25d1a0f3fc618362aa6d681a81db67b5dc360ac7508d05fc311899ddc763f2c8"
+            }
+          },
           "playbackGain": 3.85342958,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -609,6 +976,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 28569,
           "sha256": "c4e7747e1e6e84e01b565c3522bfb2a07f73404ffc1d5ef1029bb3c478587e14",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/c4e7747e1e6e84e0-kick-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 28569,
+              "sha256": "c4e7747e1e6e84e01b565c3522bfb2a07f73404ffc1d5ef1029bb3c478587e14"
+            },
+            "opus": {
+              "path": "studio/v1/b5af67fe303b36ea-kick-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11276,
+              "sha256": "b5af67fe303b36ea726a3fe335429b56b005025d593078655ad84b5fc09e4a56"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -631,6 +1012,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 33689,
           "sha256": "c35cfb9d6295750613bbdbdae247b6ff00d37902ef7fc736fd0ef21614962a58",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/c35cfb9d62957506-kick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 33689,
+              "sha256": "c35cfb9d6295750613bbdbdae247b6ff00d37902ef7fc736fd0ef21614962a58"
+            },
+            "opus": {
+              "path": "studio/v1/36464f4c2c68c980-kick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13778,
+              "sha256": "36464f4c2c68c980df56df3932e0f3d1bf4362fe1f92a5194f3107a504f28b39"
+            }
+          },
           "playbackGain": 0.97213474,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -653,6 +1048,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 34786,
           "sha256": "50ade8ff4025eb8803628ac2a96cdb7282d4200b237ee35fcc8343f47b216ed3",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/50ade8ff4025eb88-kick-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 34786,
+              "sha256": "50ade8ff4025eb8803628ac2a96cdb7282d4200b237ee35fcc8343f47b216ed3"
+            },
+            "opus": {
+              "path": "studio/v1/78f3e07227d9f827-kick-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 14099,
+              "sha256": "78f3e07227d9f827a28dc519a10b682d598d41bfb37a931f4750cdabd9c5482a"
+            }
+          },
           "playbackGain": 0.92710486,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -675,6 +1084,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 27472,
           "sha256": "8f7cc393d410f3ce05f421f7ec14884a40cfc43b6e3a815a347115bdb344610f",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/8f7cc393d410f3ce-snare-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 27472,
+              "sha256": "8f7cc393d410f3ce05f421f7ec14884a40cfc43b6e3a815a347115bdb344610f"
+            },
+            "opus": {
+              "path": "studio/v1/63203927f21c3726-snare-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10363,
+              "sha256": "63203927f21c3726d87347d87b3b11bd316d97cd57526b70cca6a68a4fd0ac1c"
+            }
+          },
           "playbackGain": 1.42066413,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -697,6 +1120,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 30032,
           "sha256": "f89b9b1be416e9e5d243cc80df934dc3cde8bced427e78a65c9e376b751da9eb",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/f89b9b1be416e9e5-snare-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 30032,
+              "sha256": "f89b9b1be416e9e5d243cc80df934dc3cde8bced427e78a65c9e376b751da9eb"
+            },
+            "opus": {
+              "path": "studio/v1/813311c4cf43364c-snare-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11888,
+              "sha256": "813311c4cf43364cb05c494a021c6de488dac43d95bc9bd10f400ab10da42c42"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -719,6 +1156,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 27106,
           "sha256": "5d34311e09d57dd5f950cccbd106aa207fcea94f2260c324970fd38294747303",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/5d34311e09d57dd5-snare-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 27106,
+              "sha256": "5d34311e09d57dd5f950cccbd106aa207fcea94f2260c324970fd38294747303"
+            },
+            "opus": {
+              "path": "studio/v1/39c12858e5c316a0-snare-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10839,
+              "sha256": "39c12858e5c316a0b6b9a84317457091acfb0ae15fad2ce7aaa08f355e531fd0"
+            }
+          },
           "playbackGain": 0.34200886,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -741,6 +1192,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 30032,
           "sha256": "8978435ff02d732d50daae1e0752e9d494fe49bfb2c42d74e0bd9d0b9415ec47",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/8978435ff02d732d-snare-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 30032,
+              "sha256": "8978435ff02d732d50daae1e0752e9d494fe49bfb2c42d74e0bd9d0b9415ec47"
+            },
+            "opus": {
+              "path": "studio/v1/8167eab7f050f011-snare-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13117,
+              "sha256": "8167eab7f050f011362034402b7190fdb97f0ca40e74b82903d2fad4854ce6d7"
+            }
+          },
           "playbackGain": 0.43990158,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -763,6 +1228,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 41369,
           "sha256": "bf404be12ea7e9bbb7d462710beafdd3730054a0a89d6721db5e1be1d12ce1eb",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/bf404be12ea7e9bb-sidestick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 41369,
+              "sha256": "bf404be12ea7e9bbb7d462710beafdd3730054a0a89d6721db5e1be1d12ce1eb"
+            },
+            "opus": {
+              "path": "studio/v1/64094bc555d24326-sidestick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13854,
+              "sha256": "64094bc555d24326d5902420c7bb41e494212a8776bae879cd8e200c30510941"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -785,6 +1264,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 39540,
           "sha256": "59c10c7356d6b3f9f398652f3a759a18c7874e39d5c5b75b8bd6a92d71365cc9",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/59c10c7356d6b3f9-sidestick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 39540,
+              "sha256": "59c10c7356d6b3f9f398652f3a759a18c7874e39d5c5b75b8bd6a92d71365cc9"
+            },
+            "opus": {
+              "path": "studio/v1/c7103c98b7f1926f-sidestick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13728,
+              "sha256": "c7103c98b7f1926fa09426935e980da740590ccccc73c03f02855db56801161f"
+            }
+          },
           "playbackGain": 0.37660423,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -807,6 +1300,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 9552,
           "sha256": "3a9890879a18763f85845993e93ea5f27e288593ef964d3239592241e68ce462",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/3a9890879a18763f-hh-closed-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9552,
+              "sha256": "3a9890879a18763f85845993e93ea5f27e288593ef964d3239592241e68ce462"
+            },
+            "opus": {
+              "path": "studio/v1/d317c426ca6c78a0-hh-closed-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 4077,
+              "sha256": "d317c426ca6c78a0cbc3d57e71ef7ef23e9e5aedc5e0d64ec7997c767bf7cf71"
+            }
+          },
           "playbackGain": 3.58993828,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -829,6 +1336,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 9186,
           "sha256": "4b16ee4e6a7884d532e2dbcbab88d81de33740ae3454a84331d0dd2cea9587c4",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/4b16ee4e6a7884d5-hh-closed-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9186,
+              "sha256": "4b16ee4e6a7884d532e2dbcbab88d81de33740ae3454a84331d0dd2cea9587c4"
+            },
+            "opus": {
+              "path": "studio/v1/91e2edd29f48dfe7-hh-closed-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 3850,
+              "sha256": "91e2edd29f48dfe79d497a66492bc149df186bc757664b639b271df9e1ce80ab"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -851,6 +1372,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 10649,
           "sha256": "eb9d5d134f80da7696888310a8edf627594e3630f39615c412f2eeca54fa6150",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/eb9d5d134f80da76-hh-closed-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 10649,
+              "sha256": "eb9d5d134f80da7696888310a8edf627594e3630f39615c412f2eeca54fa6150"
+            },
+            "opus": {
+              "path": "studio/v1/1b2e03f17bdcf2a7-hh-closed-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 4351,
+              "sha256": "1b2e03f17bdcf2a7fc3b1ab3edfcf4d91154d8141c342c8646ab93b82d60f136"
+            }
+          },
           "playbackGain": 2.29055911,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -873,6 +1408,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 10649,
           "sha256": "87d15b248f5bd0643d263c639e55a5c70068870ddd173fc42210215915dc99c9",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/87d15b248f5bd064-hh-closed-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 10649,
+              "sha256": "87d15b248f5bd0643d263c639e55a5c70068870ddd173fc42210215915dc99c9"
+            },
+            "opus": {
+              "path": "studio/v1/0f0a7a41e0b0690e-hh-closed-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 4313,
+              "sha256": "0f0a7a41e0b0690e0bbceaf9bc1091ffb3ef4bc64a288e1cc3b73ce4cbba0a50"
+            }
+          },
           "playbackGain": 2.08994677,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -895,6 +1444,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 27106,
           "sha256": "d6982e8baa794fc8c39f28bc64e7bda10a3e1bee919176efdd0d59cc5eda8cb2",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/d6982e8baa794fc8-hh-pedal-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 27106,
+              "sha256": "d6982e8baa794fc8c39f28bc64e7bda10a3e1bee919176efdd0d59cc5eda8cb2"
+            },
+            "opus": {
+              "path": "studio/v1/2072620afd136263-hh-pedal-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10959,
+              "sha256": "2072620afd136263638ea86c8f605c31cd7323ab2bcaa7de6efb04a924f9c4cc"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -917,6 +1480,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 24180,
           "sha256": "7fac2abb39b4dbd9d5bdfc06ff43e6af0495857f09a15ef077aefd8bdeae010b",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/7fac2abb39b4dbd9-hh-pedal-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 24180,
+              "sha256": "7fac2abb39b4dbd9d5bdfc06ff43e6af0495857f09a15ef077aefd8bdeae010b"
+            },
+            "opus": {
+              "path": "studio/v1/e7d70acf68b96d90-hh-pedal-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9614,
+              "sha256": "e7d70acf68b96d90e75c92c3624d337bfc209fed30fcefec83ff447f01fcc75b"
+            }
+          },
           "playbackGain": 3.07896135,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -939,6 +1516,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 32957,
           "sha256": "656bea0de9366cf806b629eae756879d3104358082d192d64a01e55a7f103343",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/656bea0de9366cf8-hh-pedal-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 32957,
+              "sha256": "656bea0de9366cf806b629eae756879d3104358082d192d64a01e55a7f103343"
+            },
+            "opus": {
+              "path": "studio/v1/63f417331972244a-hh-pedal-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13309,
+              "sha256": "63f417331972244abf5a347318cce2e1a718d58493e0dd0631712c9d6945a13c"
+            }
+          },
           "playbackGain": 0.54900268,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -961,6 +1552,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 34054,
           "sha256": "2c2fe3e140ff02284bbffaaf5b0b4c78d41a2d8569916e8db7de6991b7405f5d",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/2c2fe3e140ff0228-hh-pedal-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 34054,
+              "sha256": "2c2fe3e140ff02284bbffaaf5b0b4c78d41a2d8569916e8db7de6991b7405f5d"
+            },
+            "opus": {
+              "path": "studio/v1/478a77526ba9931c-hh-pedal-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 14082,
+              "sha256": "478a77526ba9931c60d4c81c27e9ab287d0ed88cf7eda88d015e9630169fd080"
+            }
+          },
           "playbackGain": 0.63118274,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -983,6 +1588,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 110489,
           "sha256": "7a4e600b686400984944d23035a16618ed13d5057947387725b05793b2cff09e",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/7a4e600b68640098-hh-open-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 110489,
+              "sha256": "7a4e600b686400984944d23035a16618ed13d5057947387725b05793b2cff09e"
+            },
+            "opus": {
+              "path": "studio/v1/0d785f9c53a78ed9-hh-open-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 52960,
+              "sha256": "0d785f9c53a78ed904c4c36bd6f8679b9904df74499ad0c7a60e575438b8e8d0"
+            }
+          },
           "playbackGain": 3.69715898,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1005,6 +1624,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 101712,
           "sha256": "2b39cda356715250ace009342fa3e04042f84ff812277049bd27a39ec9faef95",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/2b39cda356715250-hh-open-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 101712,
+              "sha256": "2b39cda356715250ace009342fa3e04042f84ff812277049bd27a39ec9faef95"
+            },
+            "opus": {
+              "path": "studio/v1/5570d6731d0f6b23-hh-open-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 48053,
+              "sha256": "5570d6731d0f6b23e0ec31766f0109a69908a542f50fc7c8e8806419e32746aa"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1027,6 +1660,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 134626,
           "sha256": "517bd1023a86ca8abc6b572d41507bcea6bf19281301453260c298fe99990de7",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/517bd1023a86ca8a-hh-open-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 134626,
+              "sha256": "517bd1023a86ca8abc6b572d41507bcea6bf19281301453260c298fe99990de7"
+            },
+            "opus": {
+              "path": "studio/v1/4a43eefc7fc0d680-hh-open-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 63727,
+              "sha256": "4a43eefc7fc0d680d7f61255114a3ea70c5342f53162a4aef8218e36a07ec5c1"
+            }
+          },
           "playbackGain": 2.1276402,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1049,6 +1696,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 142672,
           "sha256": "345bf7c5083bd9315f0dfcecfa7b7f127fc6db70a7423d979c7b0d94a26571ef",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/345bf7c5083bd931-hh-open-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 142672,
+              "sha256": "345bf7c5083bd9315f0dfcecfa7b7f127fc6db70a7423d979c7b0d94a26571ef"
+            },
+            "opus": {
+              "path": "studio/v1/3b3dbe583c8b98aa-hh-open-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 69465,
+              "sha256": "3b3dbe583c8b98aa5bfaa1ea60528bb6f99de09b9196de8bb661c085fa8f8bb1"
+            }
+          },
           "playbackGain": 2.09231322,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1071,6 +1732,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 26740,
           "sha256": "7b0db9883a42093b4f0d41def6c1b847bdaaee6dce310dab184b4f3300711f1f",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/7b0db9883a42093b-tom-high-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 26740,
+              "sha256": "7b0db9883a42093b4f0d41def6c1b847bdaaee6dce310dab184b4f3300711f1f"
+            },
+            "opus": {
+              "path": "studio/v1/8dc8e9917c6dffd6-tom-high-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11916,
+              "sha256": "8dc8e9917c6dffd63f22e3026fddec84f6a4356300413567abe3929c118669ad"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1093,6 +1768,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 30032,
           "sha256": "128d8d945bd8e4f11e882ef888aa10af85c54a43cc8daca9d3364cd15432292a",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/128d8d945bd8e4f1-tom-high-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 30032,
+              "sha256": "128d8d945bd8e4f11e882ef888aa10af85c54a43cc8daca9d3364cd15432292a"
+            },
+            "opus": {
+              "path": "studio/v1/283e2f36fcad368a-tom-high-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13707,
+              "sha256": "283e2f36fcad368a81dd997f45bafa223c325615b780c96e5d3b298bd98b55f3"
+            }
+          },
           "playbackGain": 0.60745997,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1115,6 +1804,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 34420,
           "sha256": "ec113362dcca081680fb2d555f5052a0344d9590fcd8d7f1be475cb47f4037c6",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/ec113362dcca0816-tom-low-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 34420,
+              "sha256": "ec113362dcca081680fb2d555f5052a0344d9590fcd8d7f1be475cb47f4037c6"
+            },
+            "opus": {
+              "path": "studio/v1/6cb2cae6cb9b51b4-tom-low-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 14250,
+              "sha256": "6cb2cae6cb9b51b4353e58a9382da5001ceaa9ca9dcef7491e56082795d4ad76"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1137,6 +1840,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 68432,
           "sha256": "4e364fea8aae4017af6661771337fafaac0355a13941fc5d2d55615a231a5777",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/4e364fea8aae4017-tom-low-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 68432,
+              "sha256": "4e364fea8aae4017af6661771337fafaac0355a13941fc5d2d55615a231a5777"
+            },
+            "opus": {
+              "path": "studio/v1/ca22de4f8396f08b-tom-low-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 27877,
+              "sha256": "ca22de4f8396f08b6e58ac59887cac72b21c486d403c9f94d21ad26e0e64ad09"
+            }
+          },
           "playbackGain": 0.31090717,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1159,6 +1876,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 160957,
           "sha256": "230c7e11a808c754398f475d5c5417b8f5e5679a01b92e63745390cf5939b345",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/230c7e11a808c754-crash-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 160957,
+              "sha256": "230c7e11a808c754398f475d5c5417b8f5e5679a01b92e63745390cf5939b345"
+            },
+            "opus": {
+              "path": "studio/v1/5338ca4a4c96e925-crash-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 71694,
+              "sha256": "5338ca4a4c96e9257abde393e6baa4e88e0c772221111e9e60218cad8619a9b7"
+            }
+          },
           "playbackGain": 3.51915398,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1181,6 +1912,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 168272,
           "sha256": "d6b2700451a050e68097adfa8f22c3c7340e085c65364bf402bcd4b79eaabec3",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/d6b2700451a050e6-crash-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 168272,
+              "sha256": "d6b2700451a050e68097adfa8f22c3c7340e085c65364bf402bcd4b79eaabec3"
+            },
+            "opus": {
+              "path": "studio/v1/8db63e4ac1342318-crash-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 75517,
+              "sha256": "8db63e4ac1342318669f7860ba7aa840ff1cceb766c24b98df9a767de4f4e109"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1203,6 +1948,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 198260,
           "sha256": "6ae83751e36a1381f4d4bd81561e2303594bc8adef8f7c8b20f99fa5784b02c7",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/6ae83751e36a1381-crash-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 198260,
+              "sha256": "6ae83751e36a1381f4d4bd81561e2303594bc8adef8f7c8b20f99fa5784b02c7"
+            },
+            "opus": {
+              "path": "studio/v1/eeee1d30190c0ab6-crash-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 87896,
+              "sha256": "eeee1d30190c0ab61363ffd93abd4517daaa6baa9a85cec02940b7761842afa3"
+            }
+          },
           "playbackGain": 1.1282423,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1225,6 +1984,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 193872,
           "sha256": "830c74891c1146773b2ae197260d9abc65ed2ee47767947233b745f390a2ab3d",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/830c74891c114677-crash-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 193872,
+              "sha256": "830c74891c1146773b2ae197260d9abc65ed2ee47767947233b745f390a2ab3d"
+            },
+            "opus": {
+              "path": "studio/v1/a3b8dd5b4addad49-crash-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 86737,
+              "sha256": "a3b8dd5b4addad49bbb4cc2337cfb618b687eb43a6f1f1dbeddbda119e0f905c"
+            }
+          },
           "playbackGain": 1.31674712,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1247,6 +2020,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 152912,
           "sha256": "8bb5e82cd0473aeec2f3d76c41cf9dd57db9dca62c1a19a1a13a3ce4d010fe95",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/8bb5e82cd0473aee-ride-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 152912,
+              "sha256": "8bb5e82cd0473aeec2f3d76c41cf9dd57db9dca62c1a19a1a13a3ce4d010fe95"
+            },
+            "opus": {
+              "path": "studio/v1/80fde798a942022f-ride-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 65203,
+              "sha256": "80fde798a942022f66c1de0a8b3236a1a30f42c9a70221bd562a44118aa51164"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1269,6 +2056,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 114877,
           "sha256": "53776bad80c4bfc7afe87f13c7049fb1d5e8f9e4205b49a6414ff20299396632",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/53776bad80c4bfc7-ride-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 114877,
+              "sha256": "53776bad80c4bfc7afe87f13c7049fb1d5e8f9e4205b49a6414ff20299396632"
+            },
+            "opus": {
+              "path": "studio/v1/d1de3626e9c24e88-ride-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 48426,
+              "sha256": "d1de3626e9c24e88d683b4ce6cdbfcb173ec1699b452482c06318658b558a156"
+            }
+          },
           "playbackGain": 3.05006109,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1291,6 +2092,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 109757,
           "sha256": "adcd7f86de0ec43117093870cbf08e715a248a39844620d57e2352bdf50d03b7",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/adcd7f86de0ec431-ride-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 109757,
+              "sha256": "adcd7f86de0ec43117093870cbf08e715a248a39844620d57e2352bdf50d03b7"
+            },
+            "opus": {
+              "path": "studio/v1/1c67d52e4fda14c6-ride-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 48136,
+              "sha256": "1c67d52e4fda14c67ea409e832ecd371fd5ccc21668ee5e078f77d1c63c004d6"
+            }
+          },
           "playbackGain": 0.45371721,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1313,6 +2128,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 89643,
           "sha256": "b40f83ad2c43faf8a4d8edf48dfa9dc312633b3a7af5c2bb39bd2ec81bdd3e46",
+          "formats": {
+            "mp3": {
+              "path": "studio/v1/b40f83ad2c43faf8-ride-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 89643,
+              "sha256": "b40f83ad2c43faf8a4d8edf48dfa9dc312633b3a7af5c2bb39bd2ec81bdd3e46"
+            },
+            "opus": {
+              "path": "studio/v1/629bd0320143e705-ride-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39902,
+              "sha256": "629bd0320143e705db8ee75051ee6e7b356255c83c62c384abe9be4da11f3903"
+            }
+          },
           "playbackGain": 0.40670365,
           "source": {
             "commit": "d41b734e9ce5edce1be375c262b2644de4387061",
@@ -1341,6 +2170,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 22717,
           "sha256": "dad4ef3ebf7c08e4f848a2036af506f8438011205a351733ea9ae03725e0edb9",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/dad4ef3ebf7c08e4-kick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 22717,
+              "sha256": "dad4ef3ebf7c08e4f848a2036af506f8438011205a351733ea9ae03725e0edb9"
+            },
+            "opus": {
+              "path": "live/v1/dfbc3838103b8b06-kick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8213,
+              "sha256": "dfbc3838103b8b06e1c6a9413869c0835e1e538a4377613ae2eff8ac26079dcd"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1363,6 +2206,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 22717,
           "sha256": "54d6e1a43d56cc7bf76e96ebf31d4bdf97e5a1129e362e168f00db2517e766b4",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/54d6e1a43d56cc7b-kick-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 22717,
+              "sha256": "54d6e1a43d56cc7bf76e96ebf31d4bdf97e5a1129e362e168f00db2517e766b4"
+            },
+            "opus": {
+              "path": "live/v1/1f88d664c662cc7f-kick-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8173,
+              "sha256": "1f88d664c662cc7f93584bba583b63dddaa84b1db206b2b2dd9d3efd0d86da02"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1385,6 +2242,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 28934,
           "sha256": "e8692e96e5919725f82789c013839be10f56e25a7f1f3aac126093ed803c2f4c",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/e8692e96e5919725-kick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 28934,
+              "sha256": "e8692e96e5919725f82789c013839be10f56e25a7f1f3aac126093ed803c2f4c"
+            },
+            "opus": {
+              "path": "live/v1/2300d80b256cd785-kick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10364,
+              "sha256": "2300d80b256cd78588fb5704346cfed6dd32b5a47aa0f65d7f838a5cbc31957d"
+            }
+          },
           "playbackGain": 0.64847511,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1407,6 +2278,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 28934,
           "sha256": "d171da3d96e85b7377394a746dfec69c0ce0a7e9b338b47a0a6747c83231a68f",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/d171da3d96e85b73-kick-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 28934,
+              "sha256": "d171da3d96e85b7377394a746dfec69c0ce0a7e9b338b47a0a6747c83231a68f"
+            },
+            "opus": {
+              "path": "live/v1/616d3966bfde7d0b-kick-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10434,
+              "sha256": "616d3966bfde7d0bf457edbf5c49f1f7e2f65140b5f09c53a4ed5f4e4addd8a9"
+            }
+          },
           "playbackGain": 0.62539851,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1429,6 +2314,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 24180,
           "sha256": "5939b0ce37df73f9bd29f8b841ef0b8a66a6a7f0bf2ca19f6a10bcea4bf68811",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/5939b0ce37df73f9-snare-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 24180,
+              "sha256": "5939b0ce37df73f9bd29f8b841ef0b8a66a6a7f0bf2ca19f6a10bcea4bf68811"
+            },
+            "opus": {
+              "path": "live/v1/d0504aa1a3a893ff-snare-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9625,
+              "sha256": "d0504aa1a3a893ff01863e33a6810567cf20c324211a0dfcc1582dcb3abe50c2"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1451,6 +2350,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 24180,
           "sha256": "e0b35ee6e56a2730104a41943c7e85fbaacd7b968a89be2a7e23eb942fc6db33",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/e0b35ee6e56a2730-snare-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 24180,
+              "sha256": "e0b35ee6e56a2730104a41943c7e85fbaacd7b968a89be2a7e23eb942fc6db33"
+            },
+            "opus": {
+              "path": "live/v1/e11f70306431b590-snare-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9370,
+              "sha256": "e11f70306431b590203c6673b4519ddeb649dd4bdd61dacd545c64d205131f80"
+            }
+          },
           "playbackGain": 3.2462641,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1473,6 +2386,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 41003,
           "sha256": "6af395e08b966e815e4c78ec510ddcb6d2c1b22d78158a2a47bfe1e0f4983d82",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/6af395e08b966e81-snare-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 41003,
+              "sha256": "6af395e08b966e815e4c78ec510ddcb6d2c1b22d78158a2a47bfe1e0f4983d82"
+            },
+            "opus": {
+              "path": "live/v1/2ee4e09fc9dadfc3-snare-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16024,
+              "sha256": "2ee4e09fc9dadfc3dd34d85bb57ec86d2743817659117e1455eab0c2b09af594"
+            }
+          },
           "playbackGain": 1.11713761,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1495,6 +2422,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 41003,
           "sha256": "75b47e414497cf26a71b03ac507115c6409690f4274d64d58e589458268b2ba3",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/75b47e414497cf26-snare-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 41003,
+              "sha256": "75b47e414497cf26a71b03ac507115c6409690f4274d64d58e589458268b2ba3"
+            },
+            "opus": {
+              "path": "live/v1/935a38ce70b0a027-snare-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 15598,
+              "sha256": "935a38ce70b0a027d1040b89ef740de382daeff8f3fb728e5d10850832f63e07"
+            }
+          },
           "playbackGain": 0.92030609,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1517,6 +2458,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 16500,
           "sha256": "634a5e0035696c720477535467762e2d527ff444e6d2c2e1744582a8c10b755b",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/634a5e0035696c72-hh-closed-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16500,
+              "sha256": "634a5e0035696c720477535467762e2d527ff444e6d2c2e1744582a8c10b755b"
+            },
+            "opus": {
+              "path": "live/v1/1a98a7cba7792570-hh-closed-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6659,
+              "sha256": "1a98a7cba7792570152cdea70a3fab3287c5a7739608699dc425404241b97f26"
+            }
+          },
           "playbackGain": 3.06702362,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1539,6 +2494,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 19426,
           "sha256": "245f90b7dd69b9810e72d1871679e7d96f72f5be7fd1a2a76548cbd3b952fe89",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/245f90b7dd69b981-hh-closed-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 19426,
+              "sha256": "245f90b7dd69b9810e72d1871679e7d96f72f5be7fd1a2a76548cbd3b952fe89"
+            },
+            "opus": {
+              "path": "live/v1/008e71e08bc45327-hh-closed-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8252,
+              "sha256": "008e71e08bc45327044054a97a93d0e2881104f03063b82a9d06a55acede4ace"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1561,6 +2530,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 26374,
           "sha256": "b44cb1d95aff2b2a2295956a4123dee84284a8bd28cd6e4ae1201bdb34e0f9e6",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/b44cb1d95aff2b2a-hh-closed-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 26374,
+              "sha256": "b44cb1d95aff2b2a2295956a4123dee84284a8bd28cd6e4ae1201bdb34e0f9e6"
+            },
+            "opus": {
+              "path": "live/v1/6f3f1635adc238d4-hh-closed-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10976,
+              "sha256": "6f3f1635adc238d4e6411f714ef3e9011c3824fd4b4c29929439357140e8bd72"
+            }
+          },
           "playbackGain": 0.58174813,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1583,6 +2566,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 25277,
           "sha256": "fb472b83e6dfdebfdb10470b24014eb92b8cd6937dd4b1e6e5c1829baecc0cb5",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/fb472b83e6dfdebf-hh-closed-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 25277,
+              "sha256": "fb472b83e6dfdebfdb10470b24014eb92b8cd6937dd4b1e6e5c1829baecc0cb5"
+            },
+            "opus": {
+              "path": "live/v1/92a5604a0bf1cd2d-hh-closed-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10248,
+              "sha256": "92a5604a0bf1cd2d3e933de311cd9190fbd3d6b274abad93c371ee60d03af62e"
+            }
+          },
           "playbackGain": 1.07364619,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1605,6 +2602,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 37346,
           "sha256": "31df9cf20d146ee886f43444f05251f0d72ff580b0d876e84c21a2dee5eb93c8",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/31df9cf20d146ee8-hh-pedal-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 37346,
+              "sha256": "31df9cf20d146ee886f43444f05251f0d72ff580b0d876e84c21a2dee5eb93c8"
+            },
+            "opus": {
+              "path": "live/v1/79f72763f6eff6d9-hh-pedal-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 15068,
+              "sha256": "79f72763f6eff6d9456345e02ccbc333cbdf7bb366173faf9cea9f7d3fb964c9"
+            }
+          },
           "playbackGain": 3.62780592,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1627,6 +2638,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 32226,
           "sha256": "7ed2b5e22f5e634b763c63556ce99f67c0ad70f9669f64d865150074110d8a67",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/7ed2b5e22f5e634b-hh-pedal-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 32226,
+              "sha256": "7ed2b5e22f5e634b763c63556ce99f67c0ad70f9669f64d865150074110d8a67"
+            },
+            "opus": {
+              "path": "live/v1/846288cbd36de5aa-hh-pedal-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13200,
+              "sha256": "846288cbd36de5aa719345942d2c39565a6df7f713105442272929ae955ad8a3"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1649,6 +2674,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 53437,
           "sha256": "f036401f12ef9c5692ddc21d7162effc205df4787cf27b93389a80b8f4c48464",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/f036401f12ef9c56-hh-pedal-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 53437,
+              "sha256": "f036401f12ef9c5692ddc21d7162effc205df4787cf27b93389a80b8f4c48464"
+            },
+            "opus": {
+              "path": "live/v1/803c20999b657330-hh-pedal-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 21656,
+              "sha256": "803c20999b6573302089f2c3295df8d1aab1e3c3782427e9e157172b14aee27e"
+            }
+          },
           "playbackGain": 1.17200076,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1671,6 +2710,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 60020,
           "sha256": "03f6c88738430345944c263515cad5039a6269023c08ba1b681aa4d64ec2d205",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/03f6c88738430345-hh-pedal-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 60020,
+              "sha256": "03f6c88738430345944c263515cad5039a6269023c08ba1b681aa4d64ec2d205"
+            },
+            "opus": {
+              "path": "live/v1/c0da1b3566ba6b12-hh-pedal-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 24129,
+              "sha256": "c0da1b3566ba6b127ef322d9df33501dfa067e0a1013bd778892dff92017985f"
+            }
+          },
           "playbackGain": 1.09494203,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1693,6 +2746,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 20523,
           "sha256": "5d598635a11b451031a104c69b299af17b12b32b3c6efef868f9f5757458d1a8",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/5d598635a11b4510-hh-open-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 20523,
+              "sha256": "5d598635a11b451031a104c69b299af17b12b32b3c6efef868f9f5757458d1a8"
+            },
+            "opus": {
+              "path": "live/v1/c2cfaf8e10924857-hh-open-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8353,
+              "sha256": "c2cfaf8e10924857d552656ed21082636e9c8341990def6a2e2d4092591f0989"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1715,6 +2782,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 19060,
           "sha256": "a5116c46a5ba20003149547bf71be9cb8368dbd290b6083bf8e90055f84449d6",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/a5116c46a5ba2000-hh-open-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 19060,
+              "sha256": "a5116c46a5ba20003149547bf71be9cb8368dbd290b6083bf8e90055f84449d6"
+            },
+            "opus": {
+              "path": "live/v1/6afc92674c543662-hh-open-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7815,
+              "sha256": "6afc92674c543662c7992ce2578873755ac15367f865d03806b247a7e8270ea1"
+            }
+          },
           "playbackGain": 2.23277471,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1737,6 +2818,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 23083,
           "sha256": "89bd615e703fa9fba705f244fe9a1cadeeb23a9d35b7c5ca9aa7cd8dd557c64c",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/89bd615e703fa9fb-hh-open-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 23083,
+              "sha256": "89bd615e703fa9fba705f244fe9a1cadeeb23a9d35b7c5ca9aa7cd8dd557c64c"
+            },
+            "opus": {
+              "path": "live/v1/0f436310d2298c40-hh-open-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9405,
+              "sha256": "0f436310d2298c40fe8dca88208eee2727c191a8054b92b10255236fa03cc61c"
+            }
+          },
           "playbackGain": 1.33633236,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1759,6 +2854,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 22352,
           "sha256": "386431e4bd981464cfaff5d4bfc5271b640424d04de059cdb8d46883c9798fad",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/386431e4bd981464-hh-open-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 22352,
+              "sha256": "386431e4bd981464cfaff5d4bfc5271b640424d04de059cdb8d46883c9798fad"
+            },
+            "opus": {
+              "path": "live/v1/f0d110456a569714-hh-open-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9082,
+              "sha256": "f0d110456a5697144859f24bd6fc5cc414d5f6ea4ade83d39610d5fa9f5e9b31"
+            }
+          },
           "playbackGain": 1.30972618,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1781,6 +2890,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 48317,
           "sha256": "9e0700b5e37c6c3031440a1b723732bd536de78da9fa2364351abc407d00b00e",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/9e0700b5e37c6c30-tom-high-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 48317,
+              "sha256": "9e0700b5e37c6c3031440a1b723732bd536de78da9fa2364351abc407d00b00e"
+            },
+            "opus": {
+              "path": "live/v1/3927c386b0cd62cc-tom-high-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17412,
+              "sha256": "3927c386b0cd62ccaee3754806c598ff7bee14b5883e6f56a4981165c297433c"
+            }
+          },
           "playbackGain": 2.2388966,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1803,6 +2926,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 48317,
           "sha256": "0e1cb5866f23a948d37ab29da73252d999633a10e51c5734a64b92c606a0f80b",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/0e1cb5866f23a948-tom-high-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 48317,
+              "sha256": "0e1cb5866f23a948d37ab29da73252d999633a10e51c5734a64b92c606a0f80b"
+            },
+            "opus": {
+              "path": "live/v1/5b4089ab34e1eba3-tom-high-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17216,
+              "sha256": "5b4089ab34e1eba3c13ad7c73cd706cbdc3de9f7549c6a6afdbe6cbe827c95f4"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1825,6 +2962,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 57094,
           "sha256": "201552a6cea3bf8100cb0e75928887337ee5fc9129eff3b7d2fd7b9cf69c3ba8",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/201552a6cea3bf81-tom-high-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 57094,
+              "sha256": "201552a6cea3bf8100cb0e75928887337ee5fc9129eff3b7d2fd7b9cf69c3ba8"
+            },
+            "opus": {
+              "path": "live/v1/1a57971cb299d27c-tom-high-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 20509,
+              "sha256": "1a57971cb299d27c85cfc3d31e7ce105b00d55770853e14dff9a1362c2cf8f82"
+            }
+          },
           "playbackGain": 0.58468544,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1847,6 +2998,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 55997,
           "sha256": "13901371967cccf6c88e11a9d9a620ffa7ed8d4ffeeedab0f5f121ce97ca31e2",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/13901371967cccf6-tom-high-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 55997,
+              "sha256": "13901371967cccf6c88e11a9d9a620ffa7ed8d4ffeeedab0f5f121ce97ca31e2"
+            },
+            "opus": {
+              "path": "live/v1/5a056bf41f8326f6-tom-high-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 20362,
+              "sha256": "5a056bf41f8326f6893129aedcebba2cc7463918e4d4ecdcb77622b5adb7f471"
+            }
+          },
           "playbackGain": 0.53882887,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1869,6 +3034,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 55266,
           "sha256": "488d98304314392b5c8895169c41e618a5b3c726d516044b69b5f676703e6cad",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/488d98304314392b-tom-mid-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 55266,
+              "sha256": "488d98304314392b5c8895169c41e618a5b3c726d516044b69b5f676703e6cad"
+            },
+            "opus": {
+              "path": "live/v1/1b7a13439c4700f0-tom-mid-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 19131,
+              "sha256": "1b7a13439c4700f04f13836a640166799e0fc626819095ac564df3fc5a03121b"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1891,6 +3070,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 47586,
           "sha256": "cca873e09a4dfd5b896f622cc9c6ed4337baa655bb25b1a1268985ee3ad87a1f",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/cca873e09a4dfd5b-tom-mid-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 47586,
+              "sha256": "cca873e09a4dfd5b896f622cc9c6ed4337baa655bb25b1a1268985ee3ad87a1f"
+            },
+            "opus": {
+              "path": "live/v1/30cb955889659179-tom-mid-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17128,
+              "sha256": "30cb9558896591792cc9c941d99f3f903fdd869f9a87bf667864d9a391c1e893"
+            }
+          },
           "playbackGain": 2.62404351,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1913,6 +3106,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 59654,
           "sha256": "7f9ae033a570849adfbe91d6aa5dcffc0ab820c1d00b77db9d266f1898194d64",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/7f9ae033a570849a-tom-mid-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 59654,
+              "sha256": "7f9ae033a570849adfbe91d6aa5dcffc0ab820c1d00b77db9d266f1898194d64"
+            },
+            "opus": {
+              "path": "live/v1/7cedbb5d2e14a5b2-tom-mid-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 21764,
+              "sha256": "7cedbb5d2e14a5b28ff9a8aca908ddf97407773995548c819e70e14b1e9adf58"
+            }
+          },
           "playbackGain": 0.52130008,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1935,6 +3142,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 61483,
           "sha256": "352345d095ced2c838481b69617b3d52630829fb642baafb37e2e06377cb89df",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/352345d095ced2c8-tom-mid-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 61483,
+              "sha256": "352345d095ced2c838481b69617b3d52630829fb642baafb37e2e06377cb89df"
+            },
+            "opus": {
+              "path": "live/v1/fe658b5363f0019d-tom-mid-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 22522,
+              "sha256": "fe658b5363f0019dfe618754cfbdd62550c09e877390d2a5070fbaafe78b987b"
+            }
+          },
           "playbackGain": 0.45969683,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1957,6 +3178,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 79769,
           "sha256": "33303b5fd896ca514e9ffcc3a9ff857ec71a83813862bdd4714724f93ea6b182",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/33303b5fd896ca51-tom-low-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 79769,
+              "sha256": "33303b5fd896ca514e9ffcc3a9ff857ec71a83813862bdd4714724f93ea6b182"
+            },
+            "opus": {
+              "path": "live/v1/793e54a86c567214-tom-low-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 28515,
+              "sha256": "793e54a86c56721446efb997986e6cae1db21d700c15e181a6df3e88d6c22a5e"
+            }
+          },
           "playbackGain": 3.39016016,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -1979,6 +3214,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 87814,
           "sha256": "06ff286c7b852c6d6b264dbd48ab2aa95a351e30caebdb90783ec1cdbc5b0e89",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/06ff286c7b852c6d-tom-low-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 87814,
+              "sha256": "06ff286c7b852c6d6b264dbd48ab2aa95a351e30caebdb90783ec1cdbc5b0e89"
+            },
+            "opus": {
+              "path": "live/v1/8eac1d1418f03ab8-tom-low-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 31453,
+              "sha256": "8eac1d1418f03ab803b133bdfda9e67aaa9f78bfaf6dae9cba2d7693e74f5039"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2001,6 +3250,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 81963,
           "sha256": "54f21400822d83ddf0ada38ad1eb20d4779bfbb1d9ee1f66bff309c0cb9979b0",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/54f21400822d83dd-tom-low-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 81963,
+              "sha256": "54f21400822d83ddf0ada38ad1eb20d4779bfbb1d9ee1f66bff309c0cb9979b0"
+            },
+            "opus": {
+              "path": "live/v1/f14b6a89eaf736de-tom-low-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 29666,
+              "sha256": "f14b6a89eaf736def94b6fbaa66c4b3e077182fd9fef6a2ac31868b5cc078185"
+            }
+          },
           "playbackGain": 0.82525468,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2023,6 +3286,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 91106,
           "sha256": "6294faa810289b2cee8d8afaf22e99a8cba62ddadb8696dc0a2a0e0b6d00ae2d",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/6294faa810289b2c-tom-low-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 91106,
+              "sha256": "6294faa810289b2cee8d8afaf22e99a8cba62ddadb8696dc0a2a0e0b6d00ae2d"
+            },
+            "opus": {
+              "path": "live/v1/4213a38a653699bf-tom-low-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 32623,
+              "sha256": "4213a38a653699bf8a16bd8fa4d035a665792f880784ed95159161db858a8689"
+            }
+          },
           "playbackGain": 0.54869291,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2045,6 +3322,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 95129,
           "sha256": "99b010e2f3bc5cec08513a9f131c4b60e1d0c262a5995708dede6c332776c4d4",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/99b010e2f3bc5cec-crash-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 95129,
+              "sha256": "99b010e2f3bc5cec08513a9f131c4b60e1d0c262a5995708dede6c332776c4d4"
+            },
+            "opus": {
+              "path": "live/v1/dddc98362ab272d8-crash-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 45563,
+              "sha256": "dddc98362ab272d83cd35f2ca2494b0125d06f206ea0ac5cdb7d1e9ea22bd511"
+            }
+          },
           "playbackGain": 2.62065632,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2067,6 +3358,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 84889,
           "sha256": "c78efd30e0527db50dd948d734eeae89a50da4bc6c32843ae1e8e587d59d8059",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/c78efd30e0527db5-crash-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 84889,
+              "sha256": "c78efd30e0527db50dd948d734eeae89a50da4bc6c32843ae1e8e587d59d8059"
+            },
+            "opus": {
+              "path": "live/v1/74c2f44eed00fabc-crash-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 41122,
+              "sha256": "74c2f44eed00fabc2f332855305f6090f4341d12daaae60edc03dcb8571117fc"
+            }
+          },
           "playbackGain": 1.69362855,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2089,6 +3394,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 110123,
           "sha256": "41b35b41be6ca1bd7dbae6730e115623d86dd286c72a7e4b05b7d84954371ce0",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/41b35b41be6ca1bd-crash-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 110123,
+              "sha256": "41b35b41be6ca1bd7dbae6730e115623d86dd286c72a7e4b05b7d84954371ce0"
+            },
+            "opus": {
+              "path": "live/v1/b64b45b1f4202568-crash-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 51325,
+              "sha256": "b64b45b1f4202568167308fa656a5a4faafd6a782847e16cb2cb44b62ee8dbeb"
+            }
+          },
           "playbackGain": 0.91193685,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2111,6 +3430,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 102809,
           "sha256": "0a468eb9d26a6049bb2b496ec95af60f65bb2f2a92dbbac5d88ed232bc0528e0",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/0a468eb9d26a6049-crash-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 102809,
+              "sha256": "0a468eb9d26a6049bb2b496ec95af60f65bb2f2a92dbbac5d88ed232bc0528e0"
+            },
+            "opus": {
+              "path": "live/v1/c7079c67159d56a8-crash-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 49984,
+              "sha256": "c7079c67159d56a88cbcfd42aa30f623f8b1204c203039e68db5a417fd8fd1d9"
+            }
+          },
           "playbackGain": 1.52527259,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2133,6 +3466,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 208134,
           "sha256": "639df181c4ff18a0c84cf0dae4cb0c16038ab186390ceb0a74a230162549e775",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/639df181c4ff18a0-ride-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 208134,
+              "sha256": "639df181c4ff18a0c84cf0dae4cb0c16038ab186390ceb0a74a230162549e775"
+            },
+            "opus": {
+              "path": "live/v1/5d9f00ecf46c2da5-ride-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 104326,
+              "sha256": "5d9f00ecf46c2da59e9dba3a2791b1b8104a4ccc716de882b8314bdb47ef23d1"
+            }
+          },
           "playbackGain": 3.26969658,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2155,6 +3502,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 194969,
           "sha256": "8d2b74d4bb82e686ed335fedbe662f3db6cd607b752846744f38eceefc44e2c0",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/8d2b74d4bb82e686-ride-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 194969,
+              "sha256": "8d2b74d4bb82e686ed335fedbe662f3db6cd607b752846744f38eceefc44e2c0"
+            },
+            "opus": {
+              "path": "live/v1/49771123c126a0dd-ride-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 94720,
+              "sha256": "49771123c126a0dd6d2167417f17cb64d05e8872664af589a5570f5b4bd41915"
+            }
+          },
           "playbackGain": 3.98107171,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2177,6 +3538,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 258603,
           "sha256": "c6cf566349f0aaf1ab2c445ca429657c4ce9bb60b3b1403f4bbab29ba199d3ce",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/c6cf566349f0aaf1-ride-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 258603,
+              "sha256": "c6cf566349f0aaf1ab2c445ca429657c4ce9bb60b3b1403f4bbab29ba199d3ce"
+            },
+            "opus": {
+              "path": "live/v1/8848c5e34a6b979d-ride-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 131637,
+              "sha256": "8848c5e34a6b979d54e08e0e72bb1302b065c58f086117a6e6d1f86aa614aa8c"
+            }
+          },
           "playbackGain": 2.68686461,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",
@@ -2199,6 +3574,20 @@
           "mimeType": "audio/mpeg",
           "encodedBytes": 207037,
           "sha256": "648e2d0818958c05f5280c2a6bf0119b8cfc13516d2ebc5db3ab52e44a74919c",
+          "formats": {
+            "mp3": {
+              "path": "live/v1/648e2d0818958c05-ride-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 207037,
+              "sha256": "648e2d0818958c05f5280c2a6bf0119b8cfc13516d2ebc5db3ab52e44a74919c"
+            },
+            "opus": {
+              "path": "live/v1/b33cfae88e4a2161-ride-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 104182,
+              "sha256": "b33cfae88e4a21611a1262fc18b86565430afcd5a83b885122ff8acff3a1ae51"
+            }
+          },
           "playbackGain": 1.04571068,
           "source": {
             "commit": "fc8a6daa22a20708de962e915ddc1ae17bd2aa32",

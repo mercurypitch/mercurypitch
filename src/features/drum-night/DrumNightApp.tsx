@@ -3041,7 +3041,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     showToast(
       manifest.engine === 'sampled'
         ? `${manifest.name} selected. Samples warm only after audio is active.`
-        : 'Mercury Synth selected. No sample download is needed.',
+        : `${manifest.name} selected. No sample download is needed.`,
     )
     void player.selectKit(kitId)
   }

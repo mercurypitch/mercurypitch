@@ -1,8 +1,12 @@
 // Guitar room band schedules count-ins and synthesized grooves on the shared room buses.
 // ============================================================
 
+import type { HumanizedEvent, HumanizeInputEvent, HumanizeOptions, } from '@/features/drum-night/groove/groove-humanize'
 import type { DrumKitPlayerPort } from '@/features/drum-night/runtime/drum-runtime-types'
+import type { GuitarNightDrumKitId, GuitarNightDrumSoundPreference, } from '@/features/guitar-night/guitar-night-drum-sound'
+import { readGuitarNightDrumSound } from '@/features/guitar-night/guitar-night-drum-sound'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import type { DrumVoiceId } from '@/lib/drum-voices'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import type { GuitarElectricAmpParameters, GuitarElectricAmpStage, } from '@/lib/guitar/guitar-electric-amp'
 import { createGuitarElectricAmpStage, DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, } from '@/lib/guitar/guitar-electric-amp'
@@ -14,12 +18,40 @@ import type { MidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
 import { sliderToGain } from '@/lib/volume-curve'
-import type { GuitarRoomRhythmPreset } from './guitar-room-rhythm'
+import { createLazyGuitarRoomDrumPlayer } from './guitar-room-drum-player'
+import type { GuitarRoomRhythmHit, GuitarRoomRhythmPreset, } from './guitar-room-rhythm'
 import { guitarRoomRhythmHitsForBeat } from './guitar-room-rhythm'
 import type { GuitarGuideInput, GuitarSessionAudioGraph, } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph, setGuitarSessionGainTarget, } from './guitar-session-audio-graph'
 
 export type GuitarRoomBandBeatPhase = 'count-in' | 'exercise'
+
+type HumanizeDrumEvents = (
+  events: readonly HumanizeInputEvent[],
+  options: HumanizeOptions,
+) => HumanizedEvent[]
+
+interface GuitarRoomHumanizerModule {
+  readonly humanizeDrumEvents: HumanizeDrumEvents
+}
+
+const GENERATED_RHYTHM_TRACK_ID = '__guitar-night-generated-rhythm__'
+
+const GUITAR_ROOM_DRUM_GM_KEYS: Readonly<Record<DrumVoiceId, number>> =
+  Object.freeze({
+    kick: 36,
+    snare: 38,
+    sidestick: 37,
+    clap: 39,
+    'hh-closed': 42,
+    'hh-pedal': 44,
+    'hh-open': 46,
+    'tom-low': 45,
+    'tom-mid': 47,
+    'tom-high': 50,
+    crash: 49,
+    ride: 51,
+  })
 
 export const GUITAR_ROOM_BAND_MIN_TEMPO_BPM = 30
 export const GUITAR_ROOM_BAND_MAX_TEMPO_BPM = 220
@@ -183,6 +215,9 @@ export interface GuitarRoomBand {
 export interface GuitarRoomBandPercussionPlayerOptions {
   getAudioContext(): AudioContext | null
   getOutput(): AudioNode | null
+  /** Pinned once per run; a later preference write applies on the next Play. */
+  readonly kitId: GuitarNightDrumKitId
+  readonly role: 'authored' | 'generated'
 }
 
 export interface GuitarRoomBandOptions {
@@ -200,58 +235,30 @@ export interface GuitarRoomBandOptions {
     context: BaseAudioContext,
     initial?: Partial<GuitarElectricAmpParameters>,
   ) => GuitarElectricAmpStage
+  /** Lightweight storage seam; read exactly once for each started run. */
+  readDrumSoundPreference?: () => GuitarNightDrumSoundPreference
+  /** Injected so first paint never statically imports measured feel profiles. */
+  loadHumanizer?: () => Promise<GuitarRoomHumanizerModule>
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
 }
 
-/**
- * Keep the shared kit implementation out of pitched-only Guitar rooms. The
- * first authored drum run imports and activates it inside the same user
- * gesture; construction and first paint remain inert.
- */
-function createLazyMercurySynthPlayer(
-  options: GuitarRoomBandPercussionPlayerOptions,
-): DrumKitPlayerPort {
-  let player: DrumKitPlayerPort | null = null
-  let activation: Promise<boolean> | null = null
-  let disposed = false
+async function loadGuitarRoomHumanizer(): Promise<GuitarRoomHumanizerModule> {
+  return await import('@/features/drum-night/groove/groove-humanize')
+}
 
-  return {
-    async activate(): Promise<boolean> {
-      if (disposed) return false
-      if (activation !== null) return await activation
-      if (player !== null) return await player.activate()
-      const pendingActivation = (async () => {
-        const module =
-          await import('@/features/drum-night/audio/drum-kit-player')
-        if (disposed) return false
-        const created = module.createDrumKitPlayer({
-          getAudioContext: options.getAudioContext,
-          getOutput: options.getOutput,
-          initialKitId: 'mercury-synth',
-        })
-        player = created
-        return await created.activate()
-      })()
-      activation = pendingActivation
-      try {
-        return await pendingActivation
-      } finally {
-        if (activation === pendingActivation) activation = null
-      }
-    },
-    trigger: (hit) => player?.trigger(hit) ?? 'dropped',
-    panic: () => player?.panic(),
-    async dispose(): Promise<void> {
-      disposed = true
-      try {
-        await activation
-      } finally {
-        await player?.dispose()
-        player = null
-      }
-    },
+function guitarRoomHumanizeSeed(
+  preference: GuitarNightDrumSoundPreference,
+  tempoBpm: number,
+  presetId: string | null,
+): number {
+  const text = `${preference.feelId}:${Math.round(tempoBpm * 100)}:${presetId ?? 'default'}`
+  let hash = 0x811c9dc5
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
   }
+  return hash >>> 0
 }
 
 /**
@@ -449,7 +456,12 @@ export function createGuitarRoomBand(
   const melodyChannelLevels = new Map<string, number>()
   const percussionPlayers = new Map<
     string,
-    { output: GainNode; player: DrumKitPlayerPort }
+    {
+      output: GainNode
+      player: DrumKitPlayerPort
+      kitId: GuitarNightDrumKitId
+      role: 'authored' | 'generated'
+    }
   >()
   let runOutput: {
     guide: Record<GuitarGuideInput, GainNode>
@@ -461,24 +473,50 @@ export function createGuitarRoomBand(
   const callbackTimers = new Set<number>()
   const pendingReleases = new Set<Promise<void>>()
   let disposed = false
+  let activeDrumKitId: GuitarNightDrumKitId | null = null
 
   const createPercussionPlayer =
-    options.createPercussionPlayer ?? createLazyMercurySynthPlayer
+    options.createPercussionPlayer ?? createLazyGuitarRoomDrumPlayer
   const createElectricAmpStage =
     options.createElectricAmpStage ?? createGuitarElectricAmpStage
+  const readDrumSoundPreference =
+    options.readDrumSoundPreference ?? readGuitarNightDrumSound
+  const loadHumanizer = options.loadHumanizer ?? loadGuitarRoomHumanizer
 
   const percussionChannelForTrack = (
     trackId: string,
     currentGraph: GuitarSessionAudioGraph,
+    kitId: GuitarNightDrumKitId,
+    role: 'authored' | 'generated',
   ): { output: GainNode; player: DrumKitPlayerPort } => {
     const existing = percussionPlayers.get(trackId)
-    if (existing !== undefined) return existing
+    if (
+      existing !== undefined &&
+      existing.kitId === kitId &&
+      existing.role === role
+    ) {
+      return existing
+    }
+    if (existing !== undefined) {
+      existing.output.disconnect()
+      void existing.player.dispose()
+      percussionPlayers.delete(trackId)
+    }
     const holder = {
       output: currentGraph.context.createGain(),
-    } as { output: GainNode; player: DrumKitPlayerPort }
+      kitId,
+      role,
+    } as {
+      output: GainNode
+      player: DrumKitPlayerPort
+      kitId: GuitarNightDrumKitId
+      role: 'authored' | 'generated'
+    }
     holder.player = createPercussionPlayer({
       getAudioContext: () => context,
       getOutput: () => holder.output,
+      kitId,
+      role,
     })
     percussionPlayers.set(trackId, holder)
     return holder
@@ -608,6 +646,28 @@ export function createGuitarRoomBand(
       }
       stop()
       const currentGeneration = generation
+      const drumSound = readDrumSoundPreference()
+      const feel = startOptions.feel ?? 'groove'
+      const generatedRhythmEligible =
+        feel === 'groove' && startOptions.exercisePulse !== false
+      if (activeDrumKitId !== drumSound.kitId) {
+        const retiredPlayers = [...percussionPlayers.values()]
+        percussionPlayers.clear()
+        activeDrumKitId = drumSound.kitId
+        await Promise.all(
+          retiredPlayers.map(async ({ output, player }) => {
+            output.disconnect()
+            await player.dispose()
+          }),
+        )
+        if (currentGeneration !== generation) {
+          return {
+            expectedHitTimesMs: [],
+            exerciseStartedAtSeconds: null,
+            completedAtSeconds: null,
+          }
+        }
+      }
       const currentGraph = ensureGraph()
       await activateContext(currentGraph.context)
       if (currentGeneration !== generation) {
@@ -636,12 +696,30 @@ export function createGuitarRoomBand(
       const electricAmpStages = new Map<string, GuitarElectricAmpStage>()
       const percussionTrackOutputs = new Map<string, GainNode>()
       const runPercussionPlayers = new Map<string, DrumKitPlayerPort>()
+      if (generatedRhythmEligible) {
+        const channel = percussionChannelForTrack(
+          GENERATED_RHYTHM_TRACK_ID,
+          currentGraph,
+          drumSound.kitId,
+          'generated',
+        )
+        channel.output.gain.value = 1
+        channel.output.gain.setValueAtTime(1, currentGraph.context.currentTime)
+        channel.output.connect(drumsOutput)
+        percussionTrackOutputs.set(GENERATED_RHYTHM_TRACK_ID, channel.output)
+        runPercussionPlayers.set(GENERATED_RHYTHM_TRACK_ID, channel.player)
+      }
       const initiallyAudibleTracks = startOptions.audiblePercussionTrackIds
       for (const hit of startOptions.percussion ?? []) {
         if (hit.trackId === '' || percussionTrackOutputs.has(hit.trackId)) {
           continue
         }
-        const channel = percussionChannelForTrack(hit.trackId, currentGraph)
+        const channel = percussionChannelForTrack(
+          hit.trackId,
+          currentGraph,
+          drumSound.kitId,
+          'authored',
+        )
         const initialLevel =
           initiallyAudibleTracks === undefined ||
           initiallyAudibleTracks.includes(hit.trackId)
@@ -694,10 +772,25 @@ export function createGuitarRoomBand(
       }
       if (percussionActivations.some((activated) => !activated)) {
         stop()
-        throw new Error('The authored drum player could not activate.')
+        throw new Error('The selected drum player could not activate.')
       }
 
       const tempoBpm = resolveGuitarRoomBandTempoBpm(startOptions.tempoBpm)
+      let humanizeDrumEvents: HumanizeDrumEvents | null = null
+      if (generatedRhythmEligible && drumSound.feelId !== 'straight') {
+        try {
+          humanizeDrumEvents = (await loadHumanizer()).humanizeDrumEvents
+        } catch {
+          // A split-chunk failure leaves the authored grid intact and audible.
+        }
+      }
+      if (currentGeneration !== generation) {
+        return {
+          expectedHitTimesMs: [],
+          exerciseStartedAtSeconds: null,
+          completedAtSeconds: null,
+        }
+      }
       const openingBeatSeconds = 60 / tempoBpm
       const beatToSeconds = createBeatClock({
         bpm: tempoBpm,
@@ -717,7 +810,6 @@ export function createGuitarRoomBand(
         durationBeats,
         loop,
       )
-      const feel = startOptions.feel ?? 'groove'
       const inputTimingWindowSeconds = Number.isFinite(
         startOptions.inputTimingWindowMs,
       )
@@ -777,6 +869,13 @@ export function createGuitarRoomBand(
         startOptions.rhythmPresetForIteration?.(0, null) ??
         startOptions.rhythmPreset ??
         null
+      const humanizeStyle =
+        drumSound.feelId === 'straight' ? 'rock' : drumSound.feelId
+      const humanizeSeed = guitarRoomHumanizeSeed(
+        drumSound,
+        tempoBpm,
+        activeRhythmPreset?.id ?? null,
+      )
 
       const scheduleUiCallback = (at: number, callback: () => void): void => {
         const delay = Math.max(
@@ -885,17 +984,92 @@ export function createGuitarRoomBand(
             gmKey: hit.gmKey,
             velocity: hit.velocity,
             atContextTime: hitAt,
+            lane: 'authored',
             ...(hit.sourceId === undefined ? {} : { sourceId: hit.sourceId }),
           })
         }
       }
 
-      const soundRhythmBeat = (
-        preset: GuitarRoomRhythmPreset,
+      const defaultRhythmHitsForBeat = (
         exerciseIndex: number,
+      ): readonly GuitarRoomRhythmHit[] => {
+        const patternBeat = ((exerciseIndex % 4) + 4) % 4
+        const hits: GuitarRoomRhythmHit[] = [
+          {
+            beatOffset: patternBeat,
+            voice: patternBeat === 0 ? 'kick' : 'hh-closed',
+            velocity: patternBeat === 0 ? 0.74 : 0.58,
+          },
+        ]
+        if (patternBeat === 2) {
+          hits.push({
+            beatOffset: patternBeat,
+            voice: 'snare',
+            velocity: 0.55,
+          })
+        }
+        return hits
+      }
+
+      const soundRhythmBeat = (
+        preset: GuitarRoomRhythmPreset | null,
+        exerciseIndex: number,
+        iteration: number,
         at: number,
       ): void => {
-        for (const hit of guitarRoomRhythmHitsForBeat(preset, exerciseIndex)) {
+        const player = runPercussionPlayers.get(GENERATED_RHYTHM_TRACK_ID)
+        if (player === undefined) return
+        const hits =
+          preset === null
+            ? defaultRhythmHitsForBeat(exerciseIndex)
+            : guitarRoomRhythmHitsForBeat(preset, exerciseIndex)
+        const timelineBeat =
+          loop === null ? exerciseIndex : exerciseIndex - loop.start
+        const validHits = hits.filter(
+          (hit) =>
+            Number.isFinite(hit.beatOffset) &&
+            Number.isFinite(hit.velocity) &&
+            GUITAR_ROOM_DRUM_GM_KEYS[hit.voice] !== undefined,
+        )
+        const inputEvents: HumanizeInputEvent[] = validHits.map((hit) => {
+          const fractionalOffset = hit.beatOffset - Math.floor(hit.beatOffset)
+          const eventTimelineBeat = timelineBeat + fractionalOffset
+          const bar = Math.max(0, Math.floor(eventTimelineBeat / 4))
+          const beatWithinBar = ((eventTimelineBeat % 4) + 4) % 4
+          return {
+            articulation: hit.voice,
+            bar,
+            step: Math.round(beatWithinBar * 4) % 16,
+            velocity: Math.min(
+              127,
+              Math.max(1, Math.round(hit.velocity * 127)),
+            ),
+            accent: hit.velocity >= 0.54,
+          }
+        })
+        const shaped =
+          humanizeDrumEvents === null
+            ? inputEvents.map(
+                (event): HumanizedEvent => ({
+                  timeOffsetMs: 0,
+                  velocity: event.velocity,
+                  ornaments: [],
+                }),
+              )
+            : humanizeDrumEvents(inputEvents, {
+                style: humanizeStyle,
+                intensity: 0.6,
+                seed: humanizeSeed,
+                tempoBpm,
+                // Guitar accompaniment repeats a settled pocket on every
+                // lap. This also bounds the humanizer's drift work to one
+                // bar instead of rebuilding the full song prefix per beat.
+                locked: true,
+              })
+        for (let index = 0; index < validHits.length; index += 1) {
+          const hit = validHits[index]
+          const shapedHit = shaped[index]
+          if (shapedHit === undefined) continue
           if (
             !Number.isFinite(hit.beatOffset) ||
             !Number.isFinite(hit.velocity)
@@ -906,14 +1080,25 @@ export function createGuitarRoomBand(
           const hitAt =
             at +
             beatToSeconds(exerciseIndex + fractionalOffset) -
-            beatToSeconds(exerciseIndex)
-          triggerDrumVoice(
-            hit.voice,
-            currentGraph.context,
-            hitAt,
-            Math.min(1, Math.max(0, hit.velocity)),
-            drumsOutput,
-          )
+            beatToSeconds(exerciseIndex) +
+            shapedHit.timeOffsetMs / 1000
+          const sourceId = `guitar-generated:${preset?.id ?? 'default'}:${iteration}:${exerciseIndex}:${index}`
+          for (const ornament of shapedHit.ornaments) {
+            player.trigger({
+              gmKey: GUITAR_ROOM_DRUM_GM_KEYS[hit.voice],
+              velocity: ornament.velocity,
+              atContextTime: hitAt - ornament.leadMs / 1000,
+              sourceId: `${sourceId}:${ornament.kind}`,
+              lane: 'authored',
+            })
+          }
+          player.trigger({
+            gmKey: GUITAR_ROOM_DRUM_GM_KEYS[hit.voice],
+            velocity: shapedHit.velocity,
+            atContextTime: hitAt,
+            sourceId,
+            lane: 'authored',
+          })
         }
       }
 
@@ -1009,24 +1194,14 @@ export function createGuitarRoomBand(
               drumsOutput,
             )
           } else if (activeRhythmPreset !== null) {
-            soundRhythmBeat(activeRhythmPreset, exerciseIndex, at)
-          } else {
-            triggerDrumVoice(
-              exerciseIndex % 4 === 0 ? 'kick' : 'hh-closed',
-              currentGraph.context,
+            soundRhythmBeat(
+              activeRhythmPreset,
+              exerciseIndex,
+              loopIteration,
               at,
-              exerciseIndex % 4 === 0 ? 0.74 : 0.58,
-              drumsOutput,
             )
-            if (exerciseIndex % 4 === 2) {
-              triggerDrumVoice(
-                'snare',
-                currentGraph.context,
-                at,
-                0.55,
-                drumsOutput,
-              )
-            }
+          } else {
+            soundRhythmBeat(null, exerciseIndex, loopIteration, at)
           }
 
           soundBucket(exerciseIndex, at)

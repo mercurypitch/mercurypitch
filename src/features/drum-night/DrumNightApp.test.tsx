@@ -349,6 +349,7 @@ function playerHarness(
     loadedSamples: 0,
     preparedSamples: 0,
     plannedSamples: 0,
+    selectedFormat: null,
     decodedBytes: 0,
     publishedEncodedBytes: drumKitManifest(initialKitId).publishedEncodedBytes,
     error: null,
@@ -379,11 +380,12 @@ function playerHarness(
       })
       return false
     }
-    const sampled = snapshot.selectedKitId !== 'mercury-synth'
+    const sampled = drumKitManifest(snapshot.selectedKitId).engine === 'sampled'
     updateSnapshot({
       status: sampled ? 'loading' : 'ready',
       fallbackReady: true,
       plannedSamples: sampled ? 5 : 0,
+      selectedFormat: sampled ? 'mp3' : null,
       preparedSamples: 0,
       error: null,
     })
@@ -393,7 +395,7 @@ function playerHarness(
   const panic = vi.fn()
   const dispose = vi.fn(() => listeners.clear())
   const selectKit = vi.fn<DrumKitPlayer['selectKit']>(async (kitId) => {
-    const sampled = kitId !== 'mercury-synth'
+    const sampled = drumKitManifest(kitId).engine === 'sampled'
     updateSnapshot({
       selectedKitId: kitId,
       status: snapshot.fallbackReady && sampled ? 'loading' : 'idle',
@@ -401,13 +403,17 @@ function playerHarness(
       loadedSamples: 0,
       preparedSamples: 0,
       plannedSamples: snapshot.fallbackReady && sampled ? 5 : 0,
+      selectedFormat: snapshot.fallbackReady && sampled ? 'mp3' : null,
       publishedEncodedBytes: drumKitManifest(kitId).publishedEncodedBytes,
       error: null,
     })
   })
   const retry = vi.fn<DrumKitPlayer['retry']>(async () => {
     updateSnapshot({
-      status: snapshot.selectedKitId === 'mercury-synth' ? 'ready' : 'loading',
+      status:
+        drumKitManifest(snapshot.selectedKitId).engine === 'synth'
+          ? 'ready'
+          : 'loading',
       error: null,
     })
   })
@@ -2557,13 +2563,21 @@ describe('DrumNightApp', () => {
     expect(room.requestAccess).not.toHaveBeenCalled()
   })
 
-  it('persists all four kit choices and exposes loading fallback, attribution, and retry', async () => {
+  it('persists all five kit choices and exposes loading fallback, attribution, and retry', async () => {
     const room = renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Kit' })[0])
     const drawer = screen.getByRole('region', { name: 'Choose the kit' })
     const kitGroup = within(drawer).getByRole('radiogroup', {
       name: 'Drum sound',
     })
+
+    fireEvent.click(within(kitGroup).getByRole('radio', { name: /Circuit/i }))
+    expect(room.player.selectKit).toHaveBeenCalledWith('circuit')
+    expect(localStorage.getItem('mp.drumNight.kit.v1')).toBe('circuit')
+    expect(
+      screen.getByText('Circuit selected. No sample download is needed.'),
+    ).toBeVisible()
+    expect(room.player.activate).not.toHaveBeenCalled()
 
     fireEvent.click(within(kitGroup).getByRole('radio', { name: /Live/i }))
     expect(room.player.selectKit).toHaveBeenCalledWith('live')
@@ -3441,6 +3455,12 @@ describe('DrumNightApp', () => {
     })
     synth.focus()
     fireEvent.keyDown(synth, { key: 'ArrowRight' })
+    const circuit = within(drawer).getByRole('radio', { name: /Circuit/i })
+    expect(circuit).toHaveFocus()
+    expect(circuit).toHaveAttribute('aria-checked', 'true')
+    expect(room.player.selectKit).toHaveBeenLastCalledWith('circuit')
+
+    fireEvent.keyDown(circuit, { key: 'ArrowRight' })
     const classic = within(drawer).getByRole('radio', { name: /Classic GM/i })
     expect(classic).toHaveFocus()
     expect(classic).toHaveAttribute('aria-checked', 'true')
