@@ -1246,8 +1246,15 @@
     padding: 6px 14px;
   }
 
+  /* Almost nothing: the bar above draws its own rule and the console below
+     has a border and a margin, so this padding separates the instrument from
+     two edges that are already drawn. Six pixels of it, on the screen where
+     the last four decide whether the stage scrolls. Measured at 375x553 on
+     a wrong call whose question wrapped and whose verdict ran to two lines —
+     the tallest the console gets — where the drill came to 398 in a 394
+     porthole and the instrument was already on its floor. */
   .body {
-    padding: 8px 16px 4px;
+    padding: 4px 16px 2px;
   }
 
   .figure {
@@ -1269,7 +1276,7 @@
   }
 
   .console {
-    margin: 0 10px 6px;
+    margin: 0 10px 4px;
     padding: 6px 10px;
     gap: 6px;
   }

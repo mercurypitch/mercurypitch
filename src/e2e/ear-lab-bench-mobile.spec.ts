@@ -27,8 +27,30 @@
 //     the answer pads went under a scroll in the one screen a singer taps
 //     at without looking.
 
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
+
+/**
+ * Turn auto-advance off, so a verdict waits for Next instead of the run
+ * moving on under the measurement. Call it once a run is under way — the
+ * switch is in the drill bar, which only carries it while a run is live. A drill passes through several console
+ * heights — a listen pad that is a label one moment and a button the next,
+ * a verdict that is one line or three — and with the run advancing on its
+ * own, which one got measured was down to the clock.
+ */
+async function parkOnTheVerdict(page: Page): Promise<void> {
+  const auto = page.getByTestId('ear-auto-advance')
+  await expect(auto).toBeVisible()
+  if ((await auto.getAttribute('aria-checked')) === 'true') {
+    await auto.click()
+  }
+  await expect(auto).toHaveAttribute('aria-checked', 'false')
+}
+
+/** The listen pad once it is a button again: the run has parked. */
+function parkedPad(page: Page) {
+  return page.locator('[class*="playPad"]:not([disabled])')
+}
 
 /** An iPhone SE with Safari's chrome around it. */
 test.use({ viewport: { width: 375, height: 553 } })
@@ -118,6 +140,7 @@ test('fits a running drill on an upright phone without a scroll @smoke', async (
     { hasText: 'The first' },
   )
   await expect(firstPad).toBeVisible({ timeout: 10_000 })
+  await parkOnTheVerdict(page)
 
   // Mid-run, with the verdict block under the pads: the console at its
   // tallest is the state the whole drill is spent in.
@@ -125,11 +148,9 @@ test('fits a running drill on an upright phone without a scroll @smoke', async (
   await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
     timeout: 10_000,
   })
-  // Parked on "Next", not mid-reveal: the run passes through several console
-  // heights and this is the tallest — a wrong call's line, its consequence
-  // under it, and a listen pad that has become a real button again. Measuring
-  // whichever state the clock landed on made the assertion a coin toss.
-  await expect(page.getByText('Next').first()).toBeVisible({ timeout: 20_000 })
+  // Parked, not mid-reveal: this is the console at its tallest — the verdict
+  // showing and the listen pad back as a real button.
+  await expect(parkedPad(page).first()).toBeVisible({ timeout: 20_000 })
 
   const layout = await page.evaluate(() => {
     const stage = document.querySelector('[data-testid="ear-stage"]')
@@ -215,15 +236,14 @@ test.describe('the taller phone', () => {
       '[data-testid="ear-stage-pads"] button:not([disabled])',
     )
     await expect(pads.first()).toBeEnabled({ timeout: 20_000 })
+    await parkOnTheVerdict(page)
     await pads.first().click()
     await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
       timeout: 10_000,
     })
     // Parked, for the same reason as the drill above: this is the console at
     // its tallest, and the state the singer actually reads the verdict in.
-    await expect(page.getByText('Next').first()).toBeVisible({
-      timeout: 20_000,
-    })
+    await expect(parkedPad(page).first()).toBeVisible({ timeout: 20_000 })
 
     const layout = await page.evaluate(() => {
       const stage = document.querySelector('[data-testid="ear-stage"]')
