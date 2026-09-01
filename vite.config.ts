@@ -640,6 +640,29 @@ export default defineConfig(({ command, mode }) => {
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],
+      // Pre-bundled at server start rather than discovered mid-session.
+      //
+      // Vite optimizes a dependency the first time something imports it, and
+      // then RELOADS THE PAGE to pick up the new module graph. These three
+      // are reached only from a worker or a lazy import, so the first time
+      // they are discovered is in the middle of doing the thing that needs
+      // them — `@huggingface/transformers` while a song is downloading and
+      // decoding, which is where it cost an afternoon: the load stopped
+      // mid-sentence and a fresh document appeared at the same URL, with no
+      // error, and read exactly like the iOS content-process kill we were
+      // hunting. Declared here, they are bundled before the first request
+      // and nothing reloads.
+      //
+      // A worker's imports are a separate module graph, which is why a
+      // static `import` inside src/workers still counts as late discovery.
+      include: [
+        // src/workers/whisper-worker.ts, src/workers/voice-stt-worker.ts
+        '@huggingface/transformers',
+        // Guitar tab rendering, behind a lazy import
+        '@coderline/alphatab',
+        // Take export, behind a lazy import
+        '@mediabunny/aac-encoder',
+      ],
     },
     css: {
       transformer: 'lightningcss',
