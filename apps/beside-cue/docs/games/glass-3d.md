@@ -813,6 +813,51 @@ front of it. The controller in §4.1 is body-agnostic — a capsule walks
 the same whatever is drawn around it — so a placeholder capsule can
 prove slice 1's mechanics while the rig is finished.
 
+### 6.4a Merc as actually built, and what is still missing
+
+Slice 0 shipped him as an asset (`art/merc/make_merc.py`), and three
+things about how he came out change what slice 1 has to do.
+
+**He has no skeleton, and does not need one.** Meshy's auto-rig refuses
+the S3 body plan outright — "pose estimation failed" — because there are
+no limbs to estimate a pose from. A droplet with two floating mitts has
+nothing a humanoid rig recognises. What saved it is that the mitts are
+separate mesh islands, so the export is three nodes (`merc_body`,
+`merc_hand_l`, `merc_hand_r`) animated by node transforms rather than by
+bones. No skinning, no weight painting, no four-influence budget: the
+whole §6.1 rig discipline simply does not apply to this character. Four
+clips exist — `sing`, `listen`, `celebrate`, `fall`.
+
+**There is no locomotion clip.** Slice 1 needs him to cross a room and
+nothing in the export moves him. Because he hovers, that clip is a
+vertical bob with the hands trailing and counter-swinging — genuinely
+easier than a walk cycle, and the one place the limbless design pays a
+dividend rather than charging a tax. It has to be authored before slice
+1 can look like anything.
+
+**He has no surface.** The Meshy 7 GLB is geometry only: `POSITION`
+alone, no normals, no UVs, no materials, no images. The textures were
+never downloaded alongside it — the `*_textures/` set on disk belongs to
+the earlier meshy-6 model — though Meshy packs them into the `.blend`,
+so they are recoverable if wanted.
+
+Whether they are wanted is a real question rather than an oversight.
+The locked art direction is **iridescent mercury**, and mercury is a
+material, not a texture: metalness 1, low roughness, thin-film
+iridescence, and the environment doing all the work. A `MeshPhysicalMaterial`
+gets there with no UVs at all, costs nothing to download, and — the part
+that matters — is lit by the same rig as the glass, so he belongs in the
+room instead of carrying a baked-in lighting scheme that fights it.
+
+The exception is **his face**, which is painted in the concept art, not
+sculpted. Untextured, a mercury droplet has no eyes. Options, cheapest
+first: shade the body as mercury and put the face on as a small separate
+plane with an alpha texture (a decal that can also blink and change
+expression, which a baked map cannot); recover the packed textures and
+UV-map the whole character; or model the features as geometry. The decal
+is the recommendation — it is the only one of the three that makes
+expression a runtime variable.
+
 ---
 
 ### 6.5 Getting the files onto the device
@@ -1033,13 +1078,14 @@ on the tablet) before the next begins. The §4a prerequisite is not one
 of them — it is already open as its own PR, because it improves the 2D
 games we ship today and should not wait behind a 3D decision.
 
-| Slice | Contains                                                                                                       | Done when                                                                                                                               |
-| ----- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | The Cabinet: room, glass, voice coupling, shatter, sound, score card, plus the tuning panel and frame HUD (§8) | 60fps on the tablet, shards persist, the card shows real units and a grade, and every feel number is draggable and dumps back to config |
-| 1     | Merc: kinematic controller, camera, one glass wall to break to pass                                            | The wall breaks because of a note, and Merc walks through the hole                                                                      |
-| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                                          | The three chambers are playable end to end and scored                                                                                   |
-| 3     | Polish: juice pass, haptics, reduced-motion path, load time                                                    | Passes the perf gates on a mid Android                                                                                                  |
-| 4     | The next mechanic                                                                                              | —                                                                                                                                       |
+| Slice | Contains                                                                                                 | Done when                                                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | The Cabinet: room, glass, voice coupling, shatter, score card                                            | **Landed** (#688). Tuning panel and frame HUD were dropped on maff's call — iteration happens in a desktop browser, so a panel would have been UI built to avoid a keyboard |
+| 0b    | Sound (§7): the ring, the pump, the shatter                                                              | The Cabinet is silent today, which is the largest single gap between what it is and what it is supposed to feel like                                                        |
+| 1     | Merc: surface pass, hover-locomotion clip, kinematic controller, camera, one glass wall to break to pass | The wall breaks because of a note, and Merc crosses through the hole. See §6.4a — the asset needs a material and a move clip first                                          |
+| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                                    | The three chambers are playable end to end and scored                                                                                                                       |
+| 3     | Polish: juice pass, haptics, reduced-motion path, load time                                              | Passes the perf gates on a mid Android                                                                                                                                      |
+| 4     | The next mechanic                                                                                        | —                                                                                                                                                                           |
 
 ---
 
