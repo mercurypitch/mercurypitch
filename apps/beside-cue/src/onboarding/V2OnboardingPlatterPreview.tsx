@@ -28,12 +28,17 @@ export interface V2OnboardingPlatterPreviewProps {
 const VIEWBOX_WIDTH = 720
 const VIEWBOX_HEIGHT = 1_280
 
-// Measured against the 720x1280 P02 v0.16 stopped authority. The record's
-// rotating top is a circle in its own plane and a 100x30 ellipse in the plate.
+// Measured against the 720x1280 P02 stopped authority. The full record top is
+// a 100x30 ellipse, but only its conservative inner surface rotates. Keeping
+// the outer vinyl static prevents the authored texture from sampling the pale
+// player deck and tonearm just beyond the real foreshortened record boundary.
 const RECORD_CENTER_X = 205
 const RECORD_CENTER_Y = 795
 const RECORD_RADIUS = 100
 const RECORD_Y_SCALE = 0.3
+const RECORD_MOTION_RADIUS = 80
+const RECORD_MOTION_FEATHER = 2
+const RECORD_MOTION_OPAQUE_RADIUS = RECORD_MOTION_RADIUS - RECORD_MOTION_FEATHER
 
 const RECORD_TEXTURE_X = -RECORD_CENTER_X
 const RECORD_TEXTURE_Y = -RECORD_CENTER_Y / RECORD_Y_SCALE
@@ -73,7 +78,8 @@ export function V2OnboardingPlatterPreview(
   props: V2OnboardingPlatterPreviewProps,
 ) {
   const clipIdentity = createUniqueId()
-  const recordClipId = `${clipIdentity}-record`
+  const recordMaskId = `${clipIdentity}-record`
+  const recordFeatherId = `${clipIdentity}-record-feather`
   const tonearmClipId = `${clipIdentity}-tonearm`
   const spindleClipId = `${clipIdentity}-spindle`
   const [renderedAngleRad, setRenderedAngleRad] = createSignal(0)
@@ -295,9 +301,38 @@ export function V2OnboardingPlatterPreview(
         data-visible={overlayVisible() ? 'true' : 'false'}
       >
         <defs>
-          <clipPath id={recordClipId} clipPathUnits="userSpaceOnUse">
-            <circle r={RECORD_RADIUS} />
-          </clipPath>
+          <radialGradient
+            id={recordFeatherId}
+            gradientUnits="userSpaceOnUse"
+            cx="0"
+            cy="0"
+            r={RECORD_MOTION_RADIUS}
+          >
+            <stop
+              offset={RECORD_MOTION_OPAQUE_RADIUS / RECORD_MOTION_RADIUS}
+              stop-color="#fff"
+              stop-opacity="1"
+            />
+            <stop offset="1" stop-color="#fff" stop-opacity="0" />
+          </radialGradient>
+          <mask
+            id={recordMaskId}
+            maskUnits="userSpaceOnUse"
+            maskContentUnits="userSpaceOnUse"
+            mask-type="alpha"
+            x={-RECORD_MOTION_RADIUS}
+            y={-RECORD_MOTION_RADIUS}
+            width={RECORD_MOTION_RADIUS * 2}
+            height={RECORD_MOTION_RADIUS * 2}
+            data-v2-record-motion-mask=""
+            data-record-motion-radius={RECORD_MOTION_RADIUS}
+            data-record-motion-feather={RECORD_MOTION_FEATHER}
+          >
+            <circle
+              r={RECORD_MOTION_RADIUS}
+              fill={`url(#${recordFeatherId})`}
+            />
+          </mask>
           <clipPath id={tonearmClipId} clipPathUnits="userSpaceOnUse">
             <path d="M 209 824 L 237 813 L 279 775 L 285 751 L 306 738 L 328 753 L 333 773 L 318 791 L 249 833 L 247 845 L 216 848 Z" />
           </clipPath>
@@ -309,7 +344,7 @@ export function V2OnboardingPlatterPreview(
         <g
           transform={`translate(${String(RECORD_CENTER_X)} ${String(RECORD_CENTER_Y)}) scale(1 ${String(RECORD_Y_SCALE)})`}
         >
-          <g clip-path={`url(#${recordClipId})`}>
+          <g mask={`url(#${recordMaskId})`}>
             <g transform={`rotate(${String(angleDegrees())})`}>
               <Show when={props.base} keyed fallback={<NativeRecordArtwork />}>
                 {(base) => (

@@ -1,6 +1,10 @@
 // ============================================================
 // V2 onboarding audio director — exact-once hold transitions
 // ============================================================
+//
+// Omitting music means continuity, not stop: one finite score can span scene
+// beats and naturally end. A configured score or hold bed still replaces its
+// lane only after the successor start settles.
 
 import type { AudioSessionCue, AudioSessionScope, AudioSessionStartResult, } from '../audio/audio-session'
 
@@ -88,7 +92,7 @@ export function createV2OnboardingAudioDirector(
   }
 
   function retireHoldAfter(
-    cue: AudioSessionCue | undefined,
+    cue: AudioSessionCue,
     expectedGeneration: number,
   ): void {
     afterStart(cue, (result) => {
@@ -108,7 +112,11 @@ export function createV2OnboardingAudioDirector(
       const expectedGeneration = generation
       retireDialogue()
       const score = playOptional(scope, beat.scoreAssetId)
-      retireHoldAfter(score, expectedGeneration)
+      if (score === undefined) {
+        scope.stopLane('hold-bed', 'lane-stopped')
+      } else {
+        retireHoldAfter(score, expectedGeneration)
+      }
       return playBeatAccents(beat)
     },
 
@@ -120,19 +128,23 @@ export function createV2OnboardingAudioDirector(
       activeHold = { token, exited: false }
       retireDialogue()
       const bed = playOptional(scope, hold.holdBedAssetId)
-      afterStart(bed, (result) => {
-        if (
-          disposed ||
-          activeHold?.token.generation !== token.generation ||
-          activeHold.exited
-        ) {
-          return
-        }
-        if (result?.kind !== 'started') {
-          scope.stopLane('hold-bed', 'lane-stopped')
-        }
-        scope.stopLane('score', 'lane-stopped')
-      })
+      if (bed === undefined) {
+        scope.stopLane('hold-bed', 'lane-stopped')
+      } else {
+        afterStart(bed, (result) => {
+          if (
+            disposed ||
+            activeHold?.token.generation !== token.generation ||
+            activeHold.exited
+          ) {
+            return
+          }
+          if (result?.kind !== 'started') {
+            scope.stopLane('hold-bed', 'lane-stopped')
+          }
+          scope.stopLane('score', 'lane-stopped')
+        })
+      }
       playBeatAccents(hold)
       return token
     },
@@ -155,7 +167,11 @@ export function createV2OnboardingAudioDirector(
       const expectedGeneration = generation
       retireDialogue()
       const score = playOptional(scope, nextBeat.scoreAssetId)
-      retireHoldAfter(score, expectedGeneration)
+      if (score === undefined) {
+        scope.stopLane('hold-bed', 'lane-stopped')
+      } else {
+        retireHoldAfter(score, expectedGeneration)
+      }
       playBeatAccents(nextBeat)
       return true
     },

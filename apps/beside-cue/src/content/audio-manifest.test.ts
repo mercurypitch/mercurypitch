@@ -259,10 +259,18 @@ describe('audio asset manifest', () => {
     expect(isPackagedAudioAssetUrl('./audio/voice/en/corky/line.m4a')).toBe(
       true,
     )
+    expect(
+      isPackagedAudioAssetUrl(
+        '/onboarding/corky-v2.4/audio/dialogue/corky-greeting-v0_1.m4a',
+      ),
+    ).toBe(true)
     expect(isPackagedAudioAssetUrl('https://provider.test/line.m4a')).toBe(
       false,
     )
     expect(isPackagedAudioAssetUrl('/audio/../private/line.m4a')).toBe(false)
+    expect(
+      isPackagedAudioAssetUrl('/onboarding/corky-v2.4/audio/../private.m4a'),
+    ).toBe(false)
     expect(isPackagedAudioAssetUrl('/audio/voice/line.m4a?v=2')).toBe(false)
     expect(isPackagedAudioAssetUrl('/onboarding/audio/line.m4a')).toBe(false)
     expect(isPackagedAudioAssetUrl(' /audio/voice/line.m4a')).toBe(false)

@@ -58,6 +58,7 @@ export default defineConfig(
             'scripts/pr-prepare.mjs',
             'scripts/pr-prepare.test.mjs',
             'src/features/drum-night/audio/drum-velocity-contract.mjs',
+            'scripts/prepare-beside-cue-v2-4-media.mjs',
           ],
         },
       },
@@ -305,6 +306,7 @@ export default defineConfig(
       'scripts/code-metrics.mjs',
       'scripts/pr-prepare.mjs',
       'scripts/pr-prepare.test.mjs',
+      'scripts/prepare-beside-cue-v2-4-media.mjs',
     ],
     languageOptions: {
       globals: {

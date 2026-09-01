@@ -56,7 +56,7 @@ export type CinematicOnboardingConfig =
       readonly media: CinematicOnboardingMediaManifest
     }
   | {
-      /** Caption-first V2 is explicit preview-only until product promotion. */
+      /** Caption-first V2 is isolated to the founder-test preview build. */
       readonly delivery: 'v2-first-run'
       readonly revision: string
       readonly contractVersion: '1.0'
@@ -131,7 +131,7 @@ export const V2_BESIDE_CUE_PREVIEW_CONFIG: BesideCueAppConfig = Object.freeze({
   ...DEFAULT_BESIDE_CUE_CONFIG,
   onboarding: Object.freeze({
     delivery: 'v2-first-run',
-    revision: 'beside-cue-v2-preview-v1',
+    revision: 'beside-cue-v2-preview-v2',
     contractVersion: '1.0',
     activation: 'developer-preview',
   }),

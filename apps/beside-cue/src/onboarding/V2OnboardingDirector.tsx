@@ -11,10 +11,11 @@ import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
 import { BrandMark } from '@/components/BrandMark'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
-import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, } from '@/content'
+import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import type { V2OnboardingAudioBeat } from './v2-onboarding-audio-director'
 import { createV2OnboardingAudioDirector } from './v2-onboarding-audio-director'
 import type { V2OnboardingMediaPack, V2OnboardingPullMediaMoment, } from './v2-onboarding-media-pack'
-import { resolveV2OnboardingMediaRequest } from './v2-onboarding-media-pack'
+import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingSceneMediaRequest, } from './v2-onboarding-media-pack'
 import type { V2OnboardingCueContextChoice, V2OnboardingPersistenceEffect, V2OnboardingPhase, V2OnboardingPlanDraft, V2OnboardingPullChoice, V2OnboardingRuntimeEvent, V2OnboardingRuntimeState, V2OnboardingSessionKind, V2OnboardingSideBChoice, } from './v2-onboarding-runtime'
 import { createV2OnboardingRuntimeState, reduceV2OnboardingRuntime, V2_ONBOARDING_PHASE_METADATA, V2_ONBOARDING_PHASES, } from './v2-onboarding-runtime'
 import styles from './V2OnboardingDirector.module.css'
@@ -354,37 +355,41 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       suggestionId: suggestion.id,
     }))
   })
-  const mediaTargetKey = createMemo(() => {
-    const pullId = state().confirmedPull?.pullId
-    const moment = mediaMomentForPhase(state().phase)
-    if (
-      props.mediaPack === undefined ||
-      pullId === undefined ||
-      pullId === 'custom' ||
-      moment === undefined
-    ) {
-      return undefined
-    }
-    return `${String(state().generation)}|${pullId}|${moment}`
-  })
-  const mediaRequest = createMemo(() => {
-    const targetKey = mediaTargetKey()
+
+  function mediaRequestForState(snapshot: V2OnboardingRuntimeState) {
     const mediaPack = props.mediaPack
-    if (targetKey === undefined || mediaPack === undefined) return undefined
-    const [generation, pullId, moment] = targetKey.split('|')
-    if (
-      generation === undefined ||
-      pullId === undefined ||
-      moment === undefined
-    ) {
-      return undefined
+    if (mediaPack === undefined) return undefined
+
+    if (snapshot.phase === 'B01_CORKY_GREETING') {
+      return resolveV2OnboardingSceneMediaRequest(mediaPack, {
+        targetId: 'intro:b01',
+        sceneId: 'corky-reveal',
+      })
     }
-    return resolveV2OnboardingMediaRequest(mediaPack, {
-      targetId: `v2-media:${generation}:${pullId}:${moment}`,
-      pullId,
-      moment: moment as V2OnboardingPullMediaMoment,
-    })
-  })
+    if (snapshot.phase === 'B02_TABLE_REVEAL') {
+      return resolveV2OnboardingSceneMediaRequest(mediaPack, {
+        targetId: 'intro:b02',
+        sceneId: 'table-reveal',
+      })
+    }
+
+    const moment = mediaMomentForPhase(snapshot.phase)
+    const pullId = snapshot.confirmedPull?.pullId
+    if (moment === undefined || pullId === undefined || pullId === 'custom') {
+      return snapshot.phase === 'B03_PULL_CHOICE_HOLD' || moment !== undefined
+        ? resolveV2OnboardingPlateMediaRequest(mediaPack)
+        : undefined
+    }
+
+    return (
+      resolveV2OnboardingMediaRequest(mediaPack, {
+        targetId: `pull:${pullId}:${moment}`,
+        pullId,
+        moment,
+      }) ?? resolveV2OnboardingPlateMediaRequest(mediaPack)
+    )
+  }
+  const mediaRequest = createMemo(() => mediaRequestForState(state()))
 
   const pullChoiceValid = createMemo(() => {
     const selected = state().selectedPull
@@ -440,6 +445,31 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       lineId,
       captionSha256: line.captionSha256,
     })?.id
+  }
+
+  function audioBeatForState(
+    snapshot: V2OnboardingRuntimeState,
+  ): V2OnboardingAudioBeat {
+    const dialogueAsset = dialogueAssetId(lineIdForState(snapshot))
+    switch (snapshot.phase) {
+      case 'B01_CORKY_GREETING':
+        return {
+          dialogueAssetId: dialogueAsset,
+          scoreAssetId: V2_ONBOARDING_AUDIO_ASSET_IDS.score,
+        }
+      case 'B02_TABLE_REVEAL':
+        return {
+          dialogueAssetId: dialogueAsset,
+          foleyAssetId: V2_ONBOARDING_AUDIO_ASSET_IDS.introTableSlide,
+        }
+      case 'B06_SAVE_COMMIT':
+        return {
+          dialogueAssetId: dialogueAsset,
+          foleyAssetId: V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
+        }
+      default:
+        return { dialogueAssetId: dialogueAsset }
+    }
   }
 
   function runEffect(effect: V2OnboardingPersistenceEffect): void {
@@ -640,8 +670,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     on(phaseGeneration, () => {
       const snapshot = state()
       queueMicrotask(() => headingElement?.focus({ preventScroll: true }))
-      const lineId = lineIdForState(snapshot)
-      const beat = { dialogueAssetId: dialogueAssetId(lineId) }
+      const beat = audioBeatForState(snapshot)
       if (DECISION_PHASES.has(snapshot.phase)) {
         audioDirector.enterHold({ holdId: snapshot.phase, ...beat })
         return
@@ -651,7 +680,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       const presentation = snapshot.presentation
       if (presentation === undefined) return
 
-      const requestedMedia = untrack(() => mediaRequest())
+      // Resolve from the exact reducer snapshot that created this generation.
+      // Reading the independently scheduled memo here can briefly return the
+      // outgoing Hold request, which would incorrectly omit the video-end gate
+      // and cut a newly mounted Present/Recede movie at its minimum dwell.
+      const requestedMedia = untrack(() => mediaRequestForState(snapshot))
       const waitsForMedia =
         snapshot.motionMode === 'normal' &&
         requestedMedia?.targetKind === 'automatic' &&
@@ -843,6 +876,27 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       'B06_STOP_SAVE_HOLD',
       'B06_SAVE_COMMIT',
       'B07_SAVED_ACK',
+      'B07_REMINDER_HOLD',
+      'B07_REMINDER_COMMIT',
+    ].includes(state().phase),
+  )
+
+  const isCinematicPhase = createMemo(() =>
+    [
+      'B01_CORKY_GREETING',
+      'B02_TABLE_REVEAL',
+      'B03_PULL_CHOICE_HOLD',
+      'B03_PULL_PRESENTATION',
+      'B04_CUE_CONTEXT_HOLD',
+      'B05_SIDE_B_CHOICE_HOLD',
+      'B05_PULL_RECEDES',
+      'B06_CORKY_STARTS_RECORD',
+      'B06_RIGID_SPIN',
+      'B06_STOP_SAVE_HOLD',
+      'B06_SAVE_COMMIT',
+      'B07_SAVED_ACK',
+      'B07_REMINDER_HOLD',
+      'B07_REMINDER_COMMIT',
     ].includes(state().phase),
   )
 
@@ -876,7 +930,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   return (
     <main
       class={styles.director}
+      classList={{ [styles.directorCinematic]: isCinematicPhase() }}
       data-phase={state().phase}
+      data-layout={isCinematicPhase() ? 'cinematic' : 'paper'}
       data-session-kind={props.sessionKind}
     >
       <button
@@ -941,10 +997,20 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
       <section
         class={styles.stage}
-        classList={{ [styles.stageBrand]: isBrandPhase() }}
+        classList={{
+          [styles.stageBrand]: isBrandPhase(),
+          [styles.stageCinematic]: isCinematicPhase(),
+          [styles.stageRecord]: isRecordPhase(),
+        }}
+        data-v2-scene-surface={isCinematicPhase() ? 'full-viewport' : 'paper'}
+        data-v2-record-scene={isRecordPhase() ? 'true' : 'false'}
         aria-labelledby="v2-onboarding-title"
       >
-        <div class={styles.visual} aria-hidden="true">
+        <div
+          class={styles.visual}
+          classList={{ [styles.visualCinematic]: isCinematicPhase() }}
+          aria-hidden="true"
+        >
           <Switch>
             <Match when={mediaRequest() !== undefined}>
               <V2OnboardingMediaStage
@@ -1034,381 +1100,391 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           </Switch>
         </div>
 
-        <div class={styles.copy}>
-          <h1
-            ref={(element) => {
-              headingElement = element
-            }}
-            id="v2-onboarding-title"
-            tabIndex={-1}
-          >
-            {phaseHeading(state())}
-          </h1>
+        <div
+          class={styles.copy}
+          classList={{ [styles.copyCinematic]: isCinematicPhase() }}
+        >
+          <header class={styles.copyHeading}>
+            <h1
+              ref={(element) => {
+                headingElement = element
+              }}
+              id="v2-onboarding-title"
+              tabIndex={-1}
+            >
+              {phaseHeading(state())}
+            </h1>
 
-          <Show when={captionLine()}>
-            {(line) => (
-              <p class={styles.caption} aria-live="polite" aria-atomic="true">
-                {line().text}
-              </p>
-            )}
-          </Show>
+            <Show when={captionLine()}>
+              {(line) => (
+                <p class={styles.caption} aria-live="polite" aria-atomic="true">
+                  {line().text}
+                </p>
+              )}
+            </Show>
+          </header>
 
-          <Switch>
-            <Match when={state().phase === 'B00_BEGIN_HOLD'}>
-              <button
-                type="button"
-                class={styles.primaryAction}
-                onClick={begin}
-              >
-                Tap to begin
-              </button>
-              <p class={styles.note}>
-                Sound starts after your tap. Captions stay on.
-              </p>
-            </Match>
-
-            <Match when={state().phase === 'B03_PULL_CHOICE_HOLD'}>
-              <div
-                class={styles.pullGrid}
-                role="radiogroup"
-                aria-label="Pull choices"
-              >
-                <For each={props.pullOptions}>
-                  {(option) => {
-                    const character = () =>
-                      findPullCharacter(props.contentPack, option.id) ??
-                      GENERIC_PULL_CHARACTER
-                    return (
-                      <label
-                        class={styles.pullChoice}
-                        classList={{
-                          [styles.pullChoiceSelected]:
-                            selectedPullKey() === option.id,
-                        }}
-                      >
-                        <input
-                          class={styles.choiceRadio}
-                          type="radio"
-                          name="v2-pull"
-                          value={option.id}
-                          aria-label={option.label}
-                          checked={selectedPullKey() === option.id}
-                          onChange={() => selectPull(option)}
-                        />
-                        <AssetStage
-                          slot={character().token}
-                          ceiling="still"
-                          class={styles.pullChoiceArt}
-                          size={256}
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    )
-                  }}
-                </For>
-                <label
-                  class={styles.pullChoice}
-                  classList={{
-                    [styles.pullChoiceSelected]: selectedPullKey() === 'custom',
-                  }}
+          <div class={styles.copyControls}>
+            <Switch>
+              <Match when={state().phase === 'B00_BEGIN_HOLD'}>
+                <button
+                  type="button"
+                  class={styles.primaryAction}
+                  onClick={begin}
                 >
-                  <input
-                    class={styles.choiceRadio}
-                    type="radio"
-                    name="v2-pull"
+                  Tap to begin
+                </button>
+                <p class={styles.note}>
+                  Sound starts after your tap. Captions stay on.
+                </p>
+              </Match>
+
+              <Match when={state().phase === 'B03_PULL_CHOICE_HOLD'}>
+                <div
+                  class={styles.pullGrid}
+                  role="radiogroup"
+                  aria-label="Pull choices"
+                >
+                  <For each={props.pullOptions}>
+                    {(option) => {
+                      const character = () =>
+                        findPullCharacter(props.contentPack, option.id) ??
+                        GENERIC_PULL_CHARACTER
+                      return (
+                        <label
+                          class={styles.pullChoice}
+                          classList={{
+                            [styles.pullChoiceSelected]:
+                              selectedPullKey() === option.id,
+                          }}
+                        >
+                          <input
+                            class={styles.choiceRadio}
+                            type="radio"
+                            name="v2-pull"
+                            value={option.id}
+                            aria-label={option.label}
+                            checked={selectedPullKey() === option.id}
+                            onChange={() => selectPull(option)}
+                          />
+                          <AssetStage
+                            slot={character().token}
+                            ceiling="still"
+                            class={styles.pullChoiceArt}
+                            size={256}
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      )
+                    }}
+                  </For>
+                  <label
+                    class={styles.pullChoice}
+                    classList={{
+                      [styles.pullChoiceSelected]:
+                        selectedPullKey() === 'custom',
+                    }}
+                  >
+                    <input
+                      class={styles.choiceRadio}
+                      type="radio"
+                      name="v2-pull"
+                      value="custom"
+                      aria-label="Something else"
+                      checked={selectedPullKey() === 'custom'}
+                      onChange={chooseCustomPull}
+                    />
+                    <AssetStage
+                      slot={GENERIC_PULL_CHARACTER.token}
+                      ceiling="still"
+                      class={styles.pullChoiceArt}
+                      size={256}
+                    />
+                    <span>Something else</span>
+                  </label>
+                </div>
+                <Show when={selectedPullKey() === 'custom'}>
+                  <label class={styles.textField}>
+                    <span>Your Pull</span>
+                    <input
+                      aria-label="Your Pull"
+                      value={customPullText()}
+                      maxlength={120}
+                      autocomplete="off"
+                      placeholder="For example, opening the feed again"
+                      onInput={(event) =>
+                        updateCustomPull(event.currentTarget.value)
+                      }
+                    />
+                    <small>Stored only on this device.</small>
+                  </label>
+                </Show>
+                <Show when={selectedPullPreview()}>
+                  {(line) => <p class={styles.previewCaption}>{line().text}</p>}
+                </Show>
+                <button
+                  type="button"
+                  class={styles.primaryAction}
+                  disabled={!pullChoiceValid()}
+                  onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
+                >
+                  Continue
+                </button>
+              </Match>
+
+              <Match when={state().phase === 'B04_CUE_CONTEXT_HOLD'}>
+                <div
+                  class={styles.choiceList}
+                  role="radiogroup"
+                  aria-label="Cue context choices"
+                >
+                  <For each={cueSuggestions()}>
+                    {(suggestion) => (
+                      <ChoiceButton
+                        name="v2-cue-context"
+                        value={suggestion.id}
+                        selected={cueContextKey() === suggestion.id}
+                        label={suggestion.text}
+                        onChoose={() =>
+                          selectCueContext({
+                            kind: 'suggested',
+                            suggestionId: suggestion.id,
+                            text: suggestion.text,
+                          })
+                        }
+                      />
+                    )}
+                  </For>
+                  <ChoiceButton
+                    name="v2-cue-context"
                     value="custom"
-                    aria-label="Something else"
-                    checked={selectedPullKey() === 'custom'}
-                    onChange={chooseCustomPull}
+                    selected={cueContextKey() === 'custom'}
+                    label="Write my own"
+                    onChoose={chooseCustomCueContext}
                   />
-                  <AssetStage
-                    slot={GENERIC_PULL_CHARACTER.token}
-                    ceiling="still"
-                    class={styles.pullChoiceArt}
-                    size={256}
+                  <ChoiceButton
+                    name="v2-cue-context"
+                    value="omitted"
+                    selected={cueContextKey() === 'omitted'}
+                    label="Not sure yet"
+                    description="Your plan works without this."
+                    onChoose={() => selectCueContext({ kind: 'omitted' })}
                   />
-                  <span>Something else</span>
-                </label>
-              </div>
-              <Show when={selectedPullKey() === 'custom'}>
-                <label class={styles.textField}>
-                  <span>Your Pull</span>
-                  <input
-                    aria-label="Your Pull"
-                    value={customPullText()}
-                    maxlength={120}
-                    autocomplete="off"
-                    placeholder="For example, opening the feed again"
-                    onInput={(event) =>
-                      updateCustomPull(event.currentTarget.value)
-                    }
-                  />
-                  <small>Stored only on this device.</small>
-                </label>
-              </Show>
-              <Show when={selectedPullPreview()}>
-                {(line) => <p class={styles.previewCaption}>{line().text}</p>}
-              </Show>
-              <button
-                type="button"
-                class={styles.primaryAction}
-                disabled={!pullChoiceValid()}
-                onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
-              >
-                Continue
-              </button>
-            </Match>
-
-            <Match when={state().phase === 'B04_CUE_CONTEXT_HOLD'}>
-              <div
-                class={styles.choiceList}
-                role="radiogroup"
-                aria-label="Cue context choices"
-              >
-                <For each={cueSuggestions()}>
-                  {(suggestion) => (
-                    <ChoiceButton
-                      name="v2-cue-context"
-                      value={suggestion.id}
-                      selected={cueContextKey() === suggestion.id}
-                      label={suggestion.text}
-                      onChoose={() =>
-                        selectCueContext({
-                          kind: 'suggested',
-                          suggestionId: suggestion.id,
-                          text: suggestion.text,
-                        })
+                </div>
+                <Show when={cueContextKey() === 'custom'}>
+                  <label class={styles.textField}>
+                    <span>Your cue</span>
+                    <input
+                      aria-label="Your cue"
+                      value={customCueContext()}
+                      maxlength={120}
+                      autocomplete="off"
+                      placeholder="For example, when I get into bed with my phone"
+                      onInput={(event) =>
+                        updateCustomCueContext(event.currentTarget.value)
                       }
                     />
-                  )}
-                </For>
-                <ChoiceButton
-                  name="v2-cue-context"
-                  value="custom"
-                  selected={cueContextKey() === 'custom'}
-                  label="Write my own"
-                  onChoose={chooseCustomCueContext}
-                />
-                <ChoiceButton
-                  name="v2-cue-context"
-                  value="omitted"
-                  selected={cueContextKey() === 'omitted'}
-                  label="Not sure yet"
-                  description="Your plan works without this."
-                  onChoose={() => selectCueContext({ kind: 'omitted' })}
-                />
-              </div>
-              <Show when={cueContextKey() === 'custom'}>
-                <label class={styles.textField}>
-                  <span>Your cue</span>
-                  <input
-                    aria-label="Your cue"
-                    value={customCueContext()}
-                    maxlength={120}
-                    autocomplete="off"
-                    placeholder="For example, when I get into bed with my phone"
-                    onInput={(event) =>
-                      updateCustomCueContext(event.currentTarget.value)
-                    }
-                  />
-                  <small>Stored only on this device.</small>
-                </label>
-              </Show>
-              <div class={styles.actions}>
-                <button
-                  type="button"
-                  class={styles.backAction}
-                  onClick={() => dispatch({ type: 'BACK' })}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  class={styles.primaryAction}
-                  disabled={!cueContextValid()}
-                  onClick={() => dispatch({ type: 'CONFIRM_CUE_CONTEXT' })}
-                >
-                  Choose Side B
-                </button>
-              </div>
-            </Match>
+                    <small>Stored only on this device.</small>
+                  </label>
+                </Show>
+                <div class={styles.actions}>
+                  <button
+                    type="button"
+                    class={styles.backAction}
+                    onClick={() => dispatch({ type: 'BACK' })}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    class={styles.primaryAction}
+                    disabled={!cueContextValid()}
+                    onClick={() => dispatch({ type: 'CONFIRM_CUE_CONTEXT' })}
+                  >
+                    Choose Side B
+                  </button>
+                </div>
+              </Match>
 
-            <Match when={state().phase === 'B05_SIDE_B_CHOICE_HOLD'}>
-              <dl class={styles.planPair}>
-                <div>
-                  <dt>Side A</dt>
-                  <dd>
-                    {state().confirmedPull?.sideAText ?? 'The familiar pattern'}
-                  </dd>
+              <Match when={state().phase === 'B05_SIDE_B_CHOICE_HOLD'}>
+                <dl class={styles.planPair}>
+                  <div>
+                    <dt>Side A</dt>
+                    <dd>
+                      {state().confirmedPull?.sideAText ??
+                        'The familiar pattern'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Side B</dt>
+                    <dd>{state().selectedSideB?.text ?? 'Your chosen turn'}</dd>
+                  </div>
+                </dl>
+                <div
+                  class={styles.choiceList}
+                  role="radiogroup"
+                  aria-label="Side B choices"
+                >
+                  <For each={sideBSuggestions()}>
+                    {(suggestion) => (
+                      <ChoiceButton
+                        name="v2-side-b"
+                        value={suggestion.key}
+                        selected={sideBKey() === suggestion.key}
+                        label={suggestion.label}
+                        onChoose={() =>
+                          selectSideB(
+                            {
+                              ...(suggestion.suggestionId === undefined
+                                ? {}
+                                : { suggestionId: suggestion.suggestionId }),
+                              text: suggestion.label,
+                            },
+                            suggestion.key,
+                          )
+                        }
+                      />
+                    )}
+                  </For>
+                  <ChoiceButton
+                    name="v2-side-b"
+                    value="custom"
+                    selected={sideBKey() === 'custom'}
+                    label="Write my own"
+                    onChoose={chooseCustomSideB}
+                  />
                 </div>
-                <div>
-                  <dt>Side B</dt>
-                  <dd>{state().selectedSideB?.text ?? 'Your chosen turn'}</dd>
-                </div>
-              </dl>
-              <div
-                class={styles.choiceList}
-                role="radiogroup"
-                aria-label="Side B choices"
-              >
-                <For each={sideBSuggestions()}>
-                  {(suggestion) => (
-                    <ChoiceButton
-                      name="v2-side-b"
-                      value={suggestion.key}
-                      selected={sideBKey() === suggestion.key}
-                      label={suggestion.label}
-                      onChoose={() =>
-                        selectSideB(
-                          {
-                            ...(suggestion.suggestionId === undefined
-                              ? {}
-                              : { suggestionId: suggestion.suggestionId }),
-                            text: suggestion.label,
-                          },
-                          suggestion.key,
-                        )
+                <Show when={sideBKey() === 'custom'}>
+                  <label class={styles.textField}>
+                    <span>Your Side B</span>
+                    <input
+                      aria-label="Your Side B"
+                      value={customSideB()}
+                      maxlength={120}
+                      autocomplete="off"
+                      placeholder="For example, play one guitar riff"
+                      onInput={(event) =>
+                        updateCustomSideB(event.currentTarget.value)
                       }
                     />
+                  </label>
+                </Show>
+                <div class={styles.actions}>
+                  <button
+                    type="button"
+                    class={styles.backAction}
+                    onClick={() => dispatch({ type: 'BACK' })}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    class={styles.primaryAction}
+                    disabled={!sideBValid()}
+                    onClick={() => dispatch({ type: 'CONFIRM_SIDE_B' })}
+                  >
+                    Start the record
+                  </button>
+                </div>
+              </Match>
+
+              <Match when={state().phase === 'B06_RIGID_SPIN'}>
+                <p class={styles.note}>Let it spin for a moment.</p>
+              </Match>
+
+              <Match when={state().phase === 'B06_STOP_SAVE_HOLD'}>
+                <dl class={styles.planPair}>
+                  <div>
+                    <dt>Side A</dt>
+                    <dd>{state().confirmedPull?.sideAText}</dd>
+                  </div>
+                  <div>
+                    <dt>Side B</dt>
+                    <dd>{state().confirmedSideB?.text}</dd>
+                  </div>
+                </dl>
+                <Show when={state().saveError}>
+                  {(message) => (
+                    <p class={styles.error} role="alert">
+                      {message()}
+                    </p>
                   )}
-                </For>
-                <ChoiceButton
-                  name="v2-side-b"
-                  value="custom"
-                  selected={sideBKey() === 'custom'}
-                  label="Write my own"
-                  onChoose={chooseCustomSideB}
-                />
-              </div>
-              <Show when={sideBKey() === 'custom'}>
+                </Show>
+                <button
+                  type="button"
+                  class={styles.stopAction}
+                  aria-label="Stop and save plan"
+                  onClick={() => dispatch({ type: 'STOP_AND_SAVE' })}
+                >
+                  Stop the record
+                </button>
+              </Match>
+
+              <Match when={state().phase === 'B07_REMINDER_HOLD'}>
+                <div
+                  class={styles.reminderGrid}
+                  role="radiogroup"
+                  aria-label="Reminder times"
+                >
+                  <For each={props.reminderPresets}>
+                    {(preset) => (
+                      <ChoiceButton
+                        name="v2-reminder"
+                        value={preset.id}
+                        selected={state().reminderTime === preset.localTime}
+                        label={preset.label}
+                        description={preset.localTime}
+                        onChoose={() =>
+                          dispatch({
+                            type: 'SELECT_REMINDER',
+                            localTime: preset.localTime,
+                          })
+                        }
+                      />
+                    )}
+                  </For>
+                </div>
                 <label class={styles.textField}>
-                  <span>Your Side B</span>
+                  <span>Choose a time</span>
                   <input
-                    aria-label="Your Side B"
-                    value={customSideB()}
-                    maxlength={120}
-                    autocomplete="off"
-                    placeholder="For example, play one guitar riff"
+                    aria-label="Choose a time"
+                    type="time"
+                    value={state().reminderTime ?? ''}
                     onInput={(event) =>
-                      updateCustomSideB(event.currentTarget.value)
+                      dispatch({
+                        type: 'SELECT_REMINDER',
+                        localTime: event.currentTarget.value,
+                      })
                     }
                   />
                 </label>
-              </Show>
-              <div class={styles.actions}>
-                <button
-                  type="button"
-                  class={styles.backAction}
-                  onClick={() => dispatch({ type: 'BACK' })}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  class={styles.primaryAction}
-                  disabled={!sideBValid()}
-                  onClick={() => dispatch({ type: 'CONFIRM_SIDE_B' })}
-                >
-                  Start the record
-                </button>
-              </div>
-            </Match>
-
-            <Match when={state().phase === 'B06_RIGID_SPIN'}>
-              <p class={styles.note}>Let it spin for a moment.</p>
-            </Match>
-
-            <Match when={state().phase === 'B06_STOP_SAVE_HOLD'}>
-              <dl class={styles.planPair}>
-                <div>
-                  <dt>Side A</dt>
-                  <dd>{state().confirmedPull?.sideAText}</dd>
-                </div>
-                <div>
-                  <dt>Side B</dt>
-                  <dd>{state().confirmedSideB?.text}</dd>
-                </div>
-              </dl>
-              <Show when={state().saveError}>
-                {(message) => (
-                  <p class={styles.error} role="alert">
-                    {message()}
-                  </p>
-                )}
-              </Show>
-              <button
-                type="button"
-                class={styles.stopAction}
-                onClick={() => dispatch({ type: 'STOP_AND_SAVE' })}
-              >
-                Stop and save
-              </button>
-            </Match>
-
-            <Match when={state().phase === 'B07_REMINDER_HOLD'}>
-              <div
-                class={styles.reminderGrid}
-                role="radiogroup"
-                aria-label="Reminder times"
-              >
-                <For each={props.reminderPresets}>
-                  {(preset) => (
-                    <ChoiceButton
-                      name="v2-reminder"
-                      value={preset.id}
-                      selected={state().reminderTime === preset.localTime}
-                      label={preset.label}
-                      description={preset.localTime}
-                      onChoose={() =>
-                        dispatch({
-                          type: 'SELECT_REMINDER',
-                          localTime: preset.localTime,
-                        })
-                      }
-                    />
+                <Show when={state().reminderError}>
+                  {(message) => (
+                    <p class={styles.error} role="alert">
+                      {message()}
+                    </p>
                   )}
-                </For>
-              </div>
-              <label class={styles.textField}>
-                <span>Choose a time</span>
-                <input
-                  aria-label="Choose a time"
-                  type="time"
-                  value={state().reminderTime ?? ''}
-                  onInput={(event) =>
-                    dispatch({
-                      type: 'SELECT_REMINDER',
-                      localTime: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              <Show when={state().reminderError}>
-                {(message) => (
-                  <p class={styles.error} role="alert">
-                    {message()}
-                  </p>
-                )}
-              </Show>
-              <div class={styles.actions}>
-                <button
-                  type="button"
-                  class={styles.backAction}
-                  onClick={() => dispatch({ type: 'SKIP_REMINDER' })}
-                >
-                  Not now
-                </button>
-                <button
-                  type="button"
-                  class={styles.primaryAction}
-                  disabled={normalizedText(state().reminderTime ?? '') === ''}
-                  onClick={() => dispatch({ type: 'CONFIRM_REMINDER' })}
-                >
-                  Set reminder
-                </button>
-              </div>
-            </Match>
-          </Switch>
+                </Show>
+                <div class={styles.actions}>
+                  <button
+                    type="button"
+                    class={styles.backAction}
+                    onClick={() => dispatch({ type: 'SKIP_REMINDER' })}
+                  >
+                    Not now
+                  </button>
+                  <button
+                    type="button"
+                    class={styles.primaryAction}
+                    disabled={normalizedText(state().reminderTime ?? '') === ''}
+                    onClick={() => dispatch({ type: 'CONFIRM_REMINDER' })}
+                  >
+                    Set reminder
+                  </button>
+                </div>
+              </Match>
+            </Switch>
+          </div>
         </div>
       </section>
     </main>

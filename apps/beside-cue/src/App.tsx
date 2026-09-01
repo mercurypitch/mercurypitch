@@ -282,6 +282,9 @@ export function App(props: AppProps) {
     output: untrack(services).audioOutput,
     muted: !initialState.settings.voiceEnabled,
     foreground: characterVoiceForeground,
+    // The V2.4 score stem already carries its approved opening dialogue
+    // automation. Preserve that authored gain instead of ducking it twice.
+    dialogueDuckGain: 1,
   })
   const characterVoicePlayer = createVoicePlayer({
     pack: untrack(contentPack),
