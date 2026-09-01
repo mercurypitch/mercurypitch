@@ -169,3 +169,116 @@ test('fits a running drill on an upright phone without a scroll @smoke', async (
     'the instrument has been squeezed to nothing',
   ).toBeGreaterThanOrEqual(80)
 })
+
+// ============================================================
+// The console on the phone that had the most room and used it worst
+// ============================================================
+//
+// 390x664 is an iPhone 14 inside Safari's chrome. It is 111px taller than
+// the SE above, which is exactly why it was the bad case: it clears the
+// short-viewport rules that rescue the SE, and got the desk's console
+// instead — a keycap for a key it has no keyboard for, the answer and its
+// note stacked, and a three-row verdict block. Measured mid-run: 579px of
+// drill in a 505px porthole.
+test.describe('the taller phone', () => {
+  test.use({ viewport: { width: 390, height: 664 } })
+
+  test('answers a six-way question without a scroll @smoke', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+    })
+    await page.goto('/')
+    await dismissOverlays(page)
+    await openNavTab(page, 'tab-ear-lab')
+
+    // Stack, not Hairline: six answers is where the console gets tall, and a
+    // two-answer drill fits whatever the layout does.
+    await page
+      .locator('[data-tour="ear.drills"] button', { hasText: 'Stack' })
+      .first()
+      .click()
+    await expect(page.getByTestId('ear-stage')).toBeVisible()
+
+    await page.getByText('Practice run').click()
+    const pads = page.locator(
+      '[data-testid="ear-stage-pads"] button:not([disabled])',
+    )
+    await expect(pads.first()).toBeVisible({ timeout: 10_000 })
+    await pads.first().click()
+    await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
+      timeout: 10_000,
+    })
+
+    const layout = await page.evaluate(() => {
+      const stage = document.querySelector('[data-testid="ear-stage"]')
+      const pad = document.querySelector(
+        '[data-testid="ear-stage-pads"] button',
+      )
+      const lastCall = document.querySelector('[class*="lastCall"]')
+      if (stage === null || pad === null || lastCall === null) return null
+      let porthole: Element | null = stage.parentElement
+      while (
+        porthole !== null &&
+        getComputedStyle(porthole).overflowY !== 'auto'
+      ) {
+        porthole = porthole.parentElement
+      }
+      if (porthole === null) return null
+      const label = pad.querySelector('[class*="padLabel"]')
+      const sub = pad.querySelector('[class*="padSub"]')
+      const keycap = pad.querySelector('[class*="padKey"]')
+      return {
+        portholeHeight: porthole.clientHeight,
+        portholeScroll: porthole.scrollHeight,
+        padHeight: pad.getBoundingClientRect().height,
+        keycapShown:
+          keycap !== null && getComputedStyle(keycap).display !== 'none',
+        labelTop: label?.getBoundingClientRect().top ?? null,
+        subTop: sub?.getBoundingClientRect().top ?? null,
+        // Distinct row positions inside the verdict block: three of them was
+        // a kicker over a line over a note.
+        lastCallRows: new Set(
+          [...lastCall.children]
+            .filter((child) => child.getBoundingClientRect().height > 0)
+            .map((child) => Math.round(child.getBoundingClientRect().top)),
+        ).size,
+      }
+    })
+
+    expect(layout, 'could not measure the console').not.toBe(null)
+    if (layout === null) return
+
+    expect(
+      layout.portholeScroll,
+      'the drill overflows the phone, so the answer pads sit under a scroll',
+    ).toBeLessThanOrEqual(layout.portholeHeight + 1)
+
+    expect(
+      layout.keycapShown,
+      'the answer pads still show a keycap for a keyboard the phone does not have',
+    ).toBe(false)
+
+    // The answer and its note on one line, not stacked. Compared rather than
+    // pinned: what matters is that they share a row, at whatever height the
+    // type lands on.
+    expect(layout.labelTop, 'the pad has no label').not.toBe(null)
+    expect(layout.subTop, 'the pad has no note to place').not.toBe(null)
+    expect(
+      Math.abs((layout.subTop ?? 0) - (layout.labelTop ?? 0)),
+      'the answer and its note are on separate rows',
+    ).toBeLessThan(12)
+
+    expect(
+      layout.lastCallRows,
+      'the verdict block still stacks three rows',
+    ).toBeLessThanOrEqual(2)
+
+    // The floor, so none of the above was bought below the touch target.
+    expect(
+      layout.padHeight,
+      'an answer pad is under the 44px touch target',
+    ).toBeGreaterThanOrEqual(44)
+  })
+})

@@ -1022,10 +1022,19 @@
     gap: 10px;
   }
 
-  /* Budget: bar, the console with its headline and the pill band, so
-     the stage need not scroll on a phone. */
+  /* Budget: the room's own furniture, the drill bar, and the console with
+     its headline, its listen pad, its answers and its verdict.
+     100cqh is the ROOM's height, not the stage's — the shell is the size
+     container, and the session bar and the space kept for the app's tab bar
+     are 109px of it that nothing below can see. Add the bar (61), the body's
+     padding (24) and a console that reaches 300 with two rows of answers and
+     a verdict under them, and the reserve is 500, not 380. Measured on an
+     iPhone 14 in Safari — 390x664, shell 614 — where at 380 the drill came
+     to 579 in a 505 porthole.
+     The 140px floor is the backstop: a drill with more answers than this
+     still scrolls, but it scrolls with its instrument intact. */
   .figure > svg {
-    max-height: clamp(140px, calc(100cqh - 380px), 300px);
+    max-height: clamp(140px, calc(100cqh - 500px), 300px);
   }
 
   .headline {
@@ -1048,9 +1057,9 @@
     bottom: 0;
     z-index: 2;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    margin: 0 10px 12px;
-    padding: 10px;
+    gap: 8px;
+    margin: 0 10px 10px;
+    padding: 8px;
     background: #0c0e11;
   }
 
@@ -1058,26 +1067,93 @@
     width: 100%;
   }
 
+  /* 44px is the floor, and on a phone the listen pad has no reason to be
+     over it: it is one word and a keycap that is not drawn here. */
   .playPad {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 4px 10px;
     min-width: 0;
-    min-height: 52px;
-    padding: 8px 12px;
+    min-height: 44px;
+    padding: 6px 12px;
   }
 
   .playPad kbd {
     display: none;
   }
 
+  /* One row, not three. A pad stacked its keycap, its answer and its note,
+     so four answers cost 4 x 64px of a console that has under 200 to give.
+     Side by side the same three parts sit on the 44px touch floor: the
+     answer reads from the left, its note from the right, and neither is
+     abbreviated away. */
   .pad {
-    min-height: 64px;
-    padding: 8px 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 10px;
   }
 
-  .padsCompact .padKey {
+  /* The lamp, the keycap and the mark ride in a head span so they stay
+     together on a desk. In one row they have to be siblings of the answer
+     — that is what lets the note sit between the answer and the mark. */
+  .padHead {
+    display: contents;
+  }
+
+  /* There is no keyboard on a phone. The keycap was a hint for a key that
+     cannot be pressed, in the row with the least room for it — and the
+     key hint under the question is already hidden for the same reason. */
+  .padKey {
     display: none;
+  }
+
+  /* The answer never truncates; its note is what gives way. */
+  .padLabel {
+    min-width: 0;
+  }
+
+  .padSub {
+    margin-left: auto;
+    min-width: 0;
+    padding-left: 6px;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Last in the row, where a verdict belongs; `margin-left: auto` was how
+     it reached the right of the head span, and the note owns that now. */
+  .padMark {
+    order: 1;
+    margin-left: 0;
+  }
+
+  /* Two rows, not three. The kicker says "Last call" over a line that
+     already reads as one, and the trial number it qualifies is on the bar.
+     The verdict and the measurement both stay. */
+  .pads {
+    gap: 8px;
+  }
+
+  .lastCall {
+    grid-template-areas:
+      'mark line'
+      'mark note';
+    column-gap: 10px;
+    padding: 6px 10px;
+  }
+
+  .lastCallKicker {
+    display: none;
+  }
+
+  .lastCallMark {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
   }
 
   .consoleNote {
@@ -1093,13 +1169,11 @@
   }
 }
 
-/* The voice-control pill floats bottom-left above the app's tab bar. */
-@media (max-width: 768px) {
-  .console {
-    bottom: 46px;
-    margin-bottom: 46px;
-  }
-}
+/* The console used to give up 46px here — a twelfth of a phone stage — to
+   the voice-control pill floating over the bottom-left corner. The pill docks
+   in the app header on a phone now, so the corner is the console's again.
+   The practice-timer pill still floats there, but it is off by default and
+   the singer who turns it on is choosing to have it in that corner. */
 
 @media (prefers-reduced-motion: reduce) {
   .pad,
@@ -1223,13 +1297,10 @@
     gap: 8px;
   }
 
-  /* 44px is the floor, not a target to design down from — but the keycap and
-     the label stacked make the pad 60px, well over it, for no reason a wide
-     screen can justify. Side by side they fit the floor exactly. */
+  /* The pad is already one row by the time it gets here — the width block
+     lays it out that way in either orientation. Landscape only takes it the
+     last 4px down to the touch floor, which is where it stops. */
   .pad {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
     min-height: 44px;
     padding: 5px 10px;
   }
