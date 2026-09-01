@@ -57,6 +57,16 @@ export interface StreamingStemVoiceOptions {
   readonly onEnded?: () => void
   /** A decode that failed mid-song, for the caller to surface or ignore. */
   readonly onError?: (error: unknown) => void
+  /**
+   * Each window's samples as it is scheduled, so the waveform can be drawn
+   * from audio that had to be decoded anyway. Decoding a song to draw it was
+   * what killed the phone this exists for.
+   */
+  readonly onWindow?: (
+    atSeconds: number,
+    samples: Float32Array,
+    sampleRate: number,
+  ) => void
 }
 
 export interface StreamingStemVoice {
@@ -147,6 +157,8 @@ export function createStreamingStemVoice(
         offset += data.length
       }
     }
+
+    options.onWindow?.(pendingStart, buffer.getChannelData(0), pendingRate)
 
     const source = context.createBufferSource()
     source.buffer = buffer

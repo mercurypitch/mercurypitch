@@ -49,6 +49,7 @@ const CHUNK_SECONDS = 1024 / STEM_RATE
 
 let openedStreams = 0
 let disposedStreams = 0
+let chunkIterations = 0
 
 vi.mock('./stem-stream-source', () => ({
   canStreamStems: () => true,
@@ -57,7 +58,9 @@ vi.mock('./stem-stream-source', () => ({
     return {
       sampleRate: STEM_RATE,
       channelCount: STEM_CHANNELS,
+      durationSeconds: SONG_SECONDS,
       chunks: async function* (fromSeconds: number) {
+        chunkIterations++
         for (let t = fromSeconds; t < SONG_SECONDS; t += CHUNK_SECONDS) {
           yield {
             buffer: fakeChunkBuffer(Math.min(CHUNK_SECONDS, SONG_SECONDS - t)),
@@ -263,6 +266,7 @@ beforeEach(() => {
   decodeCalls = 0
   openedStreams = 0
   disposedStreams = 0
+  chunkIterations = 0
   vi.stubGlobal(
     'fetch',
     vi.fn(
@@ -295,6 +299,18 @@ describe('opening a song on a phone', () => {
     h.dispose()
   })
 
+  it('decodes nothing at all while loading', async () => {
+    deviceClass = 'mobile'
+    const h = harness()
+    await h.controller.loadStems()
+
+    // Loading once walked the whole song to draw its waveform. Firefox iOS
+    // died inside that pass; Safari finished it, said 13 MB resident, and was
+    // killed five seconds later while idle. Nothing is decoded until play.
+    expect(chunkIterations).toBe(0)
+    h.dispose()
+  })
+
   it('keeps a waveform small enough that the size stops mattering', async () => {
     deviceClass = 'mobile'
     const h = harness()
@@ -305,6 +321,7 @@ describe('opening a song on a phone', () => {
     // Mono, a few kilohertz: what the canvas needs and nothing else.
     expect(buffer!.numberOfChannels).toBe(1)
     expect(buffer!.sampleRate).toBeLessThanOrEqual(8000)
+    expect(buffer!.duration).toBeCloseTo(SONG_SECONDS, 1)
 
     const heldBytes =
       buffer!.length * buffer!.numberOfChannels * 4 * /* both stems */ 2

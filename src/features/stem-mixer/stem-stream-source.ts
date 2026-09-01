@@ -26,6 +26,13 @@ export interface StemStream {
   readonly sampleRate: number
   readonly channelCount: number
   /**
+   * Read from the container, never by decoding. `getDurationFromMetadata` is
+   * a header read; `computeDuration` walks packet timestamps but decodes
+   * none of them. Both are cheap, and neither is the thing that killed a
+   * phone.
+   */
+  readonly durationSeconds: number
+  /**
    * Decoded chunks in presentation order from `fromSeconds`. The first chunk
    * may begin slightly before it — the voice trims the difference.
    */
@@ -79,11 +86,15 @@ export async function openStemStream(blob: Blob): Promise<StemStream | null> {
       track.getSampleRate(),
       track.getNumberOfChannels(),
     ])
+    const durationSeconds =
+      (await opened.getDurationFromMetadata()) ??
+      (await opened.computeDuration())
     const sink = new AudioBufferSink(track)
 
     return {
       sampleRate,
       channelCount,
+      durationSeconds,
       chunks(fromSeconds: number) {
         return sink.buffers(Math.max(0, fromSeconds))
       },

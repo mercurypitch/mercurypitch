@@ -8,7 +8,7 @@
 // count's, because the transport maps positions through it.
 
 import { describe, expect, it } from 'vitest'
-import { createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, } from './stem-peak-envelope'
+import { createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, fillPeakEnvelopeWindow, silentPeakEnvelope, } from './stem-peak-envelope'
 
 const RATE = 48_000
 
@@ -84,6 +84,70 @@ describe('what the envelope keeps', () => {
     const envelope = createPeakEnvelopeBuilder(4000).build()
     expect(envelope.data.length).toBe(0)
     expect(envelope.durationSeconds).toBe(0)
+  })
+})
+
+describe('a lane filled in as the song plays', () => {
+  it('starts empty and the right length', () => {
+    const envelope = silentPeakEnvelope(246.3, 1000)
+    expect(envelope.data.length).toBe(246_300)
+    expect(envelope.durationSeconds).toBeCloseTo(246.3, 6)
+    expect(envelope.data.every((v) => v === 0)).toBe(true)
+  })
+
+  it('writes a window at the song position it belongs to', () => {
+    const envelope = silentPeakEnvelope(10, 100)
+    const window = new Float32Array(RATE)
+    for (let i = 0; i < window.length; i++) window[i] = i % 2 === 0 ? 0.6 : -0.6
+
+    // One second of audio, dropped in at four seconds.
+    fillPeakEnvelopeWindow(envelope.data, 100, 4, window, RATE)
+
+    // Before and after are untouched; the second it covers is not.
+    expect(envelope.data.slice(0, 400).every((v) => v === 0)).toBe(true)
+    expect(envelope.data.slice(500).every((v) => v === 0)).toBe(true)
+    const written = envelope.data.slice(400, 500)
+    expect(written.some((v) => v > 0.5)).toBe(true)
+    expect(written.some((v) => v < -0.5)).toBe(true)
+  })
+
+  it('looks the same as a lane built in one pass', () => {
+    const seconds = 4
+    const source = new Float32Array(seconds * RATE)
+    for (let i = 0; i < source.length; i++) {
+      source[i] = 0.8 * Math.sin((i / RATE) * 2 * Math.PI * 110)
+    }
+
+    const built = createPeakEnvelopeBuilder(200)
+    built.push([source], RATE)
+    const inOnePass = built.build()
+
+    const filled = silentPeakEnvelope(seconds, 200)
+    // In window-sized pieces, as playback would deliver them.
+    for (let at = 0; at < seconds; at++) {
+      fillPeakEnvelopeWindow(
+        filled.data,
+        200,
+        at,
+        source.subarray(at * RATE, (at + 1) * RATE),
+        RATE,
+      )
+    }
+
+    expect(filled.data.length).toBe(inOnePass.data.length)
+    for (let i = 0; i < filled.data.length; i++) {
+      expect(filled.data[i]).toBeCloseTo(inOnePass.data[i], 5)
+    }
+  })
+
+  it('ignores a window that falls outside the lane', () => {
+    const envelope = silentPeakEnvelope(2, 100)
+    const window = new Float32Array(RATE).fill(0.9)
+
+    fillPeakEnvelopeWindow(envelope.data, 100, 30, window, RATE)
+    fillPeakEnvelopeWindow(envelope.data, 100, -30, window, RATE)
+
+    expect(envelope.data.every((v) => v === 0)).toBe(true)
   })
 })
 

@@ -30,6 +30,7 @@ import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
+import { fillPeakEnvelopeWindow } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
@@ -67,6 +68,17 @@ interface StemTrack {
   muted: boolean
   soloed: boolean
   volume: number
+}
+
+/** `Promise.allSettled`'s result shape, for one awaited call at a time. */
+async function settleOne<T>(
+  run: () => Promise<T>,
+): Promise<PromiseSettledResult<T>> {
+  try {
+    return { status: 'fulfilled', value: await run() }
+  } catch (reason) {
+    return { status: 'rejected', reason }
+  }
 }
 
 /** What one stem load produced, whichever path produced it. */
@@ -757,6 +769,7 @@ export const useStemMixerAudioController = (
         // A Blob rather than the ArrayBuffer: the demuxer reads it in slices,
         // and this keeps the compressed bytes out of the path that detaches
         // them, so the fallback below still has something to decode.
+        trace(`${name} opening the container`)
         const streamed = await loadStreamedStem({
           context: ctx,
           blob: new Blob([bytes]),
@@ -808,14 +821,27 @@ export const useStemMixerAudioController = (
     // this release from dropping a Drive backup's lock at the same time.
     void platform.keepAwake.enable()
     try {
-      const results = await Promise.allSettled([
+      // One at a time on a phone. The extras path has said so since the first
+      // memory fix, and the named pair went on ignoring it — which is how two
+      // demuxers, two decoders and two compressed downloads came to be open
+      // at the same moment on the device with the least room for any of it.
+      const openVocal = (): Promise<LoadedStem> =>
         deps.stems.vocal !== undefined
           ? loadOne(deps.stems.vocal)
-          : Promise.reject('no vocal'),
+          : Promise.reject('no vocal')
+      const openInstrumental = (): Promise<LoadedStem> =>
         deps.stems.instrumental !== undefined
           ? loadOne(deps.stems.instrumental)
-          : Promise.reject('no inst'),
-      ])
+          : Promise.reject('no inst')
+      const results =
+        stemLoadConcurrency(deviceClass) === 1
+          ? [
+              await settleOne(openVocal),
+              disposed
+                ? ({ status: 'rejected', reason: 'disposed' } as const)
+                : await settleOne(openInstrumental),
+            ]
+          : await Promise.allSettled([openVocal(), openInstrumental()])
 
       const [vocalResult, instResult] = results
 
@@ -1121,6 +1147,10 @@ export const useStemMixerAudioController = (
       let voice: StreamingStemVoice | null = null
 
       if (stream !== null) {
+        // The lane starts empty and fills in as the song plays. Building it up
+        // front meant decoding the whole song for a picture, and that is what
+        // killed the phone — twice, in two different browsers.
+        const lane = track.buffer
         voice = createStreamingStemVoice({
           context: ctx,
           destination: gain,
@@ -1128,6 +1158,18 @@ export const useStemMixerAudioController = (
           atContextTime: now,
           sourceOffsetSeconds: offset,
           playbackRate: playbackSpeed,
+          onWindow:
+            lane === null
+              ? undefined
+              : (atSeconds, samples, sampleRate) => {
+                  fillPeakEnvelopeWindow(
+                    lane.getChannelData(0),
+                    lane.sampleRate,
+                    atSeconds,
+                    samples,
+                    sampleRate,
+                  )
+                },
           onError: (error) => {
             console.warn(`[StemMixer] ${track.label} stream stalled:`, error)
           },

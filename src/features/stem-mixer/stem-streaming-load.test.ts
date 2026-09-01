@@ -1,11 +1,20 @@
 // ============================================================
-// When a stem cannot be streamed, it is still a stem
+// Loading a streamed stem decodes nothing
 // ============================================================
 //
-// Streaming needs WebCodecs and a container mediabunny can walk. Neither is
-// guaranteed, and the answer to "this one cannot be streamed" has to be a
-// whole decode rather than a silent room — so every failure here returns
-// null, which is the loader's signal to fall back.
+// This file used to assert that the load built a peak envelope in one pass.
+// That pass killed phones — Firefox iOS inside it, Safari five seconds after
+// finishing it and reporting 13 MB resident — because decoding a whole song
+// at full tilt produces eleven thousand short-lived AudioBuffers per stem
+// whatever you keep from them.
+//
+// So the load reads the length out of the container and stops. The strongest
+// test here is the one that asserts a chunk is never pulled.
+//
+// The other half: streaming needs WebCodecs and a container mediabunny can
+// walk, neither guaranteed, and the answer to "this one cannot be streamed"
+// has to be a whole decode rather than a silent room — so every failure
+// returns null, which is the loader's signal to fall back.
 
 import { describe, expect, it, vi } from 'vitest'
 import type { StemStream } from './stem-stream-source'
@@ -34,31 +43,62 @@ function fakeContext(): BaseAudioContext {
   } as unknown as BaseAudioContext
 }
 
-function stemOf(seconds: number, chunkSeconds = 0.25): StemStream {
-  return {
+/** Counts what the loader asks of the decoder, which should be nothing. */
+function stemOf(seconds: number) {
+  const state = { chunksOpened: 0 }
+  const stream: StemStream = {
     sampleRate: RATE,
     channelCount: 2,
-    chunks: async function* (from: number) {
-      for (let t = from; t < seconds - 1e-9; t += chunkSeconds) {
-        const length = Math.round(Math.min(chunkSeconds, seconds - t) * RATE)
-        const channel = new Float32Array(length).fill(0.25)
-        yield {
-          buffer: {
-            duration: length / RATE,
-            length,
-            numberOfChannels: 2,
-            sampleRate: RATE,
-            getChannelData: () => channel,
-          } as unknown as AudioBuffer,
-          timestamp: t,
-        }
+    durationSeconds: seconds,
+    chunks: function () {
+      state.chunksOpened++
+      return {
+        [Symbol.asyncIterator]: () => ({
+          next: () => Promise.reject(new Error('the load must not decode')),
+        }),
       }
-    },
+    } as StemStream['chunks'],
     dispose: vi.fn(),
   }
+  return { stream, state }
 }
 
 describe('loading a stem for streamed playback', () => {
+  it('never touches the decoder', async () => {
+    const { stream, state } = stemOf(246.3)
+    const loaded = await loadStreamedStem({
+      context: fakeContext(),
+      blob: new Blob([new Uint8Array(4)]),
+      open: async () => stream,
+    })
+
+    expect(loaded).not.toBeNull()
+    expect(state.chunksOpened).toBe(0)
+  })
+
+  it('sizes an empty lane from the container’s own length', async () => {
+    const { stream } = stemOf(246.3)
+    const loaded = await loadStreamedStem({
+      context: fakeContext(),
+      blob: new Blob([new Uint8Array(4)]),
+      open: async () => stream,
+      peakSampleRate: 1000,
+    })
+
+    expect(loaded!.durationSeconds).toBeCloseTo(246.3, 3)
+    expect(loaded!.displayBuffer.numberOfChannels).toBe(1)
+    expect(loaded!.displayBuffer.sampleRate).toBe(1000)
+    expect(loaded!.displaySampleRate).toBe(1000)
+    // Empty: playback fills it in from windows it decodes anyway.
+    expect(loaded!.displayBuffer.getChannelData(0).every((v) => v === 0)).toBe(
+      true,
+    )
+    // A lane, not a song: 246 s at 1 kHz is a megabyte, against 94 decoded.
+    expect(loaded!.displayBytes).toBeCloseTo(246.3 * 1000 * 4, -3)
+    expect(loaded!.sampleRate).toBe(RATE)
+    expect(loaded!.channelCount).toBe(2)
+  })
+
   it('returns null when the platform will not stream it', async () => {
     const loaded = await loadStreamedStem({
       context: fakeContext(),
@@ -69,8 +109,8 @@ describe('loading a stem for streamed playback', () => {
     expect(loaded).toBeNull()
   })
 
-  it('returns null — and lets the stream go — when it decodes to nothing', async () => {
-    const stream = stemOf(0)
+  it('returns null — and lets the stream go — when it has no length', async () => {
+    const { stream } = stemOf(0)
     const loaded = await loadStreamedStem({
       context: fakeContext(),
       blob: new Blob([new Uint8Array(4)]),
@@ -79,43 +119,5 @@ describe('loading a stem for streamed playback', () => {
 
     expect(loaded).toBeNull()
     expect(stream.dispose).toHaveBeenCalled()
-  })
-
-  it('returns null — and lets the stream go — when the decode throws', async () => {
-    const stream: StemStream = {
-      sampleRate: RATE,
-      channelCount: 2,
-      // eslint-disable-next-line require-yield
-      chunks: async function* () {
-        throw new Error('decoder gave up')
-      },
-      dispose: vi.fn(),
-    }
-    const loaded = await loadStreamedStem({
-      context: fakeContext(),
-      blob: new Blob([new Uint8Array(4)]),
-      open: async () => stream,
-    })
-
-    expect(loaded).toBeNull()
-    expect(stream.dispose).toHaveBeenCalled()
-  })
-
-  it('builds the waveform and the exact length in one pass', async () => {
-    const loaded = await loadStreamedStem({
-      context: fakeContext(),
-      blob: new Blob([new Uint8Array(4)]),
-      open: async () => stemOf(12),
-      peakSampleRate: 1000,
-    })
-
-    expect(loaded).not.toBeNull()
-    expect(loaded!.durationSeconds).toBeCloseTo(12, 3)
-    expect(loaded!.displayBuffer.numberOfChannels).toBe(1)
-    expect(loaded!.displayBuffer.sampleRate).toBe(1000)
-    // 12 s at 1 kHz, four bytes a bucket — against 4.6 MB decoded.
-    expect(loaded!.displayBytes).toBeCloseTo(12 * 1000 * 4, -2)
-    expect(loaded!.sampleRate).toBe(RATE)
-    expect(loaded!.channelCount).toBe(2)
   })
 })

@@ -111,6 +111,66 @@ export function createPeakEnvelopeBuilder(
 }
 
 /**
+ * An envelope of the right length and no content yet.
+ *
+ * Filling it means decoding the song, and on iOS decoding a song up front is
+ * exactly what kills the tab — not through what is kept, which is four
+ * megabytes, but through the eleven thousand short-lived AudioBuffers the
+ * decoder produces on the way there, which a phone does not reclaim fast
+ * enough. Measured twice: Firefox iOS died during that pass, Safari survived
+ * it, reported 13 MB resident, and died five seconds later anyway.
+ *
+ * So the lane starts flat and is written into as playback decodes windows it
+ * needed regardless — see `fillPeakEnvelopeWindow`. Nothing is decoded for
+ * the picture alone, and the surface where this matters most (Karaoke Night)
+ * draws no waveform at all.
+ */
+export function silentPeakEnvelope(
+  durationSeconds: number,
+  targetSampleRate: number = DEFAULT_PEAK_ENVELOPE_RATE,
+): PeakEnvelope {
+  const rate = Math.max(1, Math.round(targetSampleRate))
+  const buckets = Math.max(1, Math.round(Math.max(0, durationSeconds) * rate))
+  return {
+    data: new Float32Array(buckets),
+    sampleRate: rate,
+    durationSeconds: Math.max(0, durationSeconds),
+  }
+}
+
+/**
+ * Writes one decoded run of samples into an already-sized envelope buffer, at
+ * the song position it belongs to. Same alternating max/min as the builder,
+ * so a lane filled this way and one built in a single pass look identical.
+ */
+export function fillPeakEnvelopeWindow(
+  envelope: Float32Array,
+  envelopeRate: number,
+  atSeconds: number,
+  samples: Float32Array,
+  inputRate: number,
+): void {
+  if (inputRate <= 0 || envelopeRate <= 0 || samples.length === 0) return
+  const framesPerBucket = inputRate / envelopeRate
+  const firstBucket = Math.round(atSeconds * envelopeRate)
+  const buckets = Math.floor(samples.length / framesPerBucket)
+  for (let b = 0; b < buckets; b++) {
+    const target = firstBucket + b
+    if (target < 0 || target >= envelope.length) continue
+    const from = Math.floor(b * framesPerBucket)
+    const to = Math.min(samples.length, Math.floor((b + 1) * framesPerBucket))
+    let min = 0
+    let max = 0
+    for (let i = from; i < to; i++) {
+      const value = samples[i]
+      if (value < min) min = value
+      if (value > max) max = value
+    }
+    envelope[target] = target % 2 === 0 ? max : min
+  }
+}
+
+/**
  * Wraps an envelope as a mono AudioBuffer, which is what every existing
  * consumer of `track.buffer` already knows how to read.
  */
