@@ -26,13 +26,28 @@ set -euo pipefail
 export LC_ALL=C
 cd "$(dirname "$0")/.."
 
+# Three lossless passes and no lossy one, deliberately.
+#
+# dedup/prune/weld only remove data that is genuinely redundant -- shared
+# accessors, unreferenced nodes, duplicate vertices -- so the model that
+# comes out is the model that went in. `quantize` used to run here too and
+# is about 30% smaller, but it is the only step that changes the numbers,
+# and the assets are nowhere near a size worth trading quality for: a
+# native app ships its models inside the bundle, and a few hundred KB of
+# geometry is not what makes an install big.
+#
+# When compression does become the question -- when there are worlds
+# rather than one glass -- the shape of the answer is already known, and
+# it is textures, not geometry: KTX2/Basis stays compressed in VRAM and
+# cuts texture memory by roughly 10x, which is the number that actually
+# hurts on a phone. Geometry (Draco or meshopt) is the smaller half, and
+# meshopt would additionally need `wasm-unsafe-eval` in the CSP.
 optimize () {
   local src=$1 out=$2 tmp
   tmp=$(mktemp -d)
   pnpm exec gltf-transform dedup "$src"     "$tmp/1.glb"
   pnpm exec gltf-transform prune "$tmp/1.glb" "$tmp/2.glb"
-  pnpm exec gltf-transform weld  "$tmp/2.glb" "$tmp/3.glb"
-  pnpm exec gltf-transform quantize "$tmp/3.glb" "$out"
+  pnpm exec gltf-transform weld  "$tmp/2.glb" "$out"
   rm -rf "$tmp"
   printf '%-28s %6.1f KB raw  %6.1f KB gz\n' "$(basename "$out")" \
     "$(stat -c%s "$out" | awk '{print $1/1024}')" \
@@ -46,11 +61,8 @@ optimize art/merc/merc-preview.glb    art/merc/merc.opt.glb
 # The runtime loads these from public/. Copying is part of the build
 # rather than something to remember: an optimized asset nobody ships is
 # just a file on someone's laptop.
-#
-# Merc is built above but deliberately NOT copied: the Cabinet slice is
-# glass only, and an asset nothing loads is 44 KB of download for a
-# model no one sees. Add the line when he enters the scene.
 mkdir -p public/games/glass3d
 cp art/glass/glass.opt.glb  public/games/glass3d/glass.glb
 cp art/glass/shards.opt.glb public/games/glass3d/shards.glb
+cp art/merc/merc.opt.glb    public/games/glass3d/merc.glb
 echo "copied to public/games/glass3d/"

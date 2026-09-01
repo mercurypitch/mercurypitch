@@ -3441,3 +3441,31 @@ svg {
     transform: none;
   }
 }
+
+/* The build chip. Present on every screen of every build that is not a
+   tagged release, because the question it answers gets asked on a device
+   with no console attached. Deliberately unobtrusive and click-through:
+   it must never be the thing between a tester and a button. */
+.build-stamp {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(6px, env(safe-area-inset-bottom));
+  z-index: 999;
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(36 25 19 / 55%);
+  color: rgb(255 255 255 / 70%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A dirty tree means the sha in the chip does not reproduce the build,
+   which is worth one glance's worth of alarm and no more. */
+.build-stamp--dirty {
+  color: var(--custard, #f2c84b);
+}

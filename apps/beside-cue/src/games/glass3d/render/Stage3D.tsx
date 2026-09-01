@@ -12,7 +12,8 @@
 // reads. What does not: any rule (that is `sim/`), any drawing (that is
 // `render/Renderer3D.ts`), and the loop itself (`runtime/loop.ts`).
 
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { midiToNote } from '@irchiinnuss/pitch-engine'
+import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
@@ -28,10 +29,15 @@ import { createRenderer3D } from './Renderer3D'
 
 const MIC_ID = 'glass3d-cabinet'
 
-/** The note the Cabinet's glass answers to. A5 — comfortably in range
- * for most voices an octave down, and high enough that the harmonic
- * reads as "glass" rather than "hum". */
+/** The note the Cabinet's glass answers to: MIDI 69, A4, 440 Hz. High
+ * enough that the harmonic reads as "glass" rather than "hum", and low
+ * enough that most voices can reach it in some octave. */
 const TARGET_MIDI = 69
+
+/** How often the coaching text may change, in seconds. The meter tracks
+ * every frame — it is one number and the eye reads it as motion — but a
+ * note name rewritten sixty times a second is unreadable. */
+const TEXT_INTERVAL = 0.1
 
 interface Stage3DProps {
   onExit: () => void
@@ -43,6 +49,9 @@ export const Stage3D = (props: Stage3DProps) => {
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
+  const [ringing, setRinging] = createSignal(false)
+  const [wavering, setWavering] = createSignal(false)
+  const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
   const [broken, setBroken] = createSignal(false)
   const [grade, setGrade] = createSignal<number | null>(null)
 
@@ -51,6 +60,40 @@ export const Stage3D = (props: Stage3DProps) => {
   let renderer: ReturnType<typeof createRenderer3D> | null = null
 
   const cfg = WORLD3D_CONFIG
+  const target = midiToNote(TARGET_MIDI)
+  const targetName = `${target.name}${target.octave}`
+
+  /** What the mic is hearing, in the terms the player needs: which note,
+   * and whether it counts. Diagnostic on purpose — "nothing is
+   * happening" and "you are an octave low" look identical otherwise. */
+  const heardLine = createMemo(() => {
+    const midi = heardMidi()
+    if (midi === null) return 'listening'
+    const semis = midi - TARGET_MIDI
+    const tol = cfg.ring.tolSemis + (ringing() ? cfg.ring.pumpTolBonus : 0)
+    if (Math.abs(semis) <= tol) {
+      const cents = Math.round(semis * 100)
+      return `${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢`
+    }
+    // The note in brackets is the diagnostic half: "too low" says what to
+    // do, and "(G4)" says whether the mic is even hearing the right
+    // voice. Octave errors in particular look identical to silence
+    // without it.
+    const note = midiToNote(Math.round(midi))
+    const way = semis > 0 ? 'too high' : 'too low'
+    return `${way} (${note.name}${note.octave})`
+  })
+
+  /** The one line of coaching. The whole reason it exists: a steady hold
+   * charges only to `holdCap` and then stops dead, which without a word
+   * of explanation reads as a bug — the bar fills to about 60% and
+   * refuses to move however well you sing. */
+  const coachLine = createMemo(() => {
+    if (broken()) return 'Broken.'
+    if (!ringing()) return `Hold ${targetName} — ${heardLine()}`
+    if (!wavering()) return 'Now let it waver'
+    return 'Keep waving'
+  })
 
   onMount(() => {
     const r = createRenderer3D(canvas, cfg)
@@ -58,20 +101,38 @@ export const Stage3D = (props: Stage3DProps) => {
 
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
       // Capped pixel ratio: fill cost scales with its square, and this is
       // the single biggest lever on a phone (§5.4).
       r.resize(rect.width, rect.height, Math.min(window.devicePixelRatio, 1.5))
     }
 
-    void r.init().then(() => {
-      fit()
-      setBackend(r.backend())
-      begin()
-    })
+    // ResizeObserver rather than a window resize listener, because the
+    // canvas can change size without the window doing anything: the
+    // stage mounts before layout has settled, a soft keyboard opens, a
+    // parent animates in. A window listener misses all three, and what
+    // it leaves behind is a drawing buffer stuck at whatever size the
+    // element had at mount -- 0x0 if it had not been laid out yet, which
+    // renders as a black screen with no error anywhere.
+    const observer = new ResizeObserver(fit)
+    observer.observe(canvas)
 
-    window.addEventListener('resize', fit)
+    void r
+      .init()
+      .then(() => {
+        fit()
+        setBackend(r.backend())
+        begin()
+      })
+      .catch((err: unknown) => {
+        // A renderer that never resolves is a black screen with no
+        // explanation, which is the worst way to fail on a device.
+        setBackend('no GPU')
+        setMicError(err instanceof Error ? err.message : String(err))
+      })
+
     onCleanup(() => {
-      window.removeEventListener('resize', fit)
+      observer.disconnect()
       stopLoop?.()
       driver?.stop()
       r.dispose()
@@ -92,6 +153,7 @@ export const Stage3D = (props: Stage3DProps) => {
       shatterProgress: 0,
       shatterSeconds: 0,
       resonance: 0,
+      ringing: false,
       launches: null,
     }
 
@@ -101,6 +163,9 @@ export const Stage3D = (props: Stage3DProps) => {
     const loopState = createLoopState()
     let last = performance.now()
     let frame = 0
+    let sinceText = TEXT_INTERVAL
+    let lastMidi: number | null = null
+    let lastWave = false
 
     const tick = (now: number): void => {
       const frameSeconds = (now - last) / 1000
@@ -113,19 +178,20 @@ export const Stage3D = (props: Stage3DProps) => {
           pitch === null
             ? { active: false, strength: 0 }
             : vib.feed(pitch.tAudio * 1000, pitch.midi)
+        lastMidi = pitch?.midi ?? null
+        lastWave = wave.active
 
         if (launches === null) {
           const broke = stepResonance(
             ring,
             {
-              midi: pitch?.midi ?? null,
+              midi: lastMidi,
               vibrato: wave.active,
               vibratoStrength: wave.strength,
             },
             dt,
             cfg.ring,
           )
-          setCharge(ring.res)
           if (broke) {
             // Everything about how the glass flies apart is decided here,
             // once, from how well the note was actually sung.
@@ -144,7 +210,20 @@ export const Stage3D = (props: Stage3DProps) => {
         }
       })
 
+      // Signals are written once a frame, not once a simulation step:
+      // the loop runs at 120 Hz and Solid would otherwise be asked to
+      // reconcile the HUD twice per displayed frame for no gain.
+      setCharge(ring.res)
+      setRinging(ring.res >= cfg.ring.holdCap && launches === null)
+      sinceText += frameSeconds
+      if (sinceText >= TEXT_INTERVAL) {
+        sinceText = 0
+        setHeardMidi(lastMidi)
+        setWavering(lastWave)
+      }
+
       view.resonance = ring.res
+      view.ringing = ring.res >= cfg.ring.holdCap && launches === null
       view.launches = launches
       view.shatterSeconds = launches === null ? 0 : elapsed - breakAt
       view.shatterProgress =
@@ -167,6 +246,9 @@ export const Stage3D = (props: Stage3DProps) => {
       // solveShatter call the voice does.
       ;(window as unknown as Record<string, unknown>).__w3 = () => ({
         charge: ring.res,
+        ringing: ring.res >= cfg.ring.holdCap,
+        wavering: lastWave,
+        heard: lastMidi,
         broken: launches !== null,
         shards: renderer?.centroids().length ?? 0,
         backend: backend(),
@@ -182,6 +264,10 @@ export const Stage3D = (props: Stage3DProps) => {
           breakAt = elapsed
           setGrade(Math.round(acc * 100))
           setBroken(true)
+        },
+        /** Charge without singing, to inspect the ringing state. */
+        setCharge: (to = cfg.ring.holdCap) => {
+          ring.res = Math.min(0.999, to)
         },
       })
       onCleanup(() => {
@@ -202,6 +288,7 @@ export const Stage3D = (props: Stage3DProps) => {
     } catch (err) {
       // Say WHICH failure it was — the 2D game learned this the hard way.
       setMicError(micErrorLine(err))
+      driver = null
     }
   }
 
@@ -209,16 +296,29 @@ export const Stage3D = (props: Stage3DProps) => {
     <div class="stage3d">
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      <div class="stage3d__hud">
-        <span class="stage3d__backend">{backend()}</span>
-        <div class="stage3d__charge" aria-hidden="true">
-          <i style={{ width: `${Math.round(charge() * 100)}%` }} />
+      {/* Top RIGHT. The Leave pill is fixed to the top left and sits on
+          z-index 50, so anything put there is simply not on screen. */}
+      <span class="stage3d__chip">{backend()}</span>
+
+      <Show when={started() && !broken()}>
+        <div class="stage3d__meter" classList={{ 'is-ringing': ringing() }}>
+          <div class="stage3d__track">
+            <i style={{ width: `${Math.round(charge() * 100)}%` }} />
+            {/* Where a steady hold stops and vibrato has to take over.
+                Marked, because the ceiling is a rule of the game rather
+                than the end of the bar. */}
+            <b style={{ left: `${Math.round(cfg.ring.holdCap * 100)}%` }} />
+          </div>
+          <p class="stage3d__coach">{coachLine()}</p>
         </div>
-      </div>
+      </Show>
 
       <Show when={!started()}>
         <div class="stage3d__gate">
-          <p>Hold A above middle C until the glass rings, then let it waver.</p>
+          <p>
+            Hold {targetName} until the glass rings, then let it waver — a
+            steady note alone will not break it.
+          </p>
           <button type="button" onClick={() => void startMic()}>
             Sing to it
           </button>

@@ -346,45 +346,107 @@
   height: 100%;
 }
 
-.stage3d__hud {
+/* The backend readout. Top RIGHT: the Leave pill is fixed to the top
+   left on z-index 50, so a HUD anchored there is behind it and invisible
+   — which is exactly what happened to the first version of this. */
+.stage3d__chip {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
-  left: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 20;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--custard, #f2c84b);
+  opacity: 0.7;
   pointer-events: none;
 }
 
-.stage3d__backend {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.55;
-  color: var(--custard, #f2c84b);
+/* The charge meter and its one line of coaching, at the bottom of the
+   frame so the glass keeps the middle of the screen. */
+.stage3d__meter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
+  z-index: 20;
+  width: min(20rem, 78vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
 }
 
-.stage3d__charge {
-  flex: 1;
-  height: 3px;
+.stage3d__track {
+  position: relative;
+  width: 100%;
+  height: 4px;
   border-radius: 2px;
-  background: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 14%);
   overflow: hidden;
 }
 
-.stage3d__charge i {
+.stage3d__track i {
   display: block;
   height: 100%;
   background: var(--custard, #f2c84b);
   transition: width 80ms linear;
 }
 
+/* The hold ceiling. Past this mark only vibrato moves the bar, so the
+   bar stopping there is the rule working rather than the game hanging. */
+.stage3d__track b {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 55%);
+}
+
+.stage3d__coach {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 72%);
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+/* Ringing: the bar is full as far as holding can take it and the scene
+   is waiting for a wobble. Both the mark and the words say so. */
+.stage3d__meter.is-ringing .stage3d__coach {
+  color: var(--custard, #f2c84b);
+  animation: stage3d-ask 1.1s ease-in-out infinite;
+}
+
+@keyframes stage3d-ask {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage3d__meter.is-ringing .stage3d__coach {
+    animation: none;
+  }
+}
+
 .stage3d__gate,
 .stage3d__card {
   position: absolute;
   left: 50%;
-  bottom: 18%;
+  /* Low enough to leave the whole glass in frame — at 18% it covered the
+     stem and the foot, which is most of what makes a wine glass legible
+     as one. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 3.5rem);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -394,8 +456,13 @@
   max-width: min(28rem, 84vw);
   text-align: center;
   border-radius: 0.75rem;
-  background: rgb(0 0 0 / 45%);
-  backdrop-filter: blur(6px);
+  /* Opaque enough to read against the glass. The stage behind this is
+     bright where the subject is, and 45% black over a lit wine glass is
+     dark grey text on a light grey blur. */
+  background: rgb(10 14 15 / 88%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(8px);
 }
 
 .stage3d__gate button {
