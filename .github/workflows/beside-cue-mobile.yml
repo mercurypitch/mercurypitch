@@ -222,7 +222,7 @@ jobs:
     timeout-minutes: 60
     if: github.event_name == 'pull_request'
     env:
-      HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' }}
+      HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
 
     steps:
       - name: Checkout
@@ -288,6 +288,22 @@ jobs:
           printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
           chmod 600 "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
 
+      # The export signs manually with this profile. Cloud-managed signing
+      # was the first attempt and the archive half of it works, but the
+      # export needs the cloud-managed DISTRIBUTION certificate, and that
+      # is a separate grant the API key's App Manager role does not carry
+      # ("Cloud signing permission error"). A classic App Store profile
+      # against the imported cert needs no special permission at all.
+      - name: Install App Store provisioning profile
+        if: env.HAS_ASC == 'true'
+        env:
+          PROFILE_BASE64: ${{ secrets.APPLE_APPSTORE_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profiles"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/besidecue-appstore.mobileprovision"
+
       - name: Archive and upload to TestFlight
         if: env.HAS_ASC == 'true'
         working-directory: apps/beside-cue/ios/App
@@ -295,6 +311,7 @@ jobs:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+          PROFILE_NAME: ${{ secrets.APPLE_APPSTORE_PROFILE_NAME }}
         run: |
           set -euo pipefail
 
@@ -328,8 +345,13 @@ jobs:
           <dict>
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>upload</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
             <key>teamID</key><string>${TEAM_ID}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
+            </dict>
             <key>manageAppVersionAndBuildNumber</key><false/>
           </dict>
           </plist>
