@@ -24,6 +24,7 @@ vi.mock(
         dispose: vi.fn(async () => undefined),
         getAudioGraph: () => null,
         setMasterLevel: vi.fn(),
+        setElectricAmpParameters: vi.fn(),
         setMelodyChannelLevel: vi.fn(),
         setPercussionTrackAudible: bandSpies.setPercussionTrackAudible,
         start: vi.fn(async () => ({
