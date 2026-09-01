@@ -53,6 +53,12 @@
   gap: 1rem;
 }
 
+.copyHeading,
+.copyControls {
+  display: grid;
+  gap: 1rem;
+}
+
 .copy h1 {
   max-width: 18ch;
   justify-self: center;
@@ -687,6 +693,175 @@
 
   .platterFrame {
     width: min(11rem, 48vw);
+  }
+}
+
+/* Cinematic phases use the V2.4 picture as the stage, never as a card. */
+.directorCinematic {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  background: #ead6ad;
+}
+
+.stageCinematic {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 100dvh;
+  margin: 0;
+  align-content: stretch;
+  align-items: stretch;
+  gap: 0;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+
+.visualCinematic,
+.copyCinematic {
+  width: min(100vw, 56.25dvh);
+  height: 100dvh;
+  min-height: 0;
+  align-self: center;
+  justify-self: center;
+  grid-area: 1 / 1;
+}
+
+.visualCinematic {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  align-items: stretch;
+  background: #ead6ad;
+}
+
+.stageCinematic .mediaStage,
+.stageCinematic .platterFrame {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #ead6ad;
+  box-shadow: none;
+  aspect-ratio: auto;
+}
+
+.stageCinematic .platterFrame > [data-v2-platter-preview] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  aspect-ratio: auto;
+}
+
+.copyCinematic {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  padding: calc(var(--safe-top) + 4.25rem) 1rem calc(var(--safe-bottom) + 1rem);
+  overflow: hidden;
+  pointer-events: none;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.copyCinematic .copyHeading {
+  width: min(100%, 32rem);
+  padding: 0.8rem 1rem;
+  border: 1px solid rgb(36 25 19 / 14%);
+  border-radius: 16px;
+  justify-self: center;
+  background: rgb(255 244 218 / 88%);
+  box-shadow: 0 0.45rem 1.5rem rgb(36 25 19 / 12%);
+  backdrop-filter: blur(12px);
+}
+
+.copyCinematic .copyHeading h1 {
+  font-size: clamp(1.7rem, 6.5vw, 2.7rem);
+}
+
+.copyCinematic .copyHeading h1,
+.copyCinematic .copyHeading .caption {
+  justify-self: center;
+  text-align: center;
+}
+
+.copyCinematic .copyControls {
+  width: min(100%, 34rem);
+  max-height: min(58dvh, 34rem);
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-self: end;
+  justify-self: center;
+  border: 1px solid rgb(36 25 19 / 16%);
+  border-radius: 18px;
+  background: rgb(255 244 218 / 92%);
+  box-shadow: 0 -0.6rem 2rem rgb(36 25 19 / 13%);
+  pointer-events: auto;
+  backdrop-filter: blur(14px);
+}
+
+.copyCinematic .copyControls:empty {
+  display: none;
+}
+
+.stageRecord .copyHeading {
+  width: min(calc(100% - 2rem), 24rem);
+  justify-self: start;
+}
+
+.stageRecord .copyControls {
+  width: min(calc(100% - 1rem), 30rem);
+  max-height: 48dvh;
+}
+
+.stageRecord .planPair {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.stageRecord .planPair > div {
+  padding: 0.65rem 0.75rem;
+}
+
+.stageRecord .stopAction {
+  min-height: 3.5rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+}
+
+.directorCinematic .soundButton {
+  top: calc(var(--safe-top) + 0.85rem);
+  right: max(var(--safe-right), calc((100vw - 56.25dvh) / 2 + 1rem));
+}
+
+.directorCinematic .returnButton {
+  top: calc(var(--safe-top) + 0.85rem);
+  left: max(var(--safe-left), calc((100vw - 56.25dvh) / 2 + 1rem));
+}
+
+@media (max-height: 39rem), (orientation: landscape) and (max-height: 34rem) {
+  .directorCinematic {
+    overflow: hidden;
+  }
+
+  .stageCinematic,
+  .visualCinematic,
+  .copyCinematic {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .stageCinematic .mediaStage,
+  .stageCinematic .platterFrame {
+    width: 100%;
+    height: 100%;
   }
 }
 

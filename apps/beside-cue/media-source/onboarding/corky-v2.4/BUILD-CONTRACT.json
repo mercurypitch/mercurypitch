@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/prepare-beside-cue-v2-4-media.mjs",
+  "authorization": "Founder-authorized integration into MercuryPitch draft PR #689 for Android testing; normal release review still applies.",
+  "source": {
+    "package": "onboarding-video-edit-v2_4",
+    "inventorySha256": "1ab7fafe5bafaaf0391dfe82e0842f9022bae236569beef2d89a16021cdfa4d3",
+    "legacyAudioPackage": "onboarding-video-edit-v0_1"
+  },
+  "delivery": {
+    "picture": "H.264 High 3.1, yuv420p, 720x1280, 24fps CFR, CRF16, GOP48, BT.709, silent, faststart",
+    "stills": "lossless WebP, 720x1280",
+    "audio": "AAC-LC, 48kHz, stereo, 192kbps"
+  },
+  "outputRecords": [
+    {
+      "path": "audio/dialogue/corky-greeting-v0_1.m4a",
+      "sha256": "9c77fcff913846202ad08624a5731603880476232f344af897234cc1bb87bcb4",
+      "bytes": 100275
+    },
+    {
+      "path": "audio/foley/intro-table-slide-v0_1.m4a",
+      "sha256": "19771a2a5e685c0632f6066adbc96f3839e035ddbe38d505b546126a549002ac",
+      "bytes": 62129
+    },
+    {
+      "path": "audio/foley/platter-stop-v0_1.m4a",
+      "sha256": "0b277a72ed506d9281487a77424e058080ab61bcd0e099dc88a3bc8234ad1cd3",
+      "bytes": 40268
+    },
+    {
+      "path": "audio/score/besidecue-score-v0_9.m4a",
+      "sha256": "063b9b244d54c75b6742ad3220f22c7cbf34d795d7a3cce23203a80640260b79",
+      "bytes": 811165
+    },
+    {
+      "path": "picture/b01-corky-reveal-v0_2.mp4",
+      "sha256": "30c2c9a691f23a099895661e3751a87f685b089448f423829c5d7b6ba12b4a7f",
+      "bytes": 511914
+    },
+    {
+      "path": "picture/b02-table-reveal-v0_1.mp4",
+      "sha256": "41f6ba9c268dede781d49c788e28bd4382b8ecc360c80492a7ab92ad9588366f",
+      "bytes": 379510
+    },
+    {
+      "path": "picture/b03-avoidance-present-v0_1.mp4",
+      "sha256": "e85bcdade04dfb8039ad35b689b4f05dc321a18877aae898c7e742c02ec0d49b",
+      "bytes": 783683
+    },
+    {
+      "path": "picture/b03-scrolling-present-v0_2.mp4",
+      "sha256": "d0068ba95a5177b75feb12f038153d666a1a65d5b7575b2a7c25242c7d65aa1e",
+      "bytes": 637553
+    },
+    {
+      "path": "picture/b03-snacking-present-v0_3.mp4",
+      "sha256": "7e777867b43f484eed57a59a62d5ad5719d290434b196768adb338efe4acf09a",
+      "bytes": 687958
+    },
+    {
+      "path": "picture/b05-avoidance-recede-v0_1.mp4",
+      "sha256": "d50ad98ca556d482786c56b172813280fafde11f8b23cc1cc5e452f8977ba4a0",
+      "bytes": 810176
+    },
+    {
+      "path": "picture/b05-scrolling-recede-v0_2.mp4",
+      "sha256": "c0b2c075d743d276368947a9640becfb330cf3c755fc4bbab0fead1e19871194",
+      "bytes": 642645
+    },
+    {
+      "path": "picture/b05-snacking-recede-v0_4.mp4",
+      "sha256": "c88930586f9530fabfb70af1c696a49a15e28c98e714e49121155b47ba1e0928",
+      "bytes": 690471
+    },
+    {
+      "path": "stills/p00-set-empty-v0_1.webp",
+      "sha256": "6af61a1705a3e58577ffba1862ff60789de27bba9c5078272df90f491f926670",
+      "bytes": 359882
+    },
+    {
+      "path": "stills/p01-corky-rest-v0_4.webp",
+      "sha256": "012c4c66073826fe5de62220a0174a609df5acea314c9268141a5cc6360b22ae",
+      "bytes": 624618
+    },
+    {
+      "path": "stills/p02-table-ready-v0_17.webp",
+      "sha256": "8eddf8927b6b3bbc806c31454216497ba06a8487e5d5afe99c992f323b57abc9",
+      "bytes": 648168
+    },
+    {
+      "path": "stills/p03-avoidance-settled-v0_1.webp",
+      "sha256": "ebd730b0849a10432fe028b2ae6ac1440b93cc7db7c5ed74035d4aff32b70821",
+      "bytes": 665802
+    },
+    {
+      "path": "stills/p03-scrolling-settled-v0_2.webp",
+      "sha256": "1e8bb2ef5c199b1f1bb4e2ab09154348e72b3fecc7434154cad77aef3ef0d143",
+      "bytes": 650230
+    },
+    {
+      "path": "stills/p03-snacking-settled-v0_3.webp",
+      "sha256": "e2b29360ce5cced758419972b7bf020a8e056487f1db4a415d40b013e8835b75",
+      "bytes": 660312
+    }
+  ]
+}

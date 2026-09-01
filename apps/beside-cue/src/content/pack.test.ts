@@ -2,10 +2,10 @@ import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { assetUrls } from './assets'
 import type { AudioAssetManifest, AudioSourceVariant } from './audio-manifest'
-import { DEFAULT_AUDIO_ASSET_MANIFEST } from './audio-manifest'
 import { MOMENTS } from './moments'
 import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, findCharacter, findCueEntity, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, validateContentPack, } from './pack'
 import { pullOptions } from './pulls'
+import { V2_ONBOARDING_AUDIO_ASSET_MANIFEST } from './v2-onboarding-audio-manifest'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 const RECORDED_LINE = CANONICAL_VOICE_LINES[0]
@@ -43,12 +43,12 @@ function manifestWithRecording(
 }
 
 describe('content pack', () => {
-  it('ships the exact canonical V2 registry with a valid empty media layer', () => {
-    expect(DEFAULT_CONTENT_PACK.version).toBe('0.4.0')
+  it('ships the exact canonical V2 registry with its approved audio layer', () => {
+    expect(DEFAULT_CONTENT_PACK.version).toBe('0.5.0')
     expect(DEFAULT_CONTENT_PACK.lines).toBe(CANONICAL_VOICE_LINES)
     expect(DEFAULT_CONTENT_PACK.lines).toHaveLength(43)
-    expect(DEFAULT_CONTENT_PACK.audio).toBe(DEFAULT_AUDIO_ASSET_MANIFEST)
-    expect(DEFAULT_CONTENT_PACK.audio.assets).toEqual([])
+    expect(DEFAULT_CONTENT_PACK.audio).toBe(V2_ONBOARDING_AUDIO_ASSET_MANIFEST)
+    expect(DEFAULT_CONTENT_PACK.audio.assets).toHaveLength(4)
     expect(validateContentPack(DEFAULT_CONTENT_PACK)).toEqual([])
   })
 

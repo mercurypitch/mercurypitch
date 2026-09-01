@@ -13,8 +13,9 @@
 
 import type { AssetSlot } from './assets'
 import type { AudioAssetManifest } from './audio-manifest'
-import { DEFAULT_AUDIO_ASSET_MANIFEST, validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
+import { validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
 import { canonicalPullId, pullOptions } from './pulls'
+import { V2_ONBOARDING_AUDIO_ASSET_MANIFEST } from './v2-onboarding-audio-manifest'
 import type { VoiceLineKind, VoiceSpeakerId } from './voice-lines'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
@@ -223,13 +224,13 @@ export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.4.0',
+  version: '0.5.0',
   leadCharacterId: corky.id,
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,
   cueEntities: PULL_CHARACTERS,
   lines: CANONICAL_VOICE_LINES,
-  audio: DEFAULT_AUDIO_ASSET_MANIFEST,
+  audio: V2_ONBOARDING_AUDIO_ASSET_MANIFEST,
 }
 
 export function findCharacter(

@@ -82,6 +82,27 @@ describe('V2 onboarding audio director', () => {
     ).toBeUndefined()
   })
 
+  it('retains a finite score when later beats and bedless holds omit a replacement', async () => {
+    const probe = createScopeProbe()
+    const director = createV2OnboardingAudioDirector(probe.scope)
+
+    director.enterBeat({ scoreAssetId: 'score.onboarding.v2' })
+    probe.played[0]?.started.resolve({ kind: 'started' })
+    await Promise.resolve()
+    probe.stoppedLanes.length = 0
+
+    director.enterBeat({ foleyAssetId: 'foley.next-scene' })
+    const token = director.enterHold({ holdId: 'side-b' })
+    expect(director.exitHold(token, {})).toBe(true)
+
+    expect(probe.stoppedLanes.filter(([lane]) => lane === 'score')).toEqual([])
+    expect(probe.stoppedLanes.filter(([lane]) => lane === 'hold-bed')).toEqual([
+      ['hold-bed', 'lane-stopped'],
+      ['hold-bed', 'lane-stopped'],
+      ['hold-bed', 'lane-stopped'],
+    ])
+  })
+
   it('crosses from score into a hold only after the bed start settles', async () => {
     const probe = createScopeProbe()
     const director = createV2OnboardingAudioDirector(probe.scope)
@@ -166,7 +187,6 @@ describe('V2 onboarding audio director', () => {
       ['dialogue', 'lane-stopped'],
       ['dialogue', 'lane-stopped'],
       ['dialogue', 'lane-stopped'],
-      ['score', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
     ])
   })
@@ -180,15 +200,12 @@ describe('V2 onboarding audio director', () => {
     expect(probe.stoppedLanes).toEqual([
       ['dialogue', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
-      ['score', 'lane-stopped'],
     ])
     expect(director.exitHold(token, {})).toBe(true)
     expect(probe.stoppedLanes).toEqual([
       ['dialogue', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
-      ['score', 'lane-stopped'],
       ['dialogue', 'lane-stopped'],
-      ['score', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
     ])
   })

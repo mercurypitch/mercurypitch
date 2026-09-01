@@ -1,5 +1,9 @@
 # V2 Scroll media source manifest
 
+Status: superseded by the integrated `corky-v2.4` delivery pack. The four
+runtime files documented below are retired; this record and its preparation
+script remain only as reproducibility history.
+
 Locked deterministic delivery set for the Beside Cue V2 onboarding Scroll
 entrance and exit. Generated on 2026-08-30 with FFmpeg n9.0.1 and Node
 v25.8.2 by `scripts/prepare-beside-cue-v2-scroll-media.mjs` (SHA-256

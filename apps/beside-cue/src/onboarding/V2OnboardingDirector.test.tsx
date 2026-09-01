@@ -7,7 +7,7 @@ import { createEffect, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioSession, AudioSessionCue, AudioSessionFinishResult, AudioSessionScope, } from '@/audio'
 import type { ContentPack, PullOption } from '@/content'
-import { DEFAULT_CONTENT_PACK, pullOptions } from '@/content'
+import { DEFAULT_CONTENT_PACK, pullOptions, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
 import { V2_ONBOARDING_PREVIEW_MEDIA_PACK } from './v2-onboarding-media-pack'
 import type { V2OnboardingDirectorProps, V2OnboardingMutationResult, } from './V2OnboardingDirector'
 import { V2OnboardingDirector } from './V2OnboardingDirector'
@@ -312,7 +312,17 @@ function finishCurrentPlatterStop(): void {
 async function reachPullChoice(): Promise<void> {
   await advance(1_300)
   fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
-  await advance(2_300)
+  if (mediaStageHarness.props?.request?.targetId === 'intro:b01') {
+    settleCurrentMedia('intro-b01-token')
+    endCurrentMedia('intro-b01-token')
+    await advance(1_550)
+    expect(currentMediaStage().targetId).toBe('intro:b02')
+    settleCurrentMedia('intro-b02-token')
+    endCurrentMedia('intro-b02-token')
+    await advance(750)
+  } else {
+    await advance(2_300)
+  }
   expect(
     screen.getByRole('heading', {
       name: 'Which Pull do you want to notice sooner?',
@@ -333,14 +343,16 @@ async function reachStopHold(): Promise<void> {
   expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
   expect(screen.getByText('Let it spin for a moment.')).toBeVisible()
   expect(
-    screen.queryByRole('button', { name: 'Stop and save' }),
+    screen.queryByRole('button', { name: 'Stop and save plan' }),
   ).not.toBeInTheDocument()
   await advance(1_799)
   expect(
-    screen.queryByRole('button', { name: 'Stop and save' }),
+    screen.queryByRole('button', { name: 'Stop and save plan' }),
   ).not.toBeInTheDocument()
   await advance(1)
-  expect(screen.getByRole('button', { name: 'Stop and save' })).toBeVisible()
+  expect(
+    screen.getByRole('button', { name: 'Stop and save plan' }),
+  ).toHaveTextContent('Stop the record')
 }
 
 describe('V2OnboardingDirector', () => {
@@ -390,6 +402,29 @@ describe('V2OnboardingDirector', () => {
     expect(probe.audio.disposeScope).toHaveBeenCalledTimes(1)
   })
 
+  it('starts the score with Corky and cues the table Foley at its authored boundary', async () => {
+    const probe = createDirectorProbe()
+    render(() => <V2OnboardingDirector {...probe.props} />)
+
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.score,
+    )
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.introTableSlide,
+    )
+
+    await advance(1_550)
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.introTableSlide,
+    )
+  })
+
   it('waits for the visual dwell when automatic dialogue finishes first', async () => {
     const { finished } = renderWithControlledDialogue(
       'corky.onboarding.greeting',
@@ -425,6 +460,38 @@ describe('V2OnboardingDirector', () => {
     ).toBeVisible()
   })
 
+  it('uses current V2.4 Corky and table media on the full-viewport scene', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
+
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b01' })
+    expect(currentMediaStage().props.request?.primary).toMatchObject({
+      kind: 'video',
+      src: expect.stringContaining('b01-corky-reveal-v0_2.mp4'),
+    })
+    expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'cinematic')
+    expect(screen.getByRole('region', { name: 'Meet Corky.' })).toHaveAttribute(
+      'data-v2-scene-surface',
+      'full-viewport',
+    )
+
+    settleCurrentMedia('intro-b01-token')
+    endCurrentMedia('intro-b01-token')
+    await advance(1_550)
+    expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b02' })
+    expect(currentMediaStage().props.request?.primary).toMatchObject({
+      kind: 'video',
+      src: expect.stringContaining('b02-table-reveal-v0_1.mp4'),
+    })
+  })
+
   it('waits for the current Scroll picture, dialogue and dwell across Present and Recede', async () => {
     const lineId = 'pull.scrolling.present'
     const assetId = `dialogue.${lineId}`
@@ -448,7 +515,7 @@ describe('V2OnboardingDirector', () => {
     const presentStage = currentMediaStage()
     expect(presentStage.props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b03-scrolling-present-v0_1.mp4'),
+      src: expect.stringContaining('b03-scrolling-present-v0_2.mp4'),
     })
     expect(presentStage.targetId).toContain(':present')
     expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
@@ -473,9 +540,11 @@ describe('V2OnboardingDirector', () => {
         name: 'When does Endless scrolling usually show up?',
       }),
     ).toBeVisible()
+    expect(currentMediaStage().targetId).toBe('pull:scrolling:hold')
 
     fireEvent.click(screen.getByRole('radio', { name: /Not sure yet/u }))
     fireEvent.click(screen.getByRole('button', { name: 'Choose Side B' }))
+    expect(currentMediaStage().targetId).toBe('pull:scrolling:hold')
     fireEvent.click(
       screen.getByRole('radio', { name: 'Play one guitar riff.' }),
     )
@@ -484,7 +553,7 @@ describe('V2OnboardingDirector', () => {
     const recedeStage = currentMediaStage()
     expect(recedeStage.props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b05-scrolling-recede-v0_1.mp4'),
+      src: expect.stringContaining('b05-scrolling-recede-v0_2.mp4'),
     })
     expect(recedeStage.targetId).toContain(':recede')
     await advance(1_150)
@@ -503,6 +572,62 @@ describe('V2OnboardingDirector', () => {
       screen.getByRole('heading', { name: 'Corky starts the record.' }),
     ).toBeVisible()
   })
+
+  it.each([
+    {
+      label: 'Automatic snacking',
+      pullId: 'snacking',
+      presentFile: 'b03-snacking-present-v0_3.mp4',
+      recedeFile: 'b05-snacking-recede-v0_4.mp4',
+    },
+    {
+      label: 'Putting it off',
+      pullId: 'avoidance',
+      presentFile: 'b03-avoidance-present-v0_1.mp4',
+      recedeFile: 'b05-avoidance-recede-v0_1.mp4',
+    },
+  ])(
+    'keeps the $label V2.4 performance mounted across Present, Hold and Recede',
+    async ({ label, pullId, presentFile, recedeFile }) => {
+      const probe = createDirectorProbe()
+      render(() => (
+        <V2OnboardingDirector
+          {...probe.props}
+          mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        />
+      ))
+
+      await reachPullChoice()
+      fireEvent.click(screen.getByRole('radio', { name: label }))
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+      expect(currentMediaStage()).toMatchObject({
+        targetId: `pull:${pullId}:present`,
+      })
+      expect(currentMediaStage().props.request?.primary).toMatchObject({
+        kind: 'video',
+        src: expect.stringContaining(presentFile),
+      })
+
+      await advance(1_450)
+      settleCurrentMedia(`${pullId}-present-token`)
+      endCurrentMedia(`${pullId}-present-token`)
+      expect(currentMediaStage().targetId).toBe(`pull:${pullId}:hold`)
+
+      fireEvent.click(screen.getByRole('radio', { name: /Not sure yet/u }))
+      fireEvent.click(screen.getByRole('button', { name: 'Choose Side B' }))
+      fireEvent.click(screen.getAllByRole('radio')[0]!)
+      fireEvent.click(screen.getByRole('button', { name: 'Start the record' }))
+
+      expect(currentMediaStage()).toMatchObject({
+        targetId: `pull:${pullId}:recede`,
+      })
+      expect(currentMediaStage().props.request?.primary).toMatchObject({
+        kind: 'video',
+        src: expect.stringContaining(recedeFile),
+      })
+    },
+  )
 
   it('releases an authored movie gate through its still recovery', async () => {
     const probe = createDirectorProbe()
@@ -640,7 +765,11 @@ describe('V2OnboardingDirector', () => {
     expect(
       screen.getByRole('heading', { name: 'Let’s make one plan.' }),
     ).toBeVisible()
-    expect(probe.audio.play).toHaveBeenCalledTimes(1)
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === 'dialogue.corky.onboarding.greeting',
+      ),
+    ).toHaveLength(1)
   })
 
   it('defers a ready automatic scene until it returns to the foreground', async () => {
@@ -764,16 +893,18 @@ describe('V2OnboardingDirector', () => {
     await advance(20_000)
     expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: 'Stop and save' }),
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
     ).not.toBeInTheDocument()
 
     setForeground(true)
     await advance(1_199)
     expect(
-      screen.queryByRole('button', { name: 'Stop and save' }),
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
     ).not.toBeInTheDocument()
     await advance(1)
-    expect(screen.getByRole('button', { name: 'Stop and save' })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Stop and save plan' }),
+    ).toBeVisible()
   })
 
   it('renders controlled muted truth on the first frame', () => {
@@ -894,7 +1025,11 @@ describe('V2OnboardingDirector', () => {
         .length
     const stopsBeforeMissingPull = dialogueStopCount()
     fireEvent.click(screen.getByRole('radio', { name: 'Automatic snacking' }))
-    expect(probe.audio.play).toHaveBeenCalledTimes(1)
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === 'dialogue.pull.scrolling.meet',
+      ),
+    ).toHaveLength(1)
     expect(dialogueStopCount()).toBe(stopsBeforeMissingPull + 1)
 
     const stopsBeforeCustomPull = dialogueStopCount()
@@ -927,7 +1062,11 @@ describe('V2OnboardingDirector', () => {
       target: { value: 'Opening another shopping tab' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(mediaStageHarness.props).toBeUndefined()
+    expect(currentMediaStage()).toMatchObject({ targetId: 'plate:p02' })
+    expect(currentMediaStage().props.request?.primary).toMatchObject({
+      kind: 'still',
+      src: expect.stringContaining('p02-table-ready-v0_17.webp'),
+    })
     await advance(1_450)
 
     expect(
@@ -993,11 +1132,19 @@ describe('V2OnboardingDirector', () => {
 
     await reachStopHold()
     expect(platterHarness.props?.phase).toBe('spinning')
-    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     await Promise.resolve()
     await Promise.resolve()
 
     expect(probe.onSavePlan).toHaveBeenCalledTimes(1)
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
+      ),
+    ).toHaveLength(1)
     expect(platterHarness.props?.phase).toBe('stopping')
     expect(
       screen.getByRole('heading', { name: 'Saving your plan…' }),
@@ -1039,7 +1186,7 @@ describe('V2OnboardingDirector', () => {
     render(() => <V2OnboardingDirector {...probe.props} />)
 
     await reachStopHold()
-    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     await Promise.resolve()
 
     expect(probe.onSavePlan).not.toHaveBeenCalled()
@@ -1064,7 +1211,7 @@ describe('V2OnboardingDirector', () => {
 
     await reachStopHold()
     const mountedPlatter = document.querySelector('[data-v2-platter-preview]')
-    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     const failedToken = platterHarness.props?.token
     const failedCallback = platterHarness.props?.onStopped
     if (failedToken === undefined || failedCallback === undefined) {
@@ -1077,13 +1224,18 @@ describe('V2OnboardingDirector', () => {
       'Could not save this plan.',
     )
     expect(platterHarness.props?.phase).toBe('spinning')
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
+      ),
+    ).toHaveLength(1)
     expect(document.querySelector('[data-v2-platter-preview]')).toBe(
       mountedPlatter,
     )
     failedCallback(failedToken)
     expect(platterHarness.props?.phase).toBe('spinning')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     expect(platterHarness.props?.phase).toBe('stopping')
     expect(platterHarness.props?.token).not.toBe(failedToken)
     await Promise.resolve()
@@ -1097,6 +1249,11 @@ describe('V2OnboardingDirector', () => {
       screen.getByRole('heading', { name: 'Your plan is saved.' }),
     ).toBeVisible()
     expect(probe.onSavePlan).toHaveBeenCalledTimes(2)
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
+      ),
+    ).toHaveLength(2)
   })
 
   it('lets a replay return immediately without invoking persistence', async () => {
@@ -1183,10 +1340,12 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
     await advance(1_499)
     expect(
-      screen.queryByRole('button', { name: 'Stop and save' }),
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
     ).not.toBeInTheDocument()
     await advance(1)
-    expect(screen.getByRole('button', { name: 'Stop and save' })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Stop and save plan' }),
+    ).toBeVisible()
   })
 
   it('persists injected string-only Side B choices without an invented id', async () => {
@@ -1214,7 +1373,7 @@ describe('V2OnboardingDirector', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Open the window.' }))
     fireEvent.click(screen.getByRole('button', { name: 'Start the record' }))
     await advance(2_400 + 1_800)
-    fireEvent.click(screen.getByRole('button', { name: 'Stop and save' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     await Promise.resolve()
 
     expect(probe.onSavePlan).toHaveBeenCalledWith({

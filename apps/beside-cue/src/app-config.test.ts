@@ -27,7 +27,7 @@ describe('Beside Cue app config', () => {
   it('keeps V2 behind a separate developer-preview contract', () => {
     expect(V2_BESIDE_CUE_PREVIEW_CONFIG.onboarding).toEqual({
       delivery: 'v2-first-run',
-      revision: 'beside-cue-v2-preview-v1',
+      revision: 'beside-cue-v2-preview-v2',
       contractVersion: '1.0',
       activation: 'developer-preview',
     })

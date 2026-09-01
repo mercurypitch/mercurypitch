@@ -177,6 +177,16 @@ vi.mock('./onboarding/V2OnboardingDirector', () => ({
         >
           Start V2 audio
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            audioScope ??= props.audioSession.createScope('v2-app-test-harness')
+            audioScope.play('test.v2.score')
+            audioScope.play('test.v2.dialogue')
+          }}
+        >
+          Start V2 score and dialogue
+        </button>
         <button type="button" onClick={() => props.onMutedChange(!props.muted)}>
           Toggle V2 mute
         </button>
@@ -474,6 +484,9 @@ function createVoiceAudioProbe(): VoiceAudioProbe {
 }
 
 interface RecordedAudioOutputPlayback {
+  readonly source: string
+  readonly initialGain: number
+  readonly gains: number[]
   stopCalls: number
 }
 
@@ -496,14 +509,19 @@ function createAudioOutputProbe(): AudioOutputProbe {
       calls.unlock += 1
       return true
     },
-    play() {
+    play(request) {
       const finished = valueDeferred<'ended' | 'failed' | 'stopped'>()
-      const recorded: RecordedAudioOutputPlayback = { stopCalls: 0 }
+      const recorded: RecordedAudioOutputPlayback = {
+        source: request.source.src,
+        initialGain: request.initialGain,
+        gains: [],
+        stopCalls: 0,
+      }
       playbacks.push(recorded)
       return {
         started: Promise.resolve('started'),
         finished: finished.promise,
-        setGain: () => undefined,
+        setGain: (gain) => recorded.gains.push(gain),
         stop: () => {
           recorded.stopCalls += 1
           finished.resolve('stopped')
@@ -535,6 +553,27 @@ function packWithV2Score(): ContentPack {
               src: 'audio/test/v2-score.m4a',
               mimeType: 'audio/mp4; codecs="mp4a.40.2"',
               sha256: 'b'.repeat(64),
+              byteLength: 4_096,
+              durationMs: 2_000,
+              sampleRateHz: 48_000,
+              channels: 2,
+            },
+          ],
+        },
+        {
+          id: 'test.v2.dialogue',
+          lane: 'dialogue',
+          playback: { kind: 'one-shot' },
+          dialogue: {
+            lineId: 'corky.onboarding.greeting',
+            captionSha256:
+              '4d74d9080a6e32473f9a83d5956dae4e47dfc8861f0fae159e8a4e4c9febd805',
+          },
+          sources: [
+            {
+              src: 'audio/test/v2-dialogue.m4a',
+              mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+              sha256: 'c'.repeat(64),
               byteLength: 4_096,
               durationMs: 2_000,
               sampleRateHz: 48_000,
@@ -973,15 +1012,15 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2-preview-v0.2',
+      'corky-v2.4-preview-v1',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
-      '/onboarding/corky-v2-preview/scrolling/b03-scrolling-present-v0_1.mp4',
+      '/onboarding/corky-v2.4/picture/b03-scrolling-present-v0_2.mp4',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-recede',
-      '/onboarding/corky-v2-preview/scrolling/b05-scrolling-recede-v0_1.mp4',
+      '/onboarding/corky-v2.4/picture/b05-scrolling-recede-v0_2.mp4',
     )
     expect(harness).toHaveAttribute('data-muted', 'false')
     fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
@@ -1028,7 +1067,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     await waitFor(() => expect(repository.saveCalls()).toBe(1))
     expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v1'),
+      onboardingPreferences.read('beside-cue-v2-preview-v2'),
     ).toBeUndefined()
 
     saveGate.resolve()
@@ -1047,7 +1086,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       ]),
     )
     expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v1'),
+      onboardingPreferences.read('beside-cue-v2-preview-v2'),
     ).toMatchObject({ outcome: 'finished' })
 
     fireEvent.click(
@@ -1208,6 +1247,33 @@ describe('Beside Cue V2 onboarding integration', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /start v2 audio/iu }))
     expect(output.playbacks).toHaveLength(0)
+  })
+
+  it('preserves the pre-automated V2 score gain while dialogue is active', async () => {
+    const repository = createMemoryRepository()
+    const output = createAudioOutputProbe()
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, {
+          audioOutput: output.output,
+        })}
+        contentPack={packWithV2Score()}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Start V2 score and dialogue',
+      }),
+    )
+    await waitFor(() => expect(output.playbacks).toHaveLength(2))
+
+    const score = output.playbacks.find(({ source }) =>
+      source.endsWith('/v2-score.m4a'),
+    )
+    expect(score?.initialGain).toBe(1)
+    expect(score?.gains).toEqual([1])
   })
 
   it('keeps V2 foreground truth aligned across page and visibility events', async () => {

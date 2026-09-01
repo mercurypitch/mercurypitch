@@ -191,8 +191,12 @@ export function isPackagedAudioAssetUrl(value: unknown): value is string {
       : url
   const segments = path.split('/')
 
+  const hasPackagedRoot =
+    path.startsWith('audio/') ||
+    /^onboarding\/[a-z\d][a-z\d._-]*\/audio\//iu.test(path)
+
   return (
-    path.startsWith('audio/') &&
+    hasPackagedRoot &&
     /^[a-z\d][a-z\d._/-]*$/iu.test(path) &&
     segments.every(
       (segment) => segment !== '' && segment !== '.' && segment !== '..',
