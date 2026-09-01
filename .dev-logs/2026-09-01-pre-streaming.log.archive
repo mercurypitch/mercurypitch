@@ -1,0 +1,214 @@
+
+=== load fuakkr-10370 · 2026-09-01T10:10:14.484Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[fuakkr-10370]     0.00s INFO   [dev-log] page load fuakkr-10370 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[fuakkr-10370]     4.18s DEBUG  [vite] connecting...
+[fuakkr-10370]     4.35s DEBUG  [vite] connected.
+[fuakkr-10370]    10.51s LOG    global-error-handler: Handlers installed
+[fuakkr-10370]    10.51s LOG    index.tsx: root element found, rendering App
+[fuakkr-10370]    10.52s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[fuakkr-10370]    10.56s LOG    index.tsx: App mounted
+[fuakkr-10370]    11.48s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[fuakkr-10370]    12.37s ONERROR Script error. @ ?:0:0 
+[fuakkr-10370]    12.38s ERROR  Global error: Script error.
+[fuakkr-10370]    12.38s WARN   Ignored external Script error.
+
+=== load vxp5nj-24998 · 2026-09-01T10:10:25.254Z · https://192.168.178.33:3000/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[vxp5nj-24998]     0.00s INFO   [dev-log] page load vxp5nj-24998 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[vxp5nj-24998]     0.05s DEBUG  [vite] connecting...
+[vxp5nj-24998]     0.09s DEBUG  [vite] connected.
+[vxp5nj-24998]     0.28s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[vxp5nj-24998]     0.30s INFO   [SessionStore] pruned 1 orphaned session(s)
+[vxp5nj-24998]     0.31s INFO   [SessionStore] pruned 1 orphaned session(s)
+[vxp5nj-24998]     1.88s INFO   [kn-funnel] karaoke_cta_studio
+
+=== load 4utgfz-26990 · 2026-09-01T10:10:27.601Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[4utgfz-26990]     0.00s INFO   [dev-log] page load 4utgfz-26990 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[4utgfz-26990]     0.02s DEBUG  [vite] connecting...
+[4utgfz-26990]     0.08s DEBUG  [vite] connected.
+[4utgfz-26990]     1.16s LOG    global-error-handler: Handlers installed
+[4utgfz-26990]     1.16s LOG    index.tsx: root element found, rendering App
+[4utgfz-26990]     1.17s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[4utgfz-26990]     1.19s LOG    index.tsx: App mounted
+[4utgfz-26990]     2.06s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[4utgfz-26990]     3.71s LOG    Viewing session: karaoke-night-demo
+[4utgfz-26990]     3.72s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[4utgfz-26990]     3.80s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[4utgfz-26990]     3.83s INFO   [stem-mixer] vocal.m4a downloading
+[4utgfz-26990]     3.84s INFO   [stem-mixer] instrumental.m4a decoding 6MB from cache
+[4utgfz-26990]     4.18s INFO   [stem-mixer] instrumental.m4a decoded 246.3s @ 48000Hz x2 = 90MB · 90MB resident
+[4utgfz-26990]     4.30s INFO   [stem-mixer] vocal.m4a decoding 4MB just downloaded
+[4utgfz-26990]     4.55s INFO   [stem-mixer] vocal.m4a decoded 246.3s @ 48000Hz x2 = 90MB · 180MB resident
+[4utgfz-26990]     4.58s LOG    [StemMixer] Auto-play triggered. seekSec= undefined autoPlay= false duration= 246.34047916666665
+
+=== load v1000r-34691 · 2026-09-01T10:10:35.168Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[v1000r-34691]     0.00s INFO   [dev-log] page load v1000r-34691 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[v1000r-34691]     0.10s DEBUG  [vite] connecting...
+[v1000r-34691]     0.16s DEBUG  [vite] connected.
+[v1000r-34691]     0.37s LOG    global-error-handler: Handlers installed
+[v1000r-34691]     0.37s LOG    index.tsx: root element found, rendering App
+[v1000r-34691]     0.39s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[v1000r-34691]     0.42s LOG    index.tsx: App mounted
+[v1000r-34691]     0.51s LOG    Viewing session: karaoke-night-demo
+[v1000r-34691]     0.53s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[v1000r-34691]     0.58s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[v1000r-34691]     1.18s INFO   [SessionStore] pruned 1 orphaned session(s)
+[v1000r-34691]     1.18s INFO   [SessionStore] pruned 1 orphaned session(s)
+[v1000r-34691]     1.28s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+
+=== load 6hdoa1-23232 · 2026-09-01T10:12:03.537Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[6hdoa1-23232]     0.00s INFO   [dev-log] page load 6hdoa1-23232 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[6hdoa1-23232]     0.16s DEBUG  [vite] connecting...
+[6hdoa1-23232]     0.24s DEBUG  [vite] connected.
+[6hdoa1-23232]     0.42s LOG    global-error-handler: Handlers installed
+[6hdoa1-23232]     0.42s LOG    index.tsx: root element found, rendering App
+[6hdoa1-23232]     0.43s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[6hdoa1-23232]     0.46s LOG    index.tsx: App mounted
+[6hdoa1-23232]     1.48s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[6hdoa1-23232]     3.64s LOG    Viewing session: karaoke-night-demo
+[6hdoa1-23232]     3.65s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[6hdoa1-23232]     3.77s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[6hdoa1-23232]     3.79s INFO   [stem-mixer] vocal.m4a decoding 4MB from cache
+[6hdoa1-23232]     3.81s INFO   [stem-mixer] instrumental.m4a decoding 6MB from cache
+[6hdoa1-23232]     4.03s INFO   [stem-mixer] vocal.m4a decoded 246.3s @ 48000Hz x2 = 90MB · 90MB resident
+[6hdoa1-23232]     4.29s INFO   [stem-mixer] instrumental.m4a decoded 246.3s @ 48000Hz x2 = 90MB · 180MB resident
+[6hdoa1-23232]     4.32s LOG    [StemMixer] Auto-play triggered. seekSec= undefined autoPlay= false duration= 246.34047916666665
+
+=== load i4x28f-29706 · 2026-09-01T10:12:09.997Z · https://192.168.178.33:3000/#/karaoke/session/karaoke-night-demo/mixer
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[i4x28f-29706]     0.00s INFO   [dev-log] page load i4x28f-29706 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[i4x28f-29706]     0.16s DEBUG  [vite] connecting...
+[i4x28f-29706]     0.23s DEBUG  [vite] connected.
+[i4x28f-29706]     0.41s LOG    global-error-handler: Handlers installed
+[i4x28f-29706]     0.41s LOG    index.tsx: root element found, rendering App
+[i4x28f-29706]     0.42s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[i4x28f-29706]     0.45s LOG    index.tsx: App mounted
+[i4x28f-29706]     0.53s LOG    Viewing session: karaoke-night-demo
+[i4x28f-29706]     0.55s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[i4x28f-29706]     0.59s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[i4x28f-29706]     1.16s INFO   [SessionStore] pruned 1 orphaned session(s)
+[i4x28f-29706]     1.16s INFO   [SessionStore] pruned 1 orphaned session(s)
+[i4x28f-29706]     1.36s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+
+=== load znlgul-33447 · 2026-09-01T10:12:13.813Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[znlgul-33447]     0.00s INFO   [dev-log] page load znlgul-33447 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[znlgul-33447]     0.16s DEBUG  [vite] connecting...
+[znlgul-33447]     0.23s DEBUG  [vite] connected.
+[znlgul-33447]     0.51s LOG    global-error-handler: Handlers installed
+[znlgul-33447]     0.51s LOG    index.tsx: root element found, rendering App
+[znlgul-33447]     0.52s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[znlgul-33447]     0.55s LOG    index.tsx: App mounted
+[znlgul-33447]     1.37s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[znlgul-33447]   837.08s LOG    [vite] server connection lost. Polling for restart...
+
+=== load 19exm1-71244 · 2026-09-01T10:26:11.745Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[19exm1-71244]     0.00s INFO   [dev-log] page load 19exm1-71244 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[19exm1-71244]     0.05s DEBUG  [vite] connecting...
+[19exm1-71244]     0.24s DEBUG  [vite] connected.
+[19exm1-71244]     1.41s LOG    global-error-handler: Handlers installed
+[19exm1-71244]     1.41s LOG    index.tsx: root element found, rendering App
+[19exm1-71244]     1.43s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[19exm1-71244]     1.46s LOG    index.tsx: App mounted
+[19exm1-71244]     1.73s INFO   [SessionStore] pruned 1 orphaned session(s)
+[19exm1-71244]     1.86s INFO   [SessionStore] pruned 1 orphaned session(s)
+[19exm1-71244]     2.60s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+
+=== load ado0gm-55938 · 2026-09-01T10:47:35.989Z · http://localhost:42765/
+=== Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.40609.0 Chrome/148.0.7778.280 Safari/537.36
+[ado0gm-55938]     0.00s INFO   [dev-log] page load ado0gm-55938 — Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.40609.0 Chrome/148.0.7778.280 Safari/537.36
+
+=== load 86uz40-55986 · 2026-09-01T10:47:37.432Z · http://localhost:42765/
+=== Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.40609.0 Chrome/148.0.7778.280 Safari/537.36
+[86uz40-55986]     0.00s INFO   [dev-log] page load 86uz40-55986 — Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.40609.0 Chrome/148.0.7778.280 Safari/537.36
+[86uz40-55986]     0.34s DEBUG  [vite] connecting...
+[86uz40-55986]     0.38s DEBUG  [vite] connected.
+[86uz40-55986]     7.61s LOG    global-error-handler: Handlers installed
+[86uz40-55986]     7.61s LOG    index.tsx: root element found, rendering App
+[86uz40-55986]     7.63s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[86uz40-55986]     7.67s INFO   [funnel] app_open
+[86uz40-55986]     7.67s LOG    index.tsx: App mounted
+[86uz40-55986]     7.85s INFO   [onboarding-funnel] onboarding_sky
+[86uz40-55986]     7.89s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. Error: ServerAdapter: 404  on https://api-dev.mercurypitch.com/api/userProfiles/fcdbc16a-d5e2-4c7e-a1f8-440ead092ec2 — {"error":"Not found"}
+Error: ServerAdapter: 404  on https://api-dev.mercurypitch.com/api/userProfiles/fcdbc16a-d5e2-4c7e-a1f8-440ead092ec2 — {"error":"Not found"}
+    at ServerRepository.request (http://localhost:42765/src/db/adapters/server-adapter.ts:48:17)
+    at async ServerRepository.findById (http://localhost:42765/src/db/adapters/server-adapter.ts:77:14)
+    at async findOwnProfile (http://localhost:42765/src/db/services/user-service.ts:76:16)
+    at async getStreakState (http://localhost:42765/src/db/services/streak-service.ts:206:21)
+
+=== load trrgj2-63994 · 2026-09-01T10:47:44.976Z · http://localhost:42765/karaoke
+=== Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[trrgj2-63994]     0.00s INFO   [dev-log] page load trrgj2-63994 — Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[trrgj2-63994]     0.04s DEBUG  [vite] connecting...
+[trrgj2-63994]     0.05s DEBUG  [vite] connected.
+[trrgj2-63994]     0.14s INFO   [kn-funnel] karaoke_view
+[trrgj2-63994]     0.23s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[trrgj2-63994]     0.28s INFO   [SessionStore] pruned 2 orphaned session(s)
+[trrgj2-63994]     0.28s INFO   [SessionStore] pruned 2 orphaned session(s)
+[trrgj2-63994]    53.94s INFO   [kn-funnel] karaoke_demo_start
+[trrgj2-63994]    54.14s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[trrgj2-63994]    54.16s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[trrgj2-63994]    54.17s INFO   [stem-mixer] vocal.m4a downloading
+[trrgj2-63994]    54.18s INFO   [stem-mixer] instrumental.m4a downloading
+[trrgj2-63994]    54.63s INFO   [stem-mixer] vocal.m4a opening 4MB just downloaded
+[trrgj2-63994]    54.91s INFO   [stem-mixer] instrumental.m4a opening 6MB just downloaded
+[trrgj2-63994]    56.36s INFO   [stem-mixer] vocal.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 6MB resident
+[trrgj2-63994]    56.53s INFO   [stem-mixer] instrumental.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 13MB resident
+[trrgj2-63994]    56.54s LOG    [StemMixer] Auto-play triggered. seekSec= undefined autoPlay= true duration= 246.34049886621315
+[trrgj2-63994]    56.54s LOG    [StemMixer] Scheduling auto-play...
+[trrgj2-63994]    56.98s LOG    [StemMixer] Executing auto-play handlePlay()
+[trrgj2-63994]    86.16s INFO   [kn-funnel] karaoke_demo_complete
+
+=== load heyrhn-80240 · 2026-09-01T10:51:20.976Z · http://localhost:42765/app?session=karaoke-night-demo
+=== Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[heyrhn-80240]     0.00s INFO   [dev-log] page load heyrhn-80240 — Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[heyrhn-80240]     0.17s DEBUG  [vite] connecting...
+[heyrhn-80240]     0.17s DEBUG  [vite] connected.
+[heyrhn-80240]     1.43s LOG    global-error-handler: Handlers installed
+[heyrhn-80240]     1.43s LOG    index.tsx: root element found, rendering App
+[heyrhn-80240]     1.45s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[heyrhn-80240]     1.49s LOG    index.tsx: App mounted
+[heyrhn-80240]     1.60s INFO   [onboarding-funnel] onboarding_sky
+[heyrhn-80240]     1.83s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. Error: ServerAdapter: 404  on https://api-dev.mercurypitch.com/api/userProfiles/fcdbc16a-d5e2-4c7e-a1f8-440ead092ec2 — {"error":"Not found"}
+Error: ServerAdapter: 404  on https://api-dev.mercurypitch.com/api/userProfiles/fcdbc16a-d5e2-4c7e-a1f8-440ead092ec2 — {"error":"Not found"}
+    at ServerRepository.request (http://localhost:42765/src/db/adapters/server-adapter.ts:48:17)
+    at async ServerRepository.findById (http://localhost:42765/src/db/adapters/server-adapter.ts:77:14)
+    at async findOwnProfile (http://localhost:42765/src/db/services/user-service.ts:76:16)
+    at async getStreakState (http://localhost:42765/src/db/services/streak-service.ts:206:21)
+
+=== load atfdrs-54723 · 2026-09-01T10:55:54.977Z · http://localhost:42765/karaoke?session=karaoke-night-demo
+=== Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[atfdrs-54723]     0.00s INFO   [dev-log] page load atfdrs-54723 — Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[atfdrs-54723]     0.01s DEBUG  [vite] connecting...
+[atfdrs-54723]     0.01s DEBUG  [vite] connected.
+[atfdrs-54723]     0.20s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[atfdrs-54723]     0.24s INFO   [SessionStore] pruned 2 orphaned session(s)
+[atfdrs-54723]     0.49s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[atfdrs-54723]     0.52s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[atfdrs-54723]     0.54s INFO   [stem-mixer] vocal.m4a opening 4MB from cache
+[atfdrs-54723]     0.56s INFO   [stem-mixer] instrumental.m4a opening 6MB from cache
+[atfdrs-54723]     2.47s INFO   [stem-mixer] instrumental.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 6MB resident
+[atfdrs-54723]     2.47s INFO   [stem-mixer] vocal.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 13MB resident
+[atfdrs-54723]     2.48s LOG    [StemMixer] Auto-play triggered. seekSec= undefined autoPlay= false duration= 246.34049886621315
+
+=== load yf8yrz-34028 · 2026-09-01T10:57:14.977Z · http://localhost:42765/karaoke
+=== Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[yf8yrz-34028]     0.00s INFO   [dev-log] page load yf8yrz-34028 — Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[yf8yrz-34028]     0.04s DEBUG  [vite] connecting...
+[yf8yrz-34028]     0.04s DEBUG  [vite] connected.
+[yf8yrz-34028]     0.29s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[yf8yrz-34028]    11.95s INFO   [kn-funnel] karaoke_demo_start
+[yf8yrz-34028]    12.45s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[yf8yrz-34028]    12.49s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[yf8yrz-34028]    12.53s INFO   [stem-mixer] vocal.m4a opening 4MB from cache
+[yf8yrz-34028]    12.54s INFO   [stem-mixer] instrumental.m4a opening 6MB from cache
+[yf8yrz-34028]    15.56s INFO   [stem-mixer] vocal.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 6MB resident
+[yf8yrz-34028]    15.57s INFO   [stem-mixer] instrumental.m4a streaming 246.3s @ 44100Hz x2 = 4MB envelope + 3MB window · 13MB resident
+[yf8yrz-34028]    15.57s LOG    [StemMixer] Auto-play triggered. seekSec= undefined autoPlay= true duration= 246.34049886621315
+[yf8yrz-34028]    15.57s LOG    [StemMixer] Scheduling auto-play...
+[yf8yrz-34028]    15.95s LOG    [StemMixer] Executing auto-play handlePlay()

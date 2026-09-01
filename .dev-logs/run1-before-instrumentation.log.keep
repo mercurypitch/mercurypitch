@@ -1,0 +1,109 @@
+
+=== load 58ho3u-95462 · 2026-09-01T09:53:15.892Z · https://192.168.178.33:3000/
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[58ho3u-95462]     0.00s INFO   [dev-log] page load 58ho3u-95462 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[58ho3u-95462]     2.85s DEBUG  [vite] connecting...
+[58ho3u-95462]     3.80s DEBUG  [vite] connected.
+[58ho3u-95462]     7.66s LOG    global-error-handler: Handlers installed
+[58ho3u-95462]     7.66s LOG    index.tsx: root element found, rendering App
+[58ho3u-95462]     7.67s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[58ho3u-95462]     7.71s INFO   [funnel] app_open
+[58ho3u-95462]     7.71s LOG    index.tsx: App mounted
+[58ho3u-95462]     7.72s ONERROR Script error. @ ?:0:0 
+[58ho3u-95462]     7.73s ERROR  Global error: Script error.
+[58ho3u-95462]     7.73s WARN   Ignored external Script error.
+[58ho3u-95462]     8.73s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[58ho3u-95462]    13.86s ONERROR Script error. @ ?:0:0 
+[58ho3u-95462]    13.87s ERROR  Global error: Script error.
+[58ho3u-95462]    13.87s WARN   Ignored external Script error.
+
+=== load 5kdoj6-11841 · 2026-09-01T09:53:32.089Z · https://192.168.178.33:3000/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[5kdoj6-11841]     0.00s INFO   [dev-log] page load 5kdoj6-11841 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[5kdoj6-11841]     0.04s DEBUG  [vite] connecting...
+[5kdoj6-11841]     0.06s DEBUG  [vite] connected.
+[5kdoj6-11841]     0.12s INFO   [kn-funnel] karaoke_view
+[5kdoj6-11841]     0.21s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[5kdoj6-11841]     0.24s INFO   [SessionStore] pruned 1 orphaned session(s)
+[5kdoj6-11841]     0.24s INFO   [SessionStore] pruned 1 orphaned session(s)
+[5kdoj6-11841]     2.27s INFO   [kn-funnel] karaoke_cta_studio
+
+=== load frei8h-14225 · 2026-09-01T09:53:34.776Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[frei8h-14225]     0.00s INFO   [dev-log] page load frei8h-14225 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[frei8h-14225]     0.02s DEBUG  [vite] connecting...
+[frei8h-14225]     0.08s DEBUG  [vite] connected.
+[frei8h-14225]     1.10s LOG    global-error-handler: Handlers installed
+[frei8h-14225]     1.10s LOG    index.tsx: root element found, rendering App
+[frei8h-14225]     1.10s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[frei8h-14225]     1.14s LOG    index.tsx: App mounted
+[frei8h-14225]     1.98s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[frei8h-14225]     5.06s LOG    Viewing session: karaoke-night-demo
+[frei8h-14225]     5.07s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[frei8h-14225]     5.12s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+
+=== load em7h75-19959 · 2026-09-01T09:53:40.294Z · https://192.168.178.33:3000/#/karaoke/session/karaoke-night-demo/mixer
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[em7h75-19959]     0.00s INFO   [dev-log] page load em7h75-19959 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[em7h75-19959]     1.84s DEBUG  [vite] connecting...
+[em7h75-19959]     3.82s DEBUG  [vite] connected.
+[em7h75-19959]    10.96s LOG    global-error-handler: Handlers installed
+[em7h75-19959]    10.96s LOG    index.tsx: root element found, rendering App
+[em7h75-19959]    10.97s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[em7h75-19959]    10.99s LOG    index.tsx: App mounted
+[em7h75-19959]    11.04s LOG    Viewing session: karaoke-night-demo
+[em7h75-19959]    11.05s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[em7h75-19959]    11.12s LOG    [StemMixer] Alignment: no notes available (denoised=0, raw-offline=0, whisper=0)
+[em7h75-19959]    11.19s INFO   [SessionStore] pruned 1 orphaned session(s)
+[em7h75-19959]    11.19s INFO   [SessionStore] pruned 1 orphaned session(s)
+[em7h75-19959]    11.74s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+
+=== load 8k6gfl-39749 · 2026-09-01T09:54:00.019Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[8k6gfl-39749]     0.00s INFO   [dev-log] page load 8k6gfl-39749 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[8k6gfl-39749]     0.17s DEBUG  [vite] connecting...
+[8k6gfl-39749]     0.22s DEBUG  [vite] connected.
+[8k6gfl-39749]     0.39s LOG    global-error-handler: Handlers installed
+[8k6gfl-39749]     0.39s LOG    index.tsx: root element found, rendering App
+[8k6gfl-39749]     0.40s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[8k6gfl-39749]     0.43s LOG    index.tsx: App mounted
+[8k6gfl-39749]     1.22s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[8k6gfl-39749]   287.84s LOG    [vite] server connection lost. Polling for restart...
+
+=== load 9o7fl8-28192 · 2026-09-01T09:58:48.686Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[9o7fl8-28192]     0.00s INFO   [dev-log] page load 9o7fl8-28192 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[9o7fl8-28192]     0.11s DEBUG  [vite] connecting...
+[9o7fl8-28192]     0.14s DEBUG  [vite] connected.
+[9o7fl8-28192]     1.21s LOG    global-error-handler: Handlers installed
+[9o7fl8-28192]     1.21s LOG    index.tsx: root element found, rendering App
+[9o7fl8-28192]     1.21s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[9o7fl8-28192]     1.24s LOG    index.tsx: App mounted
+[9o7fl8-28192]     1.44s INFO   [SessionStore] pruned 1 orphaned session(s)
+[9o7fl8-28192]     1.44s INFO   [SessionStore] pruned 1 orphaned session(s)
+[9o7fl8-28192]     2.30s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+[9o7fl8-28192]     9.80s DEBUG  [vite] hot updated: /src/components/StemMixer.tsx
+
+=== load yra5jz-79874 · 2026-09-01T09:59:40.409Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[yra5jz-79874]     0.00s INFO   [dev-log] page load yra5jz-79874 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[yra5jz-79874]     0.03s DEBUG  [vite] connecting...
+[yra5jz-79874]     0.10s DEBUG  [vite] connected.
+[yra5jz-79874]     1.08s LOG    global-error-handler: Handlers installed
+[yra5jz-79874]     1.08s LOG    index.tsx: root element found, rendering App
+[yra5jz-79874]     1.09s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[yra5jz-79874]     1.11s LOG    index.tsx: App mounted
+[yra5jz-79874]     1.84s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed
+
+=== load 8qbfge-89771 · 2026-09-01T09:59:50.296Z · https://192.168.178.33:3000/#/karaoke
+=== Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[8qbfge-89771]     0.00s INFO   [dev-log] page load 8qbfge-89771 — Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/154.1 Mobile/15E148 Safari/604.1
+[8qbfge-89771]     0.04s DEBUG  [vite] connecting...
+[8qbfge-89771]     0.10s DEBUG  [vite] connected.
+[8qbfge-89771]     1.04s LOG    global-error-handler: Handlers installed
+[8qbfge-89771]     1.05s LOG    index.tsx: root element found, rendering App
+[8qbfge-89771]     1.05s INFO   [db] using HybridAdapter → https://api-dev.mercurypitch.com
+[8qbfge-89771]     1.07s LOG    index.tsx: App mounted
+[8qbfge-89771]     1.22s INFO   [SessionStore] pruned 1 orphaned session(s)
+[8qbfge-89771]     1.22s INFO   [SessionStore] pruned 1 orphaned session(s)
+[8qbfge-89771]     1.85s WARN   [db] cloud backend unreachable — serving empty cloud reads so the app still loads. Start the dev worker (pnpm dev:db) or unset VITE_API_BASE_URL for full local mode. TypeError: Load failed

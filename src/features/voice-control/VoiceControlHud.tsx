@@ -86,9 +86,16 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
   const statusText = () => {
     if (hasError()) {
       // The mic and the model fail differently; say which one it was.
-      return props.controller.errorDetail() === 'local-engine-failed'
-        ? 'Voice engine failed'
-        : 'Mic unavailable'
+      const detail = props.controller.errorDetail()
+      if (detail === 'local-engine-failed') return 'Voice engine failed'
+      // iOS will not start a recognizer that has no user gesture behind it,
+      // and voice control is a remembered preference — so the start that
+      // matters happens at mount, with none. Nothing is broken and nothing
+      // needs granting; it needs a touch, and any touch will do. Saying "Mic
+      // unavailable" over that sent people to Settings for a permission they
+      // had already given.
+      if (detail === 'needs-gesture') return 'Voice paused — tap to resume'
+      return 'Mic unavailable'
     }
     if (props.controller.listenerState() === 'starting') {
       return 'Loading voice engine'

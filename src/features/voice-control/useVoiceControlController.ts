@@ -411,8 +411,19 @@ export function useVoiceControlController(
     // that is the only reason the pill had to ask for two of them. A phone
     // has no key to press twice, so the second press was simply unavailable.
     // One activation, from any input, means "start listening again".
-    if (enabled() && listenerState() === 'idle') {
+    //
+    // `error` belongs here for the same reason and one more: on iOS the
+    // recognizer refuses a `start()` that has no user gesture behind it, and
+    // this press IS one. Turning off first would spend the only gesture that
+    // could have fixed it — which is what "disable and enable did nothing"
+    // was. The stop is not ceremony: the listener ignores `start` while it
+    // still believes it is started, so recovery has to reset it first.
+    if (
+      enabled() &&
+      (listenerState() === 'idle' || listenerState() === 'error')
+    ) {
       setLastLatencyMs(null)
+      stopListening()
       startUnlessSinging()
       return
     }
