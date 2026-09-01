@@ -28,8 +28,13 @@ import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
-import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, } from './stem-memory'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
+import type { StemStream } from './stem-stream-source'
+import type { StreamedStem } from './stem-streaming-load'
+import { loadStreamedStem } from './stem-streaming-load'
+import type { StreamingStemVoice } from './streaming-stem-voice'
+import { createStreamingStemVoice } from './streaming-stem-voice'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -45,13 +50,33 @@ interface StemTrack {
   label: string
   url: string
   color: string
+  /**
+   * On the buffered path this is the audio. On the streamed path it is only
+   * the waveform's peak envelope — mono, a few kilohertz — and the audio comes
+   * from `stream`. Everything that draws reads it either way; nothing that
+   * draws can tell the difference.
+   */
   buffer: AudioBuffer | null
   gainNode: GainNode | null
   analyserNode: AnalyserNode | null
   sourceNode: AudioBufferSourceNode | null
+  /** Streamed path only: the decoder playback pulls its windows from. */
+  stream?: StemStream | null
+  /** Streamed path only: what `sourceNode` is on the buffered one. */
+  streamVoice?: StreamingStemVoice | null
   muted: boolean
   soloed: boolean
   volume: number
+}
+
+/** What one stem load produced, whichever path produced it. */
+interface LoadedStem {
+  /** Audio on the buffered path, the waveform's envelope on the streamed one. */
+  buffer: AudioBuffer
+  stream?: StemStream
+  /** The song's real length — the envelope's is rounded to a bucket. */
+  durationSeconds: number
+  residentBytes: number
 }
 
 interface CanvasView {
@@ -468,9 +493,35 @@ export const useStemMixerAudioController = (
   // page that no longer has a mixer on it.
   let disposed = false
 
+  const probe = readDeviceProbe()
+  const deviceClass = classifyDevice(probe)
+  /**
+   * Mobile only. A desktop holds a decoded song without noticing, starts
+   * faster from one `decodeAudioData` than from a demux-and-decode pass, and
+   * keeps raw samples available for the features that want them (MIDI note
+   * detection, sample-exact waveform zoom). A phone cannot hold two of them at
+   * all: 180 MB of decoded PCM is where iOS kills the tab.
+   */
+  const streamStems = deviceClass === 'mobile'
+
   onCleanup(() => {
     disposed = true
     if (performanceLogTimer !== null) clearInterval(performanceLogTimer)
+    // A stream holds a demuxer and a WebCodecs decoder. Leaving one open on a
+    // room the visitor has left is the same leak the whole streamed path was
+    // built to avoid, one layer down.
+    for (const track of deps.tracks()) {
+      try {
+        track.streamVoice?.dispose()
+      } catch (_) {
+        /* already disposed */
+      }
+      try {
+        track.stream?.dispose()
+      } catch (_) {
+        /* already disposed */
+      }
+    }
   })
 
   // ── Live pitch smoothing ─────────────────────────────────────
@@ -623,6 +674,8 @@ export const useStemMixerAudioController = (
     // the last line of a page load, the decode it announced is what killed
     // the tab, and the megabytes are on it.
     let residentBytes = 0
+    /** What one streamed stem cost, for the budget the extras are fitted to. */
+    let streamedStemCost = 0
     const trace = (line: string): void => {
       if (!IS_DIAGNOSTIC_BUILD) return
       console.info(`[stem-mixer] ${line}`)
@@ -642,52 +695,91 @@ export const useStemMixerAudioController = (
           `${mb(bytes)}MB · ${mb(residentBytes)}MB resident`,
       )
     }
+    const noteStreamed = (name: string, stem: StreamedStem): void => {
+      // The window is what playback holds; the envelope is what the waveform
+      // holds. Neither grows with the song the way a decode does, and the
+      // arithmetic is written out here because the line it replaces — the one
+      // reading "180MB resident" — is what killed the tab.
+      const windowBytes = streamedStemBytes(stem.sampleRate, stem.channelCount)
+      residentBytes += stem.displayBytes + windowBytes
+      streamedStemCost = Math.max(
+        streamedStemCost,
+        stem.displayBytes + windowBytes,
+      )
+      trace(
+        `${name} streaming ${stem.durationSeconds.toFixed(1)}s @ ${stem.sampleRate}Hz x${stem.channelCount} = ` +
+          `${mb(stem.displayBytes)}MB envelope + ${mb(windowBytes)}MB window · ` +
+          `${mb(residentBytes)}MB resident`,
+      )
+    }
 
-    const loadOne = async (url: string): Promise<AudioBuffer> => {
+    const loadOne = async (url: string): Promise<LoadedStem> => {
       const name = stemName(url)
       // A stem the visitor has already downloaded once. R2 serves these
       // with no Cache-Control at all, so the browser re-fetched all six
       // megabytes on every open — the whole wait, paid again, for a song
       // that had not changed. A hit still reports its bytes so the bar
       // reads as finished rather than as never having started.
-      const kept = await readCachedSongAudio(url)
-      if (kept !== null) {
+      let bytes = await readCachedSongAudio(url)
+      if (bytes !== null) {
         byUrl.set(url, {
-          received: kept.byteLength,
-          total: kept.byteLength,
+          received: bytes.byteLength,
+          total: bytes.byteLength,
           fraction: 1,
         })
         publish()
-        trace(`${name} decoding ${mb(kept.byteLength)}MB from cache`)
-        const cachedBuf = await ctx.decodeAudioData(kept)
-        loadedCount++
-        noteDecoded(name, cachedBuf)
-        return cachedBuf
+        trace(`${name} opening ${mb(bytes.byteLength)}MB from cache`)
+      } else {
+        trace(`${name} downloading`)
+        inFlight++
+        try {
+          bytes = await fetchArrayBufferWithProgress(url, {
+            onProgress: (p) => {
+              byUrl.set(url, p)
+              publish()
+            },
+          })
+        } finally {
+          inFlight--
+        }
+        publish()
+        // Kept before the decode, because decodeAudioData detaches the
+        // buffer it is given. The copy is taken synchronously inside the
+        // call, so this does not have to be awaited here.
+        // Opaque on purpose: nothing reads the type back — the bytes go
+        // straight to a decoder that sniffs the container itself — and the
+        // stems are variously m4a and mp3 depending on the song.
+        void writeCachedSongAudio(url, bytes, 'application/octet-stream')
+        trace(`${name} opening ${mb(bytes.byteLength)}MB just downloaded`)
       }
-      trace(`${name} downloading`)
 
-      inFlight++
-      let arrayBuf: ArrayBuffer
-      try {
-        arrayBuf = await fetchArrayBufferWithProgress(url, {
-          onProgress: (p) => {
-            byUrl.set(url, p)
-            publish()
-          },
+      if (streamStems) {
+        // A Blob rather than the ArrayBuffer: the demuxer reads it in slices,
+        // and this keeps the compressed bytes out of the path that detaches
+        // them, so the fallback below still has something to decode.
+        const streamed = await loadStreamedStem({
+          context: ctx,
+          blob: new Blob([bytes]),
         })
-      } finally {
-        inFlight--
+        if (streamed !== null) {
+          loadedCount++
+          noteStreamed(name, streamed)
+          return {
+            buffer: streamed.displayBuffer,
+            stream: streamed.stream,
+            durationSeconds: streamed.durationSeconds,
+            residentBytes:
+              streamed.displayBytes +
+              streamedStemBytes(streamed.sampleRate, streamed.channelCount),
+          }
+        }
+        // A codec this platform will not decode, or a container mediabunny
+        // cannot walk. Better a whole decode than no song.
+        trace(`${name} cannot be streamed; decoding all of it`)
       }
-      publish()
-      // Kept before the decode, because decodeAudioData detaches the
-      // buffer it is given. The copy is taken synchronously inside the
-      // call, so this does not have to be awaited here.
-      // Opaque on purpose: nothing reads the type back — the bytes go
-      // straight to decodeAudioData, which sniffs the container itself —
-      // and the stems are variously m4a and mp3 depending on the song.
-      void writeCachedSongAudio(url, arrayBuf, 'application/octet-stream')
-      trace(`${name} decoding ${mb(arrayBuf.byteLength)}MB just downloaded`)
-      const buf = await ctx.decodeAudioData(arrayBuf)
+
+      trace(`${name} decoding ${mb(bytes.byteLength)}MB`)
+      const buf = await ctx.decodeAudioData(bytes)
       // Counted after the decode, not after the download. The guard below
       // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
       // downloads but will not decode — a truncated blob from a stale session
@@ -696,7 +788,15 @@ export const useStemMixerAudioController = (
       // mixer with no sound and no explanation.
       loadedCount++
       noteDecoded(name, buf)
-      return buf
+      return {
+        buffer: buf,
+        durationSeconds: buf.duration,
+        residentBytes: decodedStemBytes(
+          buf.duration,
+          buf.sampleRate,
+          buf.numberOfChannels,
+        ),
+      }
     }
 
     // A phone locking its screen is how this download dies: the OS freezes
@@ -720,17 +820,29 @@ export const useStemMixerAudioController = (
       const [vocalResult, instResult] = results
 
       if (vocalResult.status === 'fulfilled') {
-        deps.setVocal((prev) => ({ ...prev, buffer: vocalResult.value }))
-        const d = vocalResult.value.duration
-        if (d > duration()) setDuration(d)
+        const loaded = vocalResult.value
+        deps.setVocal((prev) => ({
+          ...prev,
+          buffer: loaded.buffer,
+          stream: loaded.stream ?? null,
+        }))
+        if (loaded.durationSeconds > duration()) {
+          setDuration(loaded.durationSeconds)
+        }
       } else if (deps.stems.vocal !== undefined) {
         console.warn('Failed to load vocal stem:', vocalResult.reason)
       }
 
       if (instResult.status === 'fulfilled') {
-        deps.setInstrumental((prev) => ({ ...prev, buffer: instResult.value }))
-        const d = instResult.value.duration
-        if (d > duration()) setDuration(d)
+        const loaded = instResult.value
+        deps.setInstrumental((prev) => ({
+          ...prev,
+          buffer: loaded.buffer,
+          stream: loaded.stream ?? null,
+        }))
+        if (loaded.durationSeconds > duration()) {
+          setDuration(loaded.durationSeconds)
+        }
       } else if (deps.stems.instrumental !== undefined) {
         console.warn('Failed to load instrumental stem:', instResult.reason)
       }
@@ -749,22 +861,26 @@ export const useStemMixerAudioController = (
       // occurred" page. It dies during the decode, which is exactly when
       // this mixer is showing "Decoding audio".
       if (extraTracks.length > 0) {
-        const probe = readDeviceProbe()
-        const klass = classifyDevice(probe)
+        const klass = deviceClass
         const budgetBytes = decodedBudgetBytes({
           deviceClass: klass,
           deviceMemoryGb: probe.deviceMemoryGb,
         })
-        // Measured, not guessed: the named stems have decoded by now, so
-        // their real duration and the context's real sample rate are known,
-        // and every stem of one song is the same length.
-        const perStemBytes = decodedStemBytes(
-          duration(),
-          ctx.sampleRate,
-          deps.vocal().buffer?.numberOfChannels ??
-            deps.instrumental().buffer?.numberOfChannels ??
-            2,
-        )
+        // Measured, not guessed: the named stems have loaded by now, so their
+        // real duration and the context's real sample rate are known, and
+        // every stem of one song is the same length. What a stem costs
+        // depends on how it is being held — a streamed one is its envelope
+        // plus its window, and does not grow with the song.
+        const perStemBytes =
+          streamStems && streamedStemCost > 0
+            ? streamedStemCost
+            : decodedStemBytes(
+                duration(),
+                ctx.sampleRate,
+                deps.vocal().buffer?.numberOfChannels ??
+                  deps.instrumental().buffer?.numberOfChannels ??
+                  2,
+              )
         const fit = fitStems({
           loaded: loadedCount,
           pending: extraTracks.length,
@@ -785,7 +901,7 @@ export const useStemMixerAudioController = (
         if (fit.skipped > 0) {
           const msg =
             `This device cannot hold all ${loadedCount + extraTracks.length} stems of this song in memory ` +
-            `(about ${mb(fit.projectedBytes)}MB decoded), so ${fit.skipped} were left out. ` +
+            `(about ${mb(fit.projectedBytes)}MB), so ${fit.skipped} were left out. ` +
             `Pick fewer stems for a full mix.`
           deps.showNotification(msg, 'warning')
         }
@@ -796,7 +912,7 @@ export const useStemMixerAudioController = (
         // the tab surviving.
         const limit = stemLoadConcurrency(klass)
         const wanted = extraTracks.slice(0, fit.allowed)
-        const settled: Array<PromiseSettledResult<AudioBuffer>> = []
+        const settled: Array<PromiseSettledResult<LoadedStem>> = []
         for (let start = 0; start < wanted.length; start += limit) {
           const batchTracks = wanted.slice(start, start + limit)
           settled.push(
@@ -809,13 +925,20 @@ export const useStemMixerAudioController = (
         settled.forEach((res, i) => {
           const label = wanted[i].label
           if (res.status === 'fulfilled') {
+            const loaded = res.value
             deps.setExtras((list) =>
               list.map((t) =>
-                t.label === label ? { ...t, buffer: res.value } : t,
+                t.label === label
+                  ? {
+                      ...t,
+                      buffer: loaded.buffer,
+                      stream: loaded.stream ?? null,
+                    }
+                  : t,
               ),
             )
-            if (res.value.duration > duration()) {
-              setDuration(res.value.duration)
+            if (loaded.durationSeconds > duration()) {
+              setDuration(loaded.durationSeconds)
             }
           } else {
             console.warn(`Failed to load ${label} stem:`, res.reason)
@@ -838,7 +961,12 @@ export const useStemMixerAudioController = (
       // MIDI processing
       const needsMidi =
         deps.practiceMode === 'midi' || deps.requestedStems?.midi === true
-      if (needsMidi && deps.vocal().buffer) {
+      // A streamed vocal's `buffer` is a peak envelope, not audio — running a
+      // pitch detector over it would produce confident nonsense. MIDI needs
+      // real samples, so on that path it stays unavailable rather than wrong.
+      if (needsMidi && deps.vocal().stream != null) {
+        trace('midi skipped: this vocal is streamed, not decoded')
+      } else if (needsMidi && deps.vocal().buffer) {
         setMidiGeneratingLocal(true)
         setMidiPhaseLocal('detecting')
         setMidiProgressLocal(0)
@@ -900,7 +1028,16 @@ export const useStemMixerAudioController = (
       const ctx = ensureAudioCtx()
       const resp = await fetch(input.url)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const buf = await ctx.decodeAudioData(await resp.arrayBuffer())
+      const bytes = await resp.arrayBuffer()
+
+      // The same fork as a stem loaded with the song: adding one by hand on a
+      // phone must not be the ninety megabytes the load path now avoids.
+      const streamed = streamStems
+        ? await loadStreamedStem({ context: ctx, blob: new Blob([bytes]) })
+        : null
+      const buf = streamed?.displayBuffer ?? (await ctx.decodeAudioData(bytes))
+      const addedDuration = streamed?.durationSeconds ?? buf.duration
+
       deps.setExtras((list) => [
         ...list,
         {
@@ -908,6 +1045,7 @@ export const useStemMixerAudioController = (
           url: input.url,
           color: input.color,
           buffer: buf,
+          stream: streamed?.stream ?? null,
           gainNode: null,
           analyserNode: null,
           sourceNode: null,
@@ -916,7 +1054,7 @@ export const useStemMixerAudioController = (
           volume: 0.8,
         },
       ])
-      if (buf.duration > duration()) setDuration(buf.duration)
+      if (addedDuration > duration()) setDuration(addedDuration)
       if (playing()) {
         seekTo(elapsed())
       } else {
@@ -962,9 +1100,6 @@ export const useStemMixerAudioController = (
       const isVocal = track.label === 'Vocal'
       const karaokeRef = isVocal && deps.karaokeReferenceVocal?.() === true
 
-      const src = ctx.createBufferSource()
-      src.buffer = track.buffer
-
       const gain = ctx.createGain()
       const targetGain = isAudible ? sliderToGain(track.volume) : 0
       gain.gain.setValueAtTime(0, now)
@@ -974,26 +1109,55 @@ export const useStemMixerAudioController = (
       analyser.fftSize = FFT_SIZE
       analyser.smoothingTimeConstant = 0.8
 
-      src.connect(gain)
       gain.connect(analyser)
       analyser.connect(mainGain!)
 
-      if (isVocal && vocalAnalyser) {
-        // Pre-gain tap in karaoke mode so a silenced/lowered vocal still drives
-        // the pitch reference; post-gain otherwise (unchanged behaviour).
-        if (karaokeRef) src.connect(vocalAnalyser)
-        else gain.connect(vocalAnalyser)
-      }
+      // A streamed stem has no whole buffer to hand a source node. Its voice
+      // schedules windows against this same `ctx.currentTime`, which is what
+      // keeps it locked to the stems beside it — the reason two <audio>
+      // elements were never an option here.
+      const stream = track.stream ?? null
+      let src: AudioBufferSourceNode | null = null
+      let voice: StreamingStemVoice | null = null
 
-      src.start(now, offset)
-      src.playbackRate.value = playbackSpeed
-      src.onended = () => {
-        try {
-          src.disconnect()
-          gain.disconnect()
-          analyser.disconnect()
-        } catch (_) {
-          /* already disconnected */
+      if (stream !== null) {
+        voice = createStreamingStemVoice({
+          context: ctx,
+          destination: gain,
+          open: (fromSeconds) => stream.chunks(fromSeconds),
+          atContextTime: now,
+          sourceOffsetSeconds: offset,
+          playbackRate: playbackSpeed,
+          onError: (error) => {
+            console.warn(`[StemMixer] ${track.label} stream stalled:`, error)
+          },
+        })
+        if (isVocal && vocalAnalyser) {
+          if (karaokeRef) voice.envelope.connect(vocalAnalyser)
+          else gain.connect(vocalAnalyser)
+        }
+      } else {
+        src = ctx.createBufferSource()
+        src.buffer = track.buffer
+        src.connect(gain)
+
+        if (isVocal && vocalAnalyser) {
+          // Pre-gain tap in karaoke mode so a silenced/lowered vocal still
+          // drives the pitch reference; post-gain otherwise.
+          if (karaokeRef) src.connect(vocalAnalyser)
+          else gain.connect(vocalAnalyser)
+        }
+
+        src.start(now, offset)
+        src.playbackRate.value = playbackSpeed
+        src.onended = () => {
+          try {
+            src?.disconnect()
+            gain.disconnect()
+            analyser.disconnect()
+          } catch (_) {
+            /* already disconnected */
+          }
         }
       }
 
@@ -1001,39 +1165,21 @@ export const useStemMixerAudioController = (
       // fallback matters: without it their sources are started but never
       // recorded, so stop() can't reach them and every play layers a new
       // copy over the still-running old ones.
+      const live = {
+        sourceNode: src,
+        streamVoice: voice,
+        gainNode: gain,
+        analyserNode: analyser,
+      }
       if (track.label === 'Vocal') {
-        deps.setVocal((prev) => ({
-          ...prev,
-          sourceNode: src,
-          gainNode: gain,
-          analyserNode: analyser,
-        }))
+        deps.setVocal((prev) => ({ ...prev, ...live }))
       } else if (track.label === 'Instrumental') {
-        deps.setInstrumental((prev) => ({
-          ...prev,
-          sourceNode: src,
-          gainNode: gain,
-          analyserNode: analyser,
-        }))
+        deps.setInstrumental((prev) => ({ ...prev, ...live }))
       } else if (track.label === 'MIDI') {
-        deps.setMidi((prev) => ({
-          ...prev,
-          sourceNode: src,
-          gainNode: gain,
-          analyserNode: analyser,
-        }))
+        deps.setMidi((prev) => ({ ...prev, ...live }))
       } else {
         deps.setExtras((list) =>
-          list.map((t) =>
-            t.label === track.label
-              ? {
-                  ...t,
-                  sourceNode: src,
-                  gainNode: gain,
-                  analyserNode: analyser,
-                }
-              : t,
-          ),
+          list.map((t) => (t.label === track.label ? { ...t, ...live } : t)),
         )
       }
     }
@@ -1044,6 +1190,7 @@ export const useStemMixerAudioController = (
 
     const nodesToDisconnect = deps.tracks().map((track) => ({
       sourceNode: track.sourceNode,
+      streamVoice: track.streamVoice ?? null,
       gainNode: track.gainNode,
       analyserNode: track.analyserNode,
     }))
@@ -1063,24 +1210,30 @@ export const useStemMixerAudioController = (
             /* already stopped */
           }
         }
+        // Same stop time as a buffer source: the voice fades with the gain it
+        // feeds, and stopping it also releases the decoder it is pulling from.
+        nodes.streamVoice?.stop(stopTime)
       }
     }
 
     deps.setVocal((prev) => ({
       ...prev,
       sourceNode: null,
+      streamVoice: null,
       gainNode: null,
       analyserNode: null,
     }))
     deps.setInstrumental((prev) => ({
       ...prev,
       sourceNode: null,
+      streamVoice: null,
       gainNode: null,
       analyserNode: null,
     }))
     deps.setMidi((prev) => ({
       ...prev,
       sourceNode: null,
+      streamVoice: null,
       gainNode: null,
       analyserNode: null,
     }))
@@ -1088,6 +1241,7 @@ export const useStemMixerAudioController = (
       list.map((t) => ({
         ...t,
         sourceNode: null,
+        streamVoice: null,
         gainNode: null,
         analyserNode: null,
       })),
@@ -1097,6 +1251,11 @@ export const useStemMixerAudioController = (
       for (const nodes of nodesToDisconnect) {
         try {
           nodes.sourceNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+        try {
+          nodes.streamVoice?.dispose()
         } catch (_) {
           /* */
         }

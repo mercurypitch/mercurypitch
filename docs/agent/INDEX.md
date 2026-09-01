@@ -77,8 +77,8 @@ These are the rules that break things when ignored.
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 30.0k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 27.7k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.4k | ThresholdDrillView — every Ruler-A drill on the stage. |
+| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 14.4k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
-| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.6k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.6k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.1k | Voice History — local listening desk for kept voice takes |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 6.9k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -361,6 +361,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.8k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.8k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.7k |
 | [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
@@ -369,7 +370,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.6k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 1.6k |
 | [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.6k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.6k |
 | [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
