@@ -474,7 +474,7 @@ describe('V2OnboardingDirector', () => {
     expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b01' })
     expect(currentMediaStage().props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b01-corky-reveal-v0_2.mp4'),
+      src: expect.stringContaining('b01-corky-entrance-v0_3.mp4'),
     })
     expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'cinematic')
     expect(screen.getByRole('region', { name: 'Meet Corky.' })).toHaveAttribute(
@@ -490,6 +490,40 @@ describe('V2OnboardingDirector', () => {
       kind: 'video',
       src: expect.stringContaining('b02-table-reveal-v0_1.mp4'),
     })
+  })
+
+  it('keeps the animated Corky entrance visible until its delayed greeting finishes', async () => {
+    const lineId = 'corky.onboarding.greeting'
+    const assetId = `dialogue.${lineId}`
+    const controlled = controlledCue(assetId)
+    const probe = createDirectorProbe()
+    probe.audio.play.mockImplementation((playedAssetId: string) =>
+      playedAssetId === assetId ? controlled.cue : settledCue(playedAssetId),
+    )
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        contentPack={contentPackWithDialogue(lineId, assetId)}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
+
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    settleCurrentMedia('intro-b01-token')
+    endCurrentMedia('intro-b01-token')
+    await advance(1_550)
+
+    expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
+    expect(currentMediaStage().targetId).toBe('intro:b01')
+
+    controlled.finished.resolve({ kind: 'ended' })
+    await Promise.resolve()
+
+    expect(
+      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+    ).toBeVisible()
+    expect(currentMediaStage().targetId).toBe('intro:b02')
   })
 
   it('waits for the current Scroll picture, dialogue and dwell across Present and Recede', async () => {

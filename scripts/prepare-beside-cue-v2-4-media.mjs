@@ -12,6 +12,11 @@ import { fileURLToPath } from 'node:url'
 const SOURCE_INVENTORY_SHA256 =
   '1ab7fafe5bafaaf0391dfe82e0842f9022bae236569beef2d89a16021cdfa4d3'
 
+const CORKY_ENTRANCE_SOURCE = Object.freeze({
+  sha256: 'abb9fedc1a1a43cf317599563f31e6fb2d490d182d35396b898998698bcae919',
+  frames: 144,
+})
+
 const SOURCE_FILES = Object.freeze({
   p00: {
     path: 'assets/diagnostics/plates/p00-set-empty-candidate-v0_1.png',
@@ -24,10 +29,6 @@ const SOURCE_FILES = Object.freeze({
   p02: {
     path: 'assets/diagnostics/plates/p02-table-ready-candidate-v0_17.png',
     sha256: '800a76049ad152224ead6591eaf1d8acdff3a7db9c308f7ec8f92102ce5c57c3',
-  },
-  introB01: {
-    path: 'assets/diagnostics/transitions/b01-corky-reveal-diagnostic-v0_2.mkv',
-    sha256: 'dc79f8c74318608d9ccc72ed3843259d37ee799afba5bb74ecddcd9f7b58edc9',
   },
   introB02: {
     path: 'assets/diagnostics/transitions/b02-table-reveal-diagnostic-v0_1.mkv',
@@ -115,7 +116,7 @@ const defaultProofDirectory = join(
 )
 
 const OUTPUT_NAMES = Object.freeze({
-  corkyReveal: 'picture/b01-corky-reveal-v0_2.mp4',
+  corkyReveal: 'picture/b01-corky-entrance-v0_3.mp4',
   tableReveal: 'picture/b02-table-reveal-v0_1.mp4',
   p00: 'stills/p00-set-empty-v0_1.webp',
   p01: 'stills/p01-corky-rest-v0_4.webp',
@@ -129,7 +130,7 @@ const OUTPUT_NAMES = Object.freeze({
   avoidancePresent: 'picture/b03-avoidance-present-v0_1.mp4',
   avoidanceHold: 'stills/p03-avoidance-settled-v0_1.webp',
   avoidanceRecede: 'picture/b05-avoidance-recede-v0_1.mp4',
-  greeting: 'audio/dialogue/corky-greeting-v0_1.m4a',
+  greeting: 'audio/dialogue/corky-greeting-v0_2.m4a',
   score: 'audio/score/besidecue-score-v0_9.m4a',
   introFoley: 'audio/foley/intro-table-slide-v0_1.m4a',
   platterStop: 'audio/foley/platter-stop-v0_1.m4a',
@@ -137,6 +138,8 @@ const OUTPUT_NAMES = Object.freeze({
 
 const STALE_OUTPUT_NAMES = Object.freeze([
   'picture/b01-b02-corky-table-intro-v0_1.mp4',
+  'picture/b01-corky-reveal-v0_2.mp4',
+  'audio/dialogue/corky-greeting-v0_1.m4a',
 ])
 
 const PULLS = Object.freeze([
@@ -220,6 +223,7 @@ function usage() {
     '  node scripts/prepare-beside-cue-v2-4-media.mjs \\',
     '    --source-package /absolute/path/to/onboarding-video-edit-v2_4 \\',
     '    --legacy-audio-package /absolute/path/to/onboarding-video-edit-v0_1 \\',
+    '    --corky-entrance-raw /absolute/path/to/Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4 \\',
     '    [--output-dir /absolute/or/repo-relative/public-path] \\',
     '    [--proof-dir /absolute/or/repo-relative/non-public-path]',
   ].join('\n')
@@ -236,12 +240,17 @@ function parseArguments(argv) {
     parsed[flag.slice(2)] = value
   }
 
-  if (!parsed['source-package'] || !parsed['legacy-audio-package']) {
+  if (
+    !parsed['source-package'] ||
+    !parsed['legacy-audio-package'] ||
+    !parsed['corky-entrance-raw']
+  ) {
     throw new Error(usage())
   }
   return {
     sourcePackage: resolve(parsed['source-package']),
     legacyAudioPackage: resolve(parsed['legacy-audio-package']),
+    corkyEntranceRaw: resolve(parsed['corky-entrance-raw']),
     outputDirectory: resolve(parsed['output-dir'] ?? defaultOutputDirectory),
     proofDirectory: resolve(parsed['proof-dir'] ?? defaultProofDirectory),
   }
@@ -407,6 +416,165 @@ function prepareIntroClip(source, endFrame, destination) {
   ])
 }
 
+function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
+  const frameWorkspace = join(dirname(destination), 'b01-frame-workspace')
+  const rawFrames = join(frameWorkspace, 'raw')
+  const wipeFrames = join(frameWorkspace, 'wipe')
+  const deliveryFrames = join(frameWorkspace, 'delivery')
+  mkdirSync(rawFrames, { recursive: true })
+  mkdirSync(wipeFrames, { recursive: true })
+  mkdirSync(deliveryFrames, { recursive: true })
+
+  const numbered = (directory, prefix, frame, digits = 5) =>
+    join(directory, `${prefix}${String(frame).padStart(digits, '0')}.png`)
+
+  ffmpeg([
+    '-i',
+    raw,
+    '-map',
+    '0:v:0',
+    '-vf',
+    'trim=start_frame=0:end_frame=110,setpts=PTS-STARTPTS,format=rgb24',
+    '-start_number',
+    '0',
+    '-frames:v',
+    '110',
+    '-fps_mode',
+    'passthrough',
+    '-map_metadata',
+    '-1',
+    '-y',
+    join(rawFrames, 'frame-%03d.png'),
+  ])
+
+  const panelFrame = join(frameWorkspace, 'panel-f19.png')
+  ffmpeg([
+    '-i',
+    panelTransition,
+    '-vf',
+    "select='eq(n,19)',scale=720:1280:flags=lanczos,format=rgb24",
+    '-frames:v',
+    '1',
+    '-map_metadata',
+    '-1',
+    '-y',
+    panelFrame,
+  ])
+
+  const p01Frame = join(frameWorkspace, 'p01.png')
+  ffmpeg([
+    '-i',
+    p01,
+    '-vf',
+    'scale=720:1280:flags=lanczos,format=rgb24',
+    '-frames:v',
+    '1',
+    '-map_metadata',
+    '-1',
+    '-y',
+    p01Frame,
+  ])
+
+  const raw109 = numbered(rawFrames, 'frame-', 109, 3)
+  ffmpeg([
+    '-loop',
+    '1',
+    '-framerate',
+    '24',
+    '-i',
+    raw109,
+    '-loop',
+    '1',
+    '-framerate',
+    '24',
+    '-i',
+    panelFrame,
+    '-filter_complex',
+    "[0:v][1:v]overlay=x='-720+90*n':y=0:shortest=1:format=rgb,format=rgb24[out]",
+    '-map',
+    '[out]',
+    '-start_number',
+    '0',
+    '-frames:v',
+    '8',
+    '-map_metadata',
+    '-1',
+    '-y',
+    join(wipeFrames, 'in-%03d.png'),
+  ])
+  ffmpeg([
+    '-loop',
+    '1',
+    '-framerate',
+    '24',
+    '-i',
+    p01Frame,
+    '-loop',
+    '1',
+    '-framerate',
+    '24',
+    '-i',
+    panelFrame,
+    '-filter_complex',
+    "[0:v][1:v]overlay=x='90*n':y=0:shortest=1:format=rgb,format=rgb24[out]",
+    '-map',
+    '[out]',
+    '-start_number',
+    '0',
+    '-frames:v',
+    '8',
+    '-map_metadata',
+    '-1',
+    '-y',
+    join(wipeFrames, 'out-%03d.png'),
+  ])
+
+  let outputFrame = 0
+  const append = (source) => {
+    copyFileSync(source, numbered(deliveryFrames, 'frame-', outputFrame))
+    outputFrame += 1
+  }
+  for (let frame = 0; frame < 89; frame += 1) {
+    append(numbered(rawFrames, 'frame-', frame, 3))
+  }
+  for (let frame = 0; frame < 36; frame += 1) {
+    const sourceFrame = 89 + Math.floor((frame * 21) / 36)
+    append(numbered(rawFrames, 'frame-', sourceFrame, 3))
+  }
+  for (let frame = 0; frame < 8; frame += 1) {
+    append(numbered(wipeFrames, 'in-', frame, 3))
+  }
+  append(panelFrame)
+  append(panelFrame)
+  append(panelFrame)
+  append(panelFrame)
+  for (let frame = 0; frame < 8; frame += 1) {
+    append(numbered(wipeFrames, 'out-', frame, 3))
+  }
+  for (let frame = 0; frame < 6; frame += 1) append(p01Frame)
+  if (outputFrame !== 151) {
+    throw new Error(
+      `Corky entrance assembly produced ${String(outputFrame)} frames.`,
+    )
+  }
+
+  ffmpeg([
+    '-framerate',
+    '24',
+    '-start_number',
+    '0',
+    '-i',
+    join(deliveryFrames, 'frame-%05d.png'),
+    '-vf',
+    `format=rgb24,${BT709_FRAME_TAGS}`,
+    '-frames:v',
+    '151',
+    ...VIDEO_ENCODING,
+    '-y',
+    destination,
+  ])
+}
+
 const AUDIO_ENCODING = Object.freeze([
   '-map',
   '0:a:0',
@@ -471,6 +639,44 @@ function probeVideo(path, expectedFrames) {
   }
 }
 
+function probeCorkyEntranceSource(path) {
+  const payload = JSON.parse(
+    run('ffprobe', [
+      '-v',
+      'error',
+      '-show_entries',
+      'format=duration:stream=codec_type,codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_frames,sample_rate,channels',
+      '-of',
+      'json',
+      path,
+    ]),
+  )
+  const streams = payload.streams ?? []
+  const videos = streams.filter((stream) => stream.codec_type === 'video')
+  const audio = streams.filter((stream) => stream.codec_type === 'audio')
+  const video = videos[0]
+  const track = audio[0]
+  if (
+    videos.length !== 1 ||
+    audio.length !== 1 ||
+    video.codec_name !== 'h264' ||
+    video.width !== 720 ||
+    video.height !== 1280 ||
+    video.pix_fmt !== 'yuv420p' ||
+    video.r_frame_rate !== '24/1' ||
+    video.avg_frame_rate !== '24/1' ||
+    Number(video.nb_frames) !== CORKY_ENTRANCE_SOURCE.frames ||
+    track.codec_name !== 'aac' ||
+    track.sample_rate !== '48000' ||
+    track.channels !== 2 ||
+    Math.abs(Number(payload.format?.duration) - 6.016) > 0.001
+  ) {
+    throw new Error(
+      `Corky entrance source contract failed: ${path}: ${JSON.stringify(payload)}`,
+    )
+  }
+}
+
 function probeStill(path) {
   const geometry = run('magick', [path, '-format', '%wx%h', 'info:'])
   if (geometry !== '720x1280') {
@@ -478,13 +684,13 @@ function probeStill(path) {
   }
 }
 
-function probeAudio(path) {
+function probeAudio(path, expectedDurationSeconds) {
   const payload = JSON.parse(
     run('ffprobe', [
       '-v',
       'error',
       '-show_entries',
-      'stream=codec_type,codec_name,sample_rate,channels',
+      'format=duration:stream=codec_type,codec_name,sample_rate,channels',
       '-of',
       'json',
       path,
@@ -499,9 +705,14 @@ function probeAudio(path) {
     video.length !== 0 ||
     track.codec_name !== 'aac' ||
     track.sample_rate !== '48000' ||
-    track.channels !== 2
+    track.channels !== 2 ||
+    (expectedDurationSeconds !== undefined &&
+      Math.abs(Number(payload.format?.duration) - expectedDurationSeconds) >
+        0.001)
   ) {
-    throw new Error(`Delivery audio contract failed: ${path}`)
+    throw new Error(
+      `Delivery audio contract failed: ${path}: ${JSON.stringify(payload)}`,
+    )
   }
 }
 
@@ -509,6 +720,12 @@ const paths = parseArguments(process.argv.slice(2))
 const temporaryDirectory = mkdtempSync(join(tmpdir(), 'beside-cue-v2-4-'))
 
 try {
+  assertHash(
+    'Selected Corky entrance',
+    paths.corkyEntranceRaw,
+    CORKY_ENTRANCE_SOURCE.sha256,
+  )
+  probeCorkyEntranceSource(paths.corkyEntranceRaw)
   assertHash(
     'V2.4 inventory',
     join(paths.sourcePackage, 'SHA256SUMS-v2_4.txt'),
@@ -531,7 +748,12 @@ try {
     mkdirSync(dirname(path), { recursive: true })
   }
 
-  prepareIntroClip(sourcePath(paths, 'introB01'), 60, temporary.corkyReveal)
+  prepareCorkyEntrance(
+    paths.corkyEntranceRaw,
+    sourcePath(paths, 'introB02'),
+    sourcePath(paths, 'p01'),
+    temporary.corkyReveal,
+  )
   prepareIntroClip(sourcePath(paths, 'introB02'), 48, temporary.tableReveal)
   prepareStill(sourcePath(paths, 'p00'), temporary.p00)
   prepareStill(sourcePath(paths, 'p01'), temporary.p01)
@@ -562,7 +784,11 @@ try {
     )
   }
 
-  prepareAudio(audioSourcePath(paths, 'greeting'), temporary.greeting)
+  prepareAudio(
+    audioSourcePath(paths, 'greeting'),
+    temporary.greeting,
+    'atrim=end=2.75,adelay=2601:all=1',
+  )
   prepareAudio(audioSourcePath(paths, 'score'), temporary.score)
   prepareAudio(
     audioSourcePath(paths, 'tableSlide'),
@@ -575,7 +801,7 @@ try {
     'volume=0.32',
   )
 
-  probeVideo(temporary.corkyReveal, 60)
+  probeVideo(temporary.corkyReveal, 151)
   probeVideo(temporary.tableReveal, 48)
   for (const pull of PULLS) {
     probeVideo(temporary[pull.presentOutput], 96)
@@ -583,7 +809,8 @@ try {
     probeStill(temporary[pull.holdOutput])
   }
   for (const key of ['p00', 'p01', 'p02']) probeStill(temporary[key])
-  for (const key of ['greeting', 'score', 'introFoley', 'platterStop']) {
+  probeAudio(temporary.greeting, 5.351)
+  for (const key of ['score', 'introFoley', 'platterStop']) {
     probeAudio(temporary[key])
   }
 
@@ -622,6 +849,10 @@ try {
       package: 'onboarding-video-edit-v2_4',
       inventorySha256: SOURCE_INVENTORY_SHA256,
       legacyAudioPackage: 'onboarding-video-edit-v0_1',
+      corkyEntranceRaw: {
+        file: 'Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4',
+        sha256: CORKY_ENTRANCE_SOURCE.sha256,
+      },
     },
     delivery: {
       picture:

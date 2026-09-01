@@ -12,7 +12,7 @@ describe('V2 onboarding media pack', () => {
   it('publishes one coherent V2.4 scene and Pull authority', () => {
     const pack = V2_ONBOARDING_PREVIEW_MEDIA_PACK
 
-    expect(pack.revision).toBe('corky-v2.4-preview-v1')
+    expect(pack.revision).toBe('corky-v2.4-preview-v2')
     expect(Object.keys(pack.pulls)).toEqual([
       'scrolling',
       'snacking',
@@ -25,7 +25,7 @@ describe('V2 onboarding media pack', () => {
       'corky-reveal': {
         primary: {
           kind: 'video',
-          src: `${ROOT}/picture/b01-corky-reveal-v0_2.mp4`,
+          src: `${ROOT}/picture/b01-corky-entrance-v0_3.mp4`,
         },
         reducedStill: {
           src: `${ROOT}/stills/p01-corky-rest-v0_4.webp`,
@@ -62,7 +62,7 @@ describe('V2 onboarding media pack', () => {
   })
 
   it.each([
-    ['corky-reveal', 'b01-corky-reveal-v0_2.mp4'],
+    ['corky-reveal', 'b01-corky-entrance-v0_3.mp4'],
     ['table-reveal', 'b02-table-reveal-v0_1.mp4'],
   ] as const)('resolves the %s scene as automatic media', (sceneId, suffix) => {
     expect(

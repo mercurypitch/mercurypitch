@@ -88,7 +88,7 @@ const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
 /** Founder-approved V2.4 scene pack for the explicit PR Android preview. */
 export const V2_ONBOARDING_PREVIEW_MEDIA_PACK: V2OnboardingMediaPack =
   Object.freeze({
-    revision: 'corky-v2.4-preview-v1',
+    revision: 'corky-v2.4-preview-v2',
     brand: Object.freeze({ kind: 'brand', alt: '' }),
     poster: TABLE_READY,
     plate: TABLE_READY,
@@ -96,7 +96,7 @@ export const V2_ONBOARDING_PREVIEW_MEDIA_PACK: V2OnboardingMediaPack =
       'corky-reveal': Object.freeze({
         primary: Object.freeze({
           kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b01-corky-reveal-v0_2.mp4`,
+          src: `${PREVIEW_ROOT}/picture/b01-corky-entrance-v0_3.mp4`,
           alt: '',
         }),
         reducedStill: CORKY_REST,

@@ -5,7 +5,11 @@
   "source": {
     "package": "onboarding-video-edit-v2_4",
     "inventorySha256": "1ab7fafe5bafaaf0391dfe82e0842f9022bae236569beef2d89a16021cdfa4d3",
-    "legacyAudioPackage": "onboarding-video-edit-v0_1"
+    "legacyAudioPackage": "onboarding-video-edit-v0_1",
+    "corkyEntranceRaw": {
+      "file": "Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4",
+      "sha256": "abb9fedc1a1a43cf317599563f31e6fb2d490d182d35396b898998698bcae919"
+    }
   },
   "delivery": {
     "picture": "H.264 High 3.1, yuv420p, 720x1280, 24fps CFR, CRF16, GOP48, BT.709, silent, faststart",
@@ -14,9 +18,9 @@
   },
   "outputRecords": [
     {
-      "path": "audio/dialogue/corky-greeting-v0_1.m4a",
-      "sha256": "9c77fcff913846202ad08624a5731603880476232f344af897234cc1bb87bcb4",
-      "bytes": 100275
+      "path": "audio/dialogue/corky-greeting-v0_2.m4a",
+      "sha256": "1ec12a8456c6fa922bd73614ab9eb0fa1f8754e3d26197383cd654b762f7a3f3",
+      "bytes": 71868
     },
     {
       "path": "audio/foley/intro-table-slide-v0_1.m4a",
@@ -34,9 +38,9 @@
       "bytes": 811165
     },
     {
-      "path": "picture/b01-corky-reveal-v0_2.mp4",
-      "sha256": "30c2c9a691f23a099895661e3751a87f685b089448f423829c5d7b6ba12b4a7f",
-      "bytes": 511914
+      "path": "picture/b01-corky-entrance-v0_3.mp4",
+      "sha256": "97cdff27f40ded53e4b869e2c363f107e73d91fc7df769db2d29ff69aff9cf67",
+      "bytes": 1524103
     },
     {
       "path": "picture/b02-table-reveal-v0_1.mp4",
