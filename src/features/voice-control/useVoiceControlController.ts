@@ -23,6 +23,7 @@ import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFil
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
 import { activeVoiceCommands, anyRegisteredMusicPlaying, reportHeardSpeech, wakeWordHoldActive, } from './voice-command-registry'
+import { createHasSomethingToSay } from './voice-hud-presence'
 import { createWebSpeechListener } from './webspeech-listener'
 
 /** Experimental on-device alternative, selectable in Settings for latency
@@ -69,6 +70,24 @@ export interface VoiceControlController {
   errorDetail: Accessor<string | null>
   /** End-of-speech to action time in ms, when the engine measures it. */
   lastLatencyMs: Accessor<number | null>
+  /**
+   * True while the HUD has words to show — a phrase being spoken, a verdict
+   * just landed, or a listener that stopped and needs saying so. False while
+   * voice control is on and simply waiting, which is most of the time.
+   *
+   * It lives here rather than in the HUD because two surfaces read it: the
+   * pill, which expands, and the app header, which gives up its title for
+   * the width. One timer, one answer — computed twice they could disagree
+   * for a frame, and the title would flicker back over the transcript.
+   */
+  hasSomethingToSay: Accessor<boolean>
+  /**
+   * Standing down while a voice is being scored. Voice control is still on
+   * and comes back by itself when the singing stops — the distinction the
+   * HUD needs, because a pause tells the singer to do nothing and a stopped
+   * listener tells them to tap.
+   */
+  suspendedForSinging: Accessor<boolean>
 }
 
 const FEEDBACK_VISIBLE_MS = 2600
@@ -108,8 +127,18 @@ export function useVoiceControlController(
   const [feedback, setFeedback] = createSignal<VoiceFeedback | null>(null)
   const [errorDetail, setErrorDetail] = createSignal<string | null>(null)
   const [lastLatencyMs, setLastLatencyMs] = createSignal<number | null>(null)
+  /** Held off while a voice is being scored — see the section further down. */
+  const [suspendedForSinging, setSuspendedForSinging] = createSignal(false)
 
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null
+
+  const hasSomethingToSay = createHasSomethingToSay({
+    enabled,
+    interim,
+    feedback,
+    listenerState,
+    suspended: suspendedForSinging,
+  })
 
   const presentFeedback = (next: VoiceFeedback) => {
     if (feedbackTimer !== null) clearTimeout(feedbackTimer)
@@ -358,12 +387,17 @@ export function useVoiceControlController(
   // So this is a pause, never a preference change: `enabled` stays on, the
   // HUD keeps saying voice control is on, and the listener comes back by
   // itself when the singing stops. Nothing asks the user to manage it.
-  let suspendedForSinging = false
+  //
+  // The flag itself is a signal declared with the other state above, because
+  // the HUD has to be able to tell this apart from a listener that died: the
+  // pause said "Voice stopped — tap the mic to restart" over a mic that was
+  // deliberately held off, and the tap it asked for did nothing, because
+  // there was nothing wrong to fix.
 
   /** Start unless a voice is being scored right now; remember either way. */
   const startUnlessSinging = () => {
     if (singingCaptureActive()) {
-      suspendedForSinging = true
+      setSuspendedForSinging(true)
       return
     }
     startListening()
@@ -373,7 +407,7 @@ export function useVoiceControlController(
     setEnabled(false)
     // An explicit turn-off outranks the pause: forget it, so ending the
     // song does not quietly switch the recognizer back on.
-    suspendedForSinging = false
+    setSuspendedForSinging(false)
     stopListening()
   }
 
@@ -392,8 +426,26 @@ export function useVoiceControlController(
     // that is the only reason the pill had to ask for two of them. A phone
     // has no key to press twice, so the second press was simply unavailable.
     // One activation, from any input, means "start listening again".
-    if (enabled() && listenerState() === 'idle') {
+    //
+    // `error` belongs here for the same reason and one more: on iOS the
+    // recognizer refuses a `start()` that has no user gesture behind it, and
+    // this press IS one. Turning off first would spend the only gesture that
+    // could have fixed it — which is what "disable and enable did nothing"
+    // was. The stop is not ceremony: the listener ignores `start` while it
+    // still believes it is started, so recovery has to reset it first.
+    //
+    // A singing pause is excluded: nothing is wrong there, the listener is
+    // being held off on purpose and comes back on its own. Restarting from
+    // it was a no-op, so the press fell through to nothing at all; falling
+    // through to `turnOff` instead makes the mic button mean what its label
+    // has said the whole time.
+    if (
+      enabled() &&
+      !suspendedForSinging() &&
+      (listenerState() === 'idle' || listenerState() === 'error')
+    ) {
       setLastLatencyMs(null)
+      stopListening()
       startUnlessSinging()
       return
     }
@@ -409,15 +461,15 @@ export function useVoiceControlController(
   createEffect(() => {
     const singing = singingCaptureActive()
     if (singing) {
-      if (suspendedForSinging || !untrack(enabled)) return
-      suspendedForSinging = true
+      if (untrack(suspendedForSinging) || !untrack(enabled)) return
+      setSuspendedForSinging(true)
       stopListening()
       setListenerState('idle')
       setInterim('')
       return
     }
-    if (!suspendedForSinging) return
-    suspendedForSinging = false
+    if (!untrack(suspendedForSinging)) return
+    setSuspendedForSinging(false)
     if (untrack(enabled)) startListening()
   })
 
@@ -456,7 +508,7 @@ export function useVoiceControlController(
       // Mounting mid-song (the zen stage remounts on a playlist advance)
       // must not start a recognizer the singing is already meant to hold off.
       if (untrack(singingCaptureActive)) {
-        suspendedForSinging = true
+        setSuspendedForSinging(true)
         return
       }
       activeListener = listener
@@ -486,5 +538,7 @@ export function useVoiceControlController(
     feedback,
     errorDetail,
     lastLatencyMs,
+    hasSomethingToSay,
+    suspendedForSinging,
   }
 }

@@ -8,7 +8,7 @@
 // listener hears something or a command just landed. Not a live region:
 // interim transcripts change many times a second while music plays.
 
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { Mic, Settings, X } from '@/components/icons'
 import { practiceTimerVisible } from '@/stores/practice-timer-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
@@ -64,6 +64,19 @@ const ENGINES: Array<{
 
 export function VoiceControlHud(props: VoiceControlHudProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
+  let statusEl: HTMLSpanElement | undefined
+  /**
+   * Expanded only while there is something to read. Between phrases the pill
+   * is a mic and a cog again — on a phone the expanded bar was permanent
+   * furniture, and docked in the header it sat over the app's own title for
+   * the whole session rather than for the second the words were on screen.
+   *
+   * The menu pins it open: a picker that closed itself three seconds after
+   * you opened it would be unusable.
+   */
+  const expanded = () =>
+    props.controller.enabled() &&
+    (menuOpen() || props.controller.hasSomethingToSay())
   const listening = () =>
     props.controller.enabled() &&
     props.controller.listenerState() === 'listening'
@@ -73,12 +86,27 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
   const statusText = () => {
     if (hasError()) {
       // The mic and the model fail differently; say which one it was.
-      return props.controller.errorDetail() === 'local-engine-failed'
-        ? 'Voice engine failed'
-        : 'Mic unavailable'
+      const detail = props.controller.errorDetail()
+      if (detail === 'local-engine-failed') return 'Voice engine failed'
+      // iOS will not start a recognizer that has no user gesture behind it,
+      // and voice control is a remembered preference — so the start that
+      // matters happens at mount, with none. Nothing is broken and nothing
+      // needs granting; it needs a touch, and any touch will do. Saying "Mic
+      // unavailable" over that sent people to Settings for a permission they
+      // had already given.
+      if (detail === 'needs-gesture') return 'Voice paused — tap to resume'
+      return 'Mic unavailable'
     }
     if (props.controller.listenerState() === 'starting') {
       return 'Loading voice engine'
+    }
+    // A deliberate stand-down while the stage mic scores a voice, not a
+    // failure: it ends when the singing does, and the pill collapses over it
+    // rather than sitting open. Only the pinned-open menu shows this line —
+    // but it has to be true, because "tap the mic to restart" was not, and
+    // the tap it asked for did nothing.
+    if (props.controller.suspendedForSinging()) {
+      return 'Voice paused while you sing'
     }
     // Enabled but idle is a listener that STOPPED under us — the mic
     // sentinel killing a dead stream, or a backgrounded tab losing its
@@ -110,16 +138,29 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
       : 'Turn voice control on (V)'
   }
 
+  // A long sentence runs off the end of a strip this narrow, so the strip
+  // follows it: every new word scrolls the tail into view. The singer is
+  // reading what was just heard, not the start of the phrase.
+  createEffect(() => {
+    const text = statusText()
+    // `expanded()` as a dependency, not a guard: the strip is unmounted while
+    // collapsed, and the ref is assigned as it mounts — reading it here is
+    // what makes the first words of a phrase scroll into view too.
+    if (!expanded() || statusEl === undefined || text === '') return
+    statusEl.scrollLeft = statusEl.scrollWidth
+  })
+
   return (
     <div
       class={styles.pill}
       classList={{
         [styles.raised]: practiceTimerVisible(),
-        [styles.expanded]: props.controller.enabled(),
+        [styles.expanded]: expanded(),
         [styles.docked]: props.placement === 'docked',
       }}
       data-testid="voice-control-pill"
       data-placement={props.placement ?? 'floating'}
+      data-talking={expanded() ? 'true' : 'false'}
     >
       <button
         type="button"
@@ -196,7 +237,13 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             </div>
           </Show>
         </div>
+      </Show>
+      {/* The words, and the controls that only make sense beside them.
+          Collapsed, this whole half is gone and the pill is the mic and the
+          cog — which is all there is to act on while nothing is being said. */}
+      <Show when={expanded()}>
         <span
+          ref={statusEl}
           class={styles.status}
           classList={{
             [styles.statusMatched]:

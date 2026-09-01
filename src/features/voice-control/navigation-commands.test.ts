@@ -167,3 +167,74 @@ describe('voice help, registered without the tab set', () => {
     expect(help.available?.()).toBe(false)
   })
 })
+
+// ============================================================
+// "Open karaoke" on a phone means the stage, not the desk
+// ============================================================
+//
+// The karaoke TAB is the mixer with its rails, panels and sidebar — a surface
+// built for a wide screen. Spoken from across the room on a phone it was the
+// wrong half of the app to land in. Karaoke Night is the same songs on a
+// stage that fits the device. On a desktop the two stay separate, and the
+// tab is what was asked for.
+
+describe('karaoke by voice, by screen', () => {
+  it('takes a phone to Karaoke Night', () => {
+    const leaveForPage = vi.fn()
+
+    const said = fire('open karaoke', {
+      isNarrow: () => true,
+      leaveForPage,
+    })
+
+    expect(said).toBe('Karaoke Night')
+    expect(leaveForPage).toHaveBeenCalledWith('/karaoke-night')
+    // And it did not also switch the tab underneath.
+    expect(activeTab()).toBe(TAB_HOME)
+  })
+
+  it.each(['go to karaoke', 'show karaoke', 'switch to karaoke tab'])(
+    'takes a phone to the stage for "%s" too',
+    (utterance) => {
+      const leaveForPage = vi.fn()
+
+      fire(utterance, { isNarrow: () => true, leaveForPage })
+
+      expect(leaveForPage).toHaveBeenCalledWith('/karaoke-night')
+    },
+  )
+
+  it('keeps the tab on a desktop', () => {
+    const leaveForPage = vi.fn()
+
+    const said = fire('open karaoke', {
+      isNarrow: () => false,
+      leaveForPage,
+    })
+
+    expect(said).toBe('Go to Karaoke')
+    expect(leaveForPage).not.toHaveBeenCalled()
+    expect(activeTab()).toBe(TAB_KARAOKE)
+  })
+
+  it('still leaves for the stage when Karaoke Night is asked for by name', () => {
+    const leaveForPage = vi.fn()
+
+    const said = fire('karaoke night', {
+      isNarrow: () => false,
+      leaveForPage,
+    })
+
+    expect(said).toBe('Karaoke Night')
+    expect(leaveForPage).toHaveBeenCalledWith('/karaoke-night')
+  })
+
+  it('leaves every other tab alone on a phone', () => {
+    const leaveForPage = vi.fn()
+
+    fire('open settings', { isNarrow: () => true, leaveForPage })
+
+    expect(leaveForPage).not.toHaveBeenCalled()
+    expect(activeTab()).toBe(TAB_SETTINGS)
+  })
+})

@@ -24,6 +24,12 @@ function createController(
     interim: () => '',
     feedback: () => null,
     lastLatencyMs: () => null,
+    // The real rule lives in voice-hud-presence and is tested there. Here it
+    // is a dial: the pill's job is to lay out around it, not to derive it.
+    // `idle` is a talking state — it has a sentence and a way out — so the
+    // default matches the default listener state above.
+    hasSomethingToSay: () => true,
+    suspendedForSinging: () => false,
     toggle: vi.fn(),
     turnOff: vi.fn(),
     ...overrides,
@@ -81,6 +87,27 @@ describe('VoiceControlHud placement', () => {
 // already-silent listener off. Nothing else in the expanded pill closed it
 // either, so on a phone it stayed pinned over the page's own controls.
 
+describe('VoiceControlHud while the stage mic has the audio', () => {
+  it('names the pause instead of asking for a tap that does nothing', () => {
+    // The suspension sets the listener to `idle`, and `idle` otherwise means
+    // the listener died under us and needs restarting. Here nothing is wrong,
+    // the mic is being held off on purpose, and it comes back by itself.
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'idle',
+          suspendedForSinging: () => true,
+        })}
+      />
+    ))
+
+    expect(screen.getByTestId('voice-control-status')).toHaveTextContent(
+      'Voice paused while you sing',
+    )
+  })
+})
+
 describe('VoiceControlHud on a device with no keyboard', () => {
   it('asks for the mic rather than a key when the listener has stopped', () => {
     render(() => (
@@ -127,5 +154,87 @@ describe('VoiceControlHud on a device with no keyboard', () => {
     expect(
       screen.queryByRole('button', { name: 'Turn voice control off' }),
     ).toBeNull()
+  })
+})
+
+// ============================================================
+// Between phrases the pill is a mic and a cog
+// ============================================================
+//
+// Expanded, this is a wide bar. Docked in a phone's header it ran straight
+// across "MercuryPitch" and stayed there for the whole session — for the one
+// second in ten that it had words, and the nine that it did not.
+
+describe('VoiceControlHud when there is nothing to say', () => {
+  it('keeps the mic and the engine cog, and drops the rest', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'listening',
+          hasSomethingToSay: () => false,
+        })}
+        placement="docked"
+      />
+    ))
+
+    expect(
+      screen.getByRole('button', { name: 'Voice engine and commands' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /voice control o/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('voice-control-status')).toBeNull()
+    expect(screen.getByTestId('voice-control-pill')).toHaveAttribute(
+      'data-talking',
+      'false',
+    )
+  })
+
+  it('shows the words again as soon as there are any', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'listening',
+          interim: () => 'go to karaoke night',
+          hasSomethingToSay: () => true,
+        })}
+        placement="docked"
+      />
+    ))
+
+    expect(screen.getByTestId('voice-control-status')).toHaveTextContent(
+      'go to karaoke night',
+    )
+    expect(screen.getByTestId('voice-control-pill')).toHaveAttribute(
+      'data-talking',
+      'true',
+    )
+  })
+
+  it('stays open while the engine menu is', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'listening',
+          hasSomethingToSay: () => false,
+        })}
+        placement="docked"
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Voice engine and commands' }),
+    )
+
+    // A picker that closed itself three seconds after it was opened would be
+    // unusable, so the menu pins the pill open for as long as it is up.
+    expect(screen.getByTestId('voice-control-pill')).toHaveAttribute(
+      'data-talking',
+      'true',
+    )
+    expect(screen.getByRole('menu')).toBeInTheDocument()
   })
 })

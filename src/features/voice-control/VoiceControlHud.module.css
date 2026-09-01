@@ -101,11 +101,23 @@
   cursor: not-allowed;
 }
 
+/* The transcript, as a strip that follows the words rather than a line that
+   cuts them off. `overflow-x: auto` and not `hidden`, so a phrase that ran
+   past the end can still be scrolled back through by hand; the component
+   pins it to the tail as each word arrives. The scrollbar itself is hidden —
+   this is a one-line readout inside a pill, and a gutter under it would cost
+   more height than the text. */
 .status {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   max-width: 15rem;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.status::-webkit-scrollbar {
+  display: none;
 }
 
 .statusMatched {
@@ -353,11 +365,21 @@
     background: none;
   }
 
+  /* Talking, the pill has the header row — the app title steps aside for it
+     (see AppHeader.css) — so the transcript takes whatever is left after the
+     mic, the cog and the way out, rather than a fixed few characters. The
+     `min-width: 0` is what lets it shrink inside the flex row instead of
+     pushing the account glyph off the screen. */
+  .docked[data-talking='true'] {
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
   .docked .status {
-    max-width: 6.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    max-width: none;
   }
 
   /* A millisecond count is a desk measurement; there is no room for it here
