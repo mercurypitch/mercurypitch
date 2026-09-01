@@ -55,6 +55,18 @@ done
 
 command -v magick >/dev/null || { echo "ImageMagick (magick) required" >&2; exit 1; }
 
+# ImageMagick stamps a tIME chunk into every PNG it writes, so re-running
+# this script rewrote all twenty-odd files with identical pixels and
+# different bytes. Git cannot tell that apart from a real change, which
+# makes any future icon edit arrive as a diff touching everything. Drop
+# the timestamp and the output is a pure function of the masters.
+#
+# Named tIME explicitly: the friendly "date" keyword alone does not
+# drop it. Not -strip, which would take the colour chunks too, and these
+# files are handed to platforms that read them.
+PNG='-define png:exclude-chunk=tIME,date'
+# shellcheck disable=SC2086  # PNG must word-split into magick's argv
+
 say () { printf '  %s\n' "$1"; }
 
 # --------------------------------------------------------------------
@@ -67,11 +79,11 @@ echo "iOS"
 # -alpha off, then -background, then -flatten: three ways of saying the
 # same thing, because a PNG that merely looks opaque can still carry an
 # alpha channel and that is what the validator reads.
-magick "$SRC" -background white -alpha remove -alpha off \
+magick $PNG "$SRC" -background white -alpha remove -alpha off \
   -quality 100 "$IOS/AppIcon-512@2x.png"
 say "AppIcon-512@2x.png (light, opaque)"
 
-magick "$SRC_DARK" -background black -alpha remove -alpha off \
+magick $PNG "$SRC_DARK" -background black -alpha remove -alpha off \
   -quality 100 "$IOS/AppIcon-dark-1024.png"
 say "AppIcon-dark-1024.png"
 
@@ -82,7 +94,7 @@ say "AppIcon-dark-1024.png"
 # nothing here, because ImageMagick still writes a greyscale PNG when
 # every pixel happens to be grey. Forcing RGBA is what actually hands
 # Xcode an sRGB file.
-magick "$SRC_TINTED" -colorspace sRGB -define png:color-type=6 \
+magick $PNG "$SRC_TINTED" -colorspace sRGB -define png:color-type=6 \
   -quality 100 "$IOS/AppIcon-tinted-1024.png"
 say "AppIcon-tinted-1024.png (greyscale values, sRGB, alpha)"
 
@@ -155,18 +167,18 @@ for row in "mdpi 1" "hdpi 1.5" "xhdpi 2" "xxhdpi 3" "xxxhdpi 4"; do
   safe=$(awk "BEGIN{printf \"%d\", $ADAPTIVE_DP * $scale * $SAFE_NUM / 108}")
   legacy=$(awk "BEGIN{printf \"%d\", $LEGACY_DP * $scale}")
 
-  magick "$SRC_DISC" -resize "${safe}x${safe}" \
+  magick $PNG "$SRC_DISC" -resize "${safe}x${safe}" \
     -background none -gravity center -extent "${adaptive}x${adaptive}" \
     "$dir/ic_launcher_foreground.png"
 
-  magick "$SRC" -resize "${legacy}x${legacy}" -alpha off \
+  magick $PNG "$SRC" -resize "${legacy}x${legacy}" -alpha off \
     "$dir/ic_launcher.png"
 
   # The round variant is masked here rather than left to the launcher,
   # because a launcher that asks for ic_launcher_round expects a circle
   # and will not cut one for you.
   half=$((legacy / 2))
-  magick "$SRC" -resize "${legacy}x${legacy}" \
+  magick $PNG "$SRC" -resize "${legacy}x${legacy}" \
     \( +clone -alpha transparent -fill white \
        -draw "circle $half,$half $half,0" -alpha extract \) \
     -alpha off -compose CopyOpacity -composite \
@@ -175,13 +187,28 @@ for row in "mdpi 1" "hdpi 1.5" "xhdpi 2" "xxhdpi 3" "xxxhdpi 4"; do
   say "mipmap-$density: foreground ${adaptive}px (art ${safe}px), launcher ${legacy}px"
 done
 
-# The adaptive icon's background is a flat brand colour, so the
-# foreground can stay a bare disc with no field of its own and never
-# show a seam against it.
+# The adaptive background is the disc's OWN RIM COLOUR, sampled from the
+# master: #1D0E07, uniform all the way round.
+#
+# It was the brand cream, which is what iOS shows, and on a device that
+# read as a thin cream outline drawn around the record -- because that is
+# exactly what it was. An adaptive foreground has to stay inside the
+# visible 72dp, so there is always some background between the art and
+# the mask edge, and any colour that is not the art's own edge shows up
+# there as a ring.
+#
+# Growing the disc cannot fix it: at 72dp it fills a CIRCULAR mask and
+# still leaves corners under the squircle mask Samsung ships by default.
+# Matching the colour fixes it under every mask shape at once, which is
+# the only way to be right on a launcher we have not seen.
+#
+# The cost is that Android's tile reads dark where the iOS tile reads
+# cream. That asymmetry is the platform's, not ours: iOS masks a
+# full-bleed square and never shows a background of its own.
 cat > "$RES/values/ic_launcher_background.xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFF5DD</color>
+    <color name="ic_launcher_background">#1D0E07</color>
 </resources>
 XML
 
@@ -214,16 +241,16 @@ echo "Web"
 # interpolates its way back to thousands, and a 512 favicon has no
 # business being most of a megabyte.
 for size in 16 32 48 192 512; do
-  magick "$SRC" -resize "${size}x${size}" +dither -colors 64 \
+  magick $PNG "$SRC" -resize "${size}x${size}" +dither -colors 64 \
     "$WEB/icon-${size}.png"
 done
 say "icon-{16,32,48,192,512}.png"
 
-magick "$SRC" -resize 180x180 -background white -alpha remove -alpha off \
+magick $PNG "$SRC" -resize 180x180 -background white -alpha remove -alpha off \
   +dither -colors 64 "$WEB/apple-touch-icon.png"
 say "apple-touch-icon.png (180, opaque)"
 
-magick "$WEB/icon-16.png" "$WEB/icon-32.png" "$WEB/icon-48.png" public/favicon.ico
+magick $PNG "$WEB/icon-16.png" "$WEB/icon-32.png" "$WEB/icon-48.png" public/favicon.ico
 say "favicon.ico (16+32+48)"
 
 # --------------------------------------------------------------------
@@ -233,10 +260,10 @@ STORE=build/store-icons
 mkdir -p "$STORE"
 echo "Store uploads (build/store-icons, gitignored)"
 
-magick "$SRC" -resize 512x512 -background white -alpha remove -alpha off \
+magick $PNG "$SRC" -resize 512x512 -background white -alpha remove -alpha off \
   "$STORE/play-store-512.png"
 say "play-store-512.png (upload in Play Console)"
-magick "$SRC" -background white -alpha remove -alpha off "$STORE/app-store-1024.png"
+magick $PNG "$SRC" -background white -alpha remove -alpha off "$STORE/app-store-1024.png"
 say "app-store-1024.png (App Store takes this from the build; kept for reference)"
 
 echo
