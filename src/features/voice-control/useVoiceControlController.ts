@@ -23,6 +23,7 @@ import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFil
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
 import { activeVoiceCommands, anyRegisteredMusicPlaying, reportHeardSpeech, wakeWordHoldActive, } from './voice-command-registry'
+import { createHasSomethingToSay } from './voice-hud-presence'
 import { createWebSpeechListener } from './webspeech-listener'
 
 /** Experimental on-device alternative, selectable in Settings for latency
@@ -69,6 +70,17 @@ export interface VoiceControlController {
   errorDetail: Accessor<string | null>
   /** End-of-speech to action time in ms, when the engine measures it. */
   lastLatencyMs: Accessor<number | null>
+  /**
+   * True while the HUD has words to show — a phrase being spoken, a verdict
+   * just landed, or a listener that stopped and needs saying so. False while
+   * voice control is on and simply waiting, which is most of the time.
+   *
+   * It lives here rather than in the HUD because two surfaces read it: the
+   * pill, which expands, and the app header, which gives up its title for
+   * the width. One timer, one answer — computed twice they could disagree
+   * for a frame, and the title would flicker back over the transcript.
+   */
+  hasSomethingToSay: Accessor<boolean>
 }
 
 const FEEDBACK_VISIBLE_MS = 2600
@@ -110,6 +122,13 @@ export function useVoiceControlController(
   const [lastLatencyMs, setLastLatencyMs] = createSignal<number | null>(null)
 
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null
+
+  const hasSomethingToSay = createHasSomethingToSay({
+    enabled,
+    interim,
+    feedback,
+    listenerState,
+  })
 
   const presentFeedback = (next: VoiceFeedback) => {
     if (feedbackTimer !== null) clearTimeout(feedbackTimer)
@@ -486,5 +505,6 @@ export function useVoiceControlController(
     feedback,
     errorDetail,
     lastLatencyMs,
+    hasSomethingToSay,
   }
 }

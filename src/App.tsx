@@ -3131,7 +3131,20 @@ const AppShell: Component<AppProps> = (props) => {
           }
         >
           <Show when={labTab() === null}>
-            <header>
+            {/* The docked voice pill shares this row with the title, and a
+                phone's row is about three hundred pixels wide. While there
+                are words to show the title steps aside and the transcript
+                takes the room; a few seconds after the last of them the pill
+                collapses back to a mic and a cog, and the title returns.
+                Narrow only — the pill floats on a desktop and takes nothing
+                from this row at all. */}
+            <header
+              data-voice={
+                isNarrow() && voiceControl.hasSomethingToSay()
+                  ? 'talking'
+                  : undefined
+              }
+            >
               <div class="header-left">
                 <button
                   class="sidebar-toggle-btn"

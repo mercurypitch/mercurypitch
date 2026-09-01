@@ -13,6 +13,7 @@ import { requestKaraokeAutoplay } from '@/features/stem-mixer/karaoke-launch-int
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
+import { isNarrow } from '@/lib/use-viewport'
 import { getPlaylistsReactive, isPlaylistActive, jumpTo, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { hideLibrary, isLibraryModalOpen, setActiveTab, showLibrary, } from '@/stores/ui-store'
@@ -30,6 +31,13 @@ export interface NavigationVoiceDeps {
     tab: ActiveTab,
     onResolved?: (accepted: boolean) => void,
   ) => void
+  /**
+   * Whether this is a phone-width viewport. Injected so the karaoke split
+   * below can be tested; defaults to the app's shared accessor.
+   */
+  isNarrow?: Accessor<boolean>
+  /** Leaves the app for a standalone page. Injected for the same reason. */
+  leaveForPage?: (path: string) => void
 }
 
 const TAB_SPOKEN_NAMES: Array<{
@@ -106,6 +114,14 @@ export function createNavigationVoiceCommands(
     setActiveTab(tab)
     onResolved?.(true)
   }
+  const narrow = (): boolean => (deps.isNarrow ?? isNarrow)()
+  const leaveForPage = (path: string): void => {
+    if (deps.leaveForPage !== undefined) {
+      deps.leaveForPage(path)
+      return
+    }
+    window.location.assign(path)
+  }
 
   const commands: VoiceCommand[] = TAB_SPOKEN_NAMES.map(
     ({ tab, names, extra }) => ({
@@ -123,6 +139,16 @@ export function createNavigationVoiceCommands(
       available: () =>
         notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
       run: () => {
+        // "Open karaoke" on a phone means the stage, not the desk. The
+        // karaoke TAB is the mixer with its rails, panels and sidebar — a
+        // surface built for a wide screen, and the wrong half of the app to
+        // be dropped into by voice with the phone across the room. Karaoke
+        // Night is the same songs on a stage that fits the device. On a
+        // desktop the two stay separate, and the tab is what was asked for.
+        if (tab === TAB_KARAOKE && narrow()) {
+          leaveForPage('/karaoke-night')
+          return 'Karaoke Night'
+        }
         navigateToTab(tab)
         return `Go to ${tabLabel(tab)}`
       },
@@ -143,7 +169,7 @@ export function createNavigationVoiceCommands(
       ],
       available: notSuspended,
       run: () => {
-        window.location.assign('/karaoke-night')
+        leaveForPage('/karaoke-night')
         return 'Karaoke Night'
       },
     },

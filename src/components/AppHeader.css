@@ -150,4 +150,34 @@ header h1 {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* ── The row while voice control is talking ──────────────────
+     The docked pill shows what it heard, and a phone header has room for
+     the title or for a sentence, not both — expanded, the pill grew right
+     across "MercuryPitch" and the two read as one smeared line.
+     So the row is lent out rather than shared: the title, the tagline and
+     the loaded-song pill step aside, the corner reserve that was holding
+     space for the account glyph is released, and the support group comes
+     out of its absolute corner to sit in the flow and take the width. The
+     menu button stays — it is the way out of wherever you are, and it is
+     one glyph.
+     App.tsx sets `data-voice` only on a narrow viewport and only while
+     there is something to read; a few seconds of quiet collapses the pill
+     and every rule here stops applying at once. */
+  header[data-voice='talking'] {
+    padding-right: max(12px, var(--safe-right, 0px));
+  }
+
+  header[data-voice='talking'] .logo-btn,
+  header[data-voice='talking'] .subtitle,
+  header[data-voice='talking'] .header-melody-context {
+    display: none;
+  }
+
+  header[data-voice='talking'] .header-support {
+    position: static;
+    flex: 1;
+    min-width: 0;
+    margin-left: 8px;
+  }
 }
