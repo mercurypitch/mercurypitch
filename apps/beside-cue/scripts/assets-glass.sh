@@ -24,3 +24,4 @@ optimize () {
 
 optimize art/glass/glass-preview.glb  art/glass/glass.opt.glb
 optimize art/glass/shards-preview.glb art/glass/shards.opt.glb
+optimize art/merc/merc-preview.glb    art/merc/merc.opt.glb
