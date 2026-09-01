@@ -3,7 +3,7 @@
 // ============================================================
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GUITAR_NIGHT_DRUM_SOUND_STORAGE_KEY } from './guitar-night-drum-sound'
 import { GuitarNightDrumSoundControls } from './GuitarNightDrumSoundControls'
 
@@ -43,5 +43,35 @@ describe('GuitarNightDrumSoundControls', () => {
         localStorage.getItem(GUITAR_NIGHT_DRUM_SOUND_STORAGE_KEY) ?? '{}',
       ),
     ).toEqual({ kitId: 'studio', feelId: 'funk' })
+  })
+
+  it('reports a live Kit choice while keeping Feel explicitly next-Play', () => {
+    const onKitChange = vi.fn()
+    const onFeelChange = vi.fn()
+    render(() => (
+      <GuitarNightDrumSoundControls
+        liveKit
+        onKitChange={onKitChange}
+        onFeelChange={onFeelChange}
+      />
+    ))
+
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'Guitar Night drum kit' }),
+      { target: { value: 'live' } },
+    )
+    fireEvent.change(
+      screen.getByRole('combobox', {
+        name: 'Guitar Night generated drum feel',
+      }),
+      { target: { value: 'jazz' } },
+    )
+
+    expect(onKitChange).toHaveBeenCalledWith('live')
+    expect(onFeelChange).toHaveBeenCalledWith('jazz')
+    expect(
+      screen.getByText(/Kit changes live after audio starts/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Feel starts on next Play/)).toBeInTheDocument()
   })
 })

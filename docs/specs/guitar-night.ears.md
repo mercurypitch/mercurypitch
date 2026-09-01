@@ -938,7 +938,11 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SONG-022 — Readable mixed drum lane:** WHEN a saved reference mixes
   pitched and percussion tracks, the Sheet view shall expose each authored
   drum track as a separately hideable, non-scoreable GM reference lane while
-  retaining a pitched track as the only eligible score authority.
+  retaining a pitched track as the only eligible score authority. The track
+  mixer shall let the player follow one mapped Drum lane on the moving stage;
+  Highway, Grid, Tab, and Neck shall render a percussion-native time window
+  rather than frets, and Sheet shall continue to show its complete visible
+  lanes. Following or hiding percussion shall never change Guitar scoring.
 - **REQ-GN-SONG-023 — Shared drum-player boundary:** WHEN an authored drum part
   starts, Guitar Night shall lazily acquire a drum player, schedule exact GM
   identity and velocity on the room AudioContext clock, and route each track
@@ -967,9 +971,12 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SONG-026 — Guitar-owned drum sound:** Guitar Night shall expose a
   compact local kit and generated-groove feel preference without importing the
   Drum Night catalogue, sample metadata, or humanizer on first paint. A player
-  may choose Mercury Synth, Circuit, Classic GM, Studio, or Live before Play;
-  an unsaved room shall keep the existing zero-download Mercury Synth and
-  straight-grid defaults.
+  may choose Mercury Synth, Circuit, Classic GM, Studio, or Live before Play,
+  while Playing, or while Paused. A pre-Play choice shall remain audio-inert;
+  after activation the retained route-owned player shall switch live without
+  restarting the reference clock, and a sampled kit may state that Mercury
+  fallback sounds while its bytes warm. An unsaved room shall keep the
+  existing zero-download Mercury Synth and straight-grid defaults.
 - **REQ-GN-SONG-027 — Generated feel boundary:** WHEN an optional shipped feel
   is selected, Guitar Night shall apply one run-pinned deterministic humanizer
   only to its generated groove attacks. Imported MIDI and Guitar Pro
@@ -977,6 +984,17 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   shall remain unhumanized, and score/reference clocks and expected-hit
   evidence shall remain unchanged. Sample loading or per-hit fallback shall
   never block the route transport.
+- **REQ-GN-SONG-028 — Discoverable authored-track mixer:** WHERE a MIDI or
+  Guitar Pro arrangement is loaded, the room title shall visibly disclose one
+  bounded Track mixer containing the overall room level and one stable row per
+  authored track. Every playable pitched and percussion row shall retain its
+  source identity, independent Mute/Solo state, Sheet visibility, and a live
+  `−∞..+6 dB` fader whose default is `0 dB`. Fader, master, Mute, Solo, and
+  backing-bus changes shall use pop-free gain ramps without restarting or
+  retiming playback; masks shall not overwrite a retained fader value. Reset
+  shall restore track levels to unity without changing Mute or Solo. The
+  downstream room limiter shall remain the final safety boundary, and the
+  phone dialog shall preserve 44px controls without horizontal overflow.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

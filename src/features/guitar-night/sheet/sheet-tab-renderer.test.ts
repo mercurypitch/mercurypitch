@@ -91,9 +91,21 @@ function fakeContext(): {
     save: () => record('save'),
     restore: () => record('restore'),
     beginPath: () => record('beginPath'),
+    closePath: () => record('closePath'),
     moveTo: (x: number, y: number) => record('moveTo', x, y),
     lineTo: (x: number, y: number) => record('lineTo', x, y),
     stroke: () => record('stroke'),
+    fill: () => record('fill'),
+    ellipse: (
+      x: number,
+      y: number,
+      radiusX: number,
+      radiusY: number,
+      rotation: number,
+      startAngle: number,
+      endAngle: number,
+    ) =>
+      record('ellipse', x, y, radiusX, radiusY, rotation, startAngle, endAngle),
     fillRect: (x: number, y: number, w: number, h: number) =>
       record('fillRect', x, y, w, h),
     fillText: (text: string, x: number, y: number) =>
@@ -203,13 +215,13 @@ describe('tabSheetRenderer.laneHeight', () => {
     ).toBe(metrics.labelHeight + 3 * metrics.rowHeight)
   })
 
-  it('gives percussion a compact five-row staff', () => {
+  it('gives percussion a compact five-line staff with cymbal headroom', () => {
     expect(
       tabSheetRenderer.laneHeight(
         lane({ content: 'percussion', scoreable: false }),
         metrics,
       ),
-    ).toBe(metrics.labelHeight + 4 * metrics.rowHeight)
+    ).toBe(metrics.labelHeight + 5 * metrics.rowHeight)
   })
 })
 
@@ -294,7 +306,7 @@ describe('tabSheetRenderer.paintSystem', () => {
     expect(Number(labels[0]?.args[1])).toBeLessThan(metrics.gutterWidth)
   })
 
-  it('writes exact GM keys at their authored beats on semantic drum rows', () => {
+  it('draws native GM noteheads at their authored beats without fake frets', () => {
     const ops = paint([
       lane({
         trackId: 'track-drums',
@@ -307,39 +319,48 @@ describe('tabSheetRenderer.paintSystem', () => {
           { gmKey: 38, startBeat: 1, velocity: 96 },
           { gmKey: 42, startBeat: 2, velocity: 72 },
           { gmKey: 49, startBeat: 4, velocity: 112 },
+          { gmKey: 54, startBeat: 6, velocity: 88 },
         ],
       }),
     ])
-    const byGmKey = (gmKey: number): RecordedOp | undefined =>
-      ops.find(
-        (entry) => entry.op === 'fillText' && entry.args[0] === `${gmKey}`,
-      )
-    const staffTop = metrics.systemPaddingTop + metrics.labelHeight
+    const ellipses = ops.filter((entry) => entry.op === 'ellipse')
+    const crossSegments = segments(ops).filter(
+      (segment) => segment.strokeStyle === theme.mutedNoteText,
+    )
+    const staffTop =
+      metrics.systemPaddingTop + metrics.labelHeight + metrics.rowHeight
     const contentWidth = metrics.width - metrics.gutterWidth
 
-    expect(byGmKey(36)?.args.slice(1)).toEqual([
+    expect(ellipses[0]?.args.slice(0, 2)).toEqual([
       metrics.gutterWidth,
       staffTop + 4 * metrics.rowHeight,
     ])
-    expect(byGmKey(38)?.args.slice(1)).toEqual([
+    expect(ellipses[1]?.args.slice(0, 2)).toEqual([
       metrics.gutterWidth + contentWidth / 8,
-      staffTop + 3 * metrics.rowHeight,
-    ])
-    expect(byGmKey(42)?.args.slice(1)).toEqual([
-      metrics.gutterWidth + contentWidth / 4,
-      staffTop + metrics.rowHeight,
-    ])
-    expect(byGmKey(49)?.args.slice(1)).toEqual([
-      metrics.gutterWidth + contentWidth / 2,
-      staffTop,
+      staffTop + 2 * metrics.rowHeight,
     ])
     expect(
-      ops
-        .filter(
-          (entry) => entry.op === 'fillText' && entry.textAlign === 'right',
+      crossSegments.some((segment) => {
+        const midpointX = (segment.from[0]! + segment.to[0]!) / 2
+        const midpointY = (segment.from[1]! + segment.to[1]!) / 2
+        return (
+          midpointX === metrics.gutterWidth + contentWidth / 4 &&
+          midpointY === staffTop - metrics.rowHeight / 2
         )
-        .map((entry) => entry.args[0]),
-    ).toEqual(['CY', 'HH', 'T', 'SN', 'K'])
+      }),
+    ).toBe(true)
+    expect(ops.filter((entry) => entry.op === 'ellipse')).toHaveLength(2)
+    expect(ops.filter((entry) => entry.op === 'closePath')).toHaveLength(1)
+    expect(
+      ops.filter(
+        (entry) => entry.op === 'fillText' && /^\d+$/.test(`${entry.args[0]}`),
+      ),
+    ).toHaveLength(0)
+    expect(
+      ops.filter(
+        (entry) => entry.op === 'fillText' && entry.textAlign === 'right',
+      ),
+    ).toHaveLength(0)
   })
 
   it('keeps a note off the end of the neck on the last line it has', () => {

@@ -1,19 +1,16 @@
 // ============================================================
-// Guitar room drum player tests — no capability work before activation
+// Guitar room drum player tests — inert intent and live five-kit switching
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarNightDrumKitId } from '@/features/guitar-night/guitar-night-drum-sound'
 import { createLazyGuitarRoomDrumPlayer } from './guitar-room-drum-player'
 
 const samplePlayer = vi.hoisted(() => ({
   createDrumKitPlayer: vi.fn(),
 }))
-const circuitPlayer = vi.hoisted(() => ({
-  createCircuitDrumSynth: vi.fn(),
-}))
 
 vi.mock('@/features/drum-night/audio/drum-kit-player', () => samplePlayer)
-vi.mock('@/features/drum-night/audio/circuit-drum-synth', () => circuitPlayer)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -25,6 +22,9 @@ function playerPort() {
     trigger: vi.fn(() => 'synth-fallback' as const),
     panic: vi.fn(),
     dispose: vi.fn(),
+    selectKit: vi.fn(
+      async (_kitId: GuitarNightDrumKitId): Promise<void> => undefined,
+    ),
   }
 }
 
@@ -49,21 +49,79 @@ describe('createLazyGuitarRoomDrumPlayer', () => {
       getOutput: expect.any(Function),
       initialKitId: 'studio',
     })
-    expect(circuitPlayer.createCircuitDrumSynth).not.toHaveBeenCalled()
   })
 
-  it('uses the explicit Circuit model only when Circuit was selected', async () => {
+  it('keeps rapid pre-activation intent inert and opens the latest kit', async () => {
     const port = playerPort()
-    circuitPlayer.createCircuitDrumSynth.mockReturnValue(port)
+    samplePlayer.createDrumKitPlayer.mockReturnValue(port)
     const player = createLazyGuitarRoomDrumPlayer({
       getAudioContext: () => ({}) as AudioContext,
       getOutput: () => ({}) as AudioNode,
-      kitId: 'circuit',
+      kitId: 'mercury-synth',
+    })
+
+    player.setKit('studio')
+    player.setKit('circuit')
+
+    expect(samplePlayer.createDrumKitPlayer).not.toHaveBeenCalled()
+    await expect(player.activate()).resolves.toBe(true)
+    expect(samplePlayer.createDrumKitPlayer).toHaveBeenCalledWith({
+      getAudioContext: expect.any(Function),
+      getOutput: expect.any(Function),
+      initialKitId: 'circuit',
+    })
+    expect(port.selectKit).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a kit change that lands while the lazy player is being published', async () => {
+    const port = playerPort()
+    samplePlayer.createDrumKitPlayer.mockImplementation(() => {
+      queueMicrotask(() => player.setKit('circuit'))
+      return port
+    })
+    const player = createLazyGuitarRoomDrumPlayer({
+      getAudioContext: () => ({}) as AudioContext,
+      getOutput: () => ({}) as AudioNode,
+      kitId: 'studio',
     })
 
     await expect(player.activate()).resolves.toBe(true)
-    expect(circuitPlayer.createCircuitDrumSynth).toHaveBeenCalledOnce()
-    expect(samplePlayer.createDrumKitPlayer).not.toHaveBeenCalled()
+    expect(samplePlayer.createDrumKitPlayer).toHaveBeenCalledWith({
+      getAudioContext: expect.any(Function),
+      getOutput: expect.any(Function),
+      initialKitId: 'studio',
+    })
+    expect(port.selectKit).toHaveBeenCalledOnce()
+    expect(port.selectKit).toHaveBeenCalledWith('circuit')
+  })
+
+  it('delegates rapid live Circuit and sampled switches without awaiting warm-up', async () => {
+    let rejectStudio!: (reason: unknown) => void
+    const port = playerPort()
+    port.selectKit.mockImplementation((kitId) => {
+      if (kitId !== 'studio') return Promise.resolve()
+      return new Promise<void>((_resolve, reject) => {
+        rejectStudio = reject
+      })
+    })
+    samplePlayer.createDrumKitPlayer.mockReturnValue(port)
+    const player = createLazyGuitarRoomDrumPlayer({
+      getAudioContext: () => ({}) as AudioContext,
+      getOutput: () => ({}) as AudioNode,
+      kitId: 'mercury-synth',
+    })
+    await player.activate()
+
+    expect(player.setKit('studio')).toBeUndefined()
+    expect(player.setKit('circuit')).toBeUndefined()
+    expect(port.selectKit.mock.calls.map(([kitId]) => kitId)).toEqual([
+      'studio',
+      'circuit',
+    ])
+
+    rejectStudio(new DOMException('Superseded', 'AbortError'))
+    await Promise.resolve()
+    expect(port.selectKit).toHaveBeenLastCalledWith('circuit')
   })
 
   it('settles a late activation and disposes its player', async () => {

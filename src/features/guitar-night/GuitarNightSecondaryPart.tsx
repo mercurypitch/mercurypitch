@@ -11,8 +11,11 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { ChevronDown, ChevronUp, GripVertical, RotateCcw, } from '@/components/icons'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { MidiSongPercussionHit } from '@/lib/midi-song'
+import { percussionNotationForGmKey } from '@/lib/percussion-notation'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightSecondaryPart.module.css'
+import { buildPercussionWindowIndex, queryPercussionWindow, } from './percussion-window'
 import type { SecondaryPartLayout, SecondaryPartRect, SecondaryPartSize, } from './secondary-part-layout'
 import { resolveSecondaryPartLayout, SECONDARY_PART_LAYOUT_OPTIONS, secondaryPartWidthRange, } from './secondary-part-layout'
 import type { SheetLane } from './sheet/sheet-model'
@@ -34,6 +37,8 @@ const DEFAULT_WIDTH = 300
 const KEYBOARD_MOVE_STEP = 16
 const KEYBOARD_RESIZE_STEP = 24
 const NARROW_QUERY = '(max-width: 720px)'
+const PERCUSSION_HIT_ACTIVE_BEATS = 0.125
+const PERCUSSION_STAFF_LINES = [0, 1, 2, 3, 4] as const
 
 interface StoredSecondaryPartPlacement {
   xRatio: number
@@ -186,8 +191,11 @@ export const GuitarNightSecondaryPart: Component<
   const [announcement, setAnnouncement] = createSignal('')
   const [collapsed, setCollapsed] = createSignal(false)
 
+  const percussionLane = createMemo(() => props.lane().content === 'percussion')
   const windowIndex = createMemo(() =>
-    buildStageTabWindowIndex(props.lane().notes as readonly GuitarNote[]),
+    buildStageTabWindowIndex(
+      percussionLane() ? [] : (props.lane().notes as readonly GuitarNote[]),
+    ),
   )
   const visibleNotes = createMemo(() =>
     tabWindowNotes(
@@ -204,6 +212,16 @@ export const GuitarNightSecondaryPart: Component<
     }
     return rows
   })
+  const percussionIndex = createMemo(() =>
+    buildPercussionWindowIndex(props.lane().percussionHits ?? []),
+  )
+  const percussionWindow = createMemo(() =>
+    queryPercussionWindow(
+      percussionIndex(),
+      props.playheadBeat(),
+      SECONDARY_PART_WINDOW_BEATS,
+    ),
+  )
 
   const narrowViewport = (): boolean =>
     props.narrowViewport?.() ?? fallbackNarrowViewport()
@@ -215,7 +233,37 @@ export const GuitarNightSecondaryPart: Component<
   const notePast = (note: GuitarNote): boolean =>
     note.startBeat + note.duration <= props.playheadBeat()
 
+  const percussionHitActive = (hit: MidiSongPercussionHit): boolean =>
+    hit.startBeat <= props.playheadBeat() &&
+    hit.startBeat + PERCUSSION_HIT_ACTIVE_BEATS > props.playheadBeat()
+
+  const percussionHitPast = (hit: MidiSongPercussionHit): boolean =>
+    hit.startBeat < props.playheadBeat() && !percussionHitActive(hit)
+
+  const percussionStaffTop = (gmKey: number): number => {
+    const voice = percussionNotationForGmKey(gmKey)
+    // Five staff lines occupy 20–80%; each notation step is half a line.
+    return 50 - voice.staffStep * 7.5
+  }
+
+  const canSwap = createMemo(
+    () =>
+      props.onSwap !== undefined &&
+      !percussionLane() &&
+      props.lane().scoreable !== false,
+  )
+
   const summary = createMemo(() => {
+    if (percussionLane()) {
+      const window = percussionWindow()
+      if (window.omittedHitCount > 0) {
+        return `${props.lane().trackName}, ${window.sourceHitCount} nearby hits, ${window.omittedHitCount} not shown`
+      }
+      const active = window.hits.filter(percussionHitActive).length
+      return active === 0
+        ? `${props.lane().trackName}, resting`
+        : `${props.lane().trackName}, ${active === 1 ? '1 hit' : `${active} hits`} now`
+    }
     const active = visibleNotes().filter(noteActive).length
     return active === 0
       ? `${props.lane().trackName}, resting`
@@ -771,38 +819,92 @@ export const GuitarNightSecondaryPart: Component<
   )
 
   const strip = (
-    <div class={styles.strip} aria-hidden="true">
+    <div
+      class={styles.strip}
+      data-preview-content={percussionLane() ? 'percussion' : 'pitched'}
+      aria-hidden="true"
+    >
       <i class={styles.playhead} />
-      <For each={props.lane().tuning.labels}>
-        {(label, stringIndex) => (
-          <div class={styles.string} data-secondary-part-string>
-            <span>{label}</span>
-            <i />
-            <div data-secondary-part-note-track>
-              <For each={byString()[stringIndex()] ?? []}>
-                {(note) => (
-                  <b
+      <Show
+        when={percussionLane()}
+        fallback={
+          <For each={props.lane().tuning.labels}>
+            {(label, stringIndex) => (
+              <div class={styles.string} data-secondary-part-string>
+                <span>{label}</span>
+                <i />
+                <div data-secondary-part-note-track>
+                  <For each={byString()[stringIndex()] ?? []}>
+                    {(note) => (
+                      <b
+                        classList={{
+                          [styles.noteActive]: noteActive(note),
+                          [styles.notePast]: notePast(note),
+                        }}
+                        data-note-id={note.id}
+                        style={{
+                          left: `${tabNoteOffsetPercent(
+                            note.startBeat,
+                            props.playheadBeat(),
+                            SECONDARY_PART_WINDOW_BEATS,
+                          )}%`,
+                        }}
+                      >
+                        {note.fret}
+                      </b>
+                    )}
+                  </For>
+                </div>
+              </div>
+            )}
+          </For>
+        }
+      >
+        <div
+          class={styles.percussionStaff}
+          data-secondary-part-percussion-staff
+        >
+          <For each={PERCUSSION_STAFF_LINES}>
+            {(line) => (
+              <i
+                class={styles.percussionStaffLine}
+                data-secondary-part-percussion-staff-line
+                style={{ top: `${20 + line * 15}%` }}
+              />
+            )}
+          </For>
+          <div data-secondary-part-hit-track>
+            <For each={percussionWindow().hits}>
+              {(hit) => {
+                const voice = percussionNotationForGmKey(hit.gmKey)
+                return (
+                  <i
+                    class={styles.percussionHit}
                     classList={{
-                      [styles.noteActive]: noteActive(note),
-                      [styles.notePast]: notePast(note),
+                      [styles.noteActive]: percussionHitActive(hit),
+                      [styles.notePast]: percussionHitPast(hit),
                     }}
-                    data-note-id={note.id}
+                    data-gm-key={hit.gmKey}
+                    data-notehead={voice.notehead}
+                    data-stem-direction={voice.stemDirection}
+                    title={voice.label}
                     style={{
                       left: `${tabNoteOffsetPercent(
-                        note.startBeat,
+                        hit.startBeat,
                         props.playheadBeat(),
                         SECONDARY_PART_WINDOW_BEATS,
                       )}%`,
+                      top: `${percussionStaffTop(hit.gmKey)}%`,
                     }}
                   >
-                    {note.fret}
-                  </b>
-                )}
-              </For>
-            </div>
+                    <span />
+                  </i>
+                )
+              }}
+            </For>
           </div>
-        )}
-      </For>
+        </div>
+      </Show>
     </div>
   )
 
@@ -816,6 +918,7 @@ export const GuitarNightSecondaryPart: Component<
       data-placement-mode={narrowViewport() ? 'docked' : 'floating'}
       data-positioned={positioned() ? 'true' : 'false'}
       data-layout-key={activeLayoutKey}
+      data-track-kind={percussionLane() ? 'percussion' : 'pitched'}
       data-collapsed={narrowViewport() && collapsed() ? 'true' : 'false'}
     >
       <div class={styles.chrome}>
@@ -851,7 +954,13 @@ export const GuitarNightSecondaryPart: Component<
                 ? `Expand ${props.lane().trackName} preview`
                 : `Collapse ${props.lane().trackName} preview`
             }
-            title={collapsed() ? 'Show the tab preview' : 'Make more room'}
+            title={
+              collapsed()
+                ? percussionLane()
+                  ? 'Show the drum reference'
+                  : 'Show the tab preview'
+                : 'Make more room'
+            }
             onClick={toggleCollapsed}
           >
             <Show when={collapsed()} fallback={<ChevronDown size={16} />}>
@@ -872,7 +981,7 @@ export const GuitarNightSecondaryPart: Component<
 
       <Show when={!narrowViewport() || !collapsed()}>
         <Show
-          when={props.onSwap !== undefined}
+          when={canSwap()}
           fallback={
             <div
               id="guitar-night-secondary-part-body"
@@ -890,7 +999,9 @@ export const GuitarNightSecondaryPart: Component<
             class={styles.body}
             aria-label={`Read ${props.lane().trackName} instead`}
             title={`Read ${props.lane().trackName} instead`}
-            onClick={() => props.onSwap?.(props.lane().trackId)}
+            onClick={() => {
+              if (canSwap()) props.onSwap?.(props.lane().trackId)
+            }}
           >
             {strip}
           </button>
@@ -909,7 +1020,7 @@ export const GuitarNightSecondaryPart: Component<
         aria-valuemax={Math.round(widthRange().max)}
         aria-valuenow={Math.round(layout().width)}
         aria-valuetext={`${Math.round(layout().width)} pixels wide`}
-        title="Drag the right edge to show more tab"
+        title="Drag the right edge to show more of the preview"
         onKeyDown={handleResizeKeyDown}
       />
 

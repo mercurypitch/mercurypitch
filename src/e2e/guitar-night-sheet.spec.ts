@@ -213,7 +213,9 @@ test('seeks and edits a full-width sheet loop without horizontal scroll @smoke',
   // Session is a true modal: the first pointer dismisses its scrim and must
   // not also seek the covered notation. The next intentional click may seek.
   await page.getByTestId('guitar-night-session-trigger').click()
-  await expect(page.getByRole('dialog', { name: 'Loaded score' })).toBeVisible()
+  await expect(
+    page.getByRole('dialog', { name: 'Track mixer for Band Study' }),
+  ).toBeVisible()
   const rowSeek = sheet.getByRole('slider', {
     name: 'Playback position in score row 1',
     exact: true,
@@ -225,9 +227,9 @@ test('seeks and edits a full-width sheet loop without horizontal scroll @smoke',
     (rowBox?.x ?? 0) + (rowBox?.width ?? 0) * 0.22,
     (rowBox?.y ?? 0) + (rowBox?.height ?? 0) / 2,
   )
-  await expect(page.getByRole('dialog', { name: 'Loaded score' })).toHaveCount(
-    0,
-  )
+  await expect(
+    page.getByRole('dialog', { name: 'Track mixer for Band Study' }),
+  ).toHaveCount(0)
   expect(Number(await scorePosition.inputValue())).toBeCloseTo(beforeDismiss, 2)
   await page.mouse.click(
     (rowBox?.x ?? 0) + (rowBox?.width ?? 0) * 0.22,

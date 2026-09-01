@@ -49,6 +49,23 @@ function lane(overrides: Partial<SheetLane> = {}): SheetLane {
   }
 }
 
+function percussionLane(overrides: Partial<SheetLane> = {}): SheetLane {
+  return lane({
+    trackId: 'track-drums',
+    trackName: 'Drum kit',
+    content: 'percussion',
+    scoreable: false,
+    notes: [],
+    percussionHits: [
+      { gmKey: 36, startBeat: 0, velocity: 118 },
+      { gmKey: 42, startBeat: 2, velocity: 84 },
+      { gmKey: 54, startBeat: 4, velocity: 92 },
+      { gmKey: 49, startBeat: 40, velocity: 110 },
+    ],
+    ...overrides,
+  })
+}
+
 describe('GuitarNightSecondaryPart', () => {
   beforeEach(() => {
     localStorage.removeItem(GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY)
@@ -88,6 +105,65 @@ describe('GuitarNightSecondaryPart', () => {
     expect(
       container.querySelectorAll('[data-secondary-part-string]'),
     ).toHaveLength(6)
+  })
+
+  it('projects nearby drum attacks onto a native five-line staff', () => {
+    const { container } = render(() => (
+      <GuitarNightSecondaryPart
+        lane={() => percussionLane()}
+        playheadBeat={() => 0}
+      />
+    ))
+
+    expect(screen.getByTestId('guitar-night-secondary-part')).toHaveAttribute(
+      'data-track-kind',
+      'percussion',
+    )
+    expect(
+      container.querySelectorAll('[data-secondary-part-percussion-staff-line]'),
+    ).toHaveLength(5)
+    expect(
+      container.querySelectorAll('[data-secondary-part-string]'),
+    ).toHaveLength(0)
+    expect(container.querySelector('[data-gm-key="36"]')).toHaveAttribute(
+      'data-notehead',
+      'normal',
+    )
+    expect(container.querySelector('[data-gm-key="36"]')).toHaveStyle({
+      top: '80%',
+    })
+    expect(container.querySelector('[data-gm-key="42"]')).toHaveAttribute(
+      'data-notehead',
+      'cross',
+    )
+    expect(container.querySelector('[data-gm-key="42"]')).toHaveStyle({
+      top: '12.5%',
+    })
+    expect(container.querySelector('[data-gm-key="54"]')).toHaveAttribute(
+      'data-notehead',
+      'diamond',
+    )
+    expect(container.querySelector('[data-gm-key="49"]')).toBeNull()
+  })
+
+  it('keeps percussion display-only even when the host supplies score swapping', () => {
+    const onSwap = vi.fn()
+    render(() => (
+      <GuitarNightSecondaryPart
+        lane={() => percussionLane()}
+        playheadBeat={() => 0}
+        onSwap={onSwap}
+      />
+    ))
+
+    expect(
+      screen.queryByRole('button', { name: 'Read Drum kit instead' }),
+    ).toBeNull()
+    expect(screen.getByLabelText('Drum kit, 1 hit now')).toHaveAttribute(
+      'role',
+      'img',
+    )
+    expect(onSwap).not.toHaveBeenCalled()
   })
 
   it('reads out what is sounding, for anyone not looking at it', () => {

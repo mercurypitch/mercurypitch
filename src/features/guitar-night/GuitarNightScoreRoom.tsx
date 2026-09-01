@@ -10,6 +10,7 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } fro
 import { ChevronLeft, Ear, Headphones, History, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
 import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
+import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
@@ -76,6 +77,8 @@ interface GuitarNightScoreRoomProps {
   sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** One other part, drawn small in a corner of the moving views. */
   secondaryLane?: Accessor<SheetLane | null>
+  followedStageTrackId?: Accessor<string | null>
+  onFollowStageTrack?(trackId: string | null): void
   /** The rest of the band, already carrying each part's own timbre. */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
   /** Authored drum parts, scheduled independently from pitched notes. */
@@ -472,7 +475,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   })
   const scoredCaptureActive = createMemo(() => liveScore.captureActive())
   const hasBackingParts = createMemo(
-    () => (props.backingMelody?.().length ?? 0) > 0,
+    () =>
+      (props.backingMelody?.().length ?? 0) > 0 ||
+      (props.backingPercussion?.().length ?? 0) > 0,
   )
   const backingPartsSound = createMemo(
     () =>
@@ -1566,6 +1571,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             class={styles.roomIdentityTrigger}
             aria-haspopup="dialog"
             aria-expanded={sessionPanelOpen()}
+            aria-label={`Open track mixer for ${displayedReference().title}`}
             disabled={toolTransitionPending()}
             data-testid="guitar-night-session-trigger"
             onClick={() => {
@@ -1574,6 +1580,10 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             }}
           >
             <p class={styles.eyebrow}>
+              <span class={styles.roomIdentityMixCue} aria-hidden="true">
+                <SlidersHorizontal />
+                Mix
+              </span>
               Tab rehearsal ·{' '}
               {displayedReference().tracks.length > 1
                 ? displayedReference().trackName
@@ -1988,10 +1998,6 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   </button>
                 </div>
 
-                <GuitarNightDrumSoundControls
-                  disabled={takeIsActive() || room.status() === 'starting'}
-                />
-
                 <div class={styles.scoreSessionLoop}>
                   <div>
                     <strong>Loop a phrase</strong>
@@ -2166,11 +2172,19 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   const track = displayedReference().tracks.find(
                     (candidate) => candidate.id === trackId,
                   )
-                  const audible =
-                    props.audibleBackingTrackIds?.().includes(trackId) ?? false
                   if (track?.kind === 'percussion') {
                     if (takeIsActive() && !room.percussionBackingLive()) return
-                    room.setPercussionTrackAudible(trackId, !audible)
+                    const mutedTrackIds = props.mutedBackingTrackIds?.()
+                    if (mutedTrackIds !== undefined) {
+                      room.setPercussionTrackAudible(
+                        trackId,
+                        guitarTrackAudibleAfterMuteToggle(
+                          trackId,
+                          mutedTrackIds,
+                          props.soloedBackingTrackId?.() ?? null,
+                        ),
+                      )
+                    }
                   }
                   props.onToggleBackingTrack?.(trackId)
                 },
@@ -2187,7 +2201,32 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             : { onToggleTrackSolo: props.onToggleSoloBackingTrack })}
           takeActive={takeIsActive}
           percussionControlsLive={room.percussionBackingLive}
+          masterLevel={room.masterVolume}
+          onMasterLevel={room.setMasterVolume}
+          trackLevelDb={room.trackLevelDb}
+          onTrackLevelDb={room.setTrackLevelDb}
+          onResetTrackLevels={room.resetTrackLevels}
+          {...(props.followedStageTrackId === undefined
+            ? {}
+            : { followedTrackId: props.followedStageTrackId })}
+          {...(props.onFollowStageTrack === undefined
+            ? {}
+            : {
+                onFollowTrack: (trackId: string | null) => {
+                  props.onFollowStageTrack?.(trackId)
+                  closeSessionPanel(true)
+                },
+              })}
+          drumSoundControls={
+            <GuitarNightDrumSoundControls
+              liveKit
+              onKitChange={room.setDrumKit}
+            />
+          }
           scoredPartSounds={room.hearScore}
+          onToggleScoredPartSounds={() =>
+            room.setHearScore((hearing) => !hearing)
+          }
           onSelectTrack={(trackId) => {
             selectScoredTrack(trackId)
             closeSessionPanel(true)

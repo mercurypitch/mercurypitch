@@ -478,11 +478,77 @@ describe('createGuitarRoomBand', () => {
     for (const stage of stages) expect(stage.dispose).toHaveBeenCalledOnce()
   })
 
+  it('keeps a direct melody fader behind every pre-run and live gate', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    guitarVoices.createGuitarVoice.mockImplementation(() => ({
+      gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
+      oscillators: [],
+      lfos: [],
+      lfoGains: [],
+      hasCustomEnvelope: true,
+      dispose: vi.fn(),
+    }))
+    const stage = fakeElectricAmpStage()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createElectricAmpStage: () => stage,
+      scheduleAheadSeconds: 2,
+    })
+    band.setMelodyChannelGain?.('track-guitar', 1.8)
+    band.setMelodyChannelAudible?.('track-guitar', false)
+
+    await band.start({
+      tempoBpm: 90,
+      countInBeats: 0,
+      exerciseBeats: 2,
+      durationBeats: 2,
+      feel: 'click',
+      melody: [
+        {
+          midi: 64,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'track-guitar',
+          instrumentFamily: 'electric-guitar',
+        },
+      ],
+    })
+
+    const trackFader = (stage.output.connect as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as GainNode | undefined
+    expect(trackFader?.gain.value).toBe(0)
+
+    band.setMelodyChannelAudible?.('track-guitar', true)
+    expect(trackFader?.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      1.8,
+      5,
+      0.012,
+    )
+    band.setMelodyChannelAudible?.('track-guitar', false)
+    band.setMelodyChannelGain?.('track-guitar', 1.4)
+    expect(trackFader?.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      0,
+      5,
+      0.012,
+    )
+    band.setMelodyChannelAudible?.('track-guitar', true)
+    expect(trackFader?.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      1.4,
+      5,
+      0.012,
+    )
+    await disposeBand(band)
+  })
+
   it('constructs no kit player before Play or for a click-only run', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -528,6 +594,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -602,6 +669,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(async () => false),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -634,12 +702,14 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const generatedPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn((_hit: DrumKitTrigger) => 'synth-fallback' as const),
       panic: vi.fn(),
       dispose: vi.fn(),
     }
     const authoredPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -722,6 +792,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const generatedPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn((_hit: DrumKitTrigger) => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -799,6 +870,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(async () => false),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -834,6 +906,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn((_hit: DrumKitTrigger) => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -876,6 +949,7 @@ describe('createGuitarRoomBand', () => {
     const onBeat = vi.fn()
     const onRhythmPreset = vi.fn()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn((_hit: DrumKitTrigger) => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -1001,6 +1075,7 @@ describe('createGuitarRoomBand', () => {
     vi.setSystemTime(0)
     const context = fakeAudioContext()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(
         (_hit: {
@@ -1123,6 +1198,7 @@ describe('createGuitarRoomBand', () => {
       current: null,
     }
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(
         (_hit: {
@@ -1144,6 +1220,7 @@ describe('createGuitarRoomBand', () => {
       },
       scheduleAheadSeconds: 4,
     })
+    band.setPercussionTrackGain?.('track-drums', 1.8)
 
     await band.start({
       tempoBpm: 120,
@@ -1170,9 +1247,22 @@ describe('createGuitarRoomBand', () => {
     band.setPercussionTrackAudible('track-drums', true)
     band.setPercussionTrackAudible('track-drums', false)
     expect(trackGate?.gain.setTargetAtTime.mock.calls).toEqual([
-      [1, 5, 0.012],
+      [1.8, 5, 0.012],
       [0, 5, 0.012],
     ])
+
+    band.setPercussionTrackGain?.('track-drums', 1.4)
+    expect(trackGate?.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      0,
+      5,
+      0.012,
+    )
+    band.setPercussionTrackAudible('track-drums', true)
+    expect(trackGate?.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      1.4,
+      5,
+      0.012,
+    )
 
     await disposeBand(band)
   })
@@ -1188,6 +1278,7 @@ describe('createGuitarRoomBand', () => {
     const context = fakeAudioContext(gains)
     const playerOutputs: Array<() => AudioNode | null> = []
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn(() => 'synth-fallback' as const),
       panic: vi.fn(),
@@ -1234,6 +1325,64 @@ describe('createGuitarRoomBand', () => {
     expect(stableOutput.disconnect).toHaveBeenCalledOnce()
     expect(stableOutput.disconnect).toHaveBeenCalledWith(firstRunOutput)
 
+    await disposeBand(band)
+  })
+
+  it('remembers a pre-run kit and switches retained players live and paused', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const kitPlayer = {
+      setKit: vi.fn(),
+      activate: vi.fn(() => true),
+      trigger: vi.fn(() => 'synth-fallback' as const),
+      panic: vi.fn(),
+      dispose: vi.fn(),
+    }
+    const createPercussionPlayer = vi.fn(() => kitPlayer)
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      createPercussionPlayer,
+      readDrumSoundPreference: () => ({
+        kitId: 'mercury-synth',
+        feelId: 'straight',
+      }),
+      scheduleAheadSeconds: 1,
+    })
+    const run = {
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 1,
+      exercisePulse: false,
+      percussion: [
+        { trackId: 'track-drums', gmKey: 36, startBeat: 0, velocity: 96 },
+      ],
+    } as const
+
+    band.setDrumKit?.('studio')
+    expect(createPercussionPlayer).not.toHaveBeenCalled()
+    await band.start(run)
+    expect(createPercussionPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ kitId: 'studio' }),
+    )
+
+    const panicBeforeLiveSwitch = kitPlayer.panic.mock.calls.length
+    band.setDrumKit?.('circuit')
+    expect(kitPlayer.setKit).toHaveBeenLastCalledWith('circuit')
+    expect(kitPlayer.panic).toHaveBeenCalledTimes(panicBeforeLiveSwitch)
+    expect(createPercussionPlayer).toHaveBeenCalledOnce()
+
+    band.stop()
+    const panicAfterPause = kitPlayer.panic.mock.calls.length
+    band.setDrumKit?.('live')
+    expect(kitPlayer.setKit).toHaveBeenLastCalledWith('live')
+    expect(kitPlayer.panic).toHaveBeenCalledTimes(panicAfterPause)
+    expect(kitPlayer.dispose).not.toHaveBeenCalled()
+
+    await band.start(run)
+    expect(createPercussionPlayer).toHaveBeenCalledOnce()
+    expect(kitPlayer.activate).toHaveBeenCalledTimes(2)
     await disposeBand(band)
   })
 
@@ -1390,6 +1539,7 @@ describe('createGuitarRoomBand', () => {
     const onBeat = vi.fn()
     const onComplete = vi.fn()
     const kitPlayer = {
+      setKit: vi.fn(),
       activate: vi.fn(() => true),
       trigger: vi.fn((_hit: DrumKitTrigger) => 'synth-fallback' as const),
       panic: vi.fn(),

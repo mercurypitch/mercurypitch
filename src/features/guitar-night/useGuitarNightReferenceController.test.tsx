@@ -270,7 +270,12 @@ describe('useGuitarNightReferenceController', () => {
       scoreable: false,
       notes: [],
     })
-    expect(controller.secondaryLane()).toBeNull()
+    expect(controller.followedStageTrackId()).toBeNull()
+    expect(controller.secondaryLane()?.trackId).toBe('track-drums')
+
+    controller.followTrackOnStage('track-drums')
+    expect(controller.followedStageTrackId()).toBe('track-drums')
+    expect(controller.secondaryLane()?.trackId).toBe('track-drums')
   })
 
   it('restores the score named in the URL on open', async () => {
@@ -1237,6 +1242,75 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.secondaryLane()?.trackId).toBe('track-bass')
     })
 
+    it('follows a drum lane without making it the scored part', async () => {
+      const { port } = fakePort({
+        openReference: (_songId, trackId, tuning) =>
+          openGuitarNightReference(DRUMMED_RIFF, trackId, tuning),
+        readSource: () => DRUMMED_RIFF,
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(DRUMMED_RIFF, trackId),
+      })
+      const controller = mount(port)
+      await controller.attach(DRUMMED_RIFF.id, 'track-lead')
+
+      controller.followTrackOnStage('track-lead')
+      expect(controller.followedStageTrackId()).toBeNull()
+
+      controller.followTrackOnStage('track-drums')
+
+      expect(controller.followedStageTrackId()).toBe('track-drums')
+      expect(controller.secondaryLane()).toMatchObject({
+        trackId: 'track-drums',
+        content: 'percussion',
+        scoreable: false,
+      })
+      expect(controller.reference()?.trackId).toBe('track-lead')
+
+      // The scored lane is already on stage; asking to follow it must not
+      // replace or misreport the separate Follow choice.
+      controller.followTrackOnStage('track-lead')
+      expect(controller.followedStageTrackId()).toBe('track-drums')
+
+      controller.followTrackOnStage(null)
+      expect(controller.followedStageTrackId()).toBeNull()
+      expect(controller.secondaryLane()?.trackId).toBe('track-rhythm')
+      expect(controller.reference()?.trackId).toBe('track-lead')
+    })
+
+    it('does not carry a Follow choice onto a different song', async () => {
+      const other = { ...DRUMMED_RIFF, id: 'gsong-other' }
+      const sourceFor = (songId: string) =>
+        songId === DRUMMED_RIFF.id
+          ? DRUMMED_RIFF
+          : songId === other.id
+            ? other
+            : null
+      const { port } = fakePort({
+        openReference: (songId, trackId, tuning) => {
+          const source = sourceFor(songId)
+          return source === null
+            ? { ok: false, code: 'not-found' as const }
+            : openGuitarNightReference(source, trackId, tuning)
+        },
+        readSource: sourceFor,
+        suggestInstrument: (songId, trackId) => {
+          const source = sourceFor(songId)
+          return source === null
+            ? null
+            : suggestReferenceInstrument(source, trackId)
+        },
+      })
+      const controller = mount(port)
+      await controller.attach(DRUMMED_RIFF.id, 'track-lead')
+      controller.followTrackOnStage('track-drums')
+      expect(controller.followedStageTrackId()).toBe('track-drums')
+
+      await controller.attach(other.id, 'track-lead')
+
+      expect(controller.followedStageTrackId()).toBeNull()
+      expect(controller.secondaryLane()?.trackId).toBe('track-rhythm')
+    })
+
     it('has no corner part for a file with one part', async () => {
       const single = {
         ...VELVET_RIFF,
@@ -1260,14 +1334,13 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.secondaryLane()).toBeNull()
     })
 
-    it('leaves the corner alone when a part is hidden from the sheet', async () => {
+    it('keeps Follow candidates independent from sheet visibility', async () => {
       const { port } = fakePort()
       const controller = mount(port)
       await controller.attach(VELVET_RIFF.id, 'track-lead')
       controller.toggleSheetTrack('track-rhythm')
-      // Hidden on the page means hidden in the corner too: the corner draws
-      // what the sheet draws.
-      expect(controller.secondaryLane()?.trackId).toBe('track-bass')
+      expect(controller.sheetVisibleTrackIds()).not.toContain('track-rhythm')
+      expect(controller.secondaryLane()?.trackId).toBe('track-rhythm')
     })
   })
 

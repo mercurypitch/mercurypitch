@@ -12,9 +12,10 @@
 // and it is deliberately the panel that later phases fill in: the main and
 // secondary view assignment, and the scoring override, both land here.
 
-import type { Accessor } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { For, onCleanup, onMount, Show } from 'solid-js'
 import { Eye, EyeOff, Volume2, VolumeX, X } from '@/components/icons'
+import { formatGuitarTrackMixDb, GUITAR_TRACK_MIX_MAX_DB, GUITAR_TRACK_MIX_MIN_DB, } from '@/features/guitar/backing/guitar-track-mix'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightReference } from './reference-port'
 
@@ -43,10 +44,23 @@ interface GuitarNightSessionPanelProps {
   onToggleTrackSolo?(trackId: string): void
   /** Whether the scored part sounds — owned by the room's Tab sounds control. */
   scoredPartSounds?: Accessor<boolean>
+  onToggleScoredPartSounds?(): void
   /** The current take pins pitched backing; drum rows remain live-gated. */
   takeActive?: Accessor<boolean>
   /** True only while the one-clock rehearsal has live per-drum-track gates. */
   percussionControlsLive?: Accessor<boolean>
+  /** Overall room output, kept separate from the authored-track faders. */
+  masterLevel?: Accessor<number>
+  onMasterLevel?(level: number): void
+  /** Source-track faders; their M/S masks never overwrite these values. */
+  trackLevelDb?(trackId: string): number
+  onTrackLevelDb?(trackId: string, db: number): void
+  onResetTrackLevels?(): void
+  /** A non-scoreable lane can still be followed in the moving stage views. */
+  followedTrackId?: Accessor<string | null>
+  onFollowTrack?(trackId: string | null): void
+  /** Room-owned controls that belong beside authored Drum tracks. */
+  drumSoundControls?: JSX.Element
 }
 
 export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
@@ -64,7 +78,9 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
       }
       if (event.key !== 'Tab') return
       const focusable = Array.from(
-        dialog.querySelectorAll<HTMLElement>('button:not(:disabled)'),
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), select:not(:disabled)',
+        ),
       )
       if (focusable.length === 0) return
       const first = focusable[0]
@@ -160,18 +176,15 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         class={styles.sessionPanel}
         role="dialog"
         aria-modal="true"
-        aria-label={
-          props.reference().scoreMode === 'backing-only'
-            ? 'Loaded arrangement'
-            : 'Loaded score'
-        }
+        aria-label={`Track mixer for ${props.reference().title}`}
       >
         <div class={styles.sessionHeader}>
           <div>
             <p class={styles.eyebrow}>
+              Track mixer ·{' '}
               {props.reference().scoreMode === 'backing-only'
-                ? 'Loaded arrangement · free play'
-                : 'Loaded score'}
+                ? 'free play'
+                : 'loaded score'}
             </p>
             <strong>{props.reference().title}</strong>
             <small>
@@ -183,12 +196,63 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
             ref={closeButton}
             type="button"
             class={styles.sessionClose}
-            aria-label="Close the session details"
+            aria-label="Close the track mixer"
             onClick={() => props.onClose()}
           >
             <X />
           </button>
         </div>
+
+        <Show
+          when={
+            props.masterLevel !== undefined && props.onMasterLevel !== undefined
+          }
+        >
+          <label class={styles.sessionMasterFader}>
+            <span>
+              <span aria-hidden="true">
+                <Volume2 />
+              </span>
+              <span>
+                <strong>Room level</strong>
+                <small>Overall output after the track mix</small>
+              </span>
+              <output>{Math.round((props.masterLevel?.() ?? 0) * 100)}%</output>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={props.masterLevel?.() ?? 0}
+              aria-label="Guitar Night room level"
+              onInput={(event) => {
+                const value = event.currentTarget.valueAsNumber
+                props.onMasterLevel?.(value)
+              }}
+            />
+          </label>
+        </Show>
+
+        <Show when={props.drumSoundControls !== undefined}>
+          {props.drumSoundControls}
+        </Show>
+
+        <Show when={props.onResetTrackLevels !== undefined}>
+          <div class={styles.sessionMixHeading}>
+            <div>
+              <strong>Tracks</strong>
+              <small>Unity is 0 dB. Each track can be lifted by 6 dB.</small>
+            </div>
+            <button
+              type="button"
+              class={styles.sessionResetMix}
+              onClick={() => props.onResetTrackLevels?.()}
+            >
+              Reset levels
+            </button>
+          </div>
+        </Show>
 
         <div
           class={styles.sessionTracks}
@@ -243,6 +307,8 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
               const isPercussion = () => track.kind === 'percussion'
               const isScored = () =>
                 !isPercussion() && track.id === props.reference().trackId
+              const isFollowed = () =>
+                isPercussion() && props.followedTrackId?.() === track.id
               const drumSoundUnavailable = () =>
                 track.kind === 'percussion' && track.supportedHitCount === 0
               const drumSheetUnavailable = () =>
@@ -308,7 +374,12 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                   track.droppedHitCount > 0
                     ? ` · ${track.droppedHitCount} unmapped`
                     : ''
-                return `${hits} · drums · backing only${partial}${dropped}`
+                return `${hits} · drum notation · not scored${partial}${dropped}`
+              }
+              const trackLevel = () => props.trackLevelDb?.(track.id) ?? 0
+              const sliderLevel = () => {
+                const level = trackLevel()
+                return Number.isFinite(level) ? level : GUITAR_TRACK_MIX_MIN_DB
               }
               return (
                 <div
@@ -322,16 +393,31 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                     type="button"
                     data-testid="guitar-night-session-track"
                     data-track-kind={isPercussion() ? 'percussion' : 'pitched'}
-                    classList={{ [styles.sessionTrackActive]: isScored() }}
-                    aria-pressed={isScored()}
-                    disabled={isPercussion()}
+                    data-track-action={
+                      isPercussion() ? 'follow-on-stage' : 'score'
+                    }
+                    classList={{
+                      [styles.sessionTrackActive]: isScored() || isFollowed(),
+                    }}
+                    aria-pressed={isScored() || isFollowed()}
+                    disabled={
+                      isPercussion() &&
+                      (drumSheetUnavailable() ||
+                        props.onFollowTrack === undefined)
+                    }
                     title={
                       isPercussion()
-                        ? `${track.name} is a drum backing part and cannot be scored on the guitar neck`
+                        ? drumSheetUnavailable()
+                          ? `${track.name} has no mapped Drum hits to follow`
+                          : isFollowed()
+                            ? `Stop following ${track.name} on the stage`
+                            : `Follow ${track.name} on the stage without changing Guitar scoring`
                         : undefined
                     }
                     onClick={() => {
-                      if (!isPercussion()) props.onSelectTrack(track.id)
+                      if (isPercussion()) {
+                        props.onFollowTrack?.(isFollowed() ? null : track.id)
+                      } else props.onSelectTrack(track.id)
                     }}
                   >
                     <span>{track.name}</span>
@@ -340,9 +426,16 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       {/* Said outright rather than implied by the highlight:
                           this is the part your playing is graded against. */}
                       <Show when={isScored()}> · scored</Show>
+                      <Show when={isFollowed()}> · on stage</Show>
                     </small>
                   </button>
-                  <Show when={props.onToggleTrackAudible !== undefined}>
+                  <Show
+                    when={
+                      props.onToggleTrackAudible !== undefined ||
+                      (isScored() &&
+                        props.onToggleScoredPartSounds !== undefined)
+                    }
+                  >
                     <button
                       type="button"
                       class={styles.sessionTrackVisibility}
@@ -353,13 +446,16 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       }}
                       aria-pressed={isMuted()}
                       disabled={
-                        isScored() ||
+                        (isScored() &&
+                          props.onToggleScoredPartSounds === undefined) ||
                         drumSoundUnavailable() ||
                         soundChangeWaitsForNextTake()
                       }
                       title={
                         isScored()
-                          ? `Use Tab sounds to hear or mute ${track.name}`
+                          ? isMuted()
+                            ? `Hear ${track.name}`
+                            : `Mute ${track.name}`
                           : drumSoundUnavailable()
                             ? `${track.name} has no drum sounds available yet`
                             : soundChangeWaitsForNextTake()
@@ -387,7 +483,10 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                               ? `Unmute ${track.name}`
                               : `Mute ${track.name}`
                       }
-                      onClick={() => props.onToggleTrackAudible?.(track.id)}
+                      onClick={() => {
+                        if (isScored()) props.onToggleScoredPartSounds?.()
+                        else props.onToggleTrackAudible?.(track.id)
+                      }}
                     >
                       <span aria-hidden="true">M</span>
                     </button>
@@ -461,6 +560,39 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       </Show>
                     </button>
                   </Show>
+                  <Show
+                    when={
+                      props.trackLevelDb !== undefined &&
+                      props.onTrackLevelDb !== undefined
+                    }
+                  >
+                    <label
+                      class={styles.sessionTrackFader}
+                      classList={{
+                        [styles.sessionTrackFaderMasked]:
+                          isMuted() || isMaskedBySolo() || isMaskedByMaster(),
+                      }}
+                    >
+                      <span>Level</span>
+                      <input
+                        type="range"
+                        min={GUITAR_TRACK_MIX_MIN_DB}
+                        max={GUITAR_TRACK_MIX_MAX_DB}
+                        step="0.5"
+                        value={sliderLevel()}
+                        disabled={drumSoundUnavailable()}
+                        data-testid="guitar-night-track-level"
+                        data-track-id={track.id}
+                        aria-label={`${track.name} level`}
+                        aria-valuetext={formatGuitarTrackMixDb(trackLevel())}
+                        onInput={(event) => {
+                          const value = event.currentTarget.valueAsNumber
+                          props.onTrackLevelDb?.(track.id, value)
+                        }}
+                      />
+                      <output>{formatGuitarTrackMixDb(trackLevel())}</output>
+                    </label>
+                  </Show>
                 </div>
               )
             }}
@@ -477,7 +609,7 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         >
           <p class={styles.sessionNote}>
             {props.reference().scoreMode === 'backing-only'
-              ? 'This file carries one authored drum part. Its sheet is reference only; no guitar notes are scored.'
+              ? 'This file carries one authored Drum part. Its notation is available without creating a Guitar score.'
               : 'This file carries one part. A Guitar Pro file with several will list them all here.'}
           </p>
         </Show>

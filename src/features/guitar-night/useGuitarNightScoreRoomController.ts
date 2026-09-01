@@ -12,6 +12,11 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
+import {
+  GUITAR_TRACK_MIX_DEFAULT_DB,
+  guitarTrackMixDbToGain,
+  normalizeGuitarTrackMixDb,
+} from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
@@ -19,6 +24,7 @@ import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock, createSecondsToBeatClock } from '@/lib/midi-song'
 import { createPersistedSignal } from '@/lib/storage'
+import type { GuitarNightDrumKitId } from './guitar-night-drum-sound'
 import { GUITAR_NIGHT_SCORE_MAX_COUNT_IN_BEATS } from './guitar-night-score-count-in'
 import type { GuitarNightReference } from './reference-port'
 
@@ -336,6 +342,85 @@ export function useGuitarNightScoreRoomController(
     return options.defaultHearScore?.() ?? true
   })
   const [hearBacking, setHearBacking] = createSignal(true)
+  const [trackLevelsBySong, setTrackLevelsBySong] = createSignal<
+    ReadonlyMap<string, ReadonlyMap<string, number>>
+  >(new Map())
+
+  /** One authored fader, isolated by song and stable across M/S masks. */
+  const trackLevelDb = (trackId: string): number => {
+    const songId = options.reference()?.songId
+    if (songId === undefined || trackId.length === 0) {
+      return GUITAR_TRACK_MIX_DEFAULT_DB
+    }
+    return (
+      trackLevelsBySong().get(songId)?.get(trackId) ??
+      GUITAR_TRACK_MIX_DEFAULT_DB
+    )
+  }
+
+  const setTrackLevelDb = (trackId: string, value: number): void => {
+    const currentReference = options.reference()
+    if (
+      currentReference === null ||
+      !currentReference.tracks.some((track) => track.id === trackId)
+    ) {
+      return
+    }
+    const nextLevel = normalizeGuitarTrackMixDb(value)
+    setTrackLevelsBySong((previous) => {
+      const nextBySong = new Map(previous)
+      const nextSongLevels = new Map(previous.get(currentReference.songId))
+      if (nextLevel === GUITAR_TRACK_MIX_DEFAULT_DB) {
+        nextSongLevels.delete(trackId)
+      } else {
+        nextSongLevels.set(trackId, nextLevel)
+      }
+      if (nextSongLevels.size === 0) {
+        nextBySong.delete(currentReference.songId)
+      } else {
+        nextBySong.set(currentReference.songId, nextSongLevels)
+      }
+      return nextBySong
+    })
+  }
+
+  const resetTrackLevels = (): void => {
+    const songId = options.reference()?.songId
+    if (songId === undefined) return
+    setTrackLevelsBySong((previous) => {
+      if (!previous.has(songId)) return previous
+      const next = new Map(previous)
+      next.delete(songId)
+      return next
+    })
+  }
+
+  const setBandMelodyMix = (
+    channelId: string,
+    gain: number,
+    audible: boolean,
+  ): void => {
+    if (
+      band.setMelodyChannelGain !== undefined &&
+      band.setMelodyChannelAudible !== undefined
+    ) {
+      band.setMelodyChannelGain(channelId, gain)
+      band.setMelodyChannelAudible(channelId, audible)
+      return
+    }
+    // Compatibility for injected pre-mixer band ports. The production band
+    // owns direct gain and gate independently, including gains above unity.
+    band.setMelodyChannelLevel(channelId, audible ? Math.min(1, gain) : 0)
+  }
+
+  const setBandPercussionMix = (
+    trackId: string,
+    gain: number,
+    audible: boolean,
+  ): void => {
+    band.setPercussionTrackGain?.(trackId, gain)
+    band.setPercussionTrackAudible(trackId, audible)
+  }
 
   // This signal changes only through `setMasterVolume`; seed the dormant graph
   // once, then let that setter schedule exactly one live ramp per gesture.
@@ -361,24 +446,32 @@ export function useGuitarNightScoreRoomController(
     band.setMasterLevel(hydrated)
   })
   createEffect(() => {
-    band.setMelodyChannelLevel(
-      GUITAR_NIGHT_SCORE_CHANNEL,
-      configuredHearScore() ? 1 : 0,
-    )
+    const currentReference = options.reference()
+    // Subscribe once for all faders; individual lookups below then use the
+    // same immutable song snapshot for one coherent live mix update.
+    trackLevelsBySong()
     const configuredAudibleBackingTracks = options.audibleBackingTrackIds?.()
     const audible =
       configuredAudibleBackingTracks === undefined
         ? null
         : new Set(configuredAudibleBackingTracks)
-    const channelIds = new Set(
+    const backingChannelIds = new Set(
       (options.backingMelody?.() ?? [])
         .map((note) => note.channelId)
         .filter((channelId): channelId is string => channelId !== undefined),
     )
-    for (const channelId of channelIds) {
-      band.setMelodyChannelLevel(
+    if (currentReference !== null && currentReference.trackId !== '') {
+      setBandMelodyMix(
+        GUITAR_NIGHT_SCORE_CHANNEL,
+        guitarTrackMixDbToGain(trackLevelDb(currentReference.trackId)),
+        configuredHearScore(),
+      )
+    }
+    for (const channelId of backingChannelIds) {
+      setBandMelodyMix(
         channelId,
-        hearBacking() && (audible === null || audible.has(channelId)) ? 1 : 0,
+        guitarTrackMixDbToGain(trackLevelDb(channelId)),
+        hearBacking() && (audible === null || audible.has(channelId)),
       )
     }
 
@@ -392,8 +485,9 @@ export function useGuitarNightScoreRoomController(
       (options.backingPercussion?.() ?? []).map((hit) => hit.trackId),
     )
     for (const trackId of percussionTrackIds) {
-      band.setPercussionTrackAudible(
+      setBandPercussionMix(
         trackId,
+        guitarTrackMixDbToGain(trackLevelDb(trackId)),
         hearBacking() &&
           (audiblePercussion === null || audiblePercussion.has(trackId)),
       )
@@ -1145,7 +1239,11 @@ export function useGuitarNightScoreRoomController(
     trackId: string,
     audible: boolean,
   ): void => {
-    band.setPercussionTrackAudible(trackId, audible && hearBacking())
+    setBandPercussionMix(
+      trackId,
+      guitarTrackMixDbToGain(trackLevelDb(trackId)),
+      audible && hearBacking(),
+    )
     setRunningTake((run) => {
       if (run === null || run.mode === 'assessment') return run
       const trackIds = new Set(run.audiblePercussionTrackIds)
@@ -1190,6 +1288,10 @@ export function useGuitarNightScoreRoomController(
       band.setMasterLevel(next)
     }
     scheduleMasterVolumePersistence(next)
+  }
+
+  const setDrumKit = (kitId: GuitarNightDrumKitId): void => {
+    band.setDrumKit?.(kitId)
   }
 
   onCleanup(() => {
@@ -1242,6 +1344,12 @@ export function useGuitarNightScoreRoomController(
     masterVolume,
     setMasterVolume,
     flushMasterVolumePersistence,
+    /** Song-keyed authored faders; gates never rewrite these values. */
+    trackLevelDb,
+    setTrackLevelDb,
+    resetTrackLevels,
+    /** Switch retained Guitar-room drums in place, without transport churn. */
+    setDrumKit,
     /** Whether the room sounds the score; its gain changes during playback. */
     hearScore,
     setHearScore,
