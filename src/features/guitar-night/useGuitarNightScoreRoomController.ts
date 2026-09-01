@@ -157,6 +157,10 @@ export function scoreToBandMelody(
     midi: note.midi,
     startBeat: note.startBeat,
     durationBeats: note.duration,
+    ...(note.velocity === undefined ? {} : { velocity: note.velocity }),
+    ...(reference.instrumentFamily === undefined
+      ? {}
+      : { instrumentFamily: reference.instrumentFamily }),
     channelId: GUITAR_NIGHT_SCORE_CHANNEL,
   }))
 }

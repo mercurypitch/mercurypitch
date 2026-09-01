@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { computeGuitarElectricAmpVoicing, createGuitarElectricAmpStage, createLegacyGuitarElectricAmpStage, DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, normalizeGuitarElectricAmpParameters, shapeGuitarElectricDrive, shapeGuitarElectricPowerAmp, shapeGuitarElectricPreamp, } from './guitar-electric-amp'
+import { computeGuitarElectricAmpToneResponse, computeGuitarElectricAmpVoicing, createGuitarElectricAmpStage, createLegacyGuitarElectricAmpStage, DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, normalizeGuitarElectricAmpParameters, shapeGuitarElectricDrive, shapeGuitarElectricPowerAmp, shapeGuitarElectricPreamp, } from './guitar-electric-amp'
 
 class FakeAudioParam {
   value = 0
@@ -124,11 +124,16 @@ describe('createGuitarElectricAmpStage', () => {
     expect(context.waveShapers.every((node) => node.oversample === '2x')).toBe(
       true,
     )
-    expect(context.filters[4]).toMatchObject({ type: 'peaking' })
-    expect(context.filters[4].frequency.value).toBe(4200)
-    expect(context.filters[4].gain.value).toBe(4)
-    expect(context.filters[7]).toMatchObject({ type: 'lowpass' })
-    expect(context.filters[7].frequency.value).toBe(5000)
+    expect(context.filters).toHaveLength(9)
+    expect(context.filters[0]).toMatchObject({ type: 'highpass' })
+    expect(context.filters[0].frequency.value).toBe(45)
+    expect(context.filters[1]).toMatchObject({ type: 'lowpass' })
+    expect(context.filters[1].frequency.value).toBe(7200)
+    expect(context.filters[5]).toMatchObject({ type: 'peaking' })
+    expect(context.filters[5].frequency.value).toBe(3800)
+    expect(context.filters[5].gain.value).toBeCloseTo(0.4)
+    expect(context.filters[8]).toMatchObject({ type: 'lowpass' })
+    expect(context.filters[8].frequency.value).toBe(5350)
   })
 
   it('keeps bypass and output endpoints stable while ramping live changes', () => {
@@ -221,6 +226,36 @@ describe('guitar electric amp controls', () => {
     expect(boost.cabinetBodyGainDb).toBeGreaterThan(cut.cabinetBodyGainDb)
   })
 
+  it('renders each tone control in its own useful frequency region', () => {
+    const frequencies = [80, 750, 6000]
+    const cut = computeGuitarElectricAmpToneResponse(
+      { bass: -1, mid: -1, treble: -1 },
+      frequencies,
+    )
+    const boost = computeGuitarElectricAmpToneResponse(
+      { bass: 1, mid: 1, treble: 1 },
+      frequencies,
+    )
+
+    expect(boost[0] - cut[0]).toBeGreaterThan(10)
+    expect(boost[1] - cut[1]).toBeGreaterThan(10)
+    expect(boost[2] - cut[2]).toBeGreaterThan(8)
+  })
+
+  it('makes the dark cabinet roll off the top without adding broadband level', () => {
+    const open = computeGuitarElectricAmpToneResponse(
+      { cabinet: 'open' },
+      [750, 6000],
+    )
+    const dark = computeGuitarElectricAmpToneResponse(
+      { cabinet: 'dark' },
+      [750, 6000],
+    )
+
+    expect(Math.abs(dark[0] - open[0])).toBeLessThan(1.5)
+    expect(dark[1]).toBeLessThan(open[1] - 4)
+  })
+
   it('compensates higher drive and leaves output level independently useful', () => {
     const clean = computeGuitarElectricAmpVoicing({ drive: 0, output: 0 })
     const driven = computeGuitarElectricAmpVoicing({ drive: 1, output: 1 })
@@ -238,6 +273,42 @@ describe('guitar electric amp controls', () => {
 })
 
 describe('guitar electric amp nonlinear stages', () => {
+  it('increases harmonic density monotonically across the useful drive range', () => {
+    const sampleRate = 8192
+    const sampleCount = 8192
+    const fundamental = 128
+    const distortionRatios = [0.2, 0.4, 0.6, 0.8, 1].map((drive) => {
+      const rendered = new Float32Array(sampleCount)
+      for (let index = 0; index < sampleCount; index += 1) {
+        const input =
+          0.18 * Math.sin((2 * Math.PI * fundamental * index) / sampleRate)
+        const preamp = shapeGuitarElectricPreamp(input, drive, 0.3)
+        rendered[index] = shapeGuitarElectricPowerAmp(preamp, drive)
+      }
+      const fundamentalMagnitude = spectralMagnitude(
+        rendered,
+        fundamental,
+        sampleRate,
+      )
+      const harmonicPower = [2, 3, 4, 5, 6, 7].reduce((sum, harmonic) => {
+        const magnitude = spectralMagnitude(
+          rendered,
+          fundamental * harmonic,
+          sampleRate,
+        )
+        return sum + magnitude ** 2
+      }, 0)
+      return Math.sqrt(harmonicPower) / fundamentalMagnitude
+    })
+
+    for (let index = 1; index < distortionRatios.length; index += 1) {
+      expect(distortionRatios[index]).toBeGreaterThan(
+        distortionRatios[index - 1],
+      )
+    }
+    expect(distortionRatios.at(-1)).toBeGreaterThan(distortionRatios[0] * 3)
+  })
+
   it('adds controllable even harmonics without destabilizing the signal', () => {
     const sampleRate = 8192
     const sampleCount = 8192

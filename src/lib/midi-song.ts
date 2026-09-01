@@ -8,6 +8,8 @@
 
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import type { MidiProgramFamily } from '@/lib/midi-program-family'
+import { normalizeMidiProgram, resolveMidiProgramFamily, } from '@/lib/midi-program-family'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
 export {
@@ -22,6 +24,8 @@ export interface MidiSongNote {
   midi: number
   startBeat: number
   duration: number
+  /** Authored strike intensity, 1–127. Absent on legacy or synthetic notes. */
+  velocity?: number
   /** Original tab fingering (Guitar Pro imports only): 0-based, high string first. */
   stringIndex?: number
   /** Original tab fret (Guitar Pro imports only). */
@@ -83,6 +87,10 @@ interface MidiSongTrackBase {
 export interface MidiSongPitchedTrack extends MidiSongTrackBase {
   kind: 'pitched'
   notes: MidiSongNote[]
+  /** Zero-based General MIDI program retained from the authored source. */
+  sourceProgram?: number
+  /** Honest playback family derived from source evidence. */
+  instrumentFamily?: MidiProgramFamily
   /** Authored open pitches before capo, highest string first. */
   sourceTuning?: readonly number[]
   /** Authored tuning name when the file carried one. */
@@ -99,6 +107,8 @@ export interface MidiSongPercussionTrack extends MidiSongTrackBase {
   sourceTuning?: never
   sourceTuningName?: never
   sourceCapo?: never
+  sourceProgram?: never
+  instrumentFamily?: never
   percussionHits: MidiSongPercussionHit[]
   /** Source articulations dropped because no honest GM mapping existed. */
   droppedHitCount: number
@@ -177,7 +187,32 @@ export function normalizeMidiSong(song: MidiSongNormalizationInput): MidiSong {
     ...song,
     tracks: song.tracks.map((track) => {
       if (track.kind !== 'percussion') {
-        return { ...track, kind: 'pitched' as const }
+        const sourceProgram = normalizeMidiProgram(track.sourceProgram)
+        const instrumentFamily = resolveMidiProgramFamily({
+          sourceProgram: track.sourceProgram,
+          instrumentFamily: track.instrumentFamily,
+          instrumentName: track.instrumentName,
+        })
+        const normalizedTrack: MidiSongPitchedTrack = {
+          ...track,
+          kind: 'pitched' as const,
+          notes: track.notes.map((note) => {
+            const velocity =
+              typeof note.velocity === 'number' &&
+              Number.isInteger(note.velocity) &&
+              note.velocity >= 1 &&
+              note.velocity <= 127
+                ? note.velocity
+                : undefined
+            const normalized = { ...note, velocity }
+            if (velocity === undefined) delete normalized.velocity
+            return normalized
+          }),
+          sourceProgram,
+          instrumentFamily,
+        }
+        if (sourceProgram === undefined) delete normalizedTrack.sourceProgram
+        return normalizedTrack
       }
       const hits = (track.percussionHits ?? []).filter(
         (hit) =>

@@ -17,6 +17,7 @@
 import { parseMidiProject, PianoProjectParseError, } from '@/features/piano-project/parse-midi-project'
 import type { PianoProject, PianoProjectTrack, } from '@/features/piano-project/piano-project'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { midiProgramFamily, normalizeMidiProgram, } from '@/lib/midi-program-family'
 import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { generalMidiPercussionName, normalizeGeneralMidiPercussionKey, } from '@/lib/percussion'
 
@@ -52,7 +53,7 @@ function trackNotes(
   track: PianoProjectTrack,
   ticksPerQuarter: number,
 ): MidiSongNote[] {
-  const sounding = new Map<number, number>()
+  const sounding = new Map<number, { startTick: number; velocity: number }>()
   const notes: MidiSongNote[] = []
 
   for (const event of track.events) {
@@ -61,19 +62,23 @@ function trackNotes(
     if (isOn) {
       // A second on for a pitch already sounding restarts it, which is what
       // the old scanner did and what a sequencer hears.
-      sounding.set(event.note, event.tick)
+      sounding.set(event.note, {
+        startTick: event.tick,
+        velocity: event.velocity,
+      })
       continue
     }
-    const startTick = sounding.get(event.note)
-    if (startTick === undefined) continue
+    const attack = sounding.get(event.note)
+    if (attack === undefined) continue
     sounding.delete(event.note)
     notes.push({
       midi: event.note,
-      startBeat: startTick / ticksPerQuarter,
+      startBeat: attack.startTick / ticksPerQuarter,
       duration: Math.max(
         MIN_NOTE_BEATS,
-        Math.max(1, event.tick - startTick) / ticksPerQuarter,
+        Math.max(1, event.tick - attack.startTick) / ticksPerQuarter,
       ),
+      velocity: attack.velocity,
     })
   }
 
@@ -196,7 +201,7 @@ export function midiSongFromProject(
     const notes = trackNotes(track, ticksPerQuarter)
     if (notes.length === 0) continue
 
-    const program = trackProgram(track)
+    const program = normalizeMidiProgram(trackProgram(track))
     const instrumentName =
       program === undefined ? 'Unknown Instrument' : gmInstrumentName(program)
     const name =
@@ -211,6 +216,12 @@ export function midiSongFromProject(
       kind: 'pitched',
       name,
       instrumentName,
+      ...(program === undefined
+        ? { instrumentFamily: 'neutral' as const }
+        : {
+            sourceProgram: program,
+            instrumentFamily: midiProgramFamily(program),
+          }),
       noteCount: notes.length,
       notes,
     })

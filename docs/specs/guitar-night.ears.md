@@ -278,17 +278,21 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   second count-in. Scrubbing before Play shall remain silent. WHEN the reference
   changes or the player clears the range, the percussion room shall release its
   owned A/B marks and active scheduler loop together.
-- **REQ-GN-RUNTIME-026 — Summed electric amp path:** WHEN synthesized electric
-  score notes sound together, their voices shall meet at one shared,
-  asset-free staged amp before entering the guide bus. The fixed route shall
-  provide bounded input headroom, preamp and power-stage nonlinearity,
-  amp-inspired three-band voicing, presence, cabinet filtering, compensated
-  output, and a pop-free bypass. It shall not claim to be an exact named valve
-  amp or physical tone-stack model. Acoustic references, tuner tones, bass
-  voices, backing stems, drums, and monitor audio shall bypass that guide amp.
-  Creating more electric voices shall not create more amp stages, and disposing
-  the route graph shall disconnect the shared stage without fetching an
-  external asset.
+- **REQ-GN-RUNTIME-026 — Track-scoped summed electric amp path:** WHEN notes
+  from one actual electric-guitar score track sound together, every string
+  voice in that track shall sum into exactly one shared, asset-free nonlinear
+  amp. Separate electric-guitar tracks shall keep separate amp stages so their
+  signals do not intermodulate across track boundaries. Each track's mixer
+  fader and mute gate shall sit after its amp, so changing the mix level shall
+  not change that track's drive. The fixed route shall provide bounded input
+  headroom, preamp and power-stage nonlinearity, amp-inspired three-band
+  voicing, presence, cabinet filtering, compensated output, and a pop-free
+  bypass. It shall not claim to be an exact named valve amp or physical
+  tone-stack model. Acoustic-guitar, bass, and neutral score tracks, tuner
+  tones, backing stems, drums, and monitor audio shall bypass every authored
+  electric-track amp. Creating more voices within one electric track shall not
+  create more amp stages, and disposing the run shall disconnect every
+  track-owned stage without fetching an external asset.
 - **REQ-GN-RUNTIME-027 — Persistent room tone:** Guitar Night shall expose one
   compact Amp surface in the score-room Session sheet and prepared-song Band
   sheet. Preset, bypass, Drive, Bass, Mid, Treble, Presence, Output, and
@@ -296,7 +300,15 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   Corrupt, incomplete, or unknown-future settings shall fall back to the safe
   default. Changing or resetting tone before Play shall not activate an audio
   context; changing it while audio is live shall use bounded automation rather
-  than discontinuous gain steps.
+  than discontinuous gain steps. The curated Studio clean, Edge, Crunch, and
+  Lead presets shall keep conservative headroom, approximately matched
+  reference energy, and an intentional progression toward denser,
+  mid-focused, darker high-drive voicings under the deterministic calibration
+  fixture. Those measurements are regression bounds, not evidence of Guitar
+  Rig, named commercial plug-in, cabinet, or hardware fidelity. Owner audition
+  with representative chordal and multi-track MIDI/Guitar Pro material shall
+  remain the musical-quality acceptance gate; numeric calibration alone shall
+  not mark a preset complete.
 - **REQ-GN-RUNTIME-028 — Direct-input amp monitoring:** WHERE Direct input is
   actively Listening, Guitar Night may offer one explicit **Hear my input**
   action. The wet monitor shall branch from the already-owned source into its
@@ -933,6 +945,25 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   through its live mute gate. A failed player activation shall abort the run
   without exposing a false Playing state; pitched-only rooms shall not load or
   construct this drum path.
+- **REQ-GN-SONG-024 — Authored pitched-source truth:** WHEN MIDI or Guitar Pro
+  supplies a pitched track, Guitar Night shall retain each authored note's
+  bounded velocity where present, the source's zero-based GM program where
+  present, and the resolved program family through canonical projection, local
+  persistence, and `readSource`. Programs 24–25 shall resolve as acoustic
+  guitar, 26–31 as electric guitar, 32–39 as bass, and every other explicit GM
+  program as neutral. An explicit program shall win over track name, tuning,
+  or stale stored family. A genuinely absent program shall remain absent rather
+  than become program zero; only unambiguous legacy instrument names may supply
+  a fallback family.
+- **REQ-GN-SONG-025 — Family-safe authored playback:** WHEN an authored pitched
+  note sounds, its retained velocity shall shape its strike level; legacy or
+  synthetic notes without velocity shall retain their established default
+  level. Electric-guitar tracks alone shall enter the track-scoped amp required
+  by `REQ-GN-RUNTIME-026`; bass shall use the bass voice, acoustic guitar shall
+  use a clean guitar voice, and neutral or unsupported pitched families shall
+  use a clean generic score tone. Vocals, strings, keyboards, synths, and other
+  unrelated pitched tracks shall never acquire electric-guitar distortion from
+  their name, pitch range, or Guitar Night's historical fallback.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

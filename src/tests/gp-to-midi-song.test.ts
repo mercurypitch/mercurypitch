@@ -16,6 +16,8 @@ describe('scoreToMidiSong', () => {
     const score = scoreFromTex(
       '\\title "Test" \\tempo 120 . 3.3.4 5.3.8 7.3.8 | 0.4.2 r.2',
     )
+    score.tracks[0].staves[0].bars[0].voices[0].beats[0].notes[0].dynamics =
+      alphaTab.model.DynamicValue.FF
     const song = scoreToMidiSong(score)
 
     expect(song.bpm).toBe(120)
@@ -28,6 +30,7 @@ describe('scoreToMidiSong', () => {
       midi: 58,
       startBeat: 0,
       duration: 1,
+      velocity: 111,
       stringIndex: 2,
       fret: 3,
     })
@@ -70,6 +73,53 @@ describe('scoreToMidiSong', () => {
     const song = scoreToMidiSong(scoreFromTex('\\tempo 95 . 0.6.4 0.6.4'))
     expect(song.bpm).toBe(95)
     expect(song.tracks[0].noteCount).toBe(2)
+  })
+
+  it('retains the authored GM program and classifies only guitar and bass programs', () => {
+    const cases = [
+      { program: 25, name: 'Steel part', family: 'acoustic-guitar' },
+      { program: 30, name: 'Distorted part', family: 'electric-guitar' },
+      { program: 33, name: 'Bass part', family: 'bass' },
+      { program: 48, name: 'Lead guitar', family: 'neutral' },
+      { program: 52, name: 'Vocals', family: 'neutral' },
+      { program: 80, name: 'Synth lead', family: 'neutral' },
+    ] as const
+
+    const tracks = cases.map(({ program, name }) => {
+      const score = scoreFromTex('. 3.3.4')
+      score.tracks[0].name = name
+      score.tracks[0].playbackInfo.program = program
+      return scoreToMidiSong(score).tracks[0]
+    })
+
+    expect(
+      tracks.map((track) => ({
+        sourceProgram: track.sourceProgram,
+        instrumentFamily: track.instrumentFamily,
+      })),
+    ).toEqual(
+      cases.map(({ program, family }) => ({
+        sourceProgram: program,
+        instrumentFamily: family,
+      })),
+    )
+  })
+
+  it('does not invent piano program zero when playback info is absent', () => {
+    const score = scoreFromTex('. 3.3.4')
+    ;(
+      score.tracks[0] as unknown as {
+        playbackInfo: undefined
+      }
+    ).playbackInfo = undefined
+
+    const track = scoreToMidiSong(score).tracks[0]
+
+    expect(track.sourceProgram).toBeUndefined()
+    expect(track).toMatchObject({
+      instrumentName: 'Unknown Instrument',
+      instrumentFamily: 'neutral',
+    })
   })
 
   it('lets a let-ring note ring until the next note on the same string', () => {

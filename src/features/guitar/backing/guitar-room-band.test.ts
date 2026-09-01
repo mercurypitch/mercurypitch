@@ -2,10 +2,11 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomBand, GuitarRoomBandBeatPhase, } from './guitar-room-band'
-import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, resolveBandLoop, } from './guitar-room-band'
+import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, guitarRoomBandVelocityGain, resolveBandLoop, } from './guitar-room-band'
 import { resolveGuitarRoomRhythmPreset } from './guitar-room-rhythm'
 import { setGuitarSessionGainTarget } from './guitar-session-audio-graph'
 
@@ -80,6 +81,19 @@ function fakeAudioContext(
   } as unknown as AudioContext
 }
 
+function fakeElectricAmpStage(): GuitarElectricAmpStage {
+  const parameters = { ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS }
+  return {
+    input: fakeAudioNode() as unknown as GainNode,
+    output: fakeAudioNode() as unknown as GainNode,
+    nodes: [],
+    getParameters: vi.fn(() => parameters),
+    setParameters: vi.fn(() => parameters),
+    setBypassed: vi.fn(),
+    dispose: vi.fn(),
+  }
+}
+
 async function disposeBand(band: GuitarRoomBand): Promise<void> {
   const pending = band.dispose()
   if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(80)
@@ -138,6 +152,21 @@ describe('groupNotesByBeat', () => {
       { midi: 41, startBeat: -2, durationBeats: 1 },
     ])
     expect(grouped.size).toBe(0)
+  })
+
+  it('keeps imported strike intensity monotonic and legacy notes at unity', () => {
+    expect(guitarRoomBandVelocityGain(undefined)).toBe(1)
+    expect(guitarRoomBandVelocityGain(Number.NaN)).toBe(1)
+    expect(guitarRoomBandVelocityGain(0)).toBe(1)
+    expect(guitarRoomBandVelocityGain(128)).toBe(1)
+    const quiet = guitarRoomBandVelocityGain(40)
+    const medium = guitarRoomBandVelocityGain(80)
+    const loud = guitarRoomBandVelocityGain(120)
+    expect(quiet).toBeGreaterThan(0)
+    expect(quiet).toBeLessThan(medium)
+    expect(medium).toBeLessThan(loud)
+    expect(loud).toBeLessThan(1)
+    expect(guitarRoomBandVelocityGain(127)).toBe(1)
   })
 })
 
@@ -265,12 +294,14 @@ describe('createGuitarRoomBand', () => {
           startBeat: 0,
           durationBeats: 1,
           channelId: 'track-bass',
+          instrumentFamily: 'neutral',
         },
         {
           midi: 64,
           startBeat: 0,
           durationBeats: 1,
           channelId: 'track-guitar',
+          instrumentFamily: 'neutral',
         },
       ],
     })
@@ -295,7 +326,7 @@ describe('createGuitarRoomBand', () => {
     await disposeBand(band)
   })
 
-  it('sums electric notes into the amp while bass remains on the clean guide path', async () => {
+  it('sums one guitar track before drive but isolates other tracks and neutral parts', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const context = fakeAudioContext()
@@ -309,9 +340,16 @@ describe('createGuitarRoomBand', () => {
     })
     guitarVoices.createGuitarVoice.mockImplementation(voice)
     guitarVoices.createBassVoice.mockImplementation(voice)
+    const stages: GuitarElectricAmpStage[] = []
+    const createElectricAmpStage = vi.fn(() => {
+      const stage = fakeElectricAmpStage()
+      stages.push(stage)
+      return stage
+    })
     const band = createGuitarRoomBand({
       contextFactory: () => context,
       activateContext: async () => undefined,
+      createElectricAmpStage,
       scheduleAheadSeconds: 2,
     })
 
@@ -326,73 +364,115 @@ describe('createGuitarRoomBand', () => {
           midi: 64,
           startBeat: 0,
           durationBeats: 1,
-          channelId: 'mixed-track',
-          variant: 'electric',
+          velocity: 40,
+          channelId: 'first-guitar',
+          instrumentFamily: 'electric-guitar',
+        },
+        {
+          midi: 67,
+          startBeat: 0.25,
+          durationBeats: 1,
+          velocity: 80,
+          channelId: 'first-guitar',
+          instrumentFamily: 'electric-guitar',
         },
         {
           midi: 40,
           startBeat: 0,
           durationBeats: 1,
-          channelId: 'mixed-track',
-          variant: 'bass',
+          channelId: 'bass-track',
+          instrumentFamily: 'bass',
         },
         {
-          midi: 67,
+          midi: 71,
           startBeat: 0,
           durationBeats: 1,
-          channelId: 'second-electric-track',
-          variant: 'electric',
+          velocity: 120,
+          channelId: 'second-guitar',
+          instrumentFamily: 'electric-guitar',
+        },
+        {
+          midi: 76,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'strings-track',
+          instrumentFamily: 'neutral',
         },
       ],
     })
 
-    const electricChannel = guitarVoices.createGuitarVoice.mock.results[0]
-      ?.value.gain.connect.mock.calls[0]?.[0] as
-      | (ReturnType<typeof fakeAudioNode> & {
-          gain: ReturnType<typeof fakeAudioParam>
-        })
-      | undefined
-    const cleanChannel = guitarVoices.createBassVoice.mock.results[0]?.value
-      .gain.connect.mock.calls[0]?.[0] as
-      | (ReturnType<typeof fakeAudioNode> & {
-          gain: ReturnType<typeof fakeAudioParam>
-        })
-      | undefined
-    const secondElectricChannel = guitarVoices.createGuitarVoice.mock.results[1]
-      ?.value.gain.connect.mock.calls[0]?.[0] as
-      | (ReturnType<typeof fakeAudioNode> & {
-          gain: ReturnType<typeof fakeAudioParam>
-        })
-      | undefined
-    const electricRunGate = electricChannel?.connect.mock.calls[0]?.[0]
-    const cleanRunGate = cleanChannel?.connect.mock.calls[0]?.[0]
-    const graph = band.getAudioGraph()
-
-    expect(electricChannel).toBeDefined()
-    expect(secondElectricChannel).toBeDefined()
-    expect(cleanChannel).toBeDefined()
-    expect(electricChannel).not.toBe(cleanChannel)
-    expect(secondElectricChannel?.connect).toHaveBeenCalledWith(electricRunGate)
+    expect(createElectricAmpStage).toHaveBeenCalledTimes(2)
+    const guitarDestinations = guitarVoices.createGuitarVoice.mock.results.map(
+      (result) => result.value.gain.connect.mock.calls[0]?.[0],
+    )
+    expect(guitarDestinations[0]).toBe(stages[0]?.input)
+    expect(guitarDestinations[1]).toBe(stages[0]?.input)
+    expect(guitarDestinations[2]).toBe(stages[1]?.input)
+    expect(guitarDestinations[3]).not.toBe(stages[0]?.input)
+    expect(guitarDestinations[3]).not.toBe(stages[1]?.input)
     expect(
-      guitarVoices.createGuitarVoice.mock.calls.map((call) => call[5]),
-    ).toEqual(['shared', 'shared'])
-    expect(electricRunGate?.connect).toHaveBeenCalledWith(
-      graph?.guideInputs.electric,
-    )
-    expect(cleanRunGate?.connect).toHaveBeenCalledWith(graph?.guideInputs.clean)
+      guitarVoices.createGuitarVoice.mock.calls.map((call) => [
+        call[3],
+        call[5],
+      ]),
+    ).toEqual([
+      ['electric', 'shared'],
+      ['electric', 'shared'],
+      ['electric', 'shared'],
+      ['acoustic', 'per-voice'],
+    ])
+    expect(guitarVoices.createBassVoice).toHaveBeenCalledOnce()
 
-    band.setMelodyChannelLevel('mixed-track', 0.5)
-    expect(electricChannel?.gain.setTargetAtTime).toHaveBeenCalledWith(
+    const firstTrackFader = (
+      stages[0]?.output.connect as ReturnType<typeof vi.fn>
+    ).mock.calls[0]?.[0] as
+      | (ReturnType<typeof fakeAudioNode> & {
+          gain: ReturnType<typeof fakeAudioParam>
+        })
+      | undefined
+    const secondTrackFader = (
+      stages[1]?.output.connect as ReturnType<typeof vi.fn>
+    ).mock.calls[0]?.[0]
+    expect(firstTrackFader).toBeDefined()
+    expect(secondTrackFader).toBeDefined()
+    expect(firstTrackFader).not.toBe(secondTrackFader)
+
+    band.setMelodyChannelLevel('first-guitar', 0.5)
+    expect(firstTrackFader?.gain.setTargetAtTime).toHaveBeenCalledWith(
       sliderToGain(0.5),
       5,
       0.012,
     )
-    expect(cleanChannel?.gain.setTargetAtTime).toHaveBeenCalledWith(
-      sliderToGain(0.5),
-      5,
-      0.012,
+
+    const edited = {
+      ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      drive: 0.81,
+    }
+    band.setElectricAmpParameters(edited)
+    for (const stage of stages) {
+      expect(stage.setParameters).toHaveBeenCalledWith(edited, 5)
+    }
+
+    const firstVoiceGain =
+      guitarVoices.createGuitarVoice.mock.results[0]?.value.gain.gain
+    const secondVoiceGain =
+      guitarVoices.createGuitarVoice.mock.results[1]?.value.gain.gain
+    const thirdVoiceGain =
+      guitarVoices.createGuitarVoice.mock.results[2]?.value.gain.gain
+    expect(firstVoiceGain?.setValueAtTime).toHaveBeenCalledWith(
+      guitarRoomBandVelocityGain(40),
+      5.09,
+    )
+    expect(secondVoiceGain?.setValueAtTime).toHaveBeenCalledWith(
+      guitarRoomBandVelocityGain(80),
+      5.256666666666667,
+    )
+    expect(thirdVoiceGain?.setValueAtTime).toHaveBeenCalledWith(
+      guitarRoomBandVelocityGain(120),
+      5.09,
     )
     await disposeBand(band)
+    for (const stage of stages) expect(stage.dispose).toHaveBeenCalledOnce()
   })
 
   it('constructs no kit player until an authored percussion run starts', async () => {
@@ -1198,9 +1278,16 @@ describe('createGuitarRoomBand', () => {
       exerciseBeats: 8,
       durationBeats: 8,
       feel: 'click',
-      melody: [{ midi: 64, startBeat: 0, durationBeats: 8 }],
+      melody: [
+        {
+          midi: 64,
+          startBeat: 0,
+          durationBeats: 8,
+          instrumentFamily: 'neutral',
+        },
+      ],
     })
-    const guideGate = gains.at(-3)
+    const guideGate = gains.at(-4)
     const drumsGate = gains.at(-2)
     const scoreGate = gains.at(-1)
     expect(guideGate).toBeDefined()

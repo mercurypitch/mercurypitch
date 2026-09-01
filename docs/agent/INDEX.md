@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 30.8k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 31.7k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 28.4k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.4k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
@@ -88,7 +88,7 @@ These are the rules that break things when ignored.
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.8k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.6k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.5k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
-| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 4.4k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
+| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 4.5k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.3k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 3.7k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
@@ -128,7 +128,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 8.2k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
+| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 8.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
@@ -141,7 +141,7 @@ These are the rules that break things when ignored.
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 950 | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 700 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
+| `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 650 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
@@ -177,6 +177,7 @@ These are the rules that break things when ignored.
 | [hash-router.ts](../../src/lib/hash-router.ts) | 450 | Hash Router — Client-side hash-based routing |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
+| [midi-song.ts](../../src/lib/midi-song.ts) | 400 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |

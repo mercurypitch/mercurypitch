@@ -501,6 +501,15 @@ describe('melodyToGuitarNotes', () => {
     expect(notes[0].notation).toBe(notation)
   })
 
+  it('keeps only bounded authored velocity', () => {
+    expect(
+      melodyToGuitarNotes([
+        { midi: 60, startBeat: 0, duration: 1, velocity: 37 },
+        { midi: 62, startBeat: 1, duration: 1, velocity: 0 },
+      ]).map((note) => note.velocity),
+    ).toEqual([37, undefined])
+  })
+
   it('returns empty array for empty input', () => {
     const notes = melodyToGuitarNotes([])
     expect(notes).toHaveLength(0)
