@@ -5,6 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, classifyDevice, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
 import type { DownloadProgress } from '@/lib/fetch-progress'
 import { aggregateProgress, fetchArrayBufferWithProgress, } from '@/lib/fetch-progress'
@@ -736,12 +737,15 @@ export const useStemMixerAudioController = (
           budgetBytes,
         })
         // Findable in Safari's Web Inspector when this is attached to a
-        // phone, which is the only place the failure happens.
-        console.info(
-          `[stem-mixer] ${klass} budget ${mb(budgetBytes)}MB · ${mb(perStemBytes)}MB per stem · ` +
-            `${loadedCount} loaded + ${extraTracks.length} pending = ${mb(fit.projectedBytes)}MB projected · ` +
-            `loading ${fit.allowed}, skipping ${fit.skipped}`,
-        )
+        // phone, which is the only place the failure happens — so it has to
+        // survive into the dev site's production build, and stop there.
+        if (IS_DIAGNOSTIC_BUILD) {
+          console.info(
+            `[stem-mixer] ${klass} budget ${mb(budgetBytes)}MB · ${mb(perStemBytes)}MB per stem · ` +
+              `${loadedCount} loaded + ${extraTracks.length} pending = ${mb(fit.projectedBytes)}MB projected · ` +
+              `loading ${fit.allowed}, skipping ${fit.skipped}`,
+          )
+        }
 
         if (fit.skipped > 0) {
           const msg =

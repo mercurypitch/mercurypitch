@@ -17,6 +17,7 @@ import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/ste
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
+import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { isTvDevice } from '@/lib/device-tier'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
@@ -1748,9 +1749,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // then has to hold decoded — a part preset selects vocal plus EVERY
     // isolated band stem, which is where a phone runs out. Pair it with the
     // `[stem-mixer] … projected` line in the same console.
-    console.info(
-      `[uvr-panel] open mixer ${sessionId} · stems ${[...selected].join(',') || 'none'} · ${partKeys.length} part blob(s)`,
-    )
+    if (IS_DIAGNOSTIC_BUILD) {
+      console.info(
+        `[uvr-panel] open mixer ${sessionId} · stems ${[...selected].join(',') || 'none'} · ${partKeys.length} part blob(s)`,
+      )
+    }
     setMixerPreparation({
       token,
       songTitle: extractTitle(raw.originalFile?.name ?? 'this song'),
