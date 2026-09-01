@@ -26,7 +26,7 @@ export const V2_ONBOARDING_AUDIO_ASSET_IDS = Object.freeze({
 export const V2_ONBOARDING_AUDIO_ASSET_MANIFEST: AudioAssetManifest =
   Object.freeze({
     schemaVersion: AUDIO_MANIFEST_SCHEMA_VERSION,
-    revision: 'beside-cue-onboarding-v2.4-audio-v1',
+    revision: 'beside-cue-onboarding-v2.4-audio-v2',
     locale: 'en',
     assets: Object.freeze([
       Object.freeze({
@@ -39,12 +39,12 @@ export const V2_ONBOARDING_AUDIO_ASSET_MANIFEST: AudioAssetManifest =
             '4d74d9080a6e32473f9a83d5956dae4e47dfc8861f0fae159e8a4e4c9febd805',
         }),
         sources: frozenSource({
-          src: `${AUDIO_ROOT}/dialogue/corky-greeting-v0_1.m4a`,
+          src: `${AUDIO_ROOT}/dialogue/corky-greeting-v0_2.m4a`,
           mimeType: 'audio/mp4; codecs="mp4a.40.2"',
           sha256:
-            '9c77fcff913846202ad08624a5731603880476232f344af897234cc1bb87bcb4',
-          byteLength: 100_275,
-          durationMs: 4_010,
+            '1ec12a8456c6fa922bd73614ab9eb0fa1f8754e3d26197383cd654b762f7a3f3',
+          byteLength: 71_868,
+          durationMs: 5_351,
           sampleRateHz: 48_000,
           channels: 2,
         }),

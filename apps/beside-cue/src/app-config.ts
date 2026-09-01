@@ -131,7 +131,7 @@ export const V2_BESIDE_CUE_PREVIEW_CONFIG: BesideCueAppConfig = Object.freeze({
   ...DEFAULT_BESIDE_CUE_CONFIG,
   onboarding: Object.freeze({
     delivery: 'v2-first-run',
-    revision: 'beside-cue-v2-preview-v2',
+    revision: 'beside-cue-v2-preview-v3',
     contractVersion: '1.0',
     activation: 'developer-preview',
   }),

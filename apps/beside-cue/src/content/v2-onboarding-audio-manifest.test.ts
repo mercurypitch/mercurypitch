@@ -45,6 +45,20 @@ describe('V2 onboarding audio manifest', () => {
     expect(score?.sources[0]?.durationMs).toBe(32_833.333)
   })
 
+  it("delays the approved greeting into Corky's authored speech window", () => {
+    const greeting = V2_ONBOARDING_AUDIO_ASSET_MANIFEST.assets.find(
+      (asset) => asset.id === V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+
+    expect(greeting?.sources[0]).toMatchObject({
+      src: '/onboarding/corky-v2.4/audio/dialogue/corky-greeting-v0_2.m4a',
+      durationMs: 5_351,
+      sha256:
+        '1ec12a8456c6fa922bd73614ab9eb0fa1f8754e3d26197383cd654b762f7a3f3',
+      byteLength: 71_868,
+    })
+  })
+
   it('is structurally valid and immutable at the public boundary', () => {
     expect(
       validateAudioAssetManifest(V2_ONBOARDING_AUDIO_ASSET_MANIFEST),

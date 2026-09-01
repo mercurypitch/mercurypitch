@@ -11,10 +11,14 @@ must not be promoted to a store build.
 ## Current picture scope
 
 The founder-authorized preview pack is derived from the frozen V2.4 scene and
-contains the current Corky reveal, table reveal, corrected P02 record-player
-plate, and complete enter/hold/recede performances for Scroll, Sugarlump, and
-Fog. It is included specifically so PR #689 can be reviewed as an integrated
-Android journey. Normal release review still applies before any store build.
+contains Corky's animated side entrance and spoken greeting, the table reveal,
+corrected P02 record-player plate, and complete enter/hold/recede performances
+for Scroll, Sugarlump, and Fog. Corky's generated tail is excluded: the selected
+performance is retimed only with deterministic frame duplication, then an
+opaque paper-panel transition lands on the exact existing Corky plate before
+the table reveal. It is included specifically so PR #689 can be reviewed as an
+integrated Android journey. Normal release review still applies before any
+store build.
 
 The delivery files are pinned in
 `public/onboarding/corky-v2.4/SHA256SUMS`. Source hashes, the deterministic
@@ -45,6 +49,7 @@ Install the PR artifact on a test device and exercise at least:
   review when the device already has a Cue;
 
 - normal and reduced-motion journeys;
+- Corky's entrance, lip-sync, opaque paper-panel handoff, and table reveal;
 - Scroll, Sugarlump, and Fog enter/hold/recede sequences;
 - rapid repeated Stop taps;
 - background and foreground transitions during spin and deceleration;

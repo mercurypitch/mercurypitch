@@ -1012,7 +1012,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.4-preview-v1',
+      'corky-v2.4-preview-v2',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
@@ -1067,7 +1067,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     await waitFor(() => expect(repository.saveCalls()).toBe(1))
     expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v2'),
+      onboardingPreferences.read('beside-cue-v2-preview-v3'),
     ).toBeUndefined()
 
     saveGate.resolve()
@@ -1086,7 +1086,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       ]),
     )
     expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v2'),
+      onboardingPreferences.read('beside-cue-v2-preview-v3'),
     ).toMatchObject({ outcome: 'finished' })
 
     fireEvent.click(
