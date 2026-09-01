@@ -52,6 +52,12 @@ export const DEV_DOMAIN =
  * a PR preview, and the dev domain — and nothing else. An unrecognised host
  * stays quiet, because a visitor's console is not a debugging surface.
  *
+ * The one addition is the dev-log relay. `vite preview --host` serves the
+ * real bundle to a phone over the LAN, at an IP that matches none of the
+ * above — so the build worth debugging was the one build that said nothing.
+ * The relay is a dev-server plugin behind an env flag; a page carrying its
+ * shim is by construction one a developer is watching.
+ *
  * A function so the rule can be tested; the constant below is the wiring.
  */
 export function isDiagnosticHost(input: {
@@ -60,8 +66,12 @@ export function isDiagnosticHost(input: {
   /** `null` where there is no location at all. */
   hostname: string | null
   devDomain: string
+  /** Whether the dev-log relay's shim is on the page. */
+  hasDevLogRelay?: boolean
 }): boolean {
-  if (input.isDev || input.isPreview) return true
+  if (input.isDev || input.isPreview || input.hasDevLogRelay === true) {
+    return true
+  }
   return input.hostname !== null && input.hostname === input.devDomain
 }
 
@@ -78,6 +88,11 @@ export const IS_DIAGNOSTIC_BUILD: boolean = isDiagnosticHost({
   // workers as well as in the page.
   hostname: globalThis.location?.hostname ?? null,
   devDomain: DEV_DOMAIN,
+  // Set by the relay's shim, which is injected head-prepend — so it is
+  // already there when this module is first evaluated.
+  hasDevLogRelay:
+    (globalThis as { __MP_DEV_LOG_RELAY__?: boolean }).__MP_DEV_LOG_RELAY__ ===
+    true,
 })
 
 /** When set, the app connects to a remote API instead of local IndexedDB. */

@@ -10,6 +10,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
@@ -28,7 +29,8 @@ import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
-import { PREMIUM_FEATURES } from '@/lib/defaults'
+import { IS_DIAGNOSTIC_BUILD, PREMIUM_FEATURES } from '@/lib/defaults'
+import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
@@ -625,6 +627,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // a missed reactive dependency. JSX/effect uses keep reading props.preset.
   // eslint-disable-next-line solid/reactivity
   const isPerformancePreset = props.preset === 'performance'
+
+  // Whether opening a song may start downloading the Whisper model, or has to
+  // wait to be asked. See `shouldPreloadWhisper` for why a phone waits.
+  const eagerWhisper = shouldPreloadWhisper({
+    // Static by design, like `isPerformancePreset` above: `preset` is fixed
+    // for the lifetime of a StemMixer instance, and this is read once on mount.
+    // eslint-disable-next-line solid/reactivity
+    preset: props.preset,
+    deviceClass: deviceClass(),
+  })
 
   // Phone-width viewports get the zen Apple-Music-style stage instead of the
   // desktop mixer — same controllers, different presentation. Width-based
@@ -1984,13 +1996,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Load cached data from IndexedDB in parallel:
     // 1. Whisper transcription (words + timestamps)
     // 2. Pitch analysis (denoised notes)
-    // 3. Initialize whisper service (so re-transcription is possible) — the
-    //    performance preset skips it: its transcription tooling isn't
-    //    reachable there, and the model download is too heavy to pay on a
-    //    landing-page demo.
+    // 3. Initialize whisper service (so re-transcription is possible) — see
+    //    `eagerWhisper` for who skips the eager model download, and why a
+    //    phone is one of them.
     void whisper.loadCachedTranscription()
     void pitchAnalysis.loadCachedAnalysis()
-    if (!isPerformancePreset) whisper.initWhisper()
+    // Named in the log because the model download is the largest allocation
+    // opening a song can make, and it is invisible from the outside: it
+    // happens in a worker, over the network, with no UI. A page that dies
+    // shortly after mounting should say whether it had asked for it.
+    if (IS_DIAGNOSTIC_BUILD) {
+      console.info(
+        `[stem-mixer] whisper eager=${String(eagerWhisper)} device=${deviceClass()} preset=${props.preset ?? 'studio'}`,
+      )
+    }
+    if (eagerWhisper) whisper.initWhisper()
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()

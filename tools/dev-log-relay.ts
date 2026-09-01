@@ -127,6 +127,11 @@ export function parseBatch(body: unknown): DevLogBatch | null {
 export function clientShim(endpoint: string): string {
   return `
 (function () {
+  // Announce the relay before any app module is evaluated. \`IS_DIAGNOSTIC_BUILD\`
+  // reads this: a built bundle served over the LAN is at an IP that matches no
+  // known host, so without it the one build worth debugging is the silent one.
+  window.__MP_DEV_LOG_RELAY__ = true;
+
   var LOAD_ID = Math.random().toString(36).slice(2, 8) + '-' + (Date.now() % 100000);
   var START = Date.now();
   var queue = [];

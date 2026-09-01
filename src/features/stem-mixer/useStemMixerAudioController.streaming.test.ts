@@ -28,6 +28,10 @@ vi.mock('@/lib/device-tier', async (importOriginal) => {
   const actual = await importOriginal<typeof DeviceTier>()
   return {
     ...actual,
+    // The controller asks the session for its verdict rather than
+    // re-classifying, so that `?device=mobile` reaches this path — which
+    // means a test that wants a phone has to answer here.
+    deviceClass: () => deviceClass,
     classifyDevice: () => deviceClass,
     readDeviceProbe: () => ({
       ...actual.readDeviceProbe(),

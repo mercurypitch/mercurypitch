@@ -6,7 +6,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
-import { analysisFps, classifyDevice, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
+import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
 import type { DownloadProgress } from '@/lib/fetch-progress'
 import { aggregateProgress, fetchArrayBufferWithProgress, } from '@/lib/fetch-progress'
 import { rmsOfTimeData } from '@/lib/mic-level'
@@ -506,7 +506,11 @@ export const useStemMixerAudioController = (
   let disposed = false
 
   const probe = readDeviceProbe()
-  const deviceClass = classifyDevice(probe)
+  // The session's verdict, not a fresh `classifyDevice(probe)`. Same answer on
+  // real hardware, but `?device=mobile` only reaches this one — and the
+  // streaming path below is exactly what that override exists to let someone
+  // exercise on a machine that is not a phone.
+  const deviceClass = sessionDeviceClass()
   /**
    * Mobile only. A desktop holds a decoded song without noticing, starts
    * faster from one `decodeAudioData` than from a demux-and-decode pass, and
@@ -692,6 +696,12 @@ export const useStemMixerAudioController = (
       if (!IS_DIAGNOSTIC_BUILD) return
       console.info(`[stem-mixer] ${line}`)
     }
+    // The verdict this whole path hangs on, said once and up front. Without it
+    // a log that goes straight to "decoding" is ambiguous between "this device
+    // is not a phone" and "streaming was tried and could not be done", which
+    // are opposite problems.
+    trace(`device=${deviceClass} streaming=${String(streamStems)}`)
+
     /** Last path segment, which is what tells two stems of one song apart. */
     const stemName = (url: string): string =>
       url.split('?')[0].split('/').filter(Boolean).slice(-1)[0] ?? url

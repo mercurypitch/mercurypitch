@@ -136,6 +136,13 @@ describe('the client shim', () => {
     expect(shim).toContain('new Error')
   })
 
+  it('announces itself, so the app’s own traces turn on with it', () => {
+    // A built bundle served over the LAN is at an IP that matches no host the
+    // diagnostic gate knows, so without this flag the one build worth
+    // debugging is the silent one.
+    expect(shim).toContain('__MP_DEV_LOG_RELAY__ = true')
+  })
+
   it('keeps a pulse, so silence is distinguishable from a stall', () => {
     // A one-second timer firing three seconds late is a blocked main thread,
     // which is a different bug from running out of memory while idle.
