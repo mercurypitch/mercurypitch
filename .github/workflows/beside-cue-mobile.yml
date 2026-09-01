@@ -320,12 +320,26 @@ jobs:
           # uploads of the same version apart.
           version="$(node -p "require('../../package.json').version")"
 
+          # -clonedSourcePackagesDirPath keeps SwiftPM's checkouts inside
+          # the run instead of ~/Library/Caches/org.swift.swiftpm, whose
+          # shared repository cache has failed resolution mid-flight on a
+          # hosted runner:
+          #
+          #   Git command 'git -C .../purchases-hybrid-common-b6416392
+          #   config --get remote.origin.url' failed: fatal: cannot change
+          #   to '...': No such file or directory
+          #
+          # A cache entry the resolver believed in and then could not read.
+          # A run-local directory starts empty every time, so there is
+          # nothing stale to trust. It costs one clean fetch per run, which
+          # is the right trade against an upload that fails at random.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
             -authenticationKeyID "$ASC_KEY_ID" \
