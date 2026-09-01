@@ -63,7 +63,7 @@ describe('GuitarNightAmpControls', () => {
     ).toHaveAttribute('min', '-1')
     expect(
       screen.getByRole('slider', { name: 'Guitar amp output' }),
-    ).toHaveAttribute('aria-valuetext', '0 dB')
+    ).toHaveAttribute('aria-valuetext', '-3 dB')
   })
 
   it('explains the safe Direct-input monitor and never enables it implicitly', () => {
