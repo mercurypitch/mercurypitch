@@ -9,6 +9,7 @@ import type { RangeFit } from '@/games/glass/range-finder'
 import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
+import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
@@ -23,6 +24,7 @@ type PlayPick =
   | 'journey'
   | 'trials'
   | 'cabinet3d'
+  | 'hallway3d'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -115,7 +117,10 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />
           </Show>
-          <Show when={playing() !== 'cabinet3d'}>
+          <Show when={playing() === 'hallway3d'}>
+            <HallwayStage onExit={() => setPlaying(null)} />
+          </Show>
+          <Show when={playing() !== 'cabinet3d' && playing() !== 'hallway3d'}>
             <JourneyPrototype
               variant={playing() === 'trials' ? 'trials' : 'journey'}
               level={levelPick()?.level}
@@ -195,6 +200,33 @@ export function GamesScreen(props: GamesScreenProps) {
             <span class="game-card__blurb">
               One wine glass under one light. Hold the note until it rings, then
               let your voice waver until it goes.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('hallway3d')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Hallway
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              Merc has somewhere to be, and a pane of glass disagrees. Break it
+              for him and walk him through.
             </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">

@@ -25,8 +25,8 @@
 // never against rAF — §7's hard rule, because the audio clock keeps
 // running at full rate when a WebView throttles the frame loop.
 
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import type { SharedAudioLease } from '@/audio/shared-audio-context'
+import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 
 /**
  * Partial ratios for the ring. STK's published struck-vessel set
