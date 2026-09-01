@@ -12,13 +12,14 @@
 // reads. What does not: any rule (that is `sim/`), any drawing (that is
 // `render/Renderer3D.ts`), and the loop itself (`runtime/loop.ts`).
 
-import { midiToNote } from '@irchiinnuss/pitch-engine'
+import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
+import { createGlassTone } from '../audio/glass-tone'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
@@ -58,6 +59,9 @@ export const Stage3D = (props: Stage3DProps) => {
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
   let renderer: ReturnType<typeof createRenderer3D> | null = null
+  // The glass's voice (§7). Built here, started inside the mic gesture --
+  // the same click has to unlock both directions of audio.
+  const tone = createGlassTone(midiToFreq(TARGET_MIDI))
 
   const cfg = WORLD3D_CONFIG
   const target = midiToNote(TARGET_MIDI)
@@ -135,6 +139,7 @@ export const Stage3D = (props: Stage3DProps) => {
       observer.disconnect()
       stopLoop?.()
       driver?.stop()
+      tone.dispose()
       r.dispose()
       renderer = null
     })
@@ -166,6 +171,7 @@ export const Stage3D = (props: Stage3DProps) => {
     let sinceText = TEXT_INTERVAL
     let lastMidi: number | null = null
     let lastWave = false
+    let lastWaveStrength = 0
 
     const tick = (now: number): void => {
       const frameSeconds = (now - last) / 1000
@@ -180,6 +186,7 @@ export const Stage3D = (props: Stage3DProps) => {
             : vib.feed(pitch.tAudio * 1000, pitch.midi)
         lastMidi = pitch?.midi ?? null
         lastWave = wave.active
+        lastWaveStrength = wave.active ? wave.strength : 0
 
         if (launches === null) {
           const broke = stepResonance(
@@ -204,11 +211,13 @@ export const Stage3D = (props: Stage3DProps) => {
               7,
             )
             breakAt = elapsed
+            tone.shatter(acc)
             setGrade(Math.round(acc * 100))
             setBroken(true)
           }
         }
       })
+      tone.update(ring.res, lastWaveStrength)
 
       // Signals are written once a frame, not once a simulation step:
       // the loop runs at 120 Hz and Solid would otherwise be asked to
@@ -262,6 +271,7 @@ export const Stage3D = (props: Stage3DProps) => {
             7,
           )
           breakAt = elapsed
+          tone.shatter(acc)
           setGrade(Math.round(acc * 100))
           setBroken(true)
         },
@@ -281,6 +291,9 @@ export const Stage3D = (props: Stage3DProps) => {
 
   const startMic = async (): Promise<void> => {
     setMicError(null)
+    // Synchronously, inside the gesture: WebKit only unlocks audio for
+    // code still on the click's call stack, and the await below leaves it.
+    tone.start()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
