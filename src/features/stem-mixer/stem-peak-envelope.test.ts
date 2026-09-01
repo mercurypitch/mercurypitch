@@ -8,7 +8,7 @@
 // count's, because the transport maps positions through it.
 
 import { describe, expect, it } from 'vitest'
-import { createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, fillPeakEnvelopeWindow, silentPeakEnvelope, } from './stem-peak-envelope'
+import { analysableBuffer, createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, fillPeakEnvelopeWindow, silentPeakEnvelope, } from './stem-peak-envelope'
 
 const RATE = 48_000
 
@@ -193,6 +193,28 @@ describe('what the canvas gets out of it', () => {
     for (let i = 0; i < columns; i++) {
       expect(Number.isFinite(column(i).max)).toBe(true)
     }
+  })
+})
+
+describe('who is allowed to read a track as audio', () => {
+  const audio = { sampleRate: 48_000 } as AudioBuffer
+
+  it('hands over real samples on the decoded path', () => {
+    expect(analysableBuffer({ buffer: audio })).toBe(audio)
+    expect(analysableBuffer({ buffer: audio, stream: null })).toBe(audio)
+  })
+
+  it('refuses the envelope a streamed stem leaves there', () => {
+    // The whole point. `buffer` is truthy and shaped like audio — it is a
+    // mono AudioBuffer — so every analyser in the app would read it and
+    // return confident nonsense. The phone stage runs one of them by itself
+    // when the singer turns note glyphs on.
+    expect(analysableBuffer({ buffer: audio, stream: {} })).toBeNull()
+  })
+
+  it('has nothing to give before a stem has loaded', () => {
+    expect(analysableBuffer({ buffer: null })).toBeNull()
+    expect(analysableBuffer({ buffer: null, stream: {} })).toBeNull()
   })
 })
 

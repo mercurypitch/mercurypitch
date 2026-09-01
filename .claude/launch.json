@@ -125,26 +125,31 @@
     {
       "name": "jam-lan",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "run-p",
-        "dev:jam",
-        "dev:host"
-      ],
+      "runtimeArgs": ["exec", "run-p", "dev:jam", "dev:host"],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "drum-night",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "cross-env",
-        "VITE_OVERRIDE_ONNX_MODEL=",
-        "vite"
-      ],
+      "runtimeArgs": ["exec", "cross-env", "VITE_OVERRIDE_ONNX_MODEL=", "vite"],
       "port": 3000,
       "url": "https://localhost:3000"
+    },
+    {
+      "name": "app-http-logs-3200",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "cross-env",
+        "MP_DEV_HTTP=1",
+        "MP_DEV_LOGS=1",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite",
+        "--port",
+        "3200",
+        "--strictPort"
+      ],
+      "port": 3200
     },
     {
       "name": "app-prod-lan-logs",

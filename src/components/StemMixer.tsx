@@ -17,6 +17,8 @@ import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
+import { analysableBuffer } from '@/features/stem-mixer/stem-peak-envelope'
+import type { StemStream } from '@/features/stem-mixer/stem-stream-source'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
@@ -143,10 +145,20 @@ interface StemTrack {
   label: string
   url: string
   color: string
+  /**
+   * On the buffered path this is the audio. On the streamed path it is the
+   * waveform's peak envelope and nothing else — see `analysableVocal`.
+   */
   buffer: AudioBuffer | null
   gainNode: GainNode | null
   analyserNode: AnalyserNode | null
   sourceNode: AudioBufferSourceNode | null
+  /**
+   * Set when this stem plays from a decoder instead of a decoded buffer. The
+   * audio controller owns it; everything here needs it only to know that
+   * `buffer` is not audio.
+   */
+  stream?: StemStream | null
   muted: boolean
   soloed: boolean
   volume: number
@@ -1167,11 +1179,36 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.queueCanvasRedraw()
   }
 
+  // ── What the analysers are allowed to read ─────────────────────
+  //
+  // `vocal().buffer` is not always audio. A streamed stem puts a peak
+  // envelope there — a few kHz, one channel, built for the waveform lane to
+  // draw and nothing else (see `stem-peak-envelope.ts`). Playback never
+  // touches it; the stream does that. But a pitch detector, an onset detector
+  // and Whisper would all read it quite happily and return confident nonsense,
+  // so they ask for this instead and get null when there are no real samples.
+  //
+  // Not a hypothetical: the phone stage runs an analysis by itself the first
+  // time the singer turns note glyphs on, and an iPad in landscape is
+  // classified `mobile` and is wide enough to render the whole studio.
+  const vocalIsStreamed = (): boolean => vocal().stream != null
+  const analysableVocal = (): AudioBuffer | null => analysableBuffer(vocal())
+
+  /** Say why an analysis cannot run here. True when it cannot. */
+  const refuseStreamedAnalysis = (): boolean => {
+    if (!vocalIsStreamed()) return false
+    showNotification(
+      'This device streams the song to stay within memory, and vocal analysis needs the whole thing decoded. Open this song on a computer to analyse it.',
+      'warning',
+    )
+    return true
+  }
+
   // ── Pitch Analysis controller ──────────────────────────────────
   const pitchAnalysis = useStemMixerPitchAnalysisController({
     // eslint-disable-next-line solid/reactivity
     sessionId: props.sessionId,
-    vocalBuffer: () => vocal().buffer,
+    vocalBuffer: () => analysableVocal(),
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
     setPitchHistory: (h) => {
       audio.setPitchHistory(h)
@@ -1210,7 +1247,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     createPersistedSignal<boolean>('pitchperfect_show_score_diff_bars', false)
 
   const whisper = useWhisperTranscription({
-    getAudioBuffer: () => vocal().buffer,
+    getAudioBuffer: () => analysableVocal(),
     logTag: 'StemMixer',
     // eslint-disable-next-line solid/reactivity
     sessionId: props.sessionId,
@@ -1721,7 +1758,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // One click: detect onsets on the separated vocal stem and time every
   // lyric word automatically (docs/plans/lyrics-word-sync.md).
   const autoSyncWords = () => {
-    const buf = vocal().buffer
+    if (refuseStreamedAnalysis()) return
+    const buf = analysableVocal()
     if (!buf) {
       showNotification(
         'Wait for the song to finish loading, then try again',
@@ -2157,6 +2195,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
   const ensureZenNotes = () => {
+    // Nobody asked for this one — the glyph toggle did — so it stays quiet
+    // rather than toasting a limitation at a singer who was reaching for a
+    // switch. The glyphs simply have nothing to draw.
+    if (vocalIsStreamed()) return
     const hasNotes =
       pitchAnalysis.offlineSegmentedNotes().length > 0 ||
       pitchAnalysis.offlineMergedNotes().length > 0
@@ -2166,6 +2208,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const startWhisperTranscription = () => {
+    if (refuseStreamedAnalysis()) return
     // If pitch analysis hasn't been run yet, run it first with default
     // settings so the alignment has notes to work with.
     const hasPitchData =
@@ -3029,6 +3072,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 canvas.queueCanvasRedraw()
               }}
               runAnalysis={() => {
+                if (refuseStreamedAnalysis()) return
                 void pitchAnalysis.runAnalysis().then(() => {
                   // After re-analysis with new settings, auto re-run whisper
                   // transcription so alignment stays in sync

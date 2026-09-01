@@ -171,6 +171,24 @@ export function fillPeakEnvelopeWindow(
 }
 
 /**
+ * The other half of the bargain above: the drawing consumers read
+ * `track.buffer` and cannot tell an envelope from audio, which is the point —
+ * but the *analysing* consumers must not be fooled. A pitch detector, an
+ * onset detector and Whisper will all read a 4 kHz mono envelope without
+ * complaint and return confident nonsense.
+ *
+ * So anything that wants samples asks through here and gets `null` when there
+ * are none, rather than reaching for `.buffer` and hoping.
+ */
+export function analysableBuffer(
+  track: Readonly<{ buffer: AudioBuffer | null; stream?: unknown }>,
+): AudioBuffer | null {
+  // A stream means playback comes from a decoder and `buffer` is the envelope.
+  if (track.stream != null) return null
+  return track.buffer
+}
+
+/**
  * Wraps an envelope as a mono AudioBuffer, which is what every existing
  * consumer of `track.buffer` already knows how to read.
  */
