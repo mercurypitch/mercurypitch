@@ -428,6 +428,7 @@ export function humanizeDrumEvents(
   return events.map((event) => {
     const instrument = instrumentClass(event.articulation)
     const index = noiseIndex(event)
+    const ornamentBar = locked ? 0 : event.bar
     const swing = swingShiftMs(options.style, event.step, options.tempoBpm)
 
     const measured = measuredProfileCell(
@@ -483,7 +484,7 @@ export function humanizeDrumEvents(
       event.accent === true &&
       event.articulation === 'snare' &&
       flamProb > 0 &&
-      uniform(options.seed, STREAM_FLAM, event.bar, event.step) <
+      uniform(options.seed, STREAM_FLAM, ornamentBar, event.step) <
         flamProb * intensity
     ) {
       const measuredLead = measuredStyleData?.flamLeadMs?.[0]
@@ -493,7 +494,8 @@ export function humanizeDrumEvents(
           : 25
       const lead =
         leadCenter +
-        (uniform(options.seed, STREAM_FLAM, event.bar, event.step, 7) * 2 - 1) *
+        (uniform(options.seed, STREAM_FLAM, ornamentBar, event.step, 7) * 2 -
+          1) *
           10
       ornaments.push({
         kind: 'flam',

@@ -27,6 +27,7 @@ import { createGuitarNightScoreVoiceCommands } from './guitar-night-score-voice-
 import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
 import { GuitarNightAmpControls } from './GuitarNightAmpControls'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightDrumSoundControls } from './GuitarNightDrumSoundControls'
 import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightInputNotice } from './GuitarNightInputNotice'
@@ -1986,6 +1987,10 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                     </span>
                   </button>
                 </div>
+
+                <GuitarNightDrumSoundControls
+                  disabled={takeIsActive() || room.status() === 'starting'}
+                />
 
                 <div class={styles.scoreSessionLoop}>
                   <div>

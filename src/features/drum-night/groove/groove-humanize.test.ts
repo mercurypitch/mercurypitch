@@ -90,6 +90,50 @@ describe('humanizeDrumEvents', () => {
     )
   })
 
+  it('locks flam decisions and grace-note timing across loop passes', () => {
+    const accentedSnare = (bar: number): HumanizeInputEvent[] => [
+      {
+        articulation: 'snare',
+        bar,
+        step: 4,
+        velocity: 112,
+        accent: true,
+      },
+    ]
+    let seedWithFlam: number | null = null
+    for (let seed = 1; seed <= 500; seed += 1) {
+      const [event] = humanizeDrumEvents(
+        accentedSnare(0),
+        options({ style: 'jazz', intensity: 1, locked: true, seed }),
+      )
+      if ((event?.ornaments.length ?? 0) > 0) {
+        seedWithFlam = seed
+        break
+      }
+    }
+
+    expect(seedWithFlam).not.toBeNull()
+    const firstLap = humanizeDrumEvents(
+      accentedSnare(0),
+      options({
+        style: 'jazz',
+        intensity: 1,
+        locked: true,
+        seed: seedWithFlam!,
+      }),
+    )
+    const laterLap = humanizeDrumEvents(
+      accentedSnare(7),
+      options({
+        style: 'jazz',
+        intensity: 1,
+        locked: true,
+        seed: seedWithFlam!,
+      }),
+    )
+    expect(laterLap).toEqual(firstLap)
+  })
+
   it('respects the asymmetric style clamps plus swing', () => {
     const profile = HUMANIZE_STYLE_PROFILES.funk
     for (let seed = 1; seed <= 20; seed += 1) {

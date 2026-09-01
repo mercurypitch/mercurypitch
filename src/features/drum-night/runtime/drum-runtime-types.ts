@@ -32,6 +32,7 @@ export interface DrumKitTrigger {
 export type DrumKitTriggerOutcome =
   | 'dropped'
   | 'sampled'
+  | 'synthesized'
   | 'synth-fallback'
   | 'unmapped'
 

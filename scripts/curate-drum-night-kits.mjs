@@ -17,6 +17,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { serializeDrumKitCatalogProjections, serializeDrumKitGeneratedJson, } from './drum-kit-catalog-projections.mjs'
+import { DRUM_KIT_OPUS_BITRATE, DRUM_KIT_OPUS_CHANNELS, DRUM_KIT_OPUS_MIME_TYPE, DRUM_KIT_OPUS_SAMPLE_RATE, encodeDrumKitOpusCatalog, verifyDrumKitOpusCatalog, } from './drum-kit-opus.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repo = resolve(scriptDir, '..')
@@ -24,6 +26,14 @@ const publicRoot = resolve(repo, 'public/drum-night/kits')
 const generatedCatalogPath = resolve(
   repo,
   'src/features/drum-night/audio/drum-kit-resources.generated.json',
+)
+const generatedRuntimeProjectionPath = resolve(
+  repo,
+  'src/features/drum-night/audio/drum-kit-runtime.generated.json',
+)
+const generatedOpusProjectionPath = resolve(
+  repo,
+  'src/features/drum-night/audio/drum-kit-opus.generated.json',
 )
 const publishPlanPath = resolve(publicRoot, 'publish-plan.json')
 const sonivoxPath = resolve(
@@ -1027,7 +1037,7 @@ function validateCalibration(resources) {
 function generatedCatalog(resources) {
   const grouped = Object.groupBy(resources, (resource) => resource.kitId)
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedBy: 'scripts/curate-drum-night-kits.mjs',
     toolchain: {
       ffmpeg: EXPECTED_FFMPEG_VERSION,
@@ -1091,11 +1101,22 @@ function generatedCatalog(resources) {
   }
 }
 
-function writeCatalog(catalog, sourceCatalogPath, outputRoot) {
-  const serialized = `${JSON.stringify(catalog, null, 2)}\n`
+async function writeGeneratedMetadata(
+  catalog,
+  sourceCatalogPath,
+  runtimeProjectionPath,
+  opusProjectionPath,
+  outputRoot,
+) {
+  const [serialized, projections] = await Promise.all([
+    serializeDrumKitGeneratedJson(catalog),
+    serializeDrumKitCatalogProjections(catalog),
+  ])
   ensureDirectory(dirname(sourceCatalogPath))
   ensureDirectory(outputRoot)
   writeFileSync(sourceCatalogPath, serialized)
+  writeFileSync(runtimeProjectionPath, projections.runtime)
+  writeFileSync(opusProjectionPath, projections.opus)
   writeFileSync(resolve(outputRoot, 'catalog.json'), serialized)
 }
 
@@ -1123,7 +1144,7 @@ function assertPublishableObjectKey(objectKey) {
     /^(classic-gm|studio|live)\/LICENSE\.md$/.test(objectKey) ||
     objectKey === 'classic-gm/APACHE-2.0.txt' ||
     objectKey === 'classic-gm/SONIVOX-NOTICE.txt' ||
-    /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/.test(
+    /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:mp3|opus)$/.test(
       objectKey,
     )
   ) {
@@ -1143,11 +1164,13 @@ function publishPlanData(outputRoot) {
       const mimeType =
         path.endsWith('.mp3') === true
           ? 'audio/mpeg'
-          : path.endsWith('.json') === true
-            ? 'application/json'
-            : path.endsWith('.txt') === true
-              ? 'text/plain; charset=utf-8'
-              : 'text/markdown; charset=utf-8'
+          : path.endsWith('.opus') === true
+            ? DRUM_KIT_OPUS_MIME_TYPE
+            : path.endsWith('.json') === true
+              ? 'application/json'
+              : path.endsWith('.txt') === true
+                ? 'text/plain; charset=utf-8'
+                : 'text/markdown; charset=utf-8'
       return {
         objectKey,
         localPath: relative(repo, resolve(publicRoot, objectKey)).replaceAll(
@@ -1158,7 +1181,7 @@ function publishPlanData(outputRoot) {
         sha256: sha256(data),
         mimeType,
         cacheControl:
-          path.endsWith('.mp3') === true
+          path.endsWith('.mp3') === true || path.endsWith('.opus') === true
             ? CACHE_CONTROL
             : 'public, max-age=300',
       }
@@ -1203,31 +1226,59 @@ function copyStaticPublicFiles(outputRoot) {
   }
 }
 
-function installCuratedTree(stagedPublicRoot, stagedSourceCatalogPath) {
+function installCuratedTree(stagedPublicRoot, stagedSourceFiles) {
   const backupPublicRoot = resolve(
     dirname(publicRoot),
     `.drum-kits-backup-${process.pid}`,
+  )
+  const sourceFiles = stagedSourceFiles.map(
+    ({ stagedPath, destinationPath }) => ({
+      stagedPath,
+      destinationPath,
+      backupPath: `${destinationPath}.backup-${process.pid}`,
+      backedUp: false,
+      installed: false,
+    }),
   )
   if (existsSync(backupPublicRoot)) {
     throw new Error(
       `Refusing to overwrite transaction backup: ${backupPublicRoot}`,
     )
   }
+  for (const file of sourceFiles) {
+    if (!existsSync(file.stagedPath) || existsSync(file.backupPath)) {
+      throw new Error(
+        `Missing staged metadata or stale transaction backup: ${file.destinationPath}`,
+      )
+    }
+  }
   let originalMoved = false
   let stagedInstalled = false
   try {
     renameSync(publicRoot, backupPublicRoot)
     originalMoved = true
+    for (const file of sourceFiles) {
+      if (!existsSync(file.destinationPath)) continue
+      renameSync(file.destinationPath, file.backupPath)
+      file.backedUp = true
+    }
     renameSync(stagedPublicRoot, publicRoot)
     stagedInstalled = true
-    renameSync(stagedSourceCatalogPath, generatedCatalogPath)
+    for (const file of sourceFiles) {
+      renameSync(file.stagedPath, file.destinationPath)
+      file.installed = true
+    }
   } catch (error) {
+    for (const file of [...sourceFiles].reverse()) {
+      if (file.installed === true && existsSync(file.destinationPath)) {
+        renameSync(file.destinationPath, file.stagedPath)
+      }
+      if (file.backedUp === true && existsSync(file.backupPath)) {
+        renameSync(file.backupPath, file.destinationPath)
+      }
+    }
     if (stagedInstalled && existsSync(publicRoot)) {
-      const failedRoot = resolve(
-        dirname(stagedPublicRoot),
-        `failed-kits-${process.pid}`,
-      )
-      renameSync(publicRoot, failedRoot)
+      renameSync(publicRoot, stagedPublicRoot)
     }
     if (originalMoved && existsSync(backupPublicRoot)) {
       renameSync(backupPublicRoot, publicRoot)
@@ -1235,6 +1286,9 @@ function installCuratedTree(stagedPublicRoot, stagedSourceCatalogPath) {
     throw error
   }
   rmSync(backupPublicRoot, { recursive: true, force: true })
+  for (const file of sourceFiles) {
+    rmSync(file.backupPath, { force: true })
+  }
 }
 
 function assertRequiredPublicFiles(outputRoot) {
@@ -1298,9 +1352,31 @@ function assertResourceProvenance(resource, zone) {
   }
 }
 
-function verifyCatalog({
+async function verifyGeneratedProjections(
+  catalog,
+  runtimeProjectionPath,
+  opusProjectionPath,
+) {
+  const projections = await serializeDrumKitCatalogProjections(catalog)
+  if (
+    !existsSync(runtimeProjectionPath) ||
+    readFileSync(runtimeProjectionPath, 'utf8') !== projections.runtime
+  ) {
+    throw new Error('Generated Drum Night runtime projection drifted')
+  }
+  if (
+    !existsSync(opusProjectionPath) ||
+    readFileSync(opusProjectionPath, 'utf8') !== projections.opus
+  ) {
+    throw new Error('Generated Drum Night Opus projection drifted')
+  }
+}
+
+async function verifyCatalog({
   outputRoot = publicRoot,
   sourceCatalogPath = generatedCatalogPath,
+  runtimeProjectionPath = generatedRuntimeProjectionPath,
+  opusProjectionPath = generatedOpusProjectionPath,
   requirePublishPlan = true,
 } = {}) {
   assertRequiredPublicFiles(outputRoot)
@@ -1331,7 +1407,7 @@ function verifyCatalog({
   }
   const catalog = JSON.parse(generated.toString('utf8'))
   if (
-    catalog.schemaVersion !== 1 ||
+    catalog.schemaVersion !== 2 ||
     catalog.toolchain?.ffmpeg !== EXPECTED_FFMPEG_VERSION ||
     catalog.toolchain?.fluidsynth !== EXPECTED_FLUIDSYNTH_VERSION ||
     catalog.toolchain?.fluidsynthChorus !== false ||
@@ -1342,6 +1418,17 @@ function verifyCatalog({
     catalog.audio?.sampleRate !== SAMPLE_RATE ||
     catalog.audio?.channels !== CHANNELS ||
     catalog.audio?.bitrate !== BITRATE ||
+    catalog.audio?.formats?.mp3?.mimeType !== 'audio/mpeg' ||
+    catalog.audio?.formats?.mp3?.sampleRate !== SAMPLE_RATE ||
+    catalog.audio?.formats?.mp3?.channels !== CHANNELS ||
+    catalog.audio?.formats?.mp3?.bitrate !== BITRATE ||
+    catalog.audio?.formats?.opus?.mimeType !== DRUM_KIT_OPUS_MIME_TYPE ||
+    catalog.audio?.formats?.opus?.sampleRate !== DRUM_KIT_OPUS_SAMPLE_RATE ||
+    catalog.audio?.formats?.opus?.channels !== DRUM_KIT_OPUS_CHANNELS ||
+    catalog.audio?.formats?.opus?.bitrate !== DRUM_KIT_OPUS_BITRATE ||
+    catalog.audio?.formats?.opus?.vbr !== true ||
+    catalog.audio?.formats?.opus?.application !== 'audio' ||
+    catalog.audio?.formats?.opus?.frameDurationMs !== 20 ||
     catalog.calibration?.hardOnsetThresholdDb !== HARD_ONSET_THRESHOLD_DB ||
     catalog.calibration?.transientFloorDb !== TRANSIENT_FLOOR_DB ||
     catalog.calibration?.transientRelativeDb !== TRANSIENT_RELATIVE_DB ||
@@ -1360,6 +1447,11 @@ function verifyCatalog({
       'Drum Night catalog toolchain or calibration metadata drifted',
     )
   }
+  await verifyGeneratedProjections(
+    catalog,
+    runtimeProjectionPath,
+    opusProjectionPath,
+  )
 
   let totalBytes = 0
   const analyzedResources = []
@@ -1436,19 +1528,26 @@ function verifyCatalog({
     rmSync(verificationDirectory, { recursive: true, force: true })
   }
 
-  const unreferencedMp3s = listFiles(outputRoot).filter((path) => {
-    if (path.endsWith('.mp3') !== true) return false
+  const opusTotalsByKit = verifyDrumKitOpusCatalog(catalog, outputRoot)
+
+  const unreferencedAudio = listFiles(outputRoot).filter((path) => {
+    if (path.endsWith('.mp3') !== true && path.endsWith('.opus') !== true) {
+      return false
+    }
     const relativePath = relative(outputRoot, path).replaceAll('\\', '/')
     return (
       Object.values(catalog.kits).some(
         (kit) =>
-          kit.resources.some((resource) => resource.path === relativePath) ===
-          true,
+          kit.resources.some((resource) =>
+            Object.values(resource.formats ?? {}).some(
+              (format) => format?.path === relativePath,
+            ),
+          ) === true,
       ) === false
     )
   })
-  if (unreferencedMp3s.length > 0) {
-    throw new Error(`Unreferenced kit assets: ${unreferencedMp3s.join(', ')}`)
+  if (unreferencedAudio.length > 0) {
+    throw new Error(`Unreferenced kit assets: ${unreferencedAudio.join(', ')}`)
   }
   if (requirePublishPlan) {
     const outputPlanPath = resolve(outputRoot, 'publish-plan.json')
@@ -1463,12 +1562,12 @@ function verifyCatalog({
       )
     }
   }
-  return { catalog, totalBytes }
+  return { catalog, opusTotalsByKit, totalBytes }
 }
 
 if (checkOnly) {
   assertExpectedToolchain()
-  const result = verifyCatalog()
+  const result = await verifyCatalog()
   globalThis.console.log(
     `verified ${result.totalBytes} encoded bytes across four Drum Night kit manifests`,
   )
@@ -1477,9 +1576,9 @@ if (checkOnly) {
 
 if (planOnly) {
   assertExpectedToolchain()
-  verifyCatalog({ requirePublishPlan: false })
+  await verifyCatalog({ requirePublishPlan: false })
   const plan = makePublishPlan(publicRoot)
-  verifyCatalog()
+  await verifyCatalog()
   globalThis.console.log(
     `wrote ${relative(repo, publishPlanPath)} with ${plan.objects.length} inert upload records`,
   )
@@ -1508,6 +1607,14 @@ const stagedSourceCatalogPath = resolve(
   stagingDirectory,
   'drum-kit-resources.generated.json',
 )
+const stagedRuntimeProjectionPath = resolve(
+  stagingDirectory,
+  'drum-kit-runtime.generated.json',
+)
+const stagedOpusProjectionPath = resolve(
+  stagingDirectory,
+  'drum-kit-opus.generated.json',
+)
 try {
   copyStaticPublicFiles(stagedPublicRoot)
   const resources = []
@@ -1519,18 +1626,45 @@ try {
     resources.push(await curateZone(zone, workDirectory, stagedPublicRoot))
   }
   const calibratedResources = calibrateResources(resources)
-  const catalog = generatedCatalog(calibratedResources)
-  writeCatalog(catalog, stagedSourceCatalogPath, stagedPublicRoot)
+  const { catalog } = encodeDrumKitOpusCatalog(
+    generatedCatalog(calibratedResources),
+    {
+      inputRoot: stagedPublicRoot,
+      outputRoot: stagedPublicRoot,
+    },
+  )
+  await writeGeneratedMetadata(
+    catalog,
+    stagedSourceCatalogPath,
+    stagedRuntimeProjectionPath,
+    stagedOpusProjectionPath,
+    stagedPublicRoot,
+  )
   copyFileSync(
     sonivoxLicensePath,
     resolve(stagedPublicRoot, 'classic-gm/SONIVOX-NOTICE.txt'),
   )
   makePublishPlan(stagedPublicRoot)
-  const result = verifyCatalog({
+  const result = await verifyCatalog({
     outputRoot: stagedPublicRoot,
     sourceCatalogPath: stagedSourceCatalogPath,
+    runtimeProjectionPath: stagedRuntimeProjectionPath,
+    opusProjectionPath: stagedOpusProjectionPath,
   })
-  installCuratedTree(stagedPublicRoot, stagedSourceCatalogPath)
+  installCuratedTree(stagedPublicRoot, [
+    {
+      stagedPath: stagedSourceCatalogPath,
+      destinationPath: generatedCatalogPath,
+    },
+    {
+      stagedPath: stagedRuntimeProjectionPath,
+      destinationPath: generatedRuntimeProjectionPath,
+    },
+    {
+      stagedPath: stagedOpusProjectionPath,
+      destinationPath: generatedOpusProjectionPath,
+    },
+  ])
   globalThis.console.log(
     `curated, transactionally installed, and verified ${calibratedResources.length} resources (${result.totalBytes} encoded bytes)`,
   )

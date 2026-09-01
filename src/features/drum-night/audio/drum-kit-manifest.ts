@@ -1,22 +1,45 @@
 // ============================================================
-// Drum kit manifest — four licensed flavors behind one immutable asset map
+// Drum kit manifest — five licensed flavors behind one immutable asset map
 // ============================================================
 //
-// The generated resource catalog is small metadata, not audio. It is safe to
-// inspect on first paint; only the player may resolve and fetch its MP3 paths.
+// First paint receives only the compact MP3 runtime projection. The canonical
+// provenance and multi-format catalog stays an audited build artifact, while
+// Opus metadata is loaded only after the gesture-owned capability probe.
 
 import type { DrumVoiceId } from '@/lib/drum-voices'
-import generatedCatalog from './drum-kit-resources.generated.json'
+import type * as CatalogSchema from './drum-kit-catalog-schema'
+import { DRUM_KIT_CATALOG_SCHEMA_VERSION, DRUM_KIT_IDS, } from './drum-kit-catalog-schema'
+import runtimeCatalog from './drum-kit-runtime.generated.json'
 
-export const DRUM_KIT_IDS = Object.freeze([
-  'mercury-synth',
-  'classic-gm',
-  'studio',
-  'live',
-] as const)
+export * from './drum-kit-catalog-schema'
 
-export type DrumKitId = (typeof DRUM_KIT_IDS)[number]
-export type DrumKitEngine = 'sampled' | 'synth'
+type DrumKitId = CatalogSchema.DrumKitId
+type DrumKitEngine = CatalogSchema.DrumKitEngine
+type DrumKitSynthModel = CatalogSchema.DrumKitSynthModel
+type DrumKitSampleResource = CatalogSchema.DrumKitSampleResource
+type DrumKitVelocityCurves = CatalogSchema.DrumKitVelocityCurves
+type DrumVelocityCurve = CatalogSchema.DrumVelocityCurve
+type SampledDrumKitId = CatalogSchema.SampledDrumKitId
+
+type RuntimeDrumKitSampleResource = Omit<
+  CatalogSchema.DrumKitSampleResource,
+  'formats'
+>
+
+interface RuntimeDrumKit {
+  readonly version: string
+  readonly publishedEncodedBytes: number
+  readonly resources: readonly RuntimeDrumKitSampleResource[]
+  readonly velcurve?: DrumKitVelocityCurves
+}
+
+interface RuntimeDrumKitCatalog {
+  readonly schemaVersion: 1
+  readonly catalogSchemaVersion: number
+  readonly kits: Readonly<
+    Record<SampledDrumKitId | 'mercury-synth', RuntimeDrumKit>
+  >
+}
 
 export interface DrumKitLicense {
   readonly name: string
@@ -29,157 +52,217 @@ export interface DrumKitLicense {
   readonly shareAlike: boolean
 }
 
-export interface DrumKitSourceProvenance {
-  readonly commit: string
-  readonly path: string
-  readonly sha256: string
-  readonly transforms: string
-}
-
-export interface DrumKitSampleResource {
-  readonly id: string
-  readonly kitId: Exclude<DrumKitId, 'mercury-synth'>
-  readonly articulation: DrumVoiceId
-  readonly gmKeys: readonly number[]
-  readonly velocityMin: number
-  readonly velocityMax: number
-  readonly roundRobin: number
-  readonly chokeGroup: string | null
-  readonly chokes: readonly string[]
-  /** Content-hashed object key relative to the configured kit asset base. */
-  readonly path: string
-  readonly mimeType: 'audio/mpeg'
-  readonly encodedBytes: number
-  readonly sha256: string
-  /** Curator-measured linear gain applied before the live velocity curve. */
-  readonly playbackGain: number
-  readonly source: DrumKitSourceProvenance
-}
-
 export interface DrumKitManifest {
   readonly id: DrumKitId
   readonly name: string
   readonly character: string
   readonly engine: DrumKitEngine
+  readonly synthModel: DrumKitSynthModel | null
   readonly version: string
   readonly license: DrumKitLicense
   readonly resources: readonly DrumKitSampleResource[]
   readonly publishedEncodedBytes: number
   readonly optionalDownload: boolean
+  readonly velcurve?: DrumKitVelocityCurves
 }
 
-interface GeneratedKit {
-  readonly version: string
-  readonly publishedEncodedBytes: number
-  readonly resources: readonly DrumKitSampleResource[]
-}
-
-interface GeneratedCatalog {
-  readonly schemaVersion: number
-  readonly kits: Readonly<Record<DrumKitId, GeneratedKit>>
-}
-
-const GENERATED = generatedCatalog as unknown as GeneratedCatalog
-const MAX_ENCODED_RESOURCE_BYTES = 2 * 1024 * 1024
-const HASHED_RESOURCE_PATH =
+const RUNTIME_KIT_IDS = Object.freeze([
+  'mercury-synth',
+  'classic-gm',
+  'studio',
+  'live',
+] as const)
+const RUNTIME_RESOURCE_PATH =
   /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
 const SHA256 = /^[a-f0-9]{64}$/
-const RESOURCE_ID = /^(classic-gm|studio|live):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
-const MIN_PLAYBACK_GAIN = 10 ** (-12 / 20)
-const MAX_PLAYBACK_GAIN = 10 ** (12 / 20)
-const PLAYBACK_GAIN_ROUNDING_TOLERANCE = 1e-8
 
-function assertGeneratedCatalog(catalog: GeneratedCatalog): void {
-  if (catalog.schemaVersion !== 1) {
-    throw new Error('Unsupported Drum Night kit catalog schema')
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  allowed: ReadonlySet<string>,
+): boolean {
+  return Object.keys(value).every((key) => allowed.has(key))
+}
+
+/** Keep committed runtime paths fail-closed without pulling the audit parser into first paint. */
+function assertRuntimeDrumKitCatalog(
+  value: unknown,
+): asserts value is RuntimeDrumKitCatalog {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    value.catalogSchemaVersion !== DRUM_KIT_CATALOG_SCHEMA_VERSION ||
+    !isRecord(value.kits) ||
+    !hasOnlyKeys(
+      value,
+      new Set(['schemaVersion', 'catalogSchemaVersion', 'kits']),
+    ) ||
+    !hasOnlyKeys(value.kits, new Set(RUNTIME_KIT_IDS))
+  ) {
+    throw new Error('Invalid Drum Night runtime catalog')
   }
+
   const resourceIds = new Set<string>()
   const resourcePaths = new Set<string>()
-  for (const kitId of DRUM_KIT_IDS) {
-    const kit = catalog.kits[kitId]
-    if (kit === undefined || !/^v[1-9]\d*$/.test(kit.version)) {
-      throw new Error(`Invalid Drum Night kit metadata: ${kitId}`)
-    }
+  for (const kitId of RUNTIME_KIT_IDS) {
+    const kit = value.kits[kitId]
     if (
+      !isRecord(kit) ||
+      !hasOnlyKeys(
+        kit,
+        new Set(['version', 'publishedEncodedBytes', 'resources', 'velcurve']),
+      ) ||
+      typeof kit.version !== 'string' ||
+      !/^v[1-9]\d*$/.test(kit.version) ||
       !Number.isSafeInteger(kit.publishedEncodedBytes) ||
-      kit.publishedEncodedBytes < 0
+      (kit.publishedEncodedBytes as number) < 0 ||
+      !Array.isArray(kit.resources)
     ) {
-      throw new Error(`Invalid Drum Night kit byte count: ${kitId}`)
+      throw new Error(`Invalid Drum Night runtime kit: ${kitId}`)
     }
     if (kitId === 'mercury-synth') {
       if (kit.resources.length !== 0 || kit.publishedEncodedBytes !== 0) {
-        throw new Error('Mercury Synth must remain a zero-download kit')
+        throw new Error('Mercury Synth runtime kit must remain zero-download')
       }
       continue
     }
+
     let encodedBytes = 0
     for (const resource of kit.resources) {
-      const expectedPathPrefix = `${kitId}/${kit.version}/`
-      const expectedHashPrefix = resource.sha256.slice(0, 16)
-      const fileName = resource.path.slice(resource.path.lastIndexOf('/') + 1)
       if (
-        resource.kitId !== kitId ||
-        !RESOURCE_ID.test(resource.id) ||
+        !isRecord(resource) ||
+        !hasOnlyKeys(
+          resource,
+          new Set([
+            'id',
+            'kitId',
+            'articulation',
+            'gmKeys',
+            'velocityMin',
+            'velocityMax',
+            'roundRobin',
+            'chokeGroup',
+            'chokes',
+            'path',
+            'mimeType',
+            'encodedBytes',
+            'sha256',
+            'power',
+            'playbackGain',
+          ]),
+        ) ||
+        typeof resource.id !== 'string' ||
         !resource.id.startsWith(`${kitId}:`) ||
-        !HASHED_RESOURCE_PATH.test(resource.path) ||
-        !resource.path.startsWith(expectedPathPrefix) ||
-        !fileName.startsWith(`${expectedHashPrefix}-`) ||
-        !SHA256.test(resource.sha256) ||
-        resource.mimeType !== 'audio/mpeg' ||
-        !Number.isSafeInteger(resource.encodedBytes) ||
-        resource.encodedBytes <= 0 ||
-        resource.encodedBytes > MAX_ENCODED_RESOURCE_BYTES ||
+        resource.kitId !== kitId ||
+        typeof resource.articulation !== 'string' ||
+        !Array.isArray(resource.gmKeys) ||
         resource.gmKeys.length === 0 ||
         resource.gmKeys.some(
           (gmKey) => !Number.isInteger(gmKey) || gmKey < 35 || gmKey > 81,
         ) ||
         !Number.isInteger(resource.velocityMin) ||
         !Number.isInteger(resource.velocityMax) ||
-        resource.velocityMin < 1 ||
-        resource.velocityMax > 127 ||
-        resource.velocityMin > resource.velocityMax ||
+        (resource.velocityMin as number) < 1 ||
+        (resource.velocityMax as number) > 127 ||
+        (resource.velocityMin as number) > (resource.velocityMax as number) ||
         !Number.isInteger(resource.roundRobin) ||
-        resource.roundRobin < 1 ||
+        (resource.roundRobin as number) < 1 ||
+        (resource.chokeGroup !== null &&
+          (typeof resource.chokeGroup !== 'string' ||
+            resource.chokeGroup.trim() === '')) ||
+        !Array.isArray(resource.chokes) ||
+        resource.chokes.some(
+          (choke) => typeof choke !== 'string' || choke.trim() === '',
+        ) ||
+        typeof resource.path !== 'string' ||
+        !RUNTIME_RESOURCE_PATH.test(resource.path) ||
+        !resource.path.startsWith(`${kitId}/${kit.version}/`) ||
+        resource.mimeType !== 'audio/mpeg' ||
+        !Number.isSafeInteger(resource.encodedBytes) ||
+        (resource.encodedBytes as number) <= 0 ||
+        typeof resource.sha256 !== 'string' ||
+        !SHA256.test(resource.sha256) ||
+        !resource.path
+          .slice(resource.path.lastIndexOf('/') + 1)
+          .startsWith(`${resource.sha256.slice(0, 16)}-`) ||
+        (resource.power !== undefined &&
+          (!Number.isFinite(resource.power) ||
+            (resource.power as number) <= 0 ||
+            (resource.power as number) > 1)) ||
         !Number.isFinite(resource.playbackGain) ||
-        resource.playbackGain <
-          MIN_PLAYBACK_GAIN - PLAYBACK_GAIN_ROUNDING_TOLERANCE ||
-        resource.playbackGain >
-          MAX_PLAYBACK_GAIN + PLAYBACK_GAIN_ROUNDING_TOLERANCE ||
-        !SHA256.test(resource.source.sha256) ||
-        resource.source.commit.trim() === '' ||
-        resource.source.path.trim() === '' ||
-        resource.source.transforms.trim() === ''
+        (resource.playbackGain as number) <= 0 ||
+        resourceIds.has(resource.id) ||
+        resourcePaths.has(resource.path)
       ) {
-        throw new Error(`Invalid Drum Night kit resource: ${resource.id}`)
-      }
-      if (resourceIds.has(resource.id) || resourcePaths.has(resource.path)) {
-        throw new Error(`Duplicate Drum Night kit resource: ${resource.id}`)
+        throw new Error(
+          `Invalid Drum Night runtime resource: ${String(resource.id)}`,
+        )
       }
       resourceIds.add(resource.id)
       resourcePaths.add(resource.path)
-      encodedBytes += resource.encodedBytes
+      encodedBytes += resource.encodedBytes as number
     }
     if (encodedBytes !== kit.publishedEncodedBytes) {
-      throw new Error(`Drum Night kit byte total mismatch: ${kitId}`)
+      throw new Error(`Drum Night runtime byte total mismatch: ${kitId}`)
     }
   }
 }
 
-assertGeneratedCatalog(GENERATED)
+const GENERATED_VALUE: unknown = runtimeCatalog
+assertRuntimeDrumKitCatalog(GENERATED_VALUE)
+const GENERATED = GENERATED_VALUE
 
 function immutableResources(
-  kitId: Exclude<DrumKitId, 'mercury-synth'>,
+  kitId: SampledDrumKitId,
 ): readonly DrumKitSampleResource[] {
   return Object.freeze(
-    GENERATED.kits[kitId].resources.map((resource) =>
-      Object.freeze({
+    GENERATED.kits[kitId].resources.map((resource) => {
+      return Object.freeze({
         ...resource,
         gmKeys: Object.freeze([...resource.gmKeys]),
         chokes: Object.freeze([...resource.chokes]),
-        source: Object.freeze({ ...resource.source }),
-      }),
+        formats: Object.freeze({
+          mp3: Object.freeze({
+            path: resource.path,
+            mimeType: resource.mimeType,
+            encodedBytes: resource.encodedBytes,
+            sha256: resource.sha256,
+          }),
+        }),
+      })
+    }),
+  )
+}
+
+function immutableVelocityCurve(curve: DrumVelocityCurve): DrumVelocityCurve {
+  return Object.freeze(
+    curve.map(([velocity, output]) =>
+      Object.freeze([velocity, output] as const),
     ),
   )
+}
+
+function immutableVelocityCurves(
+  curves: DrumKitVelocityCurves | undefined,
+): DrumKitVelocityCurves | undefined {
+  if (curves === undefined) return undefined
+  const articulations = Object.fromEntries(
+    Object.entries(curves.articulations ?? {}).map(([articulation, curve]) => [
+      articulation,
+      immutableVelocityCurve(curve),
+    ]),
+  ) as Partial<Record<DrumVoiceId, DrumVelocityCurve>>
+  return Object.freeze({
+    ...(curves.default === undefined
+      ? {}
+      : { default: immutableVelocityCurve(curves.default) }),
+    ...(Object.keys(articulations).length === 0
+      ? {}
+      : { articulations: Object.freeze(articulations) }),
+  })
 }
 
 const LICENSES = Object.freeze({
@@ -231,7 +314,20 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       name: 'Mercury Synth',
       character: 'Electronic, immediate, and always available',
       engine: 'synth',
+      synthModel: 'mercury',
       version: GENERATED.kits['mercury-synth'].version,
+      license: LICENSES.synth,
+      resources: Object.freeze([]),
+      publishedEncodedBytes: 0,
+      optionalDownload: false,
+    }),
+    circuit: Object.freeze({
+      id: 'circuit',
+      name: 'Circuit',
+      character: 'Owned circuit-inspired percussion with bounded variation',
+      engine: 'synth',
+      synthModel: 'circuit',
+      version: 'v1',
       license: LICENSES.synth,
       resources: Object.freeze([]),
       publishedEncodedBytes: 0,
@@ -242,33 +338,39 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       name: 'Classic GM',
       character: 'Familiar General MIDI playback for imported arrangements',
       engine: 'sampled',
+      synthModel: null,
       version: GENERATED.kits['classic-gm'].version,
       license: LICENSES.sonivox,
       resources: immutableResources('classic-gm'),
       publishedEncodedBytes: GENERATED.kits['classic-gm'].publishedEncodedBytes,
       optionalDownload: true,
+      velcurve: immutableVelocityCurves(GENERATED.kits['classic-gm'].velcurve),
     }),
     studio: Object.freeze({
       id: 'studio',
       name: 'Studio',
       character: 'Focused contemporary acoustic kit with natural dynamics',
       engine: 'sampled',
+      synthModel: null,
       version: GENERATED.kits.studio.version,
       license: LICENSES.virtuosity,
       resources: immutableResources('studio'),
       publishedEncodedBytes: GENERATED.kits.studio.publishedEncodedBytes,
       optionalDownload: true,
+      velcurve: immutableVelocityCurves(GENERATED.kits.studio.velcurve),
     }),
     live: Object.freeze({
       id: 'live',
       name: 'Live',
       character: 'Roomier acoustic kit with broad round-robin movement',
       engine: 'sampled',
+      synthModel: null,
       version: GENERATED.kits.live.version,
       license: LICENSES.tchimera,
       resources: immutableResources('live'),
       publishedEncodedBytes: GENERATED.kits.live.publishedEncodedBytes,
       optionalDownload: true,
+      velcurve: immutableVelocityCurves(GENERATED.kits.live.velcurve),
     }),
   })
 
@@ -280,12 +382,30 @@ export function drumKitManifest(kitId: DrumKitId): DrumKitManifest {
   return DRUM_KIT_MANIFESTS[kitId]
 }
 
+/** Resolve an articulation override before the kit-wide velocity curve. */
+export function resolveDrumKitVelocityCurve(
+  curves: DrumKitVelocityCurves | undefined,
+  articulation: DrumVoiceId,
+): DrumVelocityCurve | undefined {
+  return curves?.articulations?.[articulation] ?? curves?.default
+}
+
+export function drumKitVelocityCurveFor(
+  kitId: DrumKitId,
+  articulation: DrumVoiceId,
+): DrumVelocityCurve | undefined {
+  return resolveDrumKitVelocityCurve(
+    DRUM_KIT_MANIFESTS[kitId].velcurve,
+    articulation,
+  )
+}
+
 export function drumKitResourcesForHit(
   kitId: DrumKitId,
   gmKey: number,
   velocity: number,
 ): readonly DrumKitSampleResource[] {
-  if (kitId === 'mercury-synth') return Object.freeze([])
+  if (DRUM_KIT_MANIFESTS[kitId].engine === 'synth') return Object.freeze([])
   const normalizedVelocity = Number.isFinite(velocity)
     ? Math.min(127, Math.max(1, Math.round(velocity)))
     : 1

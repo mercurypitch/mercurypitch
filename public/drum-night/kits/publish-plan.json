@@ -4,13 +4,13 @@
   "executesUploads": false,
   "configurableBaseExample": "https://media.mercurypitch.com/drum-night/kits/",
   "note": "Review this object list, bucket, domain, CORS, and cache headers before translating it into any Cloudflare upload command.",
-  "totalBytes": 6773111,
+  "totalBytes": 9349507,
   "objects": [
     {
       "objectKey": "catalog.json",
       "localPath": "public/drum-night/kits/catalog.json",
-      "encodedBytes": 110071,
-      "sha256": "1b533526a977ad3ca3862b2ecaa8356c2dc6a401496b48b64f9fe54fff6b6c20",
+      "encodedBytes": 169073,
+      "sha256": "eae55eee65e7f6bdfc390d0ce43361a2f1acb2adeceb4a626fd3ad54c90b2b5c",
       "mimeType": "application/json",
       "cacheControl": "public, max-age=300"
     },
@@ -39,6 +39,30 @@
       "cacheControl": "public, max-age=300"
     },
     {
+      "objectKey": "classic-gm/v1/01d7fbf383c3d537-hh-closed-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/01d7fbf383c3d537-hh-closed-l1-rr1.opus",
+      "encodedBytes": 5997,
+      "sha256": "01d7fbf383c3d537f9b103de7773c34c30a4f73a7cf1938c4de0dd1de41865ac",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/0a0df13b0c4a238a-tom-low-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/0a0df13b0c4a238a-tom-low-l1-rr1.opus",
+      "encodedBytes": 17497,
+      "sha256": "0a0df13b0c4a238a091edbf140cab7c440fac0ddae8c7e1af283629a5d75b37f",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/0b45a1ff0b0da082-snare-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/0b45a1ff0b0da082-snare-l2-rr1.opus",
+      "encodedBytes": 9819,
+      "sha256": "0b45a1ff0b0da082c9e2437480b87172c0f730225ca6d0203c05a324fabf7b2b",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/0d5f894e4ef947c9-hh-pedal-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/0d5f894e4ef947c9-hh-pedal-l2-rr1.mp3",
       "encodedBytes": 51243,
@@ -60,6 +84,54 @@
       "encodedBytes": 59654,
       "sha256": "13e52462163613a2ce362685d6d31c46cd0b44f3370a43095c59356ba673e2a4",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/147940f8c0c4b216-hh-pedal-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/147940f8c0c4b216-hh-pedal-l2-rr1.opus",
+      "encodedBytes": 6327,
+      "sha256": "147940f8c0c4b2165686752ccd5162ec15d1e9d702668009e7960f9be0a1b3a0",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/16a38969359f32f5-tom-high-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/16a38969359f32f5-tom-high-l1-rr1.opus",
+      "encodedBytes": 21727,
+      "sha256": "16a38969359f32f50c4670fda708eeead3ef5dc15b15bdd0abc24fef7a42c6ab",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/16a8bcf2d22cee24-tom-high-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/16a8bcf2d22cee24-tom-high-l2-rr1.opus",
+      "encodedBytes": 21774,
+      "sha256": "16a8bcf2d22cee24f83cccc1500dc890a49be25457a0ada37997b15891533c92",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/197ca00547deeee6-hh-open-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/197ca00547deeee6-hh-open-l1-rr1.opus",
+      "encodedBytes": 22365,
+      "sha256": "197ca00547deeee6b57152c2bff29d8c6ca263efd0ec609e5909bf5328b07218",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/232d1fd89de6376f-sidestick-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/232d1fd89de6376f-sidestick-l1-rr1.opus",
+      "encodedBytes": 8413,
+      "sha256": "232d1fd89de6376fbd65ed2305c8f25e869abec86ef61c396c2a73995a6f866c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/2a88026c500c05f3-clap-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/2a88026c500c05f3-clap-l2-rr1.opus",
+      "encodedBytes": 9606,
+      "sha256": "2a88026c500c05f34b951f7d7af7d321c5055a2b6a16c0c5a65f13baeca2ea07",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -87,6 +159,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "classic-gm/v1/39d79e2011a37d84-ride-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/39d79e2011a37d84-ride-l2-rr1.opus",
+      "encodedBytes": 28739,
+      "sha256": "39d79e2011a37d84e5f80f3be6afc3d1c10eb3d9fb6bd89a4cf494e8fb5d660f",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/3f1e108b0923534e-tom-high-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/3f1e108b0923534e-tom-high-l1-rr1.mp3",
       "encodedBytes": 58557,
@@ -103,11 +183,35 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "classic-gm/v1/42917187e3cbafe1-kick-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/42917187e3cbafe1-kick-l2-rr1.opus",
+      "encodedBytes": 11536,
+      "sha256": "42917187e3cbafe144cfe714a5063293edafdad65a87ab865bde0757fec6d662",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/498a57c83712bac7-clap-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/498a57c83712bac7-clap-l1-rr1.opus",
+      "encodedBytes": 8357,
+      "sha256": "498a57c83712bac73e31898461c5dce01a5083a6785c5daed6b03a5a2e991f43",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/582edc87358c6c82-hh-pedal-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/582edc87358c6c82-hh-pedal-l1-rr1.mp3",
       "encodedBytes": 51243,
       "sha256": "582edc87358c6c826ef0a29bafb9b81df8f79c4faa76a04956736b0e0f097525",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/5b8b6efb64ada440-tom-mid-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/5b8b6efb64ada440-tom-mid-l2-rr1.opus",
+      "encodedBytes": 20058,
+      "sha256": "5b8b6efb64ada440dba5c9a021137f1bbaea2d74f6b6d8dc66d4c994b4360256",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -127,6 +231,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "classic-gm/v1/637f2765093fdb3a-crash-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/637f2765093fdb3a-crash-l1-rr1.opus",
+      "encodedBytes": 22952,
+      "sha256": "637f2765093fdb3a8f494313cdd2ad4c66c2a73ef430ba2c4971e36c1c73c144",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/63aa2dd17c0df8ad-crash-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/63aa2dd17c0df8ad-crash-l2-rr1.mp3",
       "encodedBytes": 128409,
@@ -140,6 +252,14 @@
       "encodedBytes": 51243,
       "sha256": "642b32508e84630dda806093aaacccadf674716df7435729639370c6f8a90a91",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/6505bd3791063bab-hh-pedal-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/6505bd3791063bab-hh-pedal-l1-rr1.opus",
+      "encodedBytes": 5977,
+      "sha256": "6505bd3791063babea4abe84817d1234aa8efa43519a931252f42cb856794e24",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -159,11 +279,43 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "classic-gm/v1/7fa1d13d708e713a-tom-mid-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/7fa1d13d708e713a-tom-mid-l1-rr1.opus",
+      "encodedBytes": 20739,
+      "sha256": "7fa1d13d708e713ab2f006743a326e08543558a0b7a81391a59cd824494185ca",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/836a92996d4b7246-ride-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/836a92996d4b7246-ride-l2-rr1.mp3",
       "encodedBytes": 128409,
       "sha256": "836a92996d4b7246231c194263c37d6d8078fc8f19f3f1bb6c8d7fa659de639e",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/84bf755c25bb6262-kick-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/84bf755c25bb6262-kick-l1-rr1.opus",
+      "encodedBytes": 10219,
+      "sha256": "84bf755c25bb6262f168df3b6b943983aa364996fdc8b819b1da80053fbc25e3",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/86176801e57abe07-ride-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/86176801e57abe07-ride-l1-rr1.opus",
+      "encodedBytes": 27894,
+      "sha256": "86176801e57abe07a7afb8e247f6871cf168a9d7ee7366273dbaf9749efa6ef2",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/878b47152f4a99da-hh-closed-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/878b47152f4a99da-hh-closed-l2-rr1.opus",
+      "encodedBytes": 6275,
+      "sha256": "878b47152f4a99dab69d951bc661ef2c3af940ae13d067f4f0681b525530e061",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -180,6 +332,14 @@
       "encodedBytes": 51243,
       "sha256": "966527d8f3d498cdd57773db623e535aed2385e42b93e0ceeef213138f42264a",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/97fd6a07d32628e9-crash-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/97fd6a07d32628e9-crash-l2-rr1.opus",
+      "encodedBytes": 23625,
+      "sha256": "97fd6a07d32628e9e0a01b62e570760b9c9dbd58484c43ffd11eb67f4a040672",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -207,6 +367,22 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "classic-gm/v1/cf3953dd0a08e419-hh-open-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/cf3953dd0a08e419-hh-open-l2-rr1.opus",
+      "encodedBytes": 23078,
+      "sha256": "cf3953dd0a08e419567ece5982bb26cda52d0aad41b8b2a5f20e3d2e87ea8b79",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/db9a08c46b0b3f54-sidestick-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/db9a08c46b0b3f54-sidestick-l2-rr1.opus",
+      "encodedBytes": 9706,
+      "sha256": "db9a08c46b0b3f5427f192745c14fcfd2e2e9e0606c066b81505c19798fdaa62",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "classic-gm/v1/dde56439c834ad13-snare-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/classic-gm/v1/dde56439c834ad13-snare-l2-rr1.mp3",
       "encodedBytes": 58557,
@@ -220,6 +396,22 @@
       "encodedBytes": 86352,
       "sha256": "e2981a70a071508f0444ae480a8f52007f1f31193b987a0b978965dbba7180c8",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/e9d9736b1061ae57-tom-low-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/e9d9736b1061ae57-tom-low-l2-rr1.opus",
+      "encodedBytes": 16974,
+      "sha256": "e9d9736b1061ae577dcb1902cb4278af397c1626cc3764553f168ba7e227365a",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "classic-gm/v1/ec1c4bbf1ce05ca2-snare-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/classic-gm/v1/ec1c4bbf1ce05ca2-snare-l1-rr1.opus",
+      "encodedBytes": 8749,
+      "sha256": "ec1c4bbf1ce05ca2dfe7f5c5e3087c882855ab982f8ded9e0ed39750b5b55efc",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -237,6 +429,14 @@
       "sha256": "166305adec24dfbb70cbc9fab72b538cc143e1225b3bfd029a80dc03d3815b92",
       "mimeType": "text/markdown; charset=utf-8",
       "cacheControl": "public, max-age=300"
+    },
+    {
+      "objectKey": "live/v1/008e71e08bc45327-hh-closed-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/008e71e08bc45327-hh-closed-l1-rr2.opus",
+      "encodedBytes": 8252,
+      "sha256": "008e71e08bc45327044054a97a93d0e2881104f03063b82a9d06a55acede4ace",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
     },
     {
       "objectKey": "live/v1/03f6c88738430345-hh-pedal-l2-rr2.mp3",
@@ -271,11 +471,51 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/0f436310d2298c40-hh-open-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/0f436310d2298c40-hh-open-l2-rr1.opus",
+      "encodedBytes": 9405,
+      "sha256": "0f436310d2298c40fe8dca88208eee2727c191a8054b92b10255236fa03cc61c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/13901371967cccf6-tom-high-l2-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/13901371967cccf6-tom-high-l2-rr2.mp3",
       "encodedBytes": 55997,
       "sha256": "13901371967cccf6c88e11a9d9a620ffa7ed8d4ffeeedab0f5f121ce97ca31e2",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/1a57971cb299d27c-tom-high-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/1a57971cb299d27c-tom-high-l2-rr1.opus",
+      "encodedBytes": 20509,
+      "sha256": "1a57971cb299d27c85cfc3d31e7ce105b00d55770853e14dff9a1362c2cf8f82",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/1a98a7cba7792570-hh-closed-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/1a98a7cba7792570-hh-closed-l1-rr1.opus",
+      "encodedBytes": 6659,
+      "sha256": "1a98a7cba7792570152cdea70a3fab3287c5a7739608699dc425404241b97f26",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/1b7a13439c4700f0-tom-mid-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/1b7a13439c4700f0-tom-mid-l1-rr1.opus",
+      "encodedBytes": 19131,
+      "sha256": "1b7a13439c4700f04f13836a640166799e0fc626819095ac564df3fc5a03121b",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/1f88d664c662cc7f-kick-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/1f88d664c662cc7f-kick-l1-rr2.opus",
+      "encodedBytes": 8173,
+      "sha256": "1f88d664c662cc7f93584bba583b63dddaa84b1db206b2b2dd9d3efd0d86da02",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -287,11 +527,35 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/2300d80b256cd785-kick-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/2300d80b256cd785-kick-l2-rr1.opus",
+      "encodedBytes": 10364,
+      "sha256": "2300d80b256cd78588fb5704346cfed6dd32b5a47aa0f65d7f838a5cbc31957d",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/245f90b7dd69b981-hh-closed-l1-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/245f90b7dd69b981-hh-closed-l1-rr2.mp3",
       "encodedBytes": 19426,
       "sha256": "245f90b7dd69b9810e72d1871679e7d96f72f5be7fd1a2a76548cbd3b952fe89",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/2ee4e09fc9dadfc3-snare-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/2ee4e09fc9dadfc3-snare-l2-rr1.opus",
+      "encodedBytes": 16024,
+      "sha256": "2ee4e09fc9dadfc3dd34d85bb57ec86d2743817659117e1455eab0c2b09af594",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/30cb955889659179-tom-mid-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/30cb955889659179-tom-mid-l1-rr2.opus",
+      "encodedBytes": 17128,
+      "sha256": "30cb9558896591792cc9c941d99f3f903fdd869f9a87bf667864d9a391c1e893",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -327,6 +591,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/3927c386b0cd62cc-tom-high-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/3927c386b0cd62cc-tom-high-l1-rr1.opus",
+      "encodedBytes": 17412,
+      "sha256": "3927c386b0cd62ccaee3754806c598ff7bee14b5883e6f56a4981165c297433c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/41b35b41be6ca1bd-crash-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/41b35b41be6ca1bd-crash-l2-rr1.mp3",
       "encodedBytes": 110123,
@@ -335,11 +607,27 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/4213a38a653699bf-tom-low-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/4213a38a653699bf-tom-low-l2-rr2.opus",
+      "encodedBytes": 32623,
+      "sha256": "4213a38a653699bf8a16bd8fa4d035a665792f880784ed95159161db858a8689",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/488d98304314392b-tom-mid-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/488d98304314392b-tom-mid-l1-rr1.mp3",
       "encodedBytes": 55266,
       "sha256": "488d98304314392b5c8895169c41e618a5b3c726d516044b69b5f676703e6cad",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/49771123c126a0dd-ride-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/49771123c126a0dd-ride-l1-rr2.opus",
+      "encodedBytes": 94720,
+      "sha256": "49771123c126a0dd6d2167417f17cb64d05e8872664af589a5570f5b4bd41915",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -367,11 +655,43 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/5a056bf41f8326f6-tom-high-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/5a056bf41f8326f6-tom-high-l2-rr2.opus",
+      "encodedBytes": 20362,
+      "sha256": "5a056bf41f8326f6893129aedcebba2cc7463918e4d4ecdcb77622b5adb7f471",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/5b4089ab34e1eba3-tom-high-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/5b4089ab34e1eba3-tom-high-l1-rr2.opus",
+      "encodedBytes": 17216,
+      "sha256": "5b4089ab34e1eba3c13ad7c73cd706cbdc3de9f7549c6a6afdbe6cbe827c95f4",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/5d598635a11b4510-hh-open-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/5d598635a11b4510-hh-open-l1-rr1.mp3",
       "encodedBytes": 20523,
       "sha256": "5d598635a11b451031a104c69b299af17b12b32b3c6efef868f9f5757458d1a8",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/5d9f00ecf46c2da5-ride-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/5d9f00ecf46c2da5-ride-l1-rr1.opus",
+      "encodedBytes": 104326,
+      "sha256": "5d9f00ecf46c2da59e9dba3a2791b1b8104a4ccc716de882b8314bdb47ef23d1",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/616d3966bfde7d0b-kick-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/616d3966bfde7d0b-kick-l2-rr2.opus",
+      "encodedBytes": 10434,
+      "sha256": "616d3966bfde7d0bf457edbf5c49f1f7e2f65140b5f09c53a4ed5f4e4addd8a9",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -415,11 +735,59 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/6afc92674c543662-hh-open-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/6afc92674c543662-hh-open-l1-rr2.opus",
+      "encodedBytes": 7815,
+      "sha256": "6afc92674c543662c7992ce2578873755ac15367f865d03806b247a7e8270ea1",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/6f3f1635adc238d4-hh-closed-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/6f3f1635adc238d4-hh-closed-l2-rr1.opus",
+      "encodedBytes": 10976,
+      "sha256": "6f3f1635adc238d4e6411f714ef3e9011c3824fd4b4c29929439357140e8bd72",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/74c2f44eed00fabc-crash-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/74c2f44eed00fabc-crash-l1-rr2.opus",
+      "encodedBytes": 41122,
+      "sha256": "74c2f44eed00fabc2f332855305f6090f4341d12daaae60edc03dcb8571117fc",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/75b47e414497cf26-snare-l2-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/75b47e414497cf26-snare-l2-rr2.mp3",
       "encodedBytes": 41003,
       "sha256": "75b47e414497cf26a71b03ac507115c6409690f4274d64d58e589458268b2ba3",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/793e54a86c567214-tom-low-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/793e54a86c567214-tom-low-l1-rr1.opus",
+      "encodedBytes": 28515,
+      "sha256": "793e54a86c56721446efb997986e6cae1db21d700c15e181a6df3e88d6c22a5e",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/79f72763f6eff6d9-hh-pedal-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/79f72763f6eff6d9-hh-pedal-l1-rr1.opus",
+      "encodedBytes": 15068,
+      "sha256": "79f72763f6eff6d9456345e02ccbc333cbdf7bb366173faf9cea9f7d3fb964c9",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/7cedbb5d2e14a5b2-tom-mid-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/7cedbb5d2e14a5b2-tom-mid-l2-rr1.opus",
+      "encodedBytes": 21764,
+      "sha256": "7cedbb5d2e14a5b28ff9a8aca908ddf97407773995548c819e70e14b1e9adf58",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -439,6 +807,30 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/803c20999b657330-hh-pedal-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/803c20999b657330-hh-pedal-l2-rr1.opus",
+      "encodedBytes": 21656,
+      "sha256": "803c20999b6573302089f2c3295df8d1aab1e3c3782427e9e157172b14aee27e",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/846288cbd36de5aa-hh-pedal-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/846288cbd36de5aa-hh-pedal-l1-rr2.opus",
+      "encodedBytes": 13200,
+      "sha256": "846288cbd36de5aa719345942d2c39565a6df7f713105442272929ae955ad8a3",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/8848c5e34a6b979d-ride-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/8848c5e34a6b979d-ride-l2-rr1.opus",
+      "encodedBytes": 131637,
+      "sha256": "8848c5e34a6b979d54e08e0e72bb1302b065c58f086117a6e6d1f86aa614aa8c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/89bd615e703fa9fb-hh-open-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/89bd615e703fa9fb-hh-open-l2-rr1.mp3",
       "encodedBytes": 23083,
@@ -452,6 +844,30 @@
       "encodedBytes": 194969,
       "sha256": "8d2b74d4bb82e686ed335fedbe662f3db6cd607b752846744f38eceefc44e2c0",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/8eac1d1418f03ab8-tom-low-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/8eac1d1418f03ab8-tom-low-l1-rr2.opus",
+      "encodedBytes": 31453,
+      "sha256": "8eac1d1418f03ab803b133bdfda9e67aaa9f78bfaf6dae9cba2d7693e74f5039",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/92a5604a0bf1cd2d-hh-closed-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/92a5604a0bf1cd2d-hh-closed-l2-rr2.opus",
+      "encodedBytes": 10248,
+      "sha256": "92a5604a0bf1cd2d3e933de311cd9190fbd3d6b274abad93c371ee60d03af62e",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/935a38ce70b0a027-snare-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/935a38ce70b0a027-snare-l2-rr2.opus",
+      "encodedBytes": 15598,
+      "sha256": "935a38ce70b0a027d1040b89ef740de382daeff8f3fb728e5d10850832f63e07",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -479,6 +895,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/b33cfae88e4a2161-ride-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/b33cfae88e4a2161-ride-l2-rr2.opus",
+      "encodedBytes": 104182,
+      "sha256": "b33cfae88e4a21611a1262fc18b86565430afcd5a83b885122ff8acff3a1ae51",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/b44cb1d95aff2b2a-hh-closed-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/b44cb1d95aff2b2a-hh-closed-l2-rr1.mp3",
       "encodedBytes": 26374,
@@ -487,11 +911,43 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/b64b45b1f4202568-crash-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/b64b45b1f4202568-crash-l2-rr1.opus",
+      "encodedBytes": 51325,
+      "sha256": "b64b45b1f4202568167308fa656a5a4faafd6a782847e16cb2cb44b62ee8dbeb",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/c0da1b3566ba6b12-hh-pedal-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/c0da1b3566ba6b12-hh-pedal-l2-rr2.opus",
+      "encodedBytes": 24129,
+      "sha256": "c0da1b3566ba6b127ef322d9df33501dfa067e0a1013bd778892dff92017985f",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/c2cfaf8e10924857-hh-open-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/c2cfaf8e10924857-hh-open-l1-rr1.opus",
+      "encodedBytes": 8353,
+      "sha256": "c2cfaf8e10924857d552656ed21082636e9c8341990def6a2e2d4092591f0989",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/c6cf566349f0aaf1-ride-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/live/v1/c6cf566349f0aaf1-ride-l2-rr1.mp3",
       "encodedBytes": 258603,
       "sha256": "c6cf566349f0aaf1ab2c445ca429657c4ce9bb60b3b1403f4bbab29ba199d3ce",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/c7079c67159d56a8-crash-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/c7079c67159d56a8-crash-l2-rr2.opus",
+      "encodedBytes": 49984,
+      "sha256": "c7079c67159d56a88cbcfd42aa30f623f8b1204c203039e68db5a417fd8fd1d9",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -511,6 +967,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/d0504aa1a3a893ff-snare-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/d0504aa1a3a893ff-snare-l1-rr1.opus",
+      "encodedBytes": 9625,
+      "sha256": "d0504aa1a3a893ff01863e33a6810567cf20c324211a0dfcc1582dcb3abe50c2",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/d171da3d96e85b73-kick-l2-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/d171da3d96e85b73-kick-l2-rr2.mp3",
       "encodedBytes": 28934,
@@ -527,11 +991,35 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/dddc98362ab272d8-crash-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/dddc98362ab272d8-crash-l1-rr1.opus",
+      "encodedBytes": 45563,
+      "sha256": "dddc98362ab272d83cd35f2ca2494b0125d06f206ea0ac5cdb7d1e9ea22bd511",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/dfbc3838103b8b06-kick-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/dfbc3838103b8b06-kick-l1-rr1.opus",
+      "encodedBytes": 8213,
+      "sha256": "dfbc3838103b8b06e1c6a9413869c0835e1e538a4377613ae2eff8ac26079dcd",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/e0b35ee6e56a2730-snare-l1-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/e0b35ee6e56a2730-snare-l1-rr2.mp3",
       "encodedBytes": 24180,
       "sha256": "e0b35ee6e56a2730104a41943c7e85fbaacd7b968a89be2a7e23eb942fc6db33",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/e11f70306431b590-snare-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/e11f70306431b590-snare-l1-rr2.opus",
+      "encodedBytes": 9370,
+      "sha256": "e11f70306431b590203c6673b4519ddeb649dd4bdd61dacd545c64d205131f80",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -551,6 +1039,22 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/f0d110456a569714-hh-open-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/f0d110456a569714-hh-open-l2-rr2.opus",
+      "encodedBytes": 9082,
+      "sha256": "f0d110456a5697144859f24bd6fc5cc414d5f6ea4ade83d39610d5fa9f5e9b31",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "live/v1/f14b6a89eaf736de-tom-low-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/live/v1/f14b6a89eaf736de-tom-low-l2-rr1.opus",
+      "encodedBytes": 29666,
+      "sha256": "f14b6a89eaf736def94b6fbaa66c4b3e077182fd9fef6a2ac31868b5cc078185",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "live/v1/fb472b83e6dfdebf-hh-closed-l2-rr2.mp3",
       "localPath": "public/drum-night/kits/live/v1/fb472b83e6dfdebf-hh-closed-l2-rr2.mp3",
       "encodedBytes": 25277,
@@ -559,10 +1063,18 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "live/v1/fe658b5363f0019d-tom-mid-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/live/v1/fe658b5363f0019d-tom-mid-l2-rr2.opus",
+      "encodedBytes": 22522,
+      "sha256": "fe658b5363f0019dfe618754cfbdd62550c09e877390d2a5070fbaafe78b987b",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "README.md",
       "localPath": "public/drum-night/kits/README.md",
-      "encodedBytes": 829,
-      "sha256": "f8ab1708f10e05b3dc7827c147e620a2d0b6c04f6941b45f57e69b77903be483",
+      "encodedBytes": 1660,
+      "sha256": "875e698c8bf4454724d09d0301dfd896eba5299617b5caf859399c1a06e7b23e",
       "mimeType": "text/markdown; charset=utf-8",
       "cacheControl": "public, max-age=300"
     },
@@ -575,6 +1087,22 @@
       "cacheControl": "public, max-age=300"
     },
     {
+      "objectKey": "studio/v1/0d785f9c53a78ed9-hh-open-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/0d785f9c53a78ed9-hh-open-l1-rr1.opus",
+      "encodedBytes": 52960,
+      "sha256": "0d785f9c53a78ed904c4c36bd6f8679b9904df74499ad0c7a60e575438b8e8d0",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/0f0a7a41e0b0690e-hh-closed-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/0f0a7a41e0b0690e-hh-closed-l2-rr2.opus",
+      "encodedBytes": 4313,
+      "sha256": "0f0a7a41e0b0690e0bbceaf9bc1091ffb3ef4bc64a288e1cc3b73ce4cbba0a50",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/128d8d945bd8e4f1-tom-high-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/128d8d945bd8e4f1-tom-high-l2-rr1.mp3",
       "encodedBytes": 30032,
@@ -583,11 +1111,51 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/1b2e03f17bdcf2a7-hh-closed-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/1b2e03f17bdcf2a7-hh-closed-l2-rr1.opus",
+      "encodedBytes": 4351,
+      "sha256": "1b2e03f17bdcf2a7fc3b1ab3edfcf4d91154d8141c342c8646ab93b82d60f136",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/1c67d52e4fda14c6-ride-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/1c67d52e4fda14c6-ride-l2-rr1.opus",
+      "encodedBytes": 48136,
+      "sha256": "1c67d52e4fda14c67ea409e832ecd371fd5ccc21668ee5e078f77d1c63c004d6",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/2072620afd136263-hh-pedal-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/2072620afd136263-hh-pedal-l1-rr1.opus",
+      "encodedBytes": 10959,
+      "sha256": "2072620afd136263638ea86c8f605c31cd7323ab2bcaa7de6efb04a924f9c4cc",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/230c7e11a808c754-crash-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/230c7e11a808c754-crash-l1-rr1.mp3",
       "encodedBytes": 160957,
       "sha256": "230c7e11a808c754398f475d5c5417b8f5e5679a01b92e63745390cf5939b345",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/25d1a0f3fc618362-kick-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/25d1a0f3fc618362-kick-l1-rr1.opus",
+      "encodedBytes": 11393,
+      "sha256": "25d1a0f3fc618362aa6d681a81db67b5dc360ac7508d05fc311899ddc763f2c8",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/283e2f36fcad368a-tom-high-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/283e2f36fcad368a-tom-high-l2-rr1.opus",
+      "encodedBytes": 13707,
+      "sha256": "283e2f36fcad368a81dd997f45bafa223c325615b780c96e5d3b298bd98b55f3",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -615,11 +1183,51 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/36464f4c2c68c980-kick-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/36464f4c2c68c980-kick-l2-rr1.opus",
+      "encodedBytes": 13778,
+      "sha256": "36464f4c2c68c980df56df3932e0f3d1bf4362fe1f92a5194f3107a504f28b39",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/39c12858e5c316a0-snare-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/39c12858e5c316a0-snare-l2-rr1.opus",
+      "encodedBytes": 10839,
+      "sha256": "39c12858e5c316a0b6b9a84317457091acfb0ae15fad2ce7aaa08f355e531fd0",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/3a9890879a18763f-hh-closed-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/3a9890879a18763f-hh-closed-l1-rr1.mp3",
       "encodedBytes": 9552,
       "sha256": "3a9890879a18763f85845993e93ea5f27e288593ef964d3239592241e68ce462",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/3b3dbe583c8b98aa-hh-open-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/3b3dbe583c8b98aa-hh-open-l2-rr2.opus",
+      "encodedBytes": 69465,
+      "sha256": "3b3dbe583c8b98aa5bfaa1ea60528bb6f99de09b9196de8bb661c085fa8f8bb1",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/478a77526ba9931c-hh-pedal-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/478a77526ba9931c-hh-pedal-l2-rr2.opus",
+      "encodedBytes": 14082,
+      "sha256": "478a77526ba9931c60d4c81c27e9ab287d0ed88cf7eda88d015e9630169fd080",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/4a43eefc7fc0d680-hh-open-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/4a43eefc7fc0d680-hh-open-l2-rr1.opus",
+      "encodedBytes": 63727,
+      "sha256": "4a43eefc7fc0d680d7f61255114a3ea70c5342f53162a4aef8218e36a07ec5c1",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -655,11 +1263,27 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/5338ca4a4c96e925-crash-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/5338ca4a4c96e925-crash-l1-rr1.opus",
+      "encodedBytes": 71694,
+      "sha256": "5338ca4a4c96e9257abde393e6baa4e88e0c772221111e9e60218cad8619a9b7",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/53776bad80c4bfc7-ride-l1-rr2.mp3",
       "localPath": "public/drum-night/kits/studio/v1/53776bad80c4bfc7-ride-l1-rr2.mp3",
       "encodedBytes": 114877,
       "sha256": "53776bad80c4bfc7afe87f13c7049fb1d5e8f9e4205b49a6414ff20299396632",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/5570d6731d0f6b23-hh-open-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/5570d6731d0f6b23-hh-open-l1-rr2.opus",
+      "encodedBytes": 48053,
+      "sha256": "5570d6731d0f6b23e0ec31766f0109a69908a542f50fc7c8e8806419e32746aa",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -679,6 +1303,38 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/629bd0320143e705-ride-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/629bd0320143e705-ride-l2-rr2.opus",
+      "encodedBytes": 39902,
+      "sha256": "629bd0320143e705db8ee75051ee6e7b356255c83c62c384abe9be4da11f3903",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/63203927f21c3726-snare-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/63203927f21c3726-snare-l1-rr1.opus",
+      "encodedBytes": 10363,
+      "sha256": "63203927f21c3726d87347d87b3b11bd316d97cd57526b70cca6a68a4fd0ac1c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/63f417331972244a-hh-pedal-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/63f417331972244a-hh-pedal-l2-rr1.opus",
+      "encodedBytes": 13309,
+      "sha256": "63f417331972244abf5a347318cce2e1a718d58493e0dd0631712c9d6945a13c",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/64094bc555d24326-sidestick-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/64094bc555d24326-sidestick-l1-rr1.opus",
+      "encodedBytes": 13854,
+      "sha256": "64094bc555d24326d5902420c7bb41e494212a8776bae879cd8e200c30510941",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/656bea0de9366cf8-hh-pedal-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/656bea0de9366cf8-hh-pedal-l2-rr1.mp3",
       "encodedBytes": 32957,
@@ -692,6 +1348,22 @@
       "encodedBytes": 198260,
       "sha256": "6ae83751e36a1381f4d4bd81561e2303594bc8adef8f7c8b20f99fa5784b02c7",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/6cb2cae6cb9b51b4-tom-low-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/6cb2cae6cb9b51b4-tom-low-l1-rr1.opus",
+      "encodedBytes": 14250,
+      "sha256": "6cb2cae6cb9b51b4353e58a9382da5001ceaa9ca9dcef7491e56082795d4ad76",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/78f3e07227d9f827-kick-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/78f3e07227d9f827-kick-l2-rr2.opus",
+      "encodedBytes": 14099,
+      "sha256": "78f3e07227d9f827a28dc519a10b682d598d41bfb37a931f4750cdabd9c5482a",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -716,6 +1388,30 @@
       "encodedBytes": 24180,
       "sha256": "7fac2abb39b4dbd9d5bdfc06ff43e6af0495857f09a15ef077aefd8bdeae010b",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/80fde798a942022f-ride-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/80fde798a942022f-ride-l1-rr1.opus",
+      "encodedBytes": 65203,
+      "sha256": "80fde798a942022f66c1de0a8b3236a1a30f42c9a70221bd562a44118aa51164",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/813311c4cf43364c-snare-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/813311c4cf43364c-snare-l1-rr2.opus",
+      "encodedBytes": 11888,
+      "sha256": "813311c4cf43364cb05c494a021c6de488dac43d95bc9bd10f400ab10da42c42",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/8167eab7f050f011-snare-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/8167eab7f050f011-snare-l2-rr2.opus",
+      "encodedBytes": 13117,
+      "sha256": "8167eab7f050f011362034402b7190fdb97f0ca40e74b82903d2fad4854ce6d7",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -751,11 +1447,43 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/8db63e4ac1342318-crash-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/8db63e4ac1342318-crash-l1-rr2.opus",
+      "encodedBytes": 75517,
+      "sha256": "8db63e4ac1342318669f7860ba7aa840ff1cceb766c24b98df9a767de4f4e109",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/8dc8e9917c6dffd6-tom-high-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/8dc8e9917c6dffd6-tom-high-l1-rr1.opus",
+      "encodedBytes": 11916,
+      "sha256": "8dc8e9917c6dffd63f22e3026fddec84f6a4356300413567abe3929c118669ad",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/8f7cc393d410f3ce-snare-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/8f7cc393d410f3ce-snare-l1-rr1.mp3",
       "encodedBytes": 27472,
       "sha256": "8f7cc393d410f3ce05f421f7ec14884a40cfc43b6e3a815a347115bdb344610f",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/91e2edd29f48dfe7-hh-closed-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/91e2edd29f48dfe7-hh-closed-l1-rr2.opus",
+      "encodedBytes": 3850,
+      "sha256": "91e2edd29f48dfe79d497a66492bc149df186bc757664b639b271df9e1ce80ab",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/a3b8dd5b4addad49-crash-l2-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/a3b8dd5b4addad49-crash-l2-rr2.opus",
+      "encodedBytes": 86737,
+      "sha256": "a3b8dd5b4addad49bbb4cc2337cfb618b687eb43a6f1f1dbeddbda119e0f905c",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -772,6 +1500,14 @@
       "encodedBytes": 89643,
       "sha256": "b40f83ad2c43faf8a4d8edf48dfa9dc312633b3a7af5c2bb39bd2ec81bdd3e46",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/b5af67fe303b36ea-kick-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/b5af67fe303b36ea-kick-l1-rr2.opus",
+      "encodedBytes": 11276,
+      "sha256": "b5af67fe303b36ea726a3fe335429b56b005025d593078655ad84b5fc09e4a56",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
@@ -799,6 +1535,38 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/c7103c98b7f1926f-sidestick-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/c7103c98b7f1926f-sidestick-l2-rr1.opus",
+      "encodedBytes": 13728,
+      "sha256": "c7103c98b7f1926fa09426935e980da740590ccccc73c03f02855db56801161f",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/ca22de4f8396f08b-tom-low-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/ca22de4f8396f08b-tom-low-l2-rr1.opus",
+      "encodedBytes": 27877,
+      "sha256": "ca22de4f8396f08b6e58ac59887cac72b21c486d403c9f94d21ad26e0e64ad09",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/d1de3626e9c24e88-ride-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/d1de3626e9c24e88-ride-l1-rr2.opus",
+      "encodedBytes": 48426,
+      "sha256": "d1de3626e9c24e88d683b4ce6cdbfcb173ec1699b452482c06318658b558a156",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/d317c426ca6c78a0-hh-closed-l1-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/d317c426ca6c78a0-hh-closed-l1-rr1.opus",
+      "encodedBytes": 4077,
+      "sha256": "d317c426ca6c78a0cbc3d57e71ef7ef23e9e5aedc5e0d64ec7997c767bf7cf71",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/d6982e8baa794fc8-hh-pedal-l1-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/d6982e8baa794fc8-hh-pedal-l1-rr1.mp3",
       "encodedBytes": 27106,
@@ -823,6 +1591,14 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
+      "objectKey": "studio/v1/e7d70acf68b96d90-hh-pedal-l1-rr2.opus",
+      "localPath": "public/drum-night/kits/studio/v1/e7d70acf68b96d90-hh-pedal-l1-rr2.opus",
+      "encodedBytes": 9614,
+      "sha256": "e7d70acf68b96d90e75c92c3624d337bfc209fed30fcefec83ff447f01fcc75b",
+      "mimeType": "audio/ogg; codecs=opus",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
       "objectKey": "studio/v1/eb9d5d134f80da76-hh-closed-l2-rr1.mp3",
       "localPath": "public/drum-night/kits/studio/v1/eb9d5d134f80da76-hh-closed-l2-rr1.mp3",
       "encodedBytes": 10649,
@@ -836,6 +1612,14 @@
       "encodedBytes": 34420,
       "sha256": "ec113362dcca081680fb2d555f5052a0344d9590fcd8d7f1be475cb47f4037c6",
       "mimeType": "audio/mpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "objectKey": "studio/v1/eeee1d30190c0ab6-crash-l2-rr1.opus",
+      "localPath": "public/drum-night/kits/studio/v1/eeee1d30190c0ab6-crash-l2-rr1.opus",
+      "encodedBytes": 87896,
+      "sha256": "eeee1d30190c0ab61363ffd93abd4517daaa6baa9a85cec02940b7761842afa3",
+      "mimeType": "audio/ogg; codecs=opus",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     {
