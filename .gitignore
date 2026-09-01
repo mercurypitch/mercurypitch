@@ -42,6 +42,12 @@ coverage/
 
 public/assets/
 
+# Drum kit curator transaction residue after an interrupted process. The
+# curator verifies and cleans these paths during a successful run.
+public/drum-night/.drum-kits-stage-*/
+public/drum-night/.drum-kits-backup-*/
+src/features/drum-night/audio/*.generated.json.backup-*
+
 **/**/*.patch
 
 # Local DevSecOps audit telemetry (semgrep/gitleaks/nuclei/eslint scan output)
@@ -86,3 +92,6 @@ assets/gp-samples/
 # Generated marketing stills (scripts/gen-marketing-shots.mjs). Regenerate on
 # demand; the ad crops that matter live in the campaigns repo.
 public/marketing/
+
+# Browser consoles relayed from a device on the LAN (MP_DEV_LOGS=1).
+.dev-logs/

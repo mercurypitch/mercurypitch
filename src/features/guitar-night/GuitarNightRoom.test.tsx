@@ -1,7 +1,9 @@
 // Guitar Night room tests keep controls bound to route-owned transport truth.
 // ============================================================
+// Kept together because every assertion exercises the same prepared-song room
+// boundary and its route-owned transport double.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
@@ -38,6 +40,10 @@ const listening = vi.hoisted(() => ({
   timingSource: vi.fn(() => 'audio-clock'),
   latencyMs: vi.fn(() => 0),
   health: vi.fn(() => null),
+  canAmpMonitor: vi.fn(() => false),
+  ampMonitoringEnabled: vi.fn(() => false),
+  ampMonitoringActive: vi.fn(() => false),
+  setAmpMonitoringEnabled: vi.fn(() => false),
   start: vi.fn(async () => true),
   useInputHere: vi.fn(async () => true),
   stop: vi.fn(),
@@ -188,6 +194,7 @@ function createTransport(): GuitarBackingTransportController {
     setMasterVolume: vi.fn((position: number) => {
       masterVolume = position
     }),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
     getAudioGraph: vi.fn(() => null),
   }
@@ -203,6 +210,11 @@ describe('GuitarNightRoom', () => {
     listening.error.mockReturnValue(null)
     listening.notice.mockReturnValue(null)
     listening.take.mockReturnValue(null)
+    listening.inputProfile.mockReturnValue('microphone')
+    listening.inputProfileLabel.mockReturnValue('Room mic')
+    listening.canAmpMonitor.mockReturnValue(false)
+    listening.ampMonitoringEnabled.mockReturnValue(false)
+    listening.ampMonitoringActive.mockReturnValue(false)
   })
 
   afterEach(cleanup)
@@ -310,6 +322,46 @@ describe('GuitarNightRoom', () => {
     expect(
       (screen.getByLabelText('Backing volume') as HTMLInputElement).value,
     ).toBe('0.31')
+  })
+
+  it('shares the Band amp without starting playback or Direct-input monitoring', () => {
+    listening.status.mockReturnValue('listening')
+    listening.inputProfile.mockReturnValue('interface')
+    listening.inputProfileLabel.mockReturnValue('Direct input')
+    listening.canAmpMonitor.mockReturnValue(true)
+    const transport = createTransport()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByLabelText('Band, loop, and input controls, 1 track'),
+    )
+    const amp = within(screen.getByRole('region', { name: 'Guitar amp' }))
+    fireEvent.change(amp.getByLabelText('Guitar amp preset'), {
+      target: { value: 'crunch' },
+    })
+    fireEvent.click(amp.getByRole('button', { name: 'Bypass guitar amp' }))
+    fireEvent.click(amp.getByText('Shape tone & cabinet'))
+    fireEvent.input(amp.getByRole('slider', { name: 'Guitar amp treble' }), {
+      target: { value: '0.25' },
+    })
+
+    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(transport.setElectricAmpParameters).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: false, treble: 0.25 }),
+    )
+    expect(transport.activate).not.toHaveBeenCalled()
+    expect(transport.play).not.toHaveBeenCalled()
+    expect(listening.start).not.toHaveBeenCalled()
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
   })
 
   it('opens Tune silently, pauses the room, and suspends the Space transport', async () => {

@@ -6,8 +6,9 @@ import { createHash, webcrypto } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumKitPlayerPort } from '../runtime/drum-runtime-types'
 import { velocityGain } from './drum-hit-dynamics'
-import { DRUM_KIT_CATALOG, drumKitResourcesForHit } from './drum-kit-manifest'
-import { createDrumKitPlayer, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
+import { DRUM_KIT_CATALOG, drumKitManifest, drumKitResourcesForHit, } from './drum-kit-manifest'
+import opusCatalog from './drum-kit-opus.generated.json'
+import { createDrumKitPlayer, drumKitPlaybackResources, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
 
 interface ParameterEvent {
   kind: 'cancel' | 'exponential' | 'hold' | 'set' | 'target'
@@ -67,6 +68,15 @@ class FakeBufferSourceNode extends FakeAudioNode {
   readonly startOffsets: number[] = []
   readonly stops: number[] = []
   onended: (() => void) | null = null
+  readonly endedListeners: Array<() => void> = []
+
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ): void {
+    if (type !== 'ended' || typeof listener !== 'function') return
+    this.endedListeners.push(listener as () => void)
+  }
 
   start(at = 0, offset = 0): void {
     if (this.throwOnStart) throw new Error('source start failed')
@@ -84,6 +94,15 @@ class FakeOscillatorNode extends FakeAudioNode {
   readonly frequency = new FakeAudioParam()
   readonly starts: number[] = []
   readonly stops: number[] = []
+  readonly endedListeners: Array<() => void> = []
+
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ): void {
+    if (type !== 'ended' || typeof listener !== 'function') return
+    this.endedListeners.push(listener as () => void)
+  }
 
   start(at = 0): void {
     this.starts.push(at)
@@ -98,6 +117,14 @@ class FakeBiquadFilterNode extends FakeAudioNode {
   type: BiquadFilterType = 'lowpass'
   readonly frequency = new FakeAudioParam()
   readonly Q = new FakeAudioParam()
+}
+
+class FakeMediaStreamAudioDestinationNode extends FakeAudioNode {
+  readonly track = { stop: vi.fn() }
+  readonly stream = {
+    id: 'live-kit-capture',
+    getTracks: () => [this.track],
+  } as unknown as MediaStream
 }
 
 function decodedBuffer(length: number): AudioBuffer {
@@ -131,6 +158,7 @@ class FakeAudioContext {
   readonly sources: FakeBufferSourceNode[] = []
   readonly oscillators: FakeOscillatorNode[] = []
   readonly filters: FakeBiquadFilterNode[] = []
+  readonly mediaStreamDestinations: FakeMediaStreamAudioDestinationNode[] = []
   readonly resume = vi.fn(async () => {
     this.state = 'running'
   })
@@ -167,6 +195,12 @@ class FakeAudioContext {
     return filter as unknown as BiquadFilterNode
   }
 
+  createMediaStreamDestination(): MediaStreamAudioDestinationNode {
+    const destination = new FakeMediaStreamAudioDestinationNode()
+    this.mediaStreamDestinations.push(destination)
+    return destination as unknown as MediaStreamAudioDestinationNode
+  }
+
   createBuffer(
     numberOfChannels: number,
     length: number,
@@ -189,20 +223,42 @@ class FakeAudioContext {
 const ALL_RESOURCES = DRUM_KIT_CATALOG.flatMap((kit) => kit.resources)
 
 function resourceForUrl(url: string) {
-  const resource = ALL_RESOURCES.find((candidate) =>
-    url.endsWith(candidate.path),
-  )
-  if (resource === undefined) throw new Error(`Unknown test resource: ${url}`)
-  return resource
+  for (const resource of ALL_RESOURCES) {
+    const encoding = Object.values(resource.formats).find(
+      (candidate) => candidate !== undefined && url.endsWith(candidate.path),
+    )
+    if (encoding !== undefined) return { encoding, resource }
+  }
+  for (const [resourceId, projected] of Object.entries(opusCatalog.encodings)) {
+    if (!url.endsWith(projected.path)) continue
+    const resource = ALL_RESOURCES.find(
+      (candidate) => candidate.id === resourceId,
+    )
+    if (resource === undefined) break
+    return {
+      encoding: {
+        ...projected,
+        mimeType: opusCatalog.mimeType,
+      },
+      resource,
+    }
+  }
+  throw new Error(`Unknown test resource: ${url}`)
 }
 
 function harness(
   options: {
     decodedLength?: number
     failFetch?: boolean
-    initialKitId?: 'classic-gm' | 'live' | 'mercury-synth' | 'studio'
+    initialKitId?:
+      | 'circuit'
+      | 'classic-gm'
+      | 'live'
+      | 'mercury-synth'
+      | 'studio'
     maxDecodedBytes?: number
     maxVoices?: number
+    opusSupported?: boolean
     suspended?: boolean
   } = {},
 ) {
@@ -215,13 +271,14 @@ function harness(
   const fetchArrayBuffer = vi.fn(async (url: string, signal: AbortSignal) => {
     if (signal.aborted) throw new DOMException('Cancelled', 'AbortError')
     if (failFetch) throw new TypeError('offline')
-    return new ArrayBuffer(resourceForUrl(url).encodedBytes)
+    return new ArrayBuffer(resourceForUrl(url).encoding.encodedBytes)
   })
   const player = createDrumKitPlayer({
     getAudioContext,
     getOutput,
     fetchArrayBuffer,
     verifyResource: async () => true,
+    probeOpusSupport: async () => options.opusSupported ?? false,
     ...(options.initialKitId === undefined
       ? {}
       : { initialKitId: options.initialKitId }),
@@ -243,6 +300,18 @@ function harness(
       failFetch = value
     },
   }
+}
+
+function baselinePlaybackResourceCount(
+  kitId: 'classic-gm' | 'live' | 'studio',
+): number {
+  return new Set(
+    [36, 38, 42, 44, 46].flatMap((gmKey) =>
+      drumKitPlaybackResources(kitId, gmKey, 104).map(
+        (resource) => resource.id,
+      ),
+    ),
+  ).size
 }
 
 describe('createDrumKitPlayer', () => {
@@ -298,6 +367,51 @@ describe('createDrumKitPlayer', () => {
       kind: 'exponential',
       value: 1,
       at: 11.004,
+    })
+  })
+
+  it('routes the explicit Circuit model through live and authored lanes without sample I/O', async () => {
+    const { context, fetchArrayBuffer, player } = harness({
+      initialKitId: 'circuit',
+    })
+    await expect(player.activate()).resolves.toBe(true)
+
+    expect(fetchArrayBuffer).not.toHaveBeenCalled()
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'circuit',
+      selectedFormat: null,
+      status: 'ready',
+    })
+
+    expect(player.trigger({ gmKey: 38, velocity: 104 })).toBe('synthesized')
+    const liveCircuitGains = context.gains.slice(8, 10)
+    expect(liveCircuitGains).toHaveLength(2)
+    expect(
+      liveCircuitGains.every((gain) =>
+        gain.connections.includes(context.gains[1]),
+      ),
+    ).toBe(true)
+
+    expect(player.trigger({ gmKey: 38, velocity: 104, lane: 'authored' })).toBe(
+      'synthesized',
+    )
+    const authoredCircuitGains = context.gains.slice(10, 12)
+    expect(
+      authoredCircuitGains.every((gain) =>
+        gain.connections.includes(context.gains[4]),
+      ),
+    ).toBe(true)
+
+    player.panic('live')
+    expect(liveCircuitGains[0].gain.events).toContainEqual({
+      kind: 'target',
+      value: 0.0001,
+      at: 10,
+    })
+    expect(authoredCircuitGains[0].gain.events).not.toContainEqual({
+      kind: 'target',
+      value: 0.0001,
+      at: 10,
     })
   })
 
@@ -384,9 +498,15 @@ describe('createDrumKitPlayer', () => {
     expect(liveVoice.connections).toEqual([liveLane])
     expect(authoredVoice.connections).toEqual([authoredKick])
     expect(authoredKick.connections).toEqual([authoredLane])
-    expect(liveLane.connections).toEqual([master])
+    expect(liveLane.connections).toEqual([
+      master,
+      context.mediaStreamDestinations[0],
+    ])
     expect(authoredLane.connections).toEqual([master])
     expect(master.connections).toEqual([output])
+    expect(player.liveCaptureStream()).toBe(
+      context.mediaStreamDestinations[0]?.stream,
+    )
 
     player.setLaneVolume('authored', 0.25)
     expect(authoredLane.gain.events.slice(-2)).toEqual([
@@ -451,6 +571,48 @@ describe('createDrumKitPlayer', () => {
     expect(context.sources[2].stops).toEqual([])
   })
 
+  it('routes sampled and synth live hits into capture while excluding authored hits and disconnects on disposal', async () => {
+    vi.useFakeTimers()
+    const { context, player } = harness()
+    await player.activate()
+
+    const liveLane = context.gains[1]
+    const authoredLane = context.gains[2]
+    const captureDestination = context.mediaStreamDestinations[0]
+    expect(captureDestination).toBeDefined()
+    expect(liveLane.connections).toContain(captureDestination)
+    expect(authoredLane.connections).not.toContain(captureDestination)
+
+    expect(player.trigger({ gmKey: 38, velocity: 100 })).toBe('synth-fallback')
+    expect(
+      context.gains
+        .slice(8)
+        .some((gain) => gain.connections.includes(liveLane)),
+    ).toBe(true)
+
+    await player.selectKit('classic-gm')
+    const sampleSourceStart = context.sources.length
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+    expect(
+      voiceChain(context.sources[sampleSourceStart]).gain.connections,
+    ).toEqual([liveLane])
+    expect(player.trigger({ gmKey: 36, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+    expect(
+      voiceChain(context.sources[sampleSourceStart + 1]).gain.connections[0],
+    ).not.toBe(liveLane)
+
+    player.dispose()
+    expect(captureDestination?.track.stop).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(200)
+    expect(liveLane.disconnect).toHaveBeenCalledOnce()
+    expect(authoredLane.disconnect).toHaveBeenCalledOnce()
+    expect(captureDestination?.track.stop).toHaveBeenCalledOnce()
+    expect(player.liveCaptureStream()).toBeNull()
+    vi.useRealTimers()
+  })
+
   it('falls back per hit while a selected sample is still downloading', async () => {
     const { context, player } = harness()
     await player.activate()
@@ -471,6 +633,7 @@ describe('createDrumKitPlayer', () => {
           )
         }),
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await slowPlayer.activate()
     const selection = slowPlayer.selectKit('studio')
@@ -526,6 +689,64 @@ describe('createDrumKitPlayer', () => {
     expect(rampGain).toBeLessThanOrEqual(nominalGain * 10 ** (0.75 / 20))
   })
 
+  it('pins Opus for every resource when the gesture-owned decoder probe succeeds', async () => {
+    const { fetchArrayBuffer, player } = harness({ opusSupported: true })
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'classic-gm',
+      selectedFormat: 'opus',
+      status: 'ready',
+      preparedSamples: 5,
+      plannedSamples: 5,
+    })
+    expect(fetchArrayBuffer).toHaveBeenCalledTimes(5)
+    expect(
+      fetchArrayBuffer.mock.calls.every(([url]) =>
+        String(url).endsWith('.opus'),
+      ),
+    ).toBe(true)
+  })
+
+  it('discards a partial Opus cache and reaches ready with one complete MP3 plan', async () => {
+    const context = new FakeAudioContext()
+    const requestedUrls: string[] = []
+    let opusRequest = 0
+    const fetchArrayBuffer = vi.fn(async (url: string) => {
+      requestedUrls.push(url)
+      const { encoding } = resourceForUrl(url)
+      if (url.endsWith('.opus')) {
+        opusRequest += 1
+        if (opusRequest === 2) throw new TypeError('Opus request failed')
+      }
+      return new ArrayBuffer(encoding.encodedBytes)
+    })
+    const player = createDrumKitPlayer({
+      getAudioContext: () => context as unknown as AudioContext,
+      getOutput: () => context.destination as unknown as AudioNode,
+      fetchArrayBuffer,
+      verifyResource: async () => true,
+      probeOpusSupport: async () => true,
+      loadConcurrency: 1,
+    })
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(requestedUrls.filter((url) => url.endsWith('.opus'))).toHaveLength(5)
+    expect(requestedUrls.filter((url) => url.endsWith('.mp3'))).toHaveLength(5)
+    expect(player.snapshot()).toMatchObject({
+      selectedKitId: 'classic-gm',
+      selectedFormat: 'mp3',
+      status: 'ready',
+      loadedSamples: 5,
+      preparedSamples: 5,
+      plannedSamples: 5,
+      error: null,
+    })
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+  })
+
   it('cleans a failed sample source before falling back to synth', async () => {
     const { context, player } = harness()
     await player.activate()
@@ -573,6 +794,163 @@ describe('createDrumKitPlayer', () => {
     })
   })
 
+  it('reports lane-safe GM cymbal release truth without overclaiming idle or fallback', async () => {
+    const { context, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+    await player.prewarm([{ gmKey: 49, velocity: 112 }])
+
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'live' })).toBe(
+      'sampled',
+    )
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+    const liveCrash = context.sources.at(-2)!
+    const authoredCrash = context.sources.at(-1)!
+
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 11.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+    expect(liveCrash.stops).toEqual([])
+    expect(authoredCrash.stops[0]).toBeCloseTo(11.185)
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('choked')
+    expect(authoredCrash.stops[1]).toBeCloseTo(10.075)
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('idle')
+    expect(player.choke({ gmKey: 38, lane: 'authored' })).toBe('unmapped')
+
+    await player.selectKit('mercury-synth')
+    expect(player.choke({ gmKey: 49, lane: 'authored' })).toBe('idle')
+  })
+
+  it('lets panic override a future sample choke before reopening the lane', async () => {
+    const { context, player } = harness({ maxVoices: 1 })
+    await player.activate()
+    await player.selectKit('classic-gm')
+    await player.prewarm([{ gmKey: 49, velocity: 112 }])
+
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 112,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('sampled')
+    const staleCrash = context.sources.at(-1)!
+    const staleGate = voiceChain(staleCrash).gain
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+
+    player.panic('authored')
+    expect(player.trigger({ gmKey: 49, velocity: 112, lane: 'authored' })).toBe(
+      'sampled',
+    )
+
+    expect(staleCrash.stops[1]).toBeCloseTo(10.15)
+    expect(staleGate.gain.events).toContainEqual({ kind: 'hold', at: 10 })
+    expect(staleGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+    expect(context.sources.at(-1)?.starts).toEqual([10])
+    expect(context.sources.at(-1)?.stops).toEqual([])
+  })
+
+  it('chokes tracked Mercury cymbals and same-time open hats in both fallback paths', async () => {
+    vi.useFakeTimers()
+    const { context, player } = harness()
+    await player.activate()
+
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 108,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    const mercuryCrashGate = context.gains[8]!
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+    expect(mercuryCrashGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 12.11,
+    })
+    player.panic('authored')
+    expect(mercuryCrashGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+    expect(player.trigger({ gmKey: 49, velocity: 108, lane: 'authored' })).toBe(
+      'synth-fallback',
+    )
+    vi.advanceTimersByTime(151)
+    expect(mercuryCrashGate.disconnect).toHaveBeenCalledOnce()
+
+    const openHatGainIndex = context.gains.length
+    expect(
+      player.trigger({
+        gmKey: 46,
+        velocity: 104,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    const mercuryOpenHatGate = context.gains[openHatGainIndex]!
+    expect(
+      player.trigger({
+        gmKey: 42,
+        velocity: 104,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    expect(mercuryOpenHatGate.gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 12,
+    })
+
+    await player.selectKit('classic-gm')
+    expect(
+      player.trigger({
+        gmKey: 49,
+        velocity: 108,
+        atContextTime: 12,
+        lane: 'authored',
+      }),
+    ).toBe('synth-fallback')
+    expect(
+      player.choke({
+        gmKey: 49,
+        atContextTime: 12.11,
+        lane: 'authored',
+      }),
+    ).toBe('choked')
+
+    player.dispose()
+    vi.runAllTimers()
+    vi.useRealTimers()
+  })
+
   it('steals the oldest live voice without allowing the active set past its cap', async () => {
     const { context, player } = harness({ maxVoices: 2 })
     await player.activate()
@@ -609,7 +987,7 @@ describe('createDrumKitPlayer', () => {
       preparedSamples: 2,
       plannedSamples: 5,
       fallbackReady: true,
-      sampledReady: true,
+      sampledReady: false,
       error: expect.stringContaining('Mercury Synth'),
     })
   })
@@ -621,7 +999,7 @@ describe('createDrumKitPlayer', () => {
     const fetchArrayBuffer = vi.fn((url: string, signal: AbortSignal) => {
       const resource = resourceForUrl(url)
       if (!holdFirstSelection) {
-        return Promise.resolve(new ArrayBuffer(resource.encodedBytes))
+        return Promise.resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       }
       firstSelectionSignals.push(signal)
       return new Promise<ArrayBuffer>((_resolve, reject) => {
@@ -637,6 +1015,7 @@ describe('createDrumKitPlayer', () => {
       getOutput: () => context.destination as unknown as AudioNode,
       fetchArrayBuffer,
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await player.activate()
 
@@ -648,13 +1027,19 @@ describe('createDrumKitPlayer', () => {
 
     const secondSelection = player.selectKit('studio')
     await Promise.all([firstSelection, secondSelection])
-    expect(fetchArrayBuffer).toHaveBeenCalledTimes(12)
+    const planned = baselinePlaybackResourceCount('studio')
+    expect(drumKitPlaybackResources('studio', 42, 96)).toEqual([])
+    expect(drumKitManifest('studio').sampleStatus).toBe('fallback')
+    expect(fetchArrayBuffer).toHaveBeenCalledTimes(
+      firstSelectionSignals.length + planned,
+    )
     expect(player.snapshot()).toMatchObject({
       selectedKitId: 'studio',
       status: 'ready',
-      sampledReady: true,
-      preparedSamples: 10,
-      plannedSamples: 10,
+      sampleStatus: 'fallback',
+      sampledReady: false,
+      preparedSamples: planned,
+      plannedSamples: planned,
       error: null,
     })
   })
@@ -666,12 +1051,13 @@ describe('createDrumKitPlayer', () => {
     let resolveTarget: (() => void) | undefined
     const fetchArrayBuffer = vi.fn((url: string, signal: AbortSignal) => {
       const resource = resourceForUrl(url)
-      if (resource.id !== target.id) {
-        return Promise.resolve(new ArrayBuffer(resource.encodedBytes))
+      if (resource.resource.id !== target.id) {
+        return Promise.resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       }
       targetSignal = signal
       return new Promise<ArrayBuffer>((resolve) => {
-        resolveTarget = () => resolve(new ArrayBuffer(resource.encodedBytes))
+        resolveTarget = () =>
+          resolve(new ArrayBuffer(resource.encoding.encodedBytes))
       })
     })
     const player = createDrumKitPlayer({
@@ -679,6 +1065,7 @@ describe('createDrumKitPlayer', () => {
       getOutput: () => context.destination as unknown as AudioNode,
       fetchArrayBuffer,
       verifyResource: async () => true,
+      probeOpusSupport: async () => false,
     })
     await player.activate()
     await player.selectKit('classic-gm')
@@ -726,11 +1113,12 @@ describe('createDrumKitPlayer', () => {
 
     setFailFetch(false)
     await player.retry()
+    const planned = baselinePlaybackResourceCount('studio')
     expect(player.snapshot()).toMatchObject({
       status: 'ready',
-      sampledReady: true,
-      preparedSamples: 10,
-      plannedSamples: 10,
+      sampledReady: false,
+      preparedSamples: planned,
+      plannedSamples: planned,
       error: null,
     })
 
@@ -744,7 +1132,7 @@ describe('createDrumKitPlayer', () => {
     expect(player.snapshot().preparedSamples).toBe(
       player.snapshot().plannedSamples,
     )
-    expect(player.snapshot().preparedSamples).toBe(10)
+    expect(player.snapshot().preparedSamples).toBe(planned)
   })
 
   it('distinguishes unknown GM values from unsupported auxiliary percussion', async () => {
@@ -892,6 +1280,10 @@ describe('playback intelligence', () => {
     const { context, player } = harness()
     await player.activate()
     await player.selectKit('classic-gm')
+    await player.prewarm([
+      { gmKey: 38, velocity: 40 },
+      { gmKey: 38, velocity: 127 },
+    ])
 
     expect(player.trigger({ gmKey: 38, velocity: 40 })).toBe('sampled')
     const soft = voiceChain(context.sources[0])
@@ -956,9 +1348,38 @@ describe('playback intelligence', () => {
 
     const buffers = new Set<AudioBuffer | null>()
     for (let index = 0; index < 8; index += 1) {
-      expect(player.trigger({ gmKey: 42, velocity: 104 })).toBe('sampled')
+      expect(player.trigger({ gmKey: 46, velocity: 104 })).toBe('sampled')
       buffers.add(context.sources[context.sources.length - 1].buffer)
     }
     expect(buffers.size).toBeGreaterThan(1)
+  })
+
+  it('prewarms and selects reduced low versus ready high velocity layers', async () => {
+    const { fetchArrayBuffer, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+    const low = drumKitPlaybackResources('classic-gm', 36, 40)
+    const high = drumKitPlaybackResources('classic-gm', 36, 112)
+    const all = drumKitManifest('classic-gm').resources.filter((resource) =>
+      resource.gmKeys.includes(36),
+    )
+    expect(low.every((resource) => resource.readiness === 'reduced')).toBe(true)
+    expect(high.every((resource) => resource.readiness === 'ready')).toBe(true)
+    const ready = high[0]!
+    const reduced = all.find((resource) => resource.readiness === 'reduced')!
+    expect(
+      fetchArrayBuffer.mock.calls.some(([url]) => url.endsWith(ready.path)),
+    ).toBe(true)
+    expect(
+      fetchArrayBuffer.mock.calls.some(([url]) => url.endsWith(reduced.path)),
+    ).toBe(false)
+
+    await player.prewarm([{ gmKey: 36, velocity: 40 }])
+    const fetchedUrls = fetchArrayBuffer.mock.calls.map(([url]) => url)
+
+    expect(fetchedUrls.some((url) => url.endsWith(ready.path))).toBe(true)
+    expect(fetchedUrls.some((url) => url.endsWith(reduced.path))).toBe(true)
+    expect(player.trigger({ gmKey: 36, velocity: 40 })).toBe('sampled')
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
   })
 })

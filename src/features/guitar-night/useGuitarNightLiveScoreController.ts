@@ -44,6 +44,13 @@ interface GuitarNightLiveScoreControllerOptions {
   armTakeAt(startedAtSeconds: number): boolean
   completeTakeAt(endedAtSeconds: number): boolean
   completeTakeNow(): boolean
+  /** Replay capture is best-effort and must never become scoring authority. */
+  beginReplayCapture?(
+    boundary: GuitarNightScoreLiveBoundary,
+    inputKind: GuitarInputProfileKind,
+  ): void
+  finishReplayCapture?(boundaryId: string): void
+  discardReplayCapture?(boundaryId: string): void
 }
 
 function compactBeat(beat: number | null): string {
@@ -155,6 +162,36 @@ export function useGuitarNightLiveScoreController(
   let finishingTakeId: string | null = null
   let generation = 0
   let lastSampledFrame = 0
+
+  const beginReplayCapture = (
+    run: GuitarNightScoreLiveBoundary,
+    inputKind: GuitarInputProfileKind,
+  ): void => {
+    try {
+      options.beginReplayCapture?.(run, inputKind)
+    } catch {
+      // Audio replay is optional; an implementation failure cannot lose score.
+    }
+  }
+
+  const finishReplayCapture = (boundaryId: string): void => {
+    try {
+      options.finishReplayCapture?.(boundaryId)
+    } catch {
+      // Audio replay is optional; an implementation failure cannot lose score.
+    }
+  }
+
+  const discardReplayCapture = (
+    run: GuitarNightScoreLiveBoundary | null = boundary(),
+  ): void => {
+    if (run === null) return
+    try {
+      options.discardReplayCapture?.(run.id)
+    } catch {
+      // Audio replay is optional; an implementation failure cannot lose score.
+    }
+  }
 
   const transportFrame = createMemo(() => {
     const run = boundary()
@@ -341,6 +378,7 @@ export function useGuitarNightLiveScoreController(
       return
     }
     generation += 1
+    discardReplayCapture()
     setHoldReason('input-lost')
     setStarting(false)
     options.pauseRoom()
@@ -451,6 +489,7 @@ export function useGuitarNightLiveScoreController(
 
   const clear = (): void => {
     generation += 1
+    discardReplayCapture()
     engine = null
     takeId = null
     lastSampledFrame = 0
@@ -533,6 +572,7 @@ export function useGuitarNightLiveScoreController(
       setScoringInputKind(inputKind)
       finishingTakeId = null
       setFinishing(false)
+      beginReplayCapture(run, inputKind)
       return true
     } finally {
       if (currentGeneration === generation) setStarting(false)
@@ -544,6 +584,7 @@ export function useGuitarNightLiveScoreController(
     if (engine === null) return
     sampleCurrentTake(true)
     generation += 1
+    discardReplayCapture()
     setHoldReason('paused')
     setStarting(false)
   }
@@ -582,6 +623,8 @@ export function useGuitarNightLiveScoreController(
       setFinishing(false)
       return false
     }
+    const run = boundary()
+    if (run !== null) finishReplayCapture(run.id)
     return true
   }
 

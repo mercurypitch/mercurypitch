@@ -3110,7 +3110,7 @@ test('erases only Drum projects and take history after scoped confirmation @smok
   })
   await clickWithRealMouse(page, erase)
   const eraseDialog = library.getByRole('alertdialog', {
-    name: 'Erase Drum projects and take history?',
+    name: 'Erase Drum projects and summary history?',
   })
   await expect(eraseDialog).toBeVisible()
   await expect(
@@ -3288,9 +3288,13 @@ test('retains failed take evidence through retry and clears only a confirmed dis
   ).toBeVisible()
   await expect(
     compactHistory.getByRole('heading', {
-      name: 'Take saved on this device.',
+      name: 'Take summary saved on this device.',
     }),
   ).toBeVisible()
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Not now' }),
+  )
 
   await clickWithRealMouse(
     page,

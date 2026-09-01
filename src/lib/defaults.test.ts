@@ -59,6 +59,32 @@ describe('isDiagnosticHost', () => {
     }
   })
 
+  it('speaks wherever the dev-log relay is listening', () => {
+    // `vite preview --host` serves the real bundle to a phone at a LAN IP,
+    // which matches no known host — so the build actually worth debugging was
+    // the one build that said nothing. The relay only exists behind a dev
+    // server's env flag, so its presence is proof someone is watching.
+    expect(
+      isDiagnosticHost({
+        isDev: false,
+        isPreview: false,
+        hostname: '192.168.178.33',
+        devDomain: dev,
+        hasDevLogRelay: true,
+      }),
+    ).toBe(true)
+    // And its absence changes nothing about the hosts above.
+    expect(
+      isDiagnosticHost({
+        isDev: false,
+        isPreview: false,
+        hostname: '192.168.178.33',
+        devDomain: dev,
+        hasDevLogRelay: false,
+      }),
+    ).toBe(false)
+  })
+
   it('stays quiet where there is no location at all', () => {
     expect(
       isDiagnosticHost({

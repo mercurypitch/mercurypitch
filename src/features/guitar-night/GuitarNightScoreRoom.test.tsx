@@ -1,5 +1,7 @@
 // The tab room must open silent, on the tab's own terms, with no recording.
 // ============================================================
+// Kept together because the room-boundary assertions and exported state helpers
+// share the same authored-score fixture and lifecycle invariants.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -40,6 +42,7 @@ describe('GuitarNightScoreRoom', () => {
   afterEach(() => {
     cleanup()
     globalThis.localStorage.clear()
+    vi.restoreAllMocks()
   })
 
   it('opens silent, naming the tab and its own clock', () => {
@@ -131,6 +134,85 @@ describe('GuitarNightScoreRoom', () => {
     expect(
       screen.getByRole('button', { name: 'Hear selected backing parts' }),
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('opens the discoverable Track mixer with live faders and Drum Kit', () => {
+    const onFollowStageTrack = vi.fn()
+    const reference: GuitarNightReference = {
+      ...VELVET_RIFF,
+      tracks: [
+        ...VELVET_RIFF.tracks,
+        { id: 'track-bass', name: 'Bass', noteCount: 1 },
+        {
+          id: 'track-drums',
+          name: 'Studio drums',
+          kind: 'percussion',
+          hitCount: 1,
+          supportedHitCount: 1,
+          droppedHitCount: 0,
+        },
+      ],
+    }
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => reference}
+        backingMelody={() => [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 1,
+            variant: 'bass',
+            channelId: 'track-bass',
+          },
+        ]}
+        backingPercussion={() => [
+          {
+            trackId: 'track-drums',
+            gmKey: 36,
+            velocity: 100,
+            startBeat: 0,
+          },
+        ]}
+        audibleBackingTrackIds={() => ['track-bass', 'track-drums']}
+        onToggleBackingTrack={vi.fn()}
+        followedStageTrackId={() => 'track-drums'}
+        onFollowStageTrack={onFollowStageTrack}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const trigger = screen.getByTestId('guitar-night-session-trigger')
+    expect(trigger).toHaveAccessibleName('Open track mixer for Velvet Riff')
+    expect(within(trigger).getByText('Mix')).toBeInTheDocument()
+    fireEvent.click(trigger)
+
+    const mixer = screen.getByRole('dialog', {
+      name: 'Track mixer for Velvet Riff',
+    })
+    expect(
+      within(mixer).getByRole('slider', {
+        name: 'Guitar Night room level',
+      }),
+    ).toBeInTheDocument()
+    const bassLevel = within(mixer).getByRole('slider', {
+      name: 'Bass level',
+    })
+    fireEvent.input(bassLevel, { target: { value: '6' } })
+    expect(bassLevel).toHaveAttribute('aria-valuetext', '+6 dB')
+    expect(
+      within(mixer).getByRole('combobox', {
+        name: 'Guitar Night drum kit',
+      }),
+    ).toBeEnabled()
+    const followedDrums = within(mixer)
+      .getAllByTestId('guitar-night-session-track')
+      .find((button) => button.textContent?.includes('Studio drums'))
+    expect(followedDrums).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(followedDrums!)
+    expect(onFollowStageTrack).toHaveBeenCalledWith(null)
+    expect(
+      screen.queryByRole('dialog', { name: 'Track mixer for Velvet Riff' }),
+    ).not.toBeInTheDocument()
   })
 
   it('separates the launch count-in from the playback click', () => {
@@ -239,6 +321,33 @@ describe('GuitarNightScoreRoom', () => {
     expect(deck.getByLabelText('Tempo 86 BPM')).toBeInTheDocument()
   })
 
+  it('keeps the shared Session amp silent while its tone is being shaped', () => {
+    const audioContext = vi.spyOn(globalThis, 'AudioContext')
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Session controls'))
+    const amp = within(screen.getByRole('region', { name: 'Guitar amp' }))
+    fireEvent.change(amp.getByLabelText('Guitar amp preset'), {
+      target: { value: 'lead' },
+    })
+    fireEvent.click(amp.getByRole('button', { name: 'Bypass guitar amp' }))
+    fireEvent.click(amp.getByText('Shape tone & cabinet'))
+    const bass = amp.getByRole('slider', { name: 'Guitar amp bass' })
+    fireEvent.input(bass, { target: { value: '-0.25' } })
+    fireEvent.change(bass, { target: { value: '-0.25' } })
+
+    expect(amp.getByLabelText('Guitar amp preset')).toHaveValue('custom')
+    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(audioContext).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Start the count-in')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Pause score')).toBeNull()
+  })
+
   it('sets zero-safe A/B marks beside the rail and clears them again', () => {
     render(() => (
       <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
@@ -293,7 +402,7 @@ describe('GuitarNightScoreRoom', () => {
 
     fireEvent.click(screen.getByTestId('guitar-night-session-trigger'))
     expect(
-      screen.getByRole('dialog', { name: 'Loaded score' }),
+      screen.getByRole('dialog', { name: 'Track mixer for Velvet Riff' }),
     ).toBeInTheDocument()
     expect(
       activeVoiceCommands()
@@ -302,7 +411,9 @@ describe('GuitarNightScoreRoom', () => {
     ).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
-    expect(screen.queryByRole('dialog', { name: 'Loaded score' })).toBeNull()
+    expect(
+      screen.queryByRole('dialog', { name: 'Track mixer for Velvet Riff' }),
+    ).toBeNull()
     expect(screen.getByRole('dialog', { name: 'Score' })).toBeInTheDocument()
   })
 

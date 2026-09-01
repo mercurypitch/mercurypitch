@@ -6,6 +6,7 @@
 // only in the lobby, so the answer was "leave the room".
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
@@ -179,7 +180,7 @@ describe('GuitarNightSessionPanel', () => {
     ))
 
     expect(
-      screen.getByRole('button', { name: 'Close the session details' }),
+      screen.getByRole('button', { name: 'Close the track mixer' }),
     ).toHaveFocus()
     fireEvent.click(screen.getByTestId('guitar-night-session-scrim'))
 
@@ -197,7 +198,11 @@ describe('GuitarNightSessionPanel', () => {
       />
     ))
 
-    fireEvent.pointerDown(screen.getByRole('dialog', { name: 'Loaded score' }))
+    fireEvent.pointerDown(
+      screen.getByRole('dialog', {
+        name: 'Track mixer for Velvet pointer study',
+      }),
+    )
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -232,11 +237,13 @@ describe('GuitarNightSessionPanel', () => {
     ))
 
     expect(
-      screen.getByRole('dialog', { name: 'Loaded arrangement' }),
+      screen.getByRole('dialog', {
+        name: 'Track mixer for Velvet pointer study',
+      }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Loaded arrangement · free play')).toBeTruthy()
+    expect(screen.getByText('Track mixer · free play')).toBeTruthy()
     expect(
-      screen.getByText(/sheet is reference only; no guitar notes are scored/),
+      screen.getByText(/notation is available without creating a Guitar score/),
     ).toBeTruthy()
     expect(screen.queryByText(/ · scored/)).toBeNull()
   })
@@ -409,6 +416,12 @@ describe('GuitarNightSessionPanel', () => {
 
   it('lists drums as audible, readable hits without making them score parts', () => {
     const onSelectTrack = vi.fn()
+    const [followedTrackId, setFollowedTrackId] = createSignal<string | null>(
+      null,
+    )
+    const onFollowTrack = vi.fn((trackId: string | null) => {
+      setFollowedTrackId(trackId)
+    })
     const onToggleTrackAudible = vi.fn()
     const onToggleTrackVisible = vi.fn()
     render(() => (
@@ -418,6 +431,8 @@ describe('GuitarNightSessionPanel', () => {
         onToggleTrackAudible={onToggleTrackAudible}
         visibleTrackIds={() => ['track-lead', 'track-drums']}
         onToggleTrackVisible={onToggleTrackVisible}
+        followedTrackId={followedTrackId}
+        onFollowTrack={onFollowTrack}
         onSelectTrack={onSelectTrack}
         onClose={vi.fn()}
       />
@@ -427,11 +442,23 @@ describe('GuitarNightSessionPanel', () => {
       .getAllByTestId('guitar-night-session-track')
       .find((button) => button.textContent?.includes('Drum kit'))
     expect(drumPart).toBeDefined()
-    expect(drumPart).toBeDisabled()
-    expect(drumPart?.textContent).toContain('16 hits · drums')
+    expect(drumPart).toBeEnabled()
+    expect(drumPart?.textContent).toContain(
+      '16 hits · drum notation · not scored',
+    )
     expect(drumPart).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(drumPart!)
     expect(onSelectTrack).not.toHaveBeenCalled()
+    expect(onFollowTrack).toHaveBeenCalledWith('track-drums')
+    expect(drumPart).toHaveAttribute('aria-pressed', 'true')
+    expect(drumPart).toHaveAttribute(
+      'title',
+      'Stop following Drum kit on the stage',
+    )
+
+    fireEvent.click(drumPart!)
+    expect(onFollowTrack).toHaveBeenLastCalledWith(null)
+    expect(drumPart).toHaveAttribute('aria-pressed', 'false')
 
     const sound = screen.getByLabelText('Mute Drum kit')
     expect(sound).toBeEnabled()
@@ -516,24 +543,26 @@ describe('GuitarNightSessionPanel', () => {
     expect(screen.getByLabelText('Mute Rhythm guitar')).toBeEnabled()
   })
 
-  it('reports the scored part rather than owning its sound', () => {
+  it('lets the mixer mute the scored part through the room sound gate', () => {
+    const onToggleScoredPartSounds = vi.fn()
     render(() => (
       <GuitarNightSessionPanel
         reference={() => reference()}
         audibleTrackIds={() => []}
         onToggleTrackAudible={vi.fn()}
         scoredPartSounds={() => false}
+        onToggleScoredPartSounds={onToggleScoredPartSounds}
         onSelectTrack={vi.fn()}
         onClose={vi.fn()}
       />
     ))
 
     const scored = screen.getByLabelText('Unmute Lead guitar')
-    expect(scored).toBeDisabled()
+    expect(scored).toBeEnabled()
     expect(scored.getAttribute('aria-pressed')).toBe('true')
-    expect(scored.getAttribute('title')).toBe(
-      'Use Tab sounds to hear or mute Lead guitar',
-    )
+    expect(scored.getAttribute('title')).toBe('Hear Lead guitar')
+    fireEvent.click(scored)
+    expect(onToggleScoredPartSounds).toHaveBeenCalledTimes(1)
   })
 
   it('says what the band is doing when a file has several parts', () => {
@@ -574,5 +603,66 @@ describe('GuitarNightSessionPanel', () => {
     expect(
       screen.getByText(/Only Rhythm guitar is playing/),
     ).toBeInTheDocument()
+  })
+
+  it('offers live per-track boost without coupling it to mute or Solo', () => {
+    const onTrackLevelDb = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => referenceWithDrums()}
+        audibleTrackIds={() => ['track-rhythm', 'track-drums']}
+        mutedTrackIds={() => ['track-rhythm']}
+        soloedTrackId={() => 'track-drums'}
+        onToggleTrackAudible={vi.fn()}
+        onToggleTrackSolo={vi.fn()}
+        trackLevelDb={(trackId) => (trackId === 'track-drums' ? 4.5 : 0)}
+        onTrackLevelDb={onTrackLevelDb}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const drumLevel = screen.getByRole('slider', { name: 'Drum kit level' })
+    expect(drumLevel).toHaveValue('4.5')
+    expect(drumLevel).toHaveAttribute('aria-valuetext', '+4.5 dB')
+
+    fireEvent.input(drumLevel, { target: { value: '6' } })
+    expect(onTrackLevelDb).toHaveBeenCalledWith('track-drums', 6)
+    expect(screen.getByLabelText('Unmute Rhythm guitar')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByLabelText('Turn off solo for Drum kit')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('controls room level and resets faders without replacing their rows', () => {
+    const onMasterLevel = vi.fn()
+    const onResetTrackLevels = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        masterLevel={() => 0.76}
+        onMasterLevel={onMasterLevel}
+        trackLevelDb={() => 0}
+        onTrackLevelDb={vi.fn()}
+        onResetTrackLevels={onResetTrackLevels}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const master = screen.getByRole('slider', {
+      name: 'Guitar Night room level',
+    })
+    expect(master).toHaveValue('0.76')
+    expect(screen.getByText('76%')).toBeInTheDocument()
+    fireEvent.input(master, { target: { value: '0.9' } })
+    expect(onMasterLevel).toHaveBeenCalledWith(0.9)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset levels' }))
+    expect(onResetTrackLevels).toHaveBeenCalledTimes(1)
   })
 })

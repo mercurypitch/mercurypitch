@@ -13,7 +13,7 @@
 // here hard-codes game feel.
 // ============================================================
 
-import { midiToNoteNameOctave, playTargetHum } from '@irchiinnuss/pitch-engine'
+import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
@@ -21,6 +21,7 @@ import './journey.css'
 import { createSingDriver } from './drivers/sing'
 import { createTapDriver } from './drivers/tap'
 import type { InteractionDriver } from './drivers/types'
+import { createGameVoice } from './game-voice'
 import { JOURNEY_CONFIG } from './journey-config'
 import { compileLevel } from './levels/compile'
 import type { GameFeel } from './levels/feel'
@@ -36,7 +37,6 @@ import { createVibratoDetector } from './vibrato'
 import type { AtriumZone, BeamZone, Boss, Node, Pane, Platform, WhisperZone, } from './world-types'
 
 const MIC_ID = 'journey-proto'
-const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 
 type Phase = 'intro' | 'ground' | 'play' | 'cue' | 'fallen' | 'done'
 
@@ -145,6 +145,9 @@ export const JourneyPrototype: Component<{
   let beams: BeamZone[] = []
   let atriums: AtriumZone[] = []
   let vib = createVibratoDetector(JOURNEY_CONFIG.vibrato)
+  // The melody's instrument. Built here, started inside the gesture that
+  // starts the driver -- the same tap has to unlock both directions.
+  const voice = createGameVoice('glass-journey')
   let vibState: VibratoState = {
     active: false,
     rateHz: 0,
@@ -704,8 +707,7 @@ export const JourneyPrototype: Component<{
    * the driver clock REGARDLESS of the corner sound toggles — hearing
    * it IS the game. */
   const promptListen = (midi: number): void => {
-    const ctx = driver?.ctx() ?? null
-    if (ctx !== null) playTargetHum(ctx, midiToHz(midi), C.listen.promptSeconds)
+    voice.note(midi, C.listen.promptSeconds)
     listenPromptAt = performance.now()
   }
 
@@ -795,10 +797,7 @@ export const JourneyPrototype: Component<{
   }
 
   const hum = (midi: number, secs: number): void => {
-    const ctx = driver?.ctx() ?? null
-    if (ctx !== null && untrack(() => soundOn() && humOn())) {
-      playTargetHum(ctx, midiToHz(midi), secs)
-    }
+    if (untrack(() => soundOn() && humOn())) voice.note(midi, secs)
   }
 
   const advanceTo = (idx: number): void => {
@@ -946,6 +945,7 @@ export const JourneyPrototype: Component<{
       // tap and listen play need no microphone: the clock (and the
       // player's ears) are the instrument
       driver = createTapDriver()
+      voice.start()
       await driver.start()
       groundMidi = readStoredGround()
       buildStage()
@@ -955,6 +955,7 @@ export const JourneyPrototype: Component<{
     }
     try {
       driver = createSingDriver(MIC_ID)
+      voice.start()
       await driver.start()
       setPhase('ground')
     } catch (err) {
@@ -2987,6 +2988,7 @@ export const JourneyPrototype: Component<{
     window.removeEventListener('keydown', keyDown)
     window.removeEventListener('keyup', keyUp)
     arpeggioTimers.forEach((t) => window.clearTimeout(t))
+    voice.dispose()
     driver?.stop()
     driver = null
   })

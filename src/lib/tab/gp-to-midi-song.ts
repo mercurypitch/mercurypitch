@@ -11,9 +11,10 @@
 import type * as alphaTab from '@coderline/alphatab'
 import type { GuitarBendType, GuitarNoteNotation, GuitarSlideType, GuitarTechnique, } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { midiProgramFamily, normalizeMidiProgram, } from '@/lib/midi-program-family'
 import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
-import { guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
+import { guitarProAccent, guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
 
 /** alphaTab playback ticks per quarter note. */
 const TICKS_PER_QUARTER = 960
@@ -272,12 +273,20 @@ function percussionTrackToMidiSongTrack(
               droppedHitCount += 1
               continue
             }
+            const accent = guitarProAccent(note.accentuated as number)
             const writtenDuration = beat.playbackDuration / TICKS_PER_QUARTER
             percussionHits.push({
               id: sourceNoteId(index, staff, note),
               gmKey: resolved.gmKey,
               startBeat,
-              velocity: guitarProDynamicVelocity(note.dynamics as number),
+              velocity: guitarProDynamicVelocity(
+                note.dynamics as number,
+                accent,
+              ),
+              ...(accent === undefined ? {} : { accent }),
+              ...(resolved.articulation === undefined
+                ? {}
+                : { articulation: resolved.articulation }),
               ...(writtenDuration > 0 ? { writtenDuration } : {}),
               source: resolved.source,
             })
@@ -355,11 +364,18 @@ function trackToMidiSongTrack(
                   midi,
                   startBeat,
                   duration,
+                  velocity: guitarProDynamicVelocity(note.dynamics as number),
                   stringIndex,
                   fret,
                   authoredFingering: true,
                 }
-              : { id, midi, startBeat, duration }
+              : {
+                  id,
+                  midi,
+                  startBeat,
+                  duration,
+                  velocity: guitarProDynamicVelocity(note.dynamics as number),
+                }
             // Let-ring is exposed per-note and per-beat by alphaTab.
             if (note.isLetRing || beat.isLetRing) out.letRing = true
             if (notation !== undefined) out.notation = notation
@@ -374,14 +390,21 @@ function trackToMidiSongTrack(
   notes.sort((a, b) => a.startBeat - b.startBeat)
   applyLetRing(notes)
 
-  const program = info?.program ?? 0
-  const instrumentName = gmInstrumentName(program)
+  const program = normalizeMidiProgram(info?.program)
+  const instrumentName =
+    program === undefined ? 'Unknown Instrument' : gmInstrumentName(program)
   const name = track.name.trim() !== '' ? track.name.trim() : instrumentName
   return {
     id: `gp-t${index}`,
     kind: 'pitched',
     name,
     instrumentName,
+    ...(program === undefined
+      ? { instrumentFamily: 'neutral' as const }
+      : {
+          sourceProgram: program,
+          instrumentFamily: midiProgramFamily(program),
+        }),
     noteCount: notes.length,
     notes,
     ...(sourceSetup === undefined || sourceSetupConflicts

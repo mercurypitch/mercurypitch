@@ -2,6 +2,7 @@ import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTime
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
 import { createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { BuildStamp } from '@/components/BuildStamp'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
 import type { BesideCueAppConfig } from './app-config'
@@ -1761,6 +1762,8 @@ export function App(props: AppProps) {
 
   return (
     <>
+      <BuildStamp />
+
       {screen() === 'loading' ? (
         <main class="system-screen app-screen" aria-busy="true">
           <BrandMark />

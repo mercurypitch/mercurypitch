@@ -612,6 +612,13 @@
    ============================================================
    Opened from the room's own identity block, which is the "loaded tab/midi
    session info" a player already looks at to see what is in the room. */
+.main:has(.sessionScrim) {
+  /* `.main` and `.topbar` are sibling stacking contexts. A fixed descendant
+     cannot escape the main's usual z=1, so the topbar otherwise paints over
+     this modal on phones even when the scrim itself is z=40. */
+  z-index: 3;
+}
+
 .sessionScrim {
   position: fixed;
   z-index: 40;
@@ -635,8 +642,8 @@
   position: relative;
   display: grid;
   gap: 0.9rem;
-  width: min(26rem, 100%);
-  max-height: min(32rem, calc(100dvh - 2rem));
+  width: min(34rem, 100%);
+  max-height: min(42rem, calc(100dvh - 2rem));
   padding: 1.1rem;
   overflow-y: auto;
   border: 1px solid rgba(224, 164, 93, 0.26);
@@ -832,6 +839,95 @@
   gap: 0.4rem;
 }
 
+.sessionMasterFader,
+.sessionTrackFader {
+  display: grid;
+  min-width: 0;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.62rem;
+  background: rgba(244, 234, 219, 0.025);
+}
+
+.sessionMasterFader {
+  gap: 0.2rem;
+  padding: 0.45rem 0.7rem 0.15rem;
+}
+
+.sessionMasterFader > span {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) 3rem;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.sessionMasterFader > span > span:first-child {
+  display: grid;
+  place-items: center;
+  color: var(--amber);
+}
+
+.sessionMasterFader svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.sessionMasterFader strong,
+.sessionMasterFader small {
+  display: block;
+}
+
+.sessionMasterFader strong,
+.sessionMixHeading strong {
+  font-size: 0.74rem;
+}
+
+.sessionMasterFader small,
+.sessionMixHeading small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.sessionMasterFader output,
+.sessionTrackFader output {
+  color: var(--ivory);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.sessionMixHeading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sessionMixHeading > div {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.sessionResetMix {
+  flex: none;
+  min-height: var(--touch-target);
+  padding: 0 0.7rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.5rem;
+  color: var(--muted-readable);
+  background: rgba(244, 234, 219, 0.03);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sessionResetMix:hover,
+.sessionResetMix:focus-visible {
+  border-color: rgba(224, 164, 93, 0.4);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.08);
+}
+
 .sessionBackingMaster {
   display: grid;
   grid-column: 1 / -1;
@@ -920,11 +1016,100 @@
 
 .sessionTrackRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  grid-auto-columns: var(--touch-target);
+  grid-template-columns: minmax(0, 1fr) repeat(3, var(--touch-target));
   gap: 0.4rem;
   align-items: stretch;
+}
+
+.sessionTrackFader {
+  grid-column: 1 / -1;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 3.8rem;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 0.7rem;
+  transition: opacity 140ms ease;
+}
+
+.sessionTrackFader > span {
+  color: var(--muted-readable);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.sessionTrackFaderMasked {
+  opacity: 0.62;
+}
+
+.sessionMasterFader input,
+.sessionTrackFader input {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  width: 100%;
+  min-height: var(--touch-target);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sessionMasterFader input::-webkit-slider-runnable-track,
+.sessionTrackFader input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgba(224, 164, 93, 0.72),
+    rgba(244, 234, 219, 0.18)
+  );
+}
+
+.sessionMasterFader input::-webkit-slider-thumb,
+.sessionTrackFader input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.375rem;
+  border: 2px solid #26190e;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  box-shadow: 0 0 0.8rem rgba(224, 164, 93, 0.3);
+}
+
+.sessionMasterFader input::-moz-range-track,
+.sessionTrackFader input::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.18);
+}
+
+.sessionMasterFader input::-moz-range-progress,
+.sessionTrackFader input::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(224, 164, 93, 0.72);
+}
+
+.sessionMasterFader input::-moz-range-thumb,
+.sessionTrackFader input::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #26190e;
+  border-radius: 50%;
+  background: var(--amber-bright);
+}
+
+.sessionMasterFader input:focus-visible,
+.sessionTrackFader input:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: -8px;
+}
+
+.sessionMasterFader input:disabled,
+.sessionTrackFader input:disabled {
+  cursor: default;
+  opacity: 0.4;
 }
 
 .sessionTracks button {
@@ -1022,9 +1207,84 @@
   cursor: pointer;
 }
 
+.roomIdentityMixCue {
+  display: inline-flex;
+  gap: 0.22rem;
+  align-items: center;
+  margin-right: 0.45rem;
+  padding-right: 0.45rem;
+  border-right: 1px solid rgba(224, 164, 93, 0.3);
+  color: var(--amber-bright);
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+}
+
+.roomIdentityMixCue svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
 .roomIdentityTrigger:hover h1,
 .roomIdentityTrigger:focus-visible h1 {
   color: var(--amber-bright);
+}
+
+@media (max-width: 30rem) {
+  .sessionScrim {
+    padding: 0.5rem;
+  }
+
+  .sessionPanel {
+    max-height: calc(100dvh - 1rem);
+    padding: 0.75rem;
+  }
+
+  .sessionTrackRow {
+    gap: 0.25rem;
+  }
+
+  .sessionTrackFader {
+    grid-template-columns: 2.1rem minmax(0, 1fr) 3.4rem;
+    gap: 0.35rem;
+    padding-inline: 0.5rem;
+  }
+
+  .sessionMixHeading {
+    align-items: start;
+  }
+
+  .sessionPanel .drumSoundControls {
+    grid-template-columns: 1fr;
+  }
+
+  .sessionPanel .drumSoundControls > small {
+    grid-column: 1;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .sessionMasterFader input::-webkit-slider-runnable-track,
+  .sessionTrackFader input::-webkit-slider-runnable-track,
+  .sessionMasterFader input::-moz-range-track,
+  .sessionTrackFader input::-moz-range-track,
+  .sessionMasterFader input::-moz-range-progress,
+  .sessionTrackFader input::-moz-range-progress {
+    height: 8px;
+  }
+
+  .sessionMasterFader input::-webkit-slider-thumb,
+  .sessionTrackFader input::-webkit-slider-thumb {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: -0.5rem;
+  }
+
+  .sessionMasterFader input::-moz-range-thumb,
+  .sessionTrackFader input::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
 }
 
 /* The scrollbar has to look like the app's.
@@ -3501,6 +3761,283 @@
   line-height: 1.35;
 }
 
+/* One quiet faceplate inside the existing room sheet. Preset and Drive stay
+   visible; the less-frequent voicing controls earn their space on request. */
+.ampControls {
+  display: grid;
+  gap: 0.65rem;
+  padding-block: 0.75rem;
+  border-block: 1px solid rgba(224, 164, 93, 0.14);
+}
+
+.ampFaceplate,
+.ampIdentity,
+.ampMonitorRow,
+.ampMonitor,
+.ampDetails > summary,
+.ampReset {
+  display: flex;
+  align-items: center;
+}
+
+.ampFaceplate {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ampIdentity {
+  min-width: 0;
+  gap: 0.55rem;
+}
+
+.ampIdentity > span:first-child {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid rgba(224, 164, 93, 0.28);
+  border-radius: 50%;
+  color: var(--amber-bright);
+  background: rgba(224, 164, 93, 0.08);
+}
+
+.ampIdentity svg,
+.ampPower svg,
+.ampMonitor svg,
+.ampReset svg {
+  width: 0.88rem;
+  height: 0.88rem;
+}
+
+.ampIdentity > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.ampIdentity strong {
+  color: var(--ivory);
+  font-size: 0.76rem;
+}
+
+.ampIdentity small,
+.ampMonitor small,
+.ampMonitorHint {
+  color: rgba(244, 234, 219, 0.54);
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
+.ampPower {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.25rem;
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.66);
+  background: transparent;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ampPower:hover,
+.ampPower:focus-visible {
+  color: var(--ivory);
+  border-color: rgba(224, 164, 93, 0.38);
+}
+
+.ampPowerActive,
+.ampPowerActive:hover,
+.ampPowerActive:focus-visible {
+  color: #1b120a;
+  border-color: var(--amber-bright);
+  background: var(--amber-bright);
+}
+
+.ampPrimaryControls,
+.ampToneGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.ampPreset,
+.ampCabinet,
+.ampRange {
+  min-width: 0;
+}
+
+.ampPreset,
+.ampCabinet {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ampPreset > span,
+.ampCabinet > span,
+.ampRange > span {
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.57rem;
+  font-weight: 650;
+}
+
+.ampPreset select,
+.ampCabinet select {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.45rem 1.8rem 0.45rem 0.58rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.48rem;
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.04);
+  font: inherit;
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+
+.ampPreset option,
+.ampCabinet option {
+  color: #1b1713;
+  background: #f4eadb;
+}
+
+.ampRange {
+  display: grid;
+  grid-template-columns: 3.7rem minmax(3.5rem, 1fr) 2.45rem;
+  align-items: center;
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+}
+
+.ampRange input {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--amber-bright);
+}
+
+.ampRange output {
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.55rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ampDetails {
+  border-top: 1px solid rgba(244, 234, 219, 0.08);
+}
+
+.ampDetails > summary {
+  min-height: var(--touch-target);
+  justify-content: space-between;
+  color: rgba(244, 234, 219, 0.66);
+  font-size: 0.62rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.ampDetails > summary:hover,
+.ampDetails > summary:focus-visible {
+  color: var(--ivory);
+}
+
+.ampDetails[open] > summary {
+  color: var(--amber-bright);
+}
+
+.ampToneGrid {
+  padding-bottom: 0.35rem;
+}
+
+.ampReset {
+  min-height: var(--touch-target);
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  border: 0;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  font: inherit;
+  font-size: 0.59rem;
+  cursor: pointer;
+}
+
+.ampReset:hover,
+.ampReset:focus-visible {
+  color: var(--ivory);
+}
+
+.ampMonitorRow {
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.ampMonitor {
+  flex: 0 0 8.8rem;
+  min-height: var(--touch-target);
+  gap: 0.48rem;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgba(106, 202, 189, 0.22);
+  border-radius: 0.5rem;
+  color: #dcece8;
+  background: rgba(106, 202, 189, 0.055);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ampMonitor > span:last-child {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.ampMonitor strong {
+  font-size: 0.63rem;
+}
+
+.ampMonitor:hover:not(:disabled),
+.ampMonitor:focus-visible:not(:disabled),
+.ampMonitorActive {
+  border-color: rgba(106, 202, 189, 0.5);
+  color: #eafffb;
+  background: rgba(106, 202, 189, 0.13);
+}
+
+.ampMonitor:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.ampMonitorHint {
+  align-self: center;
+  max-width: 23ch;
+}
+
+@media (max-width: 440px) {
+  .ampPrimaryControls,
+  .ampToneGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ampMonitorRow {
+    display: grid;
+  }
+
+  .ampMonitor {
+    width: 100%;
+  }
+
+  .ampMonitorHint {
+    max-width: none;
+  }
+}
+
 .scoreAssessmentAction {
   display: grid;
   grid-template-columns: var(--touch-target) minmax(0, 1fr);
@@ -3566,6 +4103,58 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
+}
+
+.drumSoundControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.62rem;
+  background: rgba(244, 234, 219, 0.025);
+}
+
+.drumSoundControls legend {
+  padding: 0 0.22rem;
+  color: rgba(244, 234, 219, 0.66);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.drumSoundControls label {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.68rem;
+}
+
+.drumSoundControls select {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0 1.75rem 0 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.13);
+  border-radius: 0.48rem;
+  color: var(--ivory);
+  background: rgba(15, 18, 19, 0.9);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.drumSoundControls > small {
+  grid-column: 1 / -1;
+  color: rgba(244, 234, 219, 0.46);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.drumSoundControls:disabled {
+  opacity: 0.48;
 }
 
 .scoreSessionMix {

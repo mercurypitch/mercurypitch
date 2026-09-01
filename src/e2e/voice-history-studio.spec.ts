@@ -116,7 +116,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   const newThreadName = page.getByLabel(/what do you want to repeat/i)
   await newThreadName.fill('Unfinished chorus draft')
   await page
-    .locator('aside[aria-label="Practice threads"]')
+    .locator('aside[aria-label="Practice contexts"]')
     .getByRole('button')
     .filter({ hasText: 'Room and waveform check' })
     .click()
@@ -135,7 +135,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Find my next focus' }).click()
   await expect(page.getByTestId('guided-voice-check')).toBeVisible()
   await page
-    .locator('aside[aria-label="Practice threads"]')
+    .locator('aside[aria-label="Practice contexts"]')
     .getByRole('button')
     .filter({ hasText: 'Room and waveform check' })
     .click()
@@ -530,7 +530,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   })
 
   await page
-    .getByRole('button', { name: 'Clear entire voice history', exact: true })
+    .getByRole('button', { name: 'Clear entire take history', exact: true })
     .click()
   await page.getByTestId('confirm-phrase').fill('delete')
   await expect(
@@ -765,7 +765,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
 
   await page
-    .getByRole('button', { name: 'Clear entire voice history', exact: true })
+    .getByRole('button', { name: 'Clear entire take history', exact: true })
     .click()
   await page.getByTestId('confirm-phrase').fill('delete')
   await page.getByRole('button', { name: 'Clear history', exact: true }).click()

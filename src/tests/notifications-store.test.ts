@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { notifications, setNotifications, showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { notifications, setNotifications, showActionNotification, showDecisionNotification, showNotification, } from '@/stores/notifications-store'
 
 describe('notifications store visibility windows', () => {
   beforeEach(() => {
@@ -51,5 +51,25 @@ describe('notifications store visibility windows', () => {
     expect(notifications()).toHaveLength(1)
     vi.advanceTimersByTime(1)
     expect(notifications()).toHaveLength(0)
+  })
+
+  it('keeps both explicit choices on a decision notification', () => {
+    const keep = vi.fn()
+    const neverAsk = vi.fn()
+    showDecisionNotification(
+      'Your guitar replay is ready.',
+      'info',
+      { label: 'Keep take', onClick: keep },
+      { label: 'Don’t ask again', onClick: neverAsk },
+    )
+
+    expect(notifications()[0]?.action).toEqual({
+      label: 'Keep take',
+      onClick: keep,
+    })
+    expect(notifications()[0]?.secondaryAction).toEqual({
+      label: 'Don’t ask again',
+      onClick: neverAsk,
+    })
   })
 })

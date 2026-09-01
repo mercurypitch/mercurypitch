@@ -98,14 +98,64 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
             </span>
             <div class={styles.actionCopy} role="status" aria-live="polite">
               <span>TAKE SAVED</span>
-              <h3 id={actionHeadingId}>Take saved on this device.</h3>
+              <h3 id={actionHeadingId}>Take summary saved on this device.</h3>
               <p>
                 {props.view.finish.kind === 'saved'
                   ? (props.view.finish.message ??
                     'Start another take whenever the pocket is ready.')
                   : ''}
               </p>
+              <Show when={props.view.replay.message !== ''}>
+                <p class={styles.replayMessage}>{props.view.replay.message}</p>
+              </Show>
             </div>
+            <Switch>
+              <Match when={props.view.replay.state === 'ready'}>
+                <div class={styles.keepActions}>
+                  <button type="button" onClick={() => props.onKeepReplay()}>
+                    Keep in Hear Yourself
+                  </button>
+                  <button type="button" onClick={() => props.onDismissReplay()}>
+                    Not now
+                  </button>
+                </div>
+              </Match>
+              <Match when={props.view.replay.state === 'saving'}>
+                <div class={styles.keepActions}>
+                  <button type="button" disabled>
+                    Keeping replay…
+                  </button>
+                  <button type="button" disabled>
+                    Not now
+                  </button>
+                </div>
+              </Match>
+              <Match when={props.view.replay.state === 'processing'}>
+                <div class={styles.keepActions}>
+                  <button type="button" disabled>
+                    Preparing replay…
+                  </button>
+                  <button type="button" onClick={() => props.onDismissReplay()}>
+                    Not now
+                  </button>
+                </div>
+              </Match>
+              <Match
+                when={
+                  props.view.replay.state === 'error' ||
+                  props.view.replay.state === 'unsupported'
+                }
+              >
+                <div class={styles.keepActions}>
+                  <button type="button" onClick={() => props.onDismissReplay()}>
+                    Not now
+                  </button>
+                </div>
+              </Match>
+              <Match when={props.view.replay.state === 'saved'}>
+                <span class={styles.keptReplay}>Kept in Hear Yourself</span>
+              </Match>
+            </Switch>
           </Match>
 
           <Match when={props.view.finish.kind === 'error'}>
@@ -408,8 +458,9 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
       </Show>
 
       <footer class={styles.privacyNote}>
-        Only timing and dynamics summaries are kept. Audio, raw MIDI, and device
-        identity are not saved.
+        Only timing and dynamics summaries are kept automatically. Hear Yourself
+        saves a live-kit-only replay after Keep; authored audio, backing, click,
+        microphone, raw MIDI, and device identity stay out.
       </footer>
     </section>
   )

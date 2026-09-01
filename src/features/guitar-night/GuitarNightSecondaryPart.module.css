@@ -238,6 +238,79 @@ button.body:focus-visible {
   transform: translate(-50%, -50%);
 }
 
+.percussionStaff {
+  position: relative;
+  height: 4.25rem;
+  margin-inline: 0.2rem;
+  overflow: hidden;
+}
+
+.percussionStaffLine {
+  position: absolute;
+  z-index: 0;
+  inset-inline: 0;
+  height: 1px;
+  background: rgba(244, 234, 219, 0.18);
+  pointer-events: none;
+}
+
+.percussionStaff > div {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+}
+
+.percussionHit {
+  position: absolute;
+  display: block;
+  width: 0.45rem;
+  height: 0.34rem;
+  border-radius: 50%;
+  color: rgba(244, 234, 219, 0.76);
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.percussionHit[data-notehead='cross'] {
+  background: transparent;
+}
+
+.percussionHit[data-notehead='cross']::before,
+.percussionHit[data-notehead='cross']::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 115%;
+  height: 1px;
+  background: currentColor;
+  content: '';
+  transform: translate(-50%, -50%) rotate(42deg);
+}
+
+.percussionHit[data-notehead='cross']::after {
+  transform: translate(-50%, -50%) rotate(-42deg);
+}
+
+.percussionHit[data-notehead='diamond'] {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.percussionHit > span {
+  position: absolute;
+  bottom: 50%;
+  left: calc(50% + 0.2rem);
+  width: 1px;
+  height: 0.7rem;
+  background: currentColor;
+}
+
+.percussionHit[data-stem-direction='down'] > span {
+  top: 50%;
+  bottom: auto;
+  left: calc(50% - 0.2rem);
+}
+
 .noteActive {
   color: var(--amber-bright, #f0bd78) !important;
 }
@@ -340,6 +413,10 @@ button.body:focus-visible {
 
   .string {
     height: 0.72rem;
+  }
+
+  .percussionStaff {
+    height: 3.6rem;
   }
 }
 

@@ -133,6 +133,30 @@ describe('voice take persistence', () => {
     expect(await getVoiceTakeBlob(result.value!.id)).not.toBeNull()
   })
 
+  it('round-trips a scored instrument replay without vocal contour data', async () => {
+    const result = await saveVoiceTake({
+      ...draft(),
+      source: 'piano-night',
+      comparisonKey: 'piano-night:study:main:0-8:v1',
+      title: 'Piano Night · Study',
+      contour: undefined,
+      context: { threadTitle: 'Piano Night · Study', scoreTrackId: 'main' },
+      metrics: { accuracyPercent: 92, hits: 22, misses: 2 },
+    })
+
+    expect(result.value).toMatchObject({
+      source: 'piano-night',
+      comparisonKey: 'piano-night:study:main:0-8:v1',
+      contourVersion: undefined,
+    })
+    expect(JSON.parse(result.value!.metricsJson!)).toEqual({
+      accuracyPercent: 92,
+      hits: 22,
+      misses: 2,
+    })
+    expect(await getVoiceTakeBlob(result.value!.id)).not.toBeNull()
+  })
+
   it('treats corrupt or unknown contour rows as an unavailable Atlas', async () => {
     const result = await saveVoiceTake({ ...draft(), contour: undefined })
     const contourRepo =

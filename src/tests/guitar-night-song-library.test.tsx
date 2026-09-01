@@ -8,6 +8,7 @@ import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightPreparationPort, GuitarNightPreparationResult, } from '@/features/guitar-night/preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from '@/features/guitar-night/reference-port'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, GuitarNightSongSummary, } from '@/features/guitar-night/song-port'
+import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 
 function deferred<T>(): {
   promise: Promise<T>
@@ -142,6 +143,7 @@ function fakeBackingTransport() {
       return true
     }),
     setMasterVolume: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn((id, muted) => {
       trackStates = trackStates.map((track) =>
         track.id === id ? { ...track, muted } : track,
@@ -178,6 +180,29 @@ describe('GuitarNightApp prepared songs', () => {
     cleanup()
     vi.restoreAllMocks()
     window.history.replaceState(null, '', '/guitar-night')
+  })
+
+  it('guards the standalone document while a local Keep is pending', async () => {
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(0))} />
+    ))
+
+    const beforeKeep = new Event('beforeunload', { cancelable: true })
+    expect(window.dispatchEvent(beforeKeep)).toBe(true)
+
+    const releaseLock = acquireLocalSaveNavigationLock('guitar unload test')
+    try {
+      await Promise.resolve()
+      const duringKeep = new Event('beforeunload', { cancelable: true })
+      expect(window.dispatchEvent(duringKeep)).toBe(false)
+      expect(duringKeep.defaultPrevented).toBe(true)
+    } finally {
+      releaseLock()
+    }
+
+    await Promise.resolve()
+    const afterKeep = new Event('beforeunload', { cancelable: true })
+    expect(window.dispatchEvent(afterKeep)).toBe(true)
   })
 
   it('stages a prepared full-band session with guitar muted by default', async () => {

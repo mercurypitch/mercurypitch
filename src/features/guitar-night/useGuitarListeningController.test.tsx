@@ -1,8 +1,9 @@
 // Listening runtime regressions cover coarse attacks and calibration teardown.
 // ============================================================
 
-import { createRoot } from 'solid-js'
+import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarInputWorkletMessage } from '@/lib/guitar/input-events'
 import { guitarInputAnalysisChannelCount, strongestGuitarInputChannel, useGuitarListeningController, } from './useGuitarListeningController'
 
@@ -44,10 +45,20 @@ const dependencies = vi.hoisted(() => ({
         spreadMs: number | null,
       ) => void
     >(),
+  createInputMonitor: vi.fn(),
+  inputMonitors: [] as Array<{
+    setEnabled: ReturnType<typeof vi.fn>
+    setParameters: ReturnType<typeof vi.fn>
+    dispose: ReturnType<typeof vi.fn>
+  }>,
 }))
 
 vi.mock('@/lib/guitar/guitar-input-node', () => ({
   connectGuitarInputWorklet: dependencies.connectWorklet,
+}))
+
+vi.mock('./guitar-input-monitor', () => ({
+  createGuitarInputMonitor: dependencies.createInputMonitor,
 }))
 
 vi.mock('@/lib/mic-manager', () => ({
@@ -170,6 +181,7 @@ function createAudioHarness() {
     context: context as unknown as AudioContext,
     analyser,
     oscillators,
+    source,
     setAmplitude(next: number) {
       amplitude = next
     },
@@ -240,6 +252,18 @@ const E4 = {
   cents: 0,
 }
 
+const AMP_PARAMETERS: GuitarElectricAmpParameters = {
+  enabled: true,
+  drive: 0.5,
+  bass: 0,
+  mid: 0,
+  treble: 0,
+  presence: 0,
+  output: 0.5,
+  cabinet: 'balanced',
+  asymmetry: 0,
+}
+
 describe('useGuitarListeningController', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -284,6 +308,16 @@ describe('useGuitarListeningController', () => {
         dependencies.latencySpreadMs = spreadMs
       },
     )
+    dependencies.inputMonitors = []
+    dependencies.createInputMonitor.mockImplementation(() => {
+      const monitor = {
+        setEnabled: vi.fn((enabled: boolean) => enabled),
+        setParameters: vi.fn(),
+        dispose: vi.fn(),
+      }
+      dependencies.inputMonitors.push(monitor)
+      return monitor
+    })
     dependencies.acquire.mockResolvedValue({})
     dependencies.connectWorklet.mockImplementation(
       async (
@@ -300,6 +334,131 @@ describe('useGuitarListeningController', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('exposes only the already-owned audio route and clears it on stop', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const stream = {} as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+
+    await withController(audio.context, async (controller) => {
+      expect(controller.recordableStream()).toBeNull()
+      expect(await controller.start()).toBe(true)
+      expect(controller.recordableStream()).toBe(stream)
+      expect(controller.recordableAudioContext()).toBe(audio.context)
+
+      controller.stop()
+      expect(controller.recordableStream()).toBeNull()
+      expect(controller.recordableAudioContext()).toBeNull()
+    })
+  })
+
+  it('keeps dry evidence intact while interface monitoring stays opt-in', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const stream = {} as MediaStream
+    const monitorBus = {} as GainNode
+    dependencies.acquire.mockResolvedValue(stream)
+    const [parameters, setParameters] = createSignal(AMP_PARAMETERS)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({
+            context: audio.context,
+            buses: { monitor: monitorBus },
+          }) as never,
+        ampParameters: parameters,
+      })
+    })
+
+    try {
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(await controller.start()).toBe(true)
+
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledOnce()
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(controller.recordableStream()).toBe(stream)
+      expect(dependencies.connectWorklet).toHaveBeenCalledWith(
+        audio.context,
+        audio.source,
+        expect.any(Function),
+      )
+      expect(dependencies.createInputMonitor).toHaveBeenCalledWith({
+        context: audio.context,
+        source: audio.source,
+        destination: monitorBus,
+        parameters: AMP_PARAMETERS,
+      })
+      expect(controller.canAmpMonitor()).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(dependencies.inputMonitors[0]?.setEnabled).not.toHaveBeenCalled()
+
+      expect(controller.setAmpMonitoringEnabled(true)).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(true)
+      expect(controller.ampMonitoringActive()).toBe(true)
+      expect(dependencies.inputMonitors[0]?.setEnabled).toHaveBeenCalledWith(
+        true,
+      )
+
+      const changed = { ...AMP_PARAMETERS, drive: 0.8 }
+      setParameters(changed)
+      expect(
+        dependencies.inputMonitors[0]?.setParameters,
+      ).toHaveBeenLastCalledWith(changed)
+
+      controller.stop()
+      expect(dependencies.inputMonitors[0]?.dispose).toHaveBeenCalledOnce()
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+      expect(controller.canAmpMonitor()).toBe(false)
+
+      expect(await controller.start()).toBe(true)
+      expect(dependencies.inputMonitors).toHaveLength(2)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+      expect(dependencies.inputMonitors[1]?.setEnabled).not.toHaveBeenCalled()
+    } finally {
+      dispose()
+    }
+    expect(dependencies.inputMonitors[1]?.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('never creates or enables the wet branch for a room microphone', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const [parameters] = createSignal(AMP_PARAMETERS)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({
+            context: audio.context,
+            buses: { monitor: {} },
+          }) as never,
+        ampParameters: parameters,
+      })
+    })
+
+    try {
+      expect(controller.inputProfile()).toBe('microphone')
+      expect(await controller.start()).toBe(true)
+      expect(dependencies.createInputMonitor).not.toHaveBeenCalled()
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(controller.setAmpMonitoringEnabled(true)).toBe(false)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+    } finally {
+      dispose()
+    }
   })
 
   it('admits a same-pitch coarse restrike after the debounce', async () => {

@@ -763,7 +763,7 @@ export function DestinationArtwork(props: {
   )
 }
 
-// ── The sixth cover: a veiled entry to local voice history ─────────
+// ── The sixth cover: a veiled entry to local take history ──────────
 // At rest it is a slow-breathing question mark. Hovering reveals the
 // proposition on desktop; activating it always opens the local vault.
 function MysteryCover(): JSX.Element {
@@ -772,20 +772,20 @@ function MysteryCover(): JSX.Element {
       type="button"
       class={`${styles.cover} ${styles.mystery}`}
       data-destination="mystery"
-      aria-label="Open Hear Yourself voice history"
+      aria-label="Open Hear Yourself take history"
       onClick={() => setActiveTab(TAB_VOICE_HISTORY)}
     >
       <span class={styles.mysteryScene} aria-hidden="true">
         <span class={styles.mysteryBackdrop} />
         <span class={styles.coverShade} />
         <span class={`${styles.coverCopy} ${styles.mysteryCopy}`}>
-          <span class={styles.coverEyebrow}>Private voice history</span>
+          <span class={styles.coverEyebrow}>Private take history</span>
           <span class={styles.coverTitle}>Hear Yourself</span>
           <span class={styles.coverDescription}>
-            Keep tiny Glass takes on your device, return to the same practice
-            thread, and hear the space between Earlier and Later.
+            Keep voice and Night-stage takes on your device, return to familiar
+            practice contexts, and replay the performances you chose.
           </span>
-          <span class={styles.mysteryStatus}>Open voice history</span>
+          <span class={styles.mysteryStatus}>Open take history</span>
         </span>
       </span>
 

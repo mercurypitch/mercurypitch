@@ -138,7 +138,7 @@ test('plays the rest of the band, and lets any of it be muted @smoke', async ({
     'false',
   )
   await restoreBacking.click()
-  await panel.getByRole('button', { name: 'Close the session details' }).click()
+  await panel.getByRole('button', { name: 'Close the track mixer' }).click()
 
   await listeningMix.getByRole('button', { name: 'Mute target guide' }).click()
 
@@ -158,7 +158,12 @@ test('plays the rest of the band, and lets any of it be muted @smoke', async ({
     'aria-pressed',
     'true',
   )
-  await expect(panel.getByLabel('Unmute Lead guitar')).toBeDisabled()
+  await expect(panel.getByLabel('Unmute Lead guitar')).toBeEnabled()
+  await panel.getByLabel('Unmute Lead guitar').click()
+  await expect(panel.getByLabel('Mute Lead guitar')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
 
   await panel.getByLabel('Mute Bass').click()
   await expect(panel.getByLabel('Unmute Bass')).toHaveAttribute(

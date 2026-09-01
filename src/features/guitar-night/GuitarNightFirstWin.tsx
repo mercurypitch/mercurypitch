@@ -8,6 +8,7 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import type { GuitarFirstWinCompletionAction } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightDrumSoundControls } from './GuitarNightDrumSoundControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { useGuitarFirstWinController } from './useGuitarFirstWinController'
 
@@ -355,6 +356,7 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
                   </For>
                 </select>
               </label>
+              <GuitarNightDrumSoundControls disabled={grooveRunning()} />
             </div>
           </details>
           <Show

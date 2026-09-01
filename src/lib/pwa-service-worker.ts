@@ -189,9 +189,14 @@ export async function reloadToLatest(
     (() => {
       window.location.reload()
     })
-  const doReload = (): void => {
+  const doReload = (rung: string): void => {
     if (reloading) return
     reloading = true
+    // Which rung of the ladder took the page away. Same reason as
+    // chunk-load-recovery's line: a silent self-reload cannot be told apart
+    // from an iOS content process being killed, and the two need different
+    // fixes.
+    console.warn(`[sw-reload] ${rung}`)
     reload()
   }
   // Unlike registerServiceWorker this only ever runs inside a page — from a
@@ -200,7 +205,7 @@ export async function reloadToLatest(
     options.container ??
     ('serviceWorker' in navigator ? navigator.serviceWorker : undefined)
   if (container === undefined) {
-    doReload()
+    doReload('no service worker support — plain reload')
     return
   }
 
@@ -211,7 +216,7 @@ export async function reloadToLatest(
     registration = undefined
   }
   if (registration === undefined) {
-    doReload()
+    doReload('no worker registered — plain reload')
     return
   }
   const finalRegistration = registration
@@ -226,7 +231,7 @@ export async function reloadToLatest(
         // The reload still happens; it just may hit the cache again.
       }
     }
-    doReload()
+    doReload('unregistered the worker, reloading from the origin')
   }
 
   const waiting = finalRegistration.waiting
@@ -247,7 +252,7 @@ export async function reloadToLatest(
       'controllerchange',
       () => {
         clearTimeout(timer)
-        doReload()
+        doReload('adopted the waiting worker, reloading into it')
         resolve()
       },
       { once: true },

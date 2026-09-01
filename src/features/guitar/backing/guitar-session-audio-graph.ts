@@ -1,6 +1,9 @@
 // Guitar session audio graph gives every room source one reusable, route-owned output path.
+// Electric guide voices meet at one amp stage; clean guide audio bypasses it.
 // ============================================================
 
+import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
+import { createGuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 
 export type GuitarSessionAudioBus =
@@ -10,13 +13,21 @@ export type GuitarSessionAudioBus =
   | 'stems'
   | 'monitor'
 
+export type GuitarGuideInput = 'clean' | 'electric'
+
 export interface GuitarSessionAudioGraph {
   readonly context: AudioContext
   readonly buses: Readonly<Record<GuitarSessionAudioBus, GainNode>>
+  readonly guideInputs: Readonly<Record<GuitarGuideInput, AudioNode>>
   readonly master: GainNode
   readonly limiter: DynamicsCompressorNode
   setBusLevel(bus: GuitarSessionAudioBus, position: number): void
   setMasterLevel(position: number): void
+  /** Update the one post-sum electric stage without rebuilding its graph. */
+  setElectricAmpParameters(
+    parameters: Partial<GuitarElectricAmpParameters>,
+  ): void
+  getElectricAmpParameters(): GuitarElectricAmpParameters
   dispose(): void
 }
 
@@ -24,15 +35,19 @@ interface GuitarSessionAudioGraphOptions {
   destination?: AudioNode
   masterLevel?: number
   busLevels?: Partial<Record<GuitarSessionAudioBus, number>>
+  /** Seed the dormant amp before any guide voice can reach it. */
+  electricAmpParameters?: Partial<GuitarElectricAmpParameters>
 }
 
-const DEFAULT_BUS_LEVELS: Record<GuitarSessionAudioBus, number> = {
+export const GUITAR_SESSION_DEFAULT_BUS_LEVELS: Readonly<
+  Record<GuitarSessionAudioBus, number>
+> = Object.freeze({
   guide: 0.72,
-  drums: 0.78,
+  drums: 1,
   bass: 0.68,
   stems: 1,
   monitor: 0.74,
-}
+})
 
 function clamp(value: number): number {
   return Math.min(1, Math.max(0, value))
@@ -75,8 +90,23 @@ export function createGuitarSessionAudioGraph(
     monitor: context.createGain(),
   } satisfies Record<GuitarSessionAudioBus, GainNode>
 
+  // A normal guitar pickup combines its strings before the amplifier. Keep
+  // that non-linearity on a dedicated electric input: the clean guide path is
+  // also used by tuner/reference tones and must not inherit amp colour.
+  const electricAmp = createGuitarElectricAmpStage(
+    context,
+    options.electricAmpParameters,
+  )
+  electricAmp.output.connect(buses.guide)
+
+  const guideInputs = {
+    clean: buses.guide,
+    electric: electricAmp.input,
+  } satisfies Record<GuitarGuideInput, AudioNode>
+
   for (const bus of Object.keys(buses) as GuitarSessionAudioBus[]) {
-    const level = options.busLevels?.[bus] ?? DEFAULT_BUS_LEVELS[bus]
+    const level =
+      options.busLevels?.[bus] ?? GUITAR_SESSION_DEFAULT_BUS_LEVELS[bus]
     buses[bus].gain.value = sliderToGain(clamp(level))
     buses[bus].connect(master)
   }
@@ -95,6 +125,7 @@ export function createGuitarSessionAudioGraph(
   return {
     context,
     buses,
+    guideInputs,
     master,
     limiter,
     setBusLevel(bus, position) {
@@ -110,10 +141,16 @@ export function createGuitarSessionAudioGraph(
         now,
       )
     },
+    setElectricAmpParameters(parameters) {
+      if (disposed) return
+      electricAmp.setParameters(parameters, context.currentTime)
+    },
+    getElectricAmpParameters: () => electricAmp.getParameters(),
     dispose() {
       if (disposed) return
       disposed = true
       for (const bus of Object.values(buses)) bus.disconnect()
+      electricAmp.dispose()
       master.disconnect()
       limiter.disconnect()
     },

@@ -197,6 +197,10 @@
   line-height: 1.45;
 }
 
+.actionCopy .replayMessage {
+  color: var(--take-cyan);
+}
+
 .finishRail[data-state='idle'] button {
   border-color: rgb(231 173 82 / 54%);
   color: var(--take-ink);
@@ -215,6 +219,32 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.keepActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.keepActions button:first-child {
+  border-color: rgb(102 213 205 / 48%);
+  color: var(--take-ink);
+  background: rgb(102 213 205 / 11%);
+}
+
+.keepActions button:last-child {
+  color: var(--take-muted);
+  background: transparent;
+}
+
+.keptReplay {
+  color: var(--take-cyan);
+  font-size: 10px;
+  font-weight: 730;
+  text-align: right;
 }
 
 .failureActions > span {
@@ -457,6 +487,12 @@
     justify-self: start;
   }
 
+  .keepActions,
+  .keptReplay {
+    grid-column: 2;
+    justify-self: start;
+  }
+
   .takeRow {
     grid-template-columns: 1fr;
     gap: 13px;
@@ -508,6 +544,16 @@
   .finishRail > button {
     width: 100%;
     grid-column: 1;
+  }
+
+  .keepActions,
+  .keptReplay {
+    width: 100%;
+    grid-column: 1;
+  }
+
+  .keepActions button {
+    flex: 1 1 0;
   }
 
   .actionIcon {

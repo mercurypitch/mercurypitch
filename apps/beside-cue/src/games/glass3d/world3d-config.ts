@@ -33,6 +33,33 @@ export interface World3DConfig {
     fallSeconds: number
   }
 
+  /** The ear that decides whether the voice is WAVING.
+   *
+   * The 2D game's band (journey-config.ts) was fitted to a trained
+   * vibrato: 3.5-8.5 Hz, 15-140 cents. Measured against synthetic
+   * singers (vibrato-reach.test.ts), that band rejects everything a
+   * first-time player actually does -- a deliberate, conscious wobble
+   * sits nearer 2.5 Hz, and an enthusiastic one swings well past 140
+   * cents. Both read as "nothing happening", with no way to tell which.
+   *
+   * So the 3D world keeps its own band, wider at both ends. The skill
+   * is still the wave; it is just no longer a wave only a singer can
+   * make. */
+  vibrato: {
+    /** Sliding window the wave is measured over, seconds. */
+    windowSec: number
+    /** Oscillation rate that counts, Hz. */
+    minHz: number
+    maxHz: number
+    /** Half peak-to-peak amplitude that counts, cents. */
+    minDepthCents: number
+    maxDepthCents: number
+    /** Samples needed before judging. */
+    minSamples: number
+    /** A silence gap longer than this resets the window, ms. */
+    resetGapMs: number
+  }
+
   /** How the glass comes apart once resonance reaches 1. */
   shatter: {
     /** Metres per second of outward launch at a perfect break. */
@@ -74,6 +101,25 @@ export const WORLD3D_CONFIG: World3DConfig = {
     pumpTolBonus: 1.0,
     fallSeconds: 2.6,
   },
+  vibrato: {
+    windowSec: 1.0,
+    // 2.2 Hz because a player told to "let it waver" waves at about the
+    // rate they would shake their head, not at a singer's 5.5.
+    minHz: 2.2,
+    maxHz: 9.5,
+    // 12 because the smoother costs roughly a fifth of the depth before
+    // the detector ever sees it.
+    //
+    // 220 is not a taste call: it is exactly the pitch band the wave has
+    // to stay inside, (ring.tolSemis + ring.pumpTolBonus) * 100. Swing
+    // wider than that and the note leaves tolerance, so resonance decays
+    // no matter what the ear says. Setting the cap anywhere above 220
+    // would only promise a pump the sim then refuses.
+    minDepthCents: 12,
+    maxDepthCents: 220,
+    minSamples: 12,
+    resetGapMs: 250,
+  },
   shatter: {
     launchSpeed: 3.2,
     launchSpeedFloorRatio: 0.55,
@@ -113,6 +159,7 @@ export const resolveConfig = (
   if (override === undefined) return base
   return {
     ring: { ...base.ring, ...override.ring },
+    vibrato: { ...base.vibrato, ...override.vibrato },
     shatter: { ...base.shatter, ...override.shatter },
     loop: { ...base.loop, ...override.loop },
   }

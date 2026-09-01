@@ -3,13 +3,15 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { ChevronLeft, Metronome, Pause, Play, Square } from '@/components/icons'
+import { ChevronLeft, Metronome, Pause, Play, SlidersHorizontal, Square, } from '@/components/icons'
 import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandPercussionHit } from '@/features/guitar/backing/guitar-room-band'
+import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightDrumSoundControls } from './GuitarNightDrumSoundControls'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
@@ -28,7 +30,15 @@ interface GuitarNightPercussionRoomProps {
   onToggleSheetTrack(trackId: string): void
   backingPercussion: Accessor<readonly GuitarRoomBandPercussionHit[]>
   audibleBackingTrackIds: Accessor<readonly string[]>
+  /** Explicit M state stays distinct while Solo temporarily masks other lanes. */
+  mutedBackingTrackIds: Accessor<readonly string[]>
   onToggleBackingTrack(trackId: string): void
+  soloedBackingTrackId: Accessor<string | null>
+  onToggleSoloBackingTrack(trackId: string): void
+  /** Native reference lane shown beside Neck; it never becomes score authority. */
+  secondaryLane?: Accessor<SheetLane | null>
+  followedStageTrackId?: Accessor<string | null>
+  onFollowStageTrack?(trackId: string | null): void
 }
 
 function formatTime(seconds: number): string {
@@ -180,7 +190,7 @@ export function GuitarNightPercussionRoom(
     onCleanup(
       installSpacePlaybackToggle({
         toggle: room.toggle,
-        ownsSpace: () => props.suspended?.() !== true,
+        ownsSpace: () => props.suspended?.() !== true && !sessionPanelOpen(),
         enabled: () => room.status() !== 'starting',
       }),
     )
@@ -212,10 +222,17 @@ export function GuitarNightPercussionRoom(
             class={styles.roomIdentityTrigger}
             aria-haspopup="dialog"
             aria-expanded={sessionPanelOpen()}
+            aria-label={`Open track mixer for ${displayedReference().title}`}
             data-testid="guitar-night-session-trigger"
             onClick={() => setSessionPanelOpen(true)}
           >
-            <p class={styles.eyebrow}>Backing-only rehearsal · free play</p>
+            <p class={styles.eyebrow}>
+              <span class={styles.roomIdentityMixCue} aria-hidden="true">
+                <SlidersHorizontal />
+                Mix
+              </span>
+              Backing-only rehearsal · free play
+            </p>
             <h1
               ref={roomHeading}
               tabindex="-1"
@@ -253,6 +270,9 @@ export function GuitarNightPercussionRoom(
         initialMode="sheet"
         availableViews={() => ['sheet', 'neck']}
         sheetLanes={props.sheetLanes}
+        {...(props.secondaryLane === undefined
+          ? {}
+          : { secondaryLane: props.secondaryLane })}
         {...(props.sheetTimeSignatures === undefined
           ? {}
           : { sheetTimeSignatures: props.sheetTimeSignatures })}
@@ -285,14 +305,41 @@ export function GuitarNightPercussionRoom(
           visibleTrackIds={props.sheetVisibleTrackIds}
           onToggleTrackVisible={props.onToggleSheetTrack}
           audibleTrackIds={props.audibleBackingTrackIds}
+          mutedTrackIds={props.mutedBackingTrackIds}
           onToggleTrackAudible={(trackId) => {
-            const audible = props.audibleBackingTrackIds().includes(trackId)
             if (room.setupLocked() && !room.percussionBackingLive()) return
-            room.setPercussionTrackAudible(trackId, !audible)
+            room.setPercussionTrackAudible(
+              trackId,
+              guitarTrackAudibleAfterMuteToggle(
+                trackId,
+                props.mutedBackingTrackIds(),
+                props.soloedBackingTrackId(),
+              ),
+            )
             props.onToggleBackingTrack(trackId)
           }}
+          soloedTrackId={props.soloedBackingTrackId}
+          onToggleTrackSolo={props.onToggleSoloBackingTrack}
           takeActive={room.setupLocked}
           percussionControlsLive={room.percussionBackingLive}
+          masterLevel={room.masterVolume}
+          onMasterLevel={room.setMasterVolume}
+          trackLevelDb={room.trackLevelDb}
+          onTrackLevelDb={room.setTrackLevelDb}
+          onResetTrackLevels={room.resetTrackLevels}
+          {...(props.followedStageTrackId === undefined
+            ? {}
+            : { followedTrackId: props.followedStageTrackId })}
+          onFollowTrack={(trackId) => {
+            props.onFollowStageTrack?.(trackId)
+            setSessionPanelOpen(false)
+          }}
+          drumSoundControls={
+            <GuitarNightDrumSoundControls
+              liveKit
+              onKitChange={room.setDrumKit}
+            />
+          }
           scoredPartSounds={() => false}
           onSelectTrack={() => undefined}
           onClose={() => {

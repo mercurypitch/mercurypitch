@@ -59,6 +59,26 @@ workspace.
 - Inside the room, Space always toggles the backing transport — a focused
   mute chip, slider or panel button never steals the key; typing surfaces and
   modifier chords do (shared rule: `src/lib/space-playback.ts`).
+- The loaded song title visibly names its `Mix` action and opens the shared
+  Track mixer rather than adding a permanent console beside the stage. The
+  mixer keeps source track names, room level, Mute, Solo, Sheet visibility and
+  a live fader together; unity is explicit and each authored lane has modest
+  positive headroom behind the room limiter. A Drum row follows native Drum
+  notation on moving views without ever becoming Guitar scoring authority.
+- Drum Kit is a live timbre choice after the room owns audio, including while
+  Paused; generated Feel remains a next-Play scheduling choice. Before the
+  first Play both selectors remain data-only, and sampled kits may use Mercury
+  fallback while warming rather than delaying or restarting the score clock.
+- After activation, each authored Drum lane prewarms the unique GM/velocity
+  attacks its score actually uses. The retained adapter reports sampled-core
+  readiness and bounded routing decisions; `sampled`, `synthesized`, fallback,
+  unmapped, dropped, and unreported describe routing only, never proof that a
+  listener heard output.
+- Guitar Pro choked cymbals remain attacks: the mapped cymbal strikes on time
+  and its authored lane receives a GM-target release 110ms later. Closed and
+  pedal hats broadcast an open-hat release across every retained percussion
+  track. Same-time open strikes are scheduled before the closer, independently
+  of source track order.
 - The amber Play control is icon-only; its state names (Play, Pause, Resume)
   live in the accessible label and tooltip so the pedalboard never reflows
   between states.
@@ -181,10 +201,14 @@ core Learn set in
   never offered.
 - The stage shows only traceable reference notes: authored score events or
   confidence-bearing measured events bound to the active recording. Authored
-  tempo maps, tracks, Guitar Pro fingering, source tuning/name/capo, chord
-  labels, and techniques are attached only when the saved representation
-  really carries them; meter and sections are not claimed. MIDI notes without
-  authored fingering are placed by the shared helper.
+  tempo maps, tracks, note velocity, zero-based GM program, resolved program
+  family, Guitar Pro fingering, source tuning/name/capo, chord labels, and
+  techniques are attached only when the saved representation really carries
+  them; meter and sections are not claimed. An explicit GM program is stronger
+  evidence than a track name or tuning: programs 24–25 are acoustic guitar,
+  26–31 electric guitar, 32–39 bass, and every other explicit program is
+  neutral. A missing program stays missing rather than becoming piano program
+  zero. MIDI notes without authored fingering are placed by the shared helper.
 - Authored score beat time is derived from the tab room's canonical audio
   clock, never from render frames. Beat-to-seconds and seconds-to-beat mapping
   both use the complete persisted tempo map; changing the opening tempo scales
@@ -241,7 +265,27 @@ core Learn set in
   does not create an audio context.
 - One shared output graph exposes guide, drums, bass, stems, and monitor buses
   through a master limiter. Room consumers reuse that graph instead of opening
-  competing audio clocks.
+  competing audio clocks. Its Drum bus begins at unity; room master, live
+  per-track faders and gates, and the final limiter own level without restarting
+  transport. Inside authored playback, all strings in one actual
+  electric-guitar track meet before one asset-free nonlinear amp, while each
+  separate electric track owns a separate stage. The track mixer fader follows
+  that stage, so raising or lowering a part changes its post-amp mix level and
+  not its distortion. Bass keeps its bass voice; acoustic guitar stays clean;
+  neutral or unsupported pitched programs use a clean generic score tone.
+  Vocals, strings, keyboards, synths, backing stems, drums, tuner, and monitor
+  routes never inherit an authored electric-track amp. Authored MIDI note-on
+  velocity and Guitar Pro dynamics shape strike level; legacy or synthetic
+  notes without velocity keep the established unity default.
+- One compact Amp faceplate appears inside both Session and Band sheets: preset
+  and Drive remain immediate, while detailed voicing stays behind one
+  disclosure. Studio clean, Edge, Crunch, and Lead are calibrated starting
+  points with conservative headroom, approximately matched reference energy,
+  and progressively more mid focus and high-frequency restraint as drive
+  rises. The fixture protects that intent; it does not establish Guitar Rig,
+  named plug-in, physical amplifier, or cabinet fidelity. Owner audition on
+  representative chordal and multi-track MIDI/Guitar Pro songs remains the
+  musical-quality gate before those presets are treated as finished.
 - Full-band sessions expose the distinct Guitar channel muted by default.
   Two-stem sessions expose only Vocals and Backing, never a synthetic Guitar
   control. Returning to Songs cancels a pending start or pauses active voices
@@ -360,6 +404,12 @@ core Learn set in
   guitar-range MPM detector. MIDI
   keeps per-voice attack/release identity and maps its high-resolution event
   timestamp onto the room clock while stating that route delay is unmeasured.
+  Direct input alone may explicitly open a separate wet monitor through the
+  selected Amp tone and the existing monitor bus. That action starts off on
+  every input session, recommends headphones, names browser latency, and never
+  enters the dry detector, score, or Hear Yourself recording path. Room mic is
+  excluded because the browser cannot prevent speaker feedback; MIDI carries
+  no audio to monitor.
   The on-demand Jam Doctor stores no audio and makes no phrase, string, fret,
   latency, or quality claim that the evidence cannot support.
 - Timestamped attacks are captured in an AudioWorklet and anchored to the

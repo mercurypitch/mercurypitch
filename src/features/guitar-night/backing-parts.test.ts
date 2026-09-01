@@ -15,18 +15,22 @@ function source(
         id: 'track-lead',
         name: 'Lead guitar',
         instrumentName: 'Electric guitar',
+        sourceProgram: 30,
+        instrumentFamily: 'electric-guitar',
         noteCount: 2,
         notes: [
-          { midi: 64, startBeat: 2, duration: 1 },
-          { midi: 67, startBeat: 0, duration: 1 },
+          { midi: 64, startBeat: 2, duration: 1, velocity: 91 },
+          { midi: 67, startBeat: 0, duration: 1, velocity: 88 },
         ],
       },
       {
         id: 'track-bass',
         name: 'Bass',
         instrumentName: 'Electric bass',
+        sourceProgram: 33,
+        instrumentFamily: 'bass',
         noteCount: 1,
-        notes: [{ midi: 40, startBeat: 1, duration: 2 }],
+        notes: [{ midi: 40, startBeat: 1, duration: 2, velocity: 73 }],
       },
       {
         id: 'track-silent',
@@ -71,6 +75,7 @@ function mixedSource(): GuitarNightReferenceSource {
             gmKey: 49,
             startBeat: 0.5,
             velocity: 111,
+            articulation: 'choke',
             source: {
               format: 'guitar-pro',
               articulationId: 97,
@@ -107,16 +112,57 @@ describe('backingParts', () => {
     ).toEqual(['track-bass'])
   })
 
-  it('names each part and the timbre it should sound with', () => {
+  it('names each part and the honest instrument family it should sound with', () => {
     expect(backingParts(source(), 'track-lead')[0]).toMatchObject({
       name: 'Bass',
-      variant: 'bass',
+      instrumentFamily: 'bass',
       noteCount: 1,
     })
     expect(backingParts(source(), 'track-bass')[0]).toMatchObject({
       name: 'Lead guitar',
-      variant: 'electric',
+      instrumentFamily: 'electric-guitar',
     })
+  })
+
+  it('uses explicit GM programs to separate guitars, bass, and neutral parts', () => {
+    const tracks = [
+      { id: 'clean', name: 'Clean guitar', program: 27, midi: 64 },
+      { id: 'distorted', name: 'Distorted guitar', program: 30, midi: 67 },
+      { id: 'acoustic', name: 'Steel guitar', program: 25, midi: 60 },
+      { id: 'bass', name: 'Bass', program: 33, midi: 40 },
+      { id: 'strings', name: 'Lead guitar', program: 48, midi: 69 },
+      { id: 'voice', name: 'Voice Oohs', program: 53, midi: 72 },
+      { id: 'synth', name: 'Synth lead', program: 80, midi: 76 },
+    ] as const
+    const classified = backingParts(
+      source({
+        tracks: tracks.map((track) => ({
+          id: track.id,
+          name: track.name,
+          instrumentName: track.name,
+          sourceProgram: track.program,
+          noteCount: 1,
+          notes: [{ midi: track.midi, startBeat: 0, duration: 1 }],
+        })),
+      }),
+      'not-a-track',
+    )
+
+    expect(
+      classified.map((part) =>
+        part.kind === 'pitched'
+          ? [part.trackId, part.instrumentFamily]
+          : [part.trackId, part.kind],
+      ),
+    ).toEqual([
+      ['clean', 'electric-guitar'],
+      ['distorted', 'electric-guitar'],
+      ['acoustic', 'acoustic-guitar'],
+      ['bass', 'bass'],
+      ['strings', 'neutral'],
+      ['voice', 'neutral'],
+      ['synth', 'neutral'],
+    ])
   })
 
   it('is empty for a file with one part', () => {
@@ -168,6 +214,8 @@ describe('backingMelody', () => {
       startBeat: 1,
       durationBeats: 2,
       variant: 'bass',
+      instrumentFamily: 'bass',
+      velocity: 73,
       channelId: 'track-bass',
     })
   })
@@ -183,6 +231,30 @@ describe('backingMelody', () => {
     expect(new Set(notes.map((note) => note.variant))).toEqual(
       new Set(['electric', 'bass']),
     )
+  })
+
+  it('keeps neutral authored parts off guitar variants while preserving velocity', () => {
+    const neutral = source({
+      tracks: [
+        {
+          id: 'voice',
+          name: 'Lead guitar',
+          instrumentName: 'Voice Oohs',
+          sourceProgram: 53,
+          instrumentFamily: 'electric-guitar',
+          noteCount: 1,
+          notes: [{ midi: 72, startBeat: 0, duration: 1, velocity: 86 }],
+        },
+      ],
+    })
+
+    const [note] = backingMelody(neutral)
+    expect(note).toMatchObject({
+      channelId: 'voice',
+      instrumentFamily: 'neutral',
+      velocity: 86,
+    })
+    expect(note.variant).toBeUndefined()
   })
 
   it('sorts the merged parts by time', () => {
@@ -242,6 +314,7 @@ describe('backingPercussion', () => {
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,
+        articulation: 'choke',
       },
       {
         trackId: 'track-midi-drums',
@@ -272,6 +345,7 @@ describe('backingPercussion', () => {
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,
+        articulation: 'choke',
       },
     ])
   })

@@ -118,6 +118,13 @@ export function installChunkLoadRecovery(
     }
 
     if (!recordReload(storage, timestamp)) return
+    // Said out loud before the navigation, because a page that reloads
+    // itself in silence is indistinguishable from a browser that killed the
+    // tab — and on iOS both happen. The relay flushes on `pagehide`, so this
+    // line is the last one of the dying load and names the cause.
+    console.warn(
+      '[chunk-recovery] a lazy chunk failed to load; reloading to the current build',
+    )
     reload()
   }
 

@@ -441,13 +441,13 @@ backend.
 
 ### 5.2 The stack
 
-| Layer                                | Choice                                                            | Why                                                                                                                                                                                                                                                                            |
-| ------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Scene, assets, materials             | **three.js r185**, `WebGPURenderer` with its automatic backend    | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers WebGPU and WebGL2, and r185 asks for `featureLevel: 'compatibility'` by default, which reaches devices without Vulkan 1.1                                 |
-| Shaders                              | **TSL**                                                           | Compiles to WGSL or GLSL from one source, so the shatter shader is written once and survives whichever backend the device gives us. Also makes shaders ordinary JS modules, which is most of §8                                                                                |
-| Shard motion                         | **Solved once at the break, animated by one `uProgress` uniform** | See below — this is the finding that removes the need for compute at all. The impulse still comes from how well the note was sung; what changes is that it is solved once rather than integrated every frame                                                                   |
-| Custom GPU compute, if it ever comes | **TypeGPU**, sharing three's `GPUDevice` by hand                  | `new WebGPURenderer({ device })` and `tgpu.initFromDevice({ device })` both exist, so one device can serve both. Not `@typegpu/three` — see below                                                                                                                              |
-| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                      | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
+| Layer                                | Choice                                                         | Why                                                                                                                                                                                                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scene, assets, materials             | **three.js r185**, `WebGPURenderer` with its automatic backend | glTF loading, PBR, cameras, `BatchedMesh` — all the parts we would otherwise write badly. One renderer object covers WebGPU and WebGL2, and r185 asks for `featureLevel: 'compatibility'` by default, which reaches devices without Vulkan 1.1                                 |
+| Shaders                              | **TSL**                                                        | Compiles to WGSL or GLSL from one source, so the shatter shader is written once and survives whichever backend the device gives us. Also makes shaders ordinary JS modules, which is most of §8                                                                                |
+| Shard motion                         | **Solved once at the break; CPU-driven `BatchedMesh` for now** | See below — this is the finding that removes the need for compute at all. The impulse still comes from how well the note was sung; what changes is that it is solved once rather than integrated every frame                                                                   |
+| Custom GPU compute, if it ever comes | **TypeGPU**, sharing three's `GPUDevice` by hand               | `new WebGPURenderer({ device })` and `tgpu.initFromDevice({ device })` both exist, so one device can serve both. Not `@typegpu/three` — see below                                                                                                                              |
+| Real physics, only if needed         | `@dimforge/rapier3d-simd` (~758 KB gz, lazy)                   | Only if shards must collide with the pedestal and each other. Do **not** use `three/addons/physics/RapierPhysics.js`: it fetches a pinned old build from a third-party CDN at runtime (fatal offline in a Capacitor app) and falls back to trimesh colliders on dynamic bodies |
 
 **The shatter needs no GPU compute, and that is the most useful thing
 the research turned up.** A shatter is deterministic, a few seconds long,
@@ -461,16 +461,42 @@ ballistic anyway, so nothing is lost visually. Persistent GPU state —
 ping-pong simulation, transform feedback — only earns its keep if shards
 must bounce, pile and re-scatter, and they do not.
 
-**Do not adopt `@typegpu/three`, at least not for this.** It is real,
-official and elegant (it compiles TypeGPU functions into TSL nodes, so
-no shared device is even needed), but its own docs say adopting it makes
-the app work only on WebGPU-enabled devices — it **disables three's
-WebGL2 fallback**. The tracking issue for that has been open for a year.
-Trading the fifth of Android and all of iOS below 26 for shader
-ergonomics, on an effect that does not need compute, is the wrong way
-round. It is 3.9 KB gzipped and the interop is non-contagious, so
-bolting it on later — if the debris field ever grows into something
-genuinely simulated, and if that issue lands — stays cheap.
+**TypeGPU: yes to the device, no to `@typegpu/three`.** maff asked for
+TypeGPU directly — he has shipped it in `chaos-master` (compute-heavy
+IFS flame pipelines) and in this repo's own `/glass` route — so the
+question was re-checked against current facts on 2026-09-01 rather than
+left on the original citation.
+
+What is still true: `@typegpu/three` **disables three's WebGL2
+fallback**, making the app WebGPU-only. Issue
+[#1637](https://github.com/software-mansion/TypeGPU/issues/1637) has
+been open since 2025-08-21 and was last touched 2026-08-18; the caution
+is still in the docs verbatim. `@typegpu/gl` shipped in alpha
+(0.12.3) and can target WebGL2/GLSL, but its own docs say it does not
+implement the full API and never mention three.js.
+
+What is newly confirmed, and is the path: **sharing one `GPUDevice` by
+hand works, and preserves the fallback.** `new WebGPURenderer({ device
+})` and `tgpu.initFromDevice({ device })` both accept an injected
+device, and — verified in three's `WebGPUBackend.js` source — _neither
+library destroys a device it did not create_, so the two lifecycle
+contracts agree. This repo already has the exact shape that needs:
+`src/lib/gpu/webgpu-device.ts` hands out a shared device, and
+`src/features/glass/renderer/GlassRenderer.ts` already probes support,
+dynamically imports the GPU backend and silently falls back.
+
+The real cost is not the wiring: a material authored through
+`@typegpu/three`'s `toTSL()` cannot run on the WebGL branch, so every
+such material needs a second implementation. That is what #1637 exists
+to remove, and it has not.
+
+**So: no TypeGPU in slice 0, and nothing in slice 0 wants it.** The
+shatter needs no compute (below), and the Cabinet has one glass, one
+plinth and one light. TypeGPU earns its place the moment there is
+compute worth doing — glass dust, a particle field, a real fluid — and
+at that point it goes in on the WebGPU branch only, through the shared
+device, with the WebGL branch simply not drawing that effect. That is
+degrading one effect, not maintaining two renderers.
 
 That does leave the TypeGPU mandate (`glass-handoff-2026-07-17.md`
 Decision 9) satisfied only on the desktop-web funnel, where the existing
@@ -787,6 +813,51 @@ front of it. The controller in §4.1 is body-agnostic — a capsule walks
 the same whatever is drawn around it — so a placeholder capsule can
 prove slice 1's mechanics while the rig is finished.
 
+### 6.4a Merc as actually built, and what is still missing
+
+Slice 0 shipped him as an asset (`art/merc/make_merc.py`), and three
+things about how he came out change what slice 1 has to do.
+
+**He has no skeleton, and does not need one.** Meshy's auto-rig refuses
+the S3 body plan outright — "pose estimation failed" — because there are
+no limbs to estimate a pose from. A droplet with two floating mitts has
+nothing a humanoid rig recognises. What saved it is that the mitts are
+separate mesh islands, so the export is three nodes (`merc_body`,
+`merc_hand_l`, `merc_hand_r`) animated by node transforms rather than by
+bones. No skinning, no weight painting, no four-influence budget: the
+whole §6.1 rig discipline simply does not apply to this character. Four
+clips exist — `sing`, `listen`, `celebrate`, `fall`.
+
+**There is no locomotion clip.** Slice 1 needs him to cross a room and
+nothing in the export moves him. Because he hovers, that clip is a
+vertical bob with the hands trailing and counter-swinging — genuinely
+easier than a walk cycle, and the one place the limbless design pays a
+dividend rather than charging a tax. It has to be authored before slice
+1 can look like anything.
+
+**He has no surface.** The Meshy 7 GLB is geometry only: `POSITION`
+alone, no normals, no UVs, no materials, no images. The textures were
+never downloaded alongside it — the `*_textures/` set on disk belongs to
+the earlier meshy-6 model — though Meshy packs them into the `.blend`,
+so they are recoverable if wanted.
+
+Whether they are wanted is a real question rather than an oversight.
+The locked art direction is **iridescent mercury**, and mercury is a
+material, not a texture: metalness 1, low roughness, thin-film
+iridescence, and the environment doing all the work. A `MeshPhysicalMaterial`
+gets there with no UVs at all, costs nothing to download, and — the part
+that matters — is lit by the same rig as the glass, so he belongs in the
+room instead of carrying a baked-in lighting scheme that fights it.
+
+The exception is **his face**, which is painted in the concept art, not
+sculpted. Untextured, a mercury droplet has no eyes. Options, cheapest
+first: shade the body as mercury and put the face on as a small separate
+plane with an alpha texture (a decal that can also blink and change
+expression, which a baked map cannot); recover the packed textures and
+UV-map the whole character; or model the features as geometry. The decal
+is the recommendation — it is the only one of the three that makes
+expression a runtime variable.
+
 ---
 
 ### 6.5 Getting the files onto the device
@@ -1007,13 +1078,75 @@ on the tablet) before the next begins. The §4a prerequisite is not one
 of them — it is already open as its own PR, because it improves the 2D
 games we ship today and should not wait behind a 3D decision.
 
-| Slice | Contains                                                                                                       | Done when                                                                                                                               |
-| ----- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | The Cabinet: room, glass, voice coupling, shatter, sound, score card, plus the tuning panel and frame HUD (§8) | 60fps on the tablet, shards persist, the card shows real units and a grade, and every feel number is draggable and dumps back to config |
-| 1     | Merc: kinematic controller, camera, one glass wall to break to pass                                            | The wall breaks because of a note, and Merc walks through the hole                                                                      |
-| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                                          | The three chambers are playable end to end and scored                                                                                   |
-| 3     | Polish: juice pass, haptics, reduced-motion path, load time                                                    | Passes the perf gates on a mid Android                                                                                                  |
-| 4     | The next mechanic                                                                                              | —                                                                                                                                       |
+| Slice | Contains                                                                                     | Done when                                                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | The Cabinet: room, glass, voice coupling, shatter, score card                                | **Landed** (#688). Tuning panel and frame HUD were dropped on maff's call — iteration happens in a desktop browser, so a panel would have been UI built to avoid a keyboard |
+| 0b    | Sound (§7): the ring, the pump, the shatter                                                  | **Landed.** Modal ring over noise, tremolo from the vibrato detector, four-layer break, all on the shared AudioContext lease                                                |
+| 1     | The Hallway: Merc's surface + face, the move clip, 3/4 chase camera, one pane broken to pass | **Landed** as a playable scene. No touch controller — the traversal is scripted and the voice is the only input, which fits the game                                        |
+| 1b    | The wave, made reachable and visible (§6.5)                                                  | **Landed.** Own vibrato band, a rate gauge while ringing, and a chip that reports fps and f0 rate as well as the backend                                                    |
+| 2     | Standing Wave Chamber A/B/C, the harmonic ladder HUD, the comedy fall                        | The three chambers are playable end to end and scored                                                                                                                       |
+| 3     | Polish: juice pass, haptics, reduced-motion path, load time                                  | Passes the perf gates on a mid Android                                                                                                                                      |
+| 4     | The next mechanic                                                                            | —                                                                                                                                                                           |
+
+---
+
+## 6.5 The wave the player actually makes
+
+The first device test of slice 1 returned one sentence that invalidated
+the band: _"the glass is there, I cannot 'wave' it, is it vibrato? to
+shatter it? Doesn't happen but maybe I am just weak."_
+
+He was not weak. `sim/vibrato-reach.test.ts` puts synthetic singers
+through the real signal path — the engine's five-point median
+(`latestSmoothed`) and Stage3D polling one f0 frame per simulation step —
+and the 2D band (`journey-config.ts`: 3.5–8.5 Hz, 15–140 cents) rejects
+outright everything a first-time player does:
+
+| What the player does         | 2D band     | Why                                    |
+| ---------------------------- | ----------- | -------------------------------------- |
+| Deliberate wobble, 2–3 Hz    | **refused** | Below `minHz`. This is the common case |
+| Timid wobble, ±10¢           | **refused** | Below `minDepthCents`                  |
+| Enthusiastic swing, ±180¢    | **refused** | Above `maxDepthCents`                  |
+| Trained vibrato, 5.5 Hz ±40¢ | accepted    | The band was fitted to this            |
+
+That band was fitted to a trained vibrato, which is the right band for a
+singing exercise and the wrong one for a game verb. So the 3D world keeps
+its own in `world3d-config.ts` — 2.2–9.5 Hz, 12–220 cents — for the same
+reason every other feel number lives there.
+
+The upper depth bound is not taste. It is exactly
+`(ring.tolSemis + ring.pumpTolBonus) * 100`: swing wider than the pitch
+band and the note leaves tolerance, so resonance decays whatever the ear
+says. A cap above that would promise a pump the simulation then refuses,
+and the test pins the two together.
+
+Widening alone would not have fixed the report, because the actual
+complaint was not "too hard" but "I cannot tell what is happening". Two
+things answer that:
+
+- **A rate gauge, while ringing only.** The accepted band drawn as a
+  place, and the player's measured wave as a dot inside or outside it,
+  with the numbers beside it. The player is being asked for something
+  they cannot see themselves doing; this is that thing, measured.
+- **A coach line that diagnoses rather than repeats.** "Waver faster",
+  "Waver wider", "Too wide — stay on the note" — but only once a wave has
+  actually been measured. A reading of zero means the window has not
+  filled or the mic hears nothing, and correcting a wave that was never
+  heard sends the player to fix the wrong thing.
+
+The guard that keeps the mechanic honest is pinned in the same file: a
+steady note, with up to 10 cents of jitter, still stops dead at
+`holdCap`, and a 1 Hz wobble is an unsteady hold rather than a wave.
+
+### The chip
+
+It said `WebGPU` and nothing else, which answers the one question nobody
+asks when the thing feels slow. It now reads
+`WebGPU · 58fps · 47Hz` — backend, drawn frames, and **f0 frames**. The
+third number is the one worth having: on a phone the interesting failure
+is a renderer that is fine and an audio thread that is starved, and those
+are indistinguishable from "slow" without it. Counted by change of
+`tAudio`, not by reads, since one f0 frame is polled many times per step.
 
 ---
 

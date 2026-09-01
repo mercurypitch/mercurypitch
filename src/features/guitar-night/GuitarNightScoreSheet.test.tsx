@@ -96,13 +96,86 @@ describe('GuitarNightScoreSheet', () => {
     expect(screen.getByText('Direct input', { exact: false })).toBeTruthy()
     expect(screen.getAllByText(/Scored beats 5–8/)).toHaveLength(2)
     expect(
-      screen.getByText(/Audio and input device identities are not saved/),
+      screen.getByText(/replay stays temporary unless you choose Keep/i),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
     fireEvent.click(screen.getByRole('button', { name: 'Review a phrase' }))
     expect(playAgain).toHaveBeenCalledTimes(1)
     expect(reviewPhrase).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a prepared replay only through the explicit action', () => {
+    const keepTake = vi.fn()
+    const discardTake = vi.fn()
+    render(() => (
+      <GuitarNightScoreSheet
+        open={true}
+        current={summary(1_725_000_002_500)}
+        history={[]}
+        onClose={vi.fn()}
+        keepState="ready"
+        keepMessage="Guitar replay ready. Nothing is saved until you keep it."
+        onKeepTake={keepTake}
+        onDiscardTake={discardTake}
+      />
+    ))
+
+    expect(screen.getByText(/Nothing is saved until you keep it/)).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Keep in Hear Yourself' }),
+    )
+    expect(keepTake).toHaveBeenCalledOnce()
+    expect(discardTake).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+    expect(discardTake).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the result modal locked while local persistence is pending', () => {
+    const close = vi.fn()
+    const discardTake = vi.fn()
+    render(() => (
+      <GuitarNightScoreSheet
+        open={true}
+        current={summary(1_725_000_002_600)}
+        history={[]}
+        onClose={close}
+        onPlayAgain={vi.fn()}
+        keepState="saving"
+        keepMessage="Keeping this take on this device."
+        onKeepTake={vi.fn()}
+        onDiscardTake={discardTake}
+      />
+    ))
+
+    expect(screen.getByRole('button', { name: 'Close Score' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Not now' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Play again' })).toBeDisabled()
+    fireEvent.click(screen.getByTestId('guitar-night-score-backdrop'))
+    expect(close).not.toHaveBeenCalled()
+    expect(discardTake).not.toHaveBeenCalled()
+  })
+
+  it('explains that MIDI cannot yield a replay and offers no Keep action', () => {
+    render(() => (
+      <GuitarNightScoreSheet
+        open={true}
+        current={summary(1_725_000_002_750, { inputKind: 'midi' })}
+        history={[]}
+        onClose={vi.fn()}
+        keepState="unsupported"
+        keepMessage="Audio replay is available for Room mic or Direct input, not MIDI."
+        onKeepTake={vi.fn()}
+      />
+    ))
+
+    expect(screen.getByText(/not MIDI/)).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Replay unavailable' }),
+    ).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Keep in Hear Yourself' }),
+    ).toBeNull()
   })
 
   it('names insufficient evidence without manufacturing a grade', () => {
@@ -126,6 +199,9 @@ describe('GuitarNightScoreSheet', () => {
         history={[]}
         onClose={vi.fn()}
         onPlayAgain={vi.fn()}
+        keepState="ready"
+        keepMessage="Replay ready"
+        onKeepTake={vi.fn()}
       />
     ))
 
@@ -163,6 +239,9 @@ describe('GuitarNightScoreSheet', () => {
       ),
     ).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Recent takes' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Keep in Hear Yourself' }),
+    ).toBeNull()
   })
 
   it('traps focus, closes on Escape or backdrop, and restores the trigger', async () => {
