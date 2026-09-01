@@ -9,12 +9,13 @@ import { resolveV2OnboardingMediaRequest, V2_ONBOARDING_PREVIEW_MEDIA_PACK, } fr
 const ROOT = '/onboarding/corky-v2-preview/scrolling'
 
 describe('V2 onboarding media pack', () => {
-  it('publishes only the four frozen Endless scrolling preview resources', () => {
+  it('publishes the frozen Scroll resources and one shared record authority', () => {
     const pack = V2_ONBOARDING_PREVIEW_MEDIA_PACK
 
     expect(pack.revision).toBe('corky-v2-preview-v0.2')
     expect(Object.keys(pack.pulls)).toEqual(['scrolling'])
     expect(pack.poster?.src).toBe(`${ROOT}/p02-table-ready-v0_1.webp`)
+    expect(pack.record?.stoppedAuthority).toEqual(pack.pulls.scrolling?.end)
     expect(pack.pulls.scrolling).toMatchObject({
       present: {
         kind: 'video',

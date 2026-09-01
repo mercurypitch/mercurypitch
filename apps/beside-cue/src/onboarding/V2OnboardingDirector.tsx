@@ -20,6 +20,7 @@ import { createV2OnboardingRuntimeState, reduceV2OnboardingRuntime, V2_ONBOARDIN
 import styles from './V2OnboardingDirector.module.css'
 import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
 import { V2OnboardingMediaStage } from './V2OnboardingMediaStage'
+import { V2OnboardingPlatterPreview } from './V2OnboardingPlatterPreview'
 
 export type V2OnboardingMutationResult =
   | { readonly ok: true }
@@ -172,8 +173,6 @@ function mediaMomentForPhase(
       return 'hold'
     case 'B05_PULL_RECEDES':
       return 'recede'
-    case 'B06_CORKY_STARTS_RECORD':
-      return 'end'
     default:
       return undefined
   }
@@ -839,11 +838,30 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
   const isRecordPhase = createMemo(() =>
     [
+      'B06_CORKY_STARTS_RECORD',
       'B06_RIGID_SPIN',
       'B06_STOP_SAVE_HOLD',
       'B06_SAVE_COMMIT',
       'B07_SAVED_ACK',
     ].includes(state().phase),
+  )
+
+  const platterPhase = createMemo(() => {
+    switch (state().phase) {
+      case 'B06_RIGID_SPIN':
+      case 'B06_STOP_SAVE_HOLD':
+        return 'spinning' as const
+      case 'B06_SAVE_COMMIT':
+        return 'stopping' as const
+      default:
+        return 'stopped' as const
+    }
+  })
+
+  const platterToken = createMemo(
+    () =>
+      state().stopCommit?.token ??
+      `v2-platter-idle:${String(state().generation)}`,
   )
 
   const isBrandPhase = createMemo(() =>
@@ -960,23 +978,17 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
             </Match>
 
             <Match when={isRecordPhase()}>
-              <div
-                class={styles.recordPlayer}
-                data-record-spinning={
-                  state().phase === 'B06_RIGID_SPIN' ||
-                  state().phase === 'B06_STOP_SAVE_HOLD'
-                }
-                classList={{
-                  [styles.recordPlayerSpinning]:
-                    state().phase === 'B06_RIGID_SPIN' ||
-                    state().phase === 'B06_STOP_SAVE_HOLD',
-                }}
-              >
-                <div class={styles.record}>
-                  <span class={styles.recordLabel} />
-                  <span class={styles.recordHole} />
-                </div>
-                <span class={styles.toneArm} />
+              <div class={styles.platterFrame}>
+                <V2OnboardingPlatterPreview
+                  base={props.mediaPack?.record?.stoppedAuthority}
+                  phase={platterPhase()}
+                  token={platterToken()}
+                  foreground={props.foreground}
+                  reducedMotion={state().motionMode === 'reduced'}
+                  onStopped={(token) =>
+                    dispatch({ type: 'PLATTER_STOPPED', token })
+                  }
+                />
               </div>
             </Match>
 

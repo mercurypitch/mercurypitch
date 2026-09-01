@@ -1,0 +1,34 @@
+/* P02 and its native fail-open share the plate's untouched 9:16 geometry. */
+.stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #ead6ad;
+  aspect-ratio: 9 / 16;
+  isolation: isolate;
+}
+
+.base,
+.fallback,
+.motion {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.base {
+  object-fit: cover;
+  object-position: center center;
+  user-select: none;
+}
+
+.motion {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.motion[data-visible='false'] {
+  visibility: hidden;
+}
