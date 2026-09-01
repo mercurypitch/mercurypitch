@@ -203,6 +203,190 @@ jobs:
             echo "No BESIDE_CUE_KEYSTORE_BASE64 secret: release artifacts are UNSIGNED and cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  # TestFlight from every pull request (maff, 2026-09-01). The simulator
+  # artifact above cannot run on hardware -- it is compiled for the
+  # simulator ABI -- so the only way to hold a PR build on an iPhone is a
+  # signed upload to App Store Connect. Internal TestFlight testers get
+  # the build a few minutes after processing, no UDID registration.
+  #
+  # Signing is cloud-managed: automatic style plus -allowProvisioningUpdates,
+  # authenticated with the App Store Connect API key, so there is no
+  # provisioning profile to keep in sync here. The distribution .p12 is
+  # imported as well; if the cloud path ever needs it locally it is there.
+  #
+  # Build numbers must rise monotonically per marketing version for
+  # TestFlight to accept the upload; github.run_number does exactly that.
+  ios-testflight:
+    name: iOS TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 60
+    if: github.event_name == 'pull_request'
+    env:
+      HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
+
+    steps:
+      - name: Checkout
+        if: env.HAS_ASC == 'true'
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        if: env.HAS_ASC == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Set up Node.js
+        if: env.HAS_ASC == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        if: env.HAS_ASC == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # The real store key, not the Test Store: this binary is a Release
+      # build, and the SDK aborts a release binary that configures the
+      # Test Store (same reasoning as the tag-release job below).
+      - name: Build web assets
+        if: env.HAS_ASC == 'true'
+        env:
+          VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
+
+      - name: Import signing certificate
+        if: env.HAS_ASC == 'true'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$keychain"
+          security list-keychain -d user -s "$keychain" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Write App Store Connect API key
+        if: env.HAS_ASC == 'true'
+        env:
+          ASC_KEY_P8: ${{ secrets.APPLE_ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+
+      # The export signs manually with this profile. Cloud-managed signing
+      # was the first attempt and the archive half of it works, but the
+      # export needs the cloud-managed DISTRIBUTION certificate, and that
+      # is a separate grant the API key's App Manager role does not carry
+      # ("Cloud signing permission error"). A classic App Store profile
+      # against the imported cert needs no special permission at all.
+      - name: Install App Store provisioning profile
+        if: env.HAS_ASC == 'true'
+        env:
+          PROFILE_BASE64: ${{ secrets.APPLE_APPSTORE_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profiles"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/besidecue-appstore.mobileprovision"
+
+      - name: Archive and upload to TestFlight
+        if: env.HAS_ASC == 'true'
+        working-directory: apps/beside-cue/ios/App
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+          PROFILE_NAME: ${{ secrets.APPLE_APPSTORE_PROFILE_NAME }}
+        run: |
+          set -euo pipefail
+
+          # The marketing version is the app's own, not a tag: PR builds
+          # carry package.json's version, and the run number tells two
+          # uploads of the same version apart.
+          version="$(node -p "require('../../package.json').version")"
+
+          # -clonedSourcePackagesDirPath keeps SwiftPM's checkouts inside
+          # the run instead of ~/Library/Caches/org.swift.swiftpm, whose
+          # shared repository cache has failed resolution mid-flight on a
+          # hosted runner:
+          #
+          #   Git command 'git -C .../purchases-hybrid-common-b6416392
+          #   config --get remote.origin.url' failed: fatal: cannot change
+          #   to '...': No such file or directory
+          #
+          # A cache entry the resolver believed in and then could not read.
+          # A run-local directory starts empty every time, so there is
+          # nothing stale to trust. It costs one clean fetch per run, which
+          # is the right trade against an upload that fails at random.
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            MARKETING_VERSION="$version" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            archive
+
+          # destination=upload makes xcodebuild itself deliver the build to
+          # App Store Connect -- no altool, no Transporter, no IPA artifact.
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
+            </dict>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+          echo "Uploaded $version (${{ github.run_number }}) to App Store Connect." >> "$GITHUB_STEP_SUMMARY"
+          echo "TestFlight shows it after processing, usually a few minutes." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report missing secrets
+        if: env.HAS_ASC != 'true'
+        run: |
+          echo "No App Store Connect API secrets: TestFlight upload skipped." >> "$GITHUB_STEP_SUMMARY"
+
   ios:
     name: iOS
     runs-on: macos-latest

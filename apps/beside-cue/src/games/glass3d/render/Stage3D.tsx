@@ -12,13 +12,13 @@
 // reads. What does not: any rule (that is `sim/`), any drawing (that is
 // `render/Renderer3D.ts`), and the loop itself (`runtime/loop.ts`).
 
-import { midiToNote } from '@irchiinnuss/pitch-engine'
+import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
-import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
+import { createGlassTone } from '../audio/glass-tone'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
@@ -39,6 +39,12 @@ const TARGET_MIDI = 69
  * note name rewritten sixty times a second is unreadable. */
 const TEXT_INTERVAL = 0.1
 
+/** Full width of the wave-rate gauge, in Hz. Wide enough that both edges
+ * of the accepted band sit inside it with room to be missed on either
+ * side -- a gauge that cannot show you overshooting cannot teach you to
+ * stop. */
+const WAVE_SCALE_HZ = 12
+
 interface Stage3DProps {
   onExit: () => void
 }
@@ -51,13 +57,27 @@ export const Stage3D = (props: Stage3DProps) => {
   const [charge, setCharge] = createSignal(0)
   const [ringing, setRinging] = createSignal(false)
   const [wavering, setWavering] = createSignal(false)
+  /** The wave as measured, not as judged. Shown while ringing because
+   * "let it waver" with no readout is unanswerable: a player who cannot
+   * break the glass has no way to tell a wave that is too slow from one
+   * that is too shallow from one the mic never heard. */
+  const [waveRate, setWaveRate] = createSignal(0)
+  const [waveDepth, setWaveDepth] = createSignal(0)
   const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
+  /** Displayed frames and f0 frames per second. The chip used to say
+   * only which backend won, which answers the one question nobody was
+   * asking when the thing feels slow. */
+  const [fps, setFps] = createSignal(0)
+  const [pitchHz, setPitchHz] = createSignal(0)
   const [broken, setBroken] = createSignal(false)
   const [grade, setGrade] = createSignal<number | null>(null)
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
   let renderer: ReturnType<typeof createRenderer3D> | null = null
+  // The glass's voice (§7). Built here, started inside the mic gesture --
+  // the same click has to unlock both directions of audio.
+  const tone = createGlassTone(midiToFreq(TARGET_MIDI))
 
   const cfg = WORLD3D_CONFIG
   const target = midiToNote(TARGET_MIDI)
@@ -91,9 +111,30 @@ export const Stage3D = (props: Stage3DProps) => {
   const coachLine = createMemo(() => {
     if (broken()) return 'Broken.'
     if (!ringing()) return `Hold ${targetName} — ${heardLine()}`
-    if (!wavering()) return 'Now let it waver'
-    return 'Keep waving'
+    if (wavering()) return 'Keep waving'
+    // Ringing but not counting. Which way it is failing decides what the
+    // player should change, so say that rather than repeating the
+    // instruction they are already following.
+    //
+    // A measurement of zero is not a diagnosis: it means the window has
+    // not filled yet, or the mic is hearing nothing. Correcting a wave
+    // that was never heard sends the player to fix the wrong thing.
+    const v = cfg.vibrato
+    if (waveRate() === 0) return 'Now let it waver'
+    if (waveRate() < v.minHz) return 'Waver faster'
+    if (waveRate() > v.maxHz) return 'Waver slower'
+    if (waveDepth() < v.minDepthCents) return 'Waver wider'
+    if (waveDepth() > v.maxDepthCents) return 'Too wide — stay on the note'
+    return 'Now let it waver'
   })
+
+  /** Backend, drawn frames, and f0 frames. All three, because on a phone
+   * the interesting failure is a renderer that is fine and an audio
+   * thread that is starved -- and those are indistinguishable from
+   * "slow". */
+  const chipLine = createMemo(() =>
+    fps() === 0 ? backend() : `${backend()} · ${fps()}fps · ${pitchHz()}Hz`,
+  )
 
   onMount(() => {
     const r = createRenderer3D(canvas, cfg)
@@ -135,6 +176,7 @@ export const Stage3D = (props: Stage3DProps) => {
       observer.disconnect()
       stopLoop?.()
       driver?.stop()
+      tone.dispose()
       r.dispose()
       renderer = null
     })
@@ -144,7 +186,7 @@ export const Stage3D = (props: Stage3DProps) => {
    * watch it break. */
   const begin = (): void => {
     const ring = createResonance(TARGET_MIDI)
-    const vib = createVibratoDetector(JOURNEY_CONFIG.vibrato)
+    const vib = createVibratoDetector(cfg.vibrato)
     let launches: readonly ShardLaunch[] | null = null
     let breakAt = 0
     let elapsed = 0
@@ -166,6 +208,13 @@ export const Stage3D = (props: Stage3DProps) => {
     let sinceText = TEXT_INTERVAL
     let lastMidi: number | null = null
     let lastWave = false
+    let lastWaveStrength = 0
+    let lastWaveRate = 0
+    let lastWaveDepth = 0
+    let lastPitchStamp = -1
+    let pitchFrames = 0
+    let drawnFrames = 0
+    let statsAt = performance.now()
 
     const tick = (now: number): void => {
       const frameSeconds = (now - last) / 1000
@@ -180,6 +229,15 @@ export const Stage3D = (props: Stage3DProps) => {
             : vib.feed(pitch.tAudio * 1000, pitch.midi)
         lastMidi = pitch?.midi ?? null
         lastWave = wave.active
+        lastWaveStrength = wave.active ? wave.strength : 0
+        lastWaveRate = 'rateHz' in wave ? wave.rateHz : 0
+        lastWaveDepth = 'depthCents' in wave ? wave.depthCents : 0
+        // One f0 frame can be polled many times per simulation step, so
+        // the stream's real rate is counted by CHANGE, not by reads.
+        if (pitch !== null && pitch.tAudio !== lastPitchStamp) {
+          lastPitchStamp = pitch.tAudio
+          pitchFrames += 1
+        }
 
         if (launches === null) {
           const broke = stepResonance(
@@ -204,11 +262,13 @@ export const Stage3D = (props: Stage3DProps) => {
               7,
             )
             breakAt = elapsed
+            tone.shatter(acc)
             setGrade(Math.round(acc * 100))
             setBroken(true)
           }
         }
       })
+      tone.update(ring.res, lastWaveStrength)
 
       // Signals are written once a frame, not once a simulation step:
       // the loop runs at 120 Hz and Solid would otherwise be asked to
@@ -220,6 +280,20 @@ export const Stage3D = (props: Stage3DProps) => {
         sinceText = 0
         setHeardMidi(lastMidi)
         setWavering(lastWave)
+        setWaveRate(lastWaveRate)
+        setWaveDepth(lastWaveDepth)
+      }
+
+      // Rates over a whole second: anything shorter is noise, and this
+      // is a number a human reads off a phone in their hand.
+      drawnFrames += 1
+      if (now - statsAt >= 1000) {
+        const span = (now - statsAt) / 1000
+        setFps(Math.round(drawnFrames / span))
+        setPitchHz(Math.round(pitchFrames / span))
+        drawnFrames = 0
+        pitchFrames = 0
+        statsAt = now
       }
 
       view.resonance = ring.res
@@ -248,7 +322,11 @@ export const Stage3D = (props: Stage3DProps) => {
         charge: ring.res,
         ringing: ring.res >= cfg.ring.holdCap,
         wavering: lastWave,
+        waveRate: lastWaveRate,
+        waveDepth: lastWaveDepth,
         heard: lastMidi,
+        fps: fps(),
+        pitchHz: pitchHz(),
         broken: launches !== null,
         shards: renderer?.centroids().length ?? 0,
         backend: backend(),
@@ -262,6 +340,7 @@ export const Stage3D = (props: Stage3DProps) => {
             7,
           )
           breakAt = elapsed
+          tone.shatter(acc)
           setGrade(Math.round(acc * 100))
           setBroken(true)
         },
@@ -281,6 +360,9 @@ export const Stage3D = (props: Stage3DProps) => {
 
   const startMic = async (): Promise<void> => {
     setMicError(null)
+    // Synchronously, inside the gesture: WebKit only unlocks audio for
+    // code still on the click's call stack, and the await below leaves it.
+    tone.start()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
@@ -298,7 +380,7 @@ export const Stage3D = (props: Stage3DProps) => {
 
       {/* Top RIGHT. The Leave pill is fixed to the top left and sits on
           z-index 50, so anything put there is simply not on screen. */}
-      <span class="stage3d__chip">{backend()}</span>
+      <span class="stage3d__chip">{chipLine()}</span>
 
       <Show when={started() && !broken()}>
         <div class="stage3d__meter" classList={{ 'is-ringing': ringing() }}>
@@ -309,6 +391,36 @@ export const Stage3D = (props: Stage3DProps) => {
                 than the end of the bar. */}
             <b style={{ left: `${Math.round(cfg.ring.holdCap * 100)}%` }} />
           </div>
+          {/* Once the hold has done its work the player is asked for a
+              thing they cannot see themselves doing. This is that thing,
+              measured: rate against the accepted band, and depth. It
+              appears only while it matters. */}
+          <Show when={ringing()}>
+            <div
+              class="stage3d__wave"
+              classList={{ 'is-heard': wavering() }}
+              aria-hidden="true"
+            >
+              <span class="stage3d__band">
+                <i
+                  style={{
+                    left: `${Math.round((cfg.vibrato.minHz / WAVE_SCALE_HZ) * 100)}%`,
+                    width: `${Math.round(((cfg.vibrato.maxHz - cfg.vibrato.minHz) / WAVE_SCALE_HZ) * 100)}%`,
+                  }}
+                />
+                <b
+                  style={{
+                    left: `${Math.round(Math.min(1, waveRate() / WAVE_SCALE_HZ) * 100)}%`,
+                  }}
+                />
+              </span>
+              <span class="stage3d__wavenum">
+                {waveRate() > 0
+                  ? `${waveRate().toFixed(1)} Hz · ${Math.round(waveDepth())}¢`
+                  : 'no wave yet'}
+              </span>
+            </div>
+          </Show>
           <p class="stage3d__coach">{coachLine()}</p>
         </div>
       </Show>

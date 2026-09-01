@@ -1,0 +1,19 @@
+{
+  "name": "Beside Cue",
+  "short_name": "Beside Cue",
+  "description": "A private cue toward the small action you chose.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fff5dd",
+  "theme_color": "#fff5dd",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -12,7 +12,7 @@
 // against the committed files — so a bad export fails in CI rather than
 // on a device.
 
-import type { Mesh, Object3D } from 'three'
+import type { AnimationClip, Mesh, Object3D } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { Vec3 } from './sim/shatter3d'
 
@@ -38,6 +38,18 @@ const load = async (url: string): Promise<Object3D> => {
 export const loadGlass = async (base = 'games/glass3d'): Promise<Object3D> =>
   load(`${base}/glass.glb`)
 
+export interface MercAsset {
+  scene: Object3D
+  /** sing, listen, celebrate, fall, move — node-transform clips, no rig. */
+  clips: AnimationClip[]
+}
+
+/** Merc: three shells and his clips. Dressing him is render/merc.ts. */
+export const loadMerc = async (base = 'games/glass3d'): Promise<MercAsset> => {
+  const gltf = await loader().loadAsync(`${base}/merc.glb`)
+  return { scene: gltf.scene, clips: gltf.animations }
+}
+
 /**
  * The shard set, ordered and paired with the centroids that drive the
  * shatter.
@@ -46,14 +58,22 @@ export const loadGlass = async (base = 'games/glass3d'): Promise<Object3D> =>
  * launches positionally against `meshes`, and glTF makes no promise
  * about the order a scene graph walks in.
  */
-export const loadShards = async (
-  base = 'games/glass3d',
+export const loadShards = (base = 'games/glass3d'): Promise<ShardAsset> =>
+  loadShardSet(`${base}/shards.glb`, 'shard_')
+
+/** The hallway pane's break, same contract under a different prefix. */
+export const loadPaneShards = (base = 'games/glass3d'): Promise<ShardAsset> =>
+  loadShardSet(`${base}/pane-shards.glb`, 'pane_')
+
+const loadShardSet = async (
+  url: string,
+  prefix: string,
 ): Promise<ShardAsset> => {
-  const scene = await load(`${base}/shards.glb`)
+  const scene = await load(url)
 
   const found: Mesh[] = []
   scene.traverse((o) => {
-    if ((o as Mesh).isMesh === true && o.name.startsWith('shard_')) {
+    if ((o as Mesh).isMesh === true && o.name.startsWith(prefix)) {
       found.push(o as Mesh)
     }
   })

@@ -199,6 +199,25 @@ def build_animations(body, hl, hr):
     stash("celebrate", objs)
     reset_pose(objs)
 
+    # move: the travel bob. Deliberately in place -- the stage drives the
+    # root's position, and this is what the body does while that happens.
+    # He hovers, so locomotion is a bob with the hands trailing in
+    # counter-swing: the one clip the limbless body plan makes EASIER
+    # than a walk cycle would have been.
+    for o in objs:
+        key(o, 1, loc=rl(o), rot=(-0.06, 0, 0))
+    key(body, 11, loc=offset(body, dz=0.05), rot=(-0.10, 0, 0))
+    key(body, 21, loc=rl(body), rot=(-0.06, 0, 0))
+    key(body, 31, loc=offset(body, dz=0.05), rot=(-0.10, 0, 0))
+    key(hl, 11, loc=offset(hl, dy=0.08, dz=0.03))
+    key(hl, 31, loc=offset(hl, dy=-0.08, dz=0.01))
+    key(hr, 11, loc=offset(hr, dy=-0.08, dz=0.01))
+    key(hr, 31, loc=offset(hr, dy=0.08, dz=0.03))
+    for o in objs:
+        key(o, 41, loc=rl(o), rot=(-0.06, 0, 0))
+    stash("move", objs)
+    reset_pose(objs)
+
     # fall: the comedy beat. He topples, lands, and the hands arrive late.
     for o in objs:
         key(o, 1, loc=rl(o), rot=(0, 0, 0), scale=(1, 1, 1))
