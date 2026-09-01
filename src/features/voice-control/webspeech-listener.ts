@@ -26,11 +26,15 @@
 //     `listening` on its own say-so; only the recognizer's own `start` event
 //     does, and until it arrives the state is `starting`.
 //
-//  2. A session can die with no `end` and no `error` — another audio consumer
-//     taking the mic, the page being backgrounded, the tab being restored
-//     from the back/forward cache. The respawn logic hangs off `end`, so a
-//     silent death used to be permanent. `CONFIRM_START_MS` is the watchdog:
-//     a session that never announces itself is treated as dead.
+//  2. A session can die with no `end` and no `error`, and the respawn logic
+//     hangs off `end`, so a silent death used to be permanent. There are two
+//     shapes of it and they need different answers. One never got going —
+//     another audio consumer holding the mic — and `CONFIRM_START_MS` is the
+//     watchdog for it: a session that does not announce itself is dead. The
+//     other confirmed, worked, and then died inside a freeze the document
+//     came back from, leaving `live` true over nothing; no watchdog can see
+//     that, so a page returning from hidden or from the back/forward cache
+//     replaces its session rather than trusting it.
 //
 //  3. Karaoke Night is a separate document, so walking into it and back out
 //     is two full page loads, each with its own gesture-less mount. Recovery
