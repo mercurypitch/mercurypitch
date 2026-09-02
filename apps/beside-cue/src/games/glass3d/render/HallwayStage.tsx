@@ -9,6 +9,8 @@
 
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { applyPreferredInput } from '@/audio/input-device'
+import { MicInput } from '@/components/MicInput'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -272,9 +274,27 @@ export const HallwayStage = (props: HallwayStageProps) => {
     setMicError(null)
     tone.start()
     try {
+      // The remembered input, if it is still plugged in -- see
+      // audio/input-device.ts. Must happen before acquire(), because the
+      // device is chosen by the constraints that open the stream.
+      await applyPreferredInput()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
+    } catch (err) {
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  /** Re-open on a different input, without leaving the game. */
+  const switchMic = async (): Promise<void> => {
+    driver?.stop()
+    driver = null
+    setMicError(null)
+    try {
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
@@ -296,6 +316,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
             </div>
           </Show>
           <p class="stage3d__coach">{coachLine()}</p>
+          <MicInput listening onChoose={() => void switchMic()} />
         </div>
       </Show>
 
@@ -310,6 +331,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
+            <MicInput listening={false} onChoose={() => void switchMic()} />
           </Show>
         </div>
       </Show>

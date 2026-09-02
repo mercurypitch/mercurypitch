@@ -21,6 +21,7 @@
 // playing, so a screenshot documents itself.
 
 import { micManager } from '@irchiinnuss/pitch-engine'
+import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { createSingDriver } from '../games/glass/drivers/sing'
 import type { InteractionDriver } from '../games/glass/drivers/types'
 import { micErrorLine } from '../games/glass/mic-error'
@@ -102,13 +103,26 @@ interface Meter {
   note: string
 }
 
+// Only ever called AFTER a stream has been granted, and that ordering is
+// load-bearing twice over. Before permission, enumerateDevices returns a
+// single placeholder audioinput with an empty id and an empty label --
+// and asking for `{ deviceId: { exact: '' } }` is an OverconstrainedError,
+// which is a confusing way to say "not allowed yet". Labels are blank
+// before permission too, so an early list is unreadable as well as
+// unopenable.
 const startMeters = async (row: HTMLDivElement): Promise<void> => {
   const devices = (await navigator.mediaDevices.enumerateDevices()).filter(
-    (d) => d.kind === 'audioinput',
+    (d) => d.kind === 'audioinput' && d.deviceId.length > 0,
   )
   const meters: Meter[] = []
-  const context = new AudioContext()
-  await context.resume()
+  // The app's one context, not a second of its own: audio/
+  // shared-audio-context.ts owns every lane, and a test asserts that no
+  // other module constructs one. A meter is not a good enough reason to
+  // be the exception.
+  const lease = acquireSharedAudioContext('merc-probe-meters')
+  const context = lease.ensure()
+  if (context === null) return
+  await lease.unlock()
 
   for (const device of devices) {
     const meter: Meter = {
@@ -150,7 +164,7 @@ const startMeters = async (row: HTMLDivElement): Promise<void> => {
         line.addEventListener('click', () => {
           void micManager.setPreferredDevice(m.deviceId).then(() => {
             console.log(`[merc-probe mic] preferred device -> ${m.label}`)
-            restart()
+            void restart()
           })
         })
         return line
@@ -163,7 +177,7 @@ const startMeters = async (row: HTMLDivElement): Promise<void> => {
 
 let driver: InteractionDriver | null = null
 
-const restart = (): void => {
+const restart = (): Promise<void> => {
   const t0 = performance.now()
   const stamp = (msg: string): void => {
     micLine = `${msg} (+${Math.round(performance.now() - t0)}ms)`
@@ -173,7 +187,7 @@ const restart = (): void => {
   const next = createSingDriver('merc-probe')
   driver = next
   stamp(`driver created; ctx=${next.ctx()?.state ?? 'none'}`)
-  void next
+  return next
     .start()
     .then(() => {
       stamp(`started; ctx=${next.ctx()?.state ?? 'none'}`)
@@ -205,8 +219,8 @@ if (micMode) {
   panel.append(rows, button)
   document.body.append(panel)
   button.addEventListener('click', () => {
-    restart()
-    void startMeters(rows)
+    // Meter only once the grant has landed; see startMeters.
+    void restart().then(() => startMeters(rows))
   })
 }
 

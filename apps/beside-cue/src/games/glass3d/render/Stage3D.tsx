@@ -14,6 +14,8 @@
 
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { applyPreferredInput } from '@/audio/input-device'
+import { MicInput } from '@/components/MicInput'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -362,15 +364,30 @@ export const Stage3D = (props: Stage3DProps) => {
 
   const startMic = async (): Promise<void> => {
     setMicError(null)
-    // Synchronously, inside the gesture: WebKit only unlocks audio for
-    // code still on the click's call stack, and the await below leaves it.
     tone.start()
     try {
+      // The remembered input, if it is still plugged in -- see
+      // audio/input-device.ts. Must happen before acquire(), because the
+      // device is chosen by the constraints that open the stream.
+      await applyPreferredInput()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
     } catch (err) {
-      // Say WHICH failure it was — the 2D game learned this the hard way.
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  /** Re-open on a different input, without leaving the game. */
+  const switchMic = async (): Promise<void> => {
+    driver?.stop()
+    driver = null
+    setMicError(null)
+    try {
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
+    } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
     }
@@ -424,6 +441,7 @@ export const Stage3D = (props: Stage3DProps) => {
             </div>
           </Show>
           <p class="stage3d__coach">{coachLine()}</p>
+          <MicInput listening onChoose={() => void switchMic()} />
         </div>
       </Show>
 
@@ -438,6 +456,7 @@ export const Stage3D = (props: Stage3DProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
+            <MicInput listening={false} onChoose={() => void switchMic()} />
           </Show>
         </div>
       </Show>

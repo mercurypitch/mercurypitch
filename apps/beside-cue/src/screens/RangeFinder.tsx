@@ -7,6 +7,8 @@
 
 import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { applyPreferredInput } from '@/audio/input-device'
+import { MicInput } from '@/components/MicInput'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { createGameVoice } from '@/games/glass/game-voice'
@@ -123,18 +125,26 @@ export function RangeFinder(props: {
   // the same note in a level are recognisably one sound.
   const voice = createGameVoice('range-finder-voice')
 
-  onMount(() => {
-    driver = createSingDriver('range-finder')
-    voice.start()
-    driver
-      .start()
+  /** Open (or re-open) the microphone on the remembered input. */
+  const listen = (): void => {
+    stopDriver()
+    const next = createSingDriver('range-finder')
+    driver = next
+    void applyPreferredInput()
+      .then(() => next.start())
       .then(() => {
+        cancelAnimationFrame(raf)
         raf = requestAnimationFrame(tick)
       })
       .catch(() => {
         stopDriver()
         setStep('error')
       })
+  }
+
+  onMount(() => {
+    voice.start()
+    listen()
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
@@ -157,6 +167,7 @@ export function RangeFinder(props: {
             <span style={{ width: `${held() * 100}%` }} />
           </span>
         </div>
+        <MicInput listening onChoose={() => listen()} />
         <div class="range-finder__row">
           <button
             class="games-range__pick"
