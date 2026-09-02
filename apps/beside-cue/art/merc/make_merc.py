@@ -601,9 +601,81 @@ def build_animations(rig, face, unit):
     face_key(22, blink=1.0)
     bkey("base", 30, roll=1.5, side=0.06, squash=1.0, stretch=1.0)
     bkey("head", 30, roll=-0.06, squash=1.0, stretch=1.0)
-    bkey("hand_l", 26, side=0.30, up=-0.20)
-    bkey("hand_r", 28, side=0.55, up=-0.24)
+
+    # Which hand goes where is not a choice, it is the roll direction.
+    #
+    # The bones are named from Merc's own left and right, so `hand_l`
+    # sits at +X -- the viewer's right -- and positive `roll` tips him
+    # that way. He therefore falls ONTO HIS LEFT, and that settles both
+    # hands before any taste is involved:
+    #
+    #   hand_l  the side he lands on. It cannot stay where the body is
+    #           about to be, so it is shoved out towards the camera and
+    #           comes to rest flat on the floor beside him.
+    #   hand_r  the side that ends up facing the sky. It swings up and
+    #           over and lands ON him, which is what a hand does when
+    #           the shoulder it hangs from turns 86 degrees.
+    #
+    # Both used to be keyed `side` positive, which sent them the same
+    # way and buried them under his own body. Nothing in the rig stops
+    # that: a floating hand has no elbow to hit and no arm to run out
+    # of, so the only thing keeping it outside the silhouette is these
+    # numbers. They are measured against the fallen body's own bounding
+    # box -- x[-0.20, +1.47], z[-1.08, +0.16] at frame 30, with the
+    # floor at -1.12 -- and not eyeballed.
+    #
+    # They also land AFTER the body, which the old keys at 26 and 28 did
+    # not: the body settles at 30 and stops, the hands arrive at 34 and
+    # 36. Hands that beat the body to the floor read as a pose change
+    # rather than a fall.
+
+    # Where a hand ENDS is the rotation's answer, not the animator's.
+    # Both hands hang low on him, so the roll carries their sockets to
+    # his TAIL end -- the end that is now screen-left -- and that is
+    # where they have to arrive. Put them anywhere else and they read as
+    # two hands lying near his head rather than two hands still attached
+    # to a body. Rotating the rest position about `base`'s pivot (z =
+    # -0.502) by the roll gives the anchors directly:
+    #
+    #   hand_l  (+0.747, -0.045, -0.697)  ->  (-0.14, -0.05, -1.26)
+    #   hand_r  (-0.747, -0.045, -0.697)  ->  (-0.25, -0.05, +0.23)
+    #
+    # Both land at x about -0.2, which is his tail, one under the floor
+    # and one above him. So hand_l comes up to floor level and steps out
+    # towards the camera to clear his side, and hand_r stays where the
+    # rotation put it and settles onto him. `side` is negative for the
+    # left hand and positive for the right, which is the giveaway that
+    # the old keys were wrong: they were both positive, so both hands
+    # travelled the same way and neither ended up where its socket did.
+    #
+    # They also ROLL with him. A hand that keeps hanging cuff-up while the
+    # body it belongs to turns 86 degrees is the tell that nothing joins
+    # them: at rest each mitt points down and outwards, and if that never
+    # changes it goes on pointing at the floor after he is lying on it.
+    # The roll runs a little behind the body's and does not quite reach
+    # it, which is the drag an arm would have supplied.
+    #
+    # Trailing first: he is already going over, they have not caught up.
+    bkey("hand_l", 12, side=-0.05, fwd=0.05, up=-0.02, roll=0.25)
+    bkey("hand_r", 12, side=0.05, up=0.06, roll=0.20)
+
+    # hand_l is the side he lands on. It gets out towards the camera and
+    # comes to rest flat on the floor alongside him.
+    bkey("hand_l", 24, side=-0.30, fwd=0.22, up=-0.06, roll=1.10)
+    bkey("hand_l", 34, side=-0.483, fwd=0.340, up=-0.100, roll=1.62)
+    bkey("hand_l", 38, side=-0.483, fwd=0.320, up=-0.100, roll=1.55)
+
+    # hand_r is the side that ends up facing the sky, so it comes over
+    # the top and lands on him, a beat later than the body.
+    bkey("hand_r", 24, side=0.25, up=0.30, roll=0.80)
+    # An arc, not a line: keyed only at either end it cut the corner and
+    # went through his shoulder on the way over.
+    bkey("hand_r", 30, side=0.38, up=0.48, roll=1.20)
+    bkey("hand_r", 36, side=0.483, fwd=0.033, up=0.620, roll=1.45)
+    bkey("hand_r", 38, side=0.483, fwd=0.033, up=0.585, roll=1.38)
+
     face_key(30, blink=0.25)
+    face_key(38, blink=0.25)
     stash("fall")
 
 
