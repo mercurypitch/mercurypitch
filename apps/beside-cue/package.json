@@ -16,7 +16,8 @@
     "cap:sync": "pnpm build && cap sync android",
     "cap:open:android": "pnpm cap:sync && cap open android",
     "cap:run:android": "pnpm cap:sync && cap run android",
-    "assets:glass": "bash scripts/assets-glass.sh"
+    "assets:glass": "bash scripts/assets-glass.sh",
+    "assets:merc": "bash scripts/assets-merc.sh"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",

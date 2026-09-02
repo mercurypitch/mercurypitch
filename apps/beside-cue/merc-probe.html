@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merc probe</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b0d10;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #hud {
+        position: fixed;
+        left: 12px;
+        bottom: 10px;
+        color: #cfd6dc;
+        font: 12px/1.4 monospace;
+        opacity: 0.8;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+    <div id="hud"></div>
+    <script type="module" src="/src/dev/merc-probe.ts"></script>
+  </body>
+</html>

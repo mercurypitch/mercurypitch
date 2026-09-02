@@ -44,7 +44,7 @@ export interface MercAsset {
   clips: AnimationClip[]
 }
 
-/** Merc: three shells and his clips. Dressing him is render/merc.ts. */
+/** Merc: body, hands, face, rig and clips. Dressing him is render/merc.ts. */
 export const loadMerc = async (base = 'games/glass3d'): Promise<MercAsset> => {
   const gltf = await loader().loadAsync(`${base}/merc.glb`)
   return { scene: gltf.scene, clips: gltf.animations }

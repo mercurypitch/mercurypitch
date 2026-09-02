@@ -1,9 +1,9 @@
 // Merc, in the scene.
 // ============================================================
 //
-// The asset is three untextured shells and four node-transform clips
-// (§6.4a): the Meshy 7 export carries no UVs, no materials and no
-// images, and that is fine, because the locked art direction is
+// The asset is three untextured shells, a face, a five-bone skin and
+// five clips (§6.4a): the Meshy 7 export carries no UVs, no materials
+// and no images, and that is fine, because the locked art direction is
 // iridescent mercury — a MATERIAL, not a texture. Metal at mirror
 // roughness with a thin-film layer, and the environment does all the
 // painting. He is lit by the same rig as the glass, which is what makes
@@ -99,12 +99,13 @@ export const createMerc = async (
   const { scene, clips } = await loadMerc()
 
   const bodyMaterial = mercMaterial(envMap)
-  // Mercury goes on what the file left bare, and ONLY on that. The
-  // export carries no materials today, so every mesh gets it -- but the
-  // moment eyes arrive as their own geometry with their own dark
-  // material, painting mercury over everything would turn them back into
-  // chrome and undo the fix. Deferring to the asset is what lets the
-  // model gain parts without this file being edited again.
+  // Mercury goes on what the file left bare, and ONLY on that. The body
+  // and hands arrive with no material and get it; the face arrives with
+  // its own dark dielectric (`merc_eye`, built in art/merc/make_merc.py)
+  // and keeps it. Painting mercury over everything would turn the eyes
+  // back into chrome, which is the exact failure this file exists to
+  // avoid. Deferring to the asset is what lets the model gain parts
+  // without this file being edited again.
   scene.traverse((o) => {
     const mesh = o as Mesh
     if (mesh.isMesh !== true) return
