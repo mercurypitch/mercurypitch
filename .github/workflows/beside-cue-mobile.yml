@@ -351,17 +351,19 @@ jobs:
           # so a build depends on the secrets it was given and never on
           # what Apple will let the account create today.
           #
-          # CODE_SIGN_IDENTITY has to be said out loud. The project sets
-          # `CODE_SIGN_IDENTITY = "iPhone Developer"` for every
-          # configuration, so manual signing without an override looks
-          # for a development certificate and fails with
+          # The signing settings themselves are on the App target in
+          # App.xcodeproj, not here, and that is the whole trick. A build
+          # setting given on the xcodebuild command line applies to EVERY
+          # target in the build, including the SwiftPM frameworks, and
+          # they refuse it:
           #
-          #   error: No signing certificate "iOS Development" found
+          #   error: RevenueCat_RevenueCatUI does not support
+          #   provisioning profiles, but provisioning profile *** has
+          #   been manually specified.
           #
-          # while the Apple Distribution certificate it was handed sits
-          # unused in the keychain. The `ios` job below gets away with
-          # the project default because it exports release-testing; this
-          # one is going to the store and cannot.
+          # So the App target names its own certificate and asks for its
+          # profile through $(BESIDE_CUE_PROFILE), and the only thing
+          # passed here is that variable -- which no other target reads.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -372,9 +374,7 @@ jobs:
             MARKETING_VERSION="$version" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
             archive
 
           # destination=upload makes xcodebuild itself deliver the build to
@@ -542,8 +542,7 @@ jobs:
             MARKETING_VERSION="$version" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
             archive
 
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
