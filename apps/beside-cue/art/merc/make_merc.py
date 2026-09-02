@@ -36,19 +36,31 @@ to happen before it can be in a frame budget:
    total, and Merc is one prop in a room that also holds a glass, 150
    shards and the walls.
 
-3. **Give him a face.** The sculpt HAS a face -- two eye sockets and a
-   mouth, pressed a millimetre or two into the surface -- and in the
-   finished room it is invisible. Merc's locked material is mirror
-   chrome, and a mirror shows the room, not its own shape, so shallow
+3. **Give him a face.** The sculpt HAS a face: two big convex eyeballs
+   (tall ovals, about 0.21 x 0.31 in his 1.65-unit height, each with a
+   pupil dip at its centre), lips, and a mouth slit under them. In the
+   finished room all of it is invisible. Merc's locked material is
+   mirror chrome, and a mirror shows the room, not its own shape, so
    relief has nothing to shade it. A roughness sweep settled this: from
-   mirror to matte, from full metal down to 0.2, the sockets never stop
+   mirror to matte, from full metal down to 0.2, the eyes never stop
    being faint white-on-white outlines.
 
-   So the face is real geometry sitting in those sockets, with its own
-   dark dielectric material, which is how stylised eyes have always been
-   done. It is built HERE rather than in the renderer, because a face
-   drawn by the renderer floats in front of a face carved by the sculpt,
-   and Merc spent a build with two sets of eyes at different sizes.
+   So the face is real geometry laid over the sculpt's own features --
+   a dark bead centred on each pupil and sized to its eyeball, one in
+   the mouth slit -- with its own dark dielectric material, which is how
+   stylised eyes have always been done. It is built HERE rather than in
+   the renderer, because a face drawn by the renderer floats in front of
+   a face carved by the sculpt, and Merc spent a build with two sets of
+   eyes at different sizes.
+
+   The positions were measured, not eyeballed: a raycast height map of
+   the face minus its local mean shows the eyeballs as bulges with a dip
+   at each centre (the pupils, at x = +/-0.215, z = +0.02) and the mouth
+   as a dent (x = 0, z = -0.23). The first placement went by dent
+   detection alone and landed the beads in the crease at the LOWER edge
+   of each eyeball -- off-centre and too small, which is how a mistake
+   in a face reads: not as wrong numbers but as a character who looks
+   slightly unwell.
 
 Then the rig. Merc is a droplet: no limbs, no joints, no walk cycle.
 What he does need is the one thing object-level scaling cannot do --
@@ -93,14 +105,18 @@ TARGET_TRIS = 11100
 TEXTURE_SIZE = 1024     # §6.3: one 1024 map is the scene's texture budget
 FPS = 30
 
-# The face, measured off the sculpt's own sockets by raycasting the
-# surface rather than guessed: see `socket()`. Sizes are in the model's
-# own units, where the body is ~1.65 tall.
-EYE_X = 0.268           # sockets sit at -0.280 and +0.255; split the difference
-EYE_Z = -0.080
-EYE_R = 0.132
-MOUTH_Z = -0.190
-MOUTH_R = 0.150
+# The face, in the model's own units (the body is ~1.65 tall). Centres
+# are the sculpt's pupil dips and mouth slit from the relief map above;
+# the sculpt is a little asymmetric (left pupil at -0.225, right at
+# +0.206) and the beads are placed at the symmetric mean, with the
+# raycast in `socket()` seating each one on its own real surface.
+EYE_X = 0.215
+EYE_Z = 0.020
+EYE_RX = 0.100          # the eyeball bulge is ~0.105 half-wide
+EYE_RY = 0.140          # ...and ~0.155 half-tall: a tall oval, not a disc
+MOUTH_Z = -0.230
+MOUTH_RX = 0.085        # the slit is ~0.16 wide
+MOUTH_RY = 0.038
 
 
 def isolate(obj):
@@ -184,9 +200,9 @@ def socket(body, x, z):
     """Where the surface actually is at (x, z), and which way it faces.
 
     Fired from well in front of him along +y. The sculpt is not
-    symmetric -- his two sockets are 25 mm apart in x and 9 mm in z --
-    so the positions here are the symmetric ideal and the RAYCAST is
-    what makes each eye sit flush in its own real, slightly-off socket.
+    symmetric -- his two pupils are 19 mm apart in x -- so the positions
+    here are the symmetric ideal and the RAYCAST is what seats each bead
+    on its own real, slightly-off eyeball.
     """
     m = body.matrix_world
     origin = m.inverted() @ Vector((x, -4.0, z))
@@ -260,9 +276,9 @@ def build_face(body):
     feats = {}
     parts = []
     for name, x, z, rx, ry, depth, proud in (
-        ("eye_l", -EYE_X, EYE_Z, EYE_R, EYE_R * 0.92, EYE_R * 0.80, 0.42),
-        ("eye_r", EYE_X, EYE_Z, EYE_R, EYE_R * 0.92, EYE_R * 0.80, 0.42),
-        ("mouth", 0.0, MOUTH_Z, MOUTH_R, MOUTH_R * 0.34, MOUTH_R * 0.55, 0.30),
+        ("eye_l", -EYE_X, EYE_Z, EYE_RX, EYE_RY, EYE_RY * 0.75, 0.40),
+        ("eye_r", EYE_X, EYE_Z, EYE_RX, EYE_RY, EYE_RY * 0.75, 0.40),
+        ("mouth", 0.0, MOUTH_Z, MOUTH_RX, MOUTH_RY, MOUTH_RY * 1.3, 0.35),
     ):
         centre, right, up, out = socket(body, x, z)
         feats[name] = (centre, right, up, out)
