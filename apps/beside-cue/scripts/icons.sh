@@ -187,28 +187,30 @@ for row in "mdpi 1" "hdpi 1.5" "xhdpi 2" "xxhdpi 3" "xxxhdpi 4"; do
   say "mipmap-$density: foreground ${adaptive}px (art ${safe}px), launcher ${legacy}px"
 done
 
-# The adaptive background is the disc's OWN RIM COLOUR, sampled from the
-# master: #1D0E07, uniform all the way round.
+# The adaptive background is the brand cream, the same field iOS shows.
 #
-# It was the brand cream, which is what iOS shows, and on a device that
-# read as a thin cream outline drawn around the record -- because that is
-# exactly what it was. An adaptive foreground has to stay inside the
-# visible 72dp, so there is always some background between the art and
-# the mask edge, and any colour that is not the art's own edge shows up
-# there as a ring.
+# An adaptive foreground has to stay inside the visible 72dp, so there is
+# always some background between the art and the mask edge, and whatever
+# colour sits there is drawn as a ring around the record. Growing the disc
+# cannot remove it: at 72dp it fills a CIRCULAR mask and still leaves
+# corners under the squircle Samsung ships by default. So the ring is not
+# a bug to fix, it is a colour to choose.
 #
-# Growing the disc cannot fix it: at 72dp it fills a CIRCULAR mask and
-# still leaves corners under the squircle mask Samsung ships by default.
-# Matching the colour fixes it under every mask shape at once, which is
-# the only way to be right on a launcher we have not seen.
+# It was #1D0E07, the disc's own rim colour sampled from the master, which
+# hides the ring by making it the same colour as the art's edge. That is
+# the right answer if the goal is for Android to show no field at all --
+# and it is what #695 shipped.
 #
-# The cost is that Android's tile reads dark where the iOS tile reads
-# cream. That asymmetry is the platform's, not ours: iOS masks a
-# full-bleed square and never shows a background of its own.
+# maff picked the other answer (2026-09-02): cream on both platforms, the
+# `bc_tile_flat_cream` tile from the branding gallery. iOS has no
+# background layer, so its cream is baked into the artwork and cannot be
+# changed without redrawing it; matching here is what stops the two
+# platforms disagreeing. The ring comes back, deliberately, as the field
+# the iOS icon has always had.
 cat > "$RES/values/ic_launcher_background.xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1D0E07</color>
+    <color name="ic_launcher_background">#FFF5DD</color>
 </resources>
 XML
 
