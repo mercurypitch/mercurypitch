@@ -339,3 +339,85 @@ describe('the queue', () => {
     expect(button.disabled).toBe(true)
   })
 })
+
+// ── Setting one live by hand ─────────────────────────────────────────
+//
+// "Set live now" used to write `endsAt = startsAt + 7 days` flat, so pressing
+// it on a four-week challenge silently shortened it to one. It also left the
+// challenge it replaced marked active, and `/api/weekly/active` picks
+// `status = 'active' ORDER BY startsAt DESC LIMIT 1` — so the replaced row was
+// not ignored, it was shadowed: never selected again, therefore never closed,
+// therefore never in the archive.
+
+const FOUR_WEEK = row({
+  id: 'q4w',
+  title: 'Four weeks of it',
+  status: 'queued',
+  startsAt: '2026-10-05T00:00:00.000Z',
+  endsAt: '2026-11-02T00:00:00.000Z',
+})
+
+const NOT_YET_OPEN = row({
+  id: 'later',
+  title: 'Marked active, dated later',
+  status: 'active',
+  startsAt: '2026-09-14T00:00:00.000Z',
+  endsAt: '2026-10-12T00:00:00.000Z',
+})
+
+describe('setting a challenge live', () => {
+  it('keeps the challenge own length instead of cutting it to a week', async () => {
+    rows = [LIVE, FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    fireEvent.click(screen.getByTestId('set-live-q4w'))
+
+    await waitFor(() => expect(updates.length).toBe(2))
+    // This Monday is 2026-08-17 and the row runs four weeks, so it closes on
+    // 2026-09-14 — not 2026-08-24, which is what the flat +7 days wrote.
+    expect(updates[0]).toEqual({
+      id: 'q4w',
+      patch: {
+        startsAt: '2026-08-17T00:00:00.000Z',
+        endsAt: '2026-09-14T00:00:00.000Z',
+        status: 'active',
+      },
+    })
+  })
+
+  it('closes the challenge it displaces, after promoting the new one', async () => {
+    rows = [LIVE, FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    fireEvent.click(screen.getByTestId('set-live-q4w'))
+
+    await waitFor(() => expect(updates.length).toBe(2))
+    // Order matters: demoting first would leave Home with nothing live at all
+    // if the promotion never landed.
+    expect(updates.map((u) => u.id)).toEqual(['q4w', 'live'])
+    expect(updates[1].patch).toEqual({ status: 'closed' })
+  })
+
+  it('returns a not-yet-open active row to the queue rather than closing it', async () => {
+    rows = [NOT_YET_OPEN, FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    fireEvent.click(screen.getByTestId('set-live-q4w'))
+
+    await waitFor(() => expect(updates.length).toBe(2))
+    // It never ran, so there is no board to freeze and nothing to archive —
+    // but left active it would outrank the row just set live, because its
+    // startsAt sorts higher.
+    expect(updates[1]).toEqual({ id: 'later', patch: { status: 'queued' } })
+  })
+
+  it('writes nothing else when there is nothing to displace', async () => {
+    rows = [FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    fireEvent.click(screen.getByTestId('set-live-q4w'))
+
+    await waitFor(() => expect(updates.length).toBe(1))
+    expect(updates[0].id).toBe('q4w')
+  })
+})
