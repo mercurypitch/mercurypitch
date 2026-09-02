@@ -1578,6 +1578,25 @@ async function updateWeekly(
   )
     .bind(...binds)
     .run()
+
+  // Closing by hand has to snapshot the board too.
+  //
+  // `closeWeekly` is the only thing that ever writes `resultsJson`, and until
+  // now only the lazy rotation in `handleWeeklyActive` called it. A row closed
+  // through this endpoint therefore reached the archive with its top three
+  // missing, and nothing would ever fill them in later.
+  if (body.status === 'closed') {
+    const row = await env.DB.prepare(
+      `SELECT * FROM weeklyChallenges WHERE id = ?`,
+    )
+      .bind(id)
+      .first<WeeklyRow>()
+    // Only the first close counts. Re-closing an already-closed row would
+    // recompute the board from whatever the scores table holds today, which
+    // is not what was true when the challenge ended.
+    if (row && row.resultsJson === null) await closeWeekly(row, env)
+  }
+
   return respond({ ok: true })
 }
 
