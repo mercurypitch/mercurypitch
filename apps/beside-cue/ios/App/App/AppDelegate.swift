@@ -7,7 +7,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Before the web layer exists, because WKWebView inherits
+        // whatever session it finds. See AudioSession.swift for why an
+        // app with no category at all is an app with no sound.
+        AudioSession.configure()
+        NSLog("[AudioSession] at launch: \(AudioSession.describe())")
         return true
     }
 
