@@ -191,8 +191,13 @@ export const Stage3D = (props: Stage3DProps) => {
     const ring = createResonance(TARGET_MIDI)
     const vib = createVibratoDetector(cfg.vibrato)
     let launches: readonly ShardLaunch[] | null = null
-    let breakAt = 0
-    let elapsed = 0
+    // Wall time, and the wall time the pane broke at. The shatter plays
+    // back on these rather than on the fixed-step simulation clock; see
+    // HallwayStage for why that clock is the wrong thing to animate from.
+    // This stage kept no simulation time of its own for anything else, so
+    // the accumulator that fed it is gone with it.
+    let wallSeconds = 0
+    let breakAtWall = 0
 
     const view: StageView = {
       shatterProgress: 0,
@@ -222,9 +227,9 @@ export const Stage3D = (props: Stage3DProps) => {
     const tick = (now: number): void => {
       const frameSeconds = (now - last) / 1000
       last = now
+      wallSeconds += frameSeconds
 
       runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
-        elapsed += dt
         const pitch = driver?.latestPitch() ?? null
         const wave =
           pitch === null
@@ -264,7 +269,7 @@ export const Stage3D = (props: Stage3DProps) => {
               cfg.shatter,
               7,
             )
-            breakAt = elapsed
+            breakAtWall = wallSeconds
             tone.shatter(acc)
             setGrade(Math.round(acc * 100))
             setBroken(true)
@@ -302,7 +307,7 @@ export const Stage3D = (props: Stage3DProps) => {
       view.resonance = ring.res
       view.ringing = ring.res >= cfg.ring.holdCap && launches === null
       view.launches = launches
-      view.shatterSeconds = launches === null ? 0 : elapsed - breakAt
+      view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
       view.shatterProgress =
         launches === null
           ? 0
@@ -342,7 +347,7 @@ export const Stage3D = (props: Stage3DProps) => {
             cfg.shatter,
             7,
           )
-          breakAt = elapsed
+          breakAtWall = wallSeconds
           tone.shatter(acc)
           setGrade(Math.round(acc * 100))
           setBroken(true)

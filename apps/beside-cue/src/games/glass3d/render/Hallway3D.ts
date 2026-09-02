@@ -233,9 +233,26 @@ export const createHallway3D = (
         const geometryId = batch.addGeometry(g)
         return batch.addInstance(geometryId)
       })
-      batch.visible = false
       shardBatch = batch
       scene.add(batch)
+
+      // Link the shard program NOW, while nothing is waiting for it.
+      //
+      // three does not draw an invisible object, and it does not compile
+      // one either: the material's program is built the first time it
+      // actually reaches a draw call. The batch is hidden until the pane
+      // breaks, so that first draw is the first frame of the shatter --
+      // the one frame in the game that must not stall. A WebGL2 program
+      // link is not free anywhere and on iOS it is slow enough to read
+      // as the animation itself being broken.
+      //
+      // compileAsync takes the object, the camera it will be seen by,
+      // and the scene it belongs to. It has to be visible while it
+      // happens, for the same reason it was never compiled.
+      batch.visible = true
+      await renderer.compileAsync(batch, camera, scene)
+      batch.visible = false
+      if (disposed) return
     },
 
     render(view: HallwayView, dt: number): void {

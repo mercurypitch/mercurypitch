@@ -112,8 +112,26 @@ export const HallwayStage = (props: HallwayStageProps) => {
       const ring = createResonance(TARGET_MIDI)
       const vib = createVibratoDetector(cfg.vibrato)
       let launches: readonly ShardLaunch[] | null = null
-      let breakAt = 0
       let elapsed = 0
+      // The shatter runs on WALL time, not on `elapsed`.
+      //
+      // `elapsed` is simulation time, and simulation time is spent in
+      // fixed steps with a spiral guard: `runLoop` will advance at most
+      // `maxStepsPerFrame` of them per frame and DROPS the rest. At
+      // 1/120 s a step and five steps a frame that is 41.7 ms of
+      // simulation per frame, so below about 24fps the simulation falls
+      // behind real time and never catches up -- at 15fps it advances at
+      // 62% of wall speed, at 12fps at half.
+      //
+      // For the simulation that is the correct trade. For an animation it
+      // is not: the shards would play back in slow motion on exactly the
+      // devices that were already struggling, and lurch as the drops
+      // arrive unevenly, while Merc's own clip -- which the renderer
+      // drives from the real frame delta -- carried on at full speed
+      // beside them. Two clocks in one shot is what "slow, and it
+      // stutters, and it looks wrong" is made of.
+      let wallSeconds = 0
+      let breakAtWall = 0
       let mercX = START_X
       let phaseNow: Phase = 'enter'
       let celebrateUntil = 0
@@ -140,7 +158,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           cfg.shatter,
           11,
         )
-        breakAt = elapsed
+        breakAtWall = wallSeconds
         tone.shatter(acc)
         setGrade(Math.round(acc * 100))
         celebrateUntil = elapsed + CELEBRATE_SECONDS
@@ -162,6 +180,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       const tick = (now: number): void => {
         const frameSeconds = (now - last) / 1000
         last = now
+        wallSeconds += frameSeconds
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
@@ -217,7 +236,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
         view.resonance = ring.res
         view.ringing = ring.res >= cfg.ring.holdCap && launches === null
         view.launches = launches
-        view.shatterSeconds = launches === null ? 0 : elapsed - breakAt
+        view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
 
         r.render(view, frameSeconds)
         frame = requestAnimationFrame(tick)
