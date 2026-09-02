@@ -26,6 +26,7 @@
     "@fontsource-variable/gabarito": "^5.3.0",
     "@fontsource/coiny": "^5.3.0",
     "@fontsource/saira-condensed": "^5.3.0",
+    "@irchiinnuss/audio-io": "workspace:*",
     "@irchiinnuss/beside-cue-core": "workspace:*",
     "@irchiinnuss/mobile-runtime": "workspace:*",
     "@irchiinnuss/pitch-engine": "workspace:*",

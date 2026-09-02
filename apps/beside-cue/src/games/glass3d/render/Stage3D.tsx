@@ -12,10 +12,10 @@
 // reads. What does not: any rule (that is `sim/`), any drawing (that is
 // `render/Renderer3D.ts`), and the loop itself (`runtime/loop.ts`).
 
+import { applyPreferredInput } from '@irchiinnuss/audio-io'
+import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { applyPreferredInput } from '@/audio/input-device'
-import { MicInput } from '@/components/MicInput'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'

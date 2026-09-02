@@ -5,10 +5,10 @@
 // this component feeds it mic pitch through the sing driver and renders
 // the three asks. The mic stops the moment the last note locks.
 
+import { applyPreferredInput } from '@irchiinnuss/audio-io'
+import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToNoteNameOctave } from '@irchiinnuss/pitch-engine'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { applyPreferredInput } from '@/audio/input-device'
-import { MicInput } from '@/components/MicInput'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { createGameVoice } from '@/games/glass/game-voice'

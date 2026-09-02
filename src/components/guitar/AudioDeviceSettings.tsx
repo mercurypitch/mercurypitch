@@ -12,6 +12,28 @@ import type { Accessor } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { listAudioInputs, listAudioOutputs } from '@/lib/mic-manager'
 
+// TODO (after the next release): migrate onto @irchiinnuss/audio-io.
+//
+// Beside Cue now shares that package for exactly this job -- the
+// remembered input device, silence detection on an open stream, and a
+// Solid picker/meter -- and the native app will need the same. Two
+// things to carry ACROSS rather than replace, because this component
+// got them right first:
+//
+//   - the `devicechange` listener below. The package's MicInput shipped
+//     without one and offered "System default" and nothing else, because
+//     Chrome only populates device ids after a grant and the list was
+//     built once, on mount.
+//   - output device selection, which the package does not have at all.
+//
+// And one to leave behind: this list shows Chrome's synthetic `default`
+// and `communications` mirrors, so a single microphone appears two or
+// three times. The package drops them for one explicit "System default"
+// row.
+//
+// Deliberately not done yet -- this is the shipping guitar path, and the
+// swap is not worth doing between a release and a test pass.
+
 export interface AudioDeviceSettingsProps {
   inputDeviceId: Accessor<string>
   setInputDevice: (id: string) => void

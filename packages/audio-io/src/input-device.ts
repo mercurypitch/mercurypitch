@@ -35,7 +35,21 @@
 
 import { listAudioInputs, micManager } from '@irchiinnuss/pitch-engine'
 
-const STORAGE_KEY = 'beside-cue:input-device'
+/**
+ * Where the choice is remembered.
+ *
+ * Namespaced by product rather than fixed, because two apps served from
+ * one origin would otherwise share an entry and quietly overwrite each
+ * other's microphone. `configureInputDevice` sets it; until then it is
+ * the generic key, which is right for a single-app origin and harmless
+ * for anyone who never calls it.
+ */
+let storageKey = 'audio-io:input-device'
+
+/** Name the product, so its remembered input is its own. */
+export function configureInputDevice(options: { storageKey: string }): void {
+  storageKey = options.storageKey
+}
 
 /** Ids Chrome uses for its mirror entries; never offered as choices. */
 const SYNTHETIC = new Set(['default', 'communications'])
@@ -71,7 +85,7 @@ export function readPreferredInput(
 ): string | null {
   if (storage === undefined) return null
   try {
-    const value = storage.getItem(STORAGE_KEY)
+    const value = storage.getItem(storageKey)
     return value !== null && value.length > 0 ? value : null
   } catch {
     return null
@@ -86,10 +100,10 @@ export function writePreferredInput(
   if (storage === undefined) return
   try {
     if (deviceId === null || deviceId.length === 0) {
-      storage.removeItem(STORAGE_KEY)
+      storage.removeItem(storageKey)
       return
     }
-    storage.setItem(STORAGE_KEY, deviceId)
+    storage.setItem(storageKey, deviceId)
   } catch {
     // Quota, or a storage that refuses writes. Not worth failing over.
   }
