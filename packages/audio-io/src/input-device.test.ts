@@ -6,7 +6,8 @@ const device = (
   deviceId: string,
   label = '',
   kind: MediaDeviceKind = 'audioinput',
-): MediaDeviceInfo => ({ deviceId, label, kind, groupId: 'g' }) as MediaDeviceInfo
+): MediaDeviceInfo =>
+  ({ deviceId, label, kind, groupId: 'g' }) as MediaDeviceInfo
 
 const memoryStorage = (): Storage => {
   const map = new Map<string, string>()

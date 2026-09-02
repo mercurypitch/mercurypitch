@@ -21,7 +21,7 @@
 import { micLevelFraction, readMicLevel } from '@irchiinnuss/pitch-engine'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { InputChoice } from '../input-device'
-import { chooseInput, listInputs, readPreferredInput, } from '../input-device'
+import { chooseInput, listInputs, readPreferredInput } from '../input-device'
 import { createSilenceWatch } from '../silence-watch'
 
 /** How often to read the level. Fast enough to look live, far below a frame. */
