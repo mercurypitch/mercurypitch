@@ -195,6 +195,9 @@ jobs:
           VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
+      - name: Verify the default debug build omits V2 preview media
+        run: test ! -e apps/beside-cue/dist/onboarding/corky-v2.4
+
       - name: Synchronize Android project
         run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
 
@@ -245,6 +248,10 @@ jobs:
           VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
+      - name: Verify the V2 preview build contains its reviewed media
+        if: github.event_name == 'pull_request'
+        run: test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
+
       - name: Synchronize the V2 preview Android project
         if: github.event_name == 'pull_request'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
@@ -286,6 +293,11 @@ jobs:
           set -euo pipefail
           pnpm --filter @irchiinnuss/beside-cue-app exec vite build
           pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
+
+      - name: Verify release assets omit V2 preview media
+        run: |
+          test ! -e apps/beside-cue/dist/onboarding/corky-v2.4
+          test ! -e apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.4
 
       - name: Build release bundle and APK
         env:

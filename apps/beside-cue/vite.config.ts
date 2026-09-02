@@ -1,9 +1,39 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import basicSsl from '@vitejs/plugin-basic-ssl'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import solid from 'vite-plugin-solid'
+
+const V2_ONBOARDING_MEDIA_PATH = 'onboarding/corky-v2.4'
+
+/**
+ * Vite copies all of `public/` before Rollup runs. Keep the preview's reviewed
+ * media in the repository, but do not add those inactive bytes to ordinary V1
+ * web, APK, or TestFlight builds.
+ */
+function excludeInactiveV2OnboardingMedia(): Plugin {
+  let outputRoot: string | undefined
+
+  return {
+    name: 'exclude-inactive-v2-onboarding-media',
+    apply: 'build',
+    configResolved(config) {
+      outputRoot = resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      if (process.env.VITE_BESIDE_CUE_V2_ONBOARDING === '1') return
+      if (outputRoot === undefined) {
+        throw new Error('Vite output root was not resolved.')
+      }
+      rmSync(resolve(outputRoot, V2_ONBOARDING_MEDIA_PATH), {
+        recursive: true,
+        force: true,
+      })
+    },
+  }
+}
 
 // Build provenance, baked in. See src/build-info.ts for why.
 //
@@ -59,7 +89,11 @@ const channel = (mode: string): 'dev' | 'ci' | 'release' => {
 // device; the mic prompt then works without browser flags.
 export default defineConfig(({ mode }) => ({
   base: './',
-  plugins: [...(mode === 'https' ? [basicSsl()] : []), solid()],
+  plugins: [
+    excludeInactiveV2OnboardingMedia(),
+    ...(mode === 'https' ? [basicSsl()] : []),
+    solid(),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
