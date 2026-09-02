@@ -7,6 +7,8 @@
 // plus the one thing slice 1 adds: the traversal script, a four-phase
 // state machine simple enough to read as stage directions.
 
+import { applyPreferredInput } from '@irchiinnuss/audio-io'
+import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
@@ -236,9 +238,10 @@ export const HallwayStage = (props: HallwayStageProps) => {
             ring.res = Math.min(0.999, to)
           },
         })
-        onCleanup(() => {
-          delete (window as unknown as Record<string, unknown>).__w3h
-        })
+        // No onCleanup here: begin() runs from init().then(), outside any
+        // Solid owner, and a cleanup registered there is dropped with a
+        // "will never be run" warning. The mount-level cleanup below
+        // deletes the hook instead.
       }
 
       frame = requestAnimationFrame(tick)
@@ -263,6 +266,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      delete (window as unknown as Record<string, unknown>).__w3h
     })
   })
 
@@ -270,9 +274,27 @@ export const HallwayStage = (props: HallwayStageProps) => {
     setMicError(null)
     tone.start()
     try {
+      // The remembered input, if it is still plugged in -- see
+      // audio/input-device.ts. Must happen before acquire(), because the
+      // device is chosen by the constraints that open the stream.
+      await applyPreferredInput()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
+    } catch (err) {
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  /** Re-open on a different input, without leaving the game. */
+  const switchMic = async (): Promise<void> => {
+    driver?.stop()
+    driver = null
+    setMicError(null)
+    try {
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
@@ -294,6 +316,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
             </div>
           </Show>
           <p class="stage3d__coach">{coachLine()}</p>
+          <MicInput listening onChoose={() => void switchMic()} />
         </div>
       </Show>
 
@@ -308,6 +331,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
+            <MicInput listening={false} onChoose={() => void switchMic()} />
           </Show>
         </div>
       </Show>

@@ -542,3 +542,64 @@
 .is-heard .stage3d__wavenum {
   color: var(--custard);
 }
+
+/* The input readout: a level bar, and a way to change device.
+   Deliberately quiet -- it lives inside the coach panel and the gate,
+   and in the common case (one microphone, working) it is a thin bar
+   that only proves sound is arriving. */
+.micinput {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.micinput__meter {
+  width: min(14rem, 60vw);
+  height: 0.25rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 14%);
+}
+
+.micinput__meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal, #2f8f86);
+  /* Fast up, slow down: a peak should be visible after it has passed. */
+  transition: width 90ms ease-out;
+}
+
+.micinput__meter.is-silent i {
+  background: var(--orange, #c93513);
+}
+
+.micinput__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+.micinput__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 55%);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.micinput__select {
+  max-width: min(16rem, 70vw);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  font: inherit;
+  font-size: 0.8rem;
+  color: inherit;
+  background: rgb(255 255 255 / 8%);
+}

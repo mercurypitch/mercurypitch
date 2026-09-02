@@ -12,6 +12,8 @@
 // reads. What does not: any rule (that is `sim/`), any drawing (that is
 // `render/Renderer3D.ts`), and the loop itself (`runtime/loop.ts`).
 
+import { applyPreferredInput } from '@irchiinnuss/audio-io'
+import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
@@ -179,6 +181,7 @@ export const Stage3D = (props: Stage3DProps) => {
       tone.dispose()
       r.dispose()
       renderer = null
+      delete (window as unknown as Record<string, unknown>).__w3
     })
   })
 
@@ -349,9 +352,10 @@ export const Stage3D = (props: Stage3DProps) => {
           ring.res = Math.min(0.999, to)
         },
       })
-      onCleanup(() => {
-        delete (window as unknown as Record<string, unknown>).__w3
-      })
+      // No onCleanup here: begin() runs from init().then(), outside any
+      // Solid owner, and a cleanup registered there is dropped with a
+      // "will never be run" warning. The mount-level cleanup below
+      // deletes the hook instead.
     }
 
     frame = requestAnimationFrame(tick)
@@ -360,15 +364,30 @@ export const Stage3D = (props: Stage3DProps) => {
 
   const startMic = async (): Promise<void> => {
     setMicError(null)
-    // Synchronously, inside the gesture: WebKit only unlocks audio for
-    // code still on the click's call stack, and the await below leaves it.
     tone.start()
     try {
+      // The remembered input, if it is still plugged in -- see
+      // audio/input-device.ts. Must happen before acquire(), because the
+      // device is chosen by the constraints that open the stream.
+      await applyPreferredInput()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
     } catch (err) {
-      // Say WHICH failure it was — the 2D game learned this the hard way.
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  /** Re-open on a different input, without leaving the game. */
+  const switchMic = async (): Promise<void> => {
+    driver?.stop()
+    driver = null
+    setMicError(null)
+    try {
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
+    } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
     }
@@ -422,6 +441,7 @@ export const Stage3D = (props: Stage3DProps) => {
             </div>
           </Show>
           <p class="stage3d__coach">{coachLine()}</p>
+          <MicInput listening onChoose={() => void switchMic()} />
         </div>
       </Show>
 
@@ -436,6 +456,7 @@ export const Stage3D = (props: Stage3DProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
+            <MicInput listening={false} onChoose={() => void switchMic()} />
           </Show>
         </div>
       </Show>

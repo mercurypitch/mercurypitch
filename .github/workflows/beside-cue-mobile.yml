@@ -1,9 +1,22 @@
 name: Beside Cue Mobile
 
-# Native builds for the Beside Cue Capacitor shell. Every pull request that
-# touches the app produces an installable Android APK, so a change can be tried
-# on a real device before it merges. A `beside-cue-v*` tag additionally produces
-# the release artifacts that go to the stores.
+# Native builds for the Beside Cue Capacitor shell.
+#
+# Three ways in, and each answers a different question:
+#
+#   pull request      Can this change be held? An installable Android APK and a
+#                     TestFlight build, so the change can be tried on real
+#                     hardware before it merges.
+#   push to main      What does the merged app do? The same two builds from the
+#                     merge commit, which is not the code any PR tested — a PR
+#                     is built against its own base. This is the build to trust
+#                     when a report says "on main".
+#   beside-cue-v tag  The release. The same upload with the tag's version as the
+#                     marketing version, plus the store artifacts.
+#
+# TestFlight is the iOS route in all three cases. App Store Connect takes one
+# upload and a release is a build promoted out of it, so there is no separate
+# "release build" to make: the tag changes the version string and nothing else.
 #
 # Beside Cue versions independently of MercuryPitch, so this deliberately does
 # not use the `v*` tags that ship the web app to production.
@@ -17,25 +30,97 @@ on:
     branches: [main]
     paths:
       - 'apps/beside-cue/**'
+      - 'packages/audio-io/**'
       - 'packages/beside-cue-core/**'
       - 'packages/mobile-runtime/**'
+      - 'packages/pitch-engine/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/beside-cue-mobile.yml'
+  # No `paths:` here on purpose, matching build.yml and pr-gate.yml. A path
+  # filter on a trigger that also carries tags can skip a release: the filter
+  # is evaluated against the commits the push contains, and a tag placed on a
+  # commit that is already on main contains none. The `changes` job below does
+  # the same filtering where it is safe to, and lets every tag through.
   push:
+    branches: [main]
     tags: ['beside-cue-v*']
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A superseded pull-request run is wasted work and cancelling it is free. A
+# superseded main or tag run is an upload in flight, and cancelling that burns
+# a build number on a build nobody ever sees, so those queue instead.
 concurrency:
   group: beside-cue-mobile-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Which merges are worth a native build.
+  #
+  # The pull_request trigger already has a `paths:` filter, and a tag is always
+  # a release, so this only ever has a real decision to make for a push to
+  # main: MercuryPitch and Beside Cue share a repository, and most merges to
+  # main touch neither the app nor anything it compiles in. Building those
+  # would spend a macOS runner and put an identical binary in TestFlight,
+  # where every build has to be told apart from the one before it by hand.
+  #
+  # One ubuntu minute to decide, against ten macOS minutes to not.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      # Full history: the comparison reaches back to the previous tip of main,
+      # which a shallow clone does not contain.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether the app changed
+        id: filter
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          yes_it_did () {
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "Building: $1" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          }
+
+          [[ "$GITHUB_EVENT_NAME" == "push" ]] || yes_it_did "$GITHUB_EVENT_NAME, no filtering"
+          [[ "$GITHUB_REF_TYPE" != "tag" ]] || yes_it_did "tag $GITHUB_REF_NAME"
+
+          # A first push, a force-push, or a rewritten history leaves nothing
+          # to compare against. Build rather than guess -- the failure mode of
+          # a wasted run is minutes, and of a skipped one is a change that
+          # silently never reached a device.
+          if [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            yes_it_did "no usable previous commit"
+          fi
+
+          # Kept in step with the pull_request `paths:` filter above.
+          pattern='^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine)/|package\.json$|pnpm-lock\.yaml$|\.github/workflows/beside-cue-mobile\.yml$)'
+
+          if git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -Eq "$pattern"; then
+            yes_it_did "$(git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -Ec "$pattern") changed file(s) under the app"
+          fi
+
+          echo "app=false" >> "$GITHUB_OUTPUT"
+          echo "No Beside Cue files changed in this push; native builds skipped." >> "$GITHUB_STEP_SUMMARY"
+
   android:
     name: Android
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -203,11 +288,12 @@ jobs:
             echo "No BESIDE_CUE_KEYSTORE_BASE64 secret: release artifacts are UNSIGNED and cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # TestFlight from every pull request (maff, 2026-09-01). The simulator
-  # artifact above cannot run on hardware -- it is compiled for the
-  # simulator ABI -- so the only way to hold a PR build on an iPhone is a
-  # signed upload to App Store Connect. Internal TestFlight testers get
-  # the build a few minutes after processing, no UDID registration.
+  # TestFlight from every pull request (maff, 2026-09-01), and from every
+  # merge and tag as well (maff, 2026-09-02). The simulator artifact above
+  # cannot run on hardware -- it is compiled for the simulator ABI -- so a
+  # signed upload to App Store Connect is the only way to hold any of these
+  # builds on an iPhone. Internal TestFlight testers get the build a few
+  # minutes after processing, no UDID registration.
   #
   # Signing is cloud-managed: automatic style plus -allowProvisioningUpdates,
   # authenticated with the App Store Connect API key, so there is no
@@ -218,9 +304,10 @@ jobs:
   # TestFlight to accept the upload; github.run_number does exactly that.
   ios-testflight:
     name: iOS TestFlight
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
-    if: github.event_name == 'pull_request'
     env:
       HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
 
@@ -315,10 +402,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The marketing version is the app's own, not a tag: PR builds
-          # carry package.json's version, and the run number tells two
-          # uploads of the same version apart.
-          version="$(node -p "require('../../package.json').version")"
+          # A tag names the version it is releasing; everything else carries
+          # the app's own. The run number tells two uploads of the same
+          # version apart, and rises across all of them.
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#beside-cue-v}"
+          else
+            version="$(node -p "require('../../package.json').version")"
+          fi
 
           # -clonedSourcePackagesDirPath keeps SwiftPM's checkouts inside
           # the run instead of ~/Library/Caches/org.swift.swiftpm, whose
@@ -333,6 +424,37 @@ jobs:
           # A run-local directory starts empty every time, so there is
           # nothing stale to trust. It costs one clean fetch per run, which
           # is the right trade against an upload that fails at random.
+          #
+          # Manual signing, with the certificate and profile the two steps
+          # above already installed. Automatic signing asks Apple to mint
+          # what it needs, and on an account that has reached its
+          # certificate limit that is a hard stop:
+          #
+          #   error: Choose a certificate to revoke. Your account has
+          #   reached the maximum number of certificates.
+          #   error: No profiles for 'com.irchiinnuss.besidecue' were
+          #   found ... iOS App Development provisioning profiles
+          #
+          # It was asking for a DEVELOPMENT profile to archive a release,
+          # which nothing here wants, and every build from 163 onward
+          # failed on it. The export step below has always signed
+          # manually with these same materials; the archive now does too,
+          # so a build depends on the secrets it was given and never on
+          # what Apple will let the account create today.
+          #
+          # The signing settings themselves are on the App target in
+          # App.xcodeproj, not here, and that is the whole trick. A build
+          # setting given on the xcodebuild command line applies to EVERY
+          # target in the build, including the SwiftPM frameworks, and
+          # they refuse it:
+          #
+          #   error: RevenueCat_RevenueCatUI does not support
+          #   provisioning profiles, but provisioning profile *** has
+          #   been manually specified.
+          #
+          # So the App target names its own certificate and asks for its
+          # profile through $(BESIDE_CUE_PROFILE), and the only thing
+          # passed here is that variable -- which no other target reads.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -340,14 +462,10 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             MARKETING_VERSION="$version" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
+            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
             archive
 
           # destination=upload makes xcodebuild itself deliver the build to
@@ -389,6 +507,13 @@ jobs:
 
   ios:
     name: iOS
+    needs: changes
+    # Skipped on a push to main, and only there. This job's product is a
+    # simulator build, which is the compile check the pull request already
+    # ran on the same tree; the TestFlight job above is what makes the
+    # merge commit into something a device can hold. A tag still needs it,
+    # because the release IPA is exported here.
+    if: needs.changes.outputs.app == 'true' && (github.event_name != 'push' || github.ref_type == 'tag')
     runs-on: macos-latest
     timeout-minutes: 60
     env:
@@ -515,8 +640,7 @@ jobs:
             MARKETING_VERSION="$version" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
             archive
 
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST

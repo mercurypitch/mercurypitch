@@ -24,7 +24,7 @@ import { loadGlass, loadShards } from '../assets'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
-import { buildCabinetEnvironment, buildRadialFalloff, createBackdrop, } from './environment'
+import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
 
 /** The Cabinet's palette, from the brand tokens (§2 of the art plan). */
 const CUSTARD = 0xf2c84b // the one spotlight
@@ -88,29 +88,30 @@ export const createRenderer3D = (
   // transmissive material has nothing to refract and reads as a dim
   // outline -- which is exactly how the first build looked.
   //
-  // Hand-built rather than PMREMGenerator + RoomEnvironment, for two
-  // reasons. PMREMGenerator does not work with WebGPURenderer in this
-  // version (it reaches into WebGL render-target internals and throws on
-  // `buffers`, leaving init unresolved and the screen black). And a
-  // generic bright room is the wrong content anyway: what the glass
-  // should be reflecting is THIS room.
+  // Hand-built rather than RoomEnvironment: a generic bright room is the
+  // wrong content, because what the glass should be reflecting is THIS
+  // room. Note that three still runs the map through its own PMREM --
+  // `EnvironmentNode` wraps any non-cube `scene.environment` in
+  // `pmremTexture()` -- so the SOURCE resolution decides how sharp every
+  // reflection in the game can be. `environment.ts` says what that costs
+  // and why the map is the size it is.
   const environment = buildCabinetEnvironment()
   scene.environment = environment
   scene.environmentIntensity = 1
 
   // The key. Intensity is in candela (three r155+ uses physical units)
   // and the glass is 22 cm tall, so these numbers are larger than they
-  // look.
+  // look. Direction comes from `RIG`, which is also what the environment
+  // map paints -- a highlight and its reflection have to come from the
+  // same place or the scene reads as two rooms overlaid.
   const key = new SpotLight(CUSTARD, 34, 6, Math.PI / 14, 0.9, 1.8)
-  key.position.set(-0.5, 0.95, 0.4)
-  key.target.position.set(BOWL.x, BOWL.y, BOWL.z)
+  aimFromRig(key, RIG.key, new Vector3(BOWL.x, BOWL.y, BOWL.z), 1.01)
   scene.add(key, key.target)
 
   // The cold glint, opposite the key, so the shadow side of the bowl has
   // an edge rather than dissolving into the backdrop.
   const glint = new SpotLight(TURQUOISE, 22, 4, Math.PI / 6, 0.6, 1.6)
-  glint.position.set(0.8, 0.5, -0.6)
-  glint.target.position.set(BOWL.x, 0.16, BOWL.z)
+  aimFromRig(glint, RIG.glint, new Vector3(BOWL.x, 0.16, BOWL.z), 1.06)
   scene.add(glint, glint.target)
 
   // The rim. Behind the glass and low, pointing back at the camera: this
@@ -118,8 +119,7 @@ export const createRenderer3D = (
   // the single biggest reason a glass reads as a glass instead of as a
   // smudge.
   const rim = new SpotLight(PAPER, 12, 3, Math.PI / 7, 0.7, 1.4)
-  rim.position.set(-0.15, 0.34, -0.62)
-  rim.target.position.set(BOWL.x, BOWL.y, BOWL.z)
+  aimFromRig(rim, RIG.back, new Vector3(BOWL.x, BOWL.y, BOWL.z), 0.66)
   scene.add(rim, rim.target)
 
   // Just enough ambient that the unlit side is not a silhouette.

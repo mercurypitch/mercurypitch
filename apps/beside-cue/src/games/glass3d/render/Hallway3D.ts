@@ -16,7 +16,7 @@ import { loadPaneShards } from '../assets'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
-import { buildCabinetEnvironment, buildRadialFalloff, createBackdrop, } from './environment'
+import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
 
@@ -71,21 +71,19 @@ export const createHallway3D = (
   scene.environment = environment
   scene.environmentIntensity = 1
 
-  // The rig, restaged for a corridor: key from high left, cold glint
-  // from behind the pane, warm rim low behind Merc's path.
+  // The rig, restaged for a corridor: same three directions as the
+  // Cabinet and as the environment map, at a room's distances instead
+  // of a tabletop's.
   const key = new SpotLight(CUSTARD, 55, 12, Math.PI / 10, 0.85, 1.6)
-  key.position.set(-1.2, 2.6, 1.4)
-  key.target.position.set(0, 0.5, 0)
+  aimFromRig(key, RIG.key, new Vector3(0, 0.5, 0), 2.8)
   scene.add(key, key.target)
 
   const glint = new SpotLight(TURQUOISE, 30, 9, Math.PI / 7, 0.7, 1.6)
-  glint.position.set(1.6, 1.3, -1.4)
-  glint.target.position.set(0, 0.6, 0)
+  aimFromRig(glint, RIG.glint, new Vector3(0, 0.6, 0), 2.24)
   scene.add(glint, glint.target)
 
   const rim = new SpotLight(PAPER, 16, 7, Math.PI / 6, 0.8, 1.5)
-  rim.position.set(-0.6, 0.5, -1.6)
-  rim.target.position.set(0, 0.45, 0.4)
+  aimFromRig(rim, RIG.back, new Vector3(0, 0.45, 0.4), 2.09)
   scene.add(rim, rim.target)
 
   scene.add(new AmbientLight(0xffffff, 0.07))
@@ -205,7 +203,7 @@ export const createHallway3D = (
       if (disposed) return
 
       const [actor, shards] = await Promise.all([
-        createMerc(0.55),
+        createMerc(0.55, environment),
         loadPaneShards(),
       ])
       if (disposed) {
