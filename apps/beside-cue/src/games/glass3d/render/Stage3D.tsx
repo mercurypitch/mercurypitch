@@ -179,6 +179,7 @@ export const Stage3D = (props: Stage3DProps) => {
       tone.dispose()
       r.dispose()
       renderer = null
+      delete (window as unknown as Record<string, unknown>).__w3
     })
   })
 
@@ -349,9 +350,10 @@ export const Stage3D = (props: Stage3DProps) => {
           ring.res = Math.min(0.999, to)
         },
       })
-      onCleanup(() => {
-        delete (window as unknown as Record<string, unknown>).__w3
-      })
+      // No onCleanup here: begin() runs from init().then(), outside any
+      // Solid owner, and a cleanup registered there is dropped with a
+      // "will never be run" warning. The mount-level cleanup below
+      // deletes the hook instead.
     }
 
     frame = requestAnimationFrame(tick)

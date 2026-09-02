@@ -236,9 +236,10 @@ export const HallwayStage = (props: HallwayStageProps) => {
             ring.res = Math.min(0.999, to)
           },
         })
-        onCleanup(() => {
-          delete (window as unknown as Record<string, unknown>).__w3h
-        })
+        // No onCleanup here: begin() runs from init().then(), outside any
+        // Solid owner, and a cleanup registered there is dropped with a
+        // "will never be run" warning. The mount-level cleanup below
+        // deletes the hook instead.
       }
 
       frame = requestAnimationFrame(tick)
@@ -263,6 +264,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      delete (window as unknown as Record<string, unknown>).__w3h
     })
   })
 
