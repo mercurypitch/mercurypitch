@@ -19,7 +19,7 @@
 // (one microphone, working) stays a thin bar and nothing else.
 
 import { micLevelFraction, readMicLevel } from '@irchiinnuss/pitch-engine'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { InputChoice } from '@/audio/input-device'
 import { chooseInput, listInputs, readPreferredInput, } from '@/audio/input-device'
 import { createSilenceWatch } from '@/audio/silence-watch'
@@ -50,8 +50,30 @@ export function MicInput(props: MicInputProps) {
   const [open, setOpen] = createSignal(false)
   const watch = createSilenceWatch()
 
+  const refresh = (): void => void listInputs().then(setDevices)
+
+  // Chrome populates device ids and labels only once a stream has been
+  // granted, so a list built at mount time is a list of nothing --
+  // enumerateDevices returns placeholders with empty ids, every one of
+  // them is dropped as unopenable, and the picker is left offering
+  // "System default" and nothing else, permanently. It has to be built
+  // again after the grant, which is what these two do: the effect
+  // catches our own microphone starting, the event catches a device
+  // being plugged in or pulled out while the game is open.
+  createEffect(() => {
+    if (props.listening) refresh()
+  })
+
   onMount(() => {
-    void listInputs().then(setDevices)
+    refresh()
+    const onDeviceChange = (): void => refresh()
+    navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
+    onCleanup(() =>
+      navigator.mediaDevices?.removeEventListener?.(
+        'devicechange',
+        onDeviceChange,
+      ),
+    )
     const timer = setInterval(() => {
       if (!props.listening) return
       const rms = readMicLevel()
@@ -85,13 +107,23 @@ export function MicInput(props: MicInputProps) {
         </p>
       </Show>
 
+      <Show when={(silent() || open()) && devices().length <= 1}>
+        <p class="micinput__hint">
+          Only the system default is available. Allow the microphone once, then
+          this list fills in with your inputs by name.
+        </p>
+      </Show>
+
       <Show
         when={silent() || open() || !props.listening}
         fallback={
           <button
             class="micinput__link"
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              refresh()
+              setOpen(true)
+            }}
           >
             Change input
           </button>
