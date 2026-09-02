@@ -333,6 +333,23 @@ jobs:
           # A run-local directory starts empty every time, so there is
           # nothing stale to trust. It costs one clean fetch per run, which
           # is the right trade against an upload that fails at random.
+          #
+          # Manual signing, with the certificate and profile the two steps
+          # above already installed. Automatic signing asks Apple to mint
+          # what it needs, and on an account that has reached its
+          # certificate limit that is a hard stop:
+          #
+          #   error: Choose a certificate to revoke. Your account has
+          #   reached the maximum number of certificates.
+          #   error: No profiles for 'com.irchiinnuss.besidecue' were
+          #   found ... iOS App Development provisioning profiles
+          #
+          # It was asking for a DEVELOPMENT profile to archive a release,
+          # which nothing here wants, and every build from 163 onward
+          # failed on it. The export step below has always signed
+          # manually with these same materials; the archive now does too,
+          # so a build depends on the secrets it was given and never on
+          # what Apple will let the account create today.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -340,14 +357,11 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             MARKETING_VERSION="$version" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
             archive
 
           # destination=upload makes xcodebuild itself deliver the build to

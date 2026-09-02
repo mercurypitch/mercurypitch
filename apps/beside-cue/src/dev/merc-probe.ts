@@ -20,7 +20,7 @@
 // Keys 1-5 switch clips live. The HUD prints the backend and what is
 // playing, so a screenshot documents itself.
 
-import { micManager } from '@irchiinnuss/pitch-engine'
+import { micManager, readMicLevel } from '@irchiinnuss/pitch-engine'
 import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { createSingDriver } from '../games/glass/drivers/sing'
 import type { InteractionDriver } from '../games/glass/drivers/types'
@@ -177,6 +177,62 @@ const startMeters = async (row: HTMLDivElement): Promise<void> => {
 
 let driver: InteractionDriver | null = null
 
+/**
+ * The signal chain, stage by stage, so a loss can be pinned to a link.
+ *
+ * The per-device meters answer "does this device carry sound". They said
+ * yes -- 0.40 on both -- while the driver said 0.0000, and those two
+ * facts together mean the loss is inside our own pipeline. But "our
+ * pipeline" is four things in a row, so it gets four readouts:
+ *
+ *   A  the stream the APP opened, measured by a plain analyser. Differs
+ *      from the per-device meter in one way that matters: micManager
+ *      asks for echoCancellation/noiseSuppression/autoGainControl OFF,
+ *      and a device that is happy to open raw can answer a constrained
+ *      request with a different route, or with silence.
+ *   B  what the capture worklet published (readMicLevel).
+ *   C  what the detector worker returned, via the frame assembler --
+ *      this is what the GAME reads, and the only one it reads.
+ *
+ * A alone means the worklet never attached. A and B mean the worker is
+ * not answering. None of them means the app's own stream is silent
+ * while a raw one is not, which points at the constraints or the device
+ * the constraints picked -- and the track settings printed beside it
+ * name that device.
+ */
+let chain = ''
+
+const watchChain = (): void => {
+  const stream = micManager.getStream()
+  if (stream === null) return
+  const lease = acquireSharedAudioContext('merc-probe-chain')
+  const context = lease.ensure()
+  if (context === null) return
+  const track = stream.getAudioTracks()[0]
+  const settings = track?.getSettings?.() ?? {}
+  const analyser = context.createAnalyser()
+  analyser.fftSize = 2048
+  context.createMediaStreamSource(stream).connect(analyser)
+  const buffer = new Float32Array(analyser.fftSize)
+  const read = (): void => {
+    analyser.getFloatTimeDomainData(buffer)
+    let sum = 0
+    for (const v of buffer) sum += v * v
+    const a = Math.sqrt(sum / buffer.length)
+    const b = readMicLevel()
+    const pitch = driver?.latestPitch()
+    chain =
+      `A app stream ${a.toFixed(4)} (${track?.label ?? 'no track'}` +
+      `${settings.sampleRate !== undefined ? `, ${settings.sampleRate}Hz` : ''}` +
+      `${settings.channelCount !== undefined ? `, ${settings.channelCount}ch` : ''})` +
+      `\n     B worklet    ${b.toFixed(4)}` +
+      `\n     C detector   ${(driver?.latestLevel() ?? 0).toFixed(4)}` +
+      `  pitch ${pitch ? pitch.midi.toFixed(1) : 'none'}`
+    requestAnimationFrame(read)
+  }
+  read()
+}
+
 const restart = (): Promise<void> => {
   const t0 = performance.now()
   const stamp = (msg: string): void => {
@@ -191,6 +247,7 @@ const restart = (): Promise<void> => {
     .start()
     .then(() => {
       stamp(`started; ctx=${next.ctx()?.state ?? 'none'}`)
+      watchChain()
       const poll = (): void => {
         if (driver !== next) return
         const p = next.latestPitch()
@@ -235,7 +292,7 @@ const tick = (now: number): void => {
     frozen = true
   }
   r.render(view, dt)
-  hud.textContent = `${r.backend()}  clip=${clip}${freezeAt !== null ? `  t=${freezeAt}` : ''}  x=${mercX}${micMode ? `\nmic: ${micLine || 'press Start mic'}` : ''}`
+  hud.textContent = `${r.backend()}  clip=${clip}${freezeAt !== null ? `  t=${freezeAt}` : ''}  x=${mercX}${micMode ? `\nmic: ${micLine || 'press Start mic'}${chain ? `\n     ${chain}` : ''}` : ''}`
   requestAnimationFrame(tick)
 }
 requestAnimationFrame(tick)
