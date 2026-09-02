@@ -85,4 +85,15 @@ export default defineConfig(({ mode }) => ({
   worker: {
     format: 'es',
   },
+  optimizeDeps: {
+    // Out of the optimizer, as in the main app's vite config. Vite
+    // bundles a dependency the first time something imports it and then
+    // RELOADS THE PAGE for the new module graph. onnxruntime-web is
+    // reached only from the detector worker, the first time a
+    // microphone starts -- so on a cold cache (fresh install, cleared
+    // node_modules/.vite, a config change) the tap that starts the mic
+    // is answered by a fresh document at the same URL, no error shown.
+    // Served raw from node_modules it is never discovered late.
+    exclude: ['onnxruntime-web'],
+  },
 }))

@@ -38,7 +38,7 @@ export const micErrorLine = (err: unknown): string => {
     case 'no-device':
       return 'No microphone was found on this device.'
     case 'held-elsewhere':
-      return 'Another MercuryPitch tab is holding the microphone. Close it, then tap to start again.'
+      return 'Another Beside Cue tab is holding the microphone. Close it, then tap to start again.'
     default:
       return typeof err.message === 'string' && err.message.length > 0
         ? err.message
