@@ -8,3 +8,6 @@ art/merc/*.opt.glb
 build/
 art/merc/preview/
 *.blend1
+
+# Dev TLS certificate from scripts/dev-cert.sh — machine-specific, and a private key
+.dev-cert/

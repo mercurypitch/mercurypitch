@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -83,51 +83,76 @@ const channel = (mode: string): 'dev' | 'ci' | 'release' => {
   return mode === 'production' ? 'ci' : 'dev'
 }
 
-// `vite --mode https` serves over TLS with a self-signed cert — for LAN
-// device playtests: getUserMedia needs a secure context, and only
-// localhost is exempt. Accept the one-time certificate warning on the
-// device; the mic prompt then works without browser flags.
-export default defineConfig(({ mode }) => ({
-  base: './',
-  plugins: [
-    excludeInactiveV2OnboardingMedia(),
-    ...(mode === 'https' ? [basicSsl()] : []),
-    solid(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+// `vite --mode https` serves over TLS for LAN device playtests, because
+// getUserMedia needs a secure context and only localhost is exempt.
+//
+// It prefers a certificate from `scripts/dev-cert.sh`, which covers this
+// machine's LAN addresses, and falls back to @vitejs/plugin-basic-ssl.
+// That fallback is enough to reach the dev server and NOT enough to test
+// on a phone: basic-ssl's SAN list is localhost, ::1 and 127.0.0.1, so
+// on the one URL a device test uses -- https://<lan-ip>:5173 -- the
+// certificate does not name the host serving it. Safari tapped through
+// that for the document and then declined the same connection for what
+// the document asked for next, which reads as broken images, black
+// video, and a JSON parse error from a .glb loader handed a web page
+// (2026-09-03, maff's iPhone). Run the script once and the mismatch
+// goes away.
+//
+// Every device test that does not need the microphone should just use
+// http -- `vite --host`, no certificate, nothing to accept.
+const devCert = (): { key: Buffer; cert: Buffer } | undefined => {
+  const dir = fileURLToPath(new URL('./.dev-cert', import.meta.url))
+  const key = resolve(dir, 'key.pem')
+  const cert = resolve(dir, 'cert.pem')
+  if (!existsSync(key) || !existsSync(cert)) return undefined
+  return { key: readFileSync(key), cert: readFileSync(cert) }
+}
+
+export default defineConfig(({ mode }) => {
+  const https = mode === 'https' ? devCert() : undefined
+  return {
+    base: './',
+    server: https === undefined ? undefined : { https },
+    plugins: [
+      excludeInactiveV2OnboardingMedia(),
+      ...(mode === 'https' && https === undefined ? [basicSsl()] : []),
+      solid(),
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+      dedupe: ['solid-js'],
     },
-    dedupe: ['solid-js'],
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify(pkgVersion()),
-    __APP_COMMIT__: JSON.stringify(commit()),
-    __APP_DIRTY__: JSON.stringify(dirty()),
-    __APP_CHANNEL__: JSON.stringify(channel(mode)),
-  },
-  build: {
-    target: 'es2022',
-  },
-  // The pitch stream's detector worker imports the detector, which is big
-  // enough that Rollup splits it into a chunk — and Vite's default `iife`
-  // worker format cannot express a code-split build. ES workers are what
-  // the main app already ships, and `audioWorklet.addModule` loads its
-  // file as a module regardless, so this is the only format that serves
-  // both. Requires a module-worker-capable engine, which every WebView
-  // above our minimum is.
-  worker: {
-    format: 'es',
-  },
-  optimizeDeps: {
-    // Out of the optimizer, as in the main app's vite config. Vite
-    // bundles a dependency the first time something imports it and then
-    // RELOADS THE PAGE for the new module graph. onnxruntime-web is
-    // reached only from the detector worker, the first time a
-    // microphone starts -- so on a cold cache (fresh install, cleared
-    // node_modules/.vite, a config change) the tap that starts the mic
-    // is answered by a fresh document at the same URL, no error shown.
-    // Served raw from node_modules it is never discovered late.
-    exclude: ['onnxruntime-web'],
-  },
-}))
+    define: {
+      __APP_VERSION__: JSON.stringify(pkgVersion()),
+      __APP_COMMIT__: JSON.stringify(commit()),
+      __APP_DIRTY__: JSON.stringify(dirty()),
+      __APP_CHANNEL__: JSON.stringify(channel(mode)),
+    },
+    build: {
+      target: 'es2022',
+    },
+    // The pitch stream's detector worker imports the detector, which is big
+    // enough that Rollup splits it into a chunk — and Vite's default `iife`
+    // worker format cannot express a code-split build. ES workers are what
+    // the main app already ships, and `audioWorklet.addModule` loads its
+    // file as a module regardless, so this is the only format that serves
+    // both. Requires a module-worker-capable engine, which every WebView
+    // above our minimum is.
+    worker: {
+      format: 'es',
+    },
+    optimizeDeps: {
+      // Out of the optimizer, as in the main app's vite config. Vite
+      // bundles a dependency the first time something imports it and then
+      // RELOADS THE PAGE for the new module graph. onnxruntime-web is
+      // reached only from the detector worker, the first time a
+      // microphone starts -- so on a cold cache (fresh install, cleared
+      // node_modules/.vite, a config change) the tap that starts the mic
+      // is answered by a fresh document at the same URL, no error shown.
+      // Served raw from node_modules it is never discovered late.
+      exclude: ['onnxruntime-web'],
+    },
+  }
+})
