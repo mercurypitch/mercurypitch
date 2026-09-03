@@ -86,6 +86,19 @@ export interface World3DConfig {
     settleSeconds: number
   }
 
+  /** How Merc walks and jumps. Metres and seconds; see sim/locomotion3d. */
+  locomotion: {
+    walkSpeed: number
+    accelSeconds: number
+    jumpHeight: number
+    gravity: number
+    coyoteSeconds: number
+    bufferSeconds: number
+    maxFallSpeed: number
+    minX: number
+    maxX: number
+  }
+
   /** The fixed-step loop. */
   loop: {
     /** Seconds per simulation step. */
@@ -169,6 +182,23 @@ export const WORLD3D_CONFIG: World3DConfig = {
     restitution: 0.2,
     settleSeconds: 4.3,
   },
+  // Merc is a hovering droplet about half a metre tall, so these are
+  // not a human's numbers: he accelerates fast, tops out slow, and
+  // falls under a gravity well below Earth's because a blob that drops
+  // like a brick stops reading as a liquid. `minX`/`maxX` are the
+  // Hallway's; a chamber overrides them with its own length.
+  locomotion: {
+    walkSpeed: 1.15,
+    accelSeconds: 0.14,
+    jumpHeight: 0.5,
+    gravity: 6.2,
+    coyoteSeconds: 0.11,
+    bufferSeconds: 0.13,
+    maxFallSpeed: 5.5,
+    minX: -1.5,
+    maxX: 1.45,
+  },
+
   loop: {
     stepSeconds: 1 / 120,
     maxStepsPerFrame: 5,
@@ -248,6 +278,7 @@ export const resolveConfig = (
     ring: { ...base.ring, ...override.ring },
     vibrato: { ...base.vibrato, ...override.vibrato },
     shatter: { ...base.shatter, ...override.shatter },
+    locomotion: { ...base.locomotion, ...override.locomotion },
     loop: { ...base.loop, ...override.loop },
   }
 }

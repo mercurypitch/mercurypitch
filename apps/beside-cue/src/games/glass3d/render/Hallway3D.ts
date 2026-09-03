@@ -38,6 +38,10 @@ const MAX_FOV_DEG = 62
 export interface HallwayView {
   /** Where Merc is along the corridor. The stage owns the journey. */
   mercX: number
+  /** How far off the floor he is. Zero for anything that does not jump. */
+  mercY: number
+  /** Which way he is going, so the cheat below mirrors with him. */
+  mercFacing: 1 | -1
   /** 0..1 charge on the pane. */
   resonance: number
   ringing: boolean
@@ -278,27 +282,41 @@ export const createHallway3D = (
       const actor = mercActor
       if (actor !== null) {
         actor.root.position.x = view.mercX
+        actor.root.position.y = view.mercY
         // Mostly toward travel, cheated toward the lens -- the classic
         // side-scroller lie. Square to the corridor his face is a
         // profile; at ~60 degrees he reads as going somewhere AND as
-        // someone.
-        actor.root.rotation.y = 1.05
+        // someone. Mirrored rather than turned through the back, so the
+        // cheat stays a cheat whichever way he is walking.
+        actor.root.rotation.y = 1.05 * view.mercFacing
         actor.update(dt)
       }
+      // The pool is his reflection in the floor, so it stays ON the
+      // floor when he leaves it. It fades as he climbs, below.
       pool.position.x = view.mercX
       floor.position.x = view.mercX * 0.6
 
       // The chase camera: exponential, framed ahead, from the diagonal.
       // dt-independent smoothing -- 1 - exp(-k dt) is the lerp factor
       // that behaves the same at 30 and at 120 fps.
-      const ahead = view.mercX + 1.5
+      //
+      // The lead follows his facing, and has to, now that he can be
+      // walked backwards: a camera that always frames the right-hand
+      // side walks him into the left edge of his own screen. Biased
+      // rather than mirrored, so turning around swings the framing
+      // instead of throwing it across the room -- and so walking
+      // forwards is framed exactly as it was before he could turn.
+      const ahead = view.mercX + 0.9 + 0.6 * view.mercFacing
       const k = 1 - Math.exp(-3.2 * dt)
       camera.position.x += (ahead - camera.position.x) * k
       camera.lookAt(camera.position.x - 1.1, 0.45, 0)
 
       // The pane brightens toward the break exactly as the bowl does.
       key.intensity = 55 + view.resonance * 70
-      poolMaterial.opacity = 0.12 + view.resonance * 0.2
+      // A reflection that followed him up into the air would read as him
+      // not having jumped at all.
+      poolMaterial.opacity =
+        (0.12 + view.resonance * 0.2) * Math.max(0, 1 - view.mercY * 1.6)
       const pulse = view.ringing ? 0.5 + 0.5 * Math.sin(clock * 9) : 0
       paneMaterial.emissive.setHex(CUSTARD)
       paneMaterial.emissiveIntensity = view.resonance * 0.2 + pulse * 0.28

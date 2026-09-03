@@ -439,6 +439,99 @@
   }
 }
 
+/* The controls. A strip across the bottom, because the hand holding
+   the phone is the hand playing it and that hand reaches the bottom of
+   the screen and nothing else.
+
+   `touch-action: none` is load-bearing, not tidiness: without it the
+   browser claims a horizontal drag as a scroll gesture and stops sending
+   pointermove, which reads as the pad going dead halfway through a walk.
+   `user-select` likewise -- a long press on a div is a text selection
+   unless you say otherwise. */
+.stage3d__controls {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  /* Clear of the very bottom edge: a 12px gap put the jump button under
+     the build stamp on a phone, and a control the width of a thumb
+     wants more margin than that anyway. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  height: 4.25rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage3d__pad {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.1rem;
+  border-radius: 1.1rem;
+  background: rgb(10 14 15 / 42%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.stage3d__pad svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: rgb(255 255 255 / 62%);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The centre mark. The dead zone is around here, so showing where it is
+   turns "nothing happened" into "you are standing still on purpose". */
+.stage3d__pad i {
+  width: 2px;
+  height: 0.9rem;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 22%);
+}
+
+.stage3d__jump {
+  width: 4.25rem;
+  padding: 0;
+  border-radius: 1.1rem;
+  background: rgb(242 200 75 / 16%);
+  border: 1px solid rgb(242 200 75 / 34%);
+  backdrop-filter: blur(6px);
+  color: var(--custard, #f2c84b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stage3d__jump svg {
+  width: 1.7rem;
+  height: 1.7rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage3d__jump:active {
+  background: rgb(242 200 75 / 32%);
+}
+
+/* The meter sits at the bottom too, so it moves up out of the way
+   rather than being read through a thumb. */
+.stage3d.has-controls .stage3d__meter {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+}
+
 .stage3d__gate,
 .stage3d__card {
   position: absolute;
