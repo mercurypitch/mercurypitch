@@ -161,3 +161,87 @@
     min-height: 44px;
   }
 }
+
+/* ── The frozen podium ──────────────────────────────────────────────
+ *
+ * Three rows at most, so a fixed-width rank column keeps the names on one
+ * left edge — a `gap` alone would ragged them the moment a rank reached two
+ * digits, and this list is the one part of the card people compare across
+ * challenges.
+ *
+ * Gold / silver / bronze are drawn with a border rather than a fill: the card
+ * already carries three background tiers, and a fourth would flatten them. */
+.podium {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.placeRank {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.place:nth-child(1) .placeRank {
+  border-color: #d4a418;
+  color: #d4a418;
+}
+
+.place:nth-child(2) .placeRank {
+  border-color: #9aa4ad;
+  color: #9aa4ad;
+}
+
+.place:nth-child(3) .placeRank {
+  border-color: #b07a4a;
+  color: #b07a4a;
+}
+
+.placeName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A singer who has since asked not to be named. The score and the place stay
+ * — the result happened — so only the identity is dimmed and italicised. */
+.placeRedacted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.placeScore {
+  flex: none;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.attempted {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+}

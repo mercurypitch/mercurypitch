@@ -1235,8 +1235,26 @@ interface BoardUser {
   userId: string
   displayName: string
   best: number
+  /** 1 when this singer consented to appear on public boards by name. */
+  optedIn: number
 }
 
+/**
+ * Everyone who sang, with their best take and whether they may be named.
+ *
+ * Consent is carried, not filtered, because the two things the board reports
+ * want different populations. "17 sang this" is a participation count and
+ * excluding the singers who did not consent would make it a lie; the ranked
+ * *list* is an identity and must carry only people who agreed to be on it.
+ * Callers split them — see `rankable` below.
+ *
+ * `users.leaderboardExcludedAt` is deliberately NOT consulted. It is the
+ * global leaderboard's exclusion and is scoped to it — weekly challenges have
+ * their own admin tool in `weeklyChallengeScoreRetractions`, per challenge, so
+ * one week can be withdrawn without touching another. Folding the two together
+ * would make `scope: 'leaderboard'` silently do more than it says; see
+ * migration 0022 and the score-visibility integration test that pins it.
+ */
 async function computeWeeklyBoard(
   row: WeeklyRow,
   env: Env,
@@ -1248,7 +1266,8 @@ async function computeWeeklyBoard(
   const { results } = await env.DB.prepare(
     `SELECT s."userId" AS userId,
             COALESCE(p."displayName", 'Singer-' || substr(s."userId", 1, 6)) AS displayName,
-            MAX(s."score") AS best
+            MAX(s."score") AS best,
+            CASE WHEN COALESCE(p."leaderboardOptIn", 0) = 1 THEN 1 ELSE 0 END AS optedIn
      FROM "sessionRecords" s
      LEFT JOIN "userProfiles" p ON p."id" = s."userId"
      WHERE s."weeklyChallengeId" = ?
@@ -1268,6 +1287,18 @@ async function computeWeeklyBoard(
   const perUser = results ?? []
   const completedCount = perUser.filter((u) => u.best >= row.targetScore).length
   return { perUser, attemptedCount: perUser.length, completedCount }
+}
+
+/**
+ * The singers who may be ranked by name, best first.
+ *
+ * Ranks come from this list rather than from `perUser`, so the podium reads
+ * 1-2-3 with no gaps. Ranking over everyone and then hiding the
+ * non-consenting rows would publish their existence anyway — a missing #2 in
+ * a list of three says someone was there and outscored the person below.
+ */
+function rankableSingers(perUser: readonly BoardUser[]): BoardUser[] {
+  return perUser.filter((u) => u.optedIn === 1)
 }
 
 /** Top-N (founder merged in), participation counts, and the caller's standing. */
@@ -1293,8 +1324,9 @@ async function handleWeeklyBoard(
   )
 
   // Merge the founder's seed score in as a labelled entry.
+  const ranked = rankableSingers(perUser)
   type Entry = { displayName: string; best: number; isFounder: boolean }
-  const entries: Entry[] = perUser.map((u) => ({
+  const entries: Entry[] = ranked.map((u) => ({
     displayName: u.displayName,
     best: Math.round(u.best),
     isFounder: false,
@@ -1310,6 +1342,12 @@ async function handleWeeklyBoard(
   const top = entries.slice(0, 10).map((e, i) => ({ rank: i + 1, ...e }))
 
   // Caller's standing (ranked among real singers only).
+  //
+  // Ranked against the singers who can be ranked, so your number means the
+  // same thing as the numbers beside the names above it. Somebody who has not
+  // consented still gets their score and `ranked: false` — they can see how
+  // they did, and the client can offer them the board rather than pretending
+  // they hold a place on it.
   const auth = await getAuth(request, env)
   let you: {
     best: number
@@ -1317,19 +1355,23 @@ async function handleWeeklyBoard(
     percentile: number
     beatFounder: boolean
     completed: boolean
+    ranked: boolean
   } | null = null
   if (auth) {
     const mine = perUser.find((u) => u.userId === auth.userId)
     if (mine) {
-      const better = perUser.filter((u) => u.best > mine.best).length
+      const isRanked = mine.optedIn === 1
+      const field = isRanked ? ranked : [mine]
+      const better = field.filter((u) => u.best > mine.best).length
       const rank = better + 1
       you = {
         best: Math.round(mine.best),
         rank,
         percentile:
-          attemptedCount > 0 ? Math.round((100 * rank) / attemptedCount) : 100,
+          field.length > 0 ? Math.round((100 * rank) / field.length) : 100,
         beatFounder: row.founderScore !== null && mine.best > row.founderScore,
         completed: mine.best >= row.targetScore,
+        ranked: isRanked,
       }
     }
   }
@@ -1345,17 +1387,57 @@ async function handleWeeklyBoard(
   })
 }
 
+// ── The result, once it stops moving ─────────────────────────────────
+//
+// A closed challenge's board is a historical record, so it is written down
+// rather than recomputed. Two properties come from that, and both were asked
+// for:
+//
+// The **name is fixed at close time**. Whatever a singer is called when the
+// window shuts is what the podium says forever, so renaming an account after
+// winning cannot rewrite a published result. Eligibility — suspended, admin
+// excluded, score retracted, consented — is checked once, here, at the same
+// instant.
+//
+// The **consent is not**. `userId` is stored beside the frozen name so a
+// later opt-out can redact the entry on the way out (see `redactPodium`).
+// Freezing the name and re-checking the permission is the combination that
+// lets both of those be true at once.
+//
+// `version` marks the shape. Rows closed before this carry `version`
+// undefined and a `top3` without `userId` or `rank`; every reader has to keep
+// working on those, because they are the only record of those weeks.
+const WEEKLY_RESULTS_VERSION = 2
+
+/** How many places the podium keeps, and how many win a badge. */
+const PODIUM_PLACES = 3
+
+interface PodiumEntry {
+  userId: string
+  displayName: string
+  best: number
+  rank: number
+}
+
 /** Close a past-window active challenge: snapshot the board, mark closed. */
 async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
   const { perUser, attemptedCount, completedCount } = await computeWeeklyBoard(
     row,
     env,
   )
-  const top3 = perUser
-    .slice(0, 3)
-    .map((u) => ({ displayName: u.displayName, best: Math.round(u.best) }))
+  const podium: PodiumEntry[] = rankableSingers(perUser)
+    .slice(0, PODIUM_PLACES)
+    .map((u, i) => ({
+      userId: u.userId,
+      displayName: u.displayName,
+      best: Math.round(u.best),
+      rank: i + 1,
+    }))
   const results = {
-    top3,
+    version: WEEKLY_RESULTS_VERSION,
+    // Same key as version 1, so a reader that only knows the old shape still
+    // finds the names and scores where it expects them.
+    top3: podium,
     attemptedCount,
     completedCount,
     closedAt: new Date().toISOString(),
@@ -1365,6 +1447,196 @@ async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
   )
     .bind(JSON.stringify(results), new Date().toISOString(), row.id)
     .run()
+
+  await grantPodiumBadges(podium, env)
+}
+
+// ── Redaction on the way out ─────────────────────────────────────────
+//
+// The snapshot is frozen, so the only place a later change of mind can be
+// honoured is at read time. A singer who opts out of public boards — or who
+// is suspended, admin-excluded, or has retracted their score for that
+// challenge — keeps their rank and their score on the podium and loses their
+// name to `<redacted>`.
+//
+// Losing the name rather than the row is deliberate. Deleting an entry would
+// silently promote everybody below it and rewrite what happened; the record
+// stays true, and only the identity goes.
+//
+// Version 1 rows have no `userId` to check against, so they pass through
+// exactly as stored. Those weeks predate consent being asked for at all, and
+// the alternative to showing them as written is showing nothing.
+
+interface StoredPodiumEntry {
+  userId?: unknown
+  displayName?: unknown
+  best?: unknown
+  rank?: unknown
+}
+
+/** The podium out of a parsed `resultsJson`, or `[]` when it has none. */
+function storedPodium(parsed: unknown): StoredPodiumEntry[] {
+  if (parsed === null || typeof parsed !== 'object') return []
+  const top3 = (parsed as { top3?: unknown }).top3
+  if (!Array.isArray(top3)) return []
+  return top3.filter(
+    (e): e is StoredPodiumEntry => e !== null && typeof e === 'object',
+  )
+}
+
+/**
+ * The `<challengeId>:<userId>` pairs that may still be shown by name.
+ *
+ * One query for the whole archive page rather than one per entry: twenty
+ * challenges times three places is sixty lookups done as two.
+ */
+async function namesStillShowable(
+  pairs: ReadonlyArray<{ challengeId: string; userId: string }>,
+  env: Env,
+): Promise<Set<string>> {
+  const showable = new Set<string>()
+  if (pairs.length === 0) return showable
+
+  const userIds = [...new Set(pairs.map((p) => p.userId))]
+  const holes = userIds.map(() => '?').join(',')
+  const { results: eligible } = await env.DB.prepare(
+    `SELECT u."id" AS id
+       FROM "users" u
+       LEFT JOIN "userProfiles" p ON p."id" = u."id"
+      WHERE u."id" IN (${holes})
+        AND u."suspendedAt" IS NULL
+        AND COALESCE(p."leaderboardOptIn", 0) = 1`,
+  )
+    .bind(...userIds)
+    .all<{ id: string }>()
+  const consenting = new Set((eligible ?? []).map((r) => r.id))
+
+  // Retractions are per challenge, so they cannot be folded into the query
+  // above — a singer may have withdrawn one week's score and kept another's.
+  const challengeIds = [...new Set(pairs.map((p) => p.challengeId))]
+  const { results: retracted } = await env.DB.prepare(
+    `SELECT weeklyChallengeId, userId FROM weeklyChallengeScoreRetractions
+      WHERE weeklyChallengeId IN (${challengeIds.map(() => '?').join(',')})`,
+  )
+    .bind(...challengeIds)
+    .all<{ weeklyChallengeId: string; userId: string }>()
+  const withdrawn = new Set(
+    (retracted ?? []).map((r) => `${r.weeklyChallengeId}:${r.userId}`),
+  )
+
+  for (const pair of pairs) {
+    const key = `${pair.challengeId}:${pair.userId}`
+    if (consenting.has(pair.userId) && !withdrawn.has(key)) showable.add(key)
+  }
+  return showable
+}
+
+/** Each row's `resultsJson`, parsed, with no-longer-showable names removed. */
+async function redactPodiums(
+  rows: readonly WeeklyRow[],
+  env: Env,
+): Promise<unknown[]> {
+  const parsed = rows.map((r) => (r.resultsJson ? safeJson(r.resultsJson) : null))
+  const pairs: Array<{ challengeId: string; userId: string }> = []
+  parsed.forEach((results, i) => {
+    for (const entry of storedPodium(results)) {
+      if (typeof entry.userId === 'string' && entry.userId !== '') {
+        pairs.push({ challengeId: rows[i].id, userId: entry.userId })
+      }
+    }
+  })
+  const showable = await namesStillShowable(pairs, env)
+
+  return parsed.map((results, i) => {
+    const podium = storedPodium(results)
+    if (podium.length === 0) return results
+    let changed = false
+    const next = podium.map((entry) => {
+      if (typeof entry.userId !== 'string' || entry.userId === '') return entry
+      if (showable.has(`${rows[i].id}:${entry.userId}`)) return entry
+      changed = true
+      // The id goes too. Nothing downstream needs it once the name is gone,
+      // and shipping it would leave the singer identifiable to anyone holding
+      // an older copy of the same archive.
+      return {
+        best: entry.best,
+        rank: entry.rank,
+        displayName: null,
+        redacted: true,
+      }
+    })
+    if (!changed) return results
+    return { ...(results as object), top3: next }
+  })
+}
+
+// ── The badge for placing ────────────────────────────────────────────
+//
+// Granted here rather than through the client's `grantBadgeByRef`, because
+// nobody knows who won until the window shuts and the winner is by definition
+// not in the app at that moment. `userBadges` is a cloud entity in the hybrid
+// adapter, so a row written here is what the winner's next read returns.
+//
+// Resolved by `name`, never by id: badge ids are UUIDs minted per database, so
+// dev and prod disagree about the same badge (see badge-art.ts, which keys its
+// art off `icon` for the same reason). `name` is authored in seed-data.json and
+// is identical everywhere.
+const PODIUM_BADGE_NAMES: Record<number, string> = {
+  1: 'First Voice',
+  2: 'Second Voice',
+  3: 'Third Voice',
+}
+
+/**
+ * Give each podium finisher the badge for their place.
+ *
+ * Swallows its own errors. A challenge closing is the load-bearing act here —
+ * the board freezing and the next challenge starting depend on it — and a
+ * missing badge definition (a dev database that was never seeded) must not be
+ * able to stop it.
+ *
+ * Idempotent per singer: a second win re-grants nothing, which is how badges
+ * work everywhere else in the app (`grantBadgeByRef` dedupes on badgeId too).
+ */
+async function grantPodiumBadges(
+  podium: readonly PodiumEntry[],
+  env: Env,
+): Promise<void> {
+  for (const entry of podium) {
+    const name = PODIUM_BADGE_NAMES[entry.rank]
+    if (name === undefined) continue
+    try {
+      const badge = await env.DB.prepare(
+        `SELECT id FROM badgeDefinitions WHERE name = ? LIMIT 1`,
+      )
+        .bind(name)
+        .first<{ id: string }>()
+      if (!badge) continue
+      const now = new Date().toISOString()
+      // INSERT ... WHERE NOT EXISTS rather than a read-then-write: two closes
+      // racing on the same row would both see "not held" and both insert.
+      await env.DB.prepare(
+        `INSERT INTO userBadges (id, createdAt, updatedAt, userId, badgeId, earnedAt)
+         SELECT ?, ?, ?, ?, ?, ?
+          WHERE NOT EXISTS (
+            SELECT 1 FROM userBadges WHERE userId = ? AND badgeId = ?
+          )`,
+      )
+        .bind(
+          crypto.randomUUID(),
+          now,
+          now,
+          entry.userId,
+          badge.id,
+          now,
+          entry.userId,
+          badge.id,
+        )
+        .run()
+    } catch (error) {
+      console.error('[weekly] podium badge grant failed', name, error)
+    }
+  }
 }
 
 /** Encore: clone a random evergreen closed row as this week's active challenge. */
@@ -1777,9 +2049,11 @@ async function handleWeekly(
     const { results } = await env.DB.prepare(
       `SELECT * FROM weeklyChallenges WHERE status = 'closed' ORDER BY endsAt DESC LIMIT 20`,
     ).all<WeeklyRow>()
-    const archive = (results ?? []).map((r) => ({
+    const rows = results ?? []
+    const redacted = await redactPodiums(rows, env)
+    const archive = rows.map((r, i) => ({
       ...publicWeekly(r),
-      results: r.resultsJson ? safeJson(r.resultsJson) : null,
+      results: redacted[i],
     }))
     return respond({ archive })
   }

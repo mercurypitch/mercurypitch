@@ -14,12 +14,16 @@
 // funnel, so the weekly-attempt return path is unchanged.
 
 import type { Component } from 'solid-js'
-import { createEffect, createResource, For, Show } from 'solid-js'
+import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Trophy } from '@/components/icons'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
+import { showNotification } from '@/stores/notifications-store'
 import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
+import { grantBoardConsent, hasBoardConsent } from './board-consent'
 import { requestPastChallengesScroll } from './PastWeeklyChallenges'
-import { beginWeeklyAttempt, weeklyAttemptVersion } from './weekly-attempt'
+import { beginWeeklyAttempt, clearWeeklyAttempt, weeklyAttemptVersion, } from './weekly-attempt'
 import { getActiveWeekly, getWeeklyBoard, hoursUntil } from './weekly-service'
 import styles from './WeeklyLegendHero.module.css'
 
@@ -44,7 +48,56 @@ export const WeeklyLegendHero: Component = () => {
     if (id !== undefined && id !== '') void refetchBoard()
   })
 
+  // ── Consent before the first ranked take ──────────────────────
+  //
+  // A ranked attempt publishes a name beside a score on a board that freezes
+  // and is kept, so the singer is asked before the take rather than after it.
+  // Declining is not a dead end: the same melody is one tap away as practice.
+  const [consentOpen, setConsentOpen] = createSignal(false)
+  const [consenting, setConsenting] = createSignal(false)
+
   function attempt(): void {
+    void (async () => {
+      if (challenge() === undefined) return
+      if (await hasBoardConsent()) {
+        startRankedAttempt()
+        return
+      }
+      setConsentOpen(true)
+    })()
+  }
+
+  /** Store the consent, then take the attempt it was asked for. */
+  async function acceptConsent(): Promise<void> {
+    setConsenting(true)
+    const stored = await grantBoardConsent()
+    setConsenting(false)
+    if (!stored) {
+      // Never start a ranked take on a consent that was not saved — the
+      // score would publish a name the record cannot show was agreed to.
+      showNotification('Could not save that — try again', 'error')
+      return
+    }
+    setConsentOpen(false)
+    startRankedAttempt()
+  }
+
+  /** Decline: the melody is still worth singing, just not for the board. */
+  function declineConsent(): void {
+    const c = challenge()
+    setConsentOpen(false)
+    if (!c) return
+    clearWeeklyAttempt()
+    openChallengeStage({
+      challengeId: c.id,
+      title: c.title,
+      targetScore: c.targetScore,
+      targetItems: c.targetItems,
+      mode: 'practice',
+    })
+  }
+
+  function startRankedAttempt(): void {
     const c = challenge()
     if (!c) return
     beginWeeklyAttempt({
@@ -143,18 +196,31 @@ export const WeeklyLegendHero: Component = () => {
             </ol>
             <Show when={board()!.you}>
               <div class={styles.youRow}>
+                {/* An unranked singer gets their score and the truth about
+                    it. Showing a placing to someone who is not on the list
+                    would be the one number on this card that is not real. */}
                 <Show
-                  when={board()!.you!.beatFounder}
+                  when={board()!.you!.ranked}
                   fallback={
-                    <span>
-                      Your best {board()!.you!.best}% · top{' '}
-                      {board()!.you!.percentile}% of {board()!.attemptedCount}
+                    <span class={styles.unranked} data-testid="you-unranked">
+                      Your best {board()!.you!.best}% · not on the board — turn
+                      on public boards in Settings to be ranked
                     </span>
                   }
                 >
-                  <span class={styles.beatFounder}>
-                    You beat the Founder — {board()!.you!.best}%
-                  </span>
+                  <Show
+                    when={board()!.you!.beatFounder}
+                    fallback={
+                      <span>
+                        Your best {board()!.you!.best}% · top{' '}
+                        {board()!.you!.percentile}% of {board()!.attemptedCount}
+                      </span>
+                    }
+                  >
+                    <span class={styles.beatFounder}>
+                      You beat the Founder — {board()!.you!.best}%
+                    </span>
+                  </Show>
                 </Show>
               </div>
             </Show>
@@ -165,6 +231,28 @@ export const WeeklyLegendHero: Component = () => {
           See past challenges
         </button>
       </Show>
+
+      <ConfirmDialog
+        open={consentOpen()}
+        busy={consenting()}
+        title="Sing it for the board?"
+        confirmLabel="Put me on the board"
+        confirmIcon={<Trophy />}
+        message={
+          <>
+            A ranked take puts your display name and score on this challenge's
+            public board, and keeps them on its podium after it closes. You can
+            turn public boards off again in Settings at any time — past podiums
+            redact your name when you do.
+            <br />
+            <br />
+            Prefer not to? You can still sing this melody as practice. Nothing
+            is recorded to the board.
+          </>
+        }
+        onConfirm={() => void acceptConsent()}
+        onCancel={declineConsent}
+      />
     </section>
   )
 }
