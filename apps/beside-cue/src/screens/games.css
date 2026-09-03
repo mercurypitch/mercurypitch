@@ -879,6 +879,13 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
+  /* WIDTH, not max-width. `left: 50%` with no `right` makes the used
+     width shrink-to-fit against the containing block MINUS the offset --
+     exactly 50vw -- and the transform re-centres it without giving that
+     width back. So the max-width below never bit on a phone (187px of a
+     375px screen) and only looked right on a desktop, where 50vw is
+     already wider than the cap. */
+  width: min(28rem, 84vw);
   max-width: min(28rem, 84vw);
   text-align: center;
   border-radius: 0.75rem;
@@ -922,7 +929,9 @@
    yellow pill. */
 .chamber-done {
   /* Wider than a one-line card, and the rows scroll rather than push
-     the Done button off a short screen. */
+     the Done button off a short screen. Width AND max-width, for the
+     reason spelled out on `.stage3d__card` above. */
+  width: min(30rem, 90vw);
   max-width: min(30rem, 90vw);
 }
 

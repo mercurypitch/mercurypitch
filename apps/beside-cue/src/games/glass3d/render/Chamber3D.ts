@@ -26,6 +26,7 @@ import { groundIn, standingAmplitude } from '../sim/chamber3d'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
+import { FLOOR_STRIPS } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
 import { PANE } from './Hallway3D'
 import type { MercActor } from './merc'
@@ -49,7 +50,7 @@ const MAX_FOV_DEG = 64
  * strips that is six and a half strips per feature, which reads as a
  * pattern rather than as a row of lights. Doubling it buys nothing a
  * player can see at a glance, and this is redrawn every frame. */
-const STRIPS = 72
+const STRIPS = FLOOR_STRIPS
 
 /** How high off the floor the strips sit. Enough to beat the floor's
  * own plane in the depth test, small enough not to be a step. */
@@ -121,7 +122,14 @@ export const createChamber3D = (
   const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 40)
   camera.position.set(1.5, 1.0, 2.6)
 
-  const backdrop = createBackdrop(11)
+  // Radius 13, not 11. It is a BackSide sphere on the world ORIGIN, so
+  // its radius has to cover the far end of the longest room plus the
+  // chase camera standing behind him: at chamber 5's exit the camera is
+  // 11.4 out and at its far wall 11.8, both of which put a third of the
+  // frame outside a sphere of 11 and showed the clear colour through it.
+  // Sized off CHAMBERS' longest (10) rather than a number that has to be
+  // remembered when a room is added.
+  const backdrop = createBackdrop(13)
   scene.add(backdrop.mesh)
   const environment = buildCabinetEnvironment()
   scene.environment = environment
@@ -203,6 +211,14 @@ export const createChamber3D = (
       strips.setMatrixAt(i, m.compose(p, q, s))
     }
     strips.instanceMatrix.needsUpdate = true
+    // An InstancedMesh computes its bounding sphere ONCE, the first time
+    // the frustum asks, and `setMatrixAt` does not invalidate it. This
+    // was harmless while a stage owned one room; a track relays out the
+    // strips for every room and the sphere stays the size of the first
+    // one, so a longer room's far end was culled -- all seventy-two
+    // strips at once, taking the floor pattern with them. Nulling it
+    // makes three recompute on the next test.
+    strips.boundingSphere = null
   }
   scene.add(strips)
 
@@ -560,6 +576,13 @@ export const createChamber3D = (
       buildRoom()
       if (shardBatch !== null) shardBatch.visible = false
       paintPattern(null, 0, next.startAt * next.length)
+      // Put the camera where the chase would have eased it to, rather
+      // than letting it fly there. `enterRoom` teleports Merc to the new
+      // room's start and starts him walking immediately, and the ease
+      // has a ~0.3s time constant -- so the handover this whole design
+      // exists to make seamless spent up to two thirds of a second with
+      // the player steering someone off the side of their own screen.
+      camera.position.x = next.startAt * next.length + 1.5
     },
 
     centroids(): readonly Vec3[] {

@@ -404,7 +404,10 @@ All six landed. What each one turned out to be:
 shade tighter than chamber 3), hinged on the centre exactly as chamber 2
 is but one rung higher: 0.5 is a belly of 5 and a node of 6. What is new
 is that the exit stands on a ledge, so the room cannot be finished by
-walking. Arrival now checks his HEIGHT as well as his position.
+walking. Arrival checks that he is GROUNDED at the exit's height, not
+merely that he has reached it — the first version tested the height
+alone, and a hop against the far wall satisfied "the way out is up" over
+bare floor.
 
 **Chamber 5, "Three notes, and the room does not say which order."**
 Panes at 0.3, 0.625 and 0.75 want modes 5, 4 and 6 — neither up the
@@ -429,6 +432,39 @@ Fixed at both ends: `GroundSampler` now takes `fromY` and never offers a
 surface above his feet, and every ledge is asserted to be inside the
 jump with clearance to spare. Chamber 3's is now 0.42, and reachable for
 the first time.
+
+### The review pass, and what it found
+
+Slice 3 was reviewed by seven independent readers with a three-lens
+adversarial verify behind them. Thirteen defects survived it, and every
+one shipped green: typecheck, lint, format and 295 tests all passed over
+the lot. Worth recording, because the pattern in them is not random —
+most are the SAME shape, a thing that was correct while a stage owned
+exactly one room and is not correct now that one stage walks five.
+
+| What                                                                                                                        | Why the track broke it                                                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The tone never re-armed between rooms — every room after the first opened silent, no swell and a soundless break            | `shatter` silences the ring for good; the one caller of `rearm` waits for a pane still standing, and the pane that ends a room is its last           |
+| A jump pressed during the clear fired on the first step of the NEXT room                                                    | the jump buffer only decays inside `stepLocomotion`, which the `cleared` and `falling` branches skip                                                 |
+| The chase camera stayed where the last room left it — up to two thirds of a second steering someone off-screen              | `load()` rebuilt the room and never moved the camera                                                                                                 |
+| The floor pattern vanished at the far end of the long rooms, on portrait phones                                             | an `InstancedMesh` computes its bounding sphere once and `setMatrixAt` does not invalidate it, so it stayed the size of the first room               |
+| A hard-edged black band down a third of the frame at chamber 5's exit                                                       | the backdrop sphere is radius 11 on the origin, sized when the longest room was 8                                                                    |
+| The HUD counted cleared rooms, so it read "0 OF 5" in room 1 and "5 OF 5" while replaying room 1                            | `progressLabel` is the games-list card's number, reused where it means something else                                                                |
+| A finished track re-entered dropped the player into chamber 5 with no way back to the card                                  | `currentRoom` returns the last room once everything is cleared, and the card only exists in the `done` phase                                         |
+| Chamber 4 spawned him 3.7 cm from lethal floor on the room's own first answer, on a strip painted red                       | `startAt` was checked at a point; nothing asked how much safe band lay ahead of it, or what the pattern painted there                                |
+| The end card could never exceed half the viewport                                                                           | `left: 50%` with no `width` shrink-to-fits against `containing block − 50%`; the `max-width` never bit on a phone and only looked right on a desktop |
+| The exit cleared the room on the way UP through its height, a third of a second before he landed, freezing the walk mid-arc | testing `loco.y` without `loco.grounded`                                                                                                             |
+
+Two more were pre-existing and are fixed here because they sit on this
+slice's paths: `begin()` could run after unmount and leave an unstoppable
+frame loop, and a successful microphone switch left the gate up so the
+next "Walk in" overwrote a live driver without stopping it.
+
+The last was a test that claimed to model the glass as a wall and did
+not: its `reachable` variable was assigned, filtered against, and
+reassigned to the same value, and deleting it changed no result. The wall
+model lives in `perchesFor`'s standoff term and now has a test of its
+own.
 
 ### What 3c actually costs, and why it is the interesting one
 

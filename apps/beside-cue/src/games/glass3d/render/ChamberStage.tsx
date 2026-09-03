@@ -32,7 +32,7 @@ import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
-import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, walkGrade, writeTrack, } from '../levels/chamber-track'
+import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, roomIndex, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
 import { CHAMBERS } from '../levels/chambers'
 import { createLoopState, runLoop } from '../runtime/loop'
@@ -132,7 +132,17 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
-  const [phase, setPhase] = createSignal<Phase>('walking')
+  // A finished track opens on the card, not in the last room. The card
+  // is the only place the per-room bests and the way back into a cleared
+  // room live, and `currentRoom` deliberately hands back the LAST room
+  // once everything is cleared -- so without this, coming back to a
+  // finished walk meant re-beating room five to reach the list.
+  const [phase, setPhase] = createSignal<Phase>(
+    isFinished(readTrack()) ? 'done' : 'walking',
+  )
+  /** The frame loop is live. The card's replay buttons need it, and it
+   * arrives an asset load after the card does. */
+  const [ready, setReady] = createSignal(false)
   // What the microphone is actually hearing, kept separately from what the
   // room makes of it. Without this a dead microphone and a wrong note look
   // exactly the same -- an unlit ladder -- which is how "the audio is not
@@ -242,7 +252,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
     const observer = new ResizeObserver(fit)
     observer.observe(canvas)
 
+    /** Set the moment the stage goes away. `begin` runs from an async
+     * init, so without this a player who leaves during the load starts a
+     * frame loop after teardown that nothing holds a handle to. */
+    let gone = false
+
     const begin = (): void => {
+      if (gone) return
       /** The room in front of him. `enterRoom` moves it on. */
       let live: ChamberLevel = room()
 
@@ -386,12 +402,27 @@ export const ChamberStage = (props: ChamberStageProps) => {
         exitY = exitSurface(next)
         grades = []
         breaking = null
+        // The tone silences itself for good when a pane breaks, and only
+        // `rearm` undoes that. Its one other caller cannot help here: it
+        // waits for a pane that is still standing, and the pane that
+        // ended the last room was the last one in it. Without this line
+        // every room after the first opened silent -- no swell, and a
+        // completely silent break -- until 2.2s after the NEXT pane went.
+        tone.rearm()
         loco.x = next.startAt * next.length
         loco.y = 0
         loco.vx = 0
         loco.vy = 0
         loco.grounded = true
         loco.facing = 1
+        // The jump buffer only decays inside `stepLocomotion`, which the
+        // 'cleared' and 'falling' branches skip. A press made during the
+        // jump that finished the last room would otherwise sit frozen
+        // across the handover and fire on the first step of the new
+        // room: Merc leaping at the start line off an input made in a
+        // different room.
+        loco.bufferLeft = 0
+        loco.jumpWasDown = false
         closeWalls()
         setBroken(0)
         setCharges(next.modes.map(() => 0))
@@ -419,6 +450,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
         loco.vy = 0
         loco.grounded = true
         loco.facing = 1
+        // Same frozen buffer as `enterRoom`, and the same reason: the
+        // 'falling' branch returns before `stepLocomotion`, so a jump
+        // pressed on the way down survives the whole fall clip and
+        // fires the instant he is back on his feet.
+        loco.bufferLeft = 0
+        loco.jumpWasDown = false
         for (const t of targets) t.ring.res = 0
         closeWalls()
         go('walking')
@@ -574,11 +611,15 @@ export const ChamberStage = (props: ChamberStageProps) => {
           // for it to count -- the exit is not a shortcut past the
           // puzzle, it is what the puzzle opens.
           //
-          // And it has to be STOOD ON. A room whose exit is up a ledge
-          // would otherwise finish itself the moment he walked into the
-          // shadow underneath it, which is a jump the player never made.
+          // And it has to be STOOD ON -- GROUNDED at the exit's height,
+          // not merely passing through that height. Testing the height
+          // alone let a hop against the far wall finish chamber 4 over
+          // bare floor, and made even an honest jump land the clear a
+          // third of a second early, on the way up, which then froze the
+          // walk mid-arc for the whole handover beat.
           if (
             loco.x >= live.exitAt * live.length - ARRIVED &&
+            loco.grounded &&
             loco.y >= exitY - 0.01 &&
             targets.every((t) => t.broken)
           ) {
@@ -705,6 +746,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         fit()
         setBackend(r.backend())
         begin()
+        setReady(true)
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
@@ -712,6 +754,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       })
 
     onCleanup(() => {
+      gone = true
       observer.disconnect()
       unbindKeys()
       stopLoop?.()
@@ -728,6 +771,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
     tone.start()
     try {
       await applyPreferredInput()
+      // A previous attempt may have left a live driver: `switchMic`
+      // succeeds without lifting the gate, so the next tap on "Walk in"
+      // arrives with one already running. Overwriting it stranded its
+      // detector worker, its worklet and its share of the audio lease
+      // for the life of the page.
+      driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
@@ -744,6 +793,9 @@ export const ChamberStage = (props: ChamberStageProps) => {
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      // The switch IS the retry. Leaving the gate up after a device that
+      // works is what put two drivers on the same capture.
+      setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
@@ -788,7 +840,14 @@ export const ChamberStage = (props: ChamberStageProps) => {
               </Show>
             </Show>
           </p>
-          <p class="chamber-hud__where">{progressLabel(track())}</p>
+          {/* The room he is IN, which is not what the games-list card
+              counts. `progressLabel` is built on the first UNCLEARED
+              room -- the right number for "how far have I got", and off
+              by one beside a room you are standing in, and simply wrong
+              on a replay, where it read "5 of 5" at room one's start. */}
+          <p class="chamber-hud__where">
+            {roomIndex(room().id) + 1} of {CHAMBERS.length}
+          </p>
           <p class="chamber-hud__count">
             <Show
               when={heardMidi() !== null}
@@ -865,11 +924,15 @@ export const ChamberStage = (props: ChamberStageProps) => {
         <TouchControls source={input} />
       </Show>
 
-      <Show when={guide()}>
+      {/* Not over the end card. The guide explains how a ROOM works and
+          the card is what you get when there is no room on screen; the
+          only way to open it deliberately lives in the gate, which is
+          hidden there too. */}
+      <Show when={guide() && phase() !== 'done'}>
         <ChamberGuide onClose={() => setGuide(false)} />
       </Show>
 
-      <Show when={!started() && !guide()}>
+      <Show when={!started() && !guide() && phase() !== 'done'}>
         <div class="stage3d__gate">
           <p>{room().teaches}</p>
           <button type="button" onClick={() => void startMic()}>
@@ -921,7 +984,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
                   <button
                     type="button"
                     class="chamber-done__room"
-                    disabled={!isCleared(track(), level.id)}
+                    disabled={!ready() || !isCleared(track(), level.id)}
                     onClick={() => replayRoom(level)}
                   >
                     <span class="chamber-done__n">{i() + 1}</span>

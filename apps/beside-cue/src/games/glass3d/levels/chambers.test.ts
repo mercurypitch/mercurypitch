@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { belliesFor, groundIn, isFloorSafe, modeMidi, nodesFor, rangeSlackSemis, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
-import { CHAMBER_CONFIG } from '../world3d-config'
+import { CHAMBER_CONFIG, FLOOR_STRIPS } from '../world3d-config'
 import type { ChamberLevel } from './chambers'
 import { CHAMBER_1, CHAMBER_2, CHAMBER_3, CHAMBER_4, CHAMBER_5, chamberById, CHAMBERS, } from './chambers'
 
@@ -63,6 +63,47 @@ describe('every chamber', () => {
     },
   )
 
+  // Safe AT the spawn is not enough, and chamber 4 shipped proving it:
+  // at startAt 0.03 the band of safe floor in front of him on mode 6 --
+  // the very mode that opens the room's first pane -- was 3.7 cm, a
+  // thirtieth of a second's walk. A room may not ask for a note at a
+  // place where taking one step while singing it is fatal.
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: leaves room to move at the spawn, on every mode',
+    (_id, room) => {
+      const step = 0.0005
+      for (const mode of room.modes) {
+        let ahead = 0
+        while (
+          room.startAt + ahead < 1 &&
+          isFloorSafe(room.startAt + ahead, mode, room.floorThreshold)
+        ) {
+          ahead += step
+        }
+        // A tenth of a metre: about a tenth of a second at walk speed,
+        // which is the smallest gap a player could be expected to feel.
+        expect(ahead * room.length).toBeGreaterThan(0.1)
+      }
+    },
+  )
+
+  // And the ground under him has to LOOK safe. The pattern colours each
+  // strip from the amplitude at its centre, so a spawn can stand on safe
+  // floor inside a strip the room has painted as lethal -- which is a
+  // room lying to the player in the first frame.
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: paints the strip it spawns him on as safe',
+    (_id, room) => {
+      const strip = Math.floor(room.startAt * FLOOR_STRIPS)
+      const centre = (strip + 0.5) / FLOOR_STRIPS
+      for (const mode of room.modes) {
+        expect(standingAmplitude(centre, mode) <= room.floorThreshold).toBe(
+          true,
+        )
+      }
+    },
+  )
+
   it.each(CHAMBERS.map((c) => [c.id, c] as const))(
     '%s: puts every pane between the start and the exit',
     (_id, room) => {
@@ -96,8 +137,16 @@ describe('every chamber, with the glass actually in the way', () => {
     (_id, room) => {
       // Panes break in the order they stand, because you cannot walk
       // past one that has not.
+      //
+      // The wall itself is modelled inside `perchesFor`, in its standoff
+      // term -- and ONLY there. This block used to carry a `reachable`
+      // variable that was set to `exitAt`, filtered against, and reset to
+      // `exitAt`; it removed nothing, and deleting it changed no result.
+      // It read like a second, independent wall check and was not one,
+      // which is worse than having only one: someone loosening
+      // `perchesFor` would have watched two tests go green together. The
+      // test below pins that standoff term directly instead.
       const inOrder = [...room.panes].sort((a, b) => a.at - b.at)
-      let reachable = room.exitAt
       for (const pane of inOrder) {
         const modes = room.modes.filter(
           (m) => standingAmplitude(pane.at, m) >= room.breakAt,
@@ -105,15 +154,35 @@ describe('every chamber, with the glass actually in the way', () => {
         expect(modes.length).toBeGreaterThan(0)
         // At least one breaking mode must have a safe node in front of
         // this pane -- and behind it, not past it.
-        const perches = modes.flatMap((mode) =>
-          perchesFor(room, mode, pane.at).filter((n) => n < reachable),
-        )
+        const perches = modes.flatMap((mode) => perchesFor(room, mode, pane.at))
         expect(perches.length).toBeGreaterThan(0)
-        // Once it is gone, everything up to the next pane opens up.
-        reachable = room.exitAt
       }
     },
   )
+
+  // The standoff term, on a room built to fail without it: mode 2's only
+  // interior node is 0.5, and the pane sits just far enough past it that
+  // a player stopped 0.22 m short of the glass is standing ON the node --
+  // move the pane to the node's own position and there is nowhere left.
+  it('rejects a perch that is not on the near side of the glass', () => {
+    const room: ChamberLevel = {
+      id: 'unreachable',
+      modes: [2],
+      length: 4,
+      panes: [{ at: 0.5, height: 1.05 }],
+      platforms: [],
+      teaches: 'nothing',
+      breakAt: 0.8,
+      floorThreshold: 0.5,
+      startAt: 0.02,
+      exitAt: 0.96,
+    }
+    // The node IS the pane's position, so nothing is in front of it.
+    expect(nodesFor(2)).toContain(0.5)
+    expect(perchesFor(room, 2, 0.5)).toEqual([])
+    // Nudge the pane along and the same node becomes a perch.
+    expect(perchesFor(room, 2, 0.75)).toEqual([0.5])
+  })
 
   it.each(CHAMBERS.map((c) => [c.id, c] as const))(
     '%s: starts behind its first pane',
@@ -286,6 +355,25 @@ describe('chamber 4, where the jump gets a job', () => {
     // And walking up to it on the floor is not arriving.
     expect(ground(x, 0)).toBe(0)
   })
+
+  // The pocket: at 0.92/1.3 the ledge's right lip fell at x 8.93 in a
+  // room that ends at 9, and the exit's arrival window reaches the wall.
+  // Walking off the end of the ledge put him on bare floor INSIDE the
+  // window at a height that can never satisfy it, with the only way out
+  // being to walk back and jump again. Whatever the exit stands on has
+  // to reach the far wall.
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: leaves no ground past the exit that cannot reach it',
+    (_id, room) => {
+      const ground = groundIn(room)
+      const top = Number.POSITIVE_INFINITY
+      const at = ground(room.exitAt * room.length, top)
+      for (let x = room.exitAt * room.length; x <= room.length; x += 0.01) {
+        expect(ground(x, top)).toBe(at)
+      }
+      expect(ground(room.length, top)).toBe(at)
+    },
+  )
 
   it('is the only room whose exit is off the floor', () => {
     const raised = CHAMBERS.filter(

@@ -284,6 +284,17 @@ export const CABINET_CONFIG: World3DConfig = {
  * `pumpTolBonus` narrows with it, so the vibrato phase stays the same
  * proportion of forgiveness it is in the Hallway.
  */
+/**
+ * How many strips a chamber's floor pattern is drawn in.
+ *
+ * Here rather than in the renderer that draws them, because a LEVEL has
+ * to be checkable against it: a strip is coloured from the amplitude at
+ * its CENTRE, so a room can spawn a player on safe ground inside a strip
+ * it has painted as lethal. Chamber 4 shipped exactly that mismatch, and
+ * the test that catches it should not have to import three.js to do it.
+ */
+export const FLOOR_STRIPS = 72
+
 export const CHAMBER_CONFIG: World3DConfig = {
   ...WORLD3D_CONFIG,
   ring: {

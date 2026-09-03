@@ -153,13 +153,24 @@ export const CHAMBER_4: ChamberLevel = {
     { at: 5 / 12, height: 1.05 },
     { at: 0.5, height: 1.05 },
   ],
-  // Wide enough to land on without aiming, and it has to cover `exitAt`
-  // or the way out would be a step short of the light.
-  platforms: [{ at: 0.92, width: 1.3, height: 0.42 }],
+  // Wide enough to land on without aiming, and it runs PAST the far wall
+  // on purpose. At 0.92/1.3 its right lip fell at x 8.93 inside a room
+  // that ends at 9, leaving a 7 cm pocket of bare floor beyond it that
+  // is inside the exit's x window and can never satisfy it -- walk off
+  // the end of the ledge and the way out is unreachable until you walk
+  // back and jump again. A ledge that reaches the wall has no pocket.
+  platforms: [{ at: 0.95, width: 1.4, height: 0.42 }],
   teaches: 'The way out is up.',
   breakAt: 0.8,
   floorThreshold: 0.6,
-  startAt: 0.03,
+  // 0.015, not the 0.03 the other rooms use. Mode 6 is what opens this
+  // room's first pane, so singing it where he lands is the first thing
+  // the room asks for -- and at 0.03 the safe band ahead of him is 3.7
+  // CENTIMETRES, a thirtieth of a second's walk. Worse, the floor strip
+  // he is standing on samples its own centre, which at 0.0347 is over
+  // the threshold, so the room painted the ground red under a man who
+  // was safe. At 0.015 the headroom is 0.17 m and the strip reads safe.
+  startAt: 0.015,
   exitAt: 0.95,
 }
 
