@@ -4,28 +4,6 @@
   gap: 12px;
 }
 
-.statusRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.providerBadge {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
-  color: var(--text-secondary, #aaa);
-}
-
-.userEmail {
-  font-weight: 600;
-  color: var(--text-primary, #eee);
-}
-
 .mutedNote {
   font-size: 12px;
   color: var(--text-secondary, #888);
@@ -34,78 +12,6 @@
 .errorNote {
   font-size: 12px;
   color: var(--red, #e05555);
-}
-
-.authForm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 320px;
-}
-
-.authInput {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  background: var(--bg-secondary, rgba(0, 0, 0, 0.2));
-  color: var(--text-primary, #eee);
-  font-size: 13px;
-}
-
-.authInput:focus {
-  outline: none;
-  border-color: var(--accent, #7aa2f7);
-}
-
-/* Live-invalid fields (password rules, server rejection) — soft red that
-   also wins while focused, so the state stays visible mid-typing. */
-.authInput[aria-invalid='true'],
-.authInput[aria-invalid='true']:focus {
-  border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
-}
-
-/* Password field with an in-field reveal toggle. The input stretches to
-   fill the row; the button floats over its trailing edge. */
-.passwordField {
-  position: relative;
-  display: flex;
-}
-
-.passwordField .authInput {
-  flex: 1;
-  min-width: 0;
-  /* leave room for the reveal button so text never runs under it */
-  padding-right: 38px;
-}
-
-.revealButton {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 9px;
-  border: none;
-  background: none;
-  color: var(--text-secondary, #888);
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.revealButton:hover {
-  color: var(--text-primary, #eee);
-}
-
-.revealButton:focus-visible {
-  outline: 2px solid var(--accent, #7aa2f7);
-  outline-offset: -2px;
-}
-
-.revealButton svg {
-  width: 18px;
-  height: 18px;
 }
 
 .buttonRow {
@@ -133,43 +39,6 @@
   cursor: default;
 }
 
-.authButtonPrimary {
-  composes: authButton;
-  background: var(--accent, #7aa2f7);
-  border-color: var(--accent, #7aa2f7);
-  color: var(--bg-primary, #111);
-  font-weight: 600;
-}
-
-.linkButton {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent, #7aa2f7);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.googleButton {
-  composes: authButton;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
-}
-
-.nameEditRow {
-  display: flex;
-  gap: 8px;
-  max-width: 320px;
-}
-
-.nameEditRow input {
-  flex: 1;
-  min-width: 0;
-}
-
 /* Display name pill — MercuryPitch logo palette: vocal stem
    (#58a6ff → #bc8cff) into the instrumental teal (#2dd4bf).
    Gradient ring via the padding-box/border-box two-layer trick. */
@@ -190,6 +59,76 @@
   box-shadow:
     0 0 10px rgba(88, 166, 255, 0.18),
     inset 0 0 12px rgba(88, 166, 255, 0.08);
+}
+
+/* The editor is the pill, not a field next to it: same ring, same radius,
+   same weight, so confirming a change does not make the row move. */
+.displayNameInput {
+  /* Width comes from the `size` attribute, which the component drives from
+     the draft. A fixed width here would either clip a long name or open a gap
+     beside a short one — and the pill it replaces hugs its text. */
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  outline: none;
+}
+
+.displayNameInput:focus-visible {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, #58a6ff 55%, transparent),
+    0 0 10px rgba(88, 166, 255, 0.18);
+}
+
+/* Invalid replaces the gradient ring outright rather than tinting it — a red
+   edge blended into a blue-purple-teal gradient reads as decoration. */
+.pillInvalid,
+.pillInvalid:focus-visible {
+  background:
+    linear-gradient(rgba(13, 17, 23, 0.92), rgba(13, 17, 23, 0.92)) padding-box,
+    linear-gradient(var(--red, #e05555), var(--red, #e05555)) border-box;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--red, #e05555) 22%, transparent);
+}
+
+.nameGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Sized and spaced like .iconButton, but without its chrome: these sit
+   against the pill, and a boxed button beside a pill reads as a toolbar. */
+.ghostIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ghostIconButton:hover:not(:disabled) {
+  color: var(--text-primary, #eee);
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+}
+
+.ghostIconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.smallGlyph svg {
+  width: 14px;
+  height: 14px;
 }
 
 .testAccountPill {
@@ -235,6 +174,21 @@
 
 .signedOutCard .buttonRow {
   margin-top: 4px;
+}
+
+/* Deliberately a chip, not a full-width primary button: the header pill is
+   the main way in, and this is the reminder that it exists. */
+.signInChip {
+  composes: authButton;
+  align-self: flex-start;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.signInChip:hover:not(:disabled) {
+  border-color: var(--accent, #7aa2f7);
+  color: var(--accent, #7aa2f7);
 }
 
 /* ── Signed-in account card ────────────────────────────────────────

@@ -108,7 +108,7 @@ is absent from a production bundle.
 
 ### Skipping the intro while developing
 
-The cinematic first run and the setup walk stand between a fresh profile and
+The V2 first run and the setup walk stand between a fresh profile and
 every screen behind them, which makes browser testing slow and makes an empty
 profile (a new browser, cleared site data) a five-minute detour:
 
@@ -173,11 +173,12 @@ falls back to the full caption; there is no remote fetch, TTS or custom-text
 interpolation. One character voice owns the app session at a time and is
 cancelled on replacement, route exit, mute, backgrounding and teardown.
 
-The manifest already reserves `score`, `hold-bed`, `foley` and `ui` lanes so
-the V2 audiovisual reauthor can add them without changing content identity.
-The current cinematic onboarding remains one separate continuous mix until
-that reauthor; it is deliberately not routed through the character-voice
-player.
+The V2 onboarding uses the same manifest boundary for separated dialogue,
+score, and Foley lanes. Its silent greeting picture and matching
+caption-bound audio stay synchronized through the shared Web Audio runtime;
+missing or muted media still leaves the complete caption available. See
+[V2-ONBOARDING.md](V2-ONBOARDING.md) for the product flow and device-review
+contract.
 
 ## Release builds
 

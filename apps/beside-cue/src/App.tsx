@@ -20,7 +20,7 @@ import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
 import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
-import { V2_ONBOARDING_PREVIEW_MEDIA_PACK } from './onboarding/v2-onboarding-media-pack'
+import { V2_ONBOARDING_MEDIA_PACK } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
 import type { V2OnboardingMutationResult, V2OnboardingReminderPreset, } from './onboarding/V2OnboardingDirector'
 import { V2OnboardingDirector } from './onboarding/V2OnboardingDirector'
@@ -65,7 +65,7 @@ type SetupMode = 'create' | 'replace'
 export interface AppProps {
   readonly config?: BesideCueAppConfig
   readonly services?: BesideCueAppServices
-  /** Enables write-free V2 review navigation; flow activation stays in config. */
+  /** Enables write-free V2 review navigation without changing the product flow. */
   readonly onboardingReview?: boolean
   /** A localized or recorded pack can be injected without changing app flow. */
   readonly contentPack?: ContentPack
@@ -159,7 +159,6 @@ function firstRunScreen(
   if (
     onboarding.delivery === 'v2-first-run' &&
     onboarding.contractVersion === '1.0' &&
-    onboarding.activation === 'developer-preview' &&
     preferences.read(onboarding.revision) === undefined
   ) {
     return 'v2-onboarding'
@@ -190,8 +189,7 @@ export function App(props: AppProps) {
   const v2OnboardingConfig = createMemo(() => {
     const onboarding = config().onboarding
     return onboarding.delivery === 'v2-first-run' &&
-      onboarding.contractVersion === '1.0' &&
-      onboarding.activation === 'developer-preview'
+      onboarding.contractVersion === '1.0'
       ? onboarding
       : undefined
   })
@@ -846,8 +844,7 @@ export function App(props: AppProps) {
       const onboarding = appConfig.onboarding
       if (
         onboarding.delivery !== 'v2-first-run' ||
-        onboarding.contractVersion !== '1.0' ||
-        onboarding.activation !== 'developer-preview'
+        onboarding.contractVersion !== '1.0'
       ) {
         return {
           ok: false,
@@ -1835,7 +1832,7 @@ export function App(props: AppProps) {
           sessionKind={v2OnboardingSessionKind()}
           pullOptions={config().pullOptions}
           contentPack={contentPack()}
-          mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+          mediaPack={V2_ONBOARDING_MEDIA_PACK}
           audioSession={onboardingAudioSession}
           foreground={v2OnboardingForeground()}
           muted={v2Muted()}

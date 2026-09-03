@@ -21,10 +21,24 @@ const publicPath = (src: string): string =>
 
 describe('badge medallions', () => {
   it('covers every seeded icon that has art', () => {
-    // Sixteen badges plus twenty-seven achievement icons. The achievement
+    // Nineteen badges plus twenty-seven achievement icons. The achievement
     // count is icons, not rows: they share icons, and these 27 light up all
     // 46 achievements that used to fall back to a glyph.
-    expect(badgeArtIcons()).toHaveLength(43)
+    expect(badgeArtIcons()).toHaveLength(46)
+  })
+
+  it('leaves no seeded badge without a medallion', () => {
+    // Every badge has art now, podium places included — a badge someone
+    // competed for rendering as a toolbar glyph is the exact thing this
+    // module exists to stop.
+    const seed = JSON.parse(
+      readFileSync(resolve(__dirname, '../db/seed-data.json'), 'utf8'),
+    ) as { badgeDefinitions: Array<{ icon: string; name: string }> }
+    const drawn = new Set(badgeArtIcons())
+    const bare = seed.badgeDefinitions
+      .filter((row) => !drawn.has(row.icon))
+      .map((row) => row.name)
+    expect(bare).toEqual([])
   })
 
   it('leaves no seeded achievement without a medallion', () => {

@@ -261,7 +261,7 @@ describe('audio asset manifest', () => {
     )
     expect(
       isPackagedAudioAssetUrl(
-        '/onboarding/corky-v2.4/audio/dialogue/corky-greeting-v0_2.m4a',
+        '/onboarding/corky-v2.4/audio/dialogue/corky-greeting-v0_3.m4a',
       ),
     ).toBe(true)
     expect(isPackagedAudioAssetUrl('https://provider.test/line.m4a')).toBe(

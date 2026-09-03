@@ -13,7 +13,6 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
-import { lastSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HeaderAccount.module.css'
@@ -88,17 +87,6 @@ export const HeaderAccount: Component = () => {
     openAuthModal('login')
   }
 
-  /**
-   * "Sign in" for a stranger, "Welcome back" for somebody this device has seen
-   * sign in before.
-   *
-   * The pill is the affordance that survives dismissing the Home strip, so it
-   * carries the same hint in the smallest form that still says something. Only
-   * the method is known here — never a name — so there is nothing to leak on a
-   * shared machine, and the wording stays true whoever is holding it.
-   */
-  const signedInBefore = (): boolean => lastSignInMethod() !== ''
-
   function handleLogout(): void {
     setConfirming(false)
     logout()
@@ -127,13 +115,17 @@ export const HeaderAccount: Component = () => {
             <button
               class={styles.signInPill}
               onClick={openSignIn}
-              title={
-                signedInBefore() ? 'Welcome back — sign in again' : 'Sign in'
-              }
+              title="Sign in"
               data-testid="header-signin"
             >
               <UserIcon />
-              <span>{signedInBefore() ? 'Welcome back' : 'Sign in'}</span>
+              {/* Deliberately the same words for everyone. The chip cannot
+                  know whether an account is waiting — only that this device
+                  signed in once — and "Welcome back" was read as a passkey
+                  having been detected, which no browser will tell us. The
+                  Home strip carries the returning-visitor message, where
+                  there is room to name the method it is actually offering. */}
+              <span>Sign in</span>
             </button>
           }
         >

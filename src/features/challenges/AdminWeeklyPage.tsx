@@ -13,7 +13,7 @@ import { createEffect, createResource, createSignal, For, onCleanup, Show, untra
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
 import styles from './AdminWeeklyPage.module.css'
-import { CHALLENGE_PERIODS, DEFAULT_PERIOD_WEEKS, formatIsoWeek, reflowChanges, reflowQueue, reorder, shiftWeeks, weeksBetween, windowFrom, } from './challenge-window'
+import { CHALLENGE_PERIODS, DEFAULT_PERIOD_WEEKS, formatIsoWeek, reflowChanges, reflowQueue, reorder, shiftWeeks, weeksBetween, windowFrom, windowWeeks, } from './challenge-window'
 import type { WeeklyAdminRow } from './weekly-service'
 import { createWeekly, deleteWeekly, getAdminKey, listAllWeekly, melodyItemsToNotes, parseTargetNotes, plusOneWeekIso, setAdminKey, thisMondayUtcIso, updateWeekly, } from './weekly-service'
 
@@ -334,20 +334,72 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
     }
   }
 
-  /** Make this row THE live challenge: retarget to the current week + active. */
+  /**
+   * Make this row THE live challenge: retarget it to the current period, and
+   * clear whatever it displaces.
+   *
+   * Two things were silently wrong here. `endsAt` was hardcoded to
+   * `startsAt + 7 days`, so pressing this on a four-week challenge quietly
+   * shortened it to one — the row's own length is the only record of how long
+   * it was meant to run, so carry that across rather than re-deciding it.
+   *
+   * And nothing demoted the row being replaced. `/api/weekly/active` reads
+   * `status = 'active' ORDER BY startsAt DESC LIMIT 1`, so a leftover active
+   * row is not merely ignored — it is shadowed. The rotation never selects it
+   * again, so `closeWeekly` never runs on it, and because the archive lists
+   * `status = 'closed'` only, the challenge disappears instead of finishing.
+   */
   async function setLive(row: WeeklyAdminRow): Promise<void> {
-    const start = thisMondayUtcIso()
+    const period = windowFrom(thisMondayUtcIso(), windowWeeks(row))
+    const now = Date.now()
+    // What "displaced" means depends on whether the other row ever ran. One
+    // whose window has opened is the outgoing challenge and should close, so
+    // its board is snapshotted and it reaches the archive. One dated later was
+    // never live at all, and belongs back in the queue — leaving it active
+    // would shadow the row being set live, because its `startsAt` sorts higher.
+    const displaced = (rows() ?? [])
+      .filter((other) => other.id !== row.id && other.status === 'active')
+      .map((other) => ({
+        row: other,
+        status: Date.parse(other.startsAt) <= now ? 'closed' : 'queued',
+      }))
+
     const ok = await updateWeekly(
       row.id,
-      { startsAt: start, endsAt: plusOneWeekIso(start), status: 'active' },
+      { startsAt: period.startsAt, endsAt: period.endsAt, status: 'active' },
       key(),
     )
-    if (ok) {
-      showNotification(`"${row.title}" is live this week`, 'success')
-      void refetch()
-    } else {
+    if (!ok) {
       showNotification('Could not set it live — try again', 'error')
+      return
     }
+
+    // Promote first, demote second. The other order leaves Home with nothing
+    // live for as long as the second write takes — and permanently if it never
+    // lands.
+    const stuck: string[] = []
+    for (const other of displaced) {
+      const moved = await updateWeekly(
+        other.row.id,
+        { status: other.status },
+        key(),
+      )
+      if (!moved) stuck.push(other.row.title)
+    }
+    void refetch()
+
+    if (stuck.length > 0) {
+      showNotification(
+        `"${row.title}" is live, but ${stuck.join(', ')} is still marked active — clear it by hand, or Home may show the wrong one`,
+        'error',
+      )
+      return
+    }
+    const weeks = windowWeeks(period)
+    showNotification(
+      `"${row.title}" is live for ${weeks} week${weeks === 1 ? '' : 's'}`,
+      'success',
+    )
   }
 
   // Live one(s) first, then most-recent window; flag when >1 is live at once.
@@ -718,10 +770,11 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                           <Show when={!isLiveNow(row)}>
                             <button
                               class={styles.setLive}
+                              data-testid={`set-live-${row.id}`}
                               onClick={() => void setLive(row)}
-                              title="Retarget to the current period and set active"
+                              title="Retarget to the current period, keeping this challenge's own length, and clear whatever it replaces"
                             >
-                              Set live this week
+                              Set live now
                             </button>
                           </Show>
                           <button onClick={() => setForm(rowToForm(row))}>

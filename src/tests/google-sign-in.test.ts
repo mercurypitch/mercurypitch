@@ -144,11 +144,12 @@ describe('startGoogleSignIn', () => {
     expect(googleSignInPending()).toBe(false)
   })
 
+  // AccountSection is deliberately absent: the settings panel has no Google
+  // button of its own any more, only a chip that opens the modal listed here.
   it('every Google button is wired to the shared pending state', async () => {
     const { readFileSync } = await import('node:fs')
     for (const file of [
       'src/components/account/AuthModal.tsx',
-      'src/components/account/AccountSection.tsx',
       'src/features/karaoke-night/KaraokeAccount.tsx',
     ]) {
       const source = readFileSync(file, 'utf8')

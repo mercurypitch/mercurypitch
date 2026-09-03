@@ -12,21 +12,16 @@ const mocks = vi.hoisted(() => ({
   fetchMe: vi.fn(),
   logout: vi.fn(),
   openAuthModal: vi.fn(),
-  lastSignInMethod: vi.fn(() => ''),
 }))
 vi.mock('@/db/services/auth-service', () => mocks)
 // Mocked so the component doesn't pull the full ui-store import chain
 // (which reads more of @/lib/defaults than the stub above provides).
 vi.mock('@/stores/ui-store', () => ({ openAuthModal: mocks.openAuthModal }))
-vi.mock('@/lib/last-sign-in', () => ({
-  lastSignInMethod: () => mocks.lastSignInMethod(),
-}))
 
 import { HeaderAccount } from '../account/HeaderAccount'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.lastSignInMethod.mockReturnValue('')
 })
 
 describe('HeaderAccount', () => {
@@ -82,16 +77,14 @@ describe('HeaderAccount', () => {
 
     expect(await screen.findByTestId('header-signin')).toBeInTheDocument()
     expect(screen.queryByTestId('header-account')).not.toBeInTheDocument()
-    // A stranger is greeted as one: nothing on the chip implies this device
-    // has been here before.
-    expect(screen.getByTestId('header-signin')).toHaveTextContent('Sign in')
   })
 
-  // The app is usable signed out, so the chip is the only standing hint that
-  // an account is waiting. Somebody who signed in on this device once should
-  // read it as "pick up where you left off", not as a fresh invitation.
-  it('greets a device that has signed in before', async () => {
-    mocks.lastSignInMethod.mockReturnValue('passkey')
+  // The chip reads the same for everyone on purpose. It cannot know whether
+  // an account is waiting — only that this device signed in once — and a
+  // greeting there was read as a passkey having been detected, which no
+  // browser will report. The Home strip carries that message instead, where
+  // there is room to name the method being offered.
+  it('says the same thing whether or not this device has signed in before', async () => {
     mocks.fetchMe.mockResolvedValue({
       user: { authProvider: 'anonymous', email: null },
       profile: { displayName: 'Singer-1' },
@@ -99,22 +92,8 @@ describe('HeaderAccount', () => {
     render(() => <HeaderAccount />)
 
     const pill = await screen.findByTestId('header-signin')
-    expect(pill).toHaveTextContent('Welcome back')
-    expect(pill.getAttribute('title')).toBe('Welcome back — sign in again')
-  })
-
-  it('still opens the plain sign-in modal for a returning device', async () => {
-    // The greeting changes the words, not the destination — no method is
-    // named on the chip and nothing is attempted before it is pressed.
-    mocks.lastSignInMethod.mockReturnValue('google')
-    mocks.fetchMe.mockResolvedValue({
-      user: { authProvider: 'anonymous', email: null },
-      profile: { displayName: 'Singer-1' },
-    })
-    render(() => <HeaderAccount />)
-
-    fireEvent.click(await screen.findByTestId('header-signin'))
-    expect(mocks.openAuthModal).toHaveBeenCalledWith('login')
+    expect(pill).toHaveTextContent('Sign in')
+    expect(pill.getAttribute('title')).toBe('Sign in')
   })
 
   it('opens the sign-in modal from the signed-out pill', async () => {

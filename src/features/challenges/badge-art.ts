@@ -17,7 +17,7 @@
 /**
  * Icons with a drawn medallion in `public/badges/`.
  *
- * Sixteen badges plus twenty-seven achievement icons. Achievements share
+ * Nineteen badges plus twenty-seven achievement icons. Achievements share
  * icons — the 27 here cover all 46 achievements that had none — so this list
  * is shorter than the seed's row count and always will be.
  */
@@ -38,6 +38,13 @@ const BADGE_ART_ICONS = new Set([
   'sparkle',
   'crown',
   'chart',
+
+  // The Legend podium. Three icons rather than one, because the tier's metal
+  // is baked into the asset — `badgeArtSrc` keys off `icon` alone and knows
+  // nothing about tiers, so gold, silver and bronze are three files.
+  'firstvoice',
+  'secondvoice',
+  'thirdvoice',
 
   // Achievements. Drawn later and to the same recipe, but with no tier —
   // the seed gives achievements no tier at all, so every one of these is

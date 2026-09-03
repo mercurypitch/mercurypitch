@@ -160,6 +160,12 @@
   font-weight: 650;
 }
 
+/* Someone who sang but has not agreed to be listed. Muted rather than
+ * alarming: it is a setting they have not turned on, not a problem. */
+.unranked {
+  color: var(--text-muted);
+}
+
 .allLink {
   align-self: flex-start;
   margin-top: 8px;

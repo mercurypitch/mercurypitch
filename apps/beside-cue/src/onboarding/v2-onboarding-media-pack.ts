@@ -47,117 +47,116 @@ export interface V2OnboardingMediaTarget {
   readonly moment: V2OnboardingPullMediaMoment
 }
 
-const PREVIEW_ROOT = '/onboarding/corky-v2.4'
+const MEDIA_ROOT = '/onboarding/corky-v2.4'
 
 const EMPTY_SET: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p00-set-empty-v0_1.webp`,
+  src: `${MEDIA_ROOT}/stills/p00-set-empty-v0_1.webp`,
   alt: '',
 })
 
 const CORKY_REST: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p01-corky-rest-v0_4.webp`,
+  src: `${MEDIA_ROOT}/stills/p01-corky-rest-v0_4.webp`,
   alt: '',
 })
 
 const TABLE_READY: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p02-table-ready-v0_17.webp`,
+  src: `${MEDIA_ROOT}/stills/p02-table-ready-v0_17.webp`,
   alt: '',
 })
 
 const SCROLLING_SETTLED: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p03-scrolling-settled-v0_2.webp`,
+  src: `${MEDIA_ROOT}/stills/p03-scrolling-settled-v0_2.webp`,
   alt: '',
 })
 
 const SNACKING_SETTLED: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p03-snacking-settled-v0_3.webp`,
+  src: `${MEDIA_ROOT}/stills/p03-snacking-settled-v0_3.webp`,
   alt: '',
 })
 
 const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
-  src: `${PREVIEW_ROOT}/stills/p03-avoidance-settled-v0_1.webp`,
+  src: `${MEDIA_ROOT}/stills/p03-avoidance-settled-v0_1.webp`,
   alt: '',
 })
 
-/** Founder-approved V2.4 scene pack for the explicit PR Android preview. */
-export const V2_ONBOARDING_PREVIEW_MEDIA_PACK: V2OnboardingMediaPack =
-  Object.freeze({
-    revision: 'corky-v2.4-preview-v2',
-    brand: Object.freeze({ kind: 'brand', alt: '' }),
-    poster: TABLE_READY,
-    plate: TABLE_READY,
-    scenes: Object.freeze({
-      'corky-reveal': Object.freeze({
-        primary: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b01-corky-entrance-v0_3.mp4`,
-          alt: '',
-        }),
-        reducedStill: CORKY_REST,
-        poster: EMPTY_SET,
+/** Founder-approved V2.4 scene pack used by every product build. */
+export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
+  revision: 'corky-v2.4-media-v3',
+  brand: Object.freeze({ kind: 'brand', alt: '' }),
+  poster: TABLE_READY,
+  plate: TABLE_READY,
+  scenes: Object.freeze({
+    'corky-reveal': Object.freeze({
+      primary: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b01-corky-greeting-v0_4.mp4`,
+        alt: '',
       }),
-      'table-reveal': Object.freeze({
-        primary: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b02-table-reveal-v0_1.mp4`,
-          alt: '',
-        }),
-        reducedStill: TABLE_READY,
-        poster: CORKY_REST,
-      }),
+      reducedStill: CORKY_REST,
+      poster: EMPTY_SET,
     }),
-    record: Object.freeze({ stoppedAuthority: TABLE_READY }),
-    pulls: Object.freeze({
-      scrolling: Object.freeze({
-        present: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b03-scrolling-present-v0_2.mp4`,
-          alt: '',
-        }),
-        hold: SCROLLING_SETTLED,
-        recede: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b05-scrolling-recede-v0_2.mp4`,
-          alt: '',
-        }),
-        end: TABLE_READY,
+    'table-reveal': Object.freeze({
+      primary: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b02-table-reveal-v0_1.mp4`,
+        alt: '',
       }),
-      snacking: Object.freeze({
-        present: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b03-snacking-present-v0_3.mp4`,
-          alt: '',
-        }),
-        hold: SNACKING_SETTLED,
-        recede: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b05-snacking-recede-v0_4.mp4`,
-          alt: '',
-        }),
-        end: TABLE_READY,
-      }),
-      avoidance: Object.freeze({
-        present: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b03-avoidance-present-v0_1.mp4`,
-          alt: '',
-        }),
-        hold: AVOIDANCE_SETTLED,
-        recede: Object.freeze({
-          kind: 'video',
-          src: `${PREVIEW_ROOT}/picture/b05-avoidance-recede-v0_1.mp4`,
-          alt: '',
-        }),
-        end: TABLE_READY,
-      }),
+      reducedStill: TABLE_READY,
+      poster: CORKY_REST,
     }),
-  })
+  }),
+  record: Object.freeze({ stoppedAuthority: TABLE_READY }),
+  pulls: Object.freeze({
+    scrolling: Object.freeze({
+      present: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b03-scrolling-present-v0_2.mp4`,
+        alt: '',
+      }),
+      hold: SCROLLING_SETTLED,
+      recede: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b05-scrolling-recede-v0_2.mp4`,
+        alt: '',
+      }),
+      end: TABLE_READY,
+    }),
+    snacking: Object.freeze({
+      present: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b03-snacking-present-v0_3.mp4`,
+        alt: '',
+      }),
+      hold: SNACKING_SETTLED,
+      recede: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b05-snacking-recede-v0_4.mp4`,
+        alt: '',
+      }),
+      end: TABLE_READY,
+    }),
+    avoidance: Object.freeze({
+      present: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b03-avoidance-present-v0_1.mp4`,
+        alt: '',
+      }),
+      hold: AVOIDANCE_SETTLED,
+      recede: Object.freeze({
+        kind: 'video',
+        src: `${MEDIA_ROOT}/picture/b05-avoidance-recede-v0_1.mp4`,
+        alt: '',
+      }),
+      end: TABLE_READY,
+    }),
+  }),
+})
 
 export function resolveV2OnboardingSceneMediaRequest(
   pack: V2OnboardingMediaPack,
