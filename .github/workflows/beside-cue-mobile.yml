@@ -4,19 +4,36 @@ name: Beside Cue Mobile
 #
 # Three ways in, and each answers a different question:
 #
-#   pull request      Can this change be held? An installable Android APK and a
-#                     TestFlight build, so the change can be tried on real
-#                     hardware before it merges.
-#   push to main      What does the merged app do? The same two builds from the
-#                     merge commit, which is not the code any PR tested — a PR
-#                     is built against its own base. This is the build to trust
-#                     when a report says "on main".
+#   pull request      Can this change be held, and does it still build for the
+#                     store? An installable Android APK, plus an iOS archive
+#                     that is signed and then thrown away.
+#   push to main      What does the merged app do? The Android build and a
+#                     TestFlight upload from the merge commit, which is not the
+#                     code any PR tested — a PR is built against its own base.
+#                     This is the build to trust when a report says "on main".
 #   beside-cue-v tag  The release. The same upload with the tag's version as the
 #                     marketing version, plus the store artifacts.
 #
-# TestFlight is the iOS route in all three cases. App Store Connect takes one
-# upload and a release is a build promoted out of it, so there is no separate
-# "release build" to make: the tag changes the version string and nothing else.
+# WHY A PULL REQUEST NO LONGER UPLOADS (maff, 2026-09-04). It did, from
+# 2026-09-01, and the reason was good: a signed upload is the only way to get
+# an iOS build onto a phone, since the simulator artifact is compiled for the
+# wrong ABI. What that missed is that App Store Connect meters uploads per app
+# per day, and answers a run over the line with
+#
+#   error 90382: Upload limit reached. The upload limit for your application
+#   has been reached. Please wait 1 day and try again.
+#
+# — after the archive has already been built and signed. A day of ordinary
+# pushing therefore spends the quota on builds nobody installs and then refuses
+# the one that was wanted, with a red X on the pull request for a reason that
+# has nothing to do with the change. The archive is the part that proves
+# anything (it compiles, it signs, the profile is current); the upload is the
+# part that costs. So a pull request keeps the first and drops the second, and
+# TestFlight comes from main and from tags, where every build is one somebody
+# means to install.
+#
+# Android is untouched. Its release artifact is an APK attached to the run —
+# nothing is published to a store, so there is no quota to spend.
 #
 # Beside Cue versions independently of MercuryPitch, so this deliberately does
 # not use the `v*` tags that ship the web app to production.
@@ -331,12 +348,12 @@ jobs:
             echo "No BESIDE_CUE_KEYSTORE_BASE64 secret: release artifacts are UNSIGNED and cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # TestFlight from every pull request (maff, 2026-09-01), and from every
-  # merge and tag as well (maff, 2026-09-02). The simulator artifact above
-  # cannot run on hardware -- it is compiled for the simulator ABI -- so a
-  # signed upload to App Store Connect is the only way to hold any of these
-  # builds on an iPhone. Internal TestFlight testers get the build a few
-  # minutes after processing, no UDID registration.
+  # A signed release archive on every run, and an upload on the runs that
+  # mean it: main and tags (maff, 2026-09-04 — see the header for why a
+  # pull request stopped uploading). The simulator artifact above cannot
+  # run on hardware, so this upload is still the only way to hold a build
+  # on an iPhone; internal TestFlight testers get it a few minutes after
+  # processing, no UDID registration.
   #
   # Signing is cloud-managed: automatic style plus -allowProvisioningUpdates,
   # authenticated with the App Store Connect API key, so there is no
@@ -346,13 +363,15 @@ jobs:
   # Build numbers must rise monotonically per marketing version for
   # TestFlight to accept the upload; github.run_number does exactly that.
   ios-testflight:
-    name: iOS TestFlight
+    name: iOS Release
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: macos-latest
     timeout-minutes: 60
     env:
       HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
+      # Every run archives. Only a run that is not a pull request uploads.
+      UPLOAD: ${{ github.event_name != 'pull_request' }}
 
     steps:
       - name: Checkout
@@ -434,7 +453,7 @@ jobs:
           mkdir -p "$profiles"
           printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/besidecue-appstore.mobileprovision"
 
-      - name: Archive and upload to TestFlight
+      - name: Archive, and upload from main and tags
         if: env.HAS_ASC == 'true'
         working-directory: apps/beside-cue/ios/App
         env:
@@ -510,6 +529,20 @@ jobs:
             DEVELOPMENT_TEAM="$TEAM_ID" \
             BESIDE_CUE_PROFILE="$PROFILE_NAME" \
             archive
+
+          if [[ "$UPLOAD" != "true" ]]; then
+            # A pull request stops here. The archive above is the whole
+            # point of the job on this trigger: it proves the app compiles
+            # for a device, that the distribution certificate imported, and
+            # that the profile still matches the bundle id -- which are the
+            # three things that break between releases. Exporting an IPA as
+            # well would prove nothing extra, because an app-store IPA
+            # cannot be installed on a phone without going through
+            # TestFlight anyway.
+            echo "Archived $version (${{ github.run_number }}); no upload from a pull request." >> "$GITHUB_STEP_SUMMARY"
+            echo "TestFlight builds come from main and from beside-cue-v tags." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
           # destination=upload makes xcodebuild itself deliver the build to
           # App Store Connect -- no altool, no Transporter, no IPA artifact.
