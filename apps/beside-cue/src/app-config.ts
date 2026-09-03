@@ -1,11 +1,10 @@
 // ============================================================
-// Beside Cue app config — immutable product and onboarding variants
+// Beside Cue app config — immutable product and onboarding contract
 // ============================================================
 
 import type { PullOption } from './content'
 import { bSideAcknowledgements, cuePhrases, notNowAcknowledgements, pullOptions, } from './content'
 import type { CinematicOnboardingMediaManifest, LegacyCinematicOnboardingMediaManifestV03, LegacyCinematicOnboardingMediaManifestV04, } from './onboarding'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_5, CORKY_ONBOARDING_MEDIA_V0_9, } from './onboarding'
 
 export interface DailyCuePreset {
   readonly id: string
@@ -27,7 +26,7 @@ export interface DailyCueConfig {
   }
 }
 
-export type CinematicOnboardingConfig =
+export type BesideCueOnboardingConfig =
   | {
       /** Architecture is present, but Welcome remains the first-run surface. */
       readonly delivery: 'welcome-only'
@@ -56,16 +55,15 @@ export type CinematicOnboardingConfig =
       readonly media: CinematicOnboardingMediaManifest
     }
   | {
-      /** Caption-first V2 is isolated to the founder-test preview build. */
+      /** Caption-first V2 is the shipped first-run experience. */
       readonly delivery: 'v2-first-run'
       readonly revision: string
       readonly contractVersion: '1.0'
-      readonly activation: 'developer-preview'
     }
 
 export interface BesideCueAppConfig {
   readonly mascotSetId: string
-  readonly onboarding: CinematicOnboardingConfig
+  readonly onboarding: BesideCueOnboardingConfig
   readonly pullOptions: readonly PullOption[]
   readonly cuePhrases: readonly string[]
   readonly bSideAcknowledgements: readonly string[]
@@ -81,10 +79,9 @@ export interface BesideCueAppConfig {
 export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
   mascotSetId: 'corktop-v1',
   onboarding: Object.freeze({
-    delivery: 'cinematic-first-run',
-    revision: CORKY_ONBOARDING_MEDIA_V0_9.revision,
-    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_5.version,
-    media: CORKY_ONBOARDING_MEDIA_V0_9,
+    delivery: 'v2-first-run',
+    revision: 'beside-cue-v2.4-main-v1',
+    contractVersion: '1.0',
   }),
   pullOptions,
   cuePhrases,
@@ -120,19 +117,5 @@ export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
       title: 'A small cue is ready',
       body: 'Open Beside Cue when you choose.',
     }),
-  }),
-})
-
-/**
- * Opt-in caption-first V2 configuration. The environment flag selects this
- * object at the entry point; importing it never changes the shipped V1 default.
- */
-export const V2_BESIDE_CUE_PREVIEW_CONFIG: BesideCueAppConfig = Object.freeze({
-  ...DEFAULT_BESIDE_CUE_CONFIG,
-  onboarding: Object.freeze({
-    delivery: 'v2-first-run',
-    revision: 'beside-cue-v2-preview-v3',
-    contractVersion: '1.0',
-    activation: 'developer-preview',
   }),
 })

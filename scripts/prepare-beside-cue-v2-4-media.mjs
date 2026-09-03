@@ -1,5 +1,5 @@
 // ============================================================
-// Prepare founder-approved V2.4 onboarding media for app preview
+// Prepare founder-approved V2.4 onboarding media for the product build
 // ============================================================
 
 import { spawnSync } from 'node:child_process'
@@ -12,9 +12,10 @@ import { fileURLToPath } from 'node:url'
 const SOURCE_INVENTORY_SHA256 =
   '1ab7fafe5bafaaf0391dfe82e0842f9022bae236569beef2d89a16021cdfa4d3'
 
-const CORKY_ENTRANCE_SOURCE = Object.freeze({
-  sha256: 'abb9fedc1a1a43cf317599563f31e6fb2d490d182d35396b898998698bcae919',
-  frames: 144,
+const CORKY_GREETING_SOURCE = Object.freeze({
+  file: 'kling_iamcorky_initial.mp4',
+  sha256: '3c10241e1090baac039d87c6713b0f79cb42e692c06960aae71e0bc5e6966e1f',
+  frames: 121,
 })
 
 const SOURCE_FILES = Object.freeze({
@@ -85,10 +86,6 @@ const SOURCE_FILES = Object.freeze({
 })
 
 const AUDIO_SOURCE_FILES = Object.freeze({
-  greeting: {
-    path: 'assets/audio/dialogue/h01-h02-corky-greeting.wav',
-    sha256: 'db50498326c3b3c60f6ad67aa3ed2432c102be938059fe829ebd5a5222d78b9b',
-  },
   score: {
     path: 'exports/h06-record-spin-breath-v0_1/audio/score-continuous-788f.wav',
     sha256: '8938f1e835be75e2af2057a8b56f749d24a06793c4234221ac27ec1037d7072e',
@@ -116,7 +113,7 @@ const defaultProofDirectory = join(
 )
 
 const OUTPUT_NAMES = Object.freeze({
-  corkyReveal: 'picture/b01-corky-entrance-v0_3.mp4',
+  corkyReveal: 'picture/b01-corky-greeting-v0_4.mp4',
   tableReveal: 'picture/b02-table-reveal-v0_1.mp4',
   p00: 'stills/p00-set-empty-v0_1.webp',
   p01: 'stills/p01-corky-rest-v0_4.webp',
@@ -130,7 +127,7 @@ const OUTPUT_NAMES = Object.freeze({
   avoidancePresent: 'picture/b03-avoidance-present-v0_1.mp4',
   avoidanceHold: 'stills/p03-avoidance-settled-v0_1.webp',
   avoidanceRecede: 'picture/b05-avoidance-recede-v0_1.mp4',
-  greeting: 'audio/dialogue/corky-greeting-v0_2.m4a',
+  greeting: 'audio/dialogue/corky-greeting-v0_3.m4a',
   score: 'audio/score/besidecue-score-v0_9.m4a',
   introFoley: 'audio/foley/intro-table-slide-v0_1.m4a',
   platterStop: 'audio/foley/platter-stop-v0_1.m4a',
@@ -139,7 +136,9 @@ const OUTPUT_NAMES = Object.freeze({
 const STALE_OUTPUT_NAMES = Object.freeze([
   'picture/b01-b02-corky-table-intro-v0_1.mp4',
   'picture/b01-corky-reveal-v0_2.mp4',
+  'picture/b01-corky-entrance-v0_3.mp4',
   'audio/dialogue/corky-greeting-v0_1.m4a',
+  'audio/dialogue/corky-greeting-v0_2.m4a',
 ])
 
 const PULLS = Object.freeze([
@@ -223,7 +222,7 @@ function usage() {
     '  node scripts/prepare-beside-cue-v2-4-media.mjs \\',
     '    --source-package /absolute/path/to/onboarding-video-edit-v2_4 \\',
     '    --legacy-audio-package /absolute/path/to/onboarding-video-edit-v0_1 \\',
-    '    --corky-entrance-raw /absolute/path/to/Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4 \\',
+    '    --corky-greeting-raw /absolute/path/to/kling_iamcorky_initial.mp4 \\',
     '    [--output-dir /absolute/or/repo-relative/public-path] \\',
     '    [--proof-dir /absolute/or/repo-relative/non-public-path]',
   ].join('\n')
@@ -243,14 +242,14 @@ function parseArguments(argv) {
   if (
     !parsed['source-package'] ||
     !parsed['legacy-audio-package'] ||
-    !parsed['corky-entrance-raw']
+    !parsed['corky-greeting-raw']
   ) {
     throw new Error(usage())
   }
   return {
     sourcePackage: resolve(parsed['source-package']),
     legacyAudioPackage: resolve(parsed['legacy-audio-package']),
-    corkyEntranceRaw: resolve(parsed['corky-entrance-raw']),
+    corkyGreetingRaw: resolve(parsed['corky-greeting-raw']),
     outputDirectory: resolve(parsed['output-dir'] ?? defaultOutputDirectory),
     proofDirectory: resolve(parsed['proof-dir'] ?? defaultProofDirectory),
   }
@@ -416,7 +415,7 @@ function prepareIntroClip(source, endFrame, destination) {
   ])
 }
 
-function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
+function prepareCorkyGreeting(raw, panelTransition, p01, destination) {
   const frameWorkspace = join(dirname(destination), 'b01-frame-workspace')
   const rawFrames = join(frameWorkspace, 'raw')
   const wipeFrames = join(frameWorkspace, 'wipe')
@@ -434,11 +433,11 @@ function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
     '-map',
     '0:v:0',
     '-vf',
-    'trim=start_frame=0:end_frame=110,setpts=PTS-STARTPTS,format=rgb24',
+    `trim=start_frame=0:end_frame=${String(CORKY_GREETING_SOURCE.frames)},setpts=PTS-STARTPTS,scale=720:1280:flags=lanczos,format=rgb24`,
     '-start_number',
     '0',
     '-frames:v',
-    '110',
+    String(CORKY_GREETING_SOURCE.frames),
     '-fps_mode',
     'passthrough',
     '-map_metadata',
@@ -475,14 +474,19 @@ function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
     p01Frame,
   ])
 
-  const raw109 = numbered(rawFrames, 'frame-', 109, 3)
+  const finalGreetingFrame = numbered(
+    rawFrames,
+    'frame-',
+    CORKY_GREETING_SOURCE.frames - 1,
+    3,
+  )
   ffmpeg([
     '-loop',
     '1',
     '-framerate',
     '24',
     '-i',
-    raw109,
+    finalGreetingFrame,
     '-loop',
     '1',
     '-framerate',
@@ -534,12 +538,8 @@ function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
     copyFileSync(source, numbered(deliveryFrames, 'frame-', outputFrame))
     outputFrame += 1
   }
-  for (let frame = 0; frame < 89; frame += 1) {
+  for (let frame = 0; frame < CORKY_GREETING_SOURCE.frames; frame += 1) {
     append(numbered(rawFrames, 'frame-', frame, 3))
-  }
-  for (let frame = 0; frame < 36; frame += 1) {
-    const sourceFrame = 89 + Math.floor((frame * 21) / 36)
-    append(numbered(rawFrames, 'frame-', sourceFrame, 3))
   }
   for (let frame = 0; frame < 8; frame += 1) {
     append(numbered(wipeFrames, 'in-', frame, 3))
@@ -552,9 +552,9 @@ function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
     append(numbered(wipeFrames, 'out-', frame, 3))
   }
   for (let frame = 0; frame < 6; frame += 1) append(p01Frame)
-  if (outputFrame !== 151) {
+  if (outputFrame !== 147) {
     throw new Error(
-      `Corky entrance assembly produced ${String(outputFrame)} frames.`,
+      `Corky greeting assembly produced ${String(outputFrame)} frames.`,
     )
   }
 
@@ -568,7 +568,7 @@ function prepareCorkyEntrance(raw, panelTransition, p01, destination) {
     '-vf',
     `format=rgb24,${BT709_FRAME_TAGS}`,
     '-frames:v',
-    '151',
+    '147',
     ...VIDEO_ENCODING,
     '-y',
     destination,
@@ -639,7 +639,7 @@ function probeVideo(path, expectedFrames) {
   }
 }
 
-function probeCorkyEntranceSource(path) {
+function probeCorkyGreetingSource(path) {
   const payload = JSON.parse(
     run('ffprobe', [
       '-v',
@@ -660,19 +660,19 @@ function probeCorkyEntranceSource(path) {
     videos.length !== 1 ||
     audio.length !== 1 ||
     video.codec_name !== 'h264' ||
-    video.width !== 720 ||
-    video.height !== 1280 ||
+    video.width !== 2160 ||
+    video.height !== 3840 ||
     video.pix_fmt !== 'yuv420p' ||
     video.r_frame_rate !== '24/1' ||
     video.avg_frame_rate !== '24/1' ||
-    Number(video.nb_frames) !== CORKY_ENTRANCE_SOURCE.frames ||
+    Number(video.nb_frames) !== CORKY_GREETING_SOURCE.frames ||
     track.codec_name !== 'aac' ||
-    track.sample_rate !== '48000' ||
+    track.sample_rate !== '44100' ||
     track.channels !== 2 ||
-    Math.abs(Number(payload.format?.duration) - 6.016) > 0.001
+    Math.abs(Number(payload.format?.duration) - 5.041667) > 0.001
   ) {
     throw new Error(
-      `Corky entrance source contract failed: ${path}: ${JSON.stringify(payload)}`,
+      `Corky greeting source contract failed: ${path}: ${JSON.stringify(payload)}`,
     )
   }
 }
@@ -721,11 +721,11 @@ const temporaryDirectory = mkdtempSync(join(tmpdir(), 'beside-cue-v2-4-'))
 
 try {
   assertHash(
-    'Selected Corky entrance',
-    paths.corkyEntranceRaw,
-    CORKY_ENTRANCE_SOURCE.sha256,
+    'Selected Corky greeting',
+    paths.corkyGreetingRaw,
+    CORKY_GREETING_SOURCE.sha256,
   )
-  probeCorkyEntranceSource(paths.corkyEntranceRaw)
+  probeCorkyGreetingSource(paths.corkyGreetingRaw)
   assertHash(
     'V2.4 inventory',
     join(paths.sourcePackage, 'SHA256SUMS-v2_4.txt'),
@@ -748,8 +748,8 @@ try {
     mkdirSync(dirname(path), { recursive: true })
   }
 
-  prepareCorkyEntrance(
-    paths.corkyEntranceRaw,
+  prepareCorkyGreeting(
+    paths.corkyGreetingRaw,
     sourcePath(paths, 'introB02'),
     sourcePath(paths, 'p01'),
     temporary.corkyReveal,
@@ -784,11 +784,7 @@ try {
     )
   }
 
-  prepareAudio(
-    audioSourcePath(paths, 'greeting'),
-    temporary.greeting,
-    'atrim=end=2.75,adelay=2601:all=1',
-  )
+  prepareAudio(paths.corkyGreetingRaw, temporary.greeting)
   prepareAudio(audioSourcePath(paths, 'score'), temporary.score)
   prepareAudio(
     audioSourcePath(paths, 'tableSlide'),
@@ -801,7 +797,7 @@ try {
     'volume=0.32',
   )
 
-  probeVideo(temporary.corkyReveal, 151)
+  probeVideo(temporary.corkyReveal, 147)
   probeVideo(temporary.tableReveal, 48)
   for (const pull of PULLS) {
     probeVideo(temporary[pull.presentOutput], 96)
@@ -809,7 +805,7 @@ try {
     probeStill(temporary[pull.holdOutput])
   }
   for (const key of ['p00', 'p01', 'p02']) probeStill(temporary[key])
-  probeAudio(temporary.greeting, 5.351)
+  probeAudio(temporary.greeting, 5.039)
   for (const key of ['score', 'introFoley', 'platterStop']) {
     probeAudio(temporary[key])
   }
@@ -844,14 +840,14 @@ try {
     schemaVersion: 1,
     generatedBy: 'scripts/prepare-beside-cue-v2-4-media.mjs',
     authorization:
-      'Founder-authorized integration into MercuryPitch draft PR #689 for Android testing; normal release review still applies.',
+      'Founder-selected V2.4 product onboarding with the accepted Kling Corky greeting; device review remains required before release.',
     source: {
       package: 'onboarding-video-edit-v2_4',
       inventorySha256: SOURCE_INVENTORY_SHA256,
       legacyAudioPackage: 'onboarding-video-edit-v0_1',
-      corkyEntranceRaw: {
-        file: 'Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4',
-        sha256: CORKY_ENTRANCE_SOURCE.sha256,
+      corkyGreetingRaw: {
+        file: CORKY_GREETING_SOURCE.file,
+        sha256: CORKY_GREETING_SOURCE.sha256,
       },
     },
     delivery: {

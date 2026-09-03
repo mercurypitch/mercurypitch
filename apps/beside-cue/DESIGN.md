@@ -68,9 +68,9 @@ All three are bundled locally through Fontsource so the native app works offline
 - The first-run film opens behind an opaque warm-cream brand curtain. One
   full-surface **Tap to begin** gesture starts sound by default; afterward only
   mute/unmute persists in the production chrome.
-- The film creates one real plan: fixed V1 Pull, one chosen Side B, record-stop
-  confirmation, and an optional real reminder. It never hands the user to a
-  second rehearsal setup.
+- The V2 journey creates one real plan: one chosen Pull, one chosen Side B,
+  record-stop confirmation, and an optional real reminder. It never hands the
+  user to a second rehearsal setup.
 - Scene counters, persistent player controls, and review navigation are hidden
   in production. Review navigation is guarded by an explicit build flag and
   never writes product state.

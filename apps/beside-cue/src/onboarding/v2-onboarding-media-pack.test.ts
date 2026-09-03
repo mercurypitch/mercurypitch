@@ -4,15 +4,15 @@
 
 import { describe, expect, it } from 'vitest'
 import type { V2OnboardingMediaPack } from './v2-onboarding-media-pack'
-import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_PREVIEW_MEDIA_PACK, } from './v2-onboarding-media-pack'
+import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_MEDIA_PACK, } from './v2-onboarding-media-pack'
 
 const ROOT = '/onboarding/corky-v2.4'
 
 describe('V2 onboarding media pack', () => {
   it('publishes one coherent V2.4 scene and Pull authority', () => {
-    const pack = V2_ONBOARDING_PREVIEW_MEDIA_PACK
+    const pack = V2_ONBOARDING_MEDIA_PACK
 
-    expect(pack.revision).toBe('corky-v2.4-preview-v2')
+    expect(pack.revision).toBe('corky-v2.4-media-v3')
     expect(Object.keys(pack.pulls)).toEqual([
       'scrolling',
       'snacking',
@@ -25,7 +25,7 @@ describe('V2 onboarding media pack', () => {
       'corky-reveal': {
         primary: {
           kind: 'video',
-          src: `${ROOT}/picture/b01-corky-entrance-v0_3.mp4`,
+          src: `${ROOT}/picture/b01-corky-greeting-v0_4.mp4`,
         },
         reducedStill: {
           src: `${ROOT}/stills/p01-corky-rest-v0_4.webp`,
@@ -62,11 +62,11 @@ describe('V2 onboarding media pack', () => {
   })
 
   it.each([
-    ['corky-reveal', 'b01-corky-entrance-v0_3.mp4'],
+    ['corky-reveal', 'b01-corky-greeting-v0_4.mp4'],
     ['table-reveal', 'b02-table-reveal-v0_1.mp4'],
   ] as const)('resolves the %s scene as automatic media', (sceneId, suffix) => {
     expect(
-      resolveV2OnboardingSceneMediaRequest(V2_ONBOARDING_PREVIEW_MEDIA_PACK, {
+      resolveV2OnboardingSceneMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
         targetId: `intro:${sceneId}`,
         sceneId,
       }),
@@ -84,7 +84,7 @@ describe('V2 onboarding media pack', () => {
   ] as const)(
     'maps the complete %s enter, shared hold, exit, and P02 endpoint',
     (pullId, presentVersion, recedeVersion) => {
-      const pull = V2_ONBOARDING_PREVIEW_MEDIA_PACK.pulls[pullId]
+      const pull = V2_ONBOARDING_MEDIA_PACK.pulls[pullId]
       expect(pull).toBeDefined()
       expect(pull?.present).toMatchObject({
         kind: 'video',
@@ -99,14 +99,14 @@ describe('V2 onboarding media pack', () => {
         src: `${ROOT}/picture/b05-${pullId}-recede-${recedeVersion}.mp4`,
       })
       expect(pull?.end).toEqual(
-        V2_ONBOARDING_PREVIEW_MEDIA_PACK.record?.stoppedAuthority,
+        V2_ONBOARDING_MEDIA_PACK.record?.stoppedAuthority,
       )
     },
   )
 
   it('resolves one stable P02 request for choices and unauthored Pulls', () => {
     expect(
-      resolveV2OnboardingPlateMediaRequest(V2_ONBOARDING_PREVIEW_MEDIA_PACK),
+      resolveV2OnboardingPlateMediaRequest(V2_ONBOARDING_MEDIA_PACK),
     ).toMatchObject({
       targetId: 'plate:p02',
       targetKind: 'hold',
@@ -126,7 +126,7 @@ describe('V2 onboarding media pack', () => {
     'maps the %s moment onto its primary and authored reduced-motion still',
     (moment, targetKind, primaryKind, reducedSuffix) => {
       const request = resolveV2OnboardingMediaRequest(
-        V2_ONBOARDING_PREVIEW_MEDIA_PACK,
+        V2_ONBOARDING_MEDIA_PACK,
         { targetId: `scrolling:${moment}`, pullId: 'scrolling', moment },
       )
 

@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "generatedBy": "scripts/prepare-beside-cue-v2-4-media.mjs",
-  "authorization": "Founder-authorized integration into MercuryPitch draft PR #689 for Android testing; normal release review still applies.",
+  "authorization": "Founder-selected V2.4 product onboarding with the accepted Kling Corky greeting; device review remains required before release.",
   "source": {
     "package": "onboarding-video-edit-v2_4",
     "inventorySha256": "1ab7fafe5bafaaf0391dfe82e0842f9022bae236569beef2d89a16021cdfa4d3",
     "legacyAudioPackage": "onboarding-video-edit-v0_1",
-    "corkyEntranceRaw": {
-      "file": "Corky_entering_and_greeting_viewer_202609011829_no_long_legs.mp4",
-      "sha256": "abb9fedc1a1a43cf317599563f31e6fb2d490d182d35396b898998698bcae919"
+    "corkyGreetingRaw": {
+      "file": "kling_iamcorky_initial.mp4",
+      "sha256": "3c10241e1090baac039d87c6713b0f79cb42e692c06960aae71e0bc5e6966e1f"
     }
   },
   "delivery": {
@@ -18,9 +18,9 @@
   },
   "outputRecords": [
     {
-      "path": "audio/dialogue/corky-greeting-v0_2.m4a",
-      "sha256": "1ec12a8456c6fa922bd73614ab9eb0fa1f8754e3d26197383cd654b762f7a3f3",
-      "bytes": 71868
+      "path": "audio/dialogue/corky-greeting-v0_3.m4a",
+      "sha256": "544f25d1a2565f600ed3ceb10bf93e1807b223e8dd93ff05589125315dcd6cba",
+      "bytes": 123466
     },
     {
       "path": "audio/foley/intro-table-slide-v0_1.m4a",
@@ -38,9 +38,9 @@
       "bytes": 811165
     },
     {
-      "path": "picture/b01-corky-entrance-v0_3.mp4",
-      "sha256": "97cdff27f40ded53e4b869e2c363f107e73d91fc7df769db2d29ff69aff9cf67",
-      "bytes": 1524103
+      "path": "picture/b01-corky-greeting-v0_4.mp4",
+      "sha256": "3d3c1a80a064da01b21b83d0c0d37802ef14c4145870e92634fc17f84282bdaa",
+      "bytes": 2075724
     },
     {
       "path": "picture/b02-table-reveal-v0_1.mp4",

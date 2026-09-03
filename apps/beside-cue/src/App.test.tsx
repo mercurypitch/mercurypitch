@@ -7,7 +7,7 @@ import { createEffect, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
-import { DEFAULT_BESIDE_CUE_CONFIG, V2_BESIDE_CUE_PREVIEW_CONFIG, } from './app-config'
+import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import type { AudioSession, AudioSessionOutput } from './audio'
 import type { AudioSourceVariant, ContentPack, DialogueAudioAsset, VoiceAudioFinish, VoiceAudioPort, } from './content'
@@ -999,7 +999,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const probe = createMobileRuntimeProbe({ permission: 'granted' })
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         onboardingReview
         services={createTestServices(repository, {
           platform: 'android',
@@ -1012,7 +1012,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.4-preview-v2',
+      'corky-v2.4-media-v3',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
@@ -1055,7 +1055,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     })
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, { onboardingPreferences })}
       />
     ))
@@ -1067,7 +1067,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     await waitFor(() => expect(repository.saveCalls()).toBe(1))
     expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v3'),
+      onboardingPreferences.read('beside-cue-v2.4-main-v1'),
     ).toBeUndefined()
 
     saveGate.resolve()
@@ -1085,9 +1085,9 @@ describe('Beside Cue V2 onboarding integration', () => {
         },
       ]),
     )
-    expect(
-      onboardingPreferences.read('beside-cue-v2-preview-v3'),
-    ).toMatchObject({ outcome: 'finished' })
+    expect(onboardingPreferences.read('beside-cue-v2.4-main-v1')).toMatchObject(
+      { outcome: 'finished' },
+    )
 
     fireEvent.click(
       screen.getByRole('button', { name: /finish v2 introduction/iu }),
@@ -1103,7 +1103,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const repository = createMemoryRepository()
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository)}
       />
     ))
@@ -1129,7 +1129,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const probe = createMobileRuntimeProbe({ permission: 'granted' })
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, {
           platform: 'android',
           runtime: probe.runtime,
@@ -1162,7 +1162,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const output = createAudioOutputProbe()
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, {
           audioOutput: output.output,
           platform: 'android',
@@ -1229,7 +1229,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const output = createAudioOutputProbe()
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, {
           audioOutput: output.output,
         })}
@@ -1254,7 +1254,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     const output = createAudioOutputProbe()
     render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, {
           audioOutput: output.output,
         })}
@@ -1284,7 +1284,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       .mockReturnValue('visible')
     const view = render(() => (
       <App
-        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        config={DEFAULT_BESIDE_CUE_CONFIG}
         services={createTestServices(repository, {
           audioOutput: output.output,
         })}
