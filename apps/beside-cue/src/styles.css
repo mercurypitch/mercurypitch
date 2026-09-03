@@ -1902,6 +1902,20 @@ svg {
   cursor: pointer;
 }
 
+/* The affordance. Underlined rather than made a second button, because
+   the whole line is already the target and a link-looking word inside a
+   button invites a second tap at the wrong place. */
+.settings-screen__version-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  opacity: 0.75;
+  text-decoration: underline;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 /* What the device says about itself: shown only when the version line is
    tapped, so a support question has an answer without a cable. */
 .device-support {

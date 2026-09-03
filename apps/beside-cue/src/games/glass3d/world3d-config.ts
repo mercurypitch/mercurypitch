@@ -70,6 +70,10 @@ export interface World3DConfig {
     launchLift: number
     /** Random spread on each shard's direction, in radians. */
     spreadRadians: number
+    /** Constant lean towards the camera, added to each shard's outward
+     * direction before it is normalised. 0 is a pure radial burst, which
+     * throws half the glass away from the viewer and through Merc. */
+    towardViewer: number
     /** Turns per second, at the fastest. */
     spinTurnsPerSecond: number
     /** Seconds over which shards are released, so the break is not flat. */
@@ -93,13 +97,21 @@ export interface World3DConfig {
 }
 
 export const WORLD3D_CONFIG: World3DConfig = {
+  // Loosened 2026-09-03: maff was running out of breath before the ring
+  // broke. The hold reaches further and gets there sooner, the vibrato
+  // that finishes it is worth half again as much per second, the pitch
+  // band is wider, and a breath costs much less -- `fallSeconds` is the
+  // one that decides whether stopping to breathe undoes the attempt.
+  //
+  // The skill is still the wave. It is just no longer a breath-hold
+  // contest on top of it.
   ring: {
-    tolSemis: 1.2,
-    riseSeconds: 1.5,
-    holdCap: 0.55,
-    pumpSeconds: 1.6,
+    tolSemis: 1.5,
+    riseSeconds: 1.2,
+    holdCap: 0.6,
+    pumpSeconds: 1.1,
     pumpTolBonus: 1.0,
-    fallSeconds: 2.6,
+    fallSeconds: 4.0,
   },
   vibrato: {
     windowSec: 1.0,
@@ -110,26 +122,43 @@ export const WORLD3D_CONFIG: World3DConfig = {
     // 12 because the smoother costs roughly a fifth of the depth before
     // the detector ever sees it.
     //
-    // 220 is not a taste call: it is exactly the pitch band the wave has
+    // 250 is not a taste call: it is exactly the pitch band the wave has
     // to stay inside, (ring.tolSemis + ring.pumpTolBonus) * 100. Swing
     // wider than that and the note leaves tolerance, so resonance decays
-    // no matter what the ear says. Setting the cap anywhere above 220
-    // would only promise a pump the sim then refuses.
+    // no matter what the ear says. Setting the cap anywhere above it
+    // would only promise a pump the sim then refuses -- and it moved
+    // from 220 with `tolSemis`, which is what the test that pins the two
+    // together is for.
     minDepthCents: 12,
-    maxDepthCents: 220,
+    maxDepthCents: 250,
     minSamples: 12,
     resetGapMs: 250,
   },
+  // Retuned 2026-09-03, after maff watched it on a device: "the glass
+  // breaks ugly and too fast, it should not shatter like that and hit
+  // merc and go behind him". It was a bang -- every shard released
+  // inside 0.12s at 3.2 m/s under full gravity, spinning two and a half
+  // turns a second, gone before the eye could follow any one of them.
+  //
+  // What replaces it is a slower, floatier break that can be watched:
+  // roughly two thirds the launch speed, a release window nearly three
+  // times as long so the pane comes apart in a cascade rather than all
+  // at once, and gravity below Earth's -- which is not physics, it is
+  // the reason slow-motion glass looks like glass. More lift and more
+  // spread to arc them apart, less spin so an individual shard reads as
+  // a shape rather than a blur, and a longer settle so the floor is not
+  // reached before the eye is.
   shatter: {
-    launchSpeed: 3.2,
-    launchSpeedFloorRatio: 0.55,
-    launchLift: 1.1,
-    spreadRadians: 0.45,
-    spinTurnsPerSecond: 2.5,
-    releaseWindowSeconds: 0.12,
-    gravity: 9.81,
-    restitution: 0.25,
-    settleSeconds: 2.5,
+    launchSpeed: 2.1,
+    launchSpeedFloorRatio: 0.6,
+    launchLift: 1.35,
+    spreadRadians: 0.55,
+    towardViewer: 0.45,
+    spinTurnsPerSecond: 1.4,
+    releaseWindowSeconds: 0.32,
+    gravity: 7.5,
+    restitution: 0.2,
+    settleSeconds: 3.2,
   },
   loop: {
     stepSeconds: 1 / 120,

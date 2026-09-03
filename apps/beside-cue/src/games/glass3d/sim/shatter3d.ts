@@ -67,6 +67,8 @@ export interface ShatterConfig {
   launchSpeedFloorRatio: number
   launchLift: number
   spreadRadians: number
+  /** Constant lean towards the camera, before normalisation. */
+  towardViewer: number
   spinTurnsPerSecond: number
   releaseWindowSeconds: number
   gravity: number
@@ -115,10 +117,17 @@ export const solveShatter = (
     // independent angles rather than one, so the cone is not a ring.
     const spreadA = (rand() * 2 - 1) * cfg.spreadRadians
     const spreadB = (rand() * 2 - 1) * cfg.spreadRadians
+    // Leaned towards the viewer. A pure radial burst throws half the
+    // glass AWAY from the camera and through the corridor Merc is
+    // standing in, which is both the least interesting half to watch and
+    // the half that ends up passing through him. Adding a constant to z
+    // before normalising tilts the whole cone forward without changing
+    // its shape -- shards still fly outward from the break, they just
+    // all come slightly at you.
     const dir = normalise({
       x: away.x + spreadA,
       y: away.y + spreadB * 0.5,
-      z: away.z + spreadB,
+      z: away.z + spreadB + cfg.towardViewer,
     })
 
     const spinAxis = normalise({

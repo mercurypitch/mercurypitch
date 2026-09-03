@@ -28,6 +28,7 @@ import { shatterDuration, solveShatter } from '../sim/shatter3d'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import type { StageView } from './Renderer3D'
 import { createRenderer3D } from './Renderer3D'
+import { VoiceCoach } from './VoiceCoach'
 
 const MIC_ID = 'glass3d-cabinet'
 
@@ -40,12 +41,6 @@ const TARGET_MIDI = 69
  * every frame — it is one number and the eye reads it as motion — but a
  * note name rewritten sixty times a second is unreadable. */
 const TEXT_INTERVAL = 0.1
-
-/** Full width of the wave-rate gauge, in Hz. Wide enough that both edges
- * of the accepted band sit inside it with room to be missed on either
- * side -- a gauge that cannot show you overshooting cannot teach you to
- * stop. */
-const WAVE_SCALE_HZ = 12
 
 interface Stage3DProps {
   onExit: () => void
@@ -84,51 +79,6 @@ export const Stage3D = (props: Stage3DProps) => {
   const cfg = WORLD3D_CONFIG
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
-
-  /** What the mic is hearing, in the terms the player needs: which note,
-   * and whether it counts. Diagnostic on purpose — "nothing is
-   * happening" and "you are an octave low" look identical otherwise. */
-  const heardLine = createMemo(() => {
-    const midi = heardMidi()
-    if (midi === null) return 'listening'
-    const semis = midi - TARGET_MIDI
-    const tol = cfg.ring.tolSemis + (ringing() ? cfg.ring.pumpTolBonus : 0)
-    if (Math.abs(semis) <= tol) {
-      const cents = Math.round(semis * 100)
-      return `${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢`
-    }
-    // The note in brackets is the diagnostic half: "too low" says what to
-    // do, and "(G4)" says whether the mic is even hearing the right
-    // voice. Octave errors in particular look identical to silence
-    // without it.
-    const note = midiToNote(Math.round(midi))
-    const way = semis > 0 ? 'too high' : 'too low'
-    return `${way} (${note.name}${note.octave})`
-  })
-
-  /** The one line of coaching. The whole reason it exists: a steady hold
-   * charges only to `holdCap` and then stops dead, which without a word
-   * of explanation reads as a bug — the bar fills to about 60% and
-   * refuses to move however well you sing. */
-  const coachLine = createMemo(() => {
-    if (broken()) return 'Broken.'
-    if (!ringing()) return `Hold ${targetName} — ${heardLine()}`
-    if (wavering()) return 'Keep waving'
-    // Ringing but not counting. Which way it is failing decides what the
-    // player should change, so say that rather than repeating the
-    // instruction they are already following.
-    //
-    // A measurement of zero is not a diagnosis: it means the window has
-    // not filled yet, or the mic is hearing nothing. Correcting a wave
-    // that was never heard sends the player to fix the wrong thing.
-    const v = cfg.vibrato
-    if (waveRate() === 0) return 'Now let it waver'
-    if (waveRate() < v.minHz) return 'Waver faster'
-    if (waveRate() > v.maxHz) return 'Waver slower'
-    if (waveDepth() < v.minDepthCents) return 'Waver wider'
-    if (waveDepth() > v.maxDepthCents) return 'Too wide — stay on the note'
-    return 'Now let it waver'
-  })
 
   /** Backend, drawn frames, and f0 frames. All three, because on a phone
    * the interesting failure is a renderer that is fine and an audio
@@ -407,47 +357,18 @@ export const Stage3D = (props: Stage3DProps) => {
       <span class="stage3d__chip">{chipLine()}</span>
 
       <Show when={started() && !broken()}>
-        <div class="stage3d__meter" classList={{ 'is-ringing': ringing() }}>
-          <div class="stage3d__track">
-            <i style={{ width: `${Math.round(charge() * 100)}%` }} />
-            {/* Where a steady hold stops and vibrato has to take over.
-                Marked, because the ceiling is a rule of the game rather
-                than the end of the bar. */}
-            <b style={{ left: `${Math.round(cfg.ring.holdCap * 100)}%` }} />
-          </div>
-          {/* Once the hold has done its work the player is asked for a
-              thing they cannot see themselves doing. This is that thing,
-              measured: rate against the accepted band, and depth. It
-              appears only while it matters. */}
-          <Show when={ringing()}>
-            <div
-              class="stage3d__wave"
-              classList={{ 'is-heard': wavering() }}
-              aria-hidden="true"
-            >
-              <span class="stage3d__band">
-                <i
-                  style={{
-                    left: `${Math.round((cfg.vibrato.minHz / WAVE_SCALE_HZ) * 100)}%`,
-                    width: `${Math.round(((cfg.vibrato.maxHz - cfg.vibrato.minHz) / WAVE_SCALE_HZ) * 100)}%`,
-                  }}
-                />
-                <b
-                  style={{
-                    left: `${Math.round(Math.min(1, waveRate() / WAVE_SCALE_HZ) * 100)}%`,
-                  }}
-                />
-              </span>
-              <span class="stage3d__wavenum">
-                {waveRate() > 0
-                  ? `${waveRate().toFixed(1)} Hz · ${Math.round(waveDepth())}¢`
-                  : 'no wave yet'}
-              </span>
-            </div>
-          </Show>
-          <p class="stage3d__coach">{coachLine()}</p>
-          <MicInput listening onChoose={() => void switchMic()} />
-        </div>
+        <VoiceCoach
+          cfg={cfg}
+          targetMidi={TARGET_MIDI}
+          charge={charge()}
+          ringing={ringing()}
+          heardMidi={heardMidi()}
+          waveRate={waveRate()}
+          waveDepth={waveDepth()}
+          wavering={wavering()}
+          listening
+          onChooseMic={() => void switchMic()}
+        />
       </Show>
 
       <Show when={!started()}>

@@ -244,9 +244,15 @@ export function SettingsScreen(props: SettingsScreenProps) {
           </p>
         ) : null}
       </section>
+      {/* The version line has always doubled as the way in to what the
+          device reports about itself, and nothing said so -- maff went
+          looking for the renderer and concluded the app did not have one
+          (2026-09-03). It is still filled in on demand, because asking
+          for a GPU adapter costs something; it just says so now. */}
       <button
         class="settings-screen__version"
         type="button"
+        aria-expanded={support() !== undefined}
         onClick={() => {
           if (support() !== undefined) {
             setSupport(undefined)
@@ -256,6 +262,9 @@ export function SettingsScreen(props: SettingsScreenProps) {
         }}
       >
         Beside Cue · {buildLabel()}
+        <span class="settings-screen__version-hint">
+          {support() === undefined ? 'Show device info' : 'Hide device info'}
+        </span>
       </button>
       <Show when={support()}>
         {(facts) => (

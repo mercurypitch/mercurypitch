@@ -23,6 +23,7 @@ import { solveShatter } from '../sim/shatter3d'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import type { HallwayView } from './Hallway3D'
 import { createHallway3D, PANE } from './Hallway3D'
+import { VoiceCoach } from './VoiceCoach'
 
 const MIC_ID = 'glass3d-hallway'
 
@@ -56,6 +57,13 @@ export const HallwayStage = (props: HallwayStageProps) => {
   const [charge, setCharge] = createSignal(0)
   const [ringing, setRinging] = createSignal(false)
   const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
+  // The wave as measured, not as judged. The Hallway used to keep only
+  // `wave.active` and throw the numbers away, which left a player whose
+  // wave was too slow, too shallow, or never heard at all looking at the
+  // same unmoving bar for all three.
+  const [wavering, setWavering] = createSignal(false)
+  const [waveRate, setWaveRate] = createSignal(0)
+  const [waveDepth, setWaveDepth] = createSignal(0)
   const [phase, setPhase] = createSignal<Phase>('enter')
   const [grade, setGrade] = createSignal<number | null>(null)
 
@@ -67,28 +75,16 @@ export const HallwayStage = (props: HallwayStageProps) => {
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
-  const heardLine = createMemo(() => {
-    const midi = heardMidi()
-    if (midi === null) return 'listening'
-    const semis = midi - TARGET_MIDI
-    const tol = cfg.ring.tolSemis + (ringing() ? cfg.ring.pumpTolBonus : 0)
-    if (Math.abs(semis) <= tol) {
-      const cents = Math.round(semis * 100)
-      return `${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢`
-    }
-    const note = midiToNote(Math.round(midi))
-    const way = semis > 0 ? 'too high' : 'too low'
-    return `${way} (${note.name}${note.octave})`
-  })
-
-  const coachLine = createMemo(() => {
+  /** What the Hallway says INSTEAD of coaching, in the phases where
+   * nothing is being sung at. `undefined` while singing hands the line
+   * back to VoiceCoach, which is the only thing that knows how the wave
+   * is going. */
+  const phaseLine = createMemo(() => {
     switch (phase()) {
       case 'enter':
         return 'Merc has somewhere to be'
       case 'sing':
-        return ringing()
-          ? 'Now let it waver'
-          : `Hold ${targetName} — ${heardLine()}`
+        return undefined
       case 'celebrate':
       case 'crossing':
         return 'Through he goes'
@@ -136,6 +132,9 @@ export const HallwayStage = (props: HallwayStageProps) => {
       let phaseNow: Phase = 'enter'
       let celebrateUntil = 0
       let lastWaveStrength = 0
+      let lastWave = false
+      let lastWaveRate = 0
+      let lastWaveDepth = 0
       let lastMidi: number | null = null
       let sinceText = TEXT_INTERVAL
 
@@ -197,7 +196,13 @@ export const HallwayStage = (props: HallwayStageProps) => {
                   ? { active: false, strength: 0 }
                   : vib.feed(pitch.tAudio * 1000, pitch.midi)
               lastMidi = pitch?.midi ?? null
+              lastWave = wave.active
               lastWaveStrength = wave.active ? wave.strength : 0
+              // `rateHz`/`depthCents` are absent on the idle state, so
+              // the guard is what keeps a measurement from being
+              // invented for a wave that was never judged.
+              lastWaveRate = 'rateHz' in wave ? wave.rateHz : 0
+              lastWaveDepth = 'depthCents' in wave ? wave.depthCents : 0
               const broke = stepResonance(
                 ring,
                 {
@@ -230,6 +235,9 @@ export const HallwayStage = (props: HallwayStageProps) => {
         if (sinceText >= TEXT_INTERVAL) {
           sinceText = 0
           setHeardMidi(lastMidi)
+          setWavering(lastWave)
+          setWaveRate(lastWaveRate)
+          setWaveDepth(lastWaveDepth)
         }
 
         view.mercX = mercX
@@ -327,16 +335,19 @@ export const HallwayStage = (props: HallwayStageProps) => {
       <span class="stage3d__chip">{backend()}</span>
 
       <Show when={started() && phase() !== 'done'}>
-        <div class="stage3d__meter" classList={{ 'is-ringing': ringing() }}>
-          <Show when={phase() === 'sing'}>
-            <div class="stage3d__track">
-              <i style={{ width: `${Math.round(charge() * 100)}%` }} />
-              <b style={{ left: `${Math.round(cfg.ring.holdCap * 100)}%` }} />
-            </div>
-          </Show>
-          <p class="stage3d__coach">{coachLine()}</p>
-          <MicInput listening onChoose={() => void switchMic()} />
-        </div>
+        <VoiceCoach
+          cfg={cfg}
+          targetMidi={TARGET_MIDI}
+          charge={charge()}
+          ringing={ringing()}
+          heardMidi={heardMidi()}
+          waveRate={waveRate()}
+          waveDepth={waveDepth()}
+          wavering={wavering()}
+          listening={phase() === 'sing'}
+          line={phaseLine()}
+          onChooseMic={() => void switchMic()}
+        />
       </Show>
 
       <Show when={!started()}>
