@@ -604,6 +604,36 @@
   cursor: default;
 }
 
+/* How far along a track the player is, on its card in the list. */
+.game-card__count {
+  align-self: center;
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft, #5a463d);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* Which room of the walk this is. Above the room's own line, because
+   "2 of 3" is about the path and the line below is about the room. */
+.chamber-hud__where {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 40%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+/* The line under the end-of-walk headline. */
+.stage3d__card-note {
+  font-size: 0.78rem;
+  color: rgb(255 255 255 / 60%);
+}
+
 /* A quiet way back to the guide, under the gate's own button. Scoped
    through the parent because `.stage3d__gate button` already claims
    every button in there and would otherwise make this a second pill. */
@@ -857,7 +887,8 @@
   backdrop-filter: blur(8px);
 }
 
-.stage3d__gate button {
+.stage3d__gate button,
+.stage3d__card button {
   padding: 0.6rem 1.4rem;
   border: 0;
   border-radius: 999px;

@@ -32,6 +32,7 @@ import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
+import { currentRoom, isFinished, progressLabel, readTrack, recordClear, roomAfter, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
@@ -56,6 +57,11 @@ const FALL_SECONDS = 1.6
 
 /** Close enough to the exit to count as out. */
 const ARRIVED = 0.02
+
+/** How long the room he just finished is held before the next one
+ * arrives. Long enough to register as an ending, short enough that it
+ * is not a loading screen. */
+const CLEARED_SECONDS = 1.4
 
 /**
  * How far in front of a pane Merc is stopped, in metres.
@@ -95,23 +101,27 @@ const writeToggle = (key: string, on: boolean): void => {
   }
 }
 
-type Phase = 'walking' | 'falling' | 'done'
+/**
+ * `cleared` is the beat between rooms: the glass is gone, the exit is
+ * reached, and the next room is being built behind a held frame. It is a
+ * phase rather than a timer somewhere else because the pose, the HUD
+ * line and the controls all have to agree about it.
+ */
+type Phase = 'walking' | 'falling' | 'cleared' | 'done'
 
 interface ChamberStageProps {
-  chamber: ChamberLevel
   onExit: () => void
 }
 
 export const ChamberStage = (props: ChamberStageProps) => {
   let canvas!: HTMLCanvasElement
-  // Read once, on purpose. The room is fixed for the life of this
-  // component -- GamesScreen mounts it with a `keyed` Show, so choosing
-  // a different chamber tears this one down and builds a new one -- and
-  // half of what is set up below (the fundamental, one resonance per
-  // pane, the renderer's geometry) is derived from it at mount and
-  // could not follow a change anyway.
-  // eslint-disable-next-line solid/reactivity
-  const chamber = props.chamber
+  // The walk, not one room of it. The stage owns the track because it is
+  // the thing that knows a room has been finished, and because moving to
+  // the next room WITHOUT REMOUNTING is the whole point: a remount takes
+  // the renderer and the microphone with it, and a re-prompt between
+  // rooms is the difference between a path and three games in a coat.
+  const [track, setTrack] = createSignal(readTrack())
+  const [room, setRoom] = createSignal<ChamberLevel>(currentRoom(readTrack()))
   const cfg = CHAMBER_CONFIG
 
   // A page with no microphone API says so before the tap rather than
@@ -138,7 +148,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const [semisOff, setSemisOff] = createSignal(0)
   const [onIt, setOnIt] = createSignal(false)
   const [charges, setCharges] = createSignal<number[]>(
-    chamber.modes.map(() => 0),
+    room().modes.map(() => 0),
   )
   const [broken, setBroken] = createSignal(0)
   const [grade, setGrade] = createSignal<number | null>(null)
@@ -157,7 +167,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
   // a room outside your range is not a hard room, it is a room you
   // cannot play (see voice-range.ts).
   const [centre, setCentre] = createSignal(voiceCentre())
-  const fundamental = (): number => tuneChamber(chamber.modes, null, centre())
+  const fundamental = (): number => tuneChamber(room().modes, null, centre())
 
   /** Move the whole room by an octave, and remember it for the next one. */
   const nudgeOctave = (octaves: number): void => {
@@ -167,7 +177,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
   const tone = createGlassTone(
-    midiToFreq(modeMidi(fundamental(), chamber.modes[0] ?? 1)),
+    midiToFreq(modeMidi(fundamental(), room().modes[0] ?? 1)),
   )
   const input = createIntentSource()
 
@@ -193,7 +203,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
   }
 
   onMount(() => {
-    const r = createChamber3D(canvas, cfg, chamber)
+    const r = createChamber3D(canvas, cfg, room())
     const unbindKeys = bindKeyboard(input, window)
 
     const fit = (): void => {
@@ -205,17 +215,32 @@ export const ChamberStage = (props: ChamberStageProps) => {
     observer.observe(canvas)
 
     const begin = (): void => {
-      // One resonance per pane, aimed at the one mode that can shake it
-      // apart. Which mode that is comes out of the geometry, not out of
-      // a field somebody has to keep in sync with the level.
-      const targets = chamber.panes.map((pane) => {
-        const mode =
-          chamber.modes.find(
-            (m) => standingAmplitude(pane.at, m) >= chamber.breakAt,
-          ) ?? chamber.modes[0]!
-        const midi = modeMidi(fundamental(), mode)
-        return { mode, midi, ring: createResonance(midi), broken: false }
-      })
+      /** The room in front of him. `enterRoom` moves it on. */
+      let live: ChamberLevel = room()
+
+      interface Target {
+        mode: number
+        midi: number
+        ring: ReturnType<typeof createResonance>
+        broken: boolean
+      }
+
+      /**
+       * One resonance per pane, aimed at the one mode that can shake it
+       * apart. Which mode that is comes out of the geometry, not out of
+       * a field somebody has to keep in sync with the level.
+       */
+      const buildTargets = (): Target[] =>
+        live.panes.map((pane) => {
+          const mode =
+            live.modes.find(
+              (m) => standingAmplitude(pane.at, m) >= live.breakAt,
+            ) ?? live.modes[0]!
+          const midi = modeMidi(fundamental(), mode)
+          return { mode, midi, ring: createResonance(midi), broken: false }
+        })
+
+      let targets = buildTargets()
 
       /** The fundamental the rings are currently listening for. */
       let tunedRoom = fundamental()
@@ -239,7 +264,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         tunedTo = -1
       }
 
-      const ground = groundIn(chamber)
+      let ground = groundIn(live)
       // The room's walls, recomputed as glass gives way.
       //
       // `maxX` is the nearest unbroken pane ahead of him, not the end of
@@ -248,17 +273,17 @@ export const ChamberStage = (props: ChamberStageProps) => {
       // a pane he has already come through cannot reach back and clamp
       // him -- which cannot happen while they break in order, and is one
       // line to be certain of rather than an assumption to hold.
-      const walls = { ...cfg.locomotion, minX: 0, maxX: chamber.length }
+      const walls = { ...cfg.locomotion, minX: 0, maxX: live.length }
       const closeWalls = (): void => {
-        let stop = chamber.length
+        let stop = live.length
         for (let i = 0; i < targets.length; i++) {
           if (targets[i]!.broken) continue
-          const at = chamber.panes[i]!.at * chamber.length - PANE_STANDOFF
+          const at = live.panes[i]!.at * live.length - PANE_STANDOFF
           if (at >= loco.x && at < stop) stop = at
         }
         walls.maxX = stop
       }
-      const loco = createLocomotion(chamber.startAt * chamber.length)
+      const loco = createLocomotion(live.startAt * live.length)
       const vib = createVibratoDetector(cfg.vibrato)
 
       let phaseNow: Phase = 'walking'
@@ -270,7 +295,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
         pane: number
         launches: readonly ShardLaunch[]
       } | null = null
-      const grades: number[] = []
+      /** The accuracy of each break in THIS room. Reset per room; the
+       * track keeps the best of the room grades it makes from them. */
+      let grades: number[] = []
+      /** Wall time the room was cleared at, for the beat before the
+       * next one. */
+      let clearedAtWall = 0
       let lastMidi: number | null = null
       let lastMode: number | null = null
       /** A mode held down from the dev hook, so the room can be walked
@@ -302,6 +332,37 @@ export const ChamberStage = (props: ChamberStageProps) => {
         else setPose('listen')
       }
 
+      /**
+       * Put a room in front of him and start it.
+       *
+       * Everything a room owns is rebuilt here -- the panes' resonances,
+       * the floor sampler, the walls, where he stands. Everything that
+       * is NOT a room is left alone: the renderer, Merc, the vibrato
+       * detector, and above all the microphone, which is why this is a
+       * function rather than a remount.
+       */
+      const enterRoom = (next: ChamberLevel): void => {
+        live = next
+        setRoom(next)
+        r.load(next)
+        targets = buildTargets()
+        tunedRoom = fundamental()
+        tunedTo = -1
+        ground = groundIn(next)
+        grades = []
+        breaking = null
+        loco.x = next.startAt * next.length
+        loco.y = 0
+        loco.vx = 0
+        loco.vy = 0
+        loco.grounded = true
+        loco.facing = 1
+        closeWalls()
+        setBroken(0)
+        setCharges(next.modes.map(() => 0))
+        go('walking')
+      }
+
       /** The floor gave way. The clip that has been rigged and exported
        * and never once played since slice 0 finally has a caller. */
       const drop = (): void => {
@@ -316,7 +377,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
        * solved. Losing three panes to one misstep is a punishment for
        * learning, and this game does not do those. */
       const restart = (): void => {
-        loco.x = chamber.startAt * chamber.length
+        loco.x = live.startAt * live.length
         loco.y = 0
         loco.vx = 0
         loco.vy = 0
@@ -325,6 +386,28 @@ export const ChamberStage = (props: ChamberStageProps) => {
         for (const t of targets) t.ring.res = 0
         closeWalls()
         go('walking')
+      }
+
+      /**
+       * The room is finished. Record it, then either walk on or stop.
+       *
+       * The clear is written the moment it happens rather than at the
+       * end of the track, because a player who puts the phone down
+       * after room two has finished room two.
+       */
+      const clearRoom = (): void => {
+        const grade =
+          grades.length === 0
+            ? 0
+            : Math.round(
+                (grades.reduce((a, b) => a + b, 0) / grades.length) * 100,
+              )
+        setGrade(grade)
+        const next = recordClear(track(), live.id, grade)
+        setTrack(next)
+        writeTrack(next)
+        clearedAtWall = wallSeconds
+        go(roomAfter(live.id) === null ? 'done' : 'cleared')
       }
 
       const breakPane = (index: number): void => {
@@ -336,7 +419,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           pane: index,
           launches: solveShatter(
             r.centroids(),
-            { x: 0, y: chamber.panes[index]!.height * 0.52, z: 0 },
+            { x: 0, y: live.panes[index]!.height * 0.52, z: 0 },
             acc,
             cfg.shatter,
             11 + index,
@@ -375,6 +458,18 @@ export const ChamberStage = (props: ChamberStageProps) => {
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
 
+          if (phaseNow === 'cleared') {
+            // The beat between rooms. He is still standing in the room
+            // he finished, and the next one arrives under him.
+            if (wallSeconds - clearedAtWall >= CLEARED_SECONDS) {
+              const next = roomAfter(live.id)
+              if (next === null) go('done')
+              else enterRoom(next)
+            }
+            return
+          }
+          if (phaseNow === 'done') return
+
           if (phaseNow === 'falling') {
             // He TOPPLES; he does not plummet. The `fall` clip is
             // anticipation, topple, impact and settle -- an animation of
@@ -398,7 +493,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           lastLevel = driver?.latestLevel() ?? 0
           lastWaveStrength = wave.active ? wave.strength : 0
 
-          const near = nearestMode(lastMidi, tunedRoom, chamber.modes)
+          const near = nearestMode(lastMidi, tunedRoom, live.modes)
           lastOff = near.semisOff
           lastOnIt =
             near.mode !== null && isExciting(near.semisOff, cfg.ring.tolSemis)
@@ -427,23 +522,20 @@ export const ChamberStage = (props: ChamberStageProps) => {
           // The floor. A ledge does not shake -- it is solid, not the
           // resonating floor -- so only the ground itself can drop him.
           const onGround = loco.grounded && loco.y <= 0.001
-          const x01 = loco.x / chamber.length
-          if (onGround && !isFloorSafe(x01, lastMode, chamber.floorThreshold)) {
+          const x01 = loco.x / live.length
+          if (onGround && !isFloorSafe(x01, lastMode, live.floorThreshold)) {
             drop()
             return
           }
 
-          if (loco.x >= chamber.exitAt * chamber.length - ARRIVED) {
-            if (targets.every((t) => t.broken)) {
-              setGrade(
-                Math.round(
-                  (grades.reduce((a, b) => a + b, 0) /
-                    Math.max(1, grades.length)) *
-                    100,
-                ),
-              )
-              go('done')
-            }
+          // The way out is the far end, and every pane has to be gone
+          // for it to count -- the exit is not a shortcut past the
+          // puzzle, it is what the puzzle opens.
+          if (
+            loco.x >= live.exitAt * live.length - ARRIVED &&
+            targets.every((t) => t.broken)
+          ) {
+            clearRoom()
           }
         })
 
@@ -490,12 +582,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
           setNearMode(
             lastMidi === null
               ? null
-              : nearestMode(lastMidi, tunedRoom, chamber.modes).mode,
+              : nearestMode(lastMidi, tunedRoom, live.modes).mode,
           )
           setSemisOff(lastOff)
           setOnIt(lastOnIt)
           setCharges(
-            chamber.modes.map((mode) =>
+            live.modes.map((mode) =>
               Math.max(
                 0,
                 ...targets
@@ -618,7 +710,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       <Show when={started() && phase() !== 'done'}>
         <Show when={showLadder()}>
           <ModeLadder
-            modes={chamber.modes}
+            modes={room().modes}
             fundamentalMidi={fundamental()}
             nearest={nearMode()}
             semisOff={semisOff()}
@@ -629,10 +721,19 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
         <div class="chamber-hud">
           <p class="chamber-hud__line">
-            <Show when={phase() === 'falling'} fallback={chamber.teaches}>
-              The floor was moving there.
+            <Show
+              when={phase() === 'falling' || phase() === 'cleared'}
+              fallback={room().teaches}
+            >
+              <Show
+                when={phase() === 'cleared'}
+                fallback="The floor was moving there."
+              >
+                Through. On to the next room.
+              </Show>
             </Show>
           </p>
+          <p class="chamber-hud__where">{progressLabel(track())}</p>
           <p class="chamber-hud__count">
             <Show
               when={heardMidi() !== null}
@@ -651,7 +752,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
               style={{ width: `${Math.min(1, level() * 6) * 2.5}rem` }}
             />
             {' · '}
-            {broken()} of {chamber.panes.length} broken
+            {broken()} of {room().panes.length} broken
           </p>
           <div class="chamber-hud__toggles">
             {/* The room moves to the voice, never the other way round.
@@ -715,7 +816,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
       <Show when={!started() && !guide()}>
         <div class="stage3d__gate">
-          <p>{chamber.teaches}</p>
+          <p>{room().teaches}</p>
           <button type="button" onClick={() => void startMic()}>
             Walk in
           </button>
@@ -743,7 +844,18 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
       <Show when={phase() === 'done'}>
         <div class="stage3d__card">
-          <span>{grade()}% in tune</span>
+          <Show
+            when={isFinished(track())}
+            fallback={<span>{grade()}% in tune</span>}
+          >
+            <span>Every room walked</span>
+            <span class="stage3d__card-note">
+              {walkGrade(track()) ?? 0}% in tune across {progressLabel(track())}
+            </span>
+          </Show>
+          <button type="button" onClick={() => props.onExit()}>
+            Done
+          </button>
         </div>
       </Show>
 

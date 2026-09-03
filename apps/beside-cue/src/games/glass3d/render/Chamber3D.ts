@@ -18,7 +18,7 @@
 // once by one voice, and by the time a second goes the first's glass has
 // settled -- so the batch simply moves to whichever pane just broke.
 
-import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, BoxGeometry, CircleGeometry, Color, DoubleSide, DynamicDrawUsage, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SpotLight, Vector3, } from 'three'
+import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, BoxGeometry, CircleGeometry, Color, DoubleSide, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
 import type { ChamberLevel } from '../levels/chambers'
@@ -84,6 +84,17 @@ export interface ChamberView {
 
 export interface Chamber3D {
   init(): Promise<void>
+  /**
+   * Put a different room in front of Merc, keeping everything that is
+   * not the room.
+   *
+   * The renderer, the environment map, the lighting rig, the shard
+   * batch and Merc himself all survive, which is what lets a track walk
+   * from one chamber to the next without a black frame -- and, upstream
+   * of this, without letting go of the microphone. Only the glass, the
+   * ledges and the floor's own divisions are rebuilt.
+   */
+  load(chamber: ChamberLevel): void
   render(view: ChamberView, dt: number): void
   /** The shard centroids, for the stage to solve a break from. */
   centroids(): readonly Vec3[]
@@ -155,12 +166,18 @@ export const createChamber3D = (
   pool.position.y = 0.001
   scene.add(pool)
 
+  /** Which room is in front of him. Swapped by `load`. */
+  let current = chamber
+
   // The pattern. Additive, so a strip the colour of the void IS the
   // void -- which is what lets a node be drawn as "nothing here" without
   // a second material or a per-instance alpha.
-  const stripWidth = chamber.length / STRIPS
+  //
+  // The mesh is permanent and only its matrices move: the strip COUNT is
+  // fixed, so a longer room is the same seventy-two strips spread wider,
+  // and rebuilding an InstancedMesh per room would be churn for nothing.
   const strips = new InstancedMesh(
-    new PlaneGeometry(stripWidth * 0.82, 1.5),
+    new PlaneGeometry(1, 1.5),
     new MeshBasicMaterial({
       blending: AdditiveBlending,
       transparent: true,
@@ -170,16 +187,17 @@ export const createChamber3D = (
     STRIPS,
   )
   strips.instanceMatrix.setUsage(DynamicDrawUsage)
-  {
+  const layOutStrips = (): void => {
+    const width = current.length / STRIPS
     const m = new Matrix4()
     const p = new Vector3()
     const q = new Quaternion().setFromAxisAngle(
       new Vector3(1, 0, 0),
       -Math.PI / 2,
     )
-    const s = new Vector3(1, 1, 1)
+    const s = new Vector3(width * 0.82, 1, 1)
     for (let i = 0; i < STRIPS; i++) {
-      p.set((i + 0.5) * stripWidth, STRIP_Y, 0)
+      p.set((i + 0.5) * width, STRIP_Y, 0)
       strips.setMatrixAt(i, m.compose(p, q, s))
     }
     strips.instanceMatrix.needsUpdate = true
@@ -204,25 +222,6 @@ export const createChamber3D = (
     depthWrite: false,
   })
 
-  const paneXs = chamber.panes.map((p) => p.at * chamber.length)
-  const panes = chamber.panes.map((spec, i) => {
-    const mesh = new Mesh(
-      new BoxGeometry(PANE.thick, spec.height, PANE.width),
-      // Each pane gets its own material: they light up independently,
-      // and one shared material would glow them all at once.
-      paneMaterial.clone(),
-    )
-    mesh.position.set(paneXs[i]!, spec.height / 2, 0)
-    scene.add(mesh)
-
-    const light = new Mesh(new CircleGeometry(0.55, 48), panePoolMaterial)
-    light.rotation.x = -Math.PI / 2
-    light.position.set(paneXs[i]!, 0.002, 0)
-    light.scale.set(0.5, 1, 1)
-    scene.add(light)
-    return { mesh, light }
-  })
-
   // Ledges. Solid, matte and pale: the one surface in the room that is
   // not glass and does not shake, and it has to look like it.
   const platformMaterial = new MeshStandardMaterial({
@@ -231,14 +230,62 @@ export const createChamber3D = (
     metalness: 0,
   })
   const PLATFORM_THICK = 0.09
-  for (const p of chamber.platforms) {
-    const mesh = new Mesh(
-      new BoxGeometry(p.width, PLATFORM_THICK, PANE.width * 1.3),
-      platformMaterial,
-    )
-    mesh.position.set(p.at * chamber.length, p.height - PLATFORM_THICK / 2, 0)
-    scene.add(mesh)
+
+  // Everything a room owns lives in one group, so swapping rooms is
+  // emptying it and filling it again rather than remembering which of
+  // the scene's children were glass.
+  const roomGroup = new Group()
+  scene.add(roomGroup)
+
+  let paneXs: number[] = []
+  let panes: { mesh: Mesh; light: Mesh }[] = []
+
+  /** Drop the geometry a room owns. Materials and maps are shared or
+   * cloned per pane; the clones go with their mesh. */
+  const clearRoom = (): void => {
+    for (const child of [...roomGroup.children]) {
+      roomGroup.remove(child)
+      const mesh = child as Mesh
+      mesh.geometry?.dispose()
+      const material = mesh.material
+      if (material instanceof MeshPhysicalMaterial) material.dispose()
+    }
+    panes = []
+    paneXs = []
   }
+
+  const buildRoom = (): void => {
+    paneXs = current.panes.map((p) => p.at * current.length)
+    panes = current.panes.map((spec, i) => {
+      const mesh = new Mesh(
+        new BoxGeometry(PANE.thick, spec.height, PANE.width),
+        // Each pane gets its own material: they light up independently,
+        // and one shared material would glow them all at once.
+        paneMaterial.clone(),
+      )
+      mesh.position.set(paneXs[i]!, spec.height / 2, 0)
+      roomGroup.add(mesh)
+
+      const light = new Mesh(new CircleGeometry(0.55, 48), panePoolMaterial)
+      light.rotation.x = -Math.PI / 2
+      light.position.set(paneXs[i]!, 0.002, 0)
+      light.scale.set(0.5, 1, 1)
+      roomGroup.add(light)
+      return { mesh, light }
+    })
+
+    for (const p of current.platforms) {
+      const mesh = new Mesh(
+        new BoxGeometry(p.width, PLATFORM_THICK, PANE.width * 1.3),
+        platformMaterial,
+      )
+      mesh.position.set(p.at * current.length, p.height - PLATFORM_THICK / 2, 0)
+      roomGroup.add(mesh)
+    }
+
+    layOutStrips()
+  }
+  buildRoom()
 
   const shardMaterial = new MeshPhysicalMaterial({
     color: 0xe8f7f4,
@@ -310,7 +357,7 @@ export const createChamber3D = (
     mercX: number,
   ): void => {
     const show = mode === null ? 0 : Math.max(0, Math.min(1, strength))
-    const threshold = chamber.floorThreshold
+    const threshold = current.floorThreshold
     for (let i = 0; i < STRIPS; i++) {
       const x01 = (i + 0.5) / STRIPS
       const amp = mode === null ? 0 : standingAmplitude(x01, mode)
@@ -326,7 +373,7 @@ export const createChamber3D = (
         stripColour.copy(dangerColour)
         stripColour.multiplyScalar(0.35 + 0.65 * over)
       }
-      const away = Math.abs((i + 0.5) * stripWidth - mercX)
+      const away = Math.abs(x01 * current.length - mercX)
       const fade = Math.max(0, 1 - away / PATTERN_REACH)
       stripColour.multiplyScalar(show * fade * fade)
       strips.setColorAt(i, stripColour)
@@ -380,7 +427,7 @@ export const createChamber3D = (
       await renderer.compileAsync(batch, camera, scene)
       batch.visible = false
       if (disposed) return
-      paintPattern(null, 0, chamber.startAt * chamber.length)
+      paintPattern(null, 0, current.startAt * current.length)
     },
 
     render(view: ChamberView, dt: number): void {
@@ -443,6 +490,15 @@ export const createChamber3D = (
       renderer.render(scene, camera)
     },
 
+    load(next: ChamberLevel): void {
+      if (disposed) return
+      current = next
+      clearRoom()
+      buildRoom()
+      if (shardBatch !== null) shardBatch.visible = false
+      paintPattern(null, 0, next.startAt * next.length)
+    },
+
     centroids(): readonly Vec3[] {
       return shardCentroids
     },
@@ -478,6 +534,7 @@ export const createChamber3D = (
     dispose(): void {
       disposed = true
       mercActor?.dispose()
+      clearRoom()
       backdrop.dispose()
       environment.dispose()
       strips.dispose()

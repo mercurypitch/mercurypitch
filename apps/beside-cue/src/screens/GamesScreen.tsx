@@ -9,7 +9,7 @@ import type { RangeFit } from '@/games/glass/range-finder'
 import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
-import { chamberById, CHAMBERS } from '@/games/glass3d/levels/chambers'
+import { progressLabel, readTrack } from '@/games/glass3d/levels/chamber-track'
 import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
@@ -28,8 +28,8 @@ type PlayPick =
   | 'trials'
   | 'cabinet3d'
   | 'hallway3d'
-  /** A chamber, by id. Rooms are data, so the list is too. */
-  | { chamber: string }
+  /** The Standing Wave: one path through every chamber. */
+  | 'chambers'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -88,6 +88,9 @@ export function GamesScreen(props: GamesScreenProps) {
   // bass and a soprano -- more than two octaves. A chamber is built out
   // of ratios and has no written notes to shift, so it moves to the
   // voice entirely.
+  // How far along the chamber path they are, for the card. Re-read when
+  // a game is left, because the walk happens inside the stage.
+  const [track, setTrack] = createSignal(readTrack())
   const [voice, setVoice] = createSignal(voiceCentre())
   const pickVoice = (midi: number): void => {
     setVoice(writeVoiceCentre(midi))
@@ -124,13 +127,6 @@ export function GamesScreen(props: GamesScreenProps) {
     return readBest(level.id, m)
   }
 
-  const chamberPick = () => {
-    const p = playing()
-    return typeof p === 'object' && p !== null && 'chamber' in p
-      ? chamberById(p.chamber)
-      : null
-  }
-
   const levelPick = (): {
     level: LevelDef
     control: LevelControl
@@ -150,17 +146,19 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'hallway3d'}>
             <HallwayStage onExit={() => setPlaying(null)} />
           </Show>
-          <Show when={chamberPick() !== null} keyed>
+          <Show when={playing() === 'chambers'}>
             <ChamberStage
-              chamber={chamberPick()!}
-              onExit={() => setPlaying(null)}
+              onExit={() => {
+                setTrack(readTrack())
+                setPlaying(null)
+              }}
             />
           </Show>
           <Show
             when={
               playing() !== 'cabinet3d' &&
               playing() !== 'hallway3d' &&
-              chamberPick() === null
+              playing() !== 'chambers'
             }
           >
             <JourneyPrototype
@@ -276,36 +274,38 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
-        {/* The chambers. One card each, because a room IS the unit of
-            level design here -- you enter it, it asks one spatial
-            question, you leave. */}
-        <For each={CHAMBERS}>
-          {(room, i) => (
-            <button
-              class="game-card"
-              type="button"
-              onClick={() => setPlaying({ chamber: room.id })}
-            >
-              <img
-                class="game-card__art"
-                src="games/merc.webp"
-                alt=""
-                width="64"
-                height="64"
-              />
-              <span class="game-card__body">
-                <span class="game-card__name">
-                  Standing Wave {i() + 1}
-                  <span class="game-card__chip">3D</span>
-                </span>
-                <span class="game-card__blurb">{room.teaches}</span>
-              </span>
-              <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m9 5 7 7-7 7" />
-              </svg>
-            </button>
-          )}
-        </For>
+        {/* ONE card, not one per room. The chambers teach in a fixed
+            order -- the room has a note, the note moves the danger, the
+            answer is a sequence -- and three peers in a list invite
+            playing them out of it, which breaks the only teaching
+            structure the slice has. */}
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('chambers')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Standing Wave
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              Rooms that answer to a note. Break the glass where the air moves
+              hardest, and stand where it does not.
+            </span>
+          </span>
+          <span class="game-card__count">{progressLabel(track())}</span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
 
         <button
           class="game-card"
