@@ -265,6 +265,40 @@ describe('the display name editor', () => {
     expect(screen.getByTestId('account-display-name').textContent).toBe('Maff')
   })
 
+  // Keyboard users are the ones who feel an editor that opens and closes:
+  // the caret has to land in the field on the way in, and come back to the
+  // control that opened it on the way out, or they are dropped at the top of
+  // the document with no idea where they were.
+  it('moves the caret into the field and back to the pencil', async () => {
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    const input = await openEditor()
+    await vi.waitFor(() => expect(document.activeElement).toBe(input))
+
+    fireEvent.click(screen.getByTestId('display-name-cancel'))
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByTestId('display-name-edit'),
+      ),
+    )
+  })
+
+  it('closes on Enter when there is nothing to save', async () => {
+    // The checkmark is disabled for an unchanged name, which is honest — but
+    // Enter has to resolve the editor either way, or it reads as stuck.
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    const input = await openEditor()
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('display-name-input')).toBeNull(),
+    )
+    expect(dbMocks.profileRepo.update).not.toHaveBeenCalled()
+  })
+
   it('refuses an empty name, visibly', async () => {
     mocks.fetchMe.mockResolvedValue(passwordMe)
     render(() => <AccountSection />)

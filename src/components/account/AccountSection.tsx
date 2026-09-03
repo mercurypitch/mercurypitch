@@ -160,7 +160,15 @@ export const AccountSection: Component = () => {
   }
 
   async function confirmEditName(): Promise<void> {
-    if (!canConfirmName()) return
+    if (nameEmpty()) return
+    // Nothing to save. The checkmark is disabled here — correctly, there is
+    // no work to do — but Enter still has to resolve the editor, or it reads
+    // as stuck to somebody who opened it and changed their mind.
+    if (draftName() === profileName()) {
+      endEditName()
+      return
+    }
+    if (busy()) return
     if (await saveDisplayName()) endEditName()
     // On failure the editor stays open with the text intact: the error line
     // below it is useless if the field it refers to has already closed.
