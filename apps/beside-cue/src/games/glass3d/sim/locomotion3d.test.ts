@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { LocomotionConfig, LocomotionIntent } from './locomotion3d'
+import type { GroundSampler, LocomotionConfig, LocomotionIntent, } from './locomotion3d'
 import { createLocomotion, hasFallenOut, jumpVelocity, stepLocomotion, } from './locomotion3d'
 
 const CFG: LocomotionConfig = {
@@ -26,7 +26,7 @@ const holed = (from: number, to: number) => (x: number) =>
 const run = (
   state: ReturnType<typeof createLocomotion>,
   intent: LocomotionIntent | ((i: number) => LocomotionIntent),
-  ground: (x: number) => number | null,
+  ground: GroundSampler,
   seconds: number,
   cfg: LocomotionConfig = CFG,
 ): { landings: number } => {
@@ -235,5 +235,37 @@ describe('falling', () => {
     run(s, STILL, ground, 2)
     expect(s.grounded).toBe(true)
     expect(s.y).toBeCloseTo(0.3, 5)
+  })
+
+  // A sampler that answers with the highest slab over x, whatever the
+  // player's height, turns every ledge into a step: walk into its
+  // shadow and the landing test lifts him onto the top of it. The
+  // second argument is the whole defence, and this is the room it was
+  // found in -- chamber 3's ledge, which was meant to need a jump and
+  // could be strolled onto for a year.
+  it('does not stand him on a ledge he walked underneath', () => {
+    const s = createLocomotion(-2)
+    /** A ledge from -1 to 1, and only when his feet are above it. */
+    const ground = (x: number, fromY: number) =>
+      x > -1 && x < 1 && fromY >= 0.3 - 1e-4 ? 0.3 : 0
+    // Long enough to be well under the ledge, short enough to still be
+    // under it: ending past the far lip would prove nothing.
+    run(s, { move: 1, jump: false }, ground, 1.5)
+    expect(s.x).toBeGreaterThan(-1)
+    expect(s.x).toBeLessThan(1)
+    expect(s.y).toBe(0)
+    expect(s.grounded).toBe(true)
+  })
+
+  it('but a jump over its lip does land on it', () => {
+    const s = createLocomotion(-1.1)
+    const ground = (x: number, fromY: number) =>
+      x > -1 && x < 1 && fromY >= 0.3 - 1e-4 ? 0.3 : 0
+    // The flight is about 0.82s at this config; stop while he is still
+    // over the ledge rather than walking him off the far end of it.
+    run(s, (i) => ({ move: 1, jump: i < 3 }), ground, 1.2)
+    expect(s.x).toBeLessThan(1)
+    expect(s.y).toBeCloseTo(0.3, 5)
+    expect(s.grounded).toBe(true)
   })
 })

@@ -147,23 +147,32 @@ export const rangeSlackSemis = (
 }
 
 /**
- * The floor height at `x01`, or null where there is nothing there.
+ * The surface under his feet at `x`, given that his feet are at `fromY`.
  *
  * A chamber's floor is continuous -- the danger is what the wave is
  * doing to it, not a hole -- so this only ever answers with the ground
- * or with a platform above it. Which is why `locomotion3d` takes the
- * sampler as an argument and has never heard of a mode.
+ * or with a platform he is already above. Which is why `locomotion3d`
+ * takes the sampler as an argument and has never heard of a mode.
+ *
+ * `fromY` is what makes a platform a platform. Without it the highest
+ * slab over that x wins, and walking under a ledge lifts him onto it:
+ * the ledge stops being something to jump to and becomes a step.
  */
 export const groundIn =
   (chamber: Chamber) =>
-  (x: number): number | null => {
+  (x: number, fromY: number): number | null => {
     const x01 = x / chamber.length
     let best = 0
     for (const p of chamber.platforms) {
       const half = p.width / 2 / chamber.length
-      if (x01 >= p.at - half && x01 <= p.at + half) {
-        best = Math.max(best, p.height)
-      }
+      if (x01 < p.at - half || x01 > p.at + half) continue
+      // AT OR BELOW his feet. A ledge he has not got above is something
+      // he is standing under, not something he is standing on -- and
+      // the epsilon is because standing ON one puts his feet exactly at
+      // its height, where floating point is not obliged to agree with
+      // itself.
+      if (p.height > fromY + 1e-4) continue
+      best = Math.max(best, p.height)
     }
     return best
   }

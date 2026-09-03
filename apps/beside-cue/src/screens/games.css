@@ -628,9 +628,13 @@
   text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
 }
 
-/* The line under the end-of-walk headline. */
-.stage3d__card-note {
+/* The line under the end-of-walk headline. Scoped through the card
+   because `.stage3d__card span` claims every span in there at 0-1-1 and
+   was winning: the note shipped as a second headline, 1.5rem custard,
+   which is the same specificity trap the guide link fell into. */
+.stage3d__card .stage3d__card-note {
   font-size: 0.78rem;
+  font-weight: 400;
   color: rgb(255 255 255 / 60%);
 }
 
@@ -907,6 +911,80 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--custard, #f2c84b);
+}
+
+/* The end-of-walk card's room list.
+   ------------------------------------------------------------------
+   Everything here is scoped through `.chamber-done` on purpose. The
+   card already claims `.stage3d__card button` and `.stage3d__card span`
+   at 0-1-1, so a plain single-class rule loses to it however far down
+   the file it sits -- which is how the guide link first shipped as a
+   yellow pill. */
+.chamber-done {
+  /* Wider than a one-line card, and the rows scroll rather than push
+     the Done button off a short screen. */
+  max-width: min(30rem, 90vw);
+}
+
+.chamber-done__rooms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.chamber-done .chamber-done__room {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  font-weight: 400;
+  text-align: left;
+  color: rgb(255 255 255 / 88%);
+  background: rgb(255 255 255 / 4%);
+}
+
+.chamber-done .chamber-done__room:disabled {
+  /* Not a locked door -- a room this walk has not reached yet. Dimmed
+     rather than hidden, because the length of the path is worth
+     knowing from inside it. */
+  color: rgb(255 255 255 / 32%);
+  background: none;
+  border-style: dashed;
+}
+
+.chamber-done .chamber-done__n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgb(255 255 255 / 45%);
+}
+
+.chamber-done .chamber-done__teaches {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: inherit;
+}
+
+.chamber-done .chamber-done__best {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--custard, #f2c84b);
+}
+
+.chamber-done .chamber-done__room:disabled .chamber-done__best {
+  color: rgb(255 255 255 / 32%);
 }
 
 /* The wave gauge. Only on screen while the glass is ringing, which is

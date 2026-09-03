@@ -381,6 +381,55 @@ standing "no streaks, ever", that settles the design:
 | 3e  | The end of the track: a card for the whole walk, and a way back into any cleared room       | Finishing says so, and replaying is one tap                     |
 | 3f  | Two more rooms, now that adding one is cheap                                                | Five rooms, and the ladder climbed rather than restated         |
 
+All six landed. What each one turned out to be:
+
+- **3d** — the exit is a pool of light with a shaft standing in it, in
+  the room's own visual language rather than a doorway with a frame
+  (the Hallway already found out that dark posts in a void room read as
+  floating monoliths). Closed it is cool and steady, open it is custard
+  and breathing, and it opens the moment the last pane goes. The pool
+  is stretched ALONG the room, not around the shaft: the chase camera
+  shows about two units ahead of Merc, so a pool the width of the shaft
+  would not appear until he was standing in it.
+- **3e** — the end card lists the rooms with the best grade each, and
+  every cleared room is a button back into it. Replaying returns to the
+  card rather than walking the player forward down a path they have
+  already finished. The track keeps the BEST grade per room, so a worse
+  run costs nothing.
+- **3f** — chambers 4 and 5, below.
+
+### The two new rooms, and the bug they turned up
+
+**Chamber 4, "The way out is up."** Modes 5 and 6 (3.16 semitones, a
+shade tighter than chamber 3), hinged on the centre exactly as chamber 2
+is but one rung higher: 0.5 is a belly of 5 and a node of 6. What is new
+is that the exit stands on a ledge, so the room cannot be finished by
+walking. Arrival now checks his HEIGHT as well as his position.
+
+**Chamber 5, "Three notes, and the room does not say which order."**
+Panes at 0.3, 0.625 and 0.75 want modes 5, 4 and 6 — neither up the
+ladder nor down it, so the room has to be read rather than tried. Its
+ledge sits over the centre, which is the perch for the second pane and
+the belly of the note that opened the first: somewhere to stand while
+still holding the wrong one.
+
+Building chamber 4 turned up why the jump had never been needed. Two
+faults, stacked:
+
+1. `stepLocomotion` landed him on any surface above his feet, and
+   `groundIn` answered with the highest slab over that x whatever his
+   height. So walking into a ledge's shadow LIFTED him onto it — every
+   platform in the game was a free step, and chamber 3's ledge was
+   reached that way for the whole of slice 2.
+2. That ledge was 0.62 high against a jump of 0.5. It could never have
+   been jumped onto. The test beside it asserted `height > 0.5`, which
+   is the opposite of the invariant that matters.
+
+Fixed at both ends: `GroundSampler` now takes `fromY` and never offers a
+surface above his feet, and every ledge is asserted to be inside the
+jump with clearance to spare. Chamber 3's is now 0.42, and reachable for
+the first time.
+
 ### What 3c actually costs, and why it is the interesting one
 
 Each `ChamberStage` today owns a canvas, a renderer, a microphone lease
@@ -434,3 +483,5 @@ So: build the inside of the circle now, draw the map when there are two.
   room and say something honest at the end, in real units.
 - **Chamber 3's ledge is decoration.** Locomotion has had a jump since
   2a and no room requires it. One of the two new rooms should.
+  _Done, and worse than described: the ledge could not be jumped onto at
+  all, and was only ever stood on by a collision bug. See above._

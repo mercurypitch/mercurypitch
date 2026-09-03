@@ -85,9 +85,20 @@ export interface LocomotionState {
   jumpWasDown: boolean
 }
 
-/** The floor under a given x, or null where there is nothing to stand
- * on. Heights are absolute, so a platform is simply a higher answer. */
-export type GroundSampler = (x: number) => number | null
+/**
+ * The surface under his feet at a given x, or null where there is
+ * nothing to stand on. Heights are absolute, so a platform is simply a
+ * higher answer.
+ *
+ * `fromY` is where his feet already are, and it is not optional
+ * bookkeeping: without it the sampler can only report the HIGHEST
+ * surface over that x, and a walk into a ledge's shadow then reads as a
+ * landing on top of it. That is not a hypothetical -- chamber 3's ledge
+ * shipped as a free step up, and the jump it was built to need was
+ * never once required. A sampler answers with the highest surface AT OR
+ * BELOW him, so a ledge overhead is not a floor.
+ */
+export type GroundSampler = (x: number, fromY: number) => number | null
 
 export const createLocomotion = (
   x: number,
@@ -163,12 +174,14 @@ export const stepLocomotion = (
   state.vy = Math.max(-cfg.maxFallSpeed, state.vy - cfg.gravity * dt)
   const wasGrounded = state.grounded
   const nextY = state.y + state.vy * dt
-  const floor = ground(state.x)
+  const floor = ground(state.x, state.y)
 
   let landed = false
   if (floor !== null && state.vy <= 0 && nextY <= floor) {
     // Only landing on the way DOWN, so a jump through a platform's plane
-    // is not caught by it on the way up.
+    // is not caught by it on the way up. Coming from BELOW is the
+    // sampler's job, not this test's: it never offers a surface above
+    // his feet, so there is nothing here to be snapped up onto.
     state.y = floor
     state.vy = 0
     state.grounded = true

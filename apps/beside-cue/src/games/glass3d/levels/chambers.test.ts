@@ -6,9 +6,10 @@
 // complete, and each one is cheaper to fail here than on a phone.
 
 import { describe, expect, it } from 'vitest'
-import { belliesFor, isFloorSafe, modeMidi, nodesFor, rangeSlackSemis, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
+import { belliesFor, groundIn, isFloorSafe, modeMidi, nodesFor, rangeSlackSemis, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
+import { CHAMBER_CONFIG } from '../world3d-config'
 import type { ChamberLevel } from './chambers'
-import { CHAMBER_1, CHAMBER_2, CHAMBER_3, chamberById, CHAMBERS, } from './chambers'
+import { CHAMBER_1, CHAMBER_2, CHAMBER_3, CHAMBER_4, CHAMBER_5, chamberById, CHAMBERS, } from './chambers'
 
 /** Which of the room's modes shake a pane at `at` apart. */
 const breakersOf = (room: ChamberLevel, at: number): number[] =>
@@ -220,9 +221,111 @@ describe('chamber 3, where it becomes a sequence', () => {
   it('has a ledge to hold a note on, over live floor', () => {
     const [ledge] = CHAMBER_3.platforms
     expect(ledge).toBeDefined()
-    expect(ledge!.height).toBeGreaterThan(0.5)
     // It sits over ground that mode 5 will not let him stand on.
     expect(isFloorSafe(ledge!.at, 5, CHAMBER_3.floorThreshold)).toBe(false)
+  })
+})
+
+// A ledge is only a ledge if a jump reaches it. This shipped asserting
+// the OPPOSITE -- chamber 3's was 0.62 against a jump of 0.5 -- and went
+// unnoticed because walking into a ledge's shadow used to lift him onto
+// it, so the one platform in the game was reached by a bug for the whole
+// of slice 2.
+describe('every ledge', () => {
+  const { jumpHeight } = CHAMBER_CONFIG.locomotion
+
+  it.each(
+    CHAMBERS.flatMap((room) =>
+      room.platforms.map((p, i) => [`${room.id} ledge ${i}`, room, p] as const),
+    ),
+  )('%s: is high enough to matter and low enough to reach', (_id, _room, p) => {
+    expect(p.height).toBeGreaterThan(0.2)
+    // Clearance, not equality: landing exactly at the apex means
+    // landing with no margin at all.
+    expect(p.height).toBeLessThanOrEqual(jumpHeight - 0.05)
+  })
+
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: does not stand him on anything he has not got above',
+    (_id, room) => {
+      const ground = groundIn(room)
+      for (const p of room.platforms) {
+        const x = p.at * room.length
+        expect(ground(x, 0)).toBe(0)
+        expect(ground(x, p.height)).toBe(p.height)
+      }
+    },
+  )
+})
+
+describe('chamber 4, where the jump gets a job', () => {
+  it('gives each pane exactly one mode that opens it', () => {
+    expect(breakersOf(CHAMBER_4, 5 / 12)).toEqual([6])
+    expect(breakersOf(CHAMBER_4, 0.5)).toEqual([5])
+  })
+
+  it('hinges on the centre, one rung up from chamber 2', () => {
+    expect(standingAmplitude(0.5, 5)).toBeCloseTo(1, 10)
+    expect(standingAmplitude(0.5, 6)).toBeCloseTo(0, 10)
+  })
+
+  it('asks a tighter interval than the room before it', () => {
+    const gap = (m: readonly number[]): number =>
+      modeMidi(0, Math.max(...m)) - modeMidi(0, Math.min(...m))
+    expect(gap(CHAMBER_4.modes)).toBeLessThan(gap(CHAMBER_3.modes))
+  })
+
+  // The point of the room: the exit is off the floor, so it cannot be
+  // walked to.
+  it('puts its exit on a ledge, and the ledge under the exit', () => {
+    const ledge = CHAMBER_4.platforms[0]
+    expect(ledge).toBeDefined()
+    const ground = groundIn(CHAMBER_4)
+    const x = CHAMBER_4.exitAt * CHAMBER_4.length
+    expect(ground(x, Number.POSITIVE_INFINITY)).toBe(ledge!.height)
+    // And walking up to it on the floor is not arriving.
+    expect(ground(x, 0)).toBe(0)
+  })
+
+  it('is the only room whose exit is off the floor', () => {
+    const raised = CHAMBERS.filter(
+      (room) =>
+        (groundIn(room)(room.exitAt * room.length, Number.POSITIVE_INFINITY) ??
+          0) > 0,
+    )
+    expect(raised.map((r) => r.id)).toEqual([CHAMBER_4.id])
+  })
+})
+
+describe('chamber 5, where three notes go out of order', () => {
+  it('gives each pane exactly one mode that opens it', () => {
+    expect(breakersOf(CHAMBER_5, 0.3)).toEqual([5])
+    expect(breakersOf(CHAMBER_5, 0.625)).toEqual([4])
+    expect(breakersOf(CHAMBER_5, 0.75)).toEqual([6])
+  })
+
+  // The whole reason the room exists: left to right the answer is 5, 4,
+  // 6, which is neither up the ladder nor down it. A player who tries
+  // the modes in turn is not reading the floor, and this room is the
+  // one that makes them.
+  it('wants its modes in an order that is not an order', () => {
+    const wanted = [...CHAMBER_5.panes]
+      .sort((a, b) => a.at - b.at)
+      .map((pane) => breakersOf(CHAMBER_5, pane.at)[0])
+    expect(wanted).toEqual([5, 4, 6])
+    const ascending = [...wanted].sort((a, b) => a! - b!)
+    expect(wanted).not.toEqual(ascending)
+    expect(wanted).not.toEqual([...ascending].reverse())
+  })
+
+  it('puts its ledge over the spot the last note makes lethal', () => {
+    const ledge = CHAMBER_5.platforms[0]
+    expect(ledge).toBeDefined()
+    // The perch for the second pane is the centre: safe on mode 4,
+    // which opens it, and the belly of mode 5, which opened the first.
+    expect(isFloorSafe(0.5, 4, CHAMBER_5.floorThreshold)).toBe(true)
+    expect(isFloorSafe(0.5, 5, CHAMBER_5.floorThreshold)).toBe(false)
+    expect(ledge!.at).toBe(0.5)
   })
 })
 

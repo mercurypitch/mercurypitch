@@ -12,6 +12,8 @@
 //   1  the room has a pitch, and glass sits where the air moves hardest
 //   2  changing the note moves the danger
 //   3  the answer is a sequence, not a position
+//   4  the way out is not always on the floor
+//   5  three notes, and the order is not the order they stand in
 //
 // The numbers are not taste. A pane at `at` breaks when the amplitude
 // there passes `breakAt`, and the amplitude is `|sin(n*pi*at)|` -- so
@@ -114,7 +116,13 @@ export const CHAMBER_3: ChamberLevel = {
     { at: 0.375, height: 1.05 },
     { at: 0.7, height: 1.05 },
   ],
-  platforms: [{ at: 0.5, width: 1.1, height: 0.62 }],
+  // 0.42, not 0.62. The jump reaches 0.5 (`CHAMBER_CONFIG.locomotion`),
+  // so the ledge as first written could not be jumped onto at all --
+  // and the only reason it was ever stood on is that walking into its
+  // shadow used to lift him onto it. Both halves of that are fixed:
+  // `groundIn` no longer hands him a surface above his feet, and this
+  // is now a height a jump can actually clear.
+  platforms: [{ at: 0.5, width: 1.1, height: 0.42 }],
   teaches: 'The answer is an order, not a place.',
   breakAt: 0.8,
   floorThreshold: 0.5,
@@ -122,11 +130,78 @@ export const CHAMBER_3: ChamberLevel = {
   exitAt: 0.97,
 }
 
+/**
+ * The room you have to leave upwards.
+ *
+ * Modes 5 and 6 are 3.16 semitones apart, a shade tighter than the room
+ * before it, and the hinge is chamber 2's one rung higher: 0.5 is a
+ * BELLY of 5 and a NODE of 6, so the second pane is deaf to the note
+ * that opened the first. The first sits on 5/12, a belly of 6 where 5
+ * musters 0.26.
+ *
+ * What is new is the way out. The exit stands on a ledge, and reaching
+ * it means jumping: every other room could be finished by walking, and
+ * the jump has been in the controls since slice 2 with nothing to do.
+ * Nothing about the glass changes -- the panes still gate the ledge,
+ * and the ledge only gates the last step.
+ */
+export const CHAMBER_4: ChamberLevel = {
+  id: 'chamber-4',
+  modes: [5, 6],
+  length: 9,
+  panes: [
+    { at: 5 / 12, height: 1.05 },
+    { at: 0.5, height: 1.05 },
+  ],
+  // Wide enough to land on without aiming, and it has to cover `exitAt`
+  // or the way out would be a step short of the light.
+  platforms: [{ at: 0.92, width: 1.3, height: 0.42 }],
+  teaches: 'The way out is up.',
+  breakAt: 0.8,
+  floorThreshold: 0.6,
+  startAt: 0.03,
+  exitAt: 0.95,
+}
+
+/**
+ * Three notes, and the room does not say which order.
+ *
+ * The panes run 0.3, 0.625, 0.75 and want modes 5, 4, 6 -- not up the
+ * ladder, not down it. Every room so far could be solved by trying the
+ * modes in turn; this one has to be READ, because the answer is a
+ * different rung each time and the pattern on the floor is the only
+ * thing that says which.
+ *
+ * The ledge is the safety net for the mistake this room invites. The
+ * perch for the second pane is the centre, which is a NODE of mode 4
+ * and the BELLY of mode 5 -- so walking there still holding the note
+ * that opened the first pane drops him. The ledge sits over exactly
+ * that spot: somewhere to stand whatever is coming out of his mouth.
+ */
+export const CHAMBER_5: ChamberLevel = {
+  id: 'chamber-5',
+  modes: [4, 5, 6],
+  length: 10,
+  panes: [
+    { at: 0.3, height: 1.05 },
+    { at: 0.625, height: 1.05 },
+    { at: 0.75, height: 1.05 },
+  ],
+  platforms: [{ at: 0.5, width: 1.2, height: 0.42 }],
+  teaches: 'Three notes, and the room does not say which order.',
+  breakAt: 0.8,
+  floorThreshold: 0.55,
+  startAt: 0.02,
+  exitAt: 0.96,
+}
+
 /** In the order they are meant to be played. */
 export const CHAMBERS: readonly ChamberLevel[] = [
   CHAMBER_1,
   CHAMBER_2,
   CHAMBER_3,
+  CHAMBER_4,
+  CHAMBER_5,
 ]
 
 export const chamberById = (id: string): ChamberLevel | null =>

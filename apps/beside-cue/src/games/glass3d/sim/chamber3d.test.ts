@@ -161,12 +161,26 @@ describe('the floor', () => {
     teaches: 'nothing',
   }
 
-  it('is the ground, except where a platform is over it', () => {
+  it('is the ground, except where a platform is under his feet', () => {
     const ground = groundIn(chamber)
-    expect(ground(0.2)).toBe(0)
-    expect(ground(2)).toBe(0.6)
+    // Above the ledge, looking down: the ledge.
+    expect(ground(2, 0.9)).toBe(0.6)
+    // Standing exactly on it stays on it, floating point notwithstanding.
+    expect(ground(2, 0.6)).toBe(0.6)
+    expect(ground(0.2, 0)).toBe(0)
     // Just outside the platform's width.
-    expect(ground(2 - 0.6)).toBe(0)
+    expect(ground(2 - 0.6, 0.9)).toBe(0)
+  })
+
+  // The bug this signature exists to make impossible: walking along the
+  // floor into a ledge's shadow used to lift him onto it, which turned
+  // every platform in the game into a step and left the jump with
+  // nothing to do.
+  it('does not lift him onto a ledge he has not got above', () => {
+    const ground = groundIn(chamber)
+    expect(ground(2, 0)).toBe(0)
+    // Nor part-way up, on the way back down from a jump that fell short.
+    expect(ground(2, 0.4)).toBe(0)
   })
 
   it('is safe at a node and not at a belly', () => {

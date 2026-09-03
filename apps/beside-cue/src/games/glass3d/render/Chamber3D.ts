@@ -22,7 +22,7 @@ import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, Box
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
 import type { ChamberLevel } from '../levels/chambers'
-import { standingAmplitude } from '../sim/chamber3d'
+import { groundIn, standingAmplitude } from '../sim/chamber3d'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
@@ -248,8 +248,12 @@ export const createChamber3D = (
 
   const placeExit = (): void => {
     const x = current.exitAt * current.length
-    exitPool.position.set(x, 0.003, 0)
-    exitGlow.position.x = x
+    // The light stands on whatever the exit stands on. A room can put
+    // its way out on a ledge, and a pool painted on the floor under
+    // that ledge would point at the one place the exit is not.
+    const y = groundIn(current)(x, Number.POSITIVE_INFINITY) ?? 0
+    exitPool.position.set(x, y + 0.003, 0)
+    exitGlow.position.set(x, y + 0.95, 0)
   }
 
   const paneMaterial = new MeshPhysicalMaterial({

@@ -24,7 +24,7 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -32,8 +32,9 @@ import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
-import { currentRoom, isFinished, progressLabel, readTrack, recordClear, roomAfter, walkGrade, writeTrack, } from '../levels/chamber-track'
+import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
+import { CHAMBERS } from '../levels/chambers'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
@@ -176,6 +177,25 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
+  /**
+   * The loop's `enterRoom`, reachable from the end card.
+   *
+   * Going back into a room is a room change like any other -- the same
+   * rebuild, the same kept microphone -- so the card must not have its
+   * own version of it. It borrows the loop's, published once the loop
+   * exists and null before then, which is also exactly when there is no
+   * end card to press.
+   */
+  let goToRoom: ((next: ChamberLevel) => void) | null = null
+  /**
+   * Set while a room is being re-walked from the end card.
+   *
+   * Without it, finishing room one again would hand the player room two
+   * and walk them down a path they have already finished. Replaying is
+   * going back to sing something better, so it returns to where it was
+   * pressed.
+   */
+  let replaying = false
   const tone = createGlassTone(
     midiToFreq(modeMidi(fundamental(), room().modes[0] ?? 1)),
   )
@@ -189,6 +209,14 @@ export const ChamberStage = (props: ChamberStageProps) => {
     if (midi === null) return ''
     const note = midiToNote(Math.round(midi))
     return `${note.name}${note.octave}`
+  }
+
+  /** Walk a cleared room again. Nothing is taken away for trying: the
+   * track keeps the BEST grade per room, so a worse run costs nothing
+   * and a better one is kept. */
+  const replayRoom = (next: ChamberLevel): void => {
+    replaying = true
+    goToRoom?.(next)
   }
 
   const toggleLadder = (): void => {
@@ -265,6 +293,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
       }
 
       let ground = groundIn(live)
+      /** The height of the surface the exit stands on. Derived from the
+       * room's own platforms rather than declared beside them, so a
+       * ledge that moves cannot leave the exit hovering. */
+      const exitSurface = (room: ChamberLevel): number =>
+        groundIn(room)(room.exitAt * room.length, Number.POSITIVE_INFINITY) ?? 0
+      let exitY = exitSurface(live)
       // The room's walls, recomputed as glass gives way.
       //
       // `maxX` is the nearest unbroken pane ahead of him, not the end of
@@ -349,6 +383,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         tunedRoom = fundamental()
         tunedTo = -1
         ground = groundIn(next)
+        exitY = exitSurface(next)
         grades = []
         breaking = null
         loco.x = next.startAt * next.length
@@ -362,6 +397,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         setCharges(next.modes.map(() => 0))
         go('walking')
       }
+      goToRoom = enterRoom
 
       /** The floor gave way. The clip that has been rigged and exported
        * and never once played since slice 0 finally has a caller. */
@@ -407,6 +443,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
         setTrack(next)
         writeTrack(next)
         clearedAtWall = wallSeconds
+        if (replaying) {
+          replaying = false
+          go('done')
+          return
+        }
         go(roomAfter(live.id) === null ? 'done' : 'cleared')
       }
 
@@ -532,8 +573,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
           // The way out is the far end, and every pane has to be gone
           // for it to count -- the exit is not a shortcut past the
           // puzzle, it is what the puzzle opens.
+          //
+          // And it has to be STOOD ON. A room whose exit is up a ledge
+          // would otherwise finish itself the moment he walked into the
+          // shadow underneath it, which is a jump the player never made.
           if (
             loco.x >= live.exitAt * live.length - ARRIVED &&
+            loco.y >= exitY - 0.01 &&
             targets.every((t) => t.broken)
           ) {
             clearRoom()
@@ -672,6 +718,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      goToRoom = null
       delete (window as unknown as Record<string, unknown>).__w3c
     })
   })
@@ -851,7 +898,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       </Show>
 
       <Show when={phase() === 'done'}>
-        <div class="stage3d__card">
+        <div class="stage3d__card chamber-done">
           <Show
             when={isFinished(track())}
             fallback={<span>{grade()}% in tune</span>}
@@ -861,6 +908,34 @@ export const ChamberStage = (props: ChamberStageProps) => {
               {walkGrade(track()) ?? 0}% in tune across {progressLabel(track())}
             </span>
           </Show>
+          {/* The walk, room by room. A single average is the wrong thing
+              to leave a singer with -- it cannot say WHICH room is the
+              one they cannot sing yet. And since the number beside each
+              room is its best, going back in can only ever improve it,
+              which is why the way back in lives here and not behind a
+              warning. */}
+          <ul class="chamber-done__rooms">
+            <For each={CHAMBERS}>
+              {(level, i) => (
+                <li>
+                  <button
+                    type="button"
+                    class="chamber-done__room"
+                    disabled={!isCleared(track(), level.id)}
+                    onClick={() => replayRoom(level)}
+                  >
+                    <span class="chamber-done__n">{i() + 1}</span>
+                    <span class="chamber-done__teaches">{level.teaches}</span>
+                    <span class="chamber-done__best">
+                      {track().best[level.id] === undefined
+                        ? 'not yet'
+                        : `${track().best[level.id]}%`}
+                    </span>
+                  </button>
+                </li>
+              )}
+            </For>
+          </ul>
           <button type="button" onClick={() => props.onExit()}>
             Done
           </button>
