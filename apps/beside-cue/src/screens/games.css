@@ -439,6 +439,129 @@
   }
 }
 
+/* The harmonic ladder. Down the left, clear of the Leave pill and of
+   the controls, and laid out in SEMITONES rather than in mode number --
+   the rungs bunching toward the top is the fact it exists to show. */
+.mode-ladder {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  /* A compact strip in the empty upper-left, not a full-height column.
+     Stretched to the screen a two-mode room puts one rung under the
+     Leave pill and the other in the controls, and the shape that is
+     supposed to show the rungs bunching shows nothing at all; centred
+     vertically it sits on Merc, who is the thing being aimed. */
+  top: calc(env(safe-area-inset-top, 0px) + 5rem);
+  height: 9rem;
+  z-index: 20;
+  width: 5.5rem;
+  pointer-events: none;
+}
+
+.mode-ladder__rung {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(10 14 15 / 45%);
+  overflow: hidden;
+  transform: translateY(50%);
+  transition: border-color 120ms linear;
+}
+
+/* The charge on that mode's pane, behind its name. A bar somewhere else
+   on the screen would make the player look away from the thing they are
+   aiming at. */
+.mode-ladder__rung i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgb(242 200 75 / 22%);
+  transition: width 80ms linear;
+}
+
+.mode-ladder__rung span,
+.mode-ladder__rung b {
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 62%);
+}
+
+.mode-ladder__rung b {
+  display: block;
+  font-weight: 400;
+  font-size: 0.6rem;
+  color: var(--orange, #c93513);
+}
+
+.mode-ladder__rung.is-near {
+  border-color: rgb(255 255 255 / 34%);
+}
+
+.mode-ladder__rung.is-on {
+  border-color: var(--custard, #f2c84b);
+}
+
+.mode-ladder__rung.is-on span {
+  color: var(--custard, #f2c84b);
+}
+
+/* What the room is asking for, and how far through it he is. Bottom
+   centre, above the controls. */
+.chamber-hud {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem);
+  z-index: 20;
+  width: min(22rem, 84vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.chamber-hud__line,
+.chamber-hud__count {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 72%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+.chamber-hud__count {
+  font-size: 0.62rem;
+  color: rgb(255 255 255 / 45%);
+}
+
+.chamber-hud__toggles {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.chamber-hud__toggles button {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(10 14 15 / 45%);
+  font-family: var(--font-label, sans-serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 45%);
+  cursor: pointer;
+}
+
+.chamber-hud__toggles button[aria-pressed='true'] {
+  border-color: rgb(242 200 75 / 40%);
+  color: var(--custard, #f2c84b);
+}
+
 /* The controls. A strip across the bottom, because the hand holding
    the phone is the hand playing it and that hand reaches the bottom of
    the screen and nothing else.

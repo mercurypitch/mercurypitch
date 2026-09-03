@@ -212,18 +212,64 @@ them.
 
 Each step lands green and is playable before the next begins.
 
-| #   | Step                                                                            | Done when                                                                          |
-| --- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 2a  | `locomotion3d.ts` + tests. No renderer, no chamber — walk, jump, fall, grounded | The physics has tests and a debug page moves a box with it                         |
-| 2b  | Touch controller, wired to the Hallway, replacing the scripted walk             | Merc is driven by a thumb in a scene that already works, with nothing else changed |
-| 2c  | `chamber.ts` + the standing-wave maths, with tests on node positions per mode   | Node positions are pinned against hand-computed values                             |
-| 2d  | Chamber 1 renders: room, one pane, the node pattern on the floor                | Singing the mode breaks the pane                                                   |
-| 2e  | Falling: a belly under Merc plays the `fall` clip and restarts the chamber      | The clip finally has a caller                                                      |
-| 2f  | Chambers 2 and 3, the ladder HUD, the settings toggles                          | Three chambers playable end to end and scored                                      |
+| #   | Step                                                                            | Done when                                                                          | Status |
+| --- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------ |
+| 2a  | `locomotion3d.ts` + tests. No renderer, no chamber — walk, jump, fall, grounded | The physics has tests and a debug page moves a box with it                         | done   |
+| 2b  | Touch controller, wired to the Hallway, replacing the scripted walk             | Merc is driven by a thumb in a scene that already works, with nothing else changed | done   |
+| 2c  | `chamber.ts` + the standing-wave maths, with tests on node positions per mode   | Node positions are pinned against hand-computed values                             | done   |
+| 2d  | Chamber 1 renders: room, one pane, the node pattern on the floor                | Singing the mode breaks the pane                                                   | done   |
+| 2e  | Falling: a belly under Merc plays the `fall` clip and restarts the chamber      | The clip finally has a caller                                                      | done   |
+| 2f  | Chambers 2 and 3, the ladder HUD, the settings toggles                          | Three chambers playable end to end and scored                                      | done   |
 
-Step 2b is deliberately early: it puts the new movement in a scene that
-already works, so a control problem cannot be confused with a chamber
-problem.
+Step 2b was deliberately early: it put the new movement in a scene that
+already worked, so a control problem could not be confused with a
+chamber problem.
+
+### What landed, and where
+
+| Thing                    | File                                                      |
+| ------------------------ | --------------------------------------------------------- |
+| Walking and jumping      | `src/games/glass3d/sim/locomotion3d.ts`                   |
+| Thumb → intent           | `src/games/glass3d/input/pad-intent.ts`                   |
+| The pad and jump button  | `src/games/glass3d/render/TouchControls.tsx`              |
+| Standing-wave maths      | `src/games/glass3d/sim/chamber3d.ts`                      |
+| The three rooms, as data | `src/games/glass3d/levels/chambers.ts`                    |
+| The room, drawn          | `src/games/glass3d/render/Chamber3D.ts`                   |
+| The room, played         | `src/games/glass3d/render/ChamberStage.tsx`               |
+| The harmonic ladder      | `src/games/glass3d/render/ModeLadder.tsx`                 |
+| A chamber's tighter band | `CHAMBER_CONFIG` in `src/games/glass3d/world3d-config.ts` |
+
+### Decisions taken while building it
+
+- **The tolerance question from §2 is answered in the config, not by
+  hand.** A chamber uses `tolSemis: 0.7` against the Hallway's 1.5,
+  because modes 4 and 5 are 3.86 semitones apart and two 1.5-wide bands
+  would leave under a semitone of ground between them. It still wants a
+  real voice to confirm, but the number is now written down and pinned.
+- **The floor pattern is coloured by SAFETY, not by amplitude.** A
+  smooth ramp is a picture of the wave; the floor has a threshold in it,
+  and drawing that threshold is what makes the pattern something to
+  stand on. It reads `floorThreshold` from the same room the rule does.
+- **A ledge does not shake.** Only the ground itself can drop him, which
+  is what lets a chamber have vertical space without every mode change
+  being a fall.
+- **The fall is a topple, not a plummet.** The `fall` clip animates
+  going over — anticipation, topple, impact, settle — so he plays it
+  where he stood. Dropping him through the floor threw the one asset the
+  moment exists to show out of frame.
+- **A fall restarts the position, not the room.** Panes already broken
+  stay broken. Losing three of them to one misstep is a punishment for
+  learning.
+- **Failure is turned off in chamber 1 without a flag**, by setting its
+  `floorThreshold` to 1: amplitude never exceeds 1, so the check simply
+  passes everywhere.
+
+### Still open
+
+- The chamber tolerance has not met a real singer. §2's question stands.
+- No score is kept per chamber; the grade card is the average accuracy
+  of that room's breaks and is not persisted.
+- The exit is a position, not a door. Nothing marks it in the room.
 
 ---
 

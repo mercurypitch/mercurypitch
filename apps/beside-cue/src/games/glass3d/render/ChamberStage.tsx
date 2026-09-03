@@ -1,0 +1,564 @@
+// A chamber, played.
+// ============================================================
+//
+// Slice 2's room. Merc walks it, the voice shapes it, and where he can
+// stand depends on what he is singing -- which is the first mechanic in
+// this game that is about SPACE, and the reason any of it is in 3D.
+//
+// The component owns what every stage here owns: the canvas, the mic
+// lifecycle, and the HUD signals. What is new is one rule, and it is
+// worth stating plainly because everything else follows from it:
+//
+//   THE ROOM IS TUNED TO THE PLAYER, NOT THE PLAYER TO THE ROOM.
+//
+// The theory fixes the RATIOS between modes and says nothing at all
+// about absolute pitch, so the fundamental is derived from the range the
+// RangeFinder measured. Nobody is asked to reach.
+//
+// Each pane gets its own resonance, targeted at the one mode that can
+// break it, and every unbroken pane is stepped with the same voice --
+// so the pane you are singing at charges and the others decay, with no
+// state machine deciding which one you meant. The panes ARE the state
+// machine.
+
+import { applyPreferredInput } from '@irchiinnuss/audio-io'
+import { MicInput } from '@irchiinnuss/audio-io/solid'
+import { midiToFreq } from '@irchiinnuss/pitch-engine'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSingDriver } from '@/games/glass/drivers/sing'
+import type { InteractionDriver } from '@/games/glass/drivers/types'
+import { micErrorLine } from '@/games/glass/mic-error'
+import { createVibratoDetector } from '@/games/glass/vibrato'
+import { createGlassTone } from '../audio/glass-tone'
+import { bindKeyboard, createIntentSource } from '../input/pad-intent'
+import type { ChamberLevel } from '../levels/chambers'
+import { createLoopState, runLoop } from '../runtime/loop'
+import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
+import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
+import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
+import type { ShardLaunch } from '../sim/shatter3d'
+import { solveShatter } from '../sim/shatter3d'
+import { CHAMBER_CONFIG } from '../world3d-config'
+import type { ChamberView } from './Chamber3D'
+import { createChamber3D } from './Chamber3D'
+import { ModeLadder } from './ModeLadder'
+import { TouchControls } from './TouchControls'
+
+const MIC_ID = 'glass3d-chamber'
+const TEXT_INTERVAL = 0.1
+
+/** The beat between the floor letting go and the room resetting: long
+ * enough for the fall to read as a fall, short enough to be a shrug. */
+const FALL_SECONDS = 1.6
+
+/** Close enough to the exit to count as out. */
+const ARRIVED = 0.02
+
+/** The measured range, if the player ever found it. Null is not a
+ * failure -- `tuneChamber` has a sensible middle to fall back on. */
+const RANGE_KEY = 'beside-cue:games:vocal-range'
+const readRange = (): { lowMidi: number; highMidi: number } | null => {
+  try {
+    const raw = window.localStorage.getItem(RANGE_KEY)
+    if (raw === null) return null
+    const fit = JSON.parse(raw) as { loMidi?: number; hiMidi?: number }
+    if (typeof fit.loMidi !== 'number' || typeof fit.hiMidi !== 'number') {
+      return null
+    }
+    if (!(fit.hiMidi > fit.loMidi)) return null
+    return { lowMidi: fit.loMidi, highMidi: fit.hiMidi }
+  } catch {
+    return null
+  }
+}
+
+const LADDER_KEY = 'beside-cue:games:chamber-ladder'
+const PATTERN_KEY = 'beside-cue:games:chamber-pattern'
+/** Both default ON. A player who wants the harder version can find the
+ * toggle; a player who cannot see why they fell will never find
+ * anything (§5). */
+const readToggle = (key: string): boolean => {
+  try {
+    return window.localStorage.getItem(key) !== 'off'
+  } catch {
+    return true
+  }
+}
+const writeToggle = (key: string, on: boolean): void => {
+  try {
+    window.localStorage.setItem(key, on ? 'on' : 'off')
+  } catch {
+    // the preference just lives for the session when storage is denied
+  }
+}
+
+type Phase = 'walking' | 'falling' | 'done'
+
+interface ChamberStageProps {
+  chamber: ChamberLevel
+  onExit: () => void
+}
+
+export const ChamberStage = (props: ChamberStageProps) => {
+  let canvas!: HTMLCanvasElement
+  // Read once, on purpose. The room is fixed for the life of this
+  // component -- GamesScreen mounts it with a `keyed` Show, so choosing
+  // a different chamber tears this one down and builds a new one -- and
+  // half of what is set up below (the fundamental, one resonance per
+  // pane, the renderer's geometry) is derived from it at mount and
+  // could not follow a change anyway.
+  // eslint-disable-next-line solid/reactivity
+  const chamber = props.chamber
+  const cfg = CHAMBER_CONFIG
+
+  const [micError, setMicError] = createSignal<string | null>(null)
+  const [started, setStarted] = createSignal(false)
+  const [backend, setBackend] = createSignal('…')
+  const [phase, setPhase] = createSignal<Phase>('walking')
+  const [nearMode, setNearMode] = createSignal<number | null>(null)
+  const [semisOff, setSemisOff] = createSignal(0)
+  const [onIt, setOnIt] = createSignal(false)
+  const [charges, setCharges] = createSignal<number[]>(
+    chamber.modes.map(() => 0),
+  )
+  const [broken, setBroken] = createSignal(0)
+  const [grade, setGrade] = createSignal<number | null>(null)
+  const [showLadder, setShowLadder] = createSignal(readToggle(LADDER_KEY))
+  const [showPattern, setShowPattern] = createSignal(readToggle(PATTERN_KEY))
+
+  /** The room, transposed onto this player's voice. */
+  const fundamental = tuneChamber(chamber.modes, readRange())
+
+  let driver: InteractionDriver | null = null
+  let stopLoop: (() => void) | null = null
+  const tone = createGlassTone(
+    midiToFreq(modeMidi(fundamental, chamber.modes[0] ?? 1)),
+  )
+  const input = createIntentSource()
+
+  const toggleLadder = (): void => {
+    const next = !showLadder()
+    setShowLadder(next)
+    writeToggle(LADDER_KEY, next)
+  }
+  const togglePattern = (): void => {
+    const next = !showPattern()
+    setShowPattern(next)
+    writeToggle(PATTERN_KEY, next)
+  }
+
+  onMount(() => {
+    const r = createChamber3D(canvas, cfg, chamber)
+    const unbindKeys = bindKeyboard(input, window)
+
+    const fit = (): void => {
+      const rect = canvas.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      r.resize(rect.width, rect.height, Math.min(window.devicePixelRatio, 1.5))
+    }
+    const observer = new ResizeObserver(fit)
+    observer.observe(canvas)
+
+    const begin = (): void => {
+      // One resonance per pane, aimed at the one mode that can shake it
+      // apart. Which mode that is comes out of the geometry, not out of
+      // a field somebody has to keep in sync with the level.
+      const targets = chamber.panes.map((pane) => {
+        const mode =
+          chamber.modes.find(
+            (m) => standingAmplitude(pane.at, m) >= chamber.breakAt,
+          ) ?? chamber.modes[0]!
+        const midi = modeMidi(fundamental, mode)
+        return { mode, midi, ring: createResonance(midi), broken: false }
+      })
+
+      const ground = groundIn(chamber)
+      const walls = { ...cfg.locomotion, minX: 0, maxX: chamber.length }
+      const loco = createLocomotion(chamber.startAt * chamber.length)
+      const vib = createVibratoDetector(cfg.vibrato)
+
+      let phaseNow: Phase = 'walking'
+      let fallUntil = 0
+      let elapsed = 0
+      let wallSeconds = 0
+      let breakAtWall = 0
+      let breaking: {
+        pane: number
+        launches: readonly ShardLaunch[]
+      } | null = null
+      const grades: number[] = []
+      let lastMidi: number | null = null
+      let lastMode: number | null = null
+      /** A mode held down from the dev hook, so the room can be walked
+       * and looked at without a microphone. Never set outside DEV. */
+      let forcedMode: number | null = null
+      let lastOff = 0
+      let lastOnIt = false
+      let lastWaveStrength = 0
+      let sinceText = TEXT_INTERVAL
+
+      const go = (p: Phase): void => {
+        phaseNow = p
+        setPhase(p)
+      }
+
+      let pose = ''
+      const setPose = (name: string, loop = true): void => {
+        if (pose === name) return
+        pose = name
+        r.merc()?.play(name, { loop })
+      }
+      const poseNow = (): void => {
+        if (phaseNow === 'falling') setPose('fall', false)
+        else if (!loco.grounded || Math.abs(loco.vx) > 0.06) setPose('move')
+        else if (lastOnIt) setPose('sing')
+        else setPose('listen')
+      }
+
+      /** The floor gave way. The clip that has been rigged and exported
+       * and never once played since slice 0 finally has a caller. */
+      const drop = (): void => {
+        input.release()
+        loco.vx = 0
+        loco.vy = 0
+        fallUntil = elapsed + FALL_SECONDS
+        go('falling')
+      }
+
+      /** Back to the start, with the room remembering what was already
+       * solved. Losing three panes to one misstep is a punishment for
+       * learning, and this game does not do those. */
+      const restart = (): void => {
+        loco.x = chamber.startAt * chamber.length
+        loco.y = 0
+        loco.vx = 0
+        loco.vy = 0
+        loco.grounded = true
+        loco.facing = 1
+        for (const t of targets) t.ring.res = 0
+        go('walking')
+      }
+
+      const breakPane = (index: number): void => {
+        const target = targets[index]!
+        target.broken = true
+        const acc = accuracy(target.ring, cfg.ring)
+        grades.push(acc)
+        breaking = {
+          pane: index,
+          launches: solveShatter(
+            r.centroids(),
+            { x: 0, y: chamber.panes[index]!.height * 0.52, z: 0 },
+            acc,
+            cfg.shatter,
+            11 + index,
+          ),
+        }
+        breakAtWall = wallSeconds
+        tone.shatter(acc)
+        setBroken(targets.filter((t) => t.broken).length)
+      }
+
+      const view: ChamberView = {
+        mercX: loco.x,
+        mercY: 0,
+        mercFacing: 1,
+        mode: null,
+        strength: 0,
+        paneBroken: targets.map(() => false),
+        breaking: null,
+        resonance: 0,
+      }
+
+      const loopState = createLoopState()
+      let last = performance.now()
+      let frame = 0
+
+      const tick = (now: number): void => {
+        const frameSeconds = (now - last) / 1000
+        last = now
+        wallSeconds += frameSeconds
+
+        runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
+          elapsed += dt
+
+          if (phaseNow === 'falling') {
+            // He TOPPLES; he does not plummet. The `fall` clip is
+            // anticipation, topple, impact and settle -- an animation of
+            // going over, played where he stood. Dropping him through
+            // the floor instead would throw the one asset this moment
+            // exists to show off out of frame, and read as him being
+            // deleted rather than as him having got it wrong.
+            if (elapsed >= fallUntil) restart()
+            return
+          }
+
+          stepLocomotion(loco, input.read(now), ground, dt, walls)
+
+          const pitch = driver?.latestPitch() ?? null
+          const wave =
+            pitch === null
+              ? { active: false, strength: 0 }
+              : vib.feed(pitch.tAudio * 1000, pitch.midi)
+          lastMidi = pitch?.midi ?? null
+          lastWaveStrength = wave.active ? wave.strength : 0
+
+          const near = nearestMode(lastMidi, fundamental, chamber.modes)
+          lastOff = near.semisOff
+          lastOnIt =
+            near.mode !== null && isExciting(near.semisOff, cfg.ring.tolSemis)
+          // A mode only SHAPES the room when it is actually being
+          // excited. Humming vaguely near a note must not move the
+          // floor, or the room reads as punishing warm-ups.
+          lastMode = lastOnIt ? near.mode : null
+          if (forcedMode !== null) lastMode = forcedMode
+
+          for (let i = 0; i < targets.length; i++) {
+            const target = targets[i]!
+            if (target.broken) continue
+            const broke = stepResonance(
+              target.ring,
+              {
+                midi: lastMidi,
+                vibrato: wave.active,
+                vibratoStrength: wave.strength,
+              },
+              dt,
+              cfg.ring,
+            )
+            if (broke) breakPane(i)
+          }
+
+          // The floor. A ledge does not shake -- it is solid, not the
+          // resonating floor -- so only the ground itself can drop him.
+          const onGround = loco.grounded && loco.y <= 0.001
+          const x01 = loco.x / chamber.length
+          if (onGround && !isFloorSafe(x01, lastMode, chamber.floorThreshold)) {
+            drop()
+            return
+          }
+
+          if (loco.x >= chamber.exitAt * chamber.length - ARRIVED) {
+            if (targets.every((t) => t.broken)) {
+              setGrade(
+                Math.round(
+                  (grades.reduce((a, b) => a + b, 0) /
+                    Math.max(1, grades.length)) *
+                    100,
+                ),
+              )
+              go('done')
+            }
+          }
+        })
+
+        const charge = Math.max(
+          ...targets.map((t) => (t.broken ? 0 : t.ring.res)),
+          0,
+        )
+        tone.update(charge, lastWaveStrength)
+        sinceText += frameSeconds
+        if (sinceText >= TEXT_INTERVAL) {
+          sinceText = 0
+          // The rung the voice is nearest, in tune or not -- a player a
+          // whole tone flat is trying to sing that mode, and the ladder
+          // saying "nothing" instead of "flat" is a shrug where a hint
+          // belongs. Silence, and only silence, lights nothing.
+          setNearMode(
+            lastMidi === null
+              ? null
+              : nearestMode(lastMidi, fundamental, chamber.modes).mode,
+          )
+          setSemisOff(lastOff)
+          setOnIt(lastOnIt)
+          setCharges(
+            chamber.modes.map((mode) =>
+              Math.max(
+                0,
+                ...targets
+                  .filter((t) => t.mode === mode && !t.broken)
+                  .map((t) => t.ring.res),
+              ),
+            ),
+          )
+        }
+
+        poseNow()
+        view.mercX = loco.x
+        view.mercY = loco.y
+        view.mercFacing = loco.facing
+        view.mode = showPattern() ? lastMode : null
+        view.strength = lastMode === null ? 0 : 1
+        view.paneBroken = targets.map((t) => t.broken)
+        view.resonance = charge
+        view.breaking =
+          breaking === null
+            ? null
+            : {
+                pane: breaking.pane,
+                seconds: wallSeconds - breakAtWall,
+                launches: breaking.launches,
+              }
+
+        r.render(view, frameSeconds)
+        frame = requestAnimationFrame(tick)
+      }
+
+      if (import.meta.env.DEV) {
+        ;(window as unknown as Record<string, unknown>).__w3c = () => ({
+          phase: phaseNow,
+          x: loco.x,
+          y: loco.y,
+          grounded: loco.grounded,
+          mode: lastMode,
+          fundamental,
+          broken: targets.map((t) => t.broken),
+          charges: targets.map((t) => t.ring.res),
+          move: (m: number) => input.setMove(m),
+          jump: () => input.pulseJump(performance.now()),
+          warpTo: (x: number) => {
+            loco.x = Math.max(0, Math.min(chamber.length, x))
+          },
+          break: (i = 0) => {
+            if (targets[i] !== undefined && !targets[i]!.broken) breakPane(i)
+          },
+          sing: (mode: number | null) => {
+            forcedMode = mode
+          },
+        })
+      }
+
+      frame = requestAnimationFrame(tick)
+      stopLoop = () => cancelAnimationFrame(frame)
+    }
+
+    void r
+      .init()
+      .then(() => {
+        fit()
+        setBackend(r.backend())
+        begin()
+      })
+      .catch((err: unknown) => {
+        setBackend('no GPU')
+        setMicError(err instanceof Error ? err.message : String(err))
+      })
+
+    onCleanup(() => {
+      observer.disconnect()
+      unbindKeys()
+      stopLoop?.()
+      driver?.stop()
+      tone.dispose()
+      r.dispose()
+      delete (window as unknown as Record<string, unknown>).__w3c
+    })
+  })
+
+  const startMic = async (): Promise<void> => {
+    setMicError(null)
+    tone.start()
+    try {
+      await applyPreferredInput()
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
+      setStarted(true)
+    } catch (err) {
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  const switchMic = async (): Promise<void> => {
+    driver?.stop()
+    driver = null
+    setMicError(null)
+    try {
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
+    } catch (err) {
+      setMicError(micErrorLine(err))
+      driver = null
+    }
+  }
+
+  return (
+    <div class="stage3d" classList={{ 'has-controls': started() }}>
+      <canvas class="stage3d__canvas" ref={canvas} />
+
+      <span class="stage3d__chip">{backend()}</span>
+
+      <Show when={started() && phase() !== 'done'}>
+        <Show when={showLadder()}>
+          <ModeLadder
+            modes={chamber.modes}
+            fundamentalMidi={fundamental}
+            nearest={nearMode()}
+            semisOff={semisOff()}
+            onIt={onIt()}
+            charge={charges()}
+          />
+        </Show>
+
+        <div class="chamber-hud">
+          <p class="chamber-hud__line">
+            <Show when={phase() === 'falling'} fallback={chamber.teaches}>
+              The floor was moving there.
+            </Show>
+          </p>
+          <p class="chamber-hud__count">
+            {broken()} of {chamber.panes.length} broken
+          </p>
+          <div class="chamber-hud__toggles">
+            <button
+              type="button"
+              aria-pressed={showLadder()}
+              onClick={toggleLadder}
+            >
+              Notes
+            </button>
+            <button
+              type="button"
+              aria-pressed={showPattern()}
+              onClick={togglePattern}
+            >
+              Pattern
+            </button>
+          </div>
+        </div>
+
+        <TouchControls source={input} />
+      </Show>
+
+      <Show when={!started()}>
+        <div class="stage3d__gate">
+          <p>{chamber.teaches}</p>
+          <p>
+            Walk him along the room. The glass breaks where the air moves
+            hardest, and the floor is only still where it does not.
+          </p>
+          <button type="button" onClick={() => void startMic()}>
+            Walk in
+          </button>
+          <Show when={micError() !== null}>
+            <p class="stage3d__error">{micError()}</p>
+            <MicInput listening={false} onChoose={() => void switchMic()} />
+          </Show>
+        </div>
+      </Show>
+
+      <Show when={phase() === 'done'}>
+        <div class="stage3d__card">
+          <span>{grade()}% in tune</span>
+        </div>
+      </Show>
+
+      <button class="games-leave" type="button" onClick={() => props.onExit()}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m15 5-7 7 7 7" />
+        </svg>
+        Leave
+      </button>
+    </div>
+  )
+}

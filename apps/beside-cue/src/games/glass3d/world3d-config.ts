@@ -269,6 +269,34 @@ export const CABINET_CONFIG: World3DConfig = {
   shatter: shatterIn(WORLD3D_CONFIG.shatter, { worldScale: 0.2 }),
 }
 
+/**
+ * A chamber, where the note names a PLACE and not just a pane.
+ *
+ * The Hallway can afford a wide band -- there is one note in the room
+ * and holding it is the whole task. A chamber cannot. Its modes are
+ * neighbours on the harmonic ladder, and the rungs get closer as they
+ * climb: modes 4 and 5 are 3.86 semitones apart, so two bands 1.5 wide
+ * would leave less than a semitone of ground between "you are singing
+ * the lower one" and "you are singing the upper one". Narrowed until
+ * there is real room to be wrong in, which is what makes being right
+ * mean something (docs/games/standing-wave-chamber.md §2).
+ *
+ * `pumpTolBonus` narrows with it, so the vibrato phase stays the same
+ * proportion of forgiveness it is in the Hallway.
+ */
+export const CHAMBER_CONFIG: World3DConfig = {
+  ...WORLD3D_CONFIG,
+  ring: {
+    ...WORLD3D_CONFIG.ring,
+    tolSemis: 0.7,
+    pumpTolBonus: 0.45,
+  },
+  vibrato: {
+    ...WORLD3D_CONFIG.vibrato,
+    maxDepthCents: (0.7 + 0.45) * 100,
+  },
+}
+
 export const resolveConfig = (
   override: World3DConfigOverride | undefined,
   base: World3DConfig = WORLD3D_CONFIG,

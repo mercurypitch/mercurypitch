@@ -9,6 +9,8 @@ import type { RangeFit } from '@/games/glass/range-finder'
 import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
+import { chamberById, CHAMBERS } from '@/games/glass3d/levels/chambers'
+import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { RangeFinder } from './RangeFinder'
@@ -25,6 +27,8 @@ type PlayPick =
   | 'trials'
   | 'cabinet3d'
   | 'hallway3d'
+  /** A chamber, by id. Rooms are data, so the list is too. */
+  | { chamber: string }
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -101,12 +105,19 @@ export function GamesScreen(props: GamesScreenProps) {
     return readBest(level.id, m)
   }
 
+  const chamberPick = () => {
+    const p = playing()
+    return typeof p === 'object' && p !== null && 'chamber' in p
+      ? chamberById(p.chamber)
+      : null
+  }
+
   const levelPick = (): {
     level: LevelDef
     control: LevelControl
   } | null => {
     const p = playing()
-    return typeof p === 'object' && p !== null ? p : null
+    return typeof p === 'object' && p !== null && 'level' in p ? p : null
   }
 
   return (
@@ -120,7 +131,19 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'hallway3d'}>
             <HallwayStage onExit={() => setPlaying(null)} />
           </Show>
-          <Show when={playing() !== 'cabinet3d' && playing() !== 'hallway3d'}>
+          <Show when={chamberPick() !== null} keyed>
+            <ChamberStage
+              chamber={chamberPick()!}
+              onExit={() => setPlaying(null)}
+            />
+          </Show>
+          <Show
+            when={
+              playing() !== 'cabinet3d' &&
+              playing() !== 'hallway3d' &&
+              chamberPick() === null
+            }
+          >
             <JourneyPrototype
               variant={playing() === 'trials' ? 'trials' : 'journey'}
               level={levelPick()?.level}
@@ -233,6 +256,37 @@ export function GamesScreen(props: GamesScreenProps) {
             <path d="m9 5 7 7-7 7" />
           </svg>
         </button>
+
+        {/* The chambers. One card each, because a room IS the unit of
+            level design here -- you enter it, it asks one spatial
+            question, you leave. */}
+        <For each={CHAMBERS}>
+          {(room, i) => (
+            <button
+              class="game-card"
+              type="button"
+              onClick={() => setPlaying({ chamber: room.id })}
+            >
+              <img
+                class="game-card__art"
+                src="games/merc.webp"
+                alt=""
+                width="64"
+                height="64"
+              />
+              <span class="game-card__body">
+                <span class="game-card__name">
+                  Standing Wave {i() + 1}
+                  <span class="game-card__chip">3D</span>
+                </span>
+                <span class="game-card__blurb">{room.teaches}</span>
+              </span>
+              <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </For>
 
         <button
           class="game-card"
