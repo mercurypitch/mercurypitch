@@ -13,7 +13,7 @@ import { openChallengeStage } from '@/stores/ui-store'
 import styles from './PastWeeklyChallenges.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
 import type { WeeklyChallenge } from './weekly-service'
-import { getWeeklyArchive } from './weekly-service'
+import { getWeeklyArchive, podiumOf } from './weekly-service'
 
 export const PAST_WEEKLY_CHALLENGES_ID = 'past-weekly-challenges'
 const PAST_SCROLL_REQUEST_KEY = 'mercurypitch_scroll_past_challenges'
@@ -139,6 +139,48 @@ export const PastWeeklyChallenges: Component = () => {
                     </div>
                     <h4>{challenge.title}</h4>
                     <p>{challenge.description}</p>
+
+                    {/* ── How it finished ─────────────────────────── */}
+                    {/* The board froze when the window shut; this is what
+                        it said. A week with no podium — closed by hand
+                        before results were snapshotted, or one nobody
+                        consented to be named on — simply shows none. */}
+                    <Show when={podiumOf(challenge.results).length > 0}>
+                      <ol
+                        class={styles.podium}
+                        data-testid={`podium-${challenge.id}`}
+                      >
+                        <For each={podiumOf(challenge.results)}>
+                          {(place) => (
+                            <li class={styles.place}>
+                              <span class={styles.placeRank}>{place.rank}</span>
+                              <span
+                                class={styles.placeName}
+                                classList={{
+                                  [styles.placeRedacted]:
+                                    place.displayName === null,
+                                }}
+                              >
+                                {place.displayName ?? '<redacted>'}
+                              </span>
+                              <span class={styles.placeScore}>
+                                {place.best}%
+                              </span>
+                            </li>
+                          )}
+                        </For>
+                      </ol>
+                      <Show when={challenge.results!.attemptedCount > 0}>
+                        <span class={styles.attempted}>
+                          {challenge.results!.attemptedCount} sang this
+                          <Show when={challenge.results!.completedCount > 0}>
+                            {' · '}
+                            {challenge.results!.completedCount} completed
+                          </Show>
+                        </span>
+                      </Show>
+                    </Show>
+
                     <span class={styles.unranked}>
                       Unranked practice · benchmark {challenge.targetScore}%
                     </span>
