@@ -57,6 +57,29 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
   it('uses dynamic viewport height (dvh)', () => {
     expect(block).toMatch(/100dvh/)
   })
+
+  // The header is full width on a phone, so a toast placed over it hides the
+  // menu, the wordmark, the mic and the account chip at once — the whole of
+  // the app's chrome, and none of it tappable while the toast is up.
+  it('starts below the header rather than on top of it', () => {
+    expect(block).toMatch(/top\s*:[\s\S]*?--app-header-height/)
+  })
+
+  it('budgets the header out of the max-height too', () => {
+    // Or a stack of toasts reaches exactly as far past the bottom as it was
+    // pushed down from the top.
+    expect(block).toMatch(/max-height\s*:[\s\S]*?--app-header-height/)
+  })
+
+  it('falls back to the old placement where no header publishes a height', () => {
+    // The standalone karaoke and mirror entries mount the toast host without
+    // an app header. They must keep the placement they had, not collapse to
+    // the top edge under a 0px default.
+    const tops = block.match(
+      /--app-header-height\s*,\s*env\(safe-area-inset-top\)/g,
+    )
+    expect(tops?.length).toBe(2)
+  })
 })
 
 describe('REQ-TMV-002 — Overflowing toasts are scrollable', () => {

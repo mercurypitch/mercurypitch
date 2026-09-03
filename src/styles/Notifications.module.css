@@ -11,7 +11,13 @@
 /* The very top-right corner, over the account and sign-in buttons.
    It sat below the header for a while so as not to cover them, but that pushed
    it onto page content instead, which is worse: those buttons are the least
-   urgent thing on screen, and a toast is transient. */
+   urgent thing on screen, and a toast is transient.
+
+   That trade still holds on a desktop, where the toast is 340px in the corner
+   and covers exactly the account cluster — measured at 1440px: Settings, Sign
+   in, the version and the support heart, with all seventeen navigation tabs
+   untouched. It does NOT hold on a phone, where the same container goes edge
+   to edge; see the mobile block at the bottom of this file. */
 .notificationContainer {
   position: fixed;
   top: calc(env(safe-area-inset-top) + 0.6rem);
@@ -243,17 +249,40 @@
 
 @media (max-width: 768px) {
   .notificationContainer {
-    top: calc(env(safe-area-inset-top) + 0.5rem);
+    /* Below the header, not over it. The desktop trade above — cover the
+       account buttons, they are the least urgent thing on screen — breaks
+       down here, because this container is full width: measured at 375px it
+       spans x 8-367 against a header at y 0-50, so for the three seconds a
+       toast is up the menu button, the wordmark, the mic and the account chip
+       are all behind it and untappable. That is not the least urgent thing on
+       screen, it is the whole of the app's chrome.
+
+       Shifting left of the account cluster instead would cost a third of the
+       width (359px to 227px) and still be wrong: the cluster is 124px signed
+       out and wider signed in, where the chip carries a name, and no CSS can
+       measure the difference.
+
+       --app-header-height is published by the header itself (lib/app-header-
+       height.ts) because it is not a constant — one row, or two once the
+       icon-tab strip shows. The fallback is the old placement, so a surface
+       that renders no header keeps exactly the behaviour it had.
+
+       Known and accepted: the header scrolls away rather than sticking, so on
+       a scrolled page the toast sits about 50px lower than it needs to. That
+       is a gap with no visible cause, and it is still preferable to hiding
+       every control in the header for the three seconds a toast is up. */
+    top: calc(var(--app-header-height, env(safe-area-inset-top)) + 0.5rem);
     right: 0.5rem;
     left: 0.5rem;
     width: auto;
     gap: 0.35rem;
 
     /* Prevent stacked / multi-line toasts from pushing action buttons below
-       the visible viewport: budget the tab bar + safe area out of the height,
-       and scroll so every toast and its buttons remain reachable. */
+       the visible viewport: budget the header and the tab bar out of the
+       height, and scroll so every toast and its buttons remain reachable. */
     max-height: calc(
-      100dvh - env(safe-area-inset-top) - var(--tabbar-total, 54px) - 1.3rem
+      100dvh - var(--app-header-height, env(safe-area-inset-top)) -
+        var(--tabbar-total, 54px) - 1.3rem
     );
     overflow-y: auto;
     overscroll-behavior: contain;
