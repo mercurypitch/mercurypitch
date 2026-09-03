@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioSession, AudioSessionCue, AudioSessionFinishResult, AudioSessionScope, } from '@/audio'
 import type { ContentPack, PullOption } from '@/content'
 import { DEFAULT_CONTENT_PACK, pullOptions, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
-import { V2_ONBOARDING_PREVIEW_MEDIA_PACK } from './v2-onboarding-media-pack'
+import { V2_ONBOARDING_MEDIA_PACK } from './v2-onboarding-media-pack'
 import type { V2OnboardingDirectorProps, V2OnboardingMutationResult, } from './V2OnboardingDirector'
 import { V2OnboardingDirector } from './V2OnboardingDirector'
 import styles from './V2OnboardingDirector.module.css'
@@ -465,7 +465,7 @@ describe('V2OnboardingDirector', () => {
     render(() => (
       <V2OnboardingDirector
         {...probe.props}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 
@@ -474,7 +474,7 @@ describe('V2OnboardingDirector', () => {
     expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b01' })
     expect(currentMediaStage().props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b01-corky-entrance-v0_3.mp4'),
+      src: expect.stringContaining('b01-corky-greeting-v0_4.mp4'),
     })
     expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'cinematic')
     expect(screen.getByRole('region', { name: 'Meet Corky.' })).toHaveAttribute(
@@ -504,7 +504,7 @@ describe('V2OnboardingDirector', () => {
       <V2OnboardingDirector
         {...probe.props}
         contentPack={contentPackWithDialogue(lineId, assetId)}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 
@@ -538,7 +538,7 @@ describe('V2OnboardingDirector', () => {
       <V2OnboardingDirector
         {...probe.props}
         contentPack={contentPackWithDialogue(lineId, assetId)}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 
@@ -627,7 +627,7 @@ describe('V2OnboardingDirector', () => {
       render(() => (
         <V2OnboardingDirector
           {...probe.props}
-          mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+          mediaPack={V2_ONBOARDING_MEDIA_PACK}
         />
       ))
 
@@ -668,7 +668,7 @@ describe('V2OnboardingDirector', () => {
     render(() => (
       <V2OnboardingDirector
         {...probe.props}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 
@@ -696,7 +696,7 @@ describe('V2OnboardingDirector', () => {
     render(() => (
       <V2OnboardingDirector
         {...probe.props}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
         foreground={foreground()}
       />
     ))
@@ -1086,7 +1086,7 @@ describe('V2OnboardingDirector', () => {
     render(() => (
       <V2OnboardingDirector
         {...probe.props}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 
@@ -1353,7 +1353,7 @@ describe('V2OnboardingDirector', () => {
     render(() => (
       <V2OnboardingDirector
         {...probe.props}
-        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
       />
     ))
 

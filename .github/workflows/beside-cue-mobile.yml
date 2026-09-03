@@ -195,8 +195,8 @@ jobs:
           VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
-      - name: Verify the default debug build omits V2 preview media
-        run: test ! -e apps/beside-cue/dist/onboarding/corky-v2.4
+      - name: Verify the debug build contains the V2 onboarding media
+        run: test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
 
       - name: Synchronize Android project
         run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
@@ -237,41 +237,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      # Keep the production-default debug artifact above on V1. Pull requests
-      # additionally publish an explicitly named V2 developer-preview build so
-      # its unfinished onboarding can be exercised on real Android hardware
-      # without changing store or ordinary sideload behavior.
-      - name: Build web assets for the V2 preview APK
-        if: github.event_name == 'pull_request'
-        env:
-          VITE_BESIDE_CUE_V2_ONBOARDING: '1'
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-
-      - name: Verify the V2 preview build contains its reviewed media
-        if: github.event_name == 'pull_request'
-        run: test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
-
-      - name: Synchronize the V2 preview Android project
-        if: github.event_name == 'pull_request'
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
-
-      - name: Package V2 preview debug APK
-        if: github.event_name == 'pull_request'
-        working-directory: apps/beside-cue/android
-        env:
-          BESIDE_CUE_DEBUG_KEYSTORE_FILE: ${{ env.HAS_DEBUG_KEY == 'true' && format('{0}/debug.jks', runner.temp) || '' }}
-        run: ./gradlew assembleDebug --no-daemon
-
-      - name: Upload V2 preview debug APK
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-v2-preview-debug-apk
-          path: apps/beside-cue/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Upload lint and unit test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -294,10 +259,10 @@ jobs:
           pnpm --filter @irchiinnuss/beside-cue-app exec vite build
           pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
 
-      - name: Verify release assets omit V2 preview media
+      - name: Verify release assets contain the V2 onboarding media
         run: |
-          test ! -e apps/beside-cue/dist/onboarding/corky-v2.4
-          test ! -e apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.4
+          test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
+          test -f apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.4/SHA256SUMS
 
       - name: Build release bundle and APK
         env:

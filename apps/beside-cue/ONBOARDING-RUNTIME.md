@@ -1,12 +1,9 @@
-# Cinematic onboarding runtime
+# Legacy cinematic onboarding runtime (V1)
 
-Status: **v0.7 picture plus the additive v0.8 eye-only H08 close and v0.9
-record-spin breathing beat are approved and packaged; V1 product/runtime
-contract 0.5.0 is wired as media revision v0.9; interactive device validation
-is pending.**
-The app architecture must not be
-described as release-ready until the automated gates and the Android/iOS
-device checks below pass.
+Status: **historical implementation record.** The V1 contract and packaged
+media remain for migration coverage and focused regression tests, but V2.4 is
+the sole product first-run path. See [V2-ONBOARDING.md](V2-ONBOARDING.md) for
+the active runtime, media, and device-review contract.
 
 ## Approved picture truth
 
@@ -167,7 +164,7 @@ letting the fixed linear mix drift freely.
   screen-reader order, focus behavior, and background/resume all require
   device verification even when unit tests pass.
 
-## Integration and device gate
+## Historical integration and device gate
 
 The v0.7 source Blender project, connected review render, additive
 `app-source-v0_2` export, deterministic v0.8 H08 proof, and v0.9 42-frame H06
@@ -195,6 +192,6 @@ Before calling `cinematic-first-run` validated or merging it as release-ready:
    not scroll at normal text size, Home text is not covered by the record art,
    and no visual media element is duplicated on a surface.
 
-Until those checks are recorded, runtime v0.5/media revision v0.9 over the
-approved v0.7 picture plus additive H08 and H06 breathing motion is the current
-first app architecture—not a device-validated onboarding release.
+These requirements document the legacy V1 validation boundary. They are not a
+claim that runtime v0.5/media revision v0.9 is still selected by the product
+build.

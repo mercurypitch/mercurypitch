@@ -42,14 +42,14 @@ describe('V2.4 onboarding app media', () => {
     expect(inventory).toHaveLength(18)
     expect(new Set(inventory.map(({ path }) => path)).size).toBe(18)
     expect(inventory).toContainEqual({
-      path: 'picture/b01-corky-entrance-v0_3.mp4',
+      path: 'picture/b01-corky-greeting-v0_4.mp4',
       sha256:
-        '97cdff27f40ded53e4b869e2c363f107e73d91fc7df769db2d29ff69aff9cf67',
+        '3d3c1a80a064da01b21b83d0c0d37802ef14c4145870e92634fc17f84282bdaa',
     })
     expect(inventory).toContainEqual({
-      path: 'audio/dialogue/corky-greeting-v0_2.m4a',
+      path: 'audio/dialogue/corky-greeting-v0_3.m4a',
       sha256:
-        '1ec12a8456c6fa922bd73614ab9eb0fa1f8754e3d26197383cd654b762f7a3f3',
+        '544f25d1a2565f600ed3ceb10bf93e1807b223e8dd93ff05589125315dcd6cba',
     })
     expect(deliveryFiles().sort()).toEqual(
       [...inventory.map(({ path }) => path), 'SHA256SUMS'].sort(),

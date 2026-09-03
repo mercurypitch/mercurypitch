@@ -1,5 +1,5 @@
 // ============================================================
-// Beside Cue entry point — selects an explicit onboarding configuration
+// Beside Cue entry point — mounts the single product onboarding configuration
 // ============================================================
 
 import { configureInputDevice } from '@irchiinnuss/audio-io'
@@ -10,10 +10,10 @@ import '@fontsource/saira-condensed/latin-600.css'
 import '@fontsource/saira-condensed/latin-700.css'
 import './styles.css'
 import { App } from './App'
-import { DEFAULT_BESIDE_CUE_CONFIG, V2_BESIDE_CUE_PREVIEW_CONFIG, } from './app-config'
+import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import { createDefaultAppServices } from './app-services'
 import { isDevSeedEnabled } from './dev/dev-seed-flag'
-import { isOnboardingReviewEnabled, isV2OnboardingPreviewEnabled, } from './v2-onboarding-preview'
+import { isOnboardingReviewEnabled } from './onboarding-review'
 
 // The remembered microphone is this product's, not the package's
 // default: two apps served from one origin must not share the entry.
@@ -25,13 +25,7 @@ if (root === null) {
   throw new Error('Beside Cue could not find its application root.')
 }
 
-const config = isV2OnboardingPreviewEnabled({
-  VITE_BESIDE_CUE_V2_ONBOARDING: import.meta.env.VITE_BESIDE_CUE_V2_ONBOARDING,
-  VITE_BESIDE_CUE_ONBOARDING_REVIEW: import.meta.env
-    .VITE_BESIDE_CUE_ONBOARDING_REVIEW,
-})
-  ? V2_BESIDE_CUE_PREVIEW_CONFIG
-  : DEFAULT_BESIDE_CUE_CONFIG
+const config = DEFAULT_BESIDE_CUE_CONFIG
 
 const onboardingReview = isOnboardingReviewEnabled({
   VITE_BESIDE_CUE_ONBOARDING_REVIEW: import.meta.env
