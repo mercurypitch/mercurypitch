@@ -343,3 +343,94 @@ slice.
 - No chamber editor. Chambers are checked-in data.
 - No new sound design. The ring, the pump and the break already exist.
 - No second mechanic. Slice 4 is where that lives.
+
+---
+
+## 9. Slice 3 — the chamber track
+
+maff, 2026-09-03, after playing all three: the rooms should not be three
+cards in the games list. They should be **one game with a path through
+it**, entered once, walked in order, showing `1 of 3` as you go.
+
+He is right, and the reason is already written down in §4: the rooms
+teach in a fixed order — the room has a note, the note moves the danger,
+the answer is a sequence. Three peers in a list invite playing them out
+of order, which breaks the only teaching structure the slice has. A
+track makes the order real instead of advisory.
+
+### The rule the track must not break
+
+`games/glass/score.ts` states it: _passing is a band, not a finish
+line_, and _nothing is gated by any of it yet_. Together with maff's
+standing "no streaks, ever", that settles the design:
+
+- **Rooms unlock in order, on being finished — not on being finished
+  well.** Getting through is the condition. The grade is a record.
+- **A cleared room stays open.** Going back to room 1 to sing it better
+  is a thing a player should be able to do without starting over.
+- **Nothing is lost by stopping.** The track remembers where you were.
+
+### Order of work
+
+| #   | Step                                                                                        | Done when                                                       |
+| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 3a  | `chamber-track.ts` — which rooms are cleared, where you are up to, persisted. Pure + tested | The state survives a reload and cannot name a room that is gone |
+| 3b  | One card in the games list, replacing the three. Shows progress                             | "The Standing Wave · 2 of 3" and it enters where you left off   |
+| 3c  | Room-to-room handover inside the stage: clear a room, a short beat, the next one builds     | The microphone is NOT re-prompted between rooms                 |
+| 3d  | The exit becomes a thing you can see, not a coordinate                                      | You can tell where the room ends before you reach it            |
+| 3e  | The end of the track: a card for the whole walk, and a way back into any cleared room       | Finishing says so, and replaying is one tap                     |
+| 3f  | Two more rooms, now that adding one is cheap                                                | Five rooms, and the ladder climbed rather than restated         |
+
+### What 3c actually costs, and why it is the interesting one
+
+Each `ChamberStage` today owns a canvas, a renderer, a microphone lease
+and a fixed `chamber` prop. A track has to move between rooms without
+tearing all of that down — the microphone especially, because
+re-prompting between rooms is the difference between a path and three
+games in a trench coat.
+
+Two ways, and the second is the one to take:
+
+1. **Remount the stage per room.** Trivial to write; throws away the
+   renderer and the mic every time. `micManager` lingers 2 s after the
+   last consumer, so a fast handover would usually reuse the device —
+   "usually" being the problem.
+2. **One stage, rooms swapped inside it.** The renderer already builds
+   its geometry from the chamber it was handed, so what is needed is a
+   `load(chamber)` on `Chamber3D` that rebuilds panes, platforms and the
+   floor pattern while keeping the renderer, the environment, Merc and
+   the lease. The stage keeps the driver across the swap.
+
+The second also gives the between-rooms beat somewhere to live: Merc
+walks out of one room and into the next without a black frame.
+
+### The shape above the track: circles
+
+maff, same conversation: the games list should eventually be a map of
+**circles**, each circle one mechanic with its own run of levels, walked
+easy to hard or picked freely — the Plants vs Zombies shape.
+
+That is not a new direction. It is the locked decision **one new
+mechanic per song/world** given a picture: a circle IS a world, and the
+track is what a world contains. Recording it here so the track is built
+to sit inside one rather than being retrofitted into one later:
+
+- A track is **named, ordered and self-contained** — it owns its rooms,
+  its progress and its end card, and knows nothing about what is beside
+  it. That is what makes a second circle cheap.
+- The games list stays a flat list until there are **two** circles. A
+  map with one circle on it is a worse list.
+- Which circles are open, and whether they are ordered or free, is a
+  question for when there is something to order. The Standing Wave is
+  the first; the Hallway and the Cabinet are a teaching pair that may
+  become the one before it.
+
+So: build the inside of the circle now, draw the map when there are two.
+
+### Also worth doing, in the same pass
+
+- **A grade for the walk, not just the room.** The chamber already
+  averages the accuracy of its breaks; the track should keep them per
+  room and say something honest at the end, in real units.
+- **Chamber 3's ledge is decoration.** Locomotion has had a jump since
+  2a and no room requires it. One of the two new rooms should.
