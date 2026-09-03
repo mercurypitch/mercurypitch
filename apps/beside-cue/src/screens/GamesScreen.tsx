@@ -13,6 +13,7 @@ import { chamberById, CHAMBERS } from '@/games/glass3d/levels/chambers'
 import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
+import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
 
@@ -70,10 +71,28 @@ export function GamesScreen(props: GamesScreenProps) {
     } catch {
       // the bias is the part that matters; losing the raw range is fine
     }
+    // A voice that has been listened to beats a voice type picked off a
+    // list, so the pick is dropped and the rooms follow the measurement.
+    clearVoiceCentre()
+    setMeasured(true)
+    setVoice(voiceCentre())
     setFinding(false)
   }
   const fitted = (): boolean =>
     rangeBias() !== 0 && Math.abs(rangeBias()) !== BIAS_STEP
+
+  // Where this player's voice sits, for the rooms that transpose to it.
+  //
+  // Separate from "Songs sit", and it has to be: that one shifts written
+  // melodies by a couple of semitones, while this is the gap between a
+  // bass and a soprano -- more than two octaves. A chamber is built out
+  // of ratios and has no written notes to shift, so it moves to the
+  // voice entirely.
+  const [voice, setVoice] = createSignal(voiceCentre())
+  const pickVoice = (midi: number): void => {
+    setVoice(writeVoiceCentre(midi))
+  }
+  const [measured, setMeasured] = createSignal(readMeasuredRange() !== null)
 
   const [stageTheme, setStageTheme] = createSignal(readStoredTheme())
   const pickTheme = (id: string): void => {
@@ -314,6 +333,27 @@ export function GamesScreen(props: GamesScreenProps) {
             <path d="m9 5 7 7-7 7" />
           </svg>
         </button>
+
+        <div class="games-range" role="group" aria-label="Your voice">
+          <span class="games-range__label">Your voice</span>
+          <For each={VOICE_PRESETS}>
+            {(preset) => (
+              <button
+                class="games-range__pick"
+                type="button"
+                aria-pressed={voice() === centreOf(preset)}
+                onClick={() => pickVoice(centreOf(preset))}
+              >
+                {preset.label}
+              </button>
+            )}
+          </For>
+          {/* Only after the range finder has actually listened. An
+              unanswered question should look unanswered, not fitted. */}
+          <Show when={measured() && presetAt(voice()) === null}>
+            <span class="games-range__fit">fitted</span>
+          </Show>
+        </div>
 
         <div class="games-range" role="group" aria-label="Song range">
           <span class="games-range__label">Songs sit</span>

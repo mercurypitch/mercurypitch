@@ -39,6 +39,7 @@ import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
 import { solveShatter } from '../sim/shatter3d'
+import { canShift, shiftOctaves, voiceCentre, writeVoiceCentre, } from '../voice-range'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { ChamberView } from './Chamber3D'
 import { createChamber3D } from './Chamber3D'
@@ -60,24 +61,6 @@ const ARRIVED = 0.02
  * the next pane is not answering over the last one's wreckage, short
  * enough that a player who moves straight on is not met with silence. */
 const REARM_SECONDS = 2.2
-
-/** The measured range, if the player ever found it. Null is not a
- * failure -- `tuneChamber` has a sensible middle to fall back on. */
-const RANGE_KEY = 'beside-cue:games:vocal-range'
-const readRange = (): { lowMidi: number; highMidi: number } | null => {
-  try {
-    const raw = window.localStorage.getItem(RANGE_KEY)
-    if (raw === null) return null
-    const fit = JSON.parse(raw) as { loMidi?: number; hiMidi?: number }
-    if (typeof fit.loMidi !== 'number' || typeof fit.hiMidi !== 'number') {
-      return null
-    }
-    if (!(fit.hiMidi > fit.loMidi)) return null
-    return { lowMidi: fit.loMidi, highMidi: fit.hiMidi }
-  } catch {
-    return null
-  }
-}
 
 const LADDER_KEY = 'beside-cue:games:chamber-ladder'
 const PATTERN_KEY = 'beside-cue:games:chamber-pattern'
@@ -143,13 +126,25 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const [showLadder, setShowLadder] = createSignal(readToggle(LADDER_KEY))
   const [showPattern, setShowPattern] = createSignal(readToggle(PATTERN_KEY))
 
-  /** The room, transposed onto this player's voice. */
-  const fundamental = tuneChamber(chamber.modes, readRange())
+  // The room, transposed onto this player's voice.
+  //
+  // A chamber is built out of RATIOS, so which absolute pitch it sits on
+  // is free -- moving it does not change one node, one belly, or one
+  // answer. That is why this is a control and not a difficulty setting:
+  // a room outside your range is not a hard room, it is a room you
+  // cannot play (see voice-range.ts).
+  const [centre, setCentre] = createSignal(voiceCentre())
+  const fundamental = (): number => tuneChamber(chamber.modes, null, centre())
+
+  /** Move the whole room by an octave, and remember it for the next one. */
+  const nudgeOctave = (octaves: number): void => {
+    setCentre(writeVoiceCentre(shiftOctaves(centre(), octaves)))
+  }
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
   const tone = createGlassTone(
-    midiToFreq(modeMidi(fundamental, chamber.modes[0] ?? 1)),
+    midiToFreq(modeMidi(fundamental(), chamber.modes[0] ?? 1)),
   )
   const input = createIntentSource()
 
@@ -195,9 +190,31 @@ export const ChamberStage = (props: ChamberStageProps) => {
           chamber.modes.find(
             (m) => standingAmplitude(pane.at, m) >= chamber.breakAt,
           ) ?? chamber.modes[0]!
-        const midi = modeMidi(fundamental, mode)
+        const midi = modeMidi(fundamental(), mode)
         return { mode, midi, ring: createResonance(midi), broken: false }
       })
+
+      /** The fundamental the rings are currently listening for. */
+      let tunedRoom = fundamental()
+
+      /**
+       * Move the room to a new fundamental, mid-play.
+       *
+       * The rings hold their target note inside them, so an octave
+       * button has to rebuild them -- and it drops whatever charge was
+       * on them, which is right: that charge was earned on a different
+       * note, and carrying it over would break a pane for a note nobody
+       * sang. Broken panes stay broken.
+       */
+      const retuneRoom = (): void => {
+        const f0 = fundamental()
+        tunedRoom = f0
+        for (const target of targets) {
+          target.midi = modeMidi(f0, target.mode)
+          target.ring = createResonance(target.midi)
+        }
+        tunedTo = -1
+      }
 
       const ground = groundIn(chamber)
       const walls = { ...cfg.locomotion, minX: 0, maxX: chamber.length }
@@ -308,6 +325,9 @@ export const ChamberStage = (props: ChamberStageProps) => {
         last = now
         wallSeconds += frameSeconds
 
+        // An octave button was pressed since the last frame.
+        if (fundamental() !== tunedRoom) retuneRoom()
+
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
 
@@ -332,7 +352,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           lastMidi = pitch?.midi ?? null
           lastWaveStrength = wave.active ? wave.strength : 0
 
-          const near = nearestMode(lastMidi, fundamental, chamber.modes)
+          const near = nearestMode(lastMidi, tunedRoom, chamber.modes)
           lastOff = near.semisOff
           lastOnIt =
             near.mode !== null && isExciting(near.semisOff, cfg.ring.tolSemis)
@@ -423,7 +443,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           setNearMode(
             lastMidi === null
               ? null
-              : nearestMode(lastMidi, fundamental, chamber.modes).mode,
+              : nearestMode(lastMidi, tunedRoom, chamber.modes).mode,
           )
           setSemisOff(lastOff)
           setOnIt(lastOnIt)
@@ -467,7 +487,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           y: loco.y,
           grounded: loco.grounded,
           mode: lastMode,
-          fundamental,
+          fundamental: fundamental(),
           broken: targets.map((t) => t.broken),
           charges: targets.map((t) => t.ring.res),
           move: (m: number) => input.setMove(m),
@@ -548,7 +568,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         <Show when={showLadder()}>
           <ModeLadder
             modes={chamber.modes}
-            fundamentalMidi={fundamental}
+            fundamentalMidi={fundamental()}
             nearest={nearMode()}
             semisOff={semisOff()}
             onIt={onIt()}
@@ -573,6 +593,34 @@ export const ChamberStage = (props: ChamberStageProps) => {
             {broken()} of {chamber.panes.length} broken
           </p>
           <div class="chamber-hud__toggles">
+            {/* The room moves to the voice, never the other way round.
+                An octave is the size of the gap between voice types, so
+                it is the step -- and because a chamber is built out of
+                ratios, moving it changes nothing about the puzzle. */}
+            <button
+              type="button"
+              class="chamber-hud__octave"
+              aria-label="Sing this room an octave lower"
+              disabled={!canShift(centre(), -1)}
+              onClick={() => nudgeOctave(-1)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v13m0 0-6-6m6 6 6-6" />
+              </svg>
+              8ve
+            </button>
+            <button
+              type="button"
+              class="chamber-hud__octave"
+              aria-label="Sing this room an octave higher"
+              disabled={!canShift(centre(), 1)}
+              onClick={() => nudgeOctave(1)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 19V6m0 0-6 6m6-6 6 6" />
+              </svg>
+              8ve
+            </button>
             <button
               type="button"
               aria-pressed={showLadder()}

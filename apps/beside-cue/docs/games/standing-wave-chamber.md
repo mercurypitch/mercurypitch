@@ -264,6 +264,34 @@ chamber problem.
   `floorThreshold` to 1: amplitude never exceeds 1, so the check simply
   passes everywhere.
 
+### Transposing, and why it costs nothing
+
+Settled on 2026-09-03, after the first play: the rooms were pitched
+around G4 for everybody, which is where the Hallway's pane sits and
+which is between alto and soprano. Every lower voice was being asked to
+reach for notes it does not have.
+
+`src/games/glass3d/voice-range.ts` is now the one place that answers
+"where does this player's voice sit", in MIDI, from three sources in
+order: an explicit choice (a voice preset, or the octave buttons in the
+room), the range the RangeFinder measured, then G4 as a last resort.
+
+The important part is that **none of this is a difficulty setting**. A
+chamber is built out of ratios; transposing it does not move one node,
+one belly, or one answer. A room outside your range is not a hard room,
+it is a room you cannot play. The difficulty knob is the mode set, which
+is untouched.
+
+- **Voice presets** in the games list — bass, baritone, tenor, alto,
+  soprano — one tap, no singing required. Standard tessitura centres.
+- **Octave buttons in the room**, for the player who finds their pick
+  still a little high or low, persisted for the next room.
+- **The range finder still wins.** A voice that has been listened to
+  beats a voice type picked off a list, so a fit clears the pick.
+
+Pinned by test: every chamber is singable by every preset with more than
+six semitones of slack.
+
 ### Still open
 
 - The chamber tolerance has not met a real singer. §2's question stands.

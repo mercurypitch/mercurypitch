@@ -568,6 +568,30 @@
   color: var(--custard, #f2c84b);
 }
 
+/* Moving the room to the voice. Not a toggle -- it does something each
+   time it is pressed -- so it is never in the pressed state, and it goes
+   dim at the ends of the singable band rather than disappearing. */
+.chamber-hud__octave {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.chamber-hud__octave svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chamber-hud__octave:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* The controls. A strip across the bottom, because the hand holding
    the phone is the hand playing it and that hand reaches the bottom of
    the screen and nothing else.
