@@ -13,7 +13,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { SupporterBadge } from '@/components/billing/SupporterBadge'
-import { Pencil } from '@/components/icons'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { CheckSmall, Pencil, X } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
@@ -22,12 +23,10 @@ import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/ser
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
-import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
-import { GoogleMark } from './GoogleMark'
 import { PasskeySettings } from './PasskeySettings'
 import { SessionList } from './SessionList'
 import { TwoFactorSettings } from './TwoFactorSettings'
@@ -50,6 +49,10 @@ export const AccountSection: Component = () => {
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
+  // The name is a pill first and a field second: it is only an input while
+  // somebody has actually asked to change it.
+  const [editingName, setEditingName] = createSignal(false)
+  const [confirmingSignOut, setConfirmingSignOut] = createSignal(false)
   // Supporter status rides along with the account fetch — it is the same
   // round trip the header already makes, and drives the badge below.
   const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
@@ -60,17 +63,29 @@ export const AccountSection: Component = () => {
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
 
-  // Keep the editor in sync with the loaded profile
-  createEffect(() => setNameDraft(profileName()))
+  /**
+   * Keep the draft in step with the loaded profile — except while the editor
+   * is open.
+   *
+   * `refreshMe()` runs on its own schedule (a save elsewhere, an auth bump),
+   * and without this guard one landing mid-edit would rewrite the field under
+   * the caret. Reading `editingName()` tracked rather than untracking it means
+   * closing the editor re-syncs, which is the behaviour wanted on cancel.
+   */
+  createEffect(() => {
+    const name = profileName()
+    if (editingName()) return
+    setNameDraft(name)
+  })
 
   /**
    * Persist the display name to the cloud profile. The leaderboard reads
    * names from the profile, so no separate update is needed. Google sign-in
    * has no name prompt, so this editor is how Google users pick one.
    */
-  async function saveDisplayName(): Promise<void> {
+  async function saveDisplayName(): Promise<boolean> {
     const name = nameDraft().trim()
-    if (name === '' || name === profileName()) return
+    if (name === '' || name === profileName()) return false
     setError('')
     setBusy(true)
     try {
@@ -93,10 +108,71 @@ export const AccountSection: Component = () => {
       // enough — there is no client-writable leaderboardEntries table.
       await refreshMe()
       showNotification('Display name updated', 'info')
+      return true
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
+      return false
     } finally {
       setBusy(false)
+    }
+  }
+
+  // ── The name editor ──────────────────────────────────────────────
+  //
+  // Focus is moved by hand in both directions. Opening puts the caret in the
+  // field somebody just asked for; closing puts it back on the pencil they
+  // pressed, so a keyboard user is not dropped at the top of the document.
+
+  let editNameButtonRef: HTMLButtonElement | undefined
+
+  const draftName = (): string => nameDraft().trim()
+
+  /**
+   * How wide the field is, in characters.
+   *
+   * The editor replaces a pill that hugs its text, so a fixed width would
+   * make the row jump on the way in and clip anything long on the way out.
+   * `size` does this in every browser; `field-sizing: content` does not.
+   */
+  const nameFieldSize = (): number =>
+    Math.min(28, Math.max(8, nameDraft().length + 1))
+
+  /** Empty is the only shape that cannot be saved; length is capped by the input. */
+  const nameEmpty = (): boolean => draftName() === ''
+
+  const canConfirmName = (): boolean =>
+    !busy() && !nameEmpty() && draftName() !== profileName()
+
+  function beginEditName(): void {
+    setNameDraft(profileName())
+    setError('')
+    setEditingName(true)
+  }
+
+  function endEditName(): void {
+    setEditingName(false)
+    editNameButtonRef?.focus()
+  }
+
+  function cancelEditName(): void {
+    setError('')
+    endEditName()
+  }
+
+  async function confirmEditName(): Promise<void> {
+    if (!canConfirmName()) return
+    if (await saveDisplayName()) endEditName()
+    // On failure the editor stays open with the text intact: the error line
+    // below it is useless if the field it refers to has already closed.
+  }
+
+  function onNameKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      void confirmEditName()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelEditName()
     }
   }
 
@@ -162,14 +238,8 @@ export const AccountSection: Component = () => {
     })()
   })
 
-  /** Shows the failure as a notification — this panel has no inline error
-   *  line of its own. Starting the redirect is shared: lib/google-sign-in. */
-  async function onGoogleSignIn(): Promise<void> {
-    const failure = await startGoogleSignIn()
-    if (failure !== null) showNotification(failure, 'error')
-  }
-
   function handleLogout(): void {
+    setConfirmingSignOut(false)
     logout()
     setMe(null)
     setSupporter(null)
@@ -219,12 +289,71 @@ export const AccountSection: Component = () => {
                   : `Signed in with ${provider() === 'google' ? 'Google' : 'email'}`}
               </span>
               <div class={styles.accountIdentity}>
-                <span
-                  class={styles.displayNamePill}
-                  data-testid="account-display-name"
+                <Show
+                  when={editingName()}
+                  fallback={
+                    <div class={styles.nameGroup}>
+                      <span
+                        class={styles.displayNamePill}
+                        data-testid="account-display-name"
+                      >
+                        {profileName() !== '' ? profileName() : 'Signed in'}
+                      </span>
+                      <button
+                        ref={editNameButtonRef}
+                        class={styles.ghostIconButton}
+                        onClick={beginEditName}
+                        aria-label="Edit display name"
+                        title="Edit display name"
+                        data-testid="display-name-edit"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    </div>
+                  }
                 >
-                  {profileName() !== '' ? profileName() : 'Signed in'}
-                </span>
+                  {/* The input is dressed as the pill it replaced, so
+                      confirming does not make the row jump. */}
+                  <div class={styles.nameGroup}>
+                    <input
+                      ref={(el) => queueMicrotask(() => el.focus())}
+                      class={`${styles.displayNamePill} ${styles.displayNameInput}`}
+                      classList={{ [styles.pillInvalid]: nameEmpty() }}
+                      type="text"
+                      aria-label="Display name"
+                      aria-invalid={nameEmpty() ? 'true' : undefined}
+                      aria-describedby="account-display-name-hint"
+                      autocomplete="nickname"
+                      maxLength={40}
+                      size={nameFieldSize()}
+                      value={nameDraft()}
+                      onInput={(e) => setNameDraft(e.currentTarget.value)}
+                      onKeyDown={onNameKeyDown}
+                      data-testid="display-name-input"
+                    />
+                    <button
+                      class={styles.ghostIconButton}
+                      onClick={() => void confirmEditName()}
+                      disabled={!canConfirmName()}
+                      aria-label="Save display name"
+                      title="Save display name"
+                      data-testid="display-name-save"
+                    >
+                      <CheckSmall size={14} />
+                    </button>
+                    <button
+                      class={styles.ghostIconButton}
+                      onClick={cancelEditName}
+                      aria-label="Cancel"
+                      title="Cancel"
+                      data-testid="display-name-cancel"
+                    >
+                      <span class={styles.smallGlyph}>
+                        <X />
+                      </span>
+                    </button>
+                  </div>
+                </Show>
                 <Show when={isTestAccount()}>
                   <span
                     class={styles.testAccountPill}
@@ -250,7 +379,7 @@ export const AccountSection: Component = () => {
                   </span>
                   <button
                     class={styles.iconButton}
-                    onClick={handleLogout}
+                    onClick={() => setConfirmingSignOut(true)}
                     data-testid="logout-button"
                     aria-label="Sign out"
                     title="Sign out"
@@ -276,43 +405,19 @@ export const AccountSection: Component = () => {
                 </p>
               </Show>
 
-              <div class={styles.accountField}>
-                <label
-                  class={styles.fieldLabel}
-                  for="account-display-name-input"
+              {/* One line, only while editing: what the name is for, or why
+                  this one cannot be saved. */}
+              <Show when={editingName()}>
+                <p
+                  id="account-display-name-hint"
+                  class={nameEmpty() ? styles.errorNote : styles.fieldHint}
+                  data-testid="display-name-hint"
                 >
-                  Display name
-                </label>
-                <div class={styles.nameEditRow}>
-                  <input
-                    id="account-display-name-input"
-                    class={styles.authInput}
-                    type="text"
-                    placeholder="Display name"
-                    aria-label="Display name"
-                    autocomplete="nickname"
-                    maxLength={40}
-                    value={nameDraft()}
-                    onInput={(e) => setNameDraft(e.currentTarget.value)}
-                    data-testid="display-name-input"
-                  />
-                  <button
-                    class={styles.authButtonPrimary}
-                    onClick={() => void saveDisplayName()}
-                    disabled={
-                      busy() ||
-                      nameDraft().trim() === '' ||
-                      nameDraft().trim() === profileName()
-                    }
-                    data-testid="display-name-save"
-                  >
-                    Save
-                  </button>
-                </div>
-                <p class={styles.fieldHint}>
-                  Shown on leaderboards and shared content.
+                  {nameEmpty()
+                    ? 'A display name cannot be empty.'
+                    : 'Shown on leaderboards and shared content.'}
                 </p>
-              </div>
+              </Show>
 
               {/* Founders group perk: a shortcut into the Content Studio, so
                   the console does not have to be reached by typed URL. The
@@ -357,31 +462,17 @@ export const AccountSection: Component = () => {
                 Create a free account to keep your progress, scores and credits
                 across devices.
               </p>
+              {/* One door, not three. The modal behind it already carries
+                  Google, the passkey button and the register toggle, so the
+                  old row was a copy of its contents that could drift from it
+                  — and the same modal is a click away on the header chip. */}
               <div class={styles.buttonRow}>
                 <button
-                  class={styles.authButtonPrimary}
-                  onClick={() => openAuthModal('register')}
-                  data-testid="show-register"
-                >
-                  Create account
-                </button>
-                <button
-                  class={styles.authButton}
+                  class={styles.signInChip}
                   onClick={() => openAuthModal('login')}
                   data-testid="show-login"
                 >
-                  Sign in
-                </button>
-                <button
-                  class={styles.googleButton}
-                  onClick={() => void onGoogleSignIn()}
-                  data-testid="google-signin"
-                  disabled={googleSignInPending()}
-                >
-                  <GoogleMark />
-                  {googleSignInPending()
-                    ? 'Opening Google\u2026'
-                    : 'Sign in with Google'}
+                  Sign in or create account
                 </button>
               </div>
             </div>
@@ -512,6 +603,18 @@ export const AccountSection: Component = () => {
           </a>
         </div>
       </div>
+
+      {/* Signing out is one press away from the button that shows who you
+          are, and it drops a session mid-practice. The header already asks
+          before doing it; this asks in the same words. */}
+      <ConfirmDialog
+        open={confirmingSignOut()}
+        title="Sign out?"
+        message="Your practice stays on this device. While signed out you keep practising with the device's own history; sign in again any time to see your account's history and sync."
+        confirmLabel="Sign out"
+        onConfirm={handleLogout}
+        onCancel={() => setConfirmingSignOut(false)}
+      />
     </div>
   )
 }

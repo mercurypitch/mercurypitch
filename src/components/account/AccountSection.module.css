@@ -159,17 +159,6 @@
   align-self: flex-start;
 }
 
-.nameEditRow {
-  display: flex;
-  gap: 8px;
-  max-width: 320px;
-}
-
-.nameEditRow input {
-  flex: 1;
-  min-width: 0;
-}
-
 /* Display name pill — MercuryPitch logo palette: vocal stem
    (#58a6ff → #bc8cff) into the instrumental teal (#2dd4bf).
    Gradient ring via the padding-box/border-box two-layer trick. */
@@ -190,6 +179,76 @@
   box-shadow:
     0 0 10px rgba(88, 166, 255, 0.18),
     inset 0 0 12px rgba(88, 166, 255, 0.08);
+}
+
+/* The editor is the pill, not a field next to it: same ring, same radius,
+   same weight, so confirming a change does not make the row move. */
+.displayNameInput {
+  /* Width comes from the `size` attribute, which the component drives from
+     the draft. A fixed width here would either clip a long name or open a gap
+     beside a short one — and the pill it replaces hugs its text. */
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  outline: none;
+}
+
+.displayNameInput:focus-visible {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, #58a6ff 55%, transparent),
+    0 0 10px rgba(88, 166, 255, 0.18);
+}
+
+/* Invalid replaces the gradient ring outright rather than tinting it — a red
+   edge blended into a blue-purple-teal gradient reads as decoration. */
+.pillInvalid,
+.pillInvalid:focus-visible {
+  background:
+    linear-gradient(rgba(13, 17, 23, 0.92), rgba(13, 17, 23, 0.92)) padding-box,
+    linear-gradient(var(--red, #e05555), var(--red, #e05555)) border-box;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--red, #e05555) 22%, transparent);
+}
+
+.nameGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Sized and spaced like .iconButton, but without its chrome: these sit
+   against the pill, and a boxed button beside a pill reads as a toolbar. */
+.ghostIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ghostIconButton:hover:not(:disabled) {
+  color: var(--text-primary, #eee);
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+}
+
+.ghostIconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.smallGlyph svg {
+  width: 14px;
+  height: 14px;
 }
 
 .testAccountPill {
@@ -235,6 +294,21 @@
 
 .signedOutCard .buttonRow {
   margin-top: 4px;
+}
+
+/* Deliberately a chip, not a full-width primary button: the header pill is
+   the main way in, and this is the reminder that it exists. */
+.signInChip {
+  composes: authButton;
+  align-self: flex-start;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.signInChip:hover:not(:disabled) {
+  border-color: var(--accent, #7aa2f7);
+  color: var(--accent, #7aa2f7);
 }
 
 /* ── Signed-in account card ────────────────────────────────────────
