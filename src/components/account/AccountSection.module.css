@@ -4,28 +4,6 @@
   gap: 12px;
 }
 
-.statusRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.providerBadge {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
-  color: var(--text-secondary, #aaa);
-}
-
-.userEmail {
-  font-weight: 600;
-  color: var(--text-primary, #eee);
-}
-
 .mutedNote {
   font-size: 12px;
   color: var(--text-secondary, #888);
@@ -34,78 +12,6 @@
 .errorNote {
   font-size: 12px;
   color: var(--red, #e05555);
-}
-
-.authForm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 320px;
-}
-
-.authInput {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  background: var(--bg-secondary, rgba(0, 0, 0, 0.2));
-  color: var(--text-primary, #eee);
-  font-size: 13px;
-}
-
-.authInput:focus {
-  outline: none;
-  border-color: var(--accent, #7aa2f7);
-}
-
-/* Live-invalid fields (password rules, server rejection) — soft red that
-   also wins while focused, so the state stays visible mid-typing. */
-.authInput[aria-invalid='true'],
-.authInput[aria-invalid='true']:focus {
-  border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
-}
-
-/* Password field with an in-field reveal toggle. The input stretches to
-   fill the row; the button floats over its trailing edge. */
-.passwordField {
-  position: relative;
-  display: flex;
-}
-
-.passwordField .authInput {
-  flex: 1;
-  min-width: 0;
-  /* leave room for the reveal button so text never runs under it */
-  padding-right: 38px;
-}
-
-.revealButton {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 9px;
-  border: none;
-  background: none;
-  color: var(--text-secondary, #888);
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.revealButton:hover {
-  color: var(--text-primary, #eee);
-}
-
-.revealButton:focus-visible {
-  outline: 2px solid var(--accent, #7aa2f7);
-  outline-offset: -2px;
-}
-
-.revealButton svg {
-  width: 18px;
-  height: 18px;
 }
 
 .buttonRow {
@@ -131,32 +37,6 @@
 .authButton:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-.authButtonPrimary {
-  composes: authButton;
-  background: var(--accent, #7aa2f7);
-  border-color: var(--accent, #7aa2f7);
-  color: var(--bg-primary, #111);
-  font-weight: 600;
-}
-
-.linkButton {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent, #7aa2f7);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.googleButton {
-  composes: authButton;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
 }
 
 /* Display name pill — MercuryPitch logo palette: vocal stem
