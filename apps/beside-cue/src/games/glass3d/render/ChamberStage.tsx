@@ -115,6 +115,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
   // coming through" and "I am singing the wrong note" became the same bug
   // report.
   const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
+  // The raw input level, which is a DIFFERENT question from "was a note
+  // recognised". A dead level means no audio is arriving at all -- wrong
+  // device, muted interface, a permission granted to a microphone that
+  // is not the one being sung into -- and no amount of singing better
+  // will fix it. A moving level with no note is the opposite problem.
+  const [level, setLevel] = createSignal(0)
   const [nearMode, setNearMode] = createSignal<number | null>(null)
   const [semisOff, setSemisOff] = createSignal(0)
   const [onIt, setOnIt] = createSignal(false)
@@ -239,6 +245,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       let lastOff = 0
       let lastOnIt = false
       let lastWaveStrength = 0
+      let lastLevel = 0
       /** Which pane the ring is currently tuned to. */
       let tunedTo = -1
       let sinceText = TEXT_INTERVAL
@@ -350,6 +357,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
               ? { active: false, strength: 0 }
               : vib.feed(pitch.tAudio * 1000, pitch.midi)
           lastMidi = pitch?.midi ?? null
+          lastLevel = driver?.latestLevel() ?? 0
           lastWaveStrength = wave.active ? wave.strength : 0
 
           const near = nearestMode(lastMidi, tunedRoom, chamber.modes)
@@ -440,6 +448,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           // saying "nothing" instead of "flat" is a shrug where a hint
           // belongs. Silence, and only silence, lights nothing.
           setHeardMidi(lastMidi)
+          setLevel(lastLevel)
           setNearMode(
             lastMidi === null
               ? null
@@ -585,10 +594,20 @@ export const ChamberStage = (props: ChamberStageProps) => {
           <p class="chamber-hud__count">
             <Show
               when={heardMidi() !== null}
-              fallback={<span class="chamber-hud__quiet">nothing heard</span>}
+              fallback={
+                <span class="chamber-hud__quiet">
+                  {level() > 0.005
+                    ? 'no note yet'
+                    : 'no sound reaching the mic'}
+                </span>
+              }
             >
               {heardName()}
             </Show>
+            <i
+              class="chamber-hud__level"
+              style={{ width: `${Math.min(1, level() * 6) * 2.5}rem` }}
+            />
             {' · '}
             {broken()} of {chamber.panes.length} broken
           </p>

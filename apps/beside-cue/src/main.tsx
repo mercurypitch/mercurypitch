@@ -4,6 +4,7 @@
 
 import { configureInputDevice } from '@irchiinnuss/audio-io'
 import { render } from 'solid-js/web'
+import '@/games/glass/pitch-assets'
 import '@fontsource-variable/gabarito'
 import '@fontsource/coiny/latin-400.css'
 import '@fontsource/saira-condensed/latin-600.css'

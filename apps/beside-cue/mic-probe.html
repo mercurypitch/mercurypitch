@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mic probe</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0b0d10;
+        color: #cfd6dc;
+        font:
+          13px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      main {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 4rem;
+      }
+      h1 {
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f2c84b;
+      }
+      button {
+        font: inherit;
+        padding: 0.5rem 1rem;
+        margin: 0 0.5rem 0.5rem 0;
+        border: 1px solid #f2c84b66;
+        border-radius: 0.5rem;
+        background: #f2c84b1a;
+        color: #f2c84b;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.75rem 0 1.5rem;
+      }
+      td {
+        padding: 0.2rem 0.5rem 0.2rem 0;
+        vertical-align: top;
+        border-bottom: 1px solid #ffffff14;
+      }
+      td:first-child {
+        color: #8b979f;
+        width: 13rem;
+        white-space: nowrap;
+      }
+      .ok {
+        color: #6fcf97;
+      }
+      .bad {
+        color: #eb5757;
+      }
+      .warn {
+        color: #f2c84b;
+      }
+      .bar {
+        display: inline-block;
+        height: 0.6rem;
+        background: #6fcf97;
+        vertical-align: middle;
+      }
+      pre {
+        white-space: pre-wrap;
+        color: #8b979f;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Beside Cue — microphone probe</h1>
+      <p>
+        Answers one question: is it the capture, or the pitch detector? Run the
+        tone test first — it needs no microphone at all.
+      </p>
+      <div id="actions"></div>
+      <table id="out"></table>
+      <pre id="log"></pre>
+    </main>
+    <script type="module" src="/src/dev/mic-probe.ts"></script>
+  </body>
+</html>

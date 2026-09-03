@@ -539,6 +539,18 @@
   color: rgb(255 255 255 / 45%);
 }
 
+/* How much sound is arriving, whether or not a note came out of it. Two
+   different failures deserve two different pictures. */
+.chamber-hud__level {
+  display: inline-block;
+  height: 3px;
+  margin: 0 0 0.15rem 0.4rem;
+  border-radius: 2px;
+  background: var(--custard, #f2c84b);
+  vertical-align: middle;
+  transition: width 80ms linear;
+}
+
 /* Nothing is reaching the microphone. Said plainly rather than left as an
    unlit ladder, which reads as "you are singing the wrong note". */
 .chamber-hud__quiet {
