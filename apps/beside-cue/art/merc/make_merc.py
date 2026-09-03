@@ -374,6 +374,19 @@ def build_rig(body, hl, hr, face):
     bone("head", -0.30, hi.z, base)
     root.use_deform = False
 
+    # `base` must be able to TRANSLATE, and a connected bone cannot.
+    #
+    # `bone()` connects a child whose head sits on its parent's tail,
+    # which is what `base` does -- and Blender then ignores the location
+    # channel on it outright. Not an error, not a warning: the keys go in,
+    # the curves show up in the graph editor, and the bone does not move.
+    # Every `up=` and `side=` ever written for `base` was a no-op, which
+    # is why the fall could never be made to touch the floor.
+    #
+    # Disconnecting changes nothing else. The parenting stays, so `base`
+    # still follows `root`; it only stops being pinned to root's tail.
+    base.use_connect = False
+
     for name, hand in (("hand_l", hl), ("hand_r", hr)):
         hlo, hhi = world_bounds(hand)
         c = (hlo + hhi) * 0.5
@@ -450,7 +463,7 @@ def build_animations(rig, face, unit):
     face.data.shape_keys.animation_data_create()
 
     def bkey(name, frame, up=0.0, side=0.0, fwd=0.0,
-             lean=None, roll=None, stretch=None, squash=None):
+             lean=None, roll=None, stretch=None, squash=None, scale=None):
         pb = pose[name]
         offset = (Vector(UP) * up + Vector(SIDE) * side + Vector(FWD) * fwd) * unit
         pb.location = to_bone(pb, offset)
@@ -463,7 +476,23 @@ def build_animations(rig, face, unit):
                 q = Quaternion(to_bone(pb, ROLL_AXIS).normalized(), roll) @ q
             pb.rotation_euler = q.to_euler("XYZ")
             pb.keyframe_insert("rotation_euler", frame=frame)
-        if stretch is not None or squash is not None:
+        if scale is not None:
+            # All three bone axes, named outright. `squash`/`stretch`
+            # below cannot flatten anything: they drive the cross-section
+            # as ONE number, so a squashed bone gets thinner in both
+            # directions at once and reads as a thinner character rather
+            # than a flattened one. That is fine for a hover or a gulp,
+            # and useless for a body hitting a floor -- a splat needs the
+            # vertical to lose exactly what the horizontal gains.
+            #
+            # X is the axis to reach for after a roll. The bone points up
+            # at rest, so its Y is his length and its X and Z are girth;
+            # roll him onto his side and that X is the one pointing at
+            # the ceiling. Which is only true once he is over, so this is
+            # an impact-and-after tool, not something to key mid-topple.
+            pb.scale = scale
+            pb.keyframe_insert("scale", frame=frame)
+        elif stretch is not None or squash is not None:
             across = squash if squash is not None else 1.0
             along = stretch if stretch is not None else 1.0
             # Y is the bone's own axis; X and Z are its cross-section.
@@ -582,25 +611,77 @@ def build_animations(rig, face, unit):
     face_key(41)
     stash("move")
 
-    # fall: the comedy beat. He topples to screen-right, lands flat, and
-    # the hands arrive late -- the late hands ARE the joke, which is why
-    # the topple is keyed on `base` (it carries the head) and not on
-    # `root` (which would carry the hands with it and lose the beat).
-    # `base` pivots at his bottom, so unlike the old object-space clip
-    # there is no downward offset to author: lying flat IS the pose. The
-    # head goes first and overshoots, because a liquid does.
+    # fall: the comedy beat.
+    # ------------------------------------------------------------
+    #
+    # He teeters, goes over to screen-right, hits, and wobbles down to a
+    # puddle. Four beats, and each one is a different problem:
+    #
+    #   1-9    ANTICIPATION. He leans the wrong way first and stretches
+    #          up off his base, because a fall that starts the instant
+    #          the clip does has nothing to fall FROM. The eyes go wide
+    #          two frames before the body commits -- he works out what is
+    #          happening slightly before it happens to him.
+    #   9-18   THE TOPPLE, accelerating. Even spacing here is what makes
+    #          a fall look like a door closing, so the roll covers 0.16
+    #          to 1.56 with most of it in the last four frames. He
+    #          elongates on the way over; a liquid does.
+    #   18     IMPACT, one frame past flat, with the splat.
+    #   18-37  THE SETTLE, three wobbles of decreasing size and
+    #          alternating sign. He is mercury: he does not stop, he
+    #          rings down. The head runs opposite the body throughout,
+    #          which is the only secondary motion this rig can express.
+    #
+    # The topple is keyed on `base` (which carries the head) and not on
+    # `root` (which would carry the hands too, and lose the late hands
+    # that are the joke). `base` pivots at his bottom, so lying flat IS
+    # the pose and there is no downward offset to author.
     rest(1, ALL)
     face_key(1)
-    bkey("base", 6, roll=0.12)
-    bkey("head", 6, roll=0.10, lean=-0.10)
-    face_key(6, wide=1.0)
-    bkey("base", 10, roll=0.5, up=0.04)
-    bkey("head", 10, roll=0.12, lean=0.06)
-    bkey("base", 22, roll=1.45, side=0.04, squash=1.16, stretch=0.80)
-    bkey("head", 22, roll=0.0, lean=0.0, squash=1.14, stretch=0.82)
-    face_key(22, blink=1.0)
-    bkey("base", 30, roll=1.5, side=0.06, squash=1.0, stretch=1.0)
-    bkey("head", 30, roll=-0.06, squash=1.0, stretch=1.0)
+
+    # Anticipation: away from the fall, and up onto his toes.
+    bkey("base", 5, roll=-0.08, stretch=1.06, squash=0.97)
+    bkey("head", 5, roll=-0.06, lean=-0.05)
+    face_key(5)
+    face_key(7, wide=1.0)
+
+    # The commit. Still slow -- this is the beat the audience gets to
+    # see coming.
+    bkey("base", 9, roll=0.16, stretch=1.04, squash=0.98)
+    bkey("head", 9, roll=0.13, lean=-0.14)
+
+    # Over he goes, and stretched out with it.
+    bkey("base", 13, roll=0.55, stretch=1.12, squash=0.94)
+    bkey("head", 13, roll=0.26, lean=0.06)
+    bkey("base", 16, roll=1.05, stretch=1.10, squash=0.95)
+    bkey("head", 16, roll=0.20, lean=0.14)
+
+    # IMPACT. One frame, one frame past flat, and the flattest he gets:
+    # the vertical loses a quarter and the length and depth take it.
+    bkey("base", 18, roll=1.58, side=0.05, up=-0.128, scale=(0.74, 1.10, 1.18))
+    bkey("head", 18, roll=0.16, lean=-0.08, scale=(0.80, 1.06, 1.14))
+    face_key(18, blink=1.0)
+
+    # First rebound, and the biggest: he comes back up past round.
+    bkey("base", 22, roll=1.43, side=0.06, up=0.030, scale=(1.11, 0.95, 0.94))
+    bkey("head", 22, roll=-0.12, scale=(1.09, 0.97, 0.96))
+    face_key(21, blink=0.55, wide=0.5)
+
+    # Second, smaller, and the other way.
+    bkey("base", 26, roll=1.54, side=0.06, up=-0.047, scale=(0.91, 1.04, 1.06))
+    bkey("head", 26, roll=0.07, scale=(0.95, 1.02, 1.03))
+    face_key(26, wide=0.75)
+
+    # Third, nearly gone.
+    bkey("base", 31, roll=1.47, side=0.06, scale=(1.04, 0.99, 0.98))
+    bkey("head", 31, roll=-0.04, scale=(1.02, 0.99, 0.99))
+
+    # Settled -- and still a little spread, because he is a puddle now
+    # and a puddle that returns to a sphere was never liquid.
+    bkey("base", 37, roll=1.50, side=0.06, up=-0.040, scale=(0.95, 1.01, 1.04))
+    bkey("head", 37, roll=0.0, scale=(0.98, 1.0, 1.01))
+    bkey("base", 42, roll=1.50, side=0.06, up=-0.040, scale=(0.95, 1.01, 1.04))
+    bkey("head", 42, roll=0.0, scale=(0.98, 1.0, 1.01))
 
     # Which hand goes where is not a choice, it is the roll direction.
     #
@@ -616,66 +697,68 @@ def build_animations(rig, face, unit):
     #           over and lands ON him, which is what a hand does when
     #           the shoulder it hangs from turns 86 degrees.
     #
-    # Both used to be keyed `side` positive, which sent them the same
-    # way and buried them under his own body. Nothing in the rig stops
-    # that: a floating hand has no elbow to hit and no arm to run out
-    # of, so the only thing keeping it outside the silhouette is these
-    # numbers. They are measured against the fallen body's own bounding
-    # box -- x[-0.20, +1.47], z[-1.08, +0.16] at frame 30, with the
-    # floor at -1.12 -- and not eyeballed.
-    #
-    # They also land AFTER the body, which the old keys at 26 and 28 did
-    # not: the body settles at 30 and stops, the hands arrive at 34 and
-    # 36. Hands that beat the body to the floor read as a pose change
-    # rather than a fall.
-
-    # Where a hand ENDS is the rotation's answer, not the animator's.
+    # Where they end up is the rotation's answer too, not the animator's.
     # Both hands hang low on him, so the roll carries their sockets to
-    # his TAIL end -- the end that is now screen-left -- and that is
-    # where they have to arrive. Put them anywhere else and they read as
-    # two hands lying near his head rather than two hands still attached
-    # to a body. Rotating the rest position about `base`'s pivot (z =
-    # -0.502) by the roll gives the anchors directly:
+    # his TAIL -- the end that is now screen-left. Rotating the rest
+    # position about `base`'s pivot (z = -0.502) gives the anchors:
     #
     #   hand_l  (+0.747, -0.045, -0.697)  ->  (-0.14, -0.05, -1.26)
     #   hand_r  (-0.747, -0.045, -0.697)  ->  (-0.25, -0.05, +0.23)
     #
-    # Both land at x about -0.2, which is his tail, one under the floor
-    # and one above him. So hand_l comes up to floor level and steps out
-    # towards the camera to clear his side, and hand_r stays where the
-    # rotation put it and settles onto him. `side` is negative for the
-    # left hand and positive for the right, which is the giveaway that
-    # the old keys were wrong: they were both positive, so both hands
-    # travelled the same way and neither ended up where its socket did.
+    # One under the floor and one above him, so hand_l comes up to floor
+    # level and steps out towards the camera to clear his side, and
+    # hand_r stays where the rotation put it and settles onto him.
+    # `side` negative for the left hand and positive for the right is
+    # the giveaway that the first version was wrong: both were positive,
+    # so both hands travelled the same way and neither ended up where
+    # its socket did.
     #
-    # They also ROLL with him. A hand that keeps hanging cuff-up while the
-    # body it belongs to turns 86 degrees is the tell that nothing joins
-    # them: at rest each mitt points down and outwards, and if that never
-    # changes it goes on pointing at the floor after he is lying on it.
-    # The roll runs a little behind the body's and does not quite reach
-    # it, which is the drag an arm would have supplied.
+    # They ROLL with him as well. A hand that goes on hanging cuff-up
+    # while the body turns 86 degrees is the tell that nothing joins
+    # them. The roll runs behind the body's and does not quite reach it,
+    # which is the drag an arm would have supplied.
     #
-    # Trailing first: he is already going over, they have not caught up.
-    bkey("hand_l", 12, side=-0.05, fwd=0.05, up=-0.02, roll=0.25)
+    # And they land AFTER him -- after the first rebound, not with the
+    # impact. Hands that arrive on the same frame as the body read as
+    # one pose change; hands that arrive two beats later read as parts
+    # that were never told.
+
+    # Trailing: he is already going over, they have not caught up.
+    bkey("hand_l", 12, side=-0.05, fwd=0.15, up=-0.03, roll=0.25)
+    # Thrown clear by the impact. The body splats widest on frame 18 and
+    # reaches further towards the camera than it ever does at rest, so
+    # the hand is pushed out ahead of it and drifts back in as the splat
+    # relaxes -- which is both what gets it out of the mesh and what a
+    # landing would have done to it.
+    bkey("hand_l", 18, side=-0.42, fwd=0.54, up=-0.090, roll=0.90)
     bkey("hand_r", 12, side=0.05, up=0.06, roll=0.20)
 
-    # hand_l is the side he lands on. It gets out towards the camera and
-    # comes to rest flat on the floor alongside him.
-    bkey("hand_l", 24, side=-0.30, fwd=0.22, up=-0.06, roll=1.10)
-    bkey("hand_l", 34, side=-0.483, fwd=0.340, up=-0.100, roll=1.62)
-    bkey("hand_l", 38, side=-0.483, fwd=0.320, up=-0.100, roll=1.55)
+    # hand_l gets out towards the camera and drops to the floor, with a
+    # small bounce of its own.
+    bkey("hand_l", 22, side=-0.46, fwd=0.45, up=-0.10, roll=1.10)
+    bkey("hand_l", 28, side=-0.483, fwd=0.340, up=-0.100, roll=1.62)
+    bkey("hand_l", 31, side=-0.470, fwd=0.330, up=-0.060, roll=1.50)
+    bkey("hand_l", 37, side=-0.483, fwd=0.320, up=-0.100, roll=1.55)
+    bkey("hand_l", 42, side=-0.483, fwd=0.320, up=-0.100, roll=1.55)
 
-    # hand_r is the side that ends up facing the sky, so it comes over
-    # the top and lands on him, a beat later than the body.
-    bkey("hand_r", 24, side=0.25, up=0.30, roll=0.80)
-    # An arc, not a line: keyed only at either end it cut the corner and
-    # went through his shoulder on the way over.
-    bkey("hand_r", 30, side=0.38, up=0.48, roll=1.20)
-    bkey("hand_r", 36, side=0.483, fwd=0.033, up=0.620, roll=1.45)
-    bkey("hand_r", 38, side=0.483, fwd=0.033, up=0.585, roll=1.38)
+    # hand_r comes over the top -- on an arc, because keyed only at
+    # either end it cut the corner and went through his shoulder -- and
+    # lands on him last of all, pressing in a little on arrival and
+    # rising back off it. The heights are set by closest APPROACH, not
+    # by penetration: a hand that is merely outside the mesh can be a
+    # hand hanging 10cm above him in mid-air, which is what the first
+    # version of this was, and only a distance measurement says so.
+    bkey("hand_r", 22, side=0.25, up=0.30, roll=0.80)
+    bkey("hand_r", 28, side=0.38, up=0.62, roll=1.20)
+    bkey("hand_r", 31, side=0.44, up=0.60, roll=1.32)
+    bkey("hand_r", 34, side=0.483, fwd=0.033, up=0.545, roll=1.45)
+    bkey("hand_r", 37, side=0.483, fwd=0.033, up=0.575, roll=1.38)
+    bkey("hand_r", 42, side=0.483, fwd=0.033, up=0.535, roll=1.40)
 
-    face_key(30, blink=0.25)
-    face_key(38, blink=0.25)
+    # He gets his eyes back, looks at where he is, and blinks once.
+    face_key(33, wide=0.35)
+    blink_at(37)
+    face_key(42)
     stash("fall")
 
 
