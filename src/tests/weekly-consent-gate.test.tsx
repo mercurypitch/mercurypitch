@@ -158,6 +158,18 @@ describe('the first ranked take', () => {
 })
 
 describe('a singer who has already agreed', () => {
+  it('starts one attempt however fast the button is tapped twice', async () => {
+    // The consent read is async, so "Sing it" stopped being instantaneous.
+    // Two taps inside that window used to begin two ranked attempts.
+    consented = true
+    await openHero()
+    fireEvent.click(screen.getByText('Sing it'))
+    fireEvent.click(screen.getByText('Sing it'))
+
+    await waitFor(() => expect(began).toHaveLength(1))
+    expect(staged).toHaveLength(1)
+  })
+
   it('goes straight to the attempt with no dialog', async () => {
     consented = true
     await openHero()
@@ -174,7 +186,8 @@ describe('what the board says about you', () => {
   function withYou(you: Record<string, unknown>): void {
     boardResponse = {
       top: [{ rank: 1, displayName: 'Rival', best: 95, isFounder: false }],
-      attemptedCount: 2,
+      attemptedCount: 4,
+      rankedCount: 2,
       completedCount: 1,
       targetScore: 70,
       founderScore: null,
@@ -212,7 +225,12 @@ describe('what the board says about you', () => {
     })
     await openHero()
 
-    await waitFor(() => screen.getByText(/Your best 88%/))
+    // The denominator is the population the percentile was computed over —
+    // four sang, two consented, and "top 100% of 4" would be a rank over one
+    // field printed against the size of another.
+    const row = await screen.findByText(/Your best 88%/)
+    expect(row.textContent).toContain('top 100% of 2')
+    expect(row.textContent).not.toContain('of 4')
     expect(screen.queryByTestId('you-unranked')).toBeNull()
   })
 })

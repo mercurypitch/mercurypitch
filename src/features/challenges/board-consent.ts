@@ -58,13 +58,21 @@ export async function grantBoardConsent(): Promise<boolean> {
       leaderboardOptInAt: new Date().toISOString(),
     }
     // Cloud row id == userId (the JWT identity). An anonymous singer has no
-    // profile row until something writes one; this is often that something,
-    // which is why the create branch carries the whole default shape.
+    // profile row until something writes one, and consent is often that
+    // something — which is why the create branch carries the whole default
+    // shape rather than just the two consent fields.
+    //
+    // The display name matters here more than it looks. A board falls back to
+    // `Singer-<id>` only when the profile row is ABSENT — an empty stored name
+    // is a name, and `COALESCE` does not catch it — so creating the row with
+    // `displayName: ''` would put a blank entry on a public podium. The same
+    // handle the fallback would have produced is written instead, matching
+    // leaderboard-service so both paths mint the identical name.
     if ((await profiles.findById(userId)) != null) {
       await profiles.update(userId, patch)
     } else {
       await profiles.create({
-        displayName: '',
+        displayName: `Singer-${userId.slice(0, 6)}`,
         joinDate: new Date().toISOString(),
         lastPracticeDate: null,
         currentStreak: 0,

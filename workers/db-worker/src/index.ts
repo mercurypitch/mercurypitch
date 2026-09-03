@@ -1246,7 +1246,7 @@ interface BoardUser {
  * want different populations. "17 sang this" is a participation count and
  * excluding the singers who did not consent would make it a lie; the ranked
  * *list* is an identity and must carry only people who agreed to be on it.
- * Callers split them — see `rankable` below.
+ * Callers split them — see `rankableSingers` below.
  *
  * `users.leaderboardExcludedAt` is deliberately NOT consulted. It is the
  * global leaderboard's exclusion and is scoped to it — weekly challenges have
@@ -1265,7 +1265,7 @@ async function computeWeeklyBoard(
 }> {
   const { results } = await env.DB.prepare(
     `SELECT s."userId" AS userId,
-            COALESCE(p."displayName", 'Singer-' || substr(s."userId", 1, 6)) AS displayName,
+            COALESCE(NULLIF(p."displayName", ''), 'Singer-' || substr(s."userId", 1, 6)) AS displayName,
             MAX(s."score") AS best,
             CASE WHEN COALESCE(p."leaderboardOptIn", 0) = 1 THEN 1 ELSE 0 END AS optedIn
      FROM "sessionRecords" s
@@ -1351,6 +1351,7 @@ async function handleWeeklyBoard(
   const auth = await getAuth(request, env)
   let you: {
     best: number
+    /** 0 when `ranked` is false — an unranked singer holds no place. */
     rank: number
     percentile: number
     beatFounder: boolean
@@ -1361,14 +1362,17 @@ async function handleWeeklyBoard(
     const mine = perUser.find((u) => u.userId === auth.userId)
     if (mine) {
       const isRanked = mine.optedIn === 1
-      const field = isRanked ? ranked : [mine]
-      const better = field.filter((u) => u.best > mine.best).length
-      const rank = better + 1
+      const better = ranked.filter((u) => u.best > mine.best).length
       you = {
         best: Math.round(mine.best),
-        rank,
+        // Zero rather than 1 when unranked. `better + 1` would say "first
+        // place" to somebody who is on no list at all, and a consumer that
+        // reads `rank` without checking `ranked` would print it.
+        rank: isRanked ? better + 1 : 0,
         percentile:
-          field.length > 0 ? Math.round((100 * rank) / field.length) : 100,
+          isRanked && ranked.length > 0
+            ? Math.round((100 * (better + 1)) / ranked.length)
+            : 0,
         beatFounder: row.founderScore !== null && mine.best > row.founderScore,
         completed: mine.best >= row.targetScore,
         ranked: isRanked,
@@ -1379,6 +1383,11 @@ async function handleWeeklyBoard(
   return respond({
     top,
     attemptedCount,
+    // The population `you.rank` and `you.percentile` are measured against.
+    // Distinct from attemptedCount, which counts everyone who sang: showing
+    // "top 40% of 17" beside a rank computed over 10 would be two different
+    // populations in one sentence.
+    rankedCount: ranked.length,
     completedCount,
     targetScore: row.targetScore,
     founderScore: row.founderScore,
@@ -1395,12 +1404,11 @@ async function handleWeeklyBoard(
 //
 // The **name is fixed at close time**. Whatever a singer is called when the
 // window shuts is what the podium says forever, so renaming an account after
-// winning cannot rewrite a published result. Eligibility — suspended, admin
-// excluded, score retracted, consented — is checked once, here, at the same
-// instant.
+// winning cannot rewrite a published result. Eligibility — suspended, score
+// retracted, consented — is checked once, here, at the same instant.
 //
 // The **consent is not**. `userId` is stored beside the frozen name so a
-// later opt-out can redact the entry on the way out (see `redactPodium`).
+// later opt-out can redact the entry on the way out (see `redactPodiums`).
 // Freezing the name and re-checking the permission is the combination that
 // lets both of those be true at once.
 //
@@ -1455,9 +1463,8 @@ async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
 //
 // The snapshot is frozen, so the only place a later change of mind can be
 // honoured is at read time. A singer who opts out of public boards — or who
-// is suspended, admin-excluded, or has retracted their score for that
-// challenge — keeps their rank and their score on the podium and loses their
-// name to `<redacted>`.
+// is suspended, or has retracted their score for that challenge — keeps their
+// rank and their score on the podium and loses their name to `<redacted>`.
 //
 // Losing the name rather than the row is deliberate. Deleting an entry would
 // silently promote everybody below it and rewrite what happened; the record
@@ -1536,7 +1543,9 @@ async function redactPodiums(
   rows: readonly WeeklyRow[],
   env: Env,
 ): Promise<unknown[]> {
-  const parsed = rows.map((r) => (r.resultsJson ? safeJson(r.resultsJson) : null))
+  const parsed = rows.map((r) =>
+    r.resultsJson ? safeJson(r.resultsJson) : null,
+  )
   const pairs: Array<{ challengeId: string; userId: string }> = []
   parsed.forEach((results, i) => {
     for (const entry of storedPodium(results)) {
