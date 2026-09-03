@@ -27,6 +27,14 @@ const PAPER = 0xfff4e2
 /** The pane, in scene metres. Matches art/pane/make_pane.py. */
 export const PANE = { width: 0.72, height: 1.05, thick: 0.006 }
 
+/** The lens the corridor was composed through, and the shape of screen
+ * it was composed on. `resize` keeps the horizontal angle these two
+ * imply, whatever shape the screen turns out to be. */
+const DESIGN_FOV_DEG = 40
+const DESIGN_ASPECT = 1.5
+/** Past this the correction stops being a correction. */
+const MAX_FOV_DEG = 62
+
 export interface HallwayView {
   /** Where Merc is along the corridor. The stage owns the journey. */
   mercX: number
@@ -62,7 +70,7 @@ export const createHallway3D = (
   // millimetre sliver with a big dark parallelogram behind it. From the
   // diagonal the face catches the backdrop and reads as glass, and
   // Merc's face turns toward the lens instead of away down the hall.
-  const camera = new PerspectiveCamera(40, 1, 0.05, 30)
+  const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 30)
   camera.position.set(1.5, 1.0, 2.4)
 
   const backdrop = createBackdrop(9)
@@ -307,7 +315,28 @@ export const createHallway3D = (
     },
 
     resize(width: number, height: number, pixelRatio: number): void {
-      camera.aspect = width / Math.max(height, 1)
+      const aspect = width / Math.max(height, 1)
+      camera.aspect = aspect
+      // Hold the HORIZONTAL field on a narrow screen, rather than the
+      // vertical one.
+      //
+      // three's `fov` is vertical, so a phone held upright keeps the 40
+      // degrees it was composed with and throws away most of the
+      // horizontal angle -- and horizontal is the axis the corridor runs
+      // along. At a phone's aspect that leaves about 19 degrees of
+      // corridor, which is how Merc ended up half outside the frame on
+      // maff's iPhone (2026-09-03) while looking fine on a laptop.
+      //
+      // So the vertical angle is derived from the horizontal one the
+      // scene was composed with, and only ever widened: a screen wider
+      // than the design aspect keeps exactly the framing it had. The cap
+      // is there because the arithmetic alone would ask for 100 degrees
+      // on a tall phone, and a 100-degree lens is a different film.
+      const halfH = Math.tan((DESIGN_FOV_DEG * Math.PI) / 360) * DESIGN_ASPECT
+      camera.fov = Math.min(
+        MAX_FOV_DEG,
+        Math.max(DESIGN_FOV_DEG, (Math.atan(halfH / aspect) * 360) / Math.PI),
+      )
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)

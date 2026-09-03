@@ -1600,12 +1600,24 @@ svg {
   opacity: 0.52;
 }
 
+/* Stacked until there is room, not until the screen is tiny.
+   This was two columns by default and only stacked under 23rem (368px),
+   so on any ordinary phone -- 390px and up -- the nowrap "Set reminder"
+   button kept its width, the time input gave up all of its own, and the
+   two ended up on top of each other (maff's iPhone, 2026-09-03). The
+   rule now starts stacked and earns its second column. */
 .custom-time {
   display: grid;
   align-items: end;
   gap: 0.75rem;
   margin-top: 1rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .custom-time {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .custom-time label {
@@ -2552,10 +2564,6 @@ svg {
 
   .cinematic-onboarding__caption {
     margin-top: calc(var(--safe-top) + 8.5rem);
-  }
-
-  .custom-time {
-    grid-template-columns: 1fr;
   }
 
   .active-sleeve {

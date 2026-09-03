@@ -148,17 +148,26 @@ export const WORLD3D_CONFIG: World3DConfig = {
   // spread to arc them apart, less spin so an individual shard reads as
   // a shape rather than a blur, and a longer settle so the floor is not
   // reached before the eye is.
+  // These are the Hallway's, at Hallway scale. `shatterIn` below is how
+  // another world borrows them, and how the whole break is slowed
+  // further without hand-editing six numbers into disagreement.
+  //
+  // Slowed once more on 2026-09-03 -- maff: "a bit even slower when it
+  // shatters, like a slow motion camera shot or similar would be
+  // nicer". These carry a x1.35 slow-motion already applied: gravity is
+  // divided by 1.35 SQUARED, which is the part that is easy to get
+  // wrong and the difference between slow motion and weak gravity.
   shatter: {
-    launchSpeed: 2.1,
+    launchSpeed: 1.55,
     launchSpeedFloorRatio: 0.6,
-    launchLift: 1.35,
+    launchLift: 1.0,
     spreadRadians: 0.55,
     towardViewer: 0.45,
-    spinTurnsPerSecond: 1.4,
-    releaseWindowSeconds: 0.32,
-    gravity: 7.5,
+    spinTurnsPerSecond: 1.05,
+    releaseWindowSeconds: 0.43,
+    gravity: 4.1,
     restitution: 0.2,
-    settleSeconds: 3.2,
+    settleSeconds: 4.3,
   },
   loop: {
     stepSeconds: 1 / 120,
@@ -181,6 +190,55 @@ export type World3DConfigOverride = {
  * would let a new config branch be added above and silently never be
  * mergeable. This way the compiler asks for it.
  */
+/**
+ * The same break, in a different-sized world or at a different speed.
+ *
+ * Both knobs are here because the two are constantly confused and the
+ * arithmetic is not the same.
+ *
+ * `worldScale` is SIZE. The Cabinet's glass is about a fifth of the
+ * Hallway's pane, and metres per second are absolute, so the identical
+ * numbers make the Cabinet's break look five times faster -- which is
+ * exactly what maff saw ("the cabinet shatter is a bit even faster so
+ * not that good", 2026-09-03). Distances, speeds and accelerations all
+ * scale linearly with size; durations do not move at all.
+ *
+ * `slowMotion` is TIME, and it is the one that behaves oddly: halving
+ * the speed of a falling object does not halve the speed of the fall,
+ * because gravity goes on doing what it does. A camera running k times
+ * slow sees velocities divided by k and accelerations divided by k
+ * SQUARED, and every duration stretched by k. Getting that square wrong
+ * is what makes slow motion look like weak gravity instead.
+ */
+export const shatterIn = (
+  base: World3DConfig['shatter'],
+  opts: { worldScale?: number; slowMotion?: number },
+): World3DConfig['shatter'] => {
+  const s = opts.worldScale ?? 1
+  const k = opts.slowMotion ?? 1
+  return {
+    ...base,
+    launchSpeed: (base.launchSpeed * s) / k,
+    launchLift: (base.launchLift * s) / k,
+    gravity: (base.gravity * s) / (k * k),
+    releaseWindowSeconds: base.releaseWindowSeconds * k,
+    settleSeconds: base.settleSeconds * k,
+    spinTurnsPerSecond: base.spinTurnsPerSecond / k,
+  }
+}
+
+/**
+ * The Cabinet, whose glass is roughly a fifth of the Hallway's pane.
+ *
+ * Everything else it uses is the Hallway's -- one ring, one ear, one
+ * loop -- so this is an override of the one part of the config that is
+ * measured in metres.
+ */
+export const CABINET_CONFIG: World3DConfig = {
+  ...WORLD3D_CONFIG,
+  shatter: shatterIn(WORLD3D_CONFIG.shatter, { worldScale: 0.2 }),
+}
+
 export const resolveConfig = (
   override: World3DConfigOverride | undefined,
   base: World3DConfig = WORLD3D_CONFIG,

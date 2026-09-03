@@ -24,6 +24,25 @@ describe('parseEngineLabel', () => {
   it('does not guess when it cannot tell', () => {
     expect(parseEngineLabel('some other agent')).toBe('Unknown engine')
   })
+
+  // The one that shipped saying "Unknown engine" on the platform whose
+  // engine mattered most. A WKWebView inside an app carries no
+  // `Version/` token, which is what the Safari branch matches on.
+  it('names the WebView Beside Cue actually runs in on iOS', () => {
+    expect(
+      parseEngineLabel(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      ),
+    ).toBe('iOS WebView 18.5')
+  })
+
+  it('still calls mobile Safari Safari', () => {
+    expect(
+      parseEngineLabel(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+      ),
+    ).toBe('Safari 18')
+  })
 })
 
 describe('graphicsLabel', () => {

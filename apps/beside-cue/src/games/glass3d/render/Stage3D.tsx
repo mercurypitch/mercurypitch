@@ -25,7 +25,7 @@ import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
 import { shatterDuration, solveShatter } from '../sim/shatter3d'
-import { WORLD3D_CONFIG } from '../world3d-config'
+import { CABINET_CONFIG } from '../world3d-config'
 import type { StageView } from './Renderer3D'
 import { createRenderer3D } from './Renderer3D'
 import { VoiceCoach } from './VoiceCoach'
@@ -76,7 +76,10 @@ export const Stage3D = (props: Stage3DProps) => {
   // the same click has to unlock both directions of audio.
   const tone = createGlassTone(midiToFreq(TARGET_MIDI))
 
-  const cfg = WORLD3D_CONFIG
+  // The Cabinet's own config: the Hallway's ring, ear and loop, with the
+  // break rescaled to a world about a fifth the size. Absolute metres
+  // per second in a small room read as a much faster break.
+  const cfg = CABINET_CONFIG
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
