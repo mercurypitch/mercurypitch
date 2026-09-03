@@ -287,6 +287,26 @@
 
   .notification {
     animation-name: mobileNotificationIn;
+
+    /* A full-width toast will always be over something. The container has
+       always been pointer-events: none so the gaps in the stack pass taps
+       through, but that stops at the toast body, which is exactly the part
+       that overlaps a control.
+
+       Two specs pin this from opposite ends of the screen:
+       room-chip-busy.spec.ts taps the Piano Room chip near the top, and
+       stem-mixer-controls.spec.ts hit-tests the music level at the bottom.
+       Both read the toast as the element at the point and fail. Making the
+       body transparent to hit-testing hands the tap back to the control it
+       is sitting on, which is the only reading that is ever right: the toast
+       is not what somebody aimed at. */
+    pointer-events: none;
+  }
+
+  /* Except the parts meant to be pressed. Dismiss and the action buttons stay
+     tappable, so a toast that offers something can still be taken up. */
+  .notification button {
+    pointer-events: auto;
   }
 }
 
