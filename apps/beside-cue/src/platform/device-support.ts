@@ -18,8 +18,29 @@ export interface DeviceSupport {
   engine: string
   /** 'WebGPU ready', 'WebGPU present, no adapter', 'WebGL2', 'none' */
   graphics: string
-  /** 'granted' | 'prompt' | 'denied' | 'unknown' */
+  /** 'granted' | 'prompt' | 'denied' | 'unknown' | 'no API (insecure page)' */
   microphone: string
+}
+
+/**
+ * Why the microphone cannot work here, or null when nothing is in the way.
+ *
+ * `navigator.mediaDevices` is gated on the SECURE CONTEXT and browsers simply
+ * do not define it otherwise, so an http page on a LAN address has no
+ * microphone API at all -- not a denied permission, not a missing device. The
+ * player finds out by tapping, and what they get is a TypeError about a
+ * property, several layers away from the fact that matters, which is the URL
+ * they typed. Answered before the tap instead.
+ */
+export const micApiBlocker = (): string | null => {
+  if (typeof navigator !== 'undefined') {
+    const devices = navigator.mediaDevices as MediaDevices | undefined
+    if (typeof devices?.getUserMedia === 'function') return null
+  }
+  return typeof globalThis.isSecureContext === 'boolean' &&
+    !globalThis.isSecureContext
+    ? 'The microphone needs a secure connection. Open this page over https, or on localhost — http on a network address hides the microphone from every browser.'
+    : 'This browser does not offer microphone access on this page.'
 }
 
 /**
@@ -97,6 +118,9 @@ const probeMicrophone = async (): Promise<string> => {
     const permissions = navigator.permissions as
       | { query?: (d: { name: string }) => Promise<{ state: string }> }
       | undefined
+    // No API to ask about, and the reason is worth naming in the readout:
+    // "prompt" next to a microphone that cannot exist is a lie.
+    if (micApiBlocker() !== null) return 'no API (insecure page)'
     if (permissions?.query === undefined) return 'unknown'
     const status = await permissions.query({ name: 'microphone' })
     return status.state

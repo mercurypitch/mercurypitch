@@ -90,7 +90,7 @@ const channel = (mode: string): 'dev' | 'ci' | 'release' => {
 // machine's LAN addresses, and falls back to @vitejs/plugin-basic-ssl.
 // That fallback is enough to reach the dev server and NOT enough to test
 // on a phone: basic-ssl's SAN list is localhost, ::1 and 127.0.0.1, so
-// on the one URL a device test uses -- https://<lan-ip>:5173 -- the
+// on the one URL a device test uses -- https://<lan-ip>:5199 -- the
 // certificate does not name the host serving it. Safari tapped through
 // that for the document and then declined the same connection for what
 // the document asked for next, which reads as broken images, black
@@ -108,11 +108,22 @@ const devCert = (): { key: Buffer; cert: Buffer } | undefined => {
   return { key: readFileSync(key), cert: readFileSync(cert) }
 }
 
+/**
+ * Beside Cue's own port.
+ *
+ * Vite's default 5173 is the first port every other project on the machine
+ * takes as well, and a dev server that silently moves to 5174 is a dev server
+ * whose LAN URL, whose certificate SANs and whose launch config all quietly
+ * stop matching. `strictPort` makes a clash an error to read rather than a
+ * surprise to debug.
+ */
+const DEV_PORT = 5199
+
 export default defineConfig(({ mode }) => {
   const https = mode === 'https' ? devCert() : undefined
   return {
     base: './',
-    server: https === undefined ? undefined : { https },
+    server: { port: DEV_PORT, strictPort: true, ...(https && { https }) },
     plugins: [
       excludeInactiveV2OnboardingMedia(),
       ...(mode === 'https' && https === undefined ? [basicSsl()] : []),

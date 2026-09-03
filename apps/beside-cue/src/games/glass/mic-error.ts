@@ -39,6 +39,15 @@ export const micErrorLine = (err: unknown): string => {
       return 'No microphone was found on this device.'
     case 'held-elsewhere':
       return 'Another Beside Cue tab is holding the microphone. Close it, then tap to start again.'
+    // The one failure that retrying can never fix, and the one the player
+    // can fix in a second once told what it actually is. Browsers withhold
+    // `navigator.mediaDevices` entirely outside a secure context, so a LAN
+    // address over plain http has no microphone at all -- which surfaced as
+    // "undefined is not an object (evaluating
+    // 'navigator.mediaDevices.getUserMedia')", a sentence about the wrong
+    // thing.
+    case 'insecure-context':
+      return 'The microphone needs a secure connection. Open this page over https, or on localhost — http on a network address hides the microphone from every browser.'
     default:
       return typeof err.message === 'string' && err.message.length > 0
         ? err.message

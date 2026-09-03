@@ -27,6 +27,7 @@ import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
+import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { createLoopState, runLoop } from '../runtime/loop'
@@ -78,7 +79,11 @@ interface HallwayStageProps {
 
 export const HallwayStage = (props: HallwayStageProps) => {
   let canvas!: HTMLCanvasElement
-  const [micError, setMicError] = createSignal<string | null>(null)
+  // A page with no microphone API says so before the tap rather than
+  // after it: there is nothing to grant and nothing to retry, and the
+  // fix is in the address bar (see platform/device-support).
+  const noMicApi = micApiBlocker()
+  const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
@@ -447,7 +452,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
-            <MicInput listening={false} onChoose={() => void switchMic()} />
+            {/* A picker is no use when the browser is withholding the
+                whole microphone API -- there is nothing to pick from. */}
+            <Show when={noMicApi === null}>
+              <MicInput listening={false} onChoose={() => void switchMic()} />
+            </Show>
           </Show>
         </div>
       </Show>

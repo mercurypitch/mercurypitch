@@ -23,12 +23,13 @@
 
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
-import { midiToFreq } from '@irchiinnuss/pitch-engine'
+import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
+import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ChamberLevel } from '../levels/chambers'
@@ -53,6 +54,12 @@ const FALL_SECONDS = 1.6
 
 /** Close enough to the exit to count as out. */
 const ARRIVED = 0.02
+
+/** How long after a break before the glass may ring again. Past the crack
+ * and the body, into the thin end of the shard tail -- long enough that
+ * the next pane is not answering over the last one's wreckage, short
+ * enough that a player who moves straight on is not met with silence. */
+const REARM_SECONDS = 2.2
 
 /** The measured range, if the player ever found it. Null is not a
  * failure -- `tuneChamber` has a sensible middle to fall back on. */
@@ -111,10 +118,20 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const chamber = props.chamber
   const cfg = CHAMBER_CONFIG
 
-  const [micError, setMicError] = createSignal<string | null>(null)
+  // A page with no microphone API says so before the tap rather than
+  // after it: there is nothing to grant and nothing to retry, and the
+  // fix is in the address bar (see platform/device-support).
+  const noMicApi = micApiBlocker()
+  const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
   const [phase, setPhase] = createSignal<Phase>('walking')
+  // What the microphone is actually hearing, kept separately from what the
+  // room makes of it. Without this a dead microphone and a wrong note look
+  // exactly the same -- an unlit ladder -- which is how "the audio is not
+  // coming through" and "I am singing the wrong note" became the same bug
+  // report.
+  const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
   const [nearMode, setNearMode] = createSignal<number | null>(null)
   const [semisOff, setSemisOff] = createSignal(0)
   const [onIt, setOnIt] = createSignal(false)
@@ -135,6 +152,16 @@ export const ChamberStage = (props: ChamberStageProps) => {
     midiToFreq(modeMidi(fundamental, chamber.modes[0] ?? 1)),
   )
   const input = createIntentSource()
+
+  /** The note being sung, named. Rounded to the nearest semitone, which
+   * is what a name IS -- how far off it that note is belongs to the
+   * ladder, where the rung it belongs to is already lit. */
+  const heardName = (): string => {
+    const midi = heardMidi()
+    if (midi === null) return ''
+    const note = midiToNote(Math.round(midi))
+    return `${note.name}${note.octave}`
+  }
 
   const toggleLadder = (): void => {
     const next = !showLadder()
@@ -195,6 +222,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
       let lastOff = 0
       let lastOnIt = false
       let lastWaveStrength = 0
+      /** Which pane the ring is currently tuned to. */
+      let tunedTo = -1
       let sinceText = TEXT_INTERVAL
 
       const go = (p: Phase): void => {
@@ -356,6 +385,32 @@ export const ChamberStage = (props: ChamberStageProps) => {
           ...targets.map((t) => (t.broken ? 0 : t.ring.res)),
           0,
         )
+
+        // The ring follows whichever pane is furthest along, and points
+        // at THAT pane's note. One tone serving several panes would
+        // otherwise answer the second one in the first one's key.
+        let active = -1
+        let bestRes = -1
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i]!
+          if (t.broken || t.ring.res <= bestRes) continue
+          bestRes = t.ring.res
+          active = i
+        }
+        if (active >= 0 && active !== tunedTo) {
+          tunedTo = active
+          tone.retune(midiToFreq(targets[active]!.midi))
+        }
+        // `shatter` silences the ring for good, which is right for a room
+        // with one pane in it. This room has more glass.
+        if (
+          breaking !== null &&
+          wallSeconds - breakAtWall > REARM_SECONDS &&
+          active >= 0
+        ) {
+          tone.rearm()
+        }
+
         tone.update(charge, lastWaveStrength)
         sinceText += frameSeconds
         if (sinceText >= TEXT_INTERVAL) {
@@ -364,6 +419,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           // whole tone flat is trying to sing that mode, and the ladder
           // saying "nothing" instead of "flat" is a shrug where a hint
           // belongs. Silence, and only silence, lights nothing.
+          setHeardMidi(lastMidi)
           setNearMode(
             lastMidi === null
               ? null
@@ -507,6 +563,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
             </Show>
           </p>
           <p class="chamber-hud__count">
+            <Show
+              when={heardMidi() !== null}
+              fallback={<span class="chamber-hud__quiet">nothing heard</span>}
+            >
+              {heardName()}
+            </Show>
+            {' · '}
             {broken()} of {chamber.panes.length} broken
           </p>
           <div class="chamber-hud__toggles">
@@ -542,7 +605,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
-            <MicInput listening={false} onChoose={() => void switchMic()} />
+            {/* A picker is no use when the browser is withholding the
+                whole microphone API -- there is nothing to pick from. */}
+            <Show when={noMicApi === null}>
+              <MicInput listening={false} onChoose={() => void switchMic()} />
+            </Show>
           </Show>
         </div>
       </Show>

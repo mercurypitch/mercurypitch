@@ -92,7 +92,7 @@ development build can put a fake store behind the same ports instead:
 
 ```sh
 pnpm beside-cue:dev
-# then open http://localhost:5173/?mockPurchases
+# then open http://localhost:5199/?mockPurchases
 ```
 
 `VITE_MOCK_PURCHASES=1` does the same without the query parameter. The fake

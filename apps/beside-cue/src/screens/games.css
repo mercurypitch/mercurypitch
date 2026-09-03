@@ -539,6 +539,12 @@
   color: rgb(255 255 255 / 45%);
 }
 
+/* Nothing is reaching the microphone. Said plainly rather than left as an
+   unlit ladder, which reads as "you are singing the wrong note". */
+.chamber-hud__quiet {
+  color: var(--orange, #c93513);
+}
+
 .chamber-hud__toggles {
   display: flex;
   gap: 0.4rem;

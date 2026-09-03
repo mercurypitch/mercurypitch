@@ -7,7 +7,7 @@
 # `vite --mode https` used to get its certificate from
 # @vitejs/plugin-basic-ssl, whose SAN list is localhost, ::1 and
 # 127.0.0.1 and nothing else. A phone does not reach a laptop on any of
-# those, so on the one URL a device test uses -- https://<lan-ip>:5173 --
+# those, so on the one URL a device test uses -- https://<lan-ip>:5199 --
 # the certificate does not match the host it is served from.
 #
 # Safari lets you tap through that for the DOCUMENT and then declines to
@@ -58,4 +58,4 @@ openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
 
 echo "wrote $OUT/cert.pem, valid 365 days"
 echo "covers localhost plus $n LAN address(es):"
-for ip in "${IPS[@]}"; do echo "  https://$ip:5173"; done
+for ip in "${IPS[@]}"; do echo "  https://$ip:5199"; done
