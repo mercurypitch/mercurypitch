@@ -72,6 +72,20 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
     expect(block).toMatch(/bottom\s*:[\s\S]*?--tabbar-total/)
   })
 
+  // Two specs pin this from opposite ends of the screen: room-chip-busy taps
+  // a chip near the top, stem-mixer-controls hit-tests the music level at the
+  // bottom. Both read the toast as the element at the point unless its body is
+  // transparent to hit-testing.
+  it('lets taps reach the control the toast is sitting on', () => {
+    expect(block).toMatch(/\.notification\s*\{[^}]*pointer-events\s*:\s*none/)
+  })
+
+  it('keeps the toast own buttons pressable', () => {
+    expect(block).toMatch(
+      /\.notification button\s*\{[^}]*pointer-events\s*:\s*auto/,
+    )
+  })
+
   it('does not anchor to the top edge at all', () => {
     // A leftover `top` alongside `bottom` stretches the container over the
     // whole screen, which puts a toast back on the chrome by a different route.
