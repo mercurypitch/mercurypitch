@@ -55,15 +55,24 @@ export const WeeklyLegendHero: Component = () => {
   // Declining is not a dead end: the same melody is one tap away as practice.
   const [consentOpen, setConsentOpen] = createSignal(false)
   const [consenting, setConsenting] = createSignal(false)
+  // The consent read is async, so "Sing it" is no longer instantaneous and a
+  // second tap inside that window used to start a second attempt.
+  let checkingConsent = false
 
   function attempt(): void {
+    if (checkingConsent || consentOpen()) return
+    checkingConsent = true
     void (async () => {
-      if (challenge() === undefined) return
-      if (await hasBoardConsent()) {
-        startRankedAttempt()
-        return
+      try {
+        if (challenge() === undefined) return
+        if (await hasBoardConsent()) {
+          startRankedAttempt()
+          return
+        }
+        setConsentOpen(true)
+      } finally {
+        checkingConsent = false
       }
-      setConsentOpen(true)
     })()
   }
 
@@ -213,7 +222,7 @@ export const WeeklyLegendHero: Component = () => {
                     fallback={
                       <span>
                         Your best {board()!.you!.best}% · top{' '}
-                        {board()!.you!.percentile}% of {board()!.attemptedCount}
+                        {board()!.you!.percentile}% of {board()!.rankedCount}
                       </span>
                     }
                   >

@@ -220,6 +220,7 @@ async function archived(id = CHALLENGE_ID): Promise<Snapshot | null> {
 interface Board {
   top: Array<{ rank: number; displayName: string; best: number }>
   attemptedCount: number
+  rankedCount: number
   completedCount: number
   you: {
     best: number
@@ -279,7 +280,9 @@ async function registerSinger(
 function badgeHolders(badgeId: string): string[] {
   return (
     sqlite
-      .prepare(`SELECT userId FROM userBadges WHERE badgeId = ? ORDER BY userId`)
+      .prepare(
+        `SELECT userId FROM userBadges WHERE badgeId = ? ORDER BY userId`,
+      )
       .all(badgeId) as Array<{ userId: string }>
   ).map((r) => r.userId)
 }
@@ -427,8 +430,11 @@ describe('the podium badge', () => {
     expect(response.status).toBe(200)
     expect(snapshot().top3).toHaveLength(1)
     expect(
-      (sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as { c: number })
-        .c,
+      (
+        sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
+          c: number
+        }
+      ).c,
     ).toBe(0)
   })
 
@@ -441,8 +447,11 @@ describe('the podium badge', () => {
 
     await close()
     expect(
-      (sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as { c: number })
-        .c,
+      (
+        sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
+          c: number
+        }
+      ).c,
     ).toBe(3)
   })
 })
@@ -498,7 +507,9 @@ describe('redaction on the way out', () => {
     const singer = seedSinger('Later Banned')
     seedScore(singer.id, 91)
     await close()
-    sqlite.prepare(`UPDATE users SET suspendedAt = ? WHERE id = ?`).run(NOW, singer.id)
+    sqlite
+      .prepare(`UPDATE users SET suspendedAt = ? WHERE id = ?`)
+      .run(NOW, singer.id)
 
     expect((await archived())?.top3[0].redacted).toBe(true)
   })
@@ -598,5 +609,68 @@ describe('the live board tells an unranked singer the truth', () => {
     const result = await board()
     expect(result.top).toEqual([])
     expect(result.attemptedCount).toBe(2)
+  })
+})
+
+describe('a board number always says which population it counted', () => {
+  it('measures rank and percentile against the singers who can be ranked', async () => {
+    // Four sang, two consented. Coming second of the two ranked singers is
+    // "top 50%" — of two, not of four. Mixing the populations would print
+    // "top 50% of 4", which is a rank over one field and a denominator over
+    // another in the same sentence.
+    seedScore(seedSinger('Shy One', { optedIn: false }).id, 99)
+    seedScore(seedSinger('Shy Two', { optedIn: false }).id, 97)
+    seedScore(seedSinger('Rival').id, 95)
+    const me = await registerSinger('pop@example.com', 'Me', true)
+    seedScore(me.id, 88)
+
+    const result = await board(me.token)
+    expect(result.attemptedCount).toBe(4)
+    expect(result.rankedCount).toBe(2)
+    expect(result.you?.rank).toBe(2)
+    expect(result.you?.percentile).toBe(100)
+  })
+
+  it('gives an unranked singer no place rather than first place', async () => {
+    // `better + 1` over a field of one is 1, and a consumer reading `rank`
+    // without checking `ranked` would print "1st" for somebody on no list.
+    seedScore(seedSinger('Rival').id, 95)
+    const me = await registerSinger('noplace@example.com', 'Quiet', false)
+    seedScore(me.id, 88)
+
+    const result = await board(me.token)
+    expect(result.you?.ranked).toBe(false)
+    expect(result.you?.rank).toBe(0)
+    expect(result.you?.percentile).toBe(0)
+    expect(result.you?.best).toBe(88)
+  })
+})
+
+describe('a singer with no display name of their own', () => {
+  it('is never published as a blank entry', async () => {
+    // `COALESCE` catches a NULL profile, not an empty stored name — a row
+    // written with `displayName: ''` would reach the podium as nothing at all.
+    const blank = seedSinger('Blank')
+    sqlite
+      .prepare(`UPDATE userProfiles SET displayName = '' WHERE id = ?`)
+      .run(blank.id)
+    seedScore(blank.id, 91)
+
+    await close()
+    const name = snapshot().top3[0].displayName
+    expect(name).not.toBe('')
+    expect(name).toBe(`Singer-${blank.id.slice(0, 6)}`)
+  })
+
+  it('is never published as a blank entry on the live board either', async () => {
+    const blank = seedSinger('Blank')
+    sqlite
+      .prepare(`UPDATE userProfiles SET displayName = '' WHERE id = ?`)
+      .run(blank.id)
+    seedScore(blank.id, 91)
+
+    expect((await board()).top[0].displayName).toBe(
+      `Singer-${blank.id.slice(0, 6)}`,
+    )
   })
 })

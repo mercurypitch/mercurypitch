@@ -55,13 +55,22 @@ export interface WeeklyBoardEntry {
 
 export interface WeeklyBoard {
   top: WeeklyBoardEntry[]
+  /** Everyone who sang, consenting or not — a participation figure. */
   attemptedCount: number
+  /**
+   * The singers `you.rank` and `you.percentile` are measured against: the
+   * ones who consented to be named. Smaller than `attemptedCount` whenever
+   * somebody sang without opting in, which is why the two are not
+   * interchangeable in copy.
+   */
+  rankedCount: number
   completedCount: number
   targetScore: number
   founderScore: number | null
   frozen: boolean
   you: {
     best: number
+    /** 0 when `ranked` is false — an unranked singer holds no place. */
     rank: number
     percentile: number
     beatFounder: boolean
