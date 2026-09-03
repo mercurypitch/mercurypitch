@@ -58,27 +58,24 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
     expect(block).toMatch(/100dvh/)
   })
 
-  // The header is full width on a phone, so a toast placed over it hides the
-  // menu, the wordmark, the mic and the account chip at once — the whole of
-  // the app's chrome, and none of it tappable while the toast is up.
-  it('starts below the header rather than on top of it', () => {
-    expect(block).toMatch(/top\s*:[\s\S]*?--app-header-height/)
+  // The header is full width on a phone, so a toast anchored to the top hides
+  // the menu, the wordmark, the mic and the account chip at once — the whole
+  // of the app's chrome, none of it tappable while the toast is up.
+  //
+  // Below the header is not the fix: that lands on the top row of page
+  // content, and toasts carry buttons. On the piano page the tour prompt's
+  // "Start tour" covered the Piano Room chip exactly, so a tap meant for the
+  // room started a tour instead — src/e2e/room-chip-busy.spec.ts catches it.
+  // The bottom edge is the strip a phone already reserves for chrome.
+  it('anchors to the bottom, not the top', () => {
+    expect(block).toMatch(/top\s*:\s*auto/)
+    expect(block).toMatch(/bottom\s*:[\s\S]*?--tabbar-total/)
   })
 
-  it('budgets the header out of the max-height too', () => {
-    // Or a stack of toasts reaches exactly as far past the bottom as it was
-    // pushed down from the top.
-    expect(block).toMatch(/max-height\s*:[\s\S]*?--app-header-height/)
-  })
-
-  it('falls back to the old placement where no header publishes a height', () => {
-    // The standalone karaoke and mirror entries mount the toast host without
-    // an app header. They must keep the placement they had, not collapse to
-    // the top edge under a 0px default.
-    const tops = block.match(
-      /--app-header-height\s*,\s*env\(safe-area-inset-top\)/g,
-    )
-    expect(tops?.length).toBe(2)
+  it('does not anchor to the top edge at all', () => {
+    // A leftover `top` alongside `bottom` stretches the container over the
+    // whole screen, which puts a toast back on the chrome by a different route.
+    expect(block).not.toMatch(/top\s*:\s*calc/)
   })
 })
 

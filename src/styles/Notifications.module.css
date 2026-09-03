@@ -239,7 +239,8 @@
 @keyframes mobileNotificationIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    /* Enters from the bottom edge it is anchored to, not the top. */
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -249,40 +250,36 @@
 
 @media (max-width: 768px) {
   .notificationContainer {
-    /* Below the header, not over it. The desktop trade above — cover the
-       account buttons, they are the least urgent thing on screen — breaks
-       down here, because this container is full width: measured at 375px it
-       spans x 8-367 against a header at y 0-50, so for the three seconds a
-       toast is up the menu button, the wordmark, the mic and the account chip
-       are all behind it and untappable. That is not the least urgent thing on
-       screen, it is the whole of the app's chrome.
+    /* Anchored to the bottom, above the tab bar — not to the top.
 
-       Shifting left of the account cluster instead would cost a third of the
-       width (359px to 227px) and still be wrong: the cluster is 124px signed
-       out and wider signed in, where the chip carries a name, and no CSS can
-       measure the difference.
+       The desktop trade at the top of this file (cover the account cluster,
+       it is the least urgent thing on screen) does not survive a phone,
+       because here the container is full width: measured at 375px it spans
+       x 8-367 against a header at y 0-50, so every control in the header sat
+       behind it and none of them could be tapped.
 
-       --app-header-height is published by the header itself (lib/app-header-
-       height.ts) because it is not a constant — one row, or two once the
-       icon-tab strip shows. The fallback is the old placement, so a surface
-       that renders no header keeps exactly the behaviour it had.
+       Below the header was the obvious answer and it is worse, not better. It
+       lands on the top row of page CONTENT, and toasts carry buttons: on the
+       piano page "New to Piano? Take a quick tour. [Start tour]" fires on load
+       and its button covered the Piano Room chip exactly (chip y 58-90 against
+       a toast at y 58-96), so a tap meant for the room started a tour. That is
+       the same misfire as the header one, moved down a row — caught by
+       src/e2e/room-chip-busy.spec.ts.
 
-       Known and accepted: the header scrolls away rather than sticking, so on
-       a scrolled page the toast sits about 50px lower than it needs to. That
-       is a gap with no visible cause, and it is still preferable to hiding
-       every control in the header for the three seconds a toast is up. */
-    top: calc(var(--app-header-height, env(safe-area-inset-top)) + 0.5rem);
+       The bottom edge is the one strip a phone already reserves for chrome,
+       and the tab bar's own height is budgeted out below. */
+    top: auto;
+    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
     right: 0.5rem;
     left: 0.5rem;
     width: auto;
     gap: 0.35rem;
 
-    /* Prevent stacked / multi-line toasts from pushing action buttons below
-       the visible viewport: budget the header and the tab bar out of the
-       height, and scroll so every toast and its buttons remain reachable. */
+    /* Prevent stacked / multi-line toasts from growing past the top of the
+       screen: budget the safe area and the tab bar out of the height, and
+       scroll so every toast and its buttons remain reachable. */
     max-height: calc(
-      100dvh - var(--app-header-height, env(safe-area-inset-top)) -
-        var(--tabbar-total, 54px) - 1.3rem
+      100dvh - env(safe-area-inset-top) - var(--tabbar-total, 54px) - 1.3rem
     );
     overflow-y: auto;
     overscroll-behavior: contain;

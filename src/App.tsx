@@ -256,7 +256,6 @@ import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
-import { trackAppHeaderHeight } from '@/lib/app-header-height'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
@@ -2262,18 +2261,6 @@ const AppShell: Component<AppProps> = (props) => {
   // the analytics module.
   onMount(() => trackEvent('app_open'))
 
-  /**
-   * Publish the header's height for anything that has to clear it — the
-   * mobile toast stack, today.
-   *
-   * On mount rather than in the ref: Solid runs a native element's ref before
-   * the element is in the document, where it has no box and measures 0.
-   */
-  let headerEl: HTMLElement | undefined
-  onMount(() => {
-    if (headerEl !== undefined) onCleanup(trackAppHeaderHeight(headerEl))
-  })
-
   // Sync own voiceprints on every auth transition. Uploads only the takes
   // made under the signed-in identity (deduped by takenAt; no-op when
   // empty). Takes made signed-out are deliberately NOT swept up here:
@@ -3152,7 +3139,6 @@ const AppShell: Component<AppProps> = (props) => {
                 Narrow only — the pill floats on a desktop and takes nothing
                 from this row at all. */}
             <header
-              ref={headerEl}
               data-voice={
                 isNarrow() && voiceControl.hasSomethingToSay()
                   ? 'talking'
