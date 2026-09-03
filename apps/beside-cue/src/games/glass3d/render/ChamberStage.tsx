@@ -57,6 +57,18 @@ const FALL_SECONDS = 1.6
 /** Close enough to the exit to count as out. */
 const ARRIVED = 0.02
 
+/**
+ * How far in front of a pane Merc is stopped, in metres.
+ *
+ * A pane is a WALL until it is broken -- the whole point of a chamber is
+ * that the way through is a note, not a walk -- and it has to stop him
+ * with the glass still in front of him rather than inside him. Merc is
+ * about half a metre tall and reads as roughly as wide, so a fifth of a
+ * metre puts him nose to the glass and leaves the pane fully visible
+ * between him and the camera.
+ */
+const PANE_STANDOFF = 0.22
+
 /** How long after a break before the glass may ring again. Past the crack
  * and the body, into the thin end of the shard tail -- long enough that
  * the next pane is not answering over the last one's wreckage, short
@@ -228,7 +240,24 @@ export const ChamberStage = (props: ChamberStageProps) => {
       }
 
       const ground = groundIn(chamber)
+      // The room's walls, recomputed as glass gives way.
+      //
+      // `maxX` is the nearest unbroken pane ahead of him, not the end of
+      // the room: walking through the glass instead of breaking it makes
+      // every puzzle in the chamber optional. Only panes AHEAD count, so
+      // a pane he has already come through cannot reach back and clamp
+      // him -- which cannot happen while they break in order, and is one
+      // line to be certain of rather than an assumption to hold.
       const walls = { ...cfg.locomotion, minX: 0, maxX: chamber.length }
+      const closeWalls = (): void => {
+        let stop = chamber.length
+        for (let i = 0; i < targets.length; i++) {
+          if (targets[i]!.broken) continue
+          const at = chamber.panes[i]!.at * chamber.length - PANE_STANDOFF
+          if (at >= loco.x && at < stop) stop = at
+        }
+        walls.maxX = stop
+      }
       const loco = createLocomotion(chamber.startAt * chamber.length)
       const vib = createVibratoDetector(cfg.vibrato)
 
@@ -294,6 +323,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         loco.grounded = true
         loco.facing = 1
         for (const t of targets) t.ring.res = 0
+        closeWalls()
         go('walking')
       }
 
@@ -316,6 +346,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
         tone.shatter(acc)
         setBroken(targets.filter((t) => t.broken).length)
       }
+
+      closeWalls()
 
       const view: ChamberView = {
         mercX: loco.x,
@@ -354,6 +386,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
             return
           }
 
+          closeWalls()
           stepLocomotion(loco, input.read(now), ground, dt, walls)
 
           const pitch = driver?.latestPitch() ?? null
@@ -507,7 +540,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
           move: (m: number) => input.setMove(m),
           jump: () => input.pulseJump(performance.now()),
           warpTo: (x: number) => {
-            loco.x = Math.max(0, Math.min(chamber.length, x))
+            // Clamped by the glass, like walking is. A debug hook that
+            // can put him on the far side of a pane that is still up
+            // would be a hook that tests a room nobody can play.
+            closeWalls()
+            loco.x = Math.max(walls.minX, Math.min(walls.maxX, x))
           },
           break: (i = 0) => {
             if (targets[i] !== undefined && !targets[i]!.broken) breakPane(i)

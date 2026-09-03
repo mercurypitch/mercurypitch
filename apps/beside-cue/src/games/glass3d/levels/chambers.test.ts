@@ -14,10 +14,21 @@ import { CHAMBER_1, CHAMBER_2, CHAMBER_3, chamberById, CHAMBERS, } from './chamb
 const breakersOf = (room: ChamberLevel, at: number): number[] =>
   room.modes.filter((m) => standingAmplitude(at, m) >= room.breakAt)
 
-/** Somewhere he can stand, singing `mode`, on the near side of `at`. */
+/**
+ * How far in front of a pane Merc is stopped, as a fraction of the room.
+ * Mirrors `PANE_STANDOFF` in ChamberStage; a pane is a wall until it
+ * breaks, so a perch has to be on the near side of that wall and not
+ * merely on the near side of the glass.
+ */
+const standoff = (room: ChamberLevel): number => 0.22 / room.length
+
+/** Somewhere he can stand, singing `mode`, and actually reach. */
 const perchesFor = (room: ChamberLevel, mode: number, at: number): number[] =>
   nodesFor(mode).filter(
-    (n) => n < at && n > 0 && isFloorSafe(n, mode, room.floorThreshold),
+    (n) =>
+      n < at - standoff(room) &&
+      n > 0 &&
+      isFloorSafe(n, mode, room.floorThreshold),
   )
 
 describe('every chamber', () => {
@@ -69,6 +80,56 @@ describe('every chamber', () => {
       expect(
         rangeSlackSemis(room.modes, { lowMidi: 60, highMidi: 72 }),
       ).toBeGreaterThanOrEqual(0)
+    },
+  )
+})
+
+// A pane is a WALL until it is broken, so the place you must stand to
+// break it has to be on the near side of every pane that is still up.
+// The old check only asked whether a node existed to the left of the
+// glass, which a chamber with two panes can satisfy while being
+// impossible to finish.
+describe('every chamber, with the glass actually in the way', () => {
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: can be solved left to right, each pane from behind the one before',
+    (_id, room) => {
+      // Panes break in the order they stand, because you cannot walk
+      // past one that has not.
+      const inOrder = [...room.panes].sort((a, b) => a.at - b.at)
+      let reachable = room.exitAt
+      for (const pane of inOrder) {
+        const modes = room.modes.filter(
+          (m) => standingAmplitude(pane.at, m) >= room.breakAt,
+        )
+        expect(modes.length).toBeGreaterThan(0)
+        // At least one breaking mode must have a safe node in front of
+        // this pane -- and behind it, not past it.
+        const perches = modes.flatMap((mode) =>
+          perchesFor(room, mode, pane.at).filter((n) => n < reachable),
+        )
+        expect(perches.length).toBeGreaterThan(0)
+        // Once it is gone, everything up to the next pane opens up.
+        reachable = room.exitAt
+      }
+    },
+  )
+
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: starts behind its first pane',
+    (_id, room) => {
+      const first = Math.min(...room.panes.map((p) => p.at))
+      expect(room.startAt).toBeLessThan(first - standoff(room))
+    },
+  )
+
+  // Nothing can be walked round, and nothing can be jumped: the panes
+  // are taller than the jump, so the note is the only way through.
+  it.each(CHAMBERS.map((c) => [c.id, c] as const))(
+    '%s: has no pane low enough to jump over',
+    (_id, room) => {
+      for (const pane of room.panes) {
+        expect(pane.height).toBeGreaterThan(0.6)
+      }
     },
   )
 })
