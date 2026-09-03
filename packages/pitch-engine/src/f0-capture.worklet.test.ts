@@ -136,3 +136,100 @@ describe('the F0 capture worklet', () => {
     expect(node.port.postMessage).not.toHaveBeenCalled()
   })
 })
+
+// The bug this guards: a Focusrite Scarlett presented as "Analog Surround
+// 4.1" hands Chrome a two-channel capture with the singer on ONE channel.
+// Reading channel zero read digital silence, reported no pitch, and raised
+// nothing at all to explain it -- while an AnalyserNode on the same stream
+// worked, because AnalyserNode down-mixes by default.
+describe('a capture that arrives with more than one channel', () => {
+  let processor: TestProcessorConstructor | null
+
+  beforeEach(async () => {
+    vi.resetModules()
+    processor = null
+    class TestAudioWorkletProcessor {
+      readonly port = { postMessage: vi.fn() }
+    }
+    vi.stubGlobal('currentFrame', 0)
+    vi.stubGlobal('sampleRate', 48000)
+    vi.stubGlobal('AudioWorkletProcessor', TestAudioWorkletProcessor)
+    vi.stubGlobal(
+      'registerProcessor',
+      vi.fn((_name: string, registered: TestProcessorConstructor) => {
+        processor = registered
+      }),
+    )
+    await import('./f0-capture.worklet')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const QUANTUM_ = 128
+  const build = (): TestProcessor => {
+    if (processor === null) throw new Error('The worklet did not register')
+    return new processor()
+  }
+  const pumpTwo = (
+    node: TestProcessor,
+    count: number,
+    left: (i: number) => number,
+    right: (i: number) => number,
+  ): void => {
+    for (let q = 0; q < count; q++) {
+      const l = new Float32Array(QUANTUM_)
+      const r = new Float32Array(QUANTUM_)
+      for (let i = 0; i < QUANTUM_; i++) {
+        l[i] = left(q * QUANTUM_ + i)
+        r[i] = right(q * QUANTUM_ + i)
+      }
+      node.process([[l, r]])
+    }
+  }
+  const lastMessage = (node: TestProcessor): CaptureMessage => {
+    const calls = node.port.postMessage.mock.calls
+    return calls[calls.length - 1]![0] as CaptureMessage
+  }
+
+  it('hears a singer who is only on the right channel', () => {
+    const node = build()
+    // Left is digital silence; the voice is entirely on the right.
+    pumpTwo(
+      node,
+      Math.ceil(F0_WINDOW / QUANTUM_) + 1,
+      () => 0,
+      (i) => Math.sin((2 * Math.PI * 220 * i) / 48000),
+    )
+    expect(node.port.postMessage).toHaveBeenCalled()
+    expect(lastMessage(node).rms).toBeGreaterThan(0.1)
+  })
+
+  it('hears a singer who is only on the left channel', () => {
+    const node = build()
+    pumpTwo(
+      node,
+      Math.ceil(F0_WINDOW / QUANTUM_) + 1,
+      (i) => Math.sin((2 * Math.PI * 220 * i) / 48000),
+      () => 0,
+    )
+    expect(lastMessage(node).rms).toBeGreaterThan(0.1)
+  })
+
+  // The same sound on both channels must not come out louder than it went
+  // in: this is a mix, not a sum.
+  it('averages rather than adds', () => {
+    const both = build()
+    const tone = (i: number) => Math.sin((2 * Math.PI * 220 * i) / 48000)
+    pumpTwo(both, Math.ceil(F0_WINDOW / QUANTUM_) + 1, tone, tone)
+    const mixed = lastMessage(both).rms
+
+    const one = build()
+    pumpTwo(one, Math.ceil(F0_WINDOW / QUANTUM_) + 1, tone, () => 0)
+    const half = lastMessage(one).rms
+
+    expect(mixed).toBeCloseTo(Math.SQRT1_2, 1)
+    expect(half).toBeCloseTo(mixed / 2, 2)
+  })
+})

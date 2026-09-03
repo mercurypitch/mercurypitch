@@ -246,6 +246,33 @@ button('Test with a 220 Hz tone (no microphone)', async () => {
   watch('tone', dest.stream, ctx)
 })
 
+// The exact shape a Focusrite Scarlett arrives in when PipeWire offers it
+// as "Analog Surround 4.1": two channels, the singer on one of them. This
+// button is here because reading channel zero of that stream produced
+// digital silence and no error at all.
+button('Test with a tone on the RIGHT channel only', async () => {
+  const ctx = context()
+  await ctx.resume()
+  const dest = ctx.createMediaStreamDestination()
+  dest.channelCount = 2
+  const merger = ctx.createChannelMerger(2)
+  const silence = ctx.createConstantSource()
+  silence.offset.value = 0
+  const osc = ctx.createOscillator()
+  osc.type = 'sawtooth'
+  osc.frequency.value = 220
+  const gain = ctx.createGain()
+  gain.gain.value = 0.2
+  silence.connect(merger, 0, 0) // left: nothing
+  osc.connect(gain)
+  gain.connect(merger, 0, 1) // right: the voice
+  merger.connect(dest)
+  silence.start()
+  osc.start()
+  log('stereo: 220 Hz on the RIGHT channel, silence on the left')
+  watch('stereo', dest.stream, ctx)
+})
+
 button('Test with the microphone', async () => {
   const ctx = context()
   await ctx.resume()

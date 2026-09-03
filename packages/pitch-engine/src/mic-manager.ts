@@ -54,11 +54,19 @@ type Listener = (state: MicState) => void
 // Analysis-grade capture: the raw signal, so the pitch detector sees the true
 // waveform. Echo cancellation / noise suppression / AGC would distort pitch and
 // must stay off for every analysis consumer.
+//
+// `channelCount: 1` is a HINT, not a demand -- a plain value is "ideal" and a
+// device that cannot do mono still opens. Asking is worth it anyway: an audio
+// interface offered as a surround device hands back a multi-channel capture
+// with the singer on one channel, and one channel is a thing that can be
+// missed. The graph down-mixes regardless (see pitch-f0-stream), so this only
+// saves the mixing when the driver obliges.
 const ANALYSIS_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
     echoCancellation: false,
     noiseSuppression: false,
     autoGainControl: false,
+    channelCount: 1,
   },
 }
 
