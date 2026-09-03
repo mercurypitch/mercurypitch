@@ -51,13 +51,13 @@ it is the one that earns 3D at all.
 The theory constrains the _intervals_ between modes, never the absolute
 pitch. Mode n of a chamber with fundamental f₀ is n·f₀, so:
 
-| modes | ratio | interval        |
-| ----- | ----- | --------------- |
-| 1 → 2 | 2:1   | an octave       |
-| 2 → 3 | 3:2   | a fifth         |
-| 3 → 4 | 4:3   | a fourth        |
-| 4 → 5 | 5:4   | a major third   |
-| 5 → 6 | 6:5   | a minor third   |
+| modes | ratio | interval      |
+| ----- | ----- | ------------- |
+| 1 → 2 | 2:1   | an octave     |
+| 2 → 3 | 3:2   | a fifth       |
+| 3 → 4 | 4:3   | a fourth      |
+| 4 → 5 | 5:4   | a major third |
+| 5 → 6 | 6:5   | a minor third |
 
 Two things follow, and they are the actual design constraints:
 
@@ -212,14 +212,14 @@ them.
 
 Each step lands green and is playable before the next begins.
 
-| #   | Step                                                                                  | Done when                                                                            |
-| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 2a  | `locomotion3d.ts` + tests. No renderer, no chamber — walk, jump, fall, grounded        | The physics has tests and a debug page moves a box with it                            |
-| 2b  | Touch controller, wired to the Hallway, replacing the scripted walk                    | Merc is driven by a thumb in a scene that already works, with nothing else changed    |
-| 2c  | `chamber.ts` + the standing-wave maths, with tests on node positions per mode          | Node positions are pinned against hand-computed values                                |
-| 2d  | Chamber 1 renders: room, one pane, the node pattern on the floor                       | Singing the mode breaks the pane                                                      |
-| 2e  | Falling: a belly under Merc plays the `fall` clip and restarts the chamber             | The clip finally has a caller                                                         |
-| 2f  | Chambers 2 and 3, the ladder HUD, the settings toggles                                 | Three chambers playable end to end and scored                                         |
+| #   | Step                                                                            | Done when                                                                          |
+| --- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 2a  | `locomotion3d.ts` + tests. No renderer, no chamber — walk, jump, fall, grounded | The physics has tests and a debug page moves a box with it                         |
+| 2b  | Touch controller, wired to the Hallway, replacing the scripted walk             | Merc is driven by a thumb in a scene that already works, with nothing else changed |
+| 2c  | `chamber.ts` + the standing-wave maths, with tests on node positions per mode   | Node positions are pinned against hand-computed values                             |
+| 2d  | Chamber 1 renders: room, one pane, the node pattern on the floor                | Singing the mode breaks the pane                                                   |
+| 2e  | Falling: a belly under Merc plays the `fall` clip and restarts the chamber      | The clip finally has a caller                                                      |
+| 2f  | Chambers 2 and 3, the ladder HUD, the settings toggles                          | Three chambers playable end to end and scored                                      |
 
 Step 2b is deliberately early: it puts the new movement in a scene that
 already works, so a control problem cannot be confused with a chamber
@@ -232,13 +232,13 @@ problem.
 Carried in from device testing, so none of it is lost. None blocks this
 slice.
 
-| What                                                                                                                      | Where it came from                       |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Art-direction and configurability pass on the break.** The shatter has been tuned twice by hand. It wants a proper pass: a tuning surface, and a decision about whether shard trajectories are art-directed rather than simulated | maff, 2026-09-03, explicitly as a follow-up |
-| **The onboarding intro does not play on native iOS.** Black, flickering between scenes, no sound. The shipped path is the v0.9 cinematic one, whose media is one mp4 and one m4a. Audio is `fetch` + `decodeAudioData`, so a byte-range problem would explain the video and not the silence — likely two failures | maff, builds 185 and 5564ef1             |
-| **First load is sluggish.** Asset load plus renderer init, on a CI build with no production optimisation. Worth measuring before treating it as a bug | maff, 2026-09-03                          |
-| **The Cabinet's framing has the same vertical-FOV problem the Hallway just had.** Not reported as broken, so not touched   | found while fixing the Hallway            |
-| **`fall` still has no articulation in the mitts** and reads as tipped rather than laid out                                | the polish pass, deliberately stopped short |
+| What                                                                                                                                                                                                                                                                                                              | Where it came from                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Art-direction and configurability pass on the break.** The shatter has been tuned twice by hand. It wants a proper pass: a tuning surface, and a decision about whether shard trajectories are art-directed rather than simulated                                                                               | maff, 2026-09-03, explicitly as a follow-up |
+| **The onboarding intro does not play on native iOS.** Black, flickering between scenes, no sound. The shipped path is the v0.9 cinematic one, whose media is one mp4 and one m4a. Audio is `fetch` + `decodeAudioData`, so a byte-range problem would explain the video and not the silence — likely two failures | maff, builds 185 and 5564ef1                |
+| **First load is sluggish.** Asset load plus renderer init, on a CI build with no production optimisation. Worth measuring before treating it as a bug                                                                                                                                                             | maff, 2026-09-03                            |
+| **The Cabinet's framing has the same vertical-FOV problem the Hallway just had.** Not reported as broken, so not touched                                                                                                                                                                                          | found while fixing the Hallway              |
+| **`fall` still has no articulation in the mitts** and reads as tipped rather than laid out                                                                                                                                                                                                                        | the polish pass, deliberately stopped short |
 
 ---
 
