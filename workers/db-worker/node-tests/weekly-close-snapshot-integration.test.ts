@@ -99,7 +99,14 @@ function patchChallenge(
 }
 
 interface Snapshot {
-  top3: Array<{ displayName: string; best: number }>
+  version?: number
+  top3: Array<{
+    userId?: string
+    displayName: string | null
+    best: number
+    rank?: number
+    redacted?: boolean
+  }>
   attemptedCount: number
   completedCount: number
   closedAt: string
@@ -144,10 +151,12 @@ describe('closing a weekly challenge through the admin PATCH', () => {
 
     const snapshot = JSON.parse(row.resultsJson as string) as Snapshot
     // Best-per-singer, so Alto's 71 never appears; 80 is the target, so only
-    // Alto completed it.
+    // Alto completed it. `userId` and `rank` are what a later opt-out and the
+    // podium UI read — see the version-2 note on closeWeekly.
+    expect(snapshot.version).toBe(2)
     expect(snapshot.top3).toEqual([
-      { displayName: 'Alto', best: 94 },
-      { displayName: 'Tenor', best: 66 },
+      { userId: ALTO, displayName: 'Alto', best: 94, rank: 1 },
+      { userId: TENOR, displayName: 'Tenor', best: 66, rank: 2 },
     ])
     expect(snapshot.attemptedCount).toBe(2)
     expect(snapshot.completedCount).toBe(1)

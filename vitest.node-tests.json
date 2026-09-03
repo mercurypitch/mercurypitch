@@ -429,6 +429,7 @@
   "workers/db-worker/node-tests/testing-accounts-integration.test.ts",
   "workers/db-worker/node-tests/twofa-integration.test.ts",
   "workers/db-worker/node-tests/weekly-close-snapshot-integration.test.ts",
+  "workers/db-worker/node-tests/weekly-podium-integration.test.ts",
   "workers/db-worker/src/access.test.ts",
   "workers/db-worker/src/auth.test.ts",
   "workers/db-worker/src/billing.test.ts",

@@ -398,6 +398,33 @@
       "category": "meta",
       "unlockCondition": "Complete all bronze-tier badges",
       "sortOrder": 16
+    },
+    {
+      "name": "First Voice",
+      "description": "Finish first on a Legend challenge board",
+      "icon": "firstvoice",
+      "tier": "gold",
+      "category": "legend",
+      "unlockCondition": "Place first when a Legend challenge closes",
+      "sortOrder": 17
+    },
+    {
+      "name": "Second Voice",
+      "description": "Finish second on a Legend challenge board",
+      "icon": "secondvoice",
+      "tier": "silver",
+      "category": "legend",
+      "unlockCondition": "Place second when a Legend challenge closes",
+      "sortOrder": 18
+    },
+    {
+      "name": "Third Voice",
+      "description": "Finish third on a Legend challenge board",
+      "icon": "thirdvoice",
+      "tier": "bronze",
+      "category": "legend",
+      "unlockCondition": "Place third when a Legend challenge closes",
+      "sortOrder": 19
     }
   ],
   "achievementDefinitions": [

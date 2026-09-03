@@ -66,7 +66,72 @@ export interface WeeklyBoard {
     percentile: number
     beatFounder: boolean
     completed: boolean
+    /**
+     * False when this singer has not consented to being named on public
+     * boards. Their score is still theirs to see; the rank beside it is only
+     * among the singers who can be listed, so the UI must say so rather than
+     * imply they hold a place on the board itself.
+     */
+    ranked: boolean
   } | null
+}
+
+// ── The frozen result of a closed challenge ──────────────────────────
+//
+// Written once by the worker when the window shuts and never recomputed, so
+// a later rename cannot rewrite a published podium. The one thing that IS
+// re-checked on every read is permission: a singer who has since opted out of
+// public boards arrives with `displayName: null` and `redacted: true`, keeping
+// their rank and score but losing their name.
+//
+// Weeks closed before this shape existed carry `version: undefined` and
+// entries with no `userId` or `rank`. They are the only record of those weeks,
+// so every reader has to keep rendering them.
+
+export interface WeeklyPodiumEntry {
+  /** Absent on version 1 rows, and on any entry that has been redacted. */
+  userId?: string
+  /** Null once redacted — render `<redacted>` rather than an empty name. */
+  displayName: string | null
+  best: number
+  /** Absent on version 1 rows; fall back to the array index. */
+  rank?: number
+  redacted?: boolean
+}
+
+export interface WeeklyResults {
+  version?: number
+  top3: WeeklyPodiumEntry[]
+  attemptedCount: number
+  completedCount: number
+  closedAt: string
+}
+
+export type ArchivedWeeklyChallenge = WeeklyChallenge & {
+  results: WeeklyResults | null
+}
+
+/**
+ * The podium as the card should draw it: at most three entries, each with a
+ * definite rank and a name or the redaction marker.
+ *
+ * Total by construction — a malformed or absent `results` yields an empty
+ * list, so the card simply renders no podium rather than throwing on a row
+ * written by an older worker.
+ */
+export function podiumOf(
+  results: WeeklyResults | null | undefined,
+): Array<{ rank: number; displayName: string | null; best: number }> {
+  if (results === null || results === undefined) return []
+  if (!Array.isArray(results.top3)) return []
+  return results.top3.slice(0, 3).map((entry, index) => ({
+    rank: typeof entry.rank === 'number' ? entry.rank : index + 1,
+    displayName:
+      typeof entry.displayName === 'string' && entry.displayName !== ''
+        ? entry.displayName
+        : null,
+    best: Math.round(entry.best),
+  }))
 }
 
 function base(): string {
@@ -99,16 +164,12 @@ export async function getWeeklyBoard(id: string): Promise<WeeklyBoard | null> {
   }
 }
 
-export async function getWeeklyArchive(): Promise<
-  (WeeklyChallenge & { results: unknown })[]
-> {
+export async function getWeeklyArchive(): Promise<ArchivedWeeklyChallenge[]> {
   if (base() === '') return []
   try {
     const res = await fetch(`${base()}/api/weekly/archive`)
     if (!res.ok) return []
-    const data = (await res.json()) as {
-      archive: (WeeklyChallenge & { results: unknown })[]
-    }
+    const data = (await res.json()) as { archive: ArchivedWeeklyChallenge[] }
     return data.archive ?? []
   } catch {
     return []
