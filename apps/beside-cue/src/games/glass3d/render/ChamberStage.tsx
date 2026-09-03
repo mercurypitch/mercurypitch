@@ -441,6 +441,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         paneBroken: targets.map(() => false),
         breaking: null,
         resonance: 0,
+        exitOpen: false,
       }
 
       const loopState = createLoopState()
@@ -606,6 +607,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         view.strength = lastMode === null ? 0 : 1
         view.paneBroken = targets.map((t) => t.broken)
         view.resonance = charge
+        view.exitOpen = targets.every((t) => t.broken)
         view.breaking =
           breaking === null
             ? null
@@ -723,7 +725,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
           <p class="chamber-hud__line">
             <Show
               when={phase() === 'falling' || phase() === 'cleared'}
-              fallback={room().teaches}
+              fallback={
+                // Once the glass is gone the room has nothing left to
+                // teach and one thing left to say.
+                broken() === room().panes.length
+                  ? 'The way out is lit.'
+                  : room().teaches
+              }
             >
               <Show
                 when={phase() === 'cleared'}

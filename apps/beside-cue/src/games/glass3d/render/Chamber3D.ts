@@ -80,6 +80,8 @@ export interface ChamberView {
   } | null
   /** 0..1 charge on the pane being sung at, for its glow. */
   resonance: number
+  /** Whether the way out has been earned. Every pane gone. */
+  exitOpen: boolean
 }
 
 export interface Chamber3D {
@@ -204,6 +206,52 @@ export const createChamber3D = (
   }
   scene.add(strips)
 
+  // The way out.
+  //
+  // A doorway would want a frame, and the Hallway already learned what a
+  // frame does in a room that is mostly void: two dark posts read as
+  // floating monoliths, not as a way through. So the exit is LIGHT, in
+  // the same language everything else in this room is anchored by -- a
+  // pool on the floor and a shaft standing in it.
+  //
+  // It is also the room's only answer to "what now". Closed it is cool
+  // and nearly out; open it is custard and breathing, and it opens the
+  // moment the last pane goes. A marker that merely said "the room ends
+  // here" would be decoration; this one is the difference between
+  // knowing you have finished and wandering to find out.
+  const exitMaterial = new MeshBasicMaterial({
+    color: TURQUOISE,
+    map: buildRadialFalloff(),
+    transparent: true,
+    opacity: 0.06,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  })
+  // The pool is stretched ALONG the room, not around the shaft, and the
+  // reason is the chase camera: it sits behind Merc looking back down
+  // the room, so it only ever shows about two units ahead of him. A
+  // pool the width of the shaft would not appear until he was already
+  // standing in it, which is precisely the "walk into the dark to find
+  // out" this exists to stop. Wide, and with a radial falloff doing the
+  // fading, the light SPILLS back toward him and arrives on screen
+  // before the way out does.
+  const exitPool = new Mesh(new CircleGeometry(0.75, 48), exitMaterial)
+  exitPool.rotation.x = -Math.PI / 2
+  exitPool.scale.set(1.35, 1, 1.5)
+  // Narrow and tall, and standing IN the pool rather than above it: a
+  // radial falloff fades at its own edges, so a shaft that merely
+  // touched the floor left a dark seam between the two and read as two
+  // separate clouds instead of one way through.
+  const exitGlow = new Mesh(new PlaneGeometry(0.62, 2.6), exitMaterial)
+  exitGlow.position.y = 0.95
+  scene.add(exitPool, exitGlow)
+
+  const placeExit = (): void => {
+    const x = current.exitAt * current.length
+    exitPool.position.set(x, 0.003, 0)
+    exitGlow.position.x = x
+  }
+
   const paneMaterial = new MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
@@ -284,6 +332,7 @@ export const createChamber3D = (
     }
 
     layOutStrips()
+    placeExit()
   }
   buildRoom()
 
@@ -477,6 +526,16 @@ export const createChamber3D = (
       camera.position.x += (ahead - camera.position.x) * k
       camera.lookAt(camera.position.x - 1.1, 0.45, 0)
 
+      // The exit breathes when it is open, and the breath is slower than
+      // the pane's ring: one is urgency, the other is an invitation.
+      const breath = 0.5 + 0.5 * Math.sin(clock * 2.2)
+      exitMaterial.color.setHex(view.exitOpen ? CUSTARD : TURQUOISE)
+      // Closed is dim but not out: it says "the room ends there, and not
+      // yet" to anyone who can see that far. Steady, too -- the breath
+      // is what makes the open one read as an invitation, so a closed
+      // exit that also breathed would be inviting him through glass.
+      exitMaterial.opacity = view.exitOpen ? 0.26 + breath * 0.2 : 0.15
+
       const pulse = 0.5 + 0.5 * Math.sin(clock * 9)
       for (let i = 0; i < panes.length; i++) {
         const material = panes[i]!.mesh.material as MeshPhysicalMaterial
@@ -538,6 +597,7 @@ export const createChamber3D = (
       backdrop.dispose()
       environment.dispose()
       strips.dispose()
+      exitMaterial.dispose()
       renderer.dispose()
     },
   }
