@@ -43,6 +43,7 @@ import { canShift, shiftOctaves, voiceCentre, writeVoiceCentre, } from '../voice
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { ChamberView } from './Chamber3D'
 import { createChamber3D } from './Chamber3D'
+import { ChamberGuide, guideSeen } from './ChamberGuide'
 import { ModeLadder } from './ModeLadder'
 import { TouchControls } from './TouchControls'
 
@@ -129,6 +130,10 @@ export const ChamberStage = (props: ChamberStageProps) => {
   )
   const [broken, setBroken] = createSignal(0)
   const [grade, setGrade] = createSignal<number | null>(null)
+  // Shown once, on the first room anybody walks into, and reachable
+  // afterwards from the HUD. A player who already knows what a node is
+  // should not be made to page through four cards to prove it.
+  const [guide, setGuide] = createSignal(!guideSeen())
   const [showLadder, setShowLadder] = createSignal(readToggle(LADDER_KEY))
   const [showPattern, setShowPattern] = createSignal(readToggle(PATTERN_KEY))
 
@@ -654,21 +659,39 @@ export const ChamberStage = (props: ChamberStageProps) => {
             >
               Pattern
             </button>
+            <button
+              type="button"
+              aria-label="How a chamber works"
+              onClick={() => setGuide(true)}
+            >
+              ?
+            </button>
           </div>
         </div>
 
         <TouchControls source={input} />
       </Show>
 
-      <Show when={!started()}>
+      <Show when={guide()}>
+        <ChamberGuide onClose={() => setGuide(false)} />
+      </Show>
+
+      <Show when={!started() && !guide()}>
         <div class="stage3d__gate">
           <p>{chamber.teaches}</p>
-          <p>
-            Walk him along the room. The glass breaks where the air moves
-            hardest, and the floor is only still where it does not.
-          </p>
           <button type="button" onClick={() => void startMic()}>
             Walk in
+          </button>
+          {/* For anyone who skipped it, or who has met a chamber before
+              and wants reminding. The gate no longer explains the
+              mechanic itself: the guide does that, and saying it twice
+              made the first screen of a game a wall of text. */}
+          <button
+            class="stage3d__gate-link"
+            type="button"
+            onClick={() => setGuide(true)}
+          >
+            How a chamber works
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>

@@ -292,6 +292,27 @@ is untouched.
 Pinned by test: every chamber is singable by every preset with more than
 six semitones of slack.
 
+### Teaching the room
+
+`render/ChamberGuide.tsx`, four cards, shown once on the first chamber
+anyone walks into and reachable afterwards from the HUD's `?` and from a
+link on the gate.
+
+The rule is one sentence of physics, and a player who has that sentence
+reads the floor immediately; a player who does not sees coloured stripes
+and a droplet that keeps falling over. Each card answers a question the
+room cannot answer for itself in time: what am I singing at, what do the
+colours mean, why did everything move, and how do I walk.
+
+**The diagrams are drawn from `standingAmplitude`** — the same function
+that colours the floor and decides whether Merc falls. A hand-drawn
+standing wave would be a second source of truth about where the nodes
+are, and the first thing to go stale.
+
+The gate no longer explains the mechanic itself. It said the same thing
+the guide had just said, which made the first screen of a game a wall of
+text.
+
 ### Still open
 
 - The chamber tolerance has not met a real singer. §2's question stands.

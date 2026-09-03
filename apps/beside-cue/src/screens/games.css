@@ -604,6 +604,140 @@
   cursor: default;
 }
 
+/* A quiet way back to the guide, under the gate's own button. Scoped
+   through the parent because `.stage3d__gate button` already claims
+   every button in there and would otherwise make this a second pill. */
+.stage3d__gate .stage3d__gate-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 45%);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The guide. Four cards, shown once on the first room and reachable from
+   the HUD afterwards. Over the gate rather than after it: what you are
+   agreeing to comes before the microphone prompt. */
+.chamber-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(6 9 10 / 72%);
+  backdrop-filter: blur(6px);
+}
+
+.chamber-guide__card {
+  width: min(24rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem 1rem;
+  border-radius: 0.9rem;
+  background: rgb(10 14 15 / 94%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: rgb(255 255 255 / 88%);
+}
+
+.chamber-guide__step {
+  margin: 0 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 38%);
+}
+
+.chamber-guide__card h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--custard, #f2c84b);
+}
+
+.chamber-guide__art {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.chamber-guide__art:empty {
+  display: none;
+}
+
+.chamber-guide__wave {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The second pattern on the "different note" card, so the eye reads the
+   first one as the before. */
+.chamber-guide__wave.is-dim {
+  opacity: 0.75;
+}
+
+.chamber-guide__wave .is-safe {
+  fill: #1c7f83;
+}
+
+.chamber-guide__wave .is-danger {
+  fill: #c93513;
+}
+
+.chamber-guide__curve {
+  fill: none;
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 1.4;
+}
+
+.chamber-guide__pane {
+  fill: rgb(255 255 255 / 85%);
+}
+
+.chamber-guide__merc {
+  fill: #f4f7f8;
+}
+
+.chamber-guide__body {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 76%);
+}
+
+.chamber-guide__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chamber-guide__nav button {
+  padding: 0.5rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--custard, #f2c84b);
+  color: var(--ink, #241913);
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chamber-guide__nav .chamber-guide__skip {
+  background: transparent;
+  color: rgb(255 255 255 / 45%);
+  padding-left: 0;
+}
+
 /* The controls. A strip across the bottom, because the hand holding
    the phone is the hand playing it and that hand reaches the bottom of
    the screen and nothing else.
