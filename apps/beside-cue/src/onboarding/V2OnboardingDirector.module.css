@@ -807,9 +807,11 @@
   border: 1px solid rgb(36 25 19 / 14%);
   border-radius: 16px;
   justify-self: center;
-  background: rgb(255 244 218 / 88%);
+  /* This panel sits over continuously changing video. Backdrop blur forces
+     WebKit to render extra passes for every frame, which is too costly for
+     the native iOS surface. Nearly-opaque paper keeps the same separation. */
+  background: rgb(255 244 218 / 96%);
   box-shadow: 0 0.45rem 1.5rem rgb(36 25 19 / 12%);
-  backdrop-filter: blur(12px);
 }
 
 .copyCinematic .copyHeading h1 {
@@ -832,10 +834,9 @@
   justify-self: center;
   border: 1px solid rgb(36 25 19 / 16%);
   border-radius: 18px;
-  background: rgb(255 244 218 / 92%);
+  background: rgb(255 244 218 / 97%);
   box-shadow: 0 -0.6rem 2rem rgb(36 25 19 / 13%);
   pointer-events: auto;
-  backdrop-filter: blur(14px);
 }
 
 .copyCinematic .copyControls:empty {

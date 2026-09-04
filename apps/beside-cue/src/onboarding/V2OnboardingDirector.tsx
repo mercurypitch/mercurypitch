@@ -1065,6 +1065,17 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     () => recordSpinOverlayRetired() || state().phase === 'B06_SAVE_COMMIT',
   )
 
+  const renderedPlatterPhase = createMemo(() => {
+    const phase = platterPhase()
+    const spinVideoVisible =
+      mediaRequest()?.targetId === 'record:spin' && !recordMediaHidden()
+    // The authored spin video is opaque. Running the masked SVG platter below
+    // it spends a full animation frame on work the user cannot see, which is
+    // especially costly in WKWebView. Start native motion only once the video
+    // layer retires (or while the stop/save transition exposes the platter).
+    return phase === 'spinning' && spinVideoVisible ? 'stopped' : phase
+  })
+
   const isBrandPhase = createMemo(() =>
     [
       'B00_BRAND_REVEAL',
@@ -1169,7 +1180,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 <div class={styles.platterFrame}>
                   <V2OnboardingPlatterPreview
                     base={props.mediaPack?.record?.stoppedAuthority}
-                    phase={platterPhase()}
+                    phase={renderedPlatterPhase()}
                     token={platterToken()}
                     foreground={props.foreground}
                     reducedMotion={state().motionMode === 'reduced'}
@@ -1188,7 +1199,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     <V2OnboardingMediaStage
                       request={mediaRequest()}
                       mode={state().motionMode}
-                      foreground={props.foreground}
+                      foreground={props.foreground && !recordMediaHidden()}
                       transitionDurationMs={0}
                       class={`${styles.mediaStage} ${styles.recordMediaStage}`}
                       onPresentationSettled={settleMediaPresentation}

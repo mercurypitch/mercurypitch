@@ -369,8 +369,13 @@ export function createWebAudioOutput(
           throw error
         }
         started.resolve('started')
-      } catch {
+      } catch (error) {
         if (stopped || disposed || abort.signal.aborted) return
+        console.warn(
+          '[beside-cue:audio] playback failed',
+          request.source.src,
+          error,
+        )
         started.resolve('failed')
         finished.resolve('failed')
       }
