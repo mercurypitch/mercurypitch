@@ -11,6 +11,10 @@
 //   /merc-probe.html?clip=sing          loop one clip
 //   /merc-probe.html?clip=listen&t=0.37 freeze it at a time (a blink)
 //   /merc-probe.html?x=-0.4             where he stands along the corridor
+//   /merc-probe.html?shape=0.0          the Sorting Line's silhouette, held
+//   /merc-probe.html?sweep=1            ...swept end to end instead
+//   /merc-probe.html?voice=baritone     which range the mic reads against
+//   /merc-probe.html?flat=0.32&tall=0.94  the two ends of the sweep, in metres
 //   /merc-probe.html?mic=1              the mic, without the game: runs the
 //                                       sing driver as the stage does, prints
 //                                       each step, and METERS EVERY INPUT so
@@ -21,12 +25,16 @@
 // playing, so a screenshot documents itself.
 
 import { micManager, readMicLevel } from '@irchiinnuss/pitch-engine'
+import { Box3, Vector3 } from 'three'
 import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { createSingDriver } from '../games/glass/drivers/sing'
 import type { InteractionDriver } from '../games/glass/drivers/types'
 import { micErrorLine } from '../games/glass/mic-error'
 import type { HallwayView } from '../games/glass3d/render/Hallway3D'
 import { createHallway3D } from '../games/glass3d/render/Hallway3D'
+import { REST_HEIGHT, REST_WIDTH, silhouetteFor, SWEEP, tFor, workingRange, } from '../games/glass3d/sim/tension3d'
+import type { VoicePreset } from '../games/glass3d/voice-range'
+import { readMeasuredRange, VOICE_PRESETS } from '../games/glass3d/voice-range'
 import { WORLD3D_CONFIG } from '../games/glass3d/world3d-config'
 
 const CLIPS = ['listen', 'sing', 'celebrate', 'move', 'fall'] as const
@@ -36,6 +44,21 @@ let clip: string = params.get('clip') ?? 'listen'
 const freezeAt = params.has('t') ? Number(params.get('t')) : null
 const mercX = Number(params.get('x') ?? '-0.55')
 const micMode = params.has('mic')
+// Slice 4a, the squash test. `shape` is `t` in the Sorting Line's sense:
+// 0 is a puddle, 1 is a thread, 0.5 is the Merc who already ships.
+let shapeT = params.has('shape') ? Number(params.get('shape')) : 0.5
+let sweeping = params.has('sweep')
+/** True while the voice is driving him, so the slider stops fighting it. */
+let shapeFromVoice = false
+const metres = (key: string, fallback: number): number => {
+  const n = Number(params.get(key))
+  return params.has(key) && Number.isFinite(n) && n > 0 ? n : fallback
+}
+/** The sweep under test. Defaults to the shipped one; dial it from the URL. */
+const sweep = {
+  flat: metres('flat', SWEEP.flat),
+  tall: metres('tall', SWEEP.tall),
+}
 
 const canvas = document.querySelector('canvas')!
 const hud = document.querySelector<HTMLDivElement>('#hud')!
@@ -72,6 +95,167 @@ addEventListener('keydown', (e) => {
 
 await r.init()
 play(clip)
+
+// The view is the probe's whole point, so hand it to the console too.
+// `__merc()` is the actor, `__view` the frame the renderer is reading:
+// enough to measure him, pose him, or ask where his feet actually are
+// without editing this file again.
+Object.assign(window as unknown as Record<string, unknown>, {
+  __merc: () => r.merc(),
+  __view: view,
+  __shape: (t: number) => {
+    shapeFromVoice = false
+    sweeping = false
+    setShapeT(t)
+  },
+  /**
+   * Where he is on the screen, in CSS pixels, for the e2e that holds
+   * him inside a phone at both ends of the sweep.
+   *
+   * POSED, not bind pose. A SkinnedMesh caches `boundingBox` from
+   * whatever pose it was first asked in, and the bind pose has the
+   * mitts flung wide -- 7 px past a phone's edge at the flat end while
+   * the drawn `listen` pose tucks them in. `computeBoundingBox` on each
+   * skin reads the bones as they are this frame, which is the box the
+   * player sees.
+   *
+   * `feetPx` is his lowest point projected as a POINT, because the
+   * bottom of the box is its nearest bottom corner, and a wider body's
+   * corner sits lower on screen through perspective alone -- 16 px at
+   * the flat end, with the feet themselves unmoved.
+   */
+  __mercScreenBox: () => {
+    const actor = r.merc()
+    if (actor === null) return null
+    actor.root.updateWorldMatrix(true, true)
+    actor.root.traverse((o) => {
+      const skin = o as {
+        isSkinnedMesh?: boolean
+        computeBoundingBox?: () => void
+      }
+      if (skin.isSkinnedMesh === true) skin.computeBoundingBox?.()
+    })
+    const box = new Box3().setFromObject(actor.root)
+    const cam = r.camera()
+    const w = window.innerWidth
+    const h = window.innerHeight
+    let left = Infinity
+    let right = -Infinity
+    let top = Infinity
+    let bottom = -Infinity
+    for (const x of [box.min.x, box.max.x])
+      for (const y of [box.min.y, box.max.y])
+        for (const z of [box.min.z, box.max.z]) {
+          const p = new Vector3(x, y, z).project(cam)
+          const px = ((p.x + 1) / 2) * w
+          const py = ((1 - p.y) / 2) * h
+          left = Math.min(left, px)
+          right = Math.max(right, px)
+          top = Math.min(top, py)
+          bottom = Math.max(bottom, py)
+        }
+    // His feet are the torso's bottom -- the thing `setShape` holds
+    // still -- projected as a point. The mitts are not feet, and they
+    // are not the part a slot has to admit either, so the torso's own
+    // screen box rides along for the e2e.
+    const torso = actor.root.getObjectByName('merc_body')
+    const torsoBox = torso === undefined ? box : new Box3().setFromObject(torso)
+    const rect = (b: Box3) => {
+      let l = Infinity
+      let r2 = -Infinity
+      let tp = Infinity
+      let bt = -Infinity
+      for (const x of [b.min.x, b.max.x])
+        for (const y of [b.min.y, b.max.y])
+          for (const z of [b.min.z, b.max.z]) {
+            const q = new Vector3(x, y, z).project(cam)
+            const px = ((q.x + 1) / 2) * w
+            const py = ((1 - q.y) / 2) * h
+            l = Math.min(l, px)
+            r2 = Math.max(r2, px)
+            tp = Math.min(tp, py)
+            bt = Math.max(bt, py)
+          }
+      return { left: l, right: r2, top: tp, bottom: bt }
+    }
+    const feet = new Vector3(
+      actor.root.position.x,
+      torsoBox.min.y,
+      actor.root.position.z,
+    ).project(cam)
+    return {
+      left,
+      right,
+      top,
+      bottom,
+      torso: rect(torsoBox),
+      viewport: { w, h },
+      feetY: torsoBox.min.y,
+      feetPx: { x: ((feet.x + 1) / 2) * w, y: ((1 - feet.y) / 2) * h },
+    }
+  },
+})
+
+// The squash test (slice 4a).
+// ============================================================
+//
+// The Sorting Line poses Merc from where the voice sits in its own
+// range, and the one thing that cannot be settled on paper is whether
+// the flat end reads as a puddle or as a broken character. So: the
+// silhouette, on the real asset, in the real environment, driven either
+// by a slider or by a voice, before a single room exists to be wrong
+// about.
+//
+// The rule itself lives in `sim/tension3d.ts` and is tested there. This
+// only turns it into something to look at.
+
+/** Which span the mic reads against: the measurement if the RangeFinder
+ * ever ran, else a named preset, else tenor. `?voice=bass` etc. */
+const askedVoice = params.get('voice')
+const presetNamed = (id: string | null): VoicePreset | undefined =>
+  VOICE_PRESETS.find((v) => v.id === id)
+const voiceRange = workingRange(
+  presetNamed(askedVoice) ??
+    readMeasuredRange() ??
+    presetNamed('tenor') ??
+    VOICE_PRESETS[2]!,
+)
+
+const slider = document.createElement('input')
+slider.type = 'range'
+slider.min = '0'
+slider.max = '1'
+slider.step = '0.001'
+slider.style.cssText =
+  'position:fixed;left:50%;transform:translateX(-50%);bottom:14px;width:min(28rem,72vw);accent-color:#cfd6dc'
+document.body.append(slider)
+
+const setShapeT = (next: number): void => {
+  shapeT = Number.isFinite(next) ? Math.min(1, Math.max(0, next)) : 0.5
+  const s = silhouetteFor(shapeT, sweep)
+  // Ratios against rest, not metres: `merc.ts` has no opinion about
+  // what this world calls a puddle, and `setShape(1, 1)` is the Merc
+  // who already ships.
+  r.merc()?.setShape(s.width / REST_WIDTH, s.height / REST_HEIGHT)
+  slider.value = String(shapeT)
+}
+
+slider.addEventListener('input', () => {
+  shapeFromVoice = false
+  sweeping = false
+  setShapeT(Number(slider.value))
+})
+
+addEventListener('keydown', (e) => {
+  if (e.key === '[' || e.key === ']') {
+    shapeFromVoice = false
+    sweeping = false
+    setShapeT(shapeT + (e.key === ']' ? 0.05 : -0.05))
+  }
+  if (e.key === 's') sweeping = !sweeping
+})
+
+setShapeT(shapeT)
 
 // Mic diagnostics.
 // ============================================================
@@ -285,6 +469,7 @@ if (micMode) {
 
 let last = performance.now()
 let frozen = false
+let sweepPhase = 0
 const tick = (now: number): void => {
   let dt = (now - last) / 1000
   last = now
@@ -293,8 +478,26 @@ const tick = (now: number): void => {
     dt = frozen ? 0 : freezeAt
     frozen = true
   }
+
+  // The voice wins whenever there is one; the slider takes over the
+  // moment it is touched, and a sweep runs when neither is driving.
+  const heard = driver?.latestPitch() ?? null
+  if (heard !== null) {
+    shapeFromVoice = true
+    sweeping = false
+    setShapeT(tFor(heard.midi, voiceRange))
+  } else if (sweeping) {
+    sweepPhase += dt * 0.35
+    setShapeT((1 - Math.cos(sweepPhase * Math.PI * 2)) / 2)
+  }
+
   r.render(view, dt)
-  hud.textContent = `${r.backend()}  clip=${clip}${freezeAt !== null ? `  t=${freezeAt}` : ''}  x=${mercX}${micMode ? `\nmic: ${micLine || 'press Start mic'}${chain ? `\n     ${chain}` : ''}` : ''}`
+  const body = silhouetteFor(shapeT, sweep)
+  const shapeLine =
+    `t=${shapeT.toFixed(3)} ${shapeFromVoice ? '(voice)' : sweeping ? '(sweep)' : '(held)'}` +
+    `  ${body.height.toFixed(2)}m tall x ${body.width.toFixed(2)}m wide` +
+    `  sweep ${sweep.flat}-${sweep.tall}m  range ${voiceRange.lowMidi}-${voiceRange.highMidi}`
+  hud.textContent = `${r.backend()}  clip=${clip}${freezeAt !== null ? `  t=${freezeAt}` : ''}  x=${mercX}\n${shapeLine}${micMode ? `\nmic: ${micLine || 'press Start mic'}${chain ? `\n     ${chain}` : ''}` : ''}`
   requestAnimationFrame(tick)
 }
 requestAnimationFrame(tick)

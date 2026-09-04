@@ -35,8 +35,9 @@
 // dresses itself -- see `applyBody` below.
 
 import type { AnimationClip, Material, Mesh, Object3D, Texture } from 'three'
-import { AnimationMixer, Box3, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
+import { AnimationMixer, Box3, Group, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
 import { loadMerc } from '../assets'
+import { bodyLiftFor, feetBelowRoot } from './merc-anchor'
 
 /**
  * The body: mercury. Full metal, near-mirror, and a thin-film layer for
@@ -72,8 +73,34 @@ export const mercMaterial = (
   })
 
 export interface MercActor {
-  /** The root to add to the scene. Scaled so Merc stands `height` tall. */
+  /** The node to add to the scene, and the ONLY one a caller should
+   * move. It carries no scale and no offset of its own, so a stage can
+   * own `position` and `rotation` outright while `setShape` owns the
+   * body inside it. */
   root: Object3D
+  /**
+   * Squash and stretch him, as multiples of the shape he was built at.
+   *
+   * `setShape(1, 1)` is the Merc `createMerc` handed back, posed at the
+   * same scale to the last bit. Both factors are ratios rather than
+   * metres on purpose: this module has no opinion about what a world
+   * calls a puddle, and a world that does can keep its own numbers
+   * without this file learning them.
+   *
+   * His FEET STAY WHERE THEY ARE. See the note in the body for why that
+   * is not what falls out of scaling him, and why it is the one thing
+   * a caller cannot reasonably do from outside.
+   */
+  setShape(widthScale: number, heightScale: number): void
+  /**
+   * The two facts a room needs about the space he occupies, in metres.
+   *
+   * `height` is the whole actor, mitts included -- the same box
+   * `createMerc` scaled him by. `feetBelowRoot` is how far under
+   * `root.position.y` his lowest point hangs, and it does NOT move when
+   * the shape does: holding it still is what `setShape` is for.
+   */
+  metrics(): { height: number; feetBelowRoot: number }
   /** Play a clip by name. Unknown names are ignored, deliberately —
    * a missing clip should degrade to stillness, not to a crash. */
   play(name: string, opts?: { loop?: boolean; fade?: number }): void
@@ -116,27 +143,97 @@ export const createMerc = async (
     if (bare) mesh.material = bodyMaterial
   })
 
-  // Scale to the asked-for height and lift so his lowest point hovers
-  // just off the floor -- he floats, that is the body plan.
+  // Scale to the asked-for height.
   //
   // Measured rather than hardcoded. The old constants (1.65 tall, base
   // at -0.689) were true of one export, and every re-rig, every added
   // eye, every shape key that moves a vertex makes them a little less
   // true -- silently, as a character who sinks into the floor or drifts
   // above it. Box3 asks the model instead.
+  //
+  // Measured on 2026-09-04, for anyone reading the numbers below:
+  // the whole actor is 1.8274 x 1.9028 x 1.2639, and `bounds.min.y` is
+  // -0.9519 -- almost exactly half the height, so THE ROOT ORIGIN SITS
+  // AT HIS VERTICAL CENTRE, not at his feet.
   const bounds = new Box3().setFromObject(scene)
   const size = bounds.getSize(new Vector3())
   const rawHeight = size.y > 1e-6 ? size.y : 1
   const s = height / rawHeight
   scene.scale.setScalar(s)
-  scene.position.y = -bounds.min.y * s + height * 0.1
 
-  const mixer = new AnimationMixer(scene)
+  // Why he is wrapped, and why the hover that used to be on this line
+  // is gone.
+  // ------------------------------------------------------------
+  //
+  // There was a `scene.position.y = -bounds.min.y * s + height * 0.1`
+  // here, meaning "lift him so his lowest point hovers just off the
+  // floor". It never ran: EVERY caller -- both stages and the probe --
+  // assigns `root.position.y` from the simulation on the very next
+  // frame, so the offset was overwritten before it was ever seen. What
+  // actually anchors him is the root origin, which is his centre, and
+  // the floor is a non-occluding gradient (`depthWrite: false`), so
+  // half a hovering droplet sitting under the floor line reads as
+  // hovering rather than as sunk. That is the shipped look and this
+  // change does not touch it.
+  //
+  // It becomes load-bearing the moment the shape moves. Anchored at his
+  // centre, scaling his height grows him DOWNWARD as much as upward: a
+  // squashed Merc rises off the floor and a stretched one sinks through
+  // it, both silently, and neither reads as squash or stretch. The
+  // player sees him bob.
+  //
+  // So the body lives inside a wrapper. The wrapper is `root` and
+  // carries nothing but what the caller puts there; the body carries
+  // the scale and a counter-offset that holds his lowest point exactly
+  // where the rest shape left it. At `setShape(1, 1)` the offset is
+  // zero and the result is the shipped Merc, unchanged.
+  const body = scene
+  const root = new Group()
+  root.name = 'merc'
+  root.add(body)
+
+  // The arithmetic lives in merc-anchor.ts, pure and tested, because
+  // the first version of it here had the sign backwards and a check at
+  // rest could not tell.
+  //
+  // THE ANCHOR IS THE TORSO, not the whole box. His feet, as far as a
+  // player can tell, are the bottom of his body: the mitts hang 25 cm
+  // below it in the bind pose and beside it in every clip that plays,
+  // so holding the box's bottom still holds a point nobody sees and
+  // lets the body itself drift by the difference, scaled. 0.2023 m
+  // under the root for this export; the whole box would say 0.2751.
+  const torso = ((): Object3D | null => {
+    let found: Object3D | null = null
+    scene.traverse((o) => {
+      if ((o as Mesh).isMesh === true && o.name === 'merc_body') found = o
+    })
+    return found
+  })()
+  const torsoBounds = torso === null ? bounds : new Box3().setFromObject(torso)
+  const anchor = { rawMinY: torsoBounds.min.y, rawHeight, restHeight: height }
+  const restFeet = feetBelowRoot(anchor)
+  let shape = { width: 1, height: 1 }
+
+  const setShape = (widthScale: number, heightScale: number): void => {
+    const w = Number.isFinite(widthScale) ? Math.max(1e-3, widthScale) : 1
+    const h = Number.isFinite(heightScale) ? Math.max(1e-3, heightScale) : 1
+    shape = { width: w, height: h }
+    body.scale.set(s * w, s * h, s * w)
+    // Hold the feet: the lowest point would otherwise ride the centre.
+    body.position.y = bodyLiftFor(anchor, h)
+  }
+  setShape(1, 1)
+
+  const mixer = new AnimationMixer(body)
   const byName = new Map<string, AnimationClip>(clips.map((c) => [c.name, c]))
   let current: string | null = null
 
   return {
-    root: scene,
+    root,
+    setShape,
+    metrics(): { height: number; feetBelowRoot: number } {
+      return { height: height * shape.height, feetBelowRoot: restFeet }
+    },
     play(name, opts = {}): void {
       if (current === name) return
       const clip = byName.get(name)
@@ -159,7 +256,7 @@ export const createMerc = async (
     dispose(): void {
       mixer.stopAllAction()
       bodyMaterial.dispose()
-      scene.traverse((o) => {
+      body.traverse((o) => {
         const mesh = o as Mesh
         if (mesh.isMesh === true) mesh.geometry.dispose()
       })

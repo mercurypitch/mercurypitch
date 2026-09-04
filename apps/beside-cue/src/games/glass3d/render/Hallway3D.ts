@@ -54,6 +54,10 @@ export interface Hallway3D {
   render(view: HallwayView, dt: number): void
   centroids(): readonly Vec3[]
   merc(): MercActor | null
+  /** The chase camera, for anything that has to ask where on the screen
+   * something is -- the probe's on-screen check, and the e2e that
+   * holds Merc inside a phone at both ends of his sweep. */
+  camera(): PerspectiveCamera
   resize(width: number, height: number, pixelRatio: number): void
   backend(): string
   dispose(): void
@@ -330,6 +334,9 @@ export const createHallway3D = (
 
     merc(): MercActor | null {
       return mercActor
+    },
+    camera(): PerspectiveCamera {
+      return camera
     },
 
     resize(width: number, height: number, pixelRatio: number): void {
