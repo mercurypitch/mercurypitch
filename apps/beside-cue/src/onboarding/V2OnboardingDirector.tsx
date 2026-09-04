@@ -1215,6 +1215,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 request={mediaRequest()}
                 mode={state().motionMode}
                 foreground={props.foreground}
+                // Keep the hardware-backed video surface out of CSS opacity
+                // transitions so handoffs do not churn compositor ownership.
+                transitionDurationMs={0}
                 class={styles.mediaStage}
                 onPresentationSettled={settleMediaPresentation}
                 onVideoEnded={finishMediaVideo}

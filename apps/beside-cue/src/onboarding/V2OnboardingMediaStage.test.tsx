@@ -3,11 +3,18 @@
 // ============================================================
 
 import { fireEvent, render } from '@solidjs/testing-library'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationRequest, } from './v2-onboarding-media-presenter'
 import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
 import { V2OnboardingMediaStage } from './V2OnboardingMediaStage'
+
+const mediaStageCss = readFileSync(
+  resolve(process.cwd(), 'src/onboarding/V2OnboardingMediaStage.module.css'),
+  'utf8',
+)
 
 const BRAND = { kind: 'brand', alt: '' } as const
 
@@ -187,6 +194,12 @@ afterEach(() => {
 })
 
 describe('V2OnboardingMediaStage', () => {
+  it('keeps a loading video compositor-eligible with an imperceptible probe', () => {
+    expect(mediaStageCss).toMatch(
+      /\.layer\[data-v2-media-kind='video'\]\[data-v2-media-phase='loading'\]\s*\{[^}]*z-index:\s*2;[^}]*opacity:\s*0\.001;/s,
+    )
+  })
+
   it('starts a visible video only after its source metadata exists', () => {
     renderStage({ request: automaticRequest('metadata-gated') })
     const element = currentVideo()
@@ -282,6 +295,45 @@ describe('V2OnboardingMediaStage', () => {
       token: expect.any(String),
       recoveryStage: 'reduced-still',
     })
+  })
+
+  it('does not retire the outgoing frame for playback-clock progress alone', () => {
+    const harness = renderStage({ request: holdRequest('known-good') })
+    const outgoing = currentImage()
+    decodeImage(outgoing)
+    fireEvent.transitionEnd(layerFor(outgoing), { propertyName: 'opacity' })
+
+    harness.setRequest(automaticRequest('progressing'))
+    const incoming = currentVideo()
+    fireEvent.loadedMetadata(incoming)
+    fireEvent.loadedData(incoming)
+    Object.defineProperties(incoming, {
+      currentTime: { configurable: true, value: 0.25 },
+      error: { configurable: true, value: null },
+      readyState: {
+        configurable: true,
+        value: 2,
+      },
+    })
+
+    fireEvent(incoming, new Event('timeupdate'))
+
+    expect(layerFor(incoming)).toHaveAttribute('data-v2-media-phase', 'loading')
+    expect(layerFor(incoming)).toHaveAttribute('data-v2-media-kind', 'video')
+    expect(document.body.contains(outgoing)).toBe(true)
+    expect(harness.onPresentationSettled).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1_199)
+    expect(currentVideo()).toBe(incoming)
+    expect(document.body.contains(outgoing)).toBe(true)
+
+    vi.advanceTimersByTime(1)
+    expect(currentVideo()).not.toBe(incoming)
+    expect(layerFor(currentVideo())).toHaveAttribute(
+      'data-v2-media-stage',
+      'retry',
+    )
+    expect(document.body.contains(outgoing)).toBe(true)
   })
 
   it('recovers when a bundled video never reaches loaded data', () => {

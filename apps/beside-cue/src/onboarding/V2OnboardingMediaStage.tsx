@@ -2,10 +2,10 @@
 // V2OnboardingMediaStage — decoded dual-layer DOM adapter
 // ============================================================
 //
-// Readiness is evidence, not an optimistic load event: video stays hidden
-// until a compositor-frame callback. An unavailable or stalled compositor
-// gate walks the explicit still recovery chain instead of inventing evidence,
-// and the decoded outgoing node survives until its successor crossfades.
+// Readiness is evidence, not an optimistic load event: video stays effectively
+// hidden until a compositor-frame callback. A nonzero loading probe keeps the
+// incoming surface eligible for composition without retiring the decoded
+// outgoing node before its successor is proven.
 
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationEvidence, V2OnboardingMediaPresentationRequest, V2OnboardingMediaPresenterEvent, V2OnboardingMediaPresenterState, V2OnboardingMediaRecoveryStage, V2OnboardingMediaResource, } from './v2-onboarding-media-presenter'
@@ -173,16 +173,15 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
     if (capable.requestVideoFrameCallback !== undefined) {
       frameCallbackExpected = true
       frameRequest = capable.requestVideoFrameCallback(presentVideoFrame)
-      // The callback fires on composition. If iOS accepts loaded data but
-      // never composites it, move to the retry/still chain; never label the
-      // stalled video itself as decoded.
+      // The loading layer's nonzero probe keeps it compositor-eligible while
+      // this callback remains the authority for retiring the outgoing frame.
     } else {
       frameCallbackExpected = false
     }
 
-    // Without compositor evidence, use the same deterministic recovery path.
-    // The watchdog is paused while the app is backgrounded because WebKit also
-    // suspends frame composition there.
+    // If no compositor evidence arrives, use the deterministic recovery
+    // chain. The watchdog pauses while backgrounded because frame composition
+    // can be suspended there.
     scheduleVideoFrameWatchdog()
   }
 
@@ -226,6 +225,7 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
       data-v2-media-target={props.targetId}
       data-v2-media-stage={props.recoveryStage}
       data-v2-media-phase={props.phase}
+      data-v2-media-kind={props.resource?.kind}
       style={{
         '--v2-media-transition-duration': `${String(
           props.transitionDurationMs,
