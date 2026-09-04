@@ -100,7 +100,7 @@ either world.
 
 ### 1.3 What maff is actually choosing between
 
-If the Sorting Line's silhouette reads badly on a phone — see §11's step
+If the Sorting Line's silhouette reads badly on a phone — see §13's step
 4a, which is one evening and answers exactly this — the Top Shelf is the
 world to fall back to, and the fallback is cheap only if 4a runs first.
 
@@ -398,7 +398,7 @@ your progress to one misstep is a punishment for learning.
 opposition of clearance and support, which is the world's own idea. It
 does NOT prove that the mechanic is more than a one-dimensional cursor,
 because both of its gates are still `t` intervals. §8 is about that, and
-§11's step 4d makes it a falsification check rather than a hope.
+§13's step 4d makes it a falsification check rather than a hope.
 
 ---
 
@@ -584,7 +584,7 @@ viewer actually perceives.
    answer after 4e is still no, **the world is a slider with a very good
    avatar**, and it is better to find that out at room 3 than at
    submission. The Top Shelf is then the fallback, which is the other
-   half of why §11 starts with an evening rather than a refactor.
+   half of why §13 starts with an evening rather than a refactor.
 4. **Difficulty must never be "narrow the band".** Narrowing bands is the
    pitch-cursor genre's most generic knob and would make the world a
    cents drill in costume, which the locked decisions forbid outright.
@@ -697,49 +697,53 @@ there is no tune here; and no number that goes up merely for continuing.
 
 ---
 
-## 11. Questions for maff
+## 11. maff's answers
 
-Put here rather than decided, because each of them changes the shape of
-the world rather than a number in it.
+Answered 2026-09-04, before any of slice 4 was built. Each of these
+changes the shape of the world rather than a number in it, which is why
+they were put rather than decided.
 
-1. **Which world.** The top four are inside one point (§1). The
-   recommendation is the Sorting Line and the reason is that it is the
-   only proposal with no axis below 8 — but if you want the Top Shelf,
-   say so before step 4b, because its geometry needs re-deriving and that
-   is a different plan rather than a different room.
-2. **Is the snap one mechanic or two?** The proposal's fourth room reads
-   the same voice one derivative up: a fast slide upward whips him off
-   the floor, higher than the thumb jump can reach. It is the same input
-   and it is the clearest "this is not the platformer's jump" moment
-   available. But "one new mechanic per world" is yours, and if you read
-   a velocity as a second verb, the world is four rooms and the snap goes.
-   **Deferred either way** — see §12 — because the pipeline probably
-   cannot serve it (a median-5 plus a 130 ms bridge means the fastest
-   gesture is reported as a hold and then as a jump, and a breath resumed
-   at a different pitch is indistinguishable from a real fast slide).
-3. **What do the octave-nudge buttons do here?** The chamber HUD has
-   them, and in a world with no target pitch they have no meaning. Remove
-   them from this world's HUD, or repurpose them to nudge the measured
-   range? They should not ship as a dead button.
-4. **Does this world have a fall at all?** Room 2 introduces the reject
-   chute, which is three seconds of comedy and costs nothing since gates
-   stay passed. One of the losing proposals argued that the world someone
-   opens at eleven at night should have no fall in it. The chute is
-   funnier; a world with no fail state is gentler. Your call.
-5. **If a player has never run the RangeFinder**, do we send them to it
-   before room 1, or open on a preset and widen silently? Silent widening
-   is specified in §6 and works; sending them costs a screen and makes
-   the world's one load-bearing measurement explicit.
+1. **Which world — the Sorting Line.** The recommendation stands. The
+   margin over the Top Shelf was one point and the choice was genuinely
+   open, so this is a decision and not a formality: the world is the one
+   where the voice sets Merc's silhouette and the room is inert.
+2. **The snap is one mechanic, and its room stays in the plan.** The
+   fourth room reads the same scalar one derivative up — a fast slide
+   upward whips him off the floor, higher than the thumb jump reaches —
+   and that counts as the same verb read faster, not a second verb. So
+   the world is five rooms.
+
+   **Still deferred, and deferred on a measurement rather than an
+   opinion** (§12): a median-5 plus a 130 ms bridge means the fastest
+   gesture is reported as a hold and then as a jump, and a breath
+   resumed at a different pitch is indistinguishable from a real fast
+   slide. The room is in the plan; it is not in this slice until the
+   pipeline has been measured on a device.
+
+3. **The octave-nudge buttons come off this world's HUD.** Nothing on
+   screen names a note here, so a control that shifts an octave has no
+   referent. The HUD is per-world already, so this costs nothing and
+   removes a button that would have to be explained.
+4. **The reject chute stays.** Room 2 keeps its fall. Gates that were
+   passed stay passed, so it restarts the position and not the room —
+   the same rule the chamber's fall already follows, which is what keeps
+   three seconds of comedy from costing anything.
+5. **Open on a preset and widen silently.** As specified in §6. A player
+   who has never run the RangeFinder is not stopped at a door; the range
+   grows as they sing. The measurement stays load-bearing without being
+   a screen.
 
 ---
 
 ## 12. What this slice does not do
 
 - **No shared world stage.** `ChamberStage` is forked, not lifted. §10.
-- **No snap, and no derivative room.** The fourth room's fast-slide jump
-  is out until the pipeline has been measured on a device, because the
-  smoothing path makes a fast siren and a breath-and-reacquire look the
-  same. Deciding it needs a measurement, not an opinion.
+- **No snap, and no derivative room.** maff has ruled it the same verb
+  read faster rather than a second one (§11.2), so the room stays in the
+  world's design — but not in this slice. It is out until the pipeline
+  has been measured on a device, because the smoothing path makes a fast
+  siren and a breath-and-reacquire look the same. What is deferred here
+  is the scope, not the decision.
 - **No narrowing bands as a difficulty knob.** §8.
 - **No shatter in the first two rooms.** The shard batch and `shatterIn`
   are reused later, for the one thing that breaks in this world.
