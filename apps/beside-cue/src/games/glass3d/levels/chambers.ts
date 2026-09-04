@@ -1,4 +1,4 @@
-// Three rooms, as data.
+// Five rooms, as data.
 // ============================================================
 //
 // `sim/chamber3d` knows what a standing wave does. This knows which
