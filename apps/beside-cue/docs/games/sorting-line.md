@@ -1100,3 +1100,36 @@ If the world is still felt to be "a slider with a very good avatar"
 after 4e, the remaining lever is a second degree of freedom -- loudness
 into volume, so a shape needs two numbers -- and that is a measurement
 before it is a design. §4 of the Top Shelf stays the fallback.
+
+### 16.3 The Wedge (4e)
+
+`LINE_3`: five metres, one wedge from 1.8 to 2.8, the exit at 4.6.
+`WedgeSlot` carries two gates -- what the mouth admits (`WEDGE_IN`,
+`tLimit 0.30`) and what the far end admits (`WEDGE_OUT`, `tLimit 0.06`,
+at least two semitones) -- and the ceiling is a straight line between
+the two torso heights they become (0.434 m to 0.327 m for a 22-semitone
+span). Three rules, all pure and tested in `lines.test.ts`:
+
+- `wedgeCeiling(gate, fit, x)`: the mouth's height before the mouth,
+  the far end's after it, linear between.
+- `admits` for a wedge judges the ceiling at his FRONT edge, not his
+  centre: a falling ceiling meets him there first, so he has to be
+  lower than where he stands -- which is the ask.
+- `wedgeStop(gate, fit, torso, halfWidth)`: where the wedge stops a
+  held shape. Infinity when the far end admits it (no wall), before the
+  mouth when the mouth does not, and for anything between, inside. The
+  walls are rebuilt from it every frame, so the wall moves with his
+  voice.
+
+The test that states the room: a glide that tracks the ceiling at his
+centre is walled; one that leads by his widest half-width is not. He
+widens as he flattens, so the lead grows through the wedge. `Line3D`
+cuts the plate as a trapezoid extruded across the corridor, recut only
+when the two ceilings change, with a mouth the wedge's whole length
+that lights while he fits where he is.
+
+`bandsFor` and `fitFor` replaced `bandFor` + `sizeFor` in the stage: a
+piece of furniture now has a `band` (where he has to be to get
+through, what the gauge shows and the grade judges) and an `entry`
+band, the same thing for everything but a wedge; and a `Fit` of one or
+two numbers. `sizeFor` stays for the one-number pieces.

@@ -397,6 +397,15 @@ export const LETTERBOX: Gate = { end: 'flat', tLimit: 0.23, semis: 4 }
 export const SCREEN_MESH: Gate = { end: 'flat', tLimit: 0.313, semis: 5 }
 export const SCREEN_SLOT: Gate = { end: 'tall', tLimit: 0.634, semis: 5 }
 
+/**
+ * Room 3's wedge (§16.2): a slot whose ceiling falls along its length,
+ * from what `WEDGE_IN` admits at its mouth to what `WEDGE_OUT` admits
+ * at its far end. It asks for a glide coupled to walking, which no
+ * band can ask for, and it is what §8's impossible gate became.
+ */
+export const WEDGE_IN: Gate = { end: 'flat', tLimit: 0.3, semis: 5 }
+export const WEDGE_OUT: Gate = { end: 'flat', tLimit: 0.06, semis: 2 }
+
 // ------------------------------------------------------------
 // The range opens by taking it from the player (§6, from The Span).
 // ------------------------------------------------------------
