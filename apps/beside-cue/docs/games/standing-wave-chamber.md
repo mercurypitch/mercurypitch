@@ -233,7 +233,7 @@ chamber problem.
 | Thumb → intent           | `src/games/glass3d/input/pad-intent.ts`                   |
 | The pad and jump button  | `src/games/glass3d/render/TouchControls.tsx`              |
 | Standing-wave maths      | `src/games/glass3d/sim/chamber3d.ts`                      |
-| The five rooms, as data | `src/games/glass3d/levels/chambers.ts`                    |
+| The five rooms, as data  | `src/games/glass3d/levels/chambers.ts`                    |
 | The room, drawn          | `src/games/glass3d/render/Chamber3D.ts`                   |
 | The room, played         | `src/games/glass3d/render/ChamberStage.tsx`               |
 | The harmonic ladder      | `src/games/glass3d/render/ModeLadder.tsx`                 |
