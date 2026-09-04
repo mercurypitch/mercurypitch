@@ -19,6 +19,16 @@ describe('the rooms', () => {
     for (const room of LINES) expect(room.teaches.length).toBeGreaterThan(8)
   })
 
+  // A hint is two sentences at most: the door is not the place for a
+  // guide (§15.4). Room 1 has none; the world's hint is read there.
+  it('keep a hint to two sentences', () => {
+    expect(LINES[0]!.hint).toBeUndefined()
+    for (const room of LINES) {
+      if (room.hint === undefined) continue
+      expect(room.hint.split(/[.!?]\s/).length).toBeLessThanOrEqual(2)
+    }
+  })
+
   it('put the start before every gate, gates in order, and the exit last', () => {
     for (const room of LINES) {
       let last = room.startX + PLATE_STANDOFF

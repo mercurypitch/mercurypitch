@@ -1382,3 +1382,33 @@
   line-height: 1.4;
   color: rgb(255 255 255 / 72%);
 }
+
+/* The Sorting Line's medal: the journey's chip, at the journey's
+   thresholds. Inline after the units it is a summary of. */
+.line-medal {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #241913;
+  vertical-align: 0.1em;
+}
+
+.line-medal--gold {
+  background: linear-gradient(160deg, #ffe08a, #d4a017);
+  box-shadow: 0 0 14px rgb(212 160 23 / 55%);
+}
+
+.line-medal--silver {
+  background: linear-gradient(160deg, #e8eef4, #9fb0c0);
+}
+
+.line-medal--bronze {
+  background: linear-gradient(160deg, #d9a06b, #9a6534);
+}

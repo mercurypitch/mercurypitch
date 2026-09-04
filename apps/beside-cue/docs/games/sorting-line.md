@@ -764,14 +764,14 @@ they were put rather than decided.
 
 Each step lands green and leaves the app working before the next begins.
 
-| #   | Step                                                                                                                                                                     | Done when                                                                                                                                                                                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4a  | **The squash test. LANDED -- see §14.** Pose Merc from the voice by root scale in the Hallway, re-derive the hover offset, sweep `t` from 0 to 1 on a dev dial. No rooms | A 0.16 × 0.67 Merc reads as a puddle rather than a broken character on a real phone, the clamp (if any) is written down, and nothing else in the app has changed                         |
-| 4b  | **LANDED -- `sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch                     | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
-| 4c  | **LANDED, see §15 -- Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                    | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
-| 4d  | **Room 2, the trade.** Width-aware ground sampler as a closure, the mesh floor, the chute, the return                                                                    | The Screen is playable, a thread falls through it, the chute returns him to the start of the stretch, gates already passed stay passed — and §8's question is asked out loud             |
-| 4e  | **The wedge gate**, plus `chamber-track.ts` generalised and a second card in the games list                                                                              | A gate exists that a one-dimensional pitch cursor cannot pass, both circles run on one track module, and the list shows two cards with progress                                          |
-| 4f  | **The grade and the end card.** Slide and overshoot recorded per gate, best per room kept, the walk card                                                                 | The run reports cents past the gate and first-try count per room and for the walk, replaying returns to the card, and nothing is gated on any of it                                      |
+| #   | Step                                                                                                                                                                                         | Done when                                                                                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4a  | **The squash test. LANDED -- see §14.** Pose Merc from the voice by root scale in the Hallway, re-derive the hover offset, sweep `t` from 0 to 1 on a dev dial. No rooms                     | A 0.16 × 0.67 Merc reads as a puddle rather than a broken character on a real phone, the clamp (if any) is written down, and nothing else in the app has changed                         |
+| 4b  | **LANDED -- `sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch                                         | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
+| 4c  | **LANDED, see §15 -- Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                                        | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
+| 4d  | **LANDED -- `levels/lines.ts` LINE_2, `Line3D` grate + chute + vertical slot, §16.1.** **Room 2, the trade.** Width-aware ground sampler as a closure, the mesh floor, the chute, the return | The Screen is playable, a thread falls through it, the chute returns him to the start of the stretch, gates already passed stay passed — and §8's question is asked out loud             |
+| 4e  | **LANDED -- `WedgeSlot`, LINE_3, §16.3.** **The wedge gate**, plus `chamber-track.ts` generalised and a second card in the games list                                                        | A gate exists that a one-dimensional pitch cursor cannot pass, both circles run on one track module, and the list shows two cards with progress                                          |
+| 4f  | **LANDED -- `sim/line-grade.ts` + `levels/line-stats.ts`, §16.4.** **The grade and the end card.** Slide and overshoot recorded per gate, best per room kept, the walk card                  | The run reports cents past the gate and first-try count per room and for the walk, replaying returns to the card, and nothing is gated on any of it                                      |
 
 **4a is first on purpose**, and it is the same reasoning that put step 2b
 early in slice 2: it puts the new thing into a scene that already works,
@@ -1015,7 +1015,7 @@ Three findings from maff's phone, all on room 1.
    art. `Line3D` now stands his TORSO on the floor
    (`root.y = mercY + feetBelowRoot`, the anchor's own number), and the
    slot is sized and judged by the torso: `TORSO_OF_HEIGHT = 1.6509 /
-   1.9028` from the measured shell, `slotHeightFor` returns
+1.9028` from the measured shell, `slotHeightFor` returns
    `torsoHeight(silhouetteFor(band.hi))`, and `fitsSlotHeight` compares
    the torso. At rest his torso is 0.477 m against a letterbox of
    0.401 m, so the tip visibly does not clear; at the band's edge the
@@ -1133,3 +1133,40 @@ piece of furniture now has a `band` (where he has to be to get
 through, what the gauge shows and the grade judges) and an `entry`
 band, the same thing for everything but a wedge; and a `Fit` of one or
 two numbers. `sizeFor` stays for the one-number pieces.
+
+### 16.4 The grade (4f)
+
+`sim/line-grade.ts`, pure, with `line-stats.ts` beside the track for
+what persists. As §9 specified, with one thing it did not: stillness
+is a WINDOW, not a velocity. A pitch tracker jitters by a few cents a
+frame, which at 60 Hz is a "velocity" of a semitone a second, so the
+0.5 semitones-per-second rule would never have seen a stop. A stop is
+now the voice held within 0.1 semitones for 150 ms; a slide starts
+when it leaves the last stop by more than 0.5. Silence clears the
+window and nothing else, so a breath in a held note is not a second
+stop. All of it is in `line-grade.test.ts`, jitter included.
+
+Per gate: the first stop aimed at it decides first-try and overshoot
+(cents past the nearest edge of the gate's band in MIDI, 0 inside);
+later stops count but do not change what the glide did; a gate walked
+through with no stop is first-try, he was already there. Quality is
+`qualityFromCents` with the gate's own band as the zero point, so
+`score.ts` is reused with its own `ScoreConfig` (`LINE_SCORE`: the
+journey's thresholds, a drop costing what a fall costs). Room grade is
+the mean, less drops, and the track keeps the best per room; the
+stats keep that run's units. The room card reads `62¢ past the gate ·
+2 of 3 first time · dropped once`; the walk card `84¢ past the gate on
+average · 11 of 14 gates first time` over every room's best, with the
+app's medal at the app's thresholds and nothing gated on it.
+
+One thing the phone will show: a room cleared before this landed
+carries a best of 0%. Walking it again fixes it, because the track
+keeps the best.
+
+### 16.5 §13, as it stands
+
+4a through 4f have landed on `feat/sorting-line-squash-test` (PR #706).
+Still open, from the phone and the plan: the tube's size on a small
+phone (seen on a tablet only), whether the wedge reads as a wedge with
+the camera where it is, the guide-versus-hint question if a playtest
+says two sentences are not enough, and §7's list.

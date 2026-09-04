@@ -27,10 +27,13 @@ import { micErrorLine } from '@/games/glass/mic-error'
 import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
+import { keepBest, readStats, writeStats } from '../levels/line-stats'
 import { lineTrack } from '../levels/line-track'
 import type { LineGate, LineLevel } from '../levels/lines'
 import { admits, bandsFor, crossed, fitFor, furnitureOf, LINES, overGaps, PLATE_STANDOFF, wedgeStop, } from '../levels/lines'
 import { createLoopState, runLoop } from '../runtime/loop'
+import type { GateGrade, RoomStats } from '../sim/line-grade'
+import { emptySlide, medalFor, midiBandFor, NO_STOPS, roomLine, slideStep, statsOf, walkLine, withStop, } from '../sim/line-grade'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import type { Band, Range, Spring } from '../sim/tension3d'
 import { inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, torsoHeight, widenRange, workingRange, } from '../sim/tension3d'
@@ -91,6 +94,14 @@ interface LineStageProps {
   onExit: () => void
 }
 
+/** The app's medal, at the app's thresholds, with nothing gated on it
+ * (§9). Renders nothing below bronze: the units are the grade then. */
+const Medal = (props: { pct: number }) => (
+  <Show when={medalFor(props.pct)}>
+    {(medal) => <i class={`line-medal line-medal--${medal()}`}>{medal()}</i>}
+  </Show>
+)
+
 export const LineStage = (props: LineStageProps) => {
   let canvas!: HTMLCanvasElement
   // Only locomotion and the loop are read from it; the ring and vibrato
@@ -117,6 +128,10 @@ export const LineStage = (props: LineStageProps) => {
   const [band, setBand] = createSignal<Band | null>(null)
   const [span, setSpan] = createSignal(24)
   const [passed, setPassed] = createSignal(0)
+  /** Every room's best run, in §9's units, for the walk card. */
+  const [stats, setStats] = createSignal(readStats())
+  /** The run just finished, for the room card. */
+  const [lastRun, setLastRun] = createSignal<RoomStats | null>(null)
   const [showGauge, setShowGauge] = createSignal(readToggle(GAUGE_KEY))
   const [dials, setDials] = createSignal(false)
 
@@ -237,6 +252,9 @@ export const LineStage = (props: LineStageProps) => {
       let fellAtWall = 0
       /** Drops this room, for the card (§9). */
       let drops = 0
+      /** The slide, and what each gate's stops came to (§9). */
+      let slide = emptySlide()
+      let grades: GateGrade[] = gates.map(() => NO_STOPS)
       let lastHeard = false
       let lastLevel = 0
       let sinceText = TEXT_INTERVAL
@@ -286,6 +304,8 @@ export const LineStage = (props: LineStageProps) => {
         loco.jumpWasDown = false
         closeWalls()
         drops = 0
+        slide = emptySlide()
+        grades = gates.map(() => NO_STOPS)
         setPassed(0)
         setSpan(range.highMidi - range.lowMidi)
         go('walking')
@@ -317,12 +337,21 @@ export const LineStage = (props: LineStageProps) => {
 
       /** The room is finished. Written the moment it happens: a player
        * who puts the phone down after room one has finished room one.
-       * The grade is §9's, and lands with step 4f; until then a clear
-       * records the walk and nothing about how it went. */
+       * The grade is §9's: where each glide stopped against its gate's
+       * band, first tries, drops -- kept per room for the best run. */
       const clearRoom = (): void => {
-        const next = lineTrack.recordClear(track(), live.id, 0)
+        const run = statsOf({
+          gates: grades,
+          bands: gates.map((g) => midiBandFor(g.band, range)),
+          drops,
+        })
+        setLastRun(run)
+        const next = lineTrack.recordClear(track(), live.id, run.pct)
         setTrack(next)
         lineTrack.writeTrack(next)
+        const kept = keepBest(stats(), live.id, run)
+        setStats(kept)
+        writeStats(kept)
         clearedAtWall = wallSeconds
         if (replaying) {
           replaying = false
@@ -396,6 +425,22 @@ export const LineStage = (props: LineStageProps) => {
           const pitch = driver?.latestPitch() ?? null
           lastLevel = driver?.latestLevel() ?? 0
           lastHeard = pitch !== null
+          // The grade listens to the voice, not to the shape: a stop
+          // is where a glide settled, judged against the band of the
+          // gate he is on his way to.
+          const sure = pitch !== null && pitch.conf >= 0.5 ? pitch.midi : null
+          const stop = slideStep(slide, sure, dt)
+          if (stop !== null) {
+            const aim = gates.findIndex((g) => !g.passed)
+            if (aim >= 0) {
+              const g = gates[aim]!
+              grades[aim] = withStop(
+                grades[aim]!,
+                stop,
+                midiBandFor(g.band, range),
+              )
+            }
+          }
           if (pitch !== null && pitch.conf >= 0.5) {
             const wider = widenRange(range, pitch.midi)
             if (wider !== range) {
@@ -508,6 +553,7 @@ export const LineStage = (props: LineStageProps) => {
           range,
           gates: gates.map((g) => ({ ...g })),
           drops,
+          grades: grades.map((g) => ({ ...g })),
           move: (m: number) => input.setMove(m),
           drop: () => drop(),
           warpTo: (x: number) => {
@@ -633,7 +679,7 @@ export const LineStage = (props: LineStageProps) => {
                   : room().teaches
               }
             >
-              Through. On to the next room.
+              Through. {lastRun() === null ? '' : roomLine(lastRun()!)}
             </Show>
           </p>
           <p class="chamber-hud__where">
@@ -686,9 +732,8 @@ export const LineStage = (props: LineStageProps) => {
         <div class="stage3d__gate">
           <p>{room().teaches}</p>
           <p class="stage3d__gate-how">
-            Your voice is his body: sing low and he spreads flat, sing high and
-            he draws up thin. Walk him to the far end, and change shape to get
-            through what is in the way.
+            {room().hint ??
+              'Your voice is his body: sing low and he spreads flat, sing high and he draws up thin. Walk him to the far end, and change shape to get through what is in the way.'}
           </p>
           <button type="button" onClick={() => void startMic()}>
             Walk in
@@ -706,11 +751,24 @@ export const LineStage = (props: LineStageProps) => {
         <div class="stage3d__card chamber-done">
           <Show
             when={lineTrack.isFinished(track())}
-            fallback={<span>Through.</span>}
+            fallback={
+              <>
+                <span>Through.</span>
+                <Show when={lastRun()}>
+                  {(run) => (
+                    <span class="stage3d__card-note">
+                      {roomLine(run())}
+                      <Medal pct={run().pct} />
+                    </span>
+                  )}
+                </Show>
+              </>
+            }
           >
-            <span>Every room walked</span>
+            <span>The Sorting Line, walked.</span>
             <span class="stage3d__card-note">
-              {lineTrack.progressLabel(track())}
+              {walkLine(LINES.flatMap((l) => stats()[l.id] ?? []))}
+              <Medal pct={lineTrack.walkGrade(track()) ?? 0} />
             </span>
           </Show>
           <ul class="chamber-done__rooms">
@@ -729,7 +787,7 @@ export const LineStage = (props: LineStageProps) => {
                     <span class="chamber-done__teaches">{level.teaches}</span>
                     <span class="chamber-done__best">
                       {lineTrack.isCleared(track(), level.id)
-                        ? 'walked'
+                        ? `${String(track().best[level.id] ?? 0)}%`
                         : 'not yet'}
                     </span>
                   </button>
