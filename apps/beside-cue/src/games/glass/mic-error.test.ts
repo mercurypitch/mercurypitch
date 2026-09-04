@@ -16,6 +16,17 @@ describe('micErrorLine', () => {
     expect(line).not.toMatch(/permission/i)
   })
 
+  // The failure that used to reach the player as "undefined is not an
+  // object (evaluating 'navigator.mediaDevices.getUserMedia')" -- a true
+  // sentence about the wrong thing, and one nobody can act on.
+  it('names the secure connection when the browser hides the API', () => {
+    const line = micErrorLine({ kind: 'insecure-context' })
+    expect(line).toMatch(/https/i)
+    expect(line).toMatch(/localhost/i)
+    // Not advice to grant a permission: there is no permission to grant.
+    expect(line).not.toMatch(/allow/i)
+  })
+
   it('carries the engine message through for an unclassified failure', () => {
     expect(
       micErrorLine({

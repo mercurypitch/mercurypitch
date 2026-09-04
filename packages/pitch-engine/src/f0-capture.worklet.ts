@@ -51,13 +51,31 @@ class F0CaptureProcessor extends AudioWorkletProcessor {
   private primed = false
 
   process(inputs: Float32Array[][]): boolean {
-    const channel = inputs[0]?.[0]
+    const input = inputs[0]
+    const channel = input?.[0]
     // An input with no connected source yields an empty array. Staying
     // alive matters: the graph reconnects when the mic does.
-    if (channel === undefined || channel.length === 0) return true
+    if (input === undefined || channel === undefined || channel.length === 0) {
+      return true
+    }
+
+    // The node is configured to hand this a single, already down-mixed
+    // channel (see pitch-f0-stream). This is the second line of defence,
+    // and it is here because the failure it guards against is SILENT: a
+    // stereo capture whose singer is on the right channel produced a
+    // detector reading exactly zero, no error, and no way to tell it
+    // apart from a muted microphone. One branch per quantum is nothing
+    // next to that.
+    const extra = input.length > 1
+    const scale = extra ? 1 / input.length : 1
 
     for (let i = 0; i < channel.length; i++) {
-      this.ring[this.writeIndex] = channel[i]
+      let sample = channel[i]!
+      if (extra) {
+        for (let c = 1; c < input.length; c++) sample += input[c]![i]!
+        sample *= scale
+      }
+      this.ring[this.writeIndex] = sample
       this.writeIndex = (this.writeIndex + 1) % F0_WINDOW
     }
     if (this.filled < F0_WINDOW) {

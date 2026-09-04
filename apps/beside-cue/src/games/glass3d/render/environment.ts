@@ -373,7 +373,23 @@ export const buildCabinetEnvironment = (
     // horizon lands across the middle of the face, and a hot thin line
     // there reads as a stripe painted on Merc rather than as the room
     // behind the camera.
-    const horizon = 1.1 * EXPOSURE * Math.exp(-((up / 0.22) * (up / 0.22)))
+    //
+    // 0.40, up from 0.22 (maff, 2026-09-04: "some kind of shade cutting
+    // directly the merc in half, he is lighter on upper part of his body
+    // and lower is dimmed"). 0.22 was already the widened value and it
+    // was still not wide enough: against a sky and floor of 0.1-0.26 a
+    // peak of 2.86 is a fifteen-to-one ring, and Merc is metal at
+    // roughness 0.06, so he mirrors it. What he showed was not shading
+    // at all -- it was the edge of that ring, drawn across him at a
+    // height that has nothing to do with his shape, which is why it read
+    // as a seam rather than as a highlight.
+    //
+    // Confirmed by experiment rather than argument: widening this one
+    // number to 1.5 removed the line completely and changed nothing else
+    // in the frame. 0.40 is where the line stops reading as an edge and
+    // the wine glass still keeps the lit rim down its bowl, checked in
+    // both stages side by side.
+    const horizon = 1.1 * EXPOSURE * Math.exp(-((up / 0.4) * (up / 0.4)))
 
     const r =
       FLOOR[0] * floorAmount * (1 - blend) +

@@ -1,7 +1,7 @@
 # Legacy cinematic onboarding runtime (V1)
 
 Status: **historical implementation record.** The V1 contract and packaged
-media remain for migration coverage and focused regression tests, but V2.4 is
+media remain for migration coverage and focused regression tests, but V2.5 is
 the sole product first-run path. See [V2-ONBOARDING.md](V2-ONBOARDING.md) for
 the active runtime, media, and device-review contract.
 

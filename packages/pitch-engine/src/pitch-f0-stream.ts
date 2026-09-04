@@ -110,10 +110,31 @@ export function createF0Stream(
       await audioContext.audioWorklet.addModule(workletUrl)
       if (disposed) return false
 
+      // DOWN-MIX TO MONO AT THE NODE, and this line is load-bearing.
+      //
+      // `channelCountMode` defaults to 'max', which makes the node's
+      // input as wide as whatever is connected -- so a stereo capture
+      // arrives as two channels and the processor, which reads channel
+      // zero, hears only the left one. On a laptop's built-in
+      // microphone that is invisible: the stream is mono, or both
+      // channels carry the same thing. On an audio interface it is not.
+      // A Focusrite Scarlett presented by PipeWire as "Analog Surround
+      // 4.1" hands Chrome two channels with the singer on ONE of them,
+      // and if that one is not the left, the detector reads digital
+      // silence, reports no pitch, and raises nothing to explain it --
+      // while the AnalyserNode fallback path a few lines down works
+      // perfectly, because AnalyserNode down-mixes by default.
+      //
+      // 'explicit' plus 'speakers' is the spec's stereo-to-mono sum,
+      // (L+R)/2, done by the engine before the processor runs: no cost
+      // on the audio thread and no channel can go unheard.
       const node = new AudioWorkletNode(audioContext, F0_CAPTURE_PROCESSOR, {
         numberOfInputs: 1,
         numberOfOutputs: 1,
         outputChannelCount: [1],
+        channelCount: 1,
+        channelCountMode: 'explicit',
+        channelInterpretation: 'speakers',
       })
       const detectorWorker = new Worker(
         new URL('./f0-detector.worker.ts', import.meta.url),

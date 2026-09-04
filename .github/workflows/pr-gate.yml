@@ -336,6 +336,12 @@ jobs:
       - name: Test Beside Cue
         run: pnpm beside-cue:test
 
+      - name: Install Chromium for Beside Cue browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test Beside Cue browser paths
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts
+
       - name: Build Beside Cue
         # beside-cue:check already typechecks every package, including the app.
         # Invoke Vite directly so the single app build does not repeat tsc.

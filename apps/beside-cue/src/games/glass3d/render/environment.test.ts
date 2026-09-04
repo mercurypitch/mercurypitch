@@ -180,6 +180,41 @@ describe('the cabinet environment', () => {
     expect(atHorizon).toBeGreaterThan(ring(-0.5) * 2)
   })
 
+  // ...and it has to be a WIDE one.
+  //
+  // The band above is necessary and was not sufficient. At half this
+  // width the map still passed it, and Merc -- metal at roughness 0.06 --
+  // mirrored the ring's edge as a hard horizontal line across his body,
+  // reported from the app as "some kind of shade cutting directly the
+  // merc in half". A near-mirror shows the map's gradients as its own
+  // shading, so a gradient this map makes sharply is a seam it paints on
+  // anything smooth in the room.
+  //
+  // Measured rather than asserted about the source: how far up you have
+  // to look before the ring has lost half its brightness. Below about
+  // 0.3 (17 degrees) the falloff is steep enough to read as an edge.
+  it('spreads that horizon wide enough not to draw a line on a mirror', () => {
+    const m = build()
+    const ring = (y: number): number => {
+      const samples: number[] = []
+      for (let k = 0; k < 32; k++) {
+        const a = (k / 32) * Math.PI * 2
+        samples.push(lookAt(m, new Vector3(Math.cos(a), y, Math.sin(a))))
+      }
+      samples.sort((p, q) => p - q)
+      return samples[Math.floor(samples.length / 2)]!
+    }
+    const peak = ring(0)
+    const halfWidth = (sign: number): number => {
+      for (let y = 0.01; y <= 1; y += 0.01) {
+        if (ring(sign * y) <= peak / 2) return y
+      }
+      return 1
+    }
+    expect(halfWidth(1)).toBeGreaterThan(0.3)
+    expect(halfWidth(-1)).toBeGreaterThan(0.3)
+  })
+
   it('deposits each light exactly once, everywhere', () => {
     // The write loop only visits the texels a light can reach, and that
     // bounding-box arithmetic is the one part of this module with no

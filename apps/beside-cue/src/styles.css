@@ -1542,7 +1542,7 @@ svg {
 }
 
 .schedule-options {
-  margin-top: 1rem;
+  margin-top: 0.35rem;
   border-top: 1px solid rgb(36 25 19 / 32%);
 }
 
@@ -1600,12 +1600,24 @@ svg {
   opacity: 0.52;
 }
 
+/* Stacked until there is room, not until the screen is tiny.
+   This was two columns by default and only stacked under 23rem (368px),
+   so on any ordinary phone -- 390px and up -- the nowrap "Set reminder"
+   button kept its width, the time input gave up all of its own, and the
+   two ended up on top of each other (maff's iPhone, 2026-09-03). The
+   rule now starts stacked and earns its second column. */
 .custom-time {
   display: grid;
   align-items: end;
   gap: 0.75rem;
   margin-top: 1rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .custom-time {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .custom-time label {
@@ -1633,6 +1645,23 @@ svg {
 
 .custom-time .secondary-button {
   white-space: nowrap;
+}
+
+.custom-time.custom-time--punched {
+  justify-items: center;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.custom-time--punched > .secondary-button {
+  width: min(100%, 25rem);
+  min-height: 3.35rem;
+}
+
+.schedule-options--single {
+  width: min(100%, 25rem);
+  margin-inline: auto;
 }
 
 .schedule-status {
@@ -1900,6 +1929,20 @@ svg {
   text-align: center;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+/* The affordance. Underlined rather than made a second button, because
+   the whole line is already the target and a link-looking word inside a
+   button invites a second tap at the wrong place. */
+.settings-screen__version-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  opacity: 0.75;
+  text-decoration: underline;
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 /* What the device says about itself: shown only when the version line is
@@ -2538,10 +2581,6 @@ svg {
 
   .cinematic-onboarding__caption {
     margin-top: calc(var(--safe-top) + 8.5rem);
-  }
-
-  .custom-time {
-    grid-template-columns: 1fr;
   }
 
   .active-sleeve {

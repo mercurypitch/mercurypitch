@@ -27,9 +27,21 @@ const PAPER = 0xfff4e2
 /** The pane, in scene metres. Matches art/pane/make_pane.py. */
 export const PANE = { width: 0.72, height: 1.05, thick: 0.006 }
 
+/** The lens the corridor was composed through, and the shape of screen
+ * it was composed on. `resize` keeps the horizontal angle these two
+ * imply, whatever shape the screen turns out to be. */
+const DESIGN_FOV_DEG = 40
+const DESIGN_ASPECT = 1.5
+/** Past this the correction stops being a correction. */
+const MAX_FOV_DEG = 62
+
 export interface HallwayView {
   /** Where Merc is along the corridor. The stage owns the journey. */
   mercX: number
+  /** How far off the floor he is. Zero for anything that does not jump. */
+  mercY: number
+  /** Which way he is going, so the cheat below mirrors with him. */
+  mercFacing: 1 | -1
   /** 0..1 charge on the pane. */
   resonance: number
   ringing: boolean
@@ -62,7 +74,7 @@ export const createHallway3D = (
   // millimetre sliver with a big dark parallelogram behind it. From the
   // diagonal the face catches the backdrop and reads as glass, and
   // Merc's face turns toward the lens instead of away down the hall.
-  const camera = new PerspectiveCamera(40, 1, 0.05, 30)
+  const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 30)
   camera.position.set(1.5, 1.0, 2.4)
 
   const backdrop = createBackdrop(9)
@@ -233,9 +245,26 @@ export const createHallway3D = (
         const geometryId = batch.addGeometry(g)
         return batch.addInstance(geometryId)
       })
-      batch.visible = false
       shardBatch = batch
       scene.add(batch)
+
+      // Link the shard program NOW, while nothing is waiting for it.
+      //
+      // three does not draw an invisible object, and it does not compile
+      // one either: the material's program is built the first time it
+      // actually reaches a draw call. The batch is hidden until the pane
+      // breaks, so that first draw is the first frame of the shatter --
+      // the one frame in the game that must not stall. A WebGL2 program
+      // link is not free anywhere and on iOS it is slow enough to read
+      // as the animation itself being broken.
+      //
+      // compileAsync takes the object, the camera it will be seen by,
+      // and the scene it belongs to. It has to be visible while it
+      // happens, for the same reason it was never compiled.
+      batch.visible = true
+      await renderer.compileAsync(batch, camera, scene)
+      batch.visible = false
+      if (disposed) return
     },
 
     render(view: HallwayView, dt: number): void {
@@ -253,27 +282,41 @@ export const createHallway3D = (
       const actor = mercActor
       if (actor !== null) {
         actor.root.position.x = view.mercX
+        actor.root.position.y = view.mercY
         // Mostly toward travel, cheated toward the lens -- the classic
         // side-scroller lie. Square to the corridor his face is a
         // profile; at ~60 degrees he reads as going somewhere AND as
-        // someone.
-        actor.root.rotation.y = 1.05
+        // someone. Mirrored rather than turned through the back, so the
+        // cheat stays a cheat whichever way he is walking.
+        actor.root.rotation.y = 1.05 * view.mercFacing
         actor.update(dt)
       }
+      // The pool is his reflection in the floor, so it stays ON the
+      // floor when he leaves it. It fades as he climbs, below.
       pool.position.x = view.mercX
       floor.position.x = view.mercX * 0.6
 
       // The chase camera: exponential, framed ahead, from the diagonal.
       // dt-independent smoothing -- 1 - exp(-k dt) is the lerp factor
       // that behaves the same at 30 and at 120 fps.
-      const ahead = view.mercX + 1.5
+      //
+      // The lead follows his facing, and has to, now that he can be
+      // walked backwards: a camera that always frames the right-hand
+      // side walks him into the left edge of his own screen. Biased
+      // rather than mirrored, so turning around swings the framing
+      // instead of throwing it across the room -- and so walking
+      // forwards is framed exactly as it was before he could turn.
+      const ahead = view.mercX + 0.9 + 0.6 * view.mercFacing
       const k = 1 - Math.exp(-3.2 * dt)
       camera.position.x += (ahead - camera.position.x) * k
       camera.lookAt(camera.position.x - 1.1, 0.45, 0)
 
       // The pane brightens toward the break exactly as the bowl does.
       key.intensity = 55 + view.resonance * 70
-      poolMaterial.opacity = 0.12 + view.resonance * 0.2
+      // A reflection that followed him up into the air would read as him
+      // not having jumped at all.
+      poolMaterial.opacity =
+        (0.12 + view.resonance * 0.2) * Math.max(0, 1 - view.mercY * 1.6)
       const pulse = view.ringing ? 0.5 + 0.5 * Math.sin(clock * 9) : 0
       paneMaterial.emissive.setHex(CUSTARD)
       paneMaterial.emissiveIntensity = view.resonance * 0.2 + pulse * 0.28
@@ -290,7 +333,28 @@ export const createHallway3D = (
     },
 
     resize(width: number, height: number, pixelRatio: number): void {
-      camera.aspect = width / Math.max(height, 1)
+      const aspect = width / Math.max(height, 1)
+      camera.aspect = aspect
+      // Hold the HORIZONTAL field on a narrow screen, rather than the
+      // vertical one.
+      //
+      // three's `fov` is vertical, so a phone held upright keeps the 40
+      // degrees it was composed with and throws away most of the
+      // horizontal angle -- and horizontal is the axis the corridor runs
+      // along. At a phone's aspect that leaves about 19 degrees of
+      // corridor, which is how Merc ended up half outside the frame on
+      // maff's iPhone (2026-09-03) while looking fine on a laptop.
+      //
+      // So the vertical angle is derived from the horizontal one the
+      // scene was composed with, and only ever widened: a screen wider
+      // than the design aspect keeps exactly the framing it had. The cap
+      // is there because the arithmetic alone would ask for 100 degrees
+      // on a tall phone, and a 100-degree lens is a different film.
+      const halfH = Math.tan((DESIGN_FOV_DEG * Math.PI) / 360) * DESIGN_ASPECT
+      camera.fov = Math.min(
+        MAX_FOV_DEG,
+        Math.max(DESIGN_FOV_DEG, (Math.atan(halfH / aspect) * 360) / Math.PI),
+      )
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)

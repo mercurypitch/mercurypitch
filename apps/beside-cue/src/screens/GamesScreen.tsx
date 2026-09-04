@@ -9,8 +9,11 @@ import type { RangeFit } from '@/games/glass/range-finder'
 import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
+import { progressLabel, readTrack } from '@/games/glass3d/levels/chamber-track'
+import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
+import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
 
@@ -25,6 +28,8 @@ type PlayPick =
   | 'trials'
   | 'cabinet3d'
   | 'hallway3d'
+  /** The Standing Wave: one path through every chamber. */
+  | 'chambers'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -66,10 +71,31 @@ export function GamesScreen(props: GamesScreenProps) {
     } catch {
       // the bias is the part that matters; losing the raw range is fine
     }
+    // A voice that has been listened to beats a voice type picked off a
+    // list, so the pick is dropped and the rooms follow the measurement.
+    clearVoiceCentre()
+    setMeasured(true)
+    setVoice(voiceCentre())
     setFinding(false)
   }
   const fitted = (): boolean =>
     rangeBias() !== 0 && Math.abs(rangeBias()) !== BIAS_STEP
+
+  // Where this player's voice sits, for the rooms that transpose to it.
+  //
+  // Separate from "Songs sit", and it has to be: that one shifts written
+  // melodies by a couple of semitones, while this is the gap between a
+  // bass and a soprano -- more than two octaves. A chamber is built out
+  // of ratios and has no written notes to shift, so it moves to the
+  // voice entirely.
+  // How far along the chamber path they are, for the card. Re-read when
+  // a game is left, because the walk happens inside the stage.
+  const [track, setTrack] = createSignal(readTrack())
+  const [voice, setVoice] = createSignal(voiceCentre())
+  const pickVoice = (midi: number): void => {
+    setVoice(writeVoiceCentre(midi))
+  }
+  const [measured, setMeasured] = createSignal(readMeasuredRange() !== null)
 
   const [stageTheme, setStageTheme] = createSignal(readStoredTheme())
   const pickTheme = (id: string): void => {
@@ -106,7 +132,7 @@ export function GamesScreen(props: GamesScreenProps) {
     control: LevelControl
   } | null => {
     const p = playing()
-    return typeof p === 'object' && p !== null ? p : null
+    return typeof p === 'object' && p !== null && 'level' in p ? p : null
   }
 
   return (
@@ -120,7 +146,21 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'hallway3d'}>
             <HallwayStage onExit={() => setPlaying(null)} />
           </Show>
-          <Show when={playing() !== 'cabinet3d' && playing() !== 'hallway3d'}>
+          <Show when={playing() === 'chambers'}>
+            <ChamberStage
+              onExit={() => {
+                setTrack(readTrack())
+                setPlaying(null)
+              }}
+            />
+          </Show>
+          <Show
+            when={
+              playing() !== 'cabinet3d' &&
+              playing() !== 'hallway3d' &&
+              playing() !== 'chambers'
+            }
+          >
             <JourneyPrototype
               variant={playing() === 'trials' ? 'trials' : 'journey'}
               level={levelPick()?.level}
@@ -234,6 +274,39 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
+        {/* ONE card, not one per room. The chambers teach in a fixed
+            order -- the room has a note, the note moves the danger, the
+            answer is a sequence -- and three peers in a list invite
+            playing them out of it, which breaks the only teaching
+            structure the slice has. */}
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('chambers')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Standing Wave
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              Rooms that answer to a note. Break the glass where the air moves
+              hardest, and stand where it does not.
+            </span>
+          </span>
+          <span class="game-card__count">{progressLabel(track())}</span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
         <button
           class="game-card"
           type="button"
@@ -260,6 +333,27 @@ export function GamesScreen(props: GamesScreenProps) {
             <path d="m9 5 7 7-7 7" />
           </svg>
         </button>
+
+        <div class="games-range" role="group" aria-label="Your voice">
+          <span class="games-range__label">Your voice</span>
+          <For each={VOICE_PRESETS}>
+            {(preset) => (
+              <button
+                class="games-range__pick"
+                type="button"
+                aria-pressed={voice() === centreOf(preset)}
+                onClick={() => pickVoice(centreOf(preset))}
+              >
+                {preset.label}
+              </button>
+            )}
+          </For>
+          {/* Only after the range finder has actually listened. An
+              unanswered question should look unanswered, not fitted. */}
+          <Show when={measured() && presetAt(voice()) === null}>
+            <span class="games-range__fit">fitted</span>
+          </Show>
+        </div>
 
         <div class="games-range" role="group" aria-label="Song range">
           <span class="games-range__label">Songs sit</span>

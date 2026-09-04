@@ -439,6 +439,432 @@
   }
 }
 
+/* The harmonic ladder. Down the left, clear of the Leave pill and of
+   the controls, and laid out in SEMITONES rather than in mode number --
+   the rungs bunching toward the top is the fact it exists to show. */
+.mode-ladder {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  /* A compact strip in the empty upper-left, not a full-height column.
+     Stretched to the screen a two-mode room puts one rung under the
+     Leave pill and the other in the controls, and the shape that is
+     supposed to show the rungs bunching shows nothing at all; centred
+     vertically it sits on Merc, who is the thing being aimed. */
+  top: calc(env(safe-area-inset-top, 0px) + 5rem);
+  height: 9rem;
+  z-index: 20;
+  width: 5.5rem;
+  pointer-events: none;
+}
+
+.mode-ladder__rung {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(10 14 15 / 45%);
+  overflow: hidden;
+  transform: translateY(50%);
+  transition: border-color 120ms linear;
+}
+
+/* The charge on that mode's pane, behind its name. A bar somewhere else
+   on the screen would make the player look away from the thing they are
+   aiming at. */
+.mode-ladder__rung i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgb(242 200 75 / 22%);
+  transition: width 80ms linear;
+}
+
+.mode-ladder__rung span,
+.mode-ladder__rung b {
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 62%);
+}
+
+.mode-ladder__rung b {
+  display: block;
+  font-weight: 400;
+  font-size: 0.6rem;
+  color: var(--orange, #c93513);
+}
+
+.mode-ladder__rung.is-near {
+  border-color: rgb(255 255 255 / 34%);
+}
+
+.mode-ladder__rung.is-on {
+  border-color: var(--custard, #f2c84b);
+}
+
+.mode-ladder__rung.is-on span {
+  color: var(--custard, #f2c84b);
+}
+
+/* What the room is asking for, and how far through it he is. Bottom
+   centre, above the controls. */
+.chamber-hud {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem);
+  z-index: 20;
+  width: min(22rem, 84vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.chamber-hud__line,
+.chamber-hud__count {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 72%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+.chamber-hud__count {
+  font-size: 0.62rem;
+  color: rgb(255 255 255 / 45%);
+}
+
+/* How much sound is arriving, whether or not a note came out of it. Two
+   different failures deserve two different pictures. */
+.chamber-hud__level {
+  display: inline-block;
+  height: 3px;
+  margin: 0 0 0.15rem 0.4rem;
+  border-radius: 2px;
+  background: var(--custard, #f2c84b);
+  vertical-align: middle;
+  transition: width 80ms linear;
+}
+
+/* Nothing is reaching the microphone. Said plainly rather than left as an
+   unlit ladder, which reads as "you are singing the wrong note". */
+.chamber-hud__quiet {
+  color: var(--orange, #c93513);
+}
+
+.chamber-hud__toggles {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.chamber-hud__toggles button {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(10 14 15 / 45%);
+  font-family: var(--font-label, sans-serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 45%);
+  cursor: pointer;
+}
+
+.chamber-hud__toggles button[aria-pressed='true'] {
+  border-color: rgb(242 200 75 / 40%);
+  color: var(--custard, #f2c84b);
+}
+
+/* Moving the room to the voice. Not a toggle -- it does something each
+   time it is pressed -- so it is never in the pressed state, and it goes
+   dim at the ends of the singable band rather than disappearing. */
+.chamber-hud__octave {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.chamber-hud__octave svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chamber-hud__octave:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* How far along a track the player is, on its card in the list. */
+.game-card__count {
+  align-self: center;
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft, #5a463d);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* Which room of the walk this is. Above the room's own line, because
+   "2 of 3" is about the path and the line below is about the room. */
+.chamber-hud__where {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 40%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+/* The line under the end-of-walk headline. Scoped through the card
+   because `.stage3d__card span` claims every span in there at 0-1-1 and
+   was winning: the note shipped as a second headline, 1.5rem custard,
+   which is the same specificity trap the guide link fell into. */
+.stage3d__card .stage3d__card-note {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgb(255 255 255 / 60%);
+}
+
+/* A quiet way back to the guide, under the gate's own button. Scoped
+   through the parent because `.stage3d__gate button` already claims
+   every button in there and would otherwise make this a second pill. */
+.stage3d__gate .stage3d__gate-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 45%);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The guide. Four cards, shown once on the first room and reachable from
+   the HUD afterwards. Over the gate rather than after it: what you are
+   agreeing to comes before the microphone prompt. */
+.chamber-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(6 9 10 / 72%);
+  backdrop-filter: blur(6px);
+}
+
+.chamber-guide__card {
+  width: min(24rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem 1rem;
+  border-radius: 0.9rem;
+  background: rgb(10 14 15 / 94%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: rgb(255 255 255 / 88%);
+}
+
+.chamber-guide__step {
+  margin: 0 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 38%);
+}
+
+.chamber-guide__card h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--custard, #f2c84b);
+}
+
+.chamber-guide__art {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.chamber-guide__art:empty {
+  display: none;
+}
+
+.chamber-guide__wave {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The second pattern on the "different note" card, so the eye reads the
+   first one as the before. */
+.chamber-guide__wave.is-dim {
+  opacity: 0.75;
+}
+
+.chamber-guide__wave .is-safe {
+  fill: #1c7f83;
+}
+
+.chamber-guide__wave .is-danger {
+  fill: #c93513;
+}
+
+.chamber-guide__curve {
+  fill: none;
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 1.4;
+}
+
+.chamber-guide__pane {
+  fill: rgb(255 255 255 / 85%);
+}
+
+.chamber-guide__merc {
+  fill: #f4f7f8;
+}
+
+.chamber-guide__body {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 76%);
+}
+
+.chamber-guide__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chamber-guide__nav button {
+  padding: 0.5rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--custard, #f2c84b);
+  color: var(--ink, #241913);
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chamber-guide__nav .chamber-guide__skip {
+  background: transparent;
+  color: rgb(255 255 255 / 45%);
+  padding-left: 0;
+}
+
+/* The controls. A strip across the bottom, because the hand holding
+   the phone is the hand playing it and that hand reaches the bottom of
+   the screen and nothing else.
+
+   `touch-action: none` is load-bearing, not tidiness: without it the
+   browser claims a horizontal drag as a scroll gesture and stops sending
+   pointermove, which reads as the pad going dead halfway through a walk.
+   `user-select` likewise -- a long press on a div is a text selection
+   unless you say otherwise. */
+.stage3d__controls {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  /* Clear of the very bottom edge: a 12px gap put the jump button under
+     the build stamp on a phone, and a control the width of a thumb
+     wants more margin than that anyway. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  height: 4.25rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage3d__pad {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.1rem;
+  border-radius: 1.1rem;
+  background: rgb(10 14 15 / 42%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.stage3d__pad svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: rgb(255 255 255 / 62%);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The centre mark. The dead zone is around here, so showing where it is
+   turns "nothing happened" into "you are standing still on purpose". */
+.stage3d__pad i {
+  width: 2px;
+  height: 0.9rem;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 22%);
+}
+
+.stage3d__jump {
+  width: 4.25rem;
+  padding: 0;
+  border-radius: 1.1rem;
+  background: rgb(242 200 75 / 16%);
+  border: 1px solid rgb(242 200 75 / 34%);
+  backdrop-filter: blur(6px);
+  color: var(--custard, #f2c84b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stage3d__jump svg {
+  width: 1.7rem;
+  height: 1.7rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage3d__jump:active {
+  background: rgb(242 200 75 / 32%);
+}
+
+/* The meter sits at the bottom too, so it moves up out of the way
+   rather than being read through a thumb. */
+.stage3d.has-controls .stage3d__meter {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+}
+
 .stage3d__gate,
 .stage3d__card {
   position: absolute;
@@ -453,6 +879,13 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
+  /* WIDTH, not max-width. `left: 50%` with no `right` makes the used
+     width shrink-to-fit against the containing block MINUS the offset --
+     exactly 50vw -- and the transform re-centres it without giving that
+     width back. So the max-width below never bit on a phone (187px of a
+     375px screen) and only looked right on a desktop, where 50vw is
+     already wider than the cap. */
+  width: min(28rem, 84vw);
   max-width: min(28rem, 84vw);
   text-align: center;
   border-radius: 0.75rem;
@@ -465,7 +898,8 @@
   backdrop-filter: blur(8px);
 }
 
-.stage3d__gate button {
+.stage3d__gate button,
+.stage3d__card button {
   padding: 0.6rem 1.4rem;
   border: 0;
   border-radius: 999px;
@@ -484,6 +918,82 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--custard, #f2c84b);
+}
+
+/* The end-of-walk card's room list.
+   ------------------------------------------------------------------
+   Everything here is scoped through `.chamber-done` on purpose. The
+   card already claims `.stage3d__card button` and `.stage3d__card span`
+   at 0-1-1, so a plain single-class rule loses to it however far down
+   the file it sits -- which is how the guide link first shipped as a
+   yellow pill. */
+.chamber-done {
+  /* Wider than a one-line card, and the rows scroll rather than push
+     the Done button off a short screen. Width AND max-width, for the
+     reason spelled out on `.stage3d__card` above. */
+  width: min(30rem, 90vw);
+  max-width: min(30rem, 90vw);
+}
+
+.chamber-done__rooms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.chamber-done .chamber-done__room {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  font-weight: 400;
+  text-align: left;
+  color: rgb(255 255 255 / 88%);
+  background: rgb(255 255 255 / 4%);
+}
+
+.chamber-done .chamber-done__room:disabled {
+  /* Not a locked door -- a room this walk has not reached yet. Dimmed
+     rather than hidden, because the length of the path is worth
+     knowing from inside it. */
+  color: rgb(255 255 255 / 32%);
+  background: none;
+  border-style: dashed;
+}
+
+.chamber-done .chamber-done__n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgb(255 255 255 / 45%);
+}
+
+.chamber-done .chamber-done__teaches {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: inherit;
+}
+
+.chamber-done .chamber-done__best {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--custard, #f2c84b);
+}
+
+.chamber-done .chamber-done__room:disabled .chamber-done__best {
+  color: rgb(255 255 255 / 32%);
 }
 
 /* The wave gauge. Only on screen while the glass is ringing, which is
@@ -602,4 +1112,177 @@
   font-size: 0.8rem;
   color: inherit;
   background: rgb(255 255 255 / 8%);
+}
+
+/* The developer dials.
+   ------------------------------------------------------------------
+   Dev builds only — `DevDials` is imported behind `import.meta.env.DEV`,
+   so none of this is reachable in a shipped app. It stays in this file
+   rather than a module of its own because the stage it sits over is
+   styled here, and a panel that floats over a canvas has to know what
+   the canvas does with safe areas.
+
+   Everything is scoped through `.dev-dials`. The stage already claims
+   `.stage3d__card button` and `.stage3d__gate button` at 0-1-1, and a
+   single-class rule loses to those wherever it sits in the file. */
+.dev-dials__open {
+  position: absolute;
+  /* Below the backend chip, not over it. Both live in the top-right and
+     the chip is `pointer-events: none`, so an overlap is silent -- you
+     just read "WEBGL2" through a button. */
+  top: calc(env(safe-area-inset-top, 0px) + 2.3rem);
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 40;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: rgb(10 14 15 / 80%);
+  color: rgb(255 255 255 / 70%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dev-dials {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  /* Half the screen, so the thing being tuned stays visible while it is
+     tuned. A panel that covers the glass cannot be used to tune the
+     glass. */
+  max-height: 58vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgb(8 11 12 / 96%);
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  backdrop-filter: blur(10px);
+  color: rgb(255 255 255 / 90%);
+}
+
+.dev-dials__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem 0.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.dev-dials__title {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 45%);
+}
+
+.dev-dials .dev-dials__ghost {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.4rem;
+  background: none;
+  color: rgb(255 255 255 / 78%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.dev-dials .dev-dials__ghost svg {
+  display: block;
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.dev-dials__actions,
+.dev-dials__tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  /* The row scrolls; the page must not. */
+  scrollbar-width: none;
+}
+
+.dev-dials__actions::-webkit-scrollbar,
+.dev-dials__tabs::-webkit-scrollbar,
+.dev-dials__rows::-webkit-scrollbar {
+  display: none;
+}
+
+.dev-dials .dev-dials__action,
+.dev-dials .dev-dials__tab {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: rgb(255 255 255 / 76%);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.dev-dials .dev-dials__action {
+  border-color: rgb(242 200 75 / 30%);
+  color: var(--custard, #f2c84b);
+}
+
+.dev-dials .dev-dials__tab.is-on {
+  background: rgb(255 255 255 / 14%);
+  color: rgb(255 255 255 / 95%);
+}
+
+.dev-dials__rows {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0.75rem 0.9rem;
+  scrollbar-width: none;
+}
+
+.dev-dials__row {
+  display: block;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
+}
+
+.dev-dials__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.dev-dials__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-style: normal;
+  color: rgb(255 255 255 / 55%);
+}
+
+/* Changed from where this session started — the only thing the Copy
+   button will emit, marked so it can be seen without pressing it. */
+.dev-dials__row.is-changed .dev-dials__value {
+  color: var(--custard, #f2c84b);
+}
+
+.dev-dials__row input[type='range'] {
+  display: block;
+  width: 100%;
+  /* Tall enough to hit with a thumb without a stylus. */
+  height: 1.6rem;
+  margin: 0.15rem 0 0.1rem;
+  accent-color: var(--custard, #f2c84b);
+}
+
+.dev-dials__does {
+  display: block;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgb(255 255 255 / 42%);
 }

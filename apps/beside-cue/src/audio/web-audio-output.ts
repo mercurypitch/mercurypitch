@@ -8,6 +8,7 @@
 // reopened by ducking.
 
 import type { AudioSourceVariant } from '../content/audio-manifest'
+import { fetchAssetBytes } from './asset-fetch'
 import type { AudioOutputFinishResult, AudioOutputPlayback, AudioOutputPlayRequest, AudioOutputStartResult, AudioSessionOutput, } from './audio-session'
 import { acquireSharedAudioContext } from './shared-audio-context'
 
@@ -81,11 +82,10 @@ async function defaultFetchArrayBuffer(
   url: string,
   signal: AbortSignal,
 ): Promise<ArrayBuffer> {
-  const response = await fetch(url, { signal })
-  if (!response.ok) {
-    throw new Error(`Audio request failed: ${String(response.status)}`)
-  }
-  return response.arrayBuffer()
+  // Not `response.ok`: on iOS every packaged media file arrives with
+  // status 0 and a complete body. See audio/asset-fetch for the whole
+  // story -- it is why the V2 onboarding was silent on iOS too.
+  return fetchAssetBytes(url, { signal })
 }
 
 function createMimeTypeProbe(): (mimeType: string) => boolean {

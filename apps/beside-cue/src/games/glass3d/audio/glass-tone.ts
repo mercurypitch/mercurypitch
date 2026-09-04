@@ -60,12 +60,31 @@ export interface GlassTone {
   update(resonance: number, vibratoStrength: number): void
   /** The four-layer break (§7): crack, body, shard tail, settle. */
   shatter(accuracy: number): void
+  /**
+   * Point the ring at a different note.
+   *
+   * A room with one pane never needs this; a chamber has several, each
+   * opened by a different mode, and a ring that stayed on the first
+   * pane's note would answer the second one in the wrong key.
+   */
+  retune(targetHz: number): void
+  /**
+   * Let the glass ring again after a break.
+   *
+   * `shatter` deliberately silences the ring for good, because in a
+   * one-pane room the charge it was tracking never returns to zero and
+   * an un-silenced ring would sing on over its own wreckage. A chamber
+   * has more glass to break, so it says so explicitly rather than the
+   * tone guessing.
+   */
+  rearm(): void
   dispose(): void
 }
 
 export const createGlassTone = (targetHz: number): GlassTone => {
   const lease: SharedAudioLease = acquireSharedAudioContext('glass3d-stage')
-  const base = targetHz * 2 // the octave-away rule, see header
+  let voiceHz = targetHz
+  let base = targetHz * 2 // the octave-away rule, see header
 
   let ctx: AudioContext | null = null
   let master: GainNode | null = null
@@ -211,11 +230,11 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       ringGain?.gain.setTargetAtTime(0, t, 0.05)
       tremoloDepth?.gain.cancelScheduledValues(t)
       tremoloDepth?.gain.setValueAtTime(0, t)
-      try {
-        lfo?.stop(t + 0.2)
-      } catch {
-        // Never started, or the context went away with the page.
-      }
+      // The LFO is NOT stopped here, only silenced. Stopping it is
+      // one-way in Web Audio, and a chamber has a second pane to charge:
+      // an oscillator that can never be restarted would leave every
+      // break after the first with no tremolo at all. Depth zero is what
+      // actually stops it pushing on the gain, which was the bug.
 
       // Layer 1, the crack: bright, sharp, and centred well above the
       // ring so it reads as breakage rather than a louder note.
@@ -223,7 +242,7 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       // Layer 2, the body: the dull low thump a thick bowl gives before
       // the fragments. A plain decaying sine, one octave-ish below target.
       const thump = c.createOscillator()
-      thump.frequency.value = targetHz * 0.5
+      thump.frequency.value = voiceHz * 0.5
       const tg = c.createGain()
       tg.gain.setValueAtTime(0.3, t)
       tg.gain.exponentialRampToValueAtTime(0.001, t + 0.22)
@@ -241,6 +260,30 @@ export const createGlassTone = (targetHz: number): GlassTone => {
         const freq = 2800 + Math.random() * 5600
         burst(c, master, at, freq, 14, 0.12 * (1 - u * 0.8), 0.16)
       }
+    },
+
+    retune(nextHz: number): void {
+      voiceHz = nextHz
+      base = nextHz * 2
+      if (ctx === null) return
+      const t = ctx.currentTime
+      for (const [i, bp] of filters.entries()) {
+        // Glided, not jumped. A bandpass whose centre teleports through
+        // looped noise makes an audible click, and the ring is supposed
+        // to be the calm thing in the room.
+        bp.frequency.setTargetAtTime(base * PARTIALS[i]!.ratio, t, 0.05)
+      }
+    },
+
+    rearm(): void {
+      if (!broken) return
+      broken = false
+      if (ctx === null || ringGain === null) return
+      // Start from silence rather than from wherever the settle left it,
+      // so the next hold swells from nothing exactly as the first did.
+      const t = ctx.currentTime
+      ringGain.gain.cancelScheduledValues(t)
+      ringGain.gain.setValueAtTime(0, t)
     },
 
     dispose(): void {

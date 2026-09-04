@@ -52,6 +52,8 @@ addEventListener('resize', fit)
 
 const view: HallwayView = {
   mercX,
+  mercY: 0,
+  mercFacing: 1,
   resonance: 0,
   ringing: false,
   shatterSeconds: 0,

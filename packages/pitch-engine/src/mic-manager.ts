@@ -25,6 +25,12 @@ export type MicErrorKind =
   | 'no-device'
   /** Another MercuryPitch tab holds the mic. Offer a hand-off, not a retry. */
   | 'held-elsewhere'
+  /**
+   * There is no `navigator.mediaDevices` to ask. Not a refusal and not a
+   * missing device -- the browser has withheld the whole API, and no amount
+   * of retrying or permission-granting will produce it.
+   */
+  | 'insecure-context'
   | 'unknown'
 
 export interface MicError {
@@ -48,11 +54,19 @@ type Listener = (state: MicState) => void
 // Analysis-grade capture: the raw signal, so the pitch detector sees the true
 // waveform. Echo cancellation / noise suppression / AGC would distort pitch and
 // must stay off for every analysis consumer.
+//
+// `channelCount: 1` is a HINT, not a demand -- a plain value is "ideal" and a
+// device that cannot do mono still opens. Asking is worth it anyway: an audio
+// interface offered as a surround device hands back a multi-channel capture
+// with the singer on one channel, and one channel is a thing that can be
+// missed. The graph down-mixes regardless (see pitch-f0-stream), so this only
+// saves the mixing when the driver obliges.
 const ANALYSIS_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
     echoCancellation: false,
     noiseSuppression: false,
     autoGainControl: false,
+    channelCount: 1,
   },
 }
 
@@ -74,6 +88,38 @@ export const BACKGROUND_HOLD_IDS: readonly string[] = ['routine']
 // One automatic retry when the OS briefly reports the device as unavailable
 // (typically a previous handle that has not finished releasing yet).
 const BUSY_RETRY_DELAY_MS = 250
+
+/**
+ * Is there a microphone API to call at all?
+ *
+ * `navigator.mediaDevices` is gated on the SECURE CONTEXT, and browsers do not
+ * define it at all when the page is not one -- so the failure is a TypeError
+ * from deep inside an acquire ("undefined is not an object"), several layers
+ * from the fact that actually matters, which is the URL in the address bar.
+ * `localhost` is trusted, a LAN address over plain http is not, and that is
+ * the entire difference between a dev server that works at the desk and the
+ * same one dead on a phone.
+ *
+ * Checked BEFORE the cross-tab lock is claimed, so a doomed attempt does not
+ * take the microphone away from a tab that could actually use it.
+ */
+function mediaDevicesUnavailable(): MicError | null {
+  if (typeof navigator !== 'undefined') {
+    const devices = navigator.mediaDevices as MediaDevices | undefined
+    if (typeof devices?.getUserMedia === 'function') return null
+  }
+  // `isSecureContext` tells the two causes apart, and they need different
+  // advice: one is fixed by the URL, the other cannot be fixed at all.
+  const insecure =
+    typeof globalThis.isSecureContext === 'boolean' &&
+    !globalThis.isSecureContext
+  return {
+    kind: 'insecure-context',
+    message: insecure
+      ? 'This page is not on a secure connection, so the browser hides the microphone entirely. Open it over https, or on localhost.'
+      : 'This browser does not offer microphone access on this page.',
+  }
+}
 
 function classifyError(err: unknown): MicError {
   const name = (err as { name?: string } | null | undefined)?.name
@@ -221,6 +267,13 @@ export class MicManager {
       // needs to ask: once we hold the stream we already hold the lock, and a
       // second consumer in this tab is exactly what the ref count is for.
       if (this.stream === null) {
+        const missing = mediaDevicesUnavailable()
+        if (missing !== null) {
+          this.error = missing
+          this.emit()
+          throw missing
+        }
+
         const claim = claimMicLock()
         if (claim.outcome === 'held-elsewhere') {
           this.blockedBy = claim.holder

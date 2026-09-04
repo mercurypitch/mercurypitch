@@ -41,7 +41,6 @@ function reachPullChoice(
   state = finishPresentation(state)
   state = send(state, { type: 'BEGIN' })
   state = finishPresentation(state)
-  state = finishPresentation(state)
   return state
 }
 
@@ -79,8 +78,17 @@ function reachStopHold(
   state = send(state, { type: 'CONFIRM_SIDE_B' })
   state = finishPresentation(state)
   state = finishPresentation(state, 1_000)
-  const readiness = state.spinReadiness
+  let readiness = state.spinReadiness
   if (readiness === undefined) throw new Error('Expected spin readiness.')
+  state = send(state, {
+    type: 'SPIN_PRESENTED',
+    token: readiness.token,
+    nowMs: 1_000,
+  })
+  readiness = state.spinReadiness
+  if (readiness?.notBeforeMs === undefined) {
+    throw new Error('Expected armed spin readiness.')
+  }
   state = send(state, {
     type: 'SPIN_READY',
     token: readiness.token,
@@ -108,6 +116,20 @@ describe('V2 onboarding runtime', () => {
     expect(send(state, { type: 'CONFIRM_PULL' })).toBe(state)
     state = send(state, { type: 'BEGIN' })
     expect(state.phase).toBe('B01_CORKY_GREETING')
+  })
+
+  it('lands the direct-to-P02 greeting on Pull choice without entering B02', () => {
+    let state = createV2OnboardingRuntimeState({
+      sessionKind: 'first-run',
+      motionMode: 'normal',
+    })
+    state = finishPresentation(state)
+    state = send(state, { type: 'BEGIN' })
+
+    expect(state.phase).toBe('B01_CORKY_GREETING')
+    state = finishPresentation(state)
+    expect(state.phase).toBe('B03_PULL_CHOICE_HOLD')
+    expect(state.presentation).toBeUndefined()
   })
 
   it('keeps selection separate from confirmation at every native decision', () => {
@@ -160,8 +182,44 @@ describe('V2 onboarding runtime', () => {
     state = send(state, { type: 'CONFIRM_SIDE_B' })
     state = finishPresentation(state)
     state = finishPresentation(state, 10_000)
-    const readiness = state.spinReadiness
+    let readiness = state.spinReadiness
     if (readiness === undefined) throw new Error('Expected spin readiness.')
+
+    expect(readiness).toMatchObject({ dwellMs: 1_800 })
+    expect(readiness.notBeforeMs).toBeUndefined()
+    expect(
+      send(state, {
+        type: 'SPIN_READY',
+        token: readiness.token,
+        nowMs: 99_000,
+      }),
+    ).toBe(state)
+    expect(
+      send(state, {
+        type: 'SPIN_PRESENTED',
+        token: 'stale-spin',
+        nowMs: 10_000,
+      }),
+    ).toBe(state)
+
+    state = send(state, {
+      type: 'SPIN_PRESENTED',
+      token: readiness.token,
+      nowMs: 10_000,
+    })
+    readiness = state.spinReadiness
+    if (readiness?.notBeforeMs === undefined) {
+      throw new Error('Expected armed spin readiness.')
+    }
+    expect(readiness.notBeforeMs).toBe(11_800)
+
+    const alreadyArmed = state
+    state = send(state, {
+      type: 'SPIN_PRESENTED',
+      token: readiness.token,
+      nowMs: 11_000,
+    })
+    expect(state).toBe(alreadyArmed)
 
     const early = send(state, {
       type: 'SPIN_READY',
@@ -169,7 +227,6 @@ describe('V2 onboarding runtime', () => {
       nowMs: readiness.notBeforeMs - 1,
     })
     expect(early).toBe(state)
-    expect(readiness.notBeforeMs).toBe(11_800)
     state = send(state, {
       type: 'SPIN_READY',
       token: readiness.token,
@@ -331,15 +388,67 @@ describe('V2 onboarding runtime', () => {
       send(firstRun, {
         type: 'REVIEW_NAVIGATE',
         phase: 'B03_PULL_CHOICE_HOLD',
+        nowMs: 1_000,
       }),
     ).toBe(firstRun)
+
+    let pendingSpin = createV2OnboardingRuntimeState({
+      sessionKind: 'developer-review',
+      motionMode: 'normal',
+    })
+    pendingSpin = send(pendingSpin, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_RIGID_SPIN',
+      nowMs: 1_000,
+    })
+    const pendingToken = pendingSpin.spinReadiness?.token
+    expect(pendingToken).toBeDefined()
+    pendingSpin = send(pendingSpin, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_STOP_SAVE_HOLD',
+      nowMs: 2_000,
+    })
+    expect(pendingSpin.spinReadiness?.notBeforeMs).toBeUndefined()
+    pendingSpin = send(pendingSpin, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_RIGID_SPIN',
+      nowMs: 3_000,
+    })
+    expect(pendingSpin.spinReadiness?.token).not.toBe(pendingToken)
+    expect(pendingSpin.spinReadiness?.notBeforeMs).toBeUndefined()
 
     let state = reachStopHold('developer-review')
     state = send(state, {
       type: 'REVIEW_NAVIGATE',
+      phase: 'B06_RIGID_SPIN',
+      nowMs: 2_000,
+    })
+    expect(state.phase).toBe('B06_RIGID_SPIN')
+    expect(state.spinReadiness).toMatchObject({
+      dwellMs: 1_800,
+      notBeforeMs: 3_800,
+    })
+
+    state = send(state, {
+      type: 'REVIEW_NAVIGATE',
       phase: 'B06_STOP_SAVE_HOLD',
+      nowMs: 3_000,
     })
     expect(state.sessionKind).toBe('developer-review')
+    state = send(state, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_RIGID_SPIN',
+      nowMs: 5_000,
+    })
+    expect(state.spinReadiness).toMatchObject({
+      dwellMs: 1_800,
+      notBeforeMs: 6_800,
+    })
+    state = send(state, {
+      type: 'REVIEW_NAVIGATE',
+      phase: 'B06_STOP_SAVE_HOLD',
+      nowMs: 7_000,
+    })
     const transition = reduceV2OnboardingRuntime(state, {
       type: 'STOP_AND_SAVE',
     })
@@ -397,6 +506,7 @@ describe('V2 onboarding runtime', () => {
     state = send(transition.state, {
       type: 'REVIEW_NAVIGATE',
       phase: 'B06_STOP_SAVE_HOLD',
+      nowMs: 4_000,
     })
     expect(state.stopCommit).toBeUndefined()
     expect(send(state, { type: 'PLATTER_STOPPED', token: reviewToken })).toBe(

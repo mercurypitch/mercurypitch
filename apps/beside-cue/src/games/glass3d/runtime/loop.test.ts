@@ -96,4 +96,38 @@ describe('the fixed-step loop', () => {
     runLoop(state, L.stepSeconds * 3, L, (_dt, simTime) => times.push(simTime))
     expect(times).toEqual([0, L.stepSeconds, L.stepSeconds * 2])
   })
+
+  // The spiral guard has a frame rate written into it, and nothing else
+  // in the codebase says the number out loud. These two pin it, because
+  // HallwayStage's comment cites it as the reason the shatter is played
+  // back on wall time instead of on this clock -- and a comment citing a
+  // number that a config change has quietly moved is worse than no
+  // comment at all.
+  const SLOWEST_REAL_TIME_FPS = 1 / (L.stepSeconds * L.maxStepsPerFrame)
+
+  it('keeps up with real time down to 24fps and no further', () => {
+    expect(SLOWEST_REAL_TIME_FPS).toBeCloseTo(24, 5)
+
+    const state = createLoopState()
+    const frame = 1 / SLOWEST_REAL_TIME_FPS
+    for (let i = 0; i < 60; i++) runLoop(state, frame, L, () => {})
+
+    // Sixty frames of real time, and the simulation has spent all of it.
+    expect(state.simTime).toBeCloseTo(frame * 60, 5)
+    expect(state.droppedSteps).toBe(0)
+  })
+
+  it('runs in slow motion below that, and says so', () => {
+    const state = createLoopState()
+    const fps = 15
+    const frame = 1 / fps
+    for (let i = 0; i < 60; i++) runLoop(state, frame, L, () => {})
+
+    // Four seconds of wall time bought 2.5 seconds of simulation: at
+    // 15fps the world moves at 62% of the speed it was tuned at.
+    const wall = frame * 60
+    expect(state.simTime).toBeCloseTo(2.5, 5)
+    expect(state.simTime / wall).toBeCloseTo(0.625, 3)
+    expect(state.droppedSteps).toBeGreaterThan(0)
+  })
 })

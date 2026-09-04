@@ -332,9 +332,15 @@ export const createRenderer3D = (
         const geometryId = batch.addGeometry(g)
         return batch.addInstance(geometryId)
       })
-      batch.visible = false
       shardBatch = batch
       scene.add(batch)
+
+      // Same reasoning as Hallway3D: an invisible object is never drawn
+      // and so is never compiled, which puts a program link on the first
+      // frame of the shatter. Pay for it here instead.
+      batch.visible = true
+      await renderer.compileAsync(batch, camera, scene)
+      batch.visible = false
     },
 
     render(view: StageView): void {

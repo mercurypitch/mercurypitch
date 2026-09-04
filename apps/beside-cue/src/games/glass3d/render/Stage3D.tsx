@@ -15,19 +15,21 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
+import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
 import { shatterDuration, solveShatter } from '../sim/shatter3d'
-import { WORLD3D_CONFIG } from '../world3d-config'
+import { CABINET_CONFIG } from '../world3d-config'
 import type { StageView } from './Renderer3D'
 import { createRenderer3D } from './Renderer3D'
+import { VoiceCoach } from './VoiceCoach'
 
 const MIC_ID = 'glass3d-cabinet'
 
@@ -41,19 +43,23 @@ const TARGET_MIDI = 69
  * note name rewritten sixty times a second is unreadable. */
 const TEXT_INTERVAL = 0.1
 
-/** Full width of the wave-rate gauge, in Hz. Wide enough that both edges
- * of the accepted band sit inside it with room to be missed on either
- * side -- a gauge that cannot show you overshooting cannot teach you to
- * stop. */
-const WAVE_SCALE_HZ = 12
-
 interface Stage3DProps {
   onExit: () => void
 }
 
+/** The dev dials, behind a dynamic import behind `DEV` -- see
+ * `ChamberStage` for why this shape rather than a plain import. */
+const DevDials = import.meta.env.DEV
+  ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
+  : null
+
 export const Stage3D = (props: Stage3DProps) => {
   let canvas!: HTMLCanvasElement
-  const [micError, setMicError] = createSignal<string | null>(null)
+  // A page with no microphone API says so before the tap rather than
+  // after it: there is nothing to grant and nothing to retry, and the
+  // fix is in the address bar (see platform/device-support).
+  const noMicApi = micApiBlocker()
+  const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
@@ -81,54 +87,13 @@ export const Stage3D = (props: Stage3DProps) => {
   // the same click has to unlock both directions of audio.
   const tone = createGlassTone(midiToFreq(TARGET_MIDI))
 
-  const cfg = WORLD3D_CONFIG
+  // The Cabinet's own config: the Hallway's ring, ear and loop, with the
+  // break rescaled to a world about a fifth the size. Absolute metres
+  // per second in a small room read as a much faster break.
+  const cfg = CABINET_CONFIG
+  const [dials, setDials] = createSignal(false)
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
-
-  /** What the mic is hearing, in the terms the player needs: which note,
-   * and whether it counts. Diagnostic on purpose — "nothing is
-   * happening" and "you are an octave low" look identical otherwise. */
-  const heardLine = createMemo(() => {
-    const midi = heardMidi()
-    if (midi === null) return 'listening'
-    const semis = midi - TARGET_MIDI
-    const tol = cfg.ring.tolSemis + (ringing() ? cfg.ring.pumpTolBonus : 0)
-    if (Math.abs(semis) <= tol) {
-      const cents = Math.round(semis * 100)
-      return `${cents >= 0 ? '+' : '−'}${Math.abs(cents)}¢`
-    }
-    // The note in brackets is the diagnostic half: "too low" says what to
-    // do, and "(G4)" says whether the mic is even hearing the right
-    // voice. Octave errors in particular look identical to silence
-    // without it.
-    const note = midiToNote(Math.round(midi))
-    const way = semis > 0 ? 'too high' : 'too low'
-    return `${way} (${note.name}${note.octave})`
-  })
-
-  /** The one line of coaching. The whole reason it exists: a steady hold
-   * charges only to `holdCap` and then stops dead, which without a word
-   * of explanation reads as a bug — the bar fills to about 60% and
-   * refuses to move however well you sing. */
-  const coachLine = createMemo(() => {
-    if (broken()) return 'Broken.'
-    if (!ringing()) return `Hold ${targetName} — ${heardLine()}`
-    if (wavering()) return 'Keep waving'
-    // Ringing but not counting. Which way it is failing decides what the
-    // player should change, so say that rather than repeating the
-    // instruction they are already following.
-    //
-    // A measurement of zero is not a diagnosis: it means the window has
-    // not filled yet, or the mic is hearing nothing. Correcting a wave
-    // that was never heard sends the player to fix the wrong thing.
-    const v = cfg.vibrato
-    if (waveRate() === 0) return 'Now let it waver'
-    if (waveRate() < v.minHz) return 'Waver faster'
-    if (waveRate() > v.maxHz) return 'Waver slower'
-    if (waveDepth() < v.minDepthCents) return 'Waver wider'
-    if (waveDepth() > v.maxDepthCents) return 'Too wide — stay on the note'
-    return 'Now let it waver'
-  })
 
   /** Backend, drawn frames, and f0 frames. All three, because on a phone
    * the interesting failure is a renderer that is fine and an audio
@@ -191,8 +156,13 @@ export const Stage3D = (props: Stage3DProps) => {
     const ring = createResonance(TARGET_MIDI)
     const vib = createVibratoDetector(cfg.vibrato)
     let launches: readonly ShardLaunch[] | null = null
-    let breakAt = 0
-    let elapsed = 0
+    // Wall time, and the wall time the pane broke at. The shatter plays
+    // back on these rather than on the fixed-step simulation clock; see
+    // HallwayStage for why that clock is the wrong thing to animate from.
+    // This stage kept no simulation time of its own for anything else, so
+    // the accumulator that fed it is gone with it.
+    let wallSeconds = 0
+    let breakAtWall = 0
 
     const view: StageView = {
       shatterProgress: 0,
@@ -222,9 +192,9 @@ export const Stage3D = (props: Stage3DProps) => {
     const tick = (now: number): void => {
       const frameSeconds = (now - last) / 1000
       last = now
+      wallSeconds += frameSeconds
 
       runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
-        elapsed += dt
         const pitch = driver?.latestPitch() ?? null
         const wave =
           pitch === null
@@ -264,7 +234,7 @@ export const Stage3D = (props: Stage3DProps) => {
               cfg.shatter,
               7,
             )
-            breakAt = elapsed
+            breakAtWall = wallSeconds
             tone.shatter(acc)
             setGrade(Math.round(acc * 100))
             setBroken(true)
@@ -302,7 +272,7 @@ export const Stage3D = (props: Stage3DProps) => {
       view.resonance = ring.res
       view.ringing = ring.res >= cfg.ring.holdCap && launches === null
       view.launches = launches
-      view.shatterSeconds = launches === null ? 0 : elapsed - breakAt
+      view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
       view.shatterProgress =
         launches === null
           ? 0
@@ -342,7 +312,7 @@ export const Stage3D = (props: Stage3DProps) => {
             cfg.shatter,
             7,
           )
-          breakAt = elapsed
+          breakAtWall = wallSeconds
           tone.shatter(acc)
           setGrade(Math.round(acc * 100))
           setBroken(true)
@@ -401,48 +371,41 @@ export const Stage3D = (props: Stage3DProps) => {
           z-index 50, so anything put there is simply not on screen. */}
       <span class="stage3d__chip">{chipLine()}</span>
 
+      <Show when={DevDials !== null}>
+        <button
+          type="button"
+          class="dev-dials__open"
+          onClick={() => setDials((on) => !on)}
+        >
+          dials
+        </button>
+      </Show>
+      <Show when={DevDials !== null && dials()}>
+        {(() => {
+          const Panel = DevDials!
+          return (
+            <Panel
+              config={cfg}
+              title="The Cabinet"
+              onClose={() => setDials(false)}
+            />
+          )
+        })()}
+      </Show>
+
       <Show when={started() && !broken()}>
-        <div class="stage3d__meter" classList={{ 'is-ringing': ringing() }}>
-          <div class="stage3d__track">
-            <i style={{ width: `${Math.round(charge() * 100)}%` }} />
-            {/* Where a steady hold stops and vibrato has to take over.
-                Marked, because the ceiling is a rule of the game rather
-                than the end of the bar. */}
-            <b style={{ left: `${Math.round(cfg.ring.holdCap * 100)}%` }} />
-          </div>
-          {/* Once the hold has done its work the player is asked for a
-              thing they cannot see themselves doing. This is that thing,
-              measured: rate against the accepted band, and depth. It
-              appears only while it matters. */}
-          <Show when={ringing()}>
-            <div
-              class="stage3d__wave"
-              classList={{ 'is-heard': wavering() }}
-              aria-hidden="true"
-            >
-              <span class="stage3d__band">
-                <i
-                  style={{
-                    left: `${Math.round((cfg.vibrato.minHz / WAVE_SCALE_HZ) * 100)}%`,
-                    width: `${Math.round(((cfg.vibrato.maxHz - cfg.vibrato.minHz) / WAVE_SCALE_HZ) * 100)}%`,
-                  }}
-                />
-                <b
-                  style={{
-                    left: `${Math.round(Math.min(1, waveRate() / WAVE_SCALE_HZ) * 100)}%`,
-                  }}
-                />
-              </span>
-              <span class="stage3d__wavenum">
-                {waveRate() > 0
-                  ? `${waveRate().toFixed(1)} Hz · ${Math.round(waveDepth())}¢`
-                  : 'no wave yet'}
-              </span>
-            </div>
-          </Show>
-          <p class="stage3d__coach">{coachLine()}</p>
-          <MicInput listening onChoose={() => void switchMic()} />
-        </div>
+        <VoiceCoach
+          cfg={cfg}
+          targetMidi={TARGET_MIDI}
+          charge={charge()}
+          ringing={ringing()}
+          heardMidi={heardMidi()}
+          waveRate={waveRate()}
+          waveDepth={waveDepth()}
+          wavering={wavering()}
+          listening
+          onChooseMic={() => void switchMic()}
+        />
       </Show>
 
       <Show when={!started()}>
@@ -456,7 +419,11 @@ export const Stage3D = (props: Stage3DProps) => {
           </button>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
-            <MicInput listening={false} onChoose={() => void switchMic()} />
+            {/* A picker is no use when the browser is withholding the
+                whole microphone API -- there is nothing to pick from. */}
+            <Show when={noMicApi === null}>
+              <MicInput listening={false} onChoose={() => void switchMic()} />
+            </Show>
           </Show>
         </div>
       </Show>

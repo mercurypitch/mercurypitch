@@ -10,6 +10,7 @@ import type { V2OnboardingBrandResource, V2OnboardingLoadableResource, V2Onboard
 
 export type V2OnboardingPullMediaMoment = 'present' | 'hold' | 'recede' | 'end'
 export type V2OnboardingSceneMediaId = 'corky-reveal' | 'table-reveal'
+export type V2OnboardingRecordMediaMoment = 'start' | 'spin'
 
 export interface V2OnboardingSceneMedia {
   readonly primary: V2OnboardingLoadableResource
@@ -25,6 +26,10 @@ export interface V2OnboardingPullMedia {
 }
 
 export interface V2OnboardingRecordMedia {
+  /** Corky's complete, one-shot physical button press. */
+  readonly start: V2OnboardingLoadableResource
+  /** Founder-approved finite standing-spin shot before the native hold. */
+  readonly spin: V2OnboardingLoadableResource
   /** Exact stopped plate beneath the deterministic native platter layer. */
   readonly stoppedAuthority: V2OnboardingStillResource
 }
@@ -48,6 +53,7 @@ export interface V2OnboardingMediaTarget {
 }
 
 const MEDIA_ROOT = '/onboarding/corky-v2.4'
+const V2_5_MEDIA_ROOT = '/onboarding/corky-v2.5'
 
 const EMPTY_SET: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
@@ -85,9 +91,9 @@ const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
   alt: '',
 })
 
-/** Founder-approved V2.4 scene pack used by every product build. */
+/** Founder-approved V2.5 scene pack used by every product build. */
 export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
-  revision: 'corky-v2.4-media-v3',
+  revision: 'corky-v2.5-media-v1',
   brand: Object.freeze({ kind: 'brand', alt: '' }),
   poster: TABLE_READY,
   plate: TABLE_READY,
@@ -95,10 +101,10 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
     'corky-reveal': Object.freeze({
       primary: Object.freeze({
         kind: 'video',
-        src: `${MEDIA_ROOT}/picture/b01-corky-greeting-v0_4.mp4`,
+        src: `${V2_5_MEDIA_ROOT}/picture/b01-corky-greeting-direct-to-p02-v0_1.mp4`,
         alt: '',
       }),
-      reducedStill: CORKY_REST,
+      reducedStill: TABLE_READY,
       poster: EMPTY_SET,
     }),
     'table-reveal': Object.freeze({
@@ -111,7 +117,19 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
       poster: CORKY_REST,
     }),
   }),
-  record: Object.freeze({ stoppedAuthority: TABLE_READY }),
+  record: Object.freeze({
+    start: Object.freeze({
+      kind: 'video',
+      src: `${V2_5_MEDIA_ROOT}/picture/b06-corky-starts-record-v0_1.mp4`,
+      alt: '',
+    }),
+    spin: Object.freeze({
+      kind: 'video',
+      src: `${V2_5_MEDIA_ROOT}/picture/b06-whole-vinyl-spin-v0_1.mp4`,
+      alt: '',
+    }),
+    stoppedAuthority: TABLE_READY,
+  }),
   pulls: Object.freeze({
     scrolling: Object.freeze({
       present: Object.freeze({
@@ -157,6 +175,26 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
     }),
   }),
 })
+
+export function resolveV2OnboardingRecordMediaRequest(
+  pack: V2OnboardingMediaPack,
+  target: {
+    readonly targetId: string
+    readonly moment: V2OnboardingRecordMediaMoment
+  },
+): V2OnboardingMediaPresentationRequest | undefined {
+  const record = pack.record
+  if (record === undefined) return undefined
+  const primary = record[target.moment]
+  return {
+    targetId: target.targetId,
+    targetKind: target.moment === 'start' ? 'automatic' : 'hold',
+    primary,
+    reducedStill: record.stoppedAuthority,
+    poster: record.stoppedAuthority,
+    brand: pack.brand,
+  }
+}
 
 export function resolveV2OnboardingSceneMediaRequest(
   pack: V2OnboardingMediaPack,

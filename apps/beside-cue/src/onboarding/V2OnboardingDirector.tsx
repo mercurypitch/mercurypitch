@@ -10,12 +10,13 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show
 import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
 import { BrandMark } from '@/components/BrandMark'
+import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
 import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
 import type { V2OnboardingAudioBeat } from './v2-onboarding-audio-director'
 import { createV2OnboardingAudioDirector } from './v2-onboarding-audio-director'
 import type { V2OnboardingMediaPack, V2OnboardingPullMediaMoment, } from './v2-onboarding-media-pack'
-import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingSceneMediaRequest, } from './v2-onboarding-media-pack'
+import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingRecordMediaRequest, resolveV2OnboardingSceneMediaRequest, } from './v2-onboarding-media-pack'
 import type { V2OnboardingCueContextChoice, V2OnboardingPersistenceEffect, V2OnboardingPhase, V2OnboardingPlanDraft, V2OnboardingPullChoice, V2OnboardingRuntimeEvent, V2OnboardingRuntimeState, V2OnboardingSessionKind, V2OnboardingSideBChoice, } from './v2-onboarding-runtime'
 import { createV2OnboardingRuntimeState, reduceV2OnboardingRuntime, V2_ONBOARDING_PHASE_METADATA, V2_ONBOARDING_PHASES, } from './v2-onboarding-runtime'
 import styles from './V2OnboardingDirector.module.css'
@@ -27,12 +28,6 @@ export type V2OnboardingMutationResult =
   | { readonly ok: true }
   | { readonly ok: false; readonly message: string }
 
-export interface V2OnboardingReminderPreset {
-  readonly id: string
-  readonly label: string
-  readonly localTime: string
-}
-
 export interface V2OnboardingDirectorProps {
   readonly sessionKind: V2OnboardingSessionKind
   readonly pullOptions: readonly PullOption[]
@@ -42,13 +37,13 @@ export interface V2OnboardingDirectorProps {
   readonly foreground: boolean
   readonly muted: boolean
   readonly onMutedChange: (muted: boolean) => void
-  readonly reminderPresets: readonly V2OnboardingReminderPreset[]
   readonly onSavePlan: (
     plan: V2OnboardingPlanDraft,
   ) => Promise<V2OnboardingMutationResult>
   readonly onSetReminder: (
     localTime: string,
   ) => Promise<V2OnboardingMutationResult>
+  readonly onTimeHaptic?: (strength: 'light' | 'medium') => void
   readonly onComplete: () => void
 }
 
@@ -68,6 +63,8 @@ const AUTOMATIC_DURATION_MS: Readonly<
 const REDUCED_AUTOMATIC_DURATION_MS = 650
 const DIALOGUE_SAFETY_TIMEOUT_MS = 15_000
 const MEDIA_SAFETY_TIMEOUT_MS = 15_000
+const RECORD_SPIN_PRESENTATION_SAFETY_TIMEOUT_MS = 8_000
+const RECORD_SPIN_END_SAFETY_TIMEOUT_MS = 6_000
 
 const DECISION_PHASES = new Set<V2OnboardingPhase>([
   'B03_PULL_CHOICE_HOLD',
@@ -285,6 +282,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   const [sideBKey, setSideBKey] = createSignal<string>()
   const [customSideB, setCustomSideB] = createSignal('')
   const [completed, setCompleted] = createSignal(false)
+  const [recordSpinOverlayRetired, setRecordSpinOverlayRetired] =
+    createSignal(false)
+  const [recordSpinEndWatchdogToken, setRecordSpinEndWatchdogToken] =
+    createSignal<string>()
   const phaseGeneration = createMemo(() => state().generation)
 
   let headingElement: HTMLHeadingElement | undefined
@@ -292,6 +293,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   let presentationSafetyClock: PausableDelay | undefined
   let presentationMediaSafetyClock: PausableDelay | undefined
   let spinReadinessClock: PausableDelay | undefined
+  let recordSpinPresentationSafetyClock: PausableDelay | undefined
+  let recordSpinEndSafetyClock: PausableDelay | undefined
   let completeVisiblePresentation: (() => void) | undefined
   let activeMediaGate:
     | {
@@ -370,6 +373,22 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       return resolveV2OnboardingSceneMediaRequest(mediaPack, {
         targetId: 'intro:b02',
         sceneId: 'table-reveal',
+      })
+    }
+    if (snapshot.phase === 'B06_CORKY_STARTS_RECORD') {
+      return resolveV2OnboardingRecordMediaRequest(mediaPack, {
+        targetId: 'record:start',
+        moment: 'start',
+      })
+    }
+    if (
+      snapshot.phase === 'B06_RIGID_SPIN' ||
+      snapshot.phase === 'B06_STOP_SAVE_HOLD' ||
+      snapshot.phase === 'B06_SAVE_COMMIT'
+    ) {
+      return resolveV2OnboardingRecordMediaRequest(mediaPack, {
+        targetId: 'record:spin',
+        moment: 'spin',
       })
     }
 
@@ -529,6 +548,26 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     const previousState = state()
     const transition = reduceV2OnboardingRuntime(previousState, event)
     if (transition.state !== previousState) {
+      if (transition.state.phase !== previousState.phase) {
+        const continuesPresentedReviewSpin =
+          event.type === 'REVIEW_NAVIGATE' &&
+          previousState.phase === 'B06_STOP_SAVE_HOLD' &&
+          transition.state.phase === 'B06_RIGID_SPIN' &&
+          previousState.spinReadiness?.notBeforeMs !== undefined
+        if (
+          !continuesPresentedReviewSpin &&
+          (transition.state.phase === 'B06_CORKY_STARTS_RECORD' ||
+            transition.state.phase === 'B06_RIGID_SPIN')
+        ) {
+          setRecordSpinOverlayRetired(false)
+          setRecordSpinEndWatchdogToken(undefined)
+        } else if (transition.state.phase === 'B06_SAVE_COMMIT') {
+          setRecordSpinOverlayRetired(true)
+          setRecordSpinEndWatchdogToken(undefined)
+        } else if (transition.state.phase !== 'B06_STOP_SAVE_HOLD') {
+          setRecordSpinEndWatchdogToken(undefined)
+        }
+      }
       if (event.type === 'CONFIRM_PULL') {
         setCueContextKey(undefined)
         setSideBKey(undefined)
@@ -634,6 +673,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     setCustomCueContext('')
     setSideBKey(undefined)
     setCustomSideB('')
+    setRecordSpinOverlayRetired(false)
+    setRecordSpinEndWatchdogToken(undefined)
     dispatch({ type: 'REVIEW_REPLAY' })
   }
 
@@ -641,11 +682,41 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     const index = V2_ONBOARDING_PHASES.indexOf(state().phase)
     const next = V2_ONBOARDING_PHASES[index + offset]
     if (next !== undefined) {
-      dispatch({ type: 'REVIEW_NAVIGATE', phase: next })
+      dispatch({ type: 'REVIEW_NAVIGATE', phase: next, nowMs: monotonicNow() })
     }
   }
 
   function settleMediaPresentation(event: V2OnboardingMediaSettledEvent): void {
+    const activeRecordSpin =
+      event.targetId === 'record:spin' &&
+      untrack(() => mediaRequest()?.targetId) === event.targetId
+    if (activeRecordSpin) {
+      const readiness = state().spinReadiness
+      if (readiness !== undefined && readiness.notBeforeMs === undefined) {
+        dispatch({
+          type: 'SPIN_PRESENTED',
+          token: readiness.token,
+          nowMs: monotonicNow(),
+        })
+      }
+      if (
+        (event.recoveryStage === 'primary' ||
+          event.recoveryStage === 'retry') &&
+        !recordSpinOverlayRetired()
+      ) {
+        setRecordSpinEndWatchdogToken(event.token)
+      } else {
+        setRecordSpinEndWatchdogToken(undefined)
+      }
+    }
+    if (
+      activeRecordSpin &&
+      state().motionMode === 'normal' &&
+      event.recoveryStage !== 'primary' &&
+      event.recoveryStage !== 'retry'
+    ) {
+      setRecordSpinOverlayRetired(true)
+    }
     const gate = activeMediaGate
     if (gate === undefined || gate.targetId !== event.targetId) return
     if (event.recoveryStage === 'primary' || event.recoveryStage === 'retry') {
@@ -657,6 +728,13 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   }
 
   function finishMediaVideo(event: V2OnboardingMediaCorrelation): void {
+    if (
+      event.targetId === 'record:spin' &&
+      untrack(() => mediaRequest()?.targetId) === event.targetId
+    ) {
+      setRecordSpinOverlayRetired(true)
+      setRecordSpinEndWatchdogToken(undefined)
+    }
     const gate = activeMediaGate
     if (gate === undefined || gate.targetId !== event.targetId) return
     if (gate.settledVideoToken === event.token) {
@@ -810,19 +888,52 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
   createEffect(
     on(
-      () => state().spinReadiness?.token,
-      (token) => {
-        if (token === undefined) return
-        const readiness = state().spinReadiness
+      () => state().spinReadiness,
+      (readiness) => {
         if (readiness === undefined) return
+        if (readiness.notBeforeMs === undefined) {
+          const snapshot = state()
+          const requestedMedia = untrack(() => mediaRequestForState(snapshot))
+          if (requestedMedia === undefined) {
+            dispatch({
+              type: 'SPIN_PRESENTED',
+              token: readiness.token,
+              nowMs: monotonicNow(),
+            })
+          } else {
+            const clock = createPausableDelay(
+              RECORD_SPIN_PRESENTATION_SAFETY_TIMEOUT_MS,
+              () => {
+                untrack(() => {
+                  setRecordSpinOverlayRetired(true)
+                  dispatch({
+                    type: 'SPIN_PRESENTED',
+                    token: readiness.token,
+                    nowMs: monotonicNow(),
+                  })
+                })
+              },
+              untrack(() => props.foreground),
+            )
+            recordSpinPresentationSafetyClock = clock
+            onCleanup(() => {
+              clock.cancel()
+              if (recordSpinPresentationSafetyClock === clock) {
+                recordSpinPresentationSafetyClock = undefined
+              }
+            })
+          }
+          return
+        }
+        const { notBeforeMs, token } = readiness
         const clock = createPausableDelay(
-          Math.max(0, readiness.notBeforeMs - monotonicNow()),
+          Math.max(0, notBeforeMs - monotonicNow()),
           () => {
             untrack(() => {
               dispatch({
                 type: 'SPIN_READY',
                 token,
-                nowMs: Math.max(monotonicNow(), readiness.notBeforeMs),
+                nowMs: Math.max(monotonicNow(), notBeforeMs),
               })
             })
           },
@@ -838,6 +949,29 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   )
 
   createEffect(
+    on(recordSpinEndWatchdogToken, (token) => {
+      if (token === undefined) return
+      const clock = createPausableDelay(
+        RECORD_SPIN_END_SAFETY_TIMEOUT_MS,
+        () => {
+          untrack(() => {
+            setRecordSpinOverlayRetired(true)
+            setRecordSpinEndWatchdogToken(undefined)
+          })
+        },
+        untrack(() => props.foreground),
+      )
+      recordSpinEndSafetyClock = clock
+      onCleanup(() => {
+        clock.cancel()
+        if (recordSpinEndSafetyClock === clock) {
+          recordSpinEndSafetyClock = undefined
+        }
+      })
+    }),
+  )
+
+  createEffect(
     on(
       () => props.foreground,
       (foreground) => {
@@ -846,6 +980,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           presentationSafetyClock,
           presentationMediaSafetyClock,
           spinReadinessClock,
+          recordSpinPresentationSafetyClock,
+          recordSpinEndSafetyClock,
         ]) {
           if (foreground) clock?.resume()
           else clock?.pause()
@@ -881,6 +1017,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     ].includes(state().phase),
   )
 
+  const isReminderPhase = createMemo(() =>
+    ['B07_REMINDER_HOLD', 'B07_REMINDER_COMMIT'].includes(state().phase),
+  )
+
   const isCinematicPhase = createMemo(() =>
     [
       'B01_CORKY_GREETING',
@@ -903,6 +1043,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   const platterPhase = createMemo(() => {
     switch (state().phase) {
       case 'B06_RIGID_SPIN':
+        return state().spinReadiness?.notBeforeMs === undefined
+          ? ('stopped' as const)
+          : ('spinning' as const)
       case 'B06_STOP_SAVE_HOLD':
         return 'spinning' as const
       case 'B06_SAVE_COMMIT':
@@ -916,6 +1059,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     () =>
       state().stopCommit?.token ??
       `v2-platter-idle:${String(state().generation)}`,
+  )
+
+  const recordMediaHidden = createMemo(
+    () => recordSpinOverlayRetired() || state().phase === 'B06_SAVE_COMMIT',
   )
 
   const isBrandPhase = createMemo(() =>
@@ -1001,6 +1148,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           [styles.stageBrand]: isBrandPhase(),
           [styles.stageCinematic]: isCinematicPhase(),
           [styles.stageRecord]: isRecordPhase(),
+          [styles.stageReminder]: isReminderPhase(),
         }}
         data-v2-scene-surface={isCinematicPhase() ? 'full-viewport' : 'paper'}
         data-v2-record-scene={isRecordPhase() ? 'true' : 'false'}
@@ -1012,6 +1160,45 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           aria-hidden="true"
         >
           <Switch>
+            <Match when={isReminderPhase()}>
+              <span />
+            </Match>
+
+            <Match when={isRecordPhase()}>
+              <div class={styles.recordFrame}>
+                <div class={styles.platterFrame}>
+                  <V2OnboardingPlatterPreview
+                    base={props.mediaPack?.record?.stoppedAuthority}
+                    phase={platterPhase()}
+                    token={platterToken()}
+                    foreground={props.foreground}
+                    reducedMotion={state().motionMode === 'reduced'}
+                    onStopped={(token) =>
+                      dispatch({ type: 'PLATTER_STOPPED', token })
+                    }
+                  />
+                </div>
+                <Show when={mediaRequest() !== undefined}>
+                  <div
+                    class={styles.recordMediaLayer}
+                    classList={{
+                      [styles.recordMediaLayerHidden]: recordMediaHidden(),
+                    }}
+                  >
+                    <V2OnboardingMediaStage
+                      request={mediaRequest()}
+                      mode={state().motionMode}
+                      foreground={props.foreground}
+                      transitionDurationMs={0}
+                      class={`${styles.mediaStage} ${styles.recordMediaStage}`}
+                      onPresentationSettled={settleMediaPresentation}
+                      onVideoEnded={finishMediaVideo}
+                    />
+                  </div>
+                </Show>
+              </div>
+            </Match>
+
             <Match when={mediaRequest() !== undefined}>
               <V2OnboardingMediaStage
                 request={mediaRequest()}
@@ -1040,21 +1227,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               >
                 <BrandMark />
                 <span class={styles.brandGroove} />
-              </div>
-            </Match>
-
-            <Match when={isRecordPhase()}>
-              <div class={styles.platterFrame}>
-                <V2OnboardingPlatterPreview
-                  base={props.mediaPack?.record?.stoppedAuthority}
-                  phase={platterPhase()}
-                  token={platterToken()}
-                  foreground={props.foreground}
-                  reducedMotion={state().motionMode === 'reduced'}
-                  onStopped={(token) =>
-                    dispatch({ type: 'PLATTER_STOPPED', token })
-                  }
-                />
               </div>
             </Match>
 
@@ -1102,7 +1274,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
         <div
           class={styles.copy}
-          classList={{ [styles.copyCinematic]: isCinematicPhase() }}
+          classList={{
+            [styles.copyCinematic]: isCinematicPhase(),
+            [styles.copyReminder]: isReminderPhase(),
+          }}
         >
           <header class={styles.copyHeading}>
             <h1
@@ -1123,6 +1298,22 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               )}
             </Show>
           </header>
+
+          <Show when={isReminderPhase()}>
+            <div class={styles.reminderDial}>
+              <PunchedTimeDial
+                value={state().reminderTime ?? ''}
+                defaultValue="18:30"
+                compact
+                disabled={state().phase === 'B07_REMINDER_COMMIT'}
+                inputLabel="Choose a time"
+                onValueChange={(localTime) =>
+                  dispatch({ type: 'SELECT_REMINDER', localTime })
+                }
+                onHaptic={props.onTimeHaptic}
+              />
+            </div>
+          </Show>
 
           <div class={styles.copyControls}>
             <Switch>
@@ -1421,43 +1612,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               </Match>
 
               <Match when={state().phase === 'B07_REMINDER_HOLD'}>
-                <div
-                  class={styles.reminderGrid}
-                  role="radiogroup"
-                  aria-label="Reminder times"
-                >
-                  <For each={props.reminderPresets}>
-                    {(preset) => (
-                      <ChoiceButton
-                        name="v2-reminder"
-                        value={preset.id}
-                        selected={state().reminderTime === preset.localTime}
-                        label={preset.label}
-                        description={preset.localTime}
-                        onChoose={() =>
-                          dispatch({
-                            type: 'SELECT_REMINDER',
-                            localTime: preset.localTime,
-                          })
-                        }
-                      />
-                    )}
-                  </For>
-                </div>
-                <label class={styles.textField}>
-                  <span>Choose a time</span>
-                  <input
-                    aria-label="Choose a time"
-                    type="time"
-                    value={state().reminderTime ?? ''}
-                    onInput={(event) =>
-                      dispatch({
-                        type: 'SELECT_REMINDER',
-                        localTime: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
                 <Show when={state().reminderError}>
                   {(message) => (
                     <p class={styles.error} role="alert">

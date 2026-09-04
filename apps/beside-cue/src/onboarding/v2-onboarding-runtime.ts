@@ -67,7 +67,8 @@ export interface V2OnboardingPresentation {
 
 export interface V2OnboardingSpinReadiness {
   readonly token: string
-  readonly notBeforeMs: number
+  readonly dwellMs: number
+  readonly notBeforeMs?: number
 }
 
 export interface V2OnboardingStopCommit {
@@ -144,6 +145,11 @@ export type V2OnboardingRuntimeEvent =
   | { readonly type: 'SELECT_SIDE_B'; readonly choice: V2OnboardingSideBChoice }
   | { readonly type: 'CONFIRM_SIDE_B' }
   | {
+      readonly type: 'SPIN_PRESENTED'
+      readonly token: string
+      readonly nowMs: number
+    }
+  | {
       readonly type: 'SPIN_READY'
       readonly token: string
       readonly nowMs: number
@@ -167,7 +173,11 @@ export type V2OnboardingRuntimeEvent =
   | { readonly type: 'SKIP_REMINDER' }
   | { readonly type: 'BACK' }
   | { readonly type: 'RETURN_FROM_REPLAY' }
-  | { readonly type: 'REVIEW_NAVIGATE'; readonly phase: V2OnboardingPhase }
+  | {
+      readonly type: 'REVIEW_NAVIGATE'
+      readonly phase: V2OnboardingPhase
+      readonly nowMs: number
+    }
   | { readonly type: 'REVIEW_REPLAY' }
 
 export interface V2OnboardingPhaseMetadata {
@@ -226,7 +236,7 @@ const PRESENTATION_NEXT: Readonly<
   Partial<Record<V2OnboardingPhase, V2OnboardingPhase>>
 > = {
   B00_BRAND_REVEAL: 'B00_BEGIN_HOLD',
-  B01_CORKY_GREETING: 'B02_TABLE_REVEAL',
+  B01_CORKY_GREETING: 'B03_PULL_CHOICE_HOLD',
   B02_TABLE_REVEAL: 'B03_PULL_CHOICE_HOLD',
   B03_PULL_PRESENTATION: 'B04_CUE_CONTEXT_HOLD',
   B05_PULL_RECEDES: 'B06_CORKY_STARTS_RECORD',
@@ -307,7 +317,8 @@ function enterPhase(
     presentation: AUTOMATIC_PHASES.has(phase)
       ? { phase, token: presentationToken(generation, phase) }
       : undefined,
-    spinReadiness: undefined,
+    spinReadiness:
+      phase === 'B06_STOP_SAVE_HOLD' ? state.spinReadiness : undefined,
     stopCommit:
       phase === 'B06_STOP_SAVE_HOLD' || phase === 'B06_SAVE_COMMIT'
         ? state.stopCommit
@@ -330,10 +341,7 @@ function completeStopCommitIfReady(
   return enterPhase(state, 'B07_SAVED_ACK')
 }
 
-function enterSpin(
-  state: V2OnboardingRuntimeState,
-  nowMs: number,
-): V2OnboardingRuntimeState {
+function enterSpin(state: V2OnboardingRuntimeState): V2OnboardingRuntimeState {
   const generation = state.generation + 1
   const dwellMs =
     state.motionMode === 'normal' ? NORMAL_SPIN_MS : REDUCED_SPIN_DWELL_MS
@@ -344,7 +352,24 @@ function enterSpin(
     presentation: undefined,
     spinReadiness: {
       token: `v2-spin:${String(generation)}`,
-      notBeforeMs: nowMs + dwellMs,
+      dwellMs,
+    },
+  }
+}
+
+function armSpinReadiness(
+  state: V2OnboardingRuntimeState,
+  nowMs: number,
+): V2OnboardingRuntimeState {
+  const readiness = state.spinReadiness
+  if (readiness === undefined || readiness.notBeforeMs !== undefined) {
+    return state
+  }
+  return {
+    ...state,
+    spinReadiness: {
+      ...readiness,
+      notBeforeMs: nowMs + readiness.dwellMs,
     },
   }
 }
@@ -413,20 +438,25 @@ export function reduceV2OnboardingRuntime(
 
   if (event.type === 'REVIEW_NAVIGATE') {
     if (state.sessionKind !== 'developer-review') return noEffect(state)
-    return noEffect(
-      enterPhase(
-        {
-          ...state,
-          pendingSave: undefined,
-          pendingReminder: undefined,
-          stopCommit: undefined,
-          frozenPlan: undefined,
-          saveError: undefined,
-          reminderError: undefined,
-        },
-        event.phase,
-      ),
-    )
+    const cleared = {
+      ...state,
+      pendingSave: undefined,
+      pendingReminder: undefined,
+      stopCommit: undefined,
+      frozenPlan: undefined,
+      saveError: undefined,
+      reminderError: undefined,
+    }
+    if (event.phase === 'B06_RIGID_SPIN') {
+      const spin = enterSpin(cleared)
+      return noEffect(
+        state.phase === 'B06_STOP_SAVE_HOLD' &&
+          state.spinReadiness?.notBeforeMs !== undefined
+          ? armSpinReadiness(spin, event.nowMs)
+          : spin,
+      )
+    }
+    return noEffect(enterPhase(cleared, event.phase))
   }
 
   if (event.type === 'RETURN_FROM_REPLAY') {
@@ -438,7 +468,7 @@ export function reduceV2OnboardingRuntime(
   if (event.type === 'PRESENTATION_COMPLETED') {
     if (state.presentation?.token !== event.token) return noEffect(state)
     if (state.phase === 'B06_CORKY_STARTS_RECORD') {
-      return noEffect(enterSpin(state, event.nowMs))
+      return noEffect(enterSpin(state))
     }
     const nextPhase = PRESENTATION_NEXT[state.phase]
     return nextPhase === undefined
@@ -533,12 +563,27 @@ export function reduceV2OnboardingRuntime(
     )
   }
 
+  if (event.type === 'SPIN_PRESENTED') {
+    const readiness = state.spinReadiness
+    if (
+      (state.phase !== 'B06_RIGID_SPIN' &&
+        state.phase !== 'B06_STOP_SAVE_HOLD') ||
+      readiness === undefined ||
+      readiness.token !== event.token ||
+      readiness.notBeforeMs !== undefined
+    ) {
+      return noEffect(state)
+    }
+    return noEffect(armSpinReadiness(state, event.nowMs))
+  }
+
   if (event.type === 'SPIN_READY') {
     const readiness = state.spinReadiness
     if (
       state.phase !== 'B06_RIGID_SPIN' ||
       readiness === undefined ||
       readiness.token !== event.token ||
+      readiness.notBeforeMs === undefined ||
       event.nowMs < readiness.notBeforeMs
     ) {
       return noEffect(state)

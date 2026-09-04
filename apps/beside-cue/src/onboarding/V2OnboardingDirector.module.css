@@ -473,6 +473,37 @@
   transform: translateY(-50%);
 }
 
+.recordFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.recordFrame .platterFrame,
+.recordMediaLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.recordMediaLayer {
+  z-index: 2;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-out);
+}
+
+.recordMediaLayerHidden {
+  opacity: 0;
+}
+
+.recordMediaStage {
+  width: 100%;
+  height: 100%;
+}
+
 .error {
   padding: 0.75rem 0.85rem;
   border-radius: 12px;
@@ -696,7 +727,7 @@
   }
 }
 
-/* Cinematic phases use the V2.4 picture as the stage, never as a card. */
+/* Cinematic phases use the reviewed V2 picture as the stage, never as a card. */
 .directorCinematic {
   width: 100%;
   max-width: none;
@@ -836,6 +867,60 @@
   font-size: 1.1rem;
 }
 
+.stageReminder .visualCinematic {
+  background:
+    radial-gradient(
+      circle at 50% 43%,
+      rgb(255 245 221 / 92%) 0,
+      rgb(255 245 221 / 55%) 35%,
+      transparent 64%
+    ),
+    #ead6ad;
+}
+
+.copyReminder {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.reminderDial {
+  width: min(72%, 18rem);
+  align-self: center;
+  justify-self: center;
+  pointer-events: auto;
+  transform: translateY(-0.5rem);
+}
+
+.copyReminder .copyHeading {
+  width: min(calc(100% - 2rem), 27rem);
+  padding: 0.65rem 0.8rem;
+}
+
+.copyReminder .copyHeading h1 {
+  font-size: clamp(1.45rem, 5.5vw, 2.15rem);
+}
+
+.copyReminder .caption {
+  font-size: clamp(0.86rem, 2.8vw, 1rem);
+  line-height: 1.34;
+}
+
+.copyReminder .copyControls {
+  width: min(calc(100% - 1rem), 30rem);
+  max-height: min(31dvh, 15rem);
+  gap: 0.65rem;
+  padding: 0.72rem;
+}
+
+.copyReminder .actions {
+  gap: 0.55rem;
+}
+
+.copyReminder .primaryAction,
+.copyReminder .backAction {
+  min-height: 3.25rem;
+  padding-block: 0.65rem;
+}
+
 .directorCinematic .soundButton {
   top: calc(var(--safe-top) + 0.85rem);
   right: max(var(--safe-right), calc((100vw - 56.25dvh) / 2 + 1rem));
@@ -863,6 +948,58 @@
     width: 100%;
     height: 100%;
   }
+
+  .directorCinematic[data-phase^='B07_REMINDER_'] {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .stageReminder {
+    position: relative;
+    width: min(100%, 30rem);
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    background:
+      radial-gradient(
+        circle at 50% 43%,
+        rgb(255 245 221 / 92%) 0,
+        rgb(255 245 221 / 55%) 35%,
+        transparent 64%
+      ),
+      #ead6ad;
+  }
+
+  .stageReminder .visualCinematic {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .stageReminder .copyReminder {
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 100dvh;
+    align-content: start;
+    gap: 0.75rem;
+    padding: calc(var(--safe-top) + 4rem) 0.75rem
+      calc(var(--safe-bottom) + 0.75rem);
+    overflow: visible;
+    grid-template-rows: auto auto auto;
+  }
+
+  .reminderDial {
+    width: min(78%, 14.5rem);
+    transform: none;
+  }
+
+  .copyReminder .copyControls {
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -886,5 +1023,9 @@
   .primaryAction:active,
   .stopAction:active {
     transform: none;
+  }
+
+  .recordMediaLayer {
+    transition: none;
   }
 }

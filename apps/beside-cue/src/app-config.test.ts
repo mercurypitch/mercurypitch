@@ -11,7 +11,7 @@ describe('Beside Cue app config', () => {
 
     expect(onboarding).toEqual({
       delivery: 'v2-first-run',
-      revision: 'beside-cue-v2.4-main-v1',
+      revision: 'beside-cue-v2.5-main-v1',
       contractVersion: '1.0',
     })
     expect(Object.isFrozen(DEFAULT_BESIDE_CUE_CONFIG)).toBe(true)

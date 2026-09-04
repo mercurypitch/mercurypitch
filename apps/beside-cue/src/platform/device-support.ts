@@ -18,8 +18,29 @@ export interface DeviceSupport {
   engine: string
   /** 'WebGPU ready', 'WebGPU present, no adapter', 'WebGL2', 'none' */
   graphics: string
-  /** 'granted' | 'prompt' | 'denied' | 'unknown' */
+  /** 'granted' | 'prompt' | 'denied' | 'unknown' | 'no API (insecure page)' */
   microphone: string
+}
+
+/**
+ * Why the microphone cannot work here, or null when nothing is in the way.
+ *
+ * `navigator.mediaDevices` is gated on the SECURE CONTEXT and browsers simply
+ * do not define it otherwise, so an http page on a LAN address has no
+ * microphone API at all -- not a denied permission, not a missing device. The
+ * player finds out by tapping, and what they get is a TypeError about a
+ * property, several layers away from the fact that matters, which is the URL
+ * they typed. Answered before the tap instead.
+ */
+export const micApiBlocker = (): string | null => {
+  if (typeof navigator !== 'undefined') {
+    const devices = navigator.mediaDevices as MediaDevices | undefined
+    if (typeof devices?.getUserMedia === 'function') return null
+  }
+  return typeof globalThis.isSecureContext === 'boolean' &&
+    !globalThis.isSecureContext
+    ? 'The microphone needs a secure connection. Open this page over https, or on localhost — http on a network address hides the microphone from every browser.'
+    : 'This browser does not offer microphone access on this page.'
 }
 
 /**
@@ -37,8 +58,27 @@ export const parseEngineLabel = (userAgent: string): string => {
   }
   const firefox = /Firefox\/(\d+)/.exec(userAgent)?.[1]
   if (firefox !== undefined) return `Firefox ${firefox}`
-  const safari = /Version\/(\d+)[.\d]* Safari/.exec(userAgent)?.[1]
+  // `Mobile/15E148` sits between the version and the word Safari on a
+  // phone, so the original pattern -- which wanted them adjacent --
+  // matched desktop Safari and nothing else. Mobile Safari has been
+  // reporting "Unknown engine" for as long as this has existed; it was
+  // only noticed when the WebView did the same and it mattered.
+  const safari = /Version\/(\d+)[.\d]*(?: Mobile\/\S+)? Safari/.exec(
+    userAgent,
+  )?.[1]
   if (safari !== undefined) return `Safari ${safari}`
+  // A WKWebView inside an app reports no `Version/` token at all, which
+  // is exactly why the Safari branch above misses it -- and why the app
+  // said "Unknown engine" on the one platform whose engine we most need
+  // named (maff's iPhone, 2026-09-03). What it does carry is the OS
+  // version, and on iOS the OS version IS the WebKit version: there is
+  // no other engine and it cannot be updated separately. So that number
+  // answers "which WebKit" outright, and calling it a WebView rather
+  // than Safari keeps the distinction that matters, because the two do
+  // not have the same audio session or the same media policy.
+  const ios = /(?:iPhone OS|CPU OS) (\d+)[_.](\d+)/.exec(userAgent)
+  if (ios !== null) return `iOS WebView ${ios[1]}.${ios[2]}`
+  if (userAgent.includes('AppleWebKit')) return 'WebKit'
   return 'Unknown engine'
 }
 
@@ -78,6 +118,9 @@ const probeMicrophone = async (): Promise<string> => {
     const permissions = navigator.permissions as
       | { query?: (d: { name: string }) => Promise<{ state: string }> }
       | undefined
+    // No API to ask about, and the reason is worth naming in the readout:
+    // "prompt" next to a microphone that cannot exist is a lie.
+    if (micApiBlocker() !== null) return 'no API (insecure page)'
     if (permissions?.query === undefined) return 'unknown'
     const status = await permissions.query({ name: 'microphone' })
     return status.state
