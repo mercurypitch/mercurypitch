@@ -1035,3 +1035,68 @@ Three findings from maff's phone, all on room 1.
 Also from the phone: the tube reads, and is a little bigger now
 (`min(54vh, 27rem)` tall, `4.1rem` wide). Seen on a tablet only, so the
 phone sizes are still a question.
+
+## 16. What landed in 4d, and §8's question asked out loud
+
+### 16.1 The Screen (4d)
+
+`LINE_2` in `levels/lines.ts`: solid floor to 1.6, a grate to 3.6 over
+an ember chute, the island, a vertical slot at 4.9, the exit at 6.6, a
+drop returning him to 1.4. The furniture is a union now -- `SlotPlate`
+and `MeshFloor` -- and three pure functions do what the stage used to
+do inline: `sizeFor` (a horizontal slot's height, a vertical slot's
+width, a grate's gap: one number per piece, drawn from and judged by),
+`admits` (fits, or is held), `crossed` (a hand past a plate, the far
+lip of a grate). `meshLayout` cuts a grate so that every gap is exactly
+the judged size and the two lips absorb the remainder; the stage drops
+him only over the gaps (`overGaps`), never on a lip, and `Line3D` lays
+its slats from the same layout. A drop is a phase, not a height: the
+`fall` clip topples him where he stands, he sinks through the bars as
+the chute flares, and 1.6 s later he is at the lip with everything he
+had passed still passed.
+
+Two corrections found on the way:
+
+- **`tLimit` was a width, and the plan reads it as an edge.** For a
+  flat gate the two are the same number; for a tall one `1 - width` is
+  not the threshold the plan's clock was computed from, and the slot
+  band came out as [0.451, 1] (rescued by the rest margin) where §5
+  says [0.634, 1]. `bandFor` now reads `tLimit` as the band's edge on
+  both ends, with `semis` the least width, and a test pins room 2's
+  slot band to 0.634.
+- **The view's gate rows were built once, for room 1.** The handover
+  into a room with more furniture than the last threw on the first
+  frame. Rebuilt per room now, and the two-room walk is the check.
+
+Numbers for a 17-semitone span, the plan's: gap 0.377 m (plan: 0.42,
+before the torso and the rest margin), slot 0.316 m (plan: 0.33). What
+holds cannot fit and what fits cannot be held, which is the room, and
+`lines.test.ts` says so for every preset.
+
+### 16.2 The question (§8.3), answered honestly
+
+**Does any gate in this world distinguish `silhouetteFor(t)` from `t`
+itself?** No -- and under the rule as locked it cannot. With `w²h`
+conserved the body has ONE degree of freedom, so every static gate,
+however it is phrased -- a band of aspect ratios, a slot over a grate,
+two demands at one place -- reduces to an interval of `t`. §8's "gate
+a one-dimensional cursor cannot pass" is not a design that has not
+been found yet; it is arithmetic.
+
+What the shape buys that a cursor does not is therefore not in any one
+gate but in two other places:
+
+1. **Opposition along the walk.** Room 2's grate wants wide and its
+   slot wants narrow, the relax runs the clock between them, and the
+   only solid ground to swap on is the island. A pitch-as-height game
+   can put two bands in a row; it has no reason for them to fight.
+2. **A profile in `x`.** A slot whose ceiling falls along its length
+   asks for a GLIDE coupled to walking -- the voice has to keep moving
+   while he does, at a rate the room sets -- which is the siren-with-
+   a-target §9 grades and which no band can ask for. This is the
+   wedge, and it is what 4e builds, in place of the impossible gate.
+
+If the world is still felt to be "a slider with a very good avatar"
+after 4e, the remaining lever is a second degree of freedom -- loudness
+into volume, so a shape needs two numbers -- and that is a measurement
+before it is a design. §4 of the Top Shelf stays the fallback.
