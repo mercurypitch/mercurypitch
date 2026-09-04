@@ -1,4 +1,4 @@
-//  Route Beside Cue's sound to the speaker, and keep it there.
+//  Route Beside Cue's sound to the speaker without fighting WebKit.
 //  ============================================================
 //
 //  Beside Cue had no audio on iOS at all while Android played fine. The
@@ -32,13 +32,12 @@
 //  AVAudioSession across the repo before this commit and the only hits
 //  are those two planning documents.
 //
-//  Why re-apply on route change rather than set it once. WebKit owns
-//  this session too and reconfigures it whenever capture starts or stops
-//  (the long-running upstream issue is WebKit bug 167788, WKWebView
-//  ignoring the app's category). A one-shot setter at launch is
-//  therefore correct until the first time the player sings, and wrong
-//  afterwards -- which is the whole app. Watching the route notification
-//  is what makes it stick.
+//  WebKit owns this session too and can reconfigure it whenever capture
+//  starts or stops. Route notifications are therefore useful, but their
+//  handler must not fight WebKit for category ownership: setCategory itself
+//  produces a category route change, and overrideOutputAudioPort produces an
+//  override route change. Unconditionally doing both from every notification
+//  creates a feedback loop on the main thread just as media playback starts.
 //
 //  Everything here is best-effort on purpose. A phone that refuses a
 //  category should end up with the audio it would have had anyway, never
@@ -48,70 +47,114 @@ import AVFoundation
 import Foundation
 
 enum AudioSession {
-    /// Category, mode and options as one decision, so re-applying is the
-    /// same call as applying.
+    private static let desiredOptions: AVAudioSession.CategoryOptions = [
+        .defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers,
+    ]
+    private static var isRoutingToSpeaker = false
+
+    private static func categoryNeedsRepair(_ session: AVAudioSession) -> Bool {
+        let hasDesiredOptions =
+            session.categoryOptions.intersection(desiredOptions) == desiredOptions
+        return session.category != .playAndRecord ||
+            session.mode != .default ||
+            !hasDesiredOptions
+    }
+
+    /// Category, mode and options as one decision. Leave a matching session
+    /// alone: changing an already-correct category still emits a route event.
     ///
     /// `playAndRecord` rather than `playback` because the mic is core to
     /// the app; `.defaultToSpeaker` is the half that actually fixes the
     /// earpiece; `.allowBluetoothA2DP` so headphones and speakers still
     /// win when they are connected; `.mixWithOthers` so a player humming
     /// along to their own music is not silenced by us.
-    private static func apply() {
-        let session = AVAudioSession.sharedInstance()
+    @discardableResult
+    private static func applyIfNeeded(_ session: AVAudioSession) -> Bool {
+        guard categoryNeedsRepair(session) else { return false }
+
         do {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
-                options: [.defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers]
+                options: desiredOptions
             )
+            return true
         } catch {
             NSLog("[AudioSession] setCategory failed: \(error.localizedDescription)")
+            return false
         }
     }
 
-    /// Force the speaker unless something better is plugged in.
+    /// Force the speaker only when iOS actually selected the receiver.
     ///
     /// `.defaultToSpeaker` in the category covers the built-in case, but
-    /// the override is what survives WebKit reconfiguring the session
-    /// mid-session. Skipped entirely when the current route is a
-    /// headset, a car, or anything else the player chose on purpose --
-    /// overriding those would be worse than the bug.
-    private static func preferSpeaker() {
-        let session = AVAudioSession.sharedInstance()
-        let chosenElsewhere: Set<AVAudioSession.Port> = [
-            .headphones, .bluetoothA2DP, .bluetoothLE, .bluetoothHFP,
-            .carAudio, .airPlay, .usbAudio, .headsetMic,
-        ]
-        let routed = session.currentRoute.outputs.map(\.portType)
-        if routed.contains(where: { chosenElsewhere.contains($0) }) { return }
+    /// the override is what repairs WebKit choosing the earpiece mid-session.
+    /// Every non-receiver route is left untouched.
+    @discardableResult
+    private static func preferSpeakerIfNeeded(_ session: AVAudioSession) -> Bool {
+        let receiverSelected = session.currentRoute.outputs.contains {
+            $0.portType == .builtInReceiver
+        }
+        guard receiverSelected else { return false }
+
         do {
             try session.overrideOutputAudioPort(.speaker)
+            return true
         } catch {
             NSLog("[AudioSession] overrideOutputAudioPort failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Reconcile only an actual earpiece route. The guard covers synchronous
+    /// delivery; the route check makes delayed notifications no-ops as well.
+    private static func routeToSpeakerIfNeeded(
+        after reason: AVAudioSession.RouteChangeReason? = nil
+    ) {
+        guard !isRoutingToSpeaker else { return }
+        let session = AVAudioSession.sharedInstance()
+        let receiverSelected = session.currentRoute.outputs.contains {
+            $0.portType == .builtInReceiver
+        }
+        guard receiverSelected else { return }
+
+        isRoutingToSpeaker = true
+        defer { isRoutingToSpeaker = false }
+        let repairedRoute = preferSpeakerIfNeeded(session)
+        if repairedRoute {
+            let reasonDescription = reason.map { String($0.rawValue) } ?? "launch"
+            NSLog(
+                "[AudioSession] repaired receiver route after reason=\(reasonDescription): \(describe())"
+            )
         }
     }
 
     /// Called once from `AppDelegate`.
     static func configure() {
-        apply()
         let session = AVAudioSession.sharedInstance()
+        applyIfNeeded(session)
         do {
             try session.setActive(true)
         } catch {
             NSLog("[AudioSession] setActive failed: \(error.localizedDescription)")
         }
-        preferSpeaker()
+        routeToSpeakerIfNeeded()
 
         NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            // WebKit may have replaced the category on its way here --
-            // getUserMedia starting is itself a route change -- so
-            // re-assert both halves, not just the override.
-            apply()
-            preferSpeaker()
+        ) { note in
+            let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+            let reason = raw.flatMap {
+                AVAudioSession.RouteChangeReason(rawValue: $0)
+            }
+
+            // This may be our own `.override` notification. By the time it is
+            // delivered the route is the speaker, so the state check is a
+            // no-op. If another owner cleared an override to the receiver,
+            // the same reason still receives the one repair it needs.
+            routeToSpeakerIfNeeded(after: reason)
         }
 
         // A phone call or Siri deactivates the session; iOS does not put
@@ -126,11 +169,13 @@ enum AudioSession {
             let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
             guard let raw, AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
             do {
-                try AVAudioSession.sharedInstance().setActive(true)
+                let session = AVAudioSession.sharedInstance()
+                applyIfNeeded(session)
+                try session.setActive(true)
             } catch {
                 NSLog("[AudioSession] reactivate failed: \(error.localizedDescription)")
             }
-            preferSpeaker()
+            routeToSpeakerIfNeeded()
         }
     }
 

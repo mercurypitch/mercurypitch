@@ -176,6 +176,23 @@ audibility") replays the automation and fails any truncation — never weaken it
 **Rule:** call `play()` inside the gesture, then align to the target, require one contiguous near-term buffered window per stem, re-align, and await seek settlement before opening the bus. Own every listener and timeout with pause/dispose cancellation.
 **See:** `src/features/guitar/backing/guitar-backing-stream.ts`
 
+### AVAudioSession route handlers reconcile state; they never blindly reassert it
+
+**Symptom:** starting a WKWebView video made video, audio, and the entire iOS UI
+advance only once every few seconds; output volume also appeared to oscillate.
+**Cause candidate confirmed in code:** a main-queue route-change observer
+unconditionally called `setCategory` and
+`overrideOutputAudioPort(.speaker)`. Those mutations emit their own
+`.categoryChange` and `.override` notifications, and the speaker override ran
+even when the route was already the built-in speaker. Device confirmation is
+still required.
+**Rule:** set the app-owned category at launch/reactivation, not from the route
+observer where it can fight WebKit. In that observer, guard reentrancy and
+override only an actual `.builtInReceiver` route; every notification after the
+route becomes the speaker must be a no-op. Native audio policy requires
+physical-device verification before release.
+**See:** `apps/beside-cue/ios/App/App/AudioSession.swift`
+
 ## Framework
 
 ### Do not destructure props
