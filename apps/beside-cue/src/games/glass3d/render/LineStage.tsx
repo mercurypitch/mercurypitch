@@ -28,12 +28,12 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { lineTrack } from '../levels/line-track'
-import type { LineLevel } from '../levels/lines'
-import { LINES, PLATE_STANDOFF } from '../levels/lines'
+import type { LineGate, LineLevel } from '../levels/lines'
+import { admits, crossed, furnitureOf, LINES, overGaps, PLATE_STANDOFF, sizeFor, } from '../levels/lines'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import type { Band, Range, Spring } from '../sim/tension3d'
-import { bandFor, fitsSlotHeight, inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, slotHeightFor, springAt, tensionStep, widenRange, workingRange, } from '../sim/tension3d'
+import { bandFor, inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, widenRange, workingRange, } from '../sim/tension3d'
 import { readMeasuredRange, voiceCentre } from '../voice-range'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { LineGateView, LineView } from './Line3D'
@@ -77,7 +77,11 @@ const entryRange = (): Range => {
   return workingRange({ lowMidi: centre - 12, highMidi: centre + 12 })
 }
 
-type Phase = 'walking' | 'cleared' | 'done'
+type Phase = 'walking' | 'falling' | 'cleared' | 'done'
+
+/** How long a drop takes, the chamber's number: the `fall` clip is a
+ * topple, and he sinks through the grate over it. */
+const FALL_SECONDS = 1.6
 
 const DevDials = import.meta.env.DEV
   ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
@@ -153,9 +157,10 @@ export const LineStage = (props: LineStageProps) => {
       let range: Range = entryRange()
 
       interface GateState {
-        x: number
+        spec: LineGate
         band: Band
-        slotHeight: number
+        /** Its one derived number: slot height, slot width or gap. */
+        size: number
         open: boolean
         passed: boolean
       }
@@ -163,12 +168,12 @@ export const LineStage = (props: LineStageProps) => {
       /** A gate's furniture, for THIS player's range. Rebuilt when the
        * range widens, which is what "the room re-scales" means. */
       const buildGates = (): GateState[] =>
-        live.gates.map((g) => {
-          const b = bandFor(g.gate, range)
+        live.gates.map((spec) => {
+          const b = bandFor(spec.gate, range)
           return {
-            x: g.x,
+            spec,
             band: b,
-            slotHeight: slotHeightFor(b),
+            size: sizeFor(spec, b),
             open: false,
             passed: false,
           }
@@ -177,9 +182,8 @@ export const LineStage = (props: LineStageProps) => {
 
       const refit = (): void => {
         for (const g of gates) {
-          const spec = live.gates[gates.indexOf(g)]!
-          g.band = bandFor(spec.gate, range)
-          g.slotHeight = slotHeightFor(g.band)
+          g.band = bandFor(g.spec.gate, range)
+          g.size = sizeFor(g.spec, g.band)
         }
         setSpan(range.highMidi - range.lowMidi)
       }
@@ -187,18 +191,21 @@ export const LineStage = (props: LineStageProps) => {
       const walls = { ...cfg.locomotion, minX: 0, maxX: live.length }
       /** The nearest shut plate ahead of him is the wall. A plate whose
        * slot he fits is no wall at all, and one he has passed cannot
-       * reach back. */
+       * reach back. A grate is never a wall: it is walked onto, and
+       * either holds or does not. */
       const closeWalls = (): void => {
         let stop = live.length
         for (const g of gates) {
-          if (g.passed || g.open) continue
-          const at = g.x - PLATE_STANDOFF
+          if (g.spec.kind !== 'slot' || g.passed || g.open) continue
+          const at = g.spec.x - PLATE_STANDOFF
           if (at >= loco.x && at < stop) stop = at
         }
         walls.maxX = stop
       }
       const loco = createLocomotion(live.startX)
-      /** Room 1 is flat. Room 2's mesh floor arrives with `supportedBy`. */
+      /** The floor is flat everywhere he can stand. A grate that does
+       * not hold him is not a lower floor, it is a drop, which is a
+       * phase rather than a height (§5: the topple, not the plummet). */
       const ground = (): number => 0
 
       let spring: Spring = springAt(restTFor())
@@ -208,6 +215,9 @@ export const LineStage = (props: LineStageProps) => {
       let phaseNow: Phase = 'walking'
       let wallSeconds = 0
       let clearedAtWall = 0
+      let fellAtWall = 0
+      /** Drops this room, for the card (§9). */
+      let drops = 0
       let lastHeard = false
       let lastLevel = 0
       let sinceText = TEXT_INTERVAL
@@ -224,18 +234,25 @@ export const LineStage = (props: LineStageProps) => {
         r.merc()?.play(name, { loop })
       }
       const poseNow = (): void => {
+        if (phaseNow === 'falling') return
         if (!loco.grounded || Math.abs(loco.vx) > 0.06) setPose('move')
         else if (lastHeard) setPose('sing')
         else setPose('listen')
       }
 
+      /** The view's per-gate rows, remade with the gates: a room with
+       * more furniture than the last one has more rows. Set once the
+       * view exists, below. */
+      let rebuildViews: (() => void) | null = null
+
       const enterRoom = (next: LineLevel): void => {
         live = next
         setRoom(next)
         gates = buildGates()
+        rebuildViews?.()
         r.load(
           next,
-          gates.map((g) => ({ x: g.x, band: g.band })),
+          gates.map((g) => furnitureOf(g.spec)),
         )
         loco.x = next.startX
         loco.y = 0
@@ -249,8 +266,32 @@ export const LineStage = (props: LineStageProps) => {
         loco.bufferLeft = 0
         loco.jumpWasDown = false
         closeWalls()
+        drops = 0
         setPassed(0)
         setSpan(range.highMidi - range.lowMidi)
+        go('walking')
+      }
+
+      /** The grate let go. He topples where he stands and sinks through
+       * it; the chute takes him back to the lip. Nothing else resets:
+       * gates already passed stay passed, and his shape is whatever his
+       * voice is making it. */
+      const drop = (): void => {
+        drops += 1
+        fellAtWall = wallSeconds
+        go('falling')
+        setPose('fall', false)
+      }
+      const returnHim = (): void => {
+        loco.x = live.returnX ?? live.startX
+        loco.y = 0
+        loco.vx = 0
+        loco.vy = 0
+        loco.grounded = true
+        loco.facing = 1
+        loco.bufferLeft = 0
+        loco.jumpWasDown = false
+        closeWalls()
         go('walking')
       }
       goToRoom = enterRoom
@@ -275,15 +316,12 @@ export const LineStage = (props: LineStageProps) => {
       closeWalls()
       r.load(
         live,
-        gates.map((g) => ({ x: g.x, band: g.band })),
+        gates.map((g) => furnitureOf(g.spec)),
       )
 
-      const gateViews: LineGateView[] = gates.map((g) => ({
-        x: g.x,
-        slotHeight: g.slotHeight,
-        open: false,
-        passed: false,
-      }))
+      const viewsFor = (): LineGateView[] =>
+        gates.map((g) => ({ size: g.size, open: false, passed: false }))
+      let gateViews: LineGateView[] = viewsFor()
       const view: LineView = {
         mercX: loco.x,
         mercY: 0,
@@ -292,6 +330,11 @@ export const LineStage = (props: LineStageProps) => {
         heightScale: 1,
         gates: gateViews,
         exitOpen: false,
+        falling: 0,
+      }
+      rebuildViews = () => {
+        gateViews = viewsFor()
+        view.gates = gateViews
       }
 
       const loopState = createLoopState()
@@ -314,8 +357,17 @@ export const LineStage = (props: LineStageProps) => {
           }
           if (phaseNow === 'done') return
 
-          closeWalls()
-          stepLocomotion(loco, input.read(now), ground, dt, walls)
+          // A drop is a phase: he does not walk, and the voice keeps
+          // shaping him, because the shape is the lesson. Locomotion
+          // resumes at the lip.
+          const falling = phaseNow === 'falling'
+          if (falling && wallSeconds - fellAtWall >= FALL_SECONDS) {
+            returnHim()
+          }
+          if (!falling) {
+            closeWalls()
+            stepLocomotion(loco, input.read(now), ground, dt, walls)
+          }
 
           const pitch = driver?.latestPitch() ?? null
           lastLevel = driver?.latestLevel() ?? 0
@@ -337,13 +389,26 @@ export const LineStage = (props: LineStageProps) => {
           const body = silhouetteFor(spring.t)
 
           for (const g of gates) {
-            g.open = fitsSlotHeight(body, g.slotHeight)
-            // Passing is crossing the plate, which the walls only allow
-            // while he fits. Passed stays passed (§5).
-            if (!g.passed && loco.x >= g.x + 0.05) g.passed = true
+            g.open = admits(g.spec, body, g.size)
+            // Passing is crossing, which the walls only allow while he
+            // fits a plate, and which a grate only allows by holding
+            // him all the way. Passed stays passed (§5).
+            if (!g.passed && !falling && crossed(g.spec, loco.x)) {
+              g.passed = true
+            }
+          }
+          if (!falling && loco.grounded) {
+            for (const g of gates) {
+              if (g.spec.kind !== 'mesh' || g.open) continue
+              if (overGaps(g.spec, loco.x, g.size)) {
+                drop()
+                break
+              }
+            }
           }
 
           if (
+            phaseNow === 'walking' &&
             loco.x >= live.exitX - ARRIVED &&
             loco.grounded &&
             gates.every((g) => g.passed)
@@ -365,16 +430,23 @@ export const LineStage = (props: LineStageProps) => {
 
         poseNow()
         const body = silhouetteFor(spring.t)
+        // Through the grate: the clip topples him, and he sinks with
+        // it, slowly then not, so the last of him goes as the chute
+        // is brightest.
+        const sink =
+          phaseNow === 'falling'
+            ? Math.min(1, (wallSeconds - fellAtWall) / FALL_SECONDS)
+            : 0
+        view.falling = sink
         view.mercX = loco.x
-        view.mercY = loco.y
+        view.mercY = phaseNow === 'falling' ? -0.55 * sink * sink : loco.y
         view.mercFacing = loco.facing
         view.widthScale = body.width / REST_WIDTH
         view.heightScale = body.height / REST_HEIGHT
         for (let i = 0; i < gates.length; i++) {
           const g = gates[i]!
           const v = gateViews[i]!
-          v.x = g.x
-          v.slotHeight = g.slotHeight
+          v.size = g.size
           v.open = g.open
           v.passed = g.passed
         }
@@ -410,7 +482,9 @@ export const LineStage = (props: LineStageProps) => {
           t: spring.t,
           range,
           gates: gates.map((g) => ({ ...g })),
+          drops,
           move: (m: number) => input.setMove(m),
+          drop: () => drop(),
           warpTo: (x: number) => {
             closeWalls()
             loco.x = Math.max(walls.minX, Math.min(walls.maxX, x))

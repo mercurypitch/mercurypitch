@@ -23,8 +23,8 @@
 // them that way, and a room whose plate is "at 1.5" is easier to argue
 // with on a phone than one whose plate is "at 0.3".
 
-import type { Gate } from '../sim/tension3d'
-import { LETTERBOX } from '../sim/tension3d'
+import type { Band, Gate, Silhouette } from '../sim/tension3d'
+import { fitsSlotHeight, fitsSlotWidth, gapWidthFor, LETTERBOX, SCREEN_MESH, SCREEN_SLOT, slotHeightFor, slotWidthFor, supportedBy, } from '../sim/tension3d'
 
 /** A plate across the corridor with a slot in it. */
 export interface SlotPlate {
@@ -36,7 +36,85 @@ export interface SlotPlate {
   readonly gate: Gate
 }
 
-export type LineGate = SlotPlate
+/** A stretch of floor that is a grate over a chute: it holds a body
+ * wide enough to span its gaps, and a narrower one pours through. */
+export interface MeshFloor {
+  readonly kind: 'mesh'
+  /** Where the grate starts and ends, in metres. */
+  readonly from: number
+  readonly to: number
+  /** The support band. Always a flat gate: wide is what holds. */
+  readonly gate: Gate
+}
+
+export type LineGate = SlotPlate | MeshFloor
+
+/**
+ * The one number a piece of furniture is, for THIS player's band:
+ * a horizontal slot's height, a vertical slot's width, a grate's gap.
+ * Drawn from it and judged by it, so the two cannot disagree (§6).
+ */
+export const sizeFor = (gate: LineGate, band: Band): number => {
+  if (gate.kind === 'mesh') return gapWidthFor(band)
+  return gate.gate.end === 'flat' ? slotHeightFor(band) : slotWidthFor(band)
+}
+
+/** Does this body get past this furniture right now? For a grate that
+ * means being held by it. */
+export const admits = (
+  gate: LineGate,
+  body: Silhouette,
+  size: number,
+): boolean => {
+  if (gate.kind === 'mesh') return supportedBy(body, size)
+  return gate.gate.end === 'flat'
+    ? fitsSlotHeight(body, size)
+    : fitsSlotWidth(body, size)
+}
+
+/** Is he through? A plate is passed a hand's width beyond it; a grate
+ * when its far lip is behind him. Passed stays passed (§5). */
+export const crossed = (gate: LineGate, x: number): boolean =>
+  gate.kind === 'mesh' ? x >= gate.to : x >= gate.x + 0.05
+
+/** How wide a grate's bar is, in metres. */
+export const SLAT = 0.05
+
+/**
+ * How a grate is cut. The gaps are EXACTLY the judged size, every one,
+ * and the two lips at its ends absorb whatever length is left over --
+ * so what is drawn is what is judged, and a lip is solid floor.
+ */
+export const meshLayout = (
+  grate: { readonly from: number; readonly to: number },
+  size: number,
+): { gaps: number; lip: number } => {
+  const span = grate.to - grate.from
+  const gaps = Math.max(1, Math.floor((span - SLAT) / (size + SLAT)))
+  const lip = (span - gaps * size - (gaps - 1) * SLAT) / 2
+  return { gaps, lip }
+}
+
+/** Is his centre over the gaps of this grate, rather than on a lip? */
+export const overGaps = (
+  grate: { readonly from: number; readonly to: number },
+  x: number,
+  size: number,
+): boolean => {
+  const { lip } = meshLayout(grate, size)
+  return x > grate.from + lip && x < grate.to - lip
+}
+
+/** What the renderer needs to stand a piece of furniture up: where it
+ * is and which way its opening runs. Its size arrives per frame. */
+export type LineFurniture =
+  | { readonly kind: 'slot'; readonly axis: 'h' | 'v'; readonly x: number }
+  | { readonly kind: 'mesh'; readonly from: number; readonly to: number }
+
+export const furnitureOf = (gate: LineGate): LineFurniture =>
+  gate.kind === 'mesh'
+    ? { kind: 'mesh', from: gate.from, to: gate.to }
+    : { kind: 'slot', axis: gate.gate.end === 'flat' ? 'h' : 'v', x: gate.x }
 
 export interface LineLevel {
   readonly id: string
@@ -50,6 +128,9 @@ export interface LineLevel {
   /** Reaching this, grounded, with every gate passed, finishes the room. */
   readonly exitX: number
   readonly gates: readonly LineGate[]
+  /** Where a drop puts him back, in metres. A room with nothing to
+   * drop through has none. */
+  readonly returnX?: number
   /** Whether the jump button is offered. A room with no vertical
    * geometry hides it: a button that does nothing is a button the
    * player believes they are failing to use. */
@@ -60,9 +141,8 @@ export interface LineLevel {
  * Room 1, "The Letterbox". Five metres, no hazard, cannot be lost.
  *
  * A plate at 1.5 with a horizontal slot along the bottom; the slot's
- * height comes from the letterbox band for THIS player's range. Beside
- * it a ghost of him, drawn at the band's centre, which is the whole
- * instruction. The band is enormous -- at least four semitones for
+ * height comes from the letterbox band for THIS player's range. The
+ * band is enormous -- at least four semitones for
  * every voice, the bottom of the range -- so a player who hums one low
  * note, once, is through.
  */
@@ -76,7 +156,35 @@ export const LINE_1: LineLevel = {
   jump: false,
 }
 
-export const LINES: readonly LineLevel[] = [LINE_1]
+/**
+ * Room 2, "The Screen". Seven metres, the first way to lose, and the
+ * room the world exists for (§5): the shape that carries you is not
+ * the shape that fits.
+ *
+ * Solid floor to 1.6, then two metres of grate over a chute -- a wide
+ * body spans the gaps and is held, a narrow one pours through. A solid
+ * island from 3.6, the only place to swap. A vertical slot at 4.9 that
+ * only a narrow body fits. The two asks oppose each other, and the
+ * relax is the clock: from the flat end silence crosses the grate in
+ * one breath with slack, from the island it reaches the slot the same
+ * way. A drop returns him to the lip of the grate, and gates already
+ * passed stay passed.
+ */
+export const LINE_2: LineLevel = {
+  id: 'line-2',
+  teaches: 'The shape that carries you is not the shape that fits.',
+  length: 7,
+  startX: 0.2,
+  exitX: 6.6,
+  returnX: 1.4,
+  gates: [
+    { kind: 'mesh', from: 1.6, to: 3.6, gate: SCREEN_MESH },
+    { kind: 'slot', x: 4.9, gate: SCREEN_SLOT },
+  ],
+  jump: false,
+}
+
+export const LINES: readonly LineLevel[] = [LINE_1, LINE_2]
 
 /** How far short of a plate he stops while it is shut, in metres. */
 export const PLATE_STANDOFF = 0.24

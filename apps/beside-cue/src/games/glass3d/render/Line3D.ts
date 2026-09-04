@@ -17,10 +17,10 @@
 // Merc is wide by design, so its camera keeps him nearer the middle and
 // pulls back a little further.
 
-import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BoxGeometry, CircleGeometry, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PerspectiveCamera, PlaneGeometry, Scene, SpotLight, Vector3, } from 'three'
+import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BoxGeometry, CircleGeometry, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
-import type { LineLevel } from '../levels/lines'
-import type { Band } from '../sim/tension3d'
+import type { LineFurniture, LineLevel } from '../levels/lines'
+import { meshLayout, SLAT } from '../levels/lines'
 import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
 import { PANE } from './Hallway3D'
@@ -39,12 +39,15 @@ const MAX_FOV_DEG = 64
  * high enough that a thread cannot see over it. */
 const PLATE_HEIGHT = 2.1
 
+/** The chute's colour: an ember, so a drop is warm and wrong rather
+ * than turquoise and fine. */
+const EMBER = 0xff7a45
+
 export interface LineGateView {
-  /** Metres along the room. */
-  x: number
-  /** The slot's height, for a flat gate. */
-  slotHeight: number
-  /** Whether he currently fits. Lights the mouth. */
+  /** The furniture's one derived number, in metres: a horizontal
+   * slot's height, a vertical slot's width, a grate's gap. */
+  size: number
+  /** Whether he currently gets past it. Lights the mouth. */
   open: boolean
   /** Whether he has been through. */
   passed: boolean
@@ -59,13 +62,16 @@ export interface LineView {
   heightScale: number
   gates: readonly LineGateView[]
   exitOpen: boolean
+  /** 0 while he walks; climbs to 1 through a drop. The chute flares
+   * with it. */
+  falling: number
 }
 
 export interface Line3D {
   init(): Promise<void>
   /** Put a different room in front of him, keeping everything that is
    * not the room -- the renderer, the environment, Merc, the mic. */
-  load(room: LineLevel, gates: readonly { x: number; band: Band }[]): void
+  load(room: LineLevel, furniture: readonly LineFurniture[]): void
   render(view: LineView, dt: number): void
   merc(): MercActor | null
   camera(): PerspectiveCamera
@@ -172,50 +178,151 @@ export const createLine3D = (
     blending: AdditiveBlending,
     depthWrite: false,
   })
+  // A grate's bars: paper, lit by the rig, so they read as floor that
+  // is there rather than as light. Under them the chute: an ember that
+  // is barely on until he goes through it.
+  const slatMaterial = new MeshStandardMaterial({
+    color: 0xd9e4e1,
+    roughness: 0.55,
+    metalness: 0.1,
+  })
+  const chuteMaterial = new MeshBasicMaterial({
+    color: EMBER,
+    map: buildRadialFalloff(),
+    transparent: true,
+    opacity: 0.06,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  })
 
   const roomGroup = new Group()
   scene.add(roomGroup)
 
   interface PlateParts {
+    kind: 'slot'
+    axis: 'h' | 'v'
+    /** The plate, or for a vertical slot the near half of it. */
     plate: Mesh
+    /** The far half of a vertical slot's plate. */
+    far: Mesh | null
     mouth: Mesh
     material: MeshBasicMaterial
   }
-  let plates: PlateParts[] = []
+  interface GrateParts {
+    kind: 'mesh'
+    spec: { readonly from: number; readonly to: number }
+    slats: Group
+    glow: Mesh
+    /** The gap the slats were last laid for, so a range that widens
+     * re-lays them and a frame that does not changes nothing. */
+    laidFor: number
+  }
+  type Parts = PlateParts | GrateParts
+  let parts: Parts[] = []
   let current = room
 
-  const clearRoom = (): void => {
-    for (const child of [...roomGroup.children]) {
-      roomGroup.remove(child)
+  const disposeChildren = (group: Group): void => {
+    for (const child of [...group.children]) {
+      group.remove(child)
       const mesh = child as Mesh
       mesh.geometry?.dispose()
+      if (mesh.children.length > 0) disposeChildren(mesh as unknown as Group)
     }
-    for (const p of plates) p.material.dispose()
-    plates = []
   }
 
-  const buildRoom = (gates: readonly { x: number; band: Band }[]): void => {
-    plates = gates.map(({ x }) => {
-      // The plate is the part ABOVE the slot; the slot is the gap
-      // between it and the floor. Its bottom edge is set per frame from
-      // the gate's slot height, which is per player.
+  const clearRoom = (): void => {
+    disposeChildren(roomGroup)
+    for (const p of parts) if (p.kind === 'slot') p.material.dispose()
+    parts = []
+  }
+
+  /** The corridor's width, as the panes span it. */
+  const SPAN = PANE.width * 1.15
+
+  /** Lay a grate's bars for a gap. The gaps are exactly the judged
+   * size and the two lips take the remainder, per `meshLayout`. */
+  const layGrate = (g: GrateParts, size: number): void => {
+    disposeChildren(g.slats)
+    const { gaps, lip } = meshLayout(g.spec, size)
+    const bar = (x0: number, width: number): void => {
+      const slat = new Mesh(new BoxGeometry(width, 0.025, SPAN), slatMaterial)
+      slat.position.set(x0 + width / 2, 0.0125, 0)
+      g.slats.add(slat)
+    }
+    bar(g.spec.from, lip)
+    let x = g.spec.from + lip
+    for (let i = 0; i < gaps; i++) {
+      x += size
+      if (i < gaps - 1) {
+        bar(x, SLAT)
+        x += SLAT
+      }
+    }
+    bar(g.spec.to - lip, lip)
+    g.laidFor = size
+  }
+
+  const buildRoom = (furniture: readonly LineFurniture[]): void => {
+    parts = furniture.map((f): Parts => {
+      if (f.kind === 'mesh') {
+        const slats = new Group()
+        roomGroup.add(slats)
+        // The chute under the grate. It sits just below the floor so
+        // the bars occlude nothing of it: the floor here is a gradient
+        // that writes no depth, and additive light through a dark disc
+        // reads as a glow seen through a grate.
+        const glow = new Mesh(
+          new PlaneGeometry(f.to - f.from, SPAN),
+          chuteMaterial,
+        )
+        glow.rotation.x = -Math.PI / 2
+        glow.position.set((f.from + f.to) / 2, -0.02, 0)
+        roomGroup.add(glow)
+        const g: GrateParts = {
+          kind: 'mesh',
+          spec: f,
+          slats,
+          glow,
+          laidFor: -1,
+        }
+        return g
+      }
+      const material = mouthMaterial.clone()
+      if (f.axis === 'h') {
+        // The plate is the part ABOVE the slot; the slot is the gap
+        // between it and the floor. Its bottom edge is set per frame
+        // from the gate's size, which is per player.
+        const plate = new Mesh(
+          new BoxGeometry(PANE.thick, 1, SPAN),
+          plateMaterial,
+        )
+        plate.position.set(f.x, PLATE_HEIGHT / 2, 0)
+        roomGroup.add(plate)
+        // The mouth: a thin lit bar across the slot's opening, on the
+        // floor -- the "this is open now" light borrowed from the exit.
+        const mouth = new Mesh(new BoxGeometry(0.03, 0.012, SPAN), material)
+        mouth.position.set(f.x, 0.006, 0)
+        roomGroup.add(mouth)
+        return { kind: 'slot', axis: 'h', plate, far: null, mouth, material }
+      }
+      // A vertical slot: the plate in two halves, either side of a gap
+      // up the middle whose width is set per frame. The mouth is the
+      // gap's own width, on the floor between them.
       const plate = new Mesh(
-        new BoxGeometry(PANE.thick, 1, PANE.width * 1.15),
+        new BoxGeometry(PANE.thick, PLATE_HEIGHT, 1),
         plateMaterial,
       )
-      plate.position.set(x, PLATE_HEIGHT / 2, 0)
-      roomGroup.add(plate)
-
-      const material = mouthMaterial.clone()
-      // The mouth: a thin lit bar across the slot's opening, on the
-      // floor -- the "this is open now" light borrowed from the exit.
-      const mouth = new Mesh(
-        new BoxGeometry(0.03, 0.012, PANE.width * 1.15),
-        material,
+      const far = new Mesh(
+        new BoxGeometry(PANE.thick, PLATE_HEIGHT, 1),
+        plateMaterial,
       )
-      mouth.position.set(x, 0.006, 0)
+      plate.position.set(f.x, PLATE_HEIGHT / 2, 0)
+      far.position.set(f.x, PLATE_HEIGHT / 2, 0)
+      roomGroup.add(plate, far)
+      const mouth = new Mesh(new BoxGeometry(0.03, 0.012, 1), material)
+      mouth.position.set(f.x, 0.006, 0)
       roomGroup.add(mouth)
-      return { plate, mouth, material }
+      return { kind: 'slot', axis: 'v', plate, far, mouth, material }
     })
     exitPool.position.set(current.exitX, 0.003, 0)
     exitGlow.position.set(current.exitX, 0.95, 0)
@@ -238,11 +345,11 @@ export const createLine3D = (
       scene.add(actor.root)
     },
 
-    load(next, gates): void {
+    load(next, furniture): void {
       if (disposed) return
       current = next
       clearRoom()
-      buildRoom(gates)
+      buildRoom(furniture)
       // Put the camera where the chase would have eased it to, rather
       // than letting it fly there across the handover (slice 3's fix).
       camera.position.x = next.startX + 1.15
@@ -268,7 +375,8 @@ export const createLine3D = (
         actor.update(dt)
       }
       pool.position.x = view.mercX
-      poolMaterial.opacity = 0.12 * Math.max(0, 1 - view.mercY * 1.6)
+      poolMaterial.opacity =
+        0.12 * Math.max(0, Math.min(1, 1 - view.mercY * 1.6))
       floor.position.x = view.mercX
 
       key.position.x = view.mercX + (key.position.x - key.target.position.x)
@@ -280,17 +388,32 @@ export const createLine3D = (
       rim.target.position.x = view.mercX
 
       const pulse = 0.5 + 0.5 * Math.sin(clock * 6)
-      for (let i = 0; i < plates.length; i++) {
-        const p = plates[i]!
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i]!
         const g = view.gates[i]
         if (g === undefined) continue
-        const top = PLATE_HEIGHT
-        const bottom = g.slotHeight
-        p.plate.scale.y = Math.max(0.01, top - bottom)
-        p.plate.position.y = bottom + (top - bottom) / 2
+        if (p.kind === 'mesh') {
+          if (Math.abs(p.laidFor - g.size) > 0.0005) layGrate(p, g.size)
+          continue
+        }
+        if (p.axis === 'h') {
+          const top = PLATE_HEIGHT
+          const bottom = g.size
+          p.plate.scale.y = Math.max(0.01, top - bottom)
+          p.plate.position.y = bottom + (top - bottom) / 2
+        } else {
+          const half = Math.max(0.01, (SPAN - g.size) / 2)
+          p.plate.scale.z = half
+          p.plate.position.z = g.size / 2 + half / 2
+          p.far!.scale.z = half
+          p.far!.position.z = -(g.size / 2 + half / 2)
+          p.mouth.scale.z = g.size
+        }
         p.material.color.setHex(g.open ? CUSTARD : TURQUOISE)
         p.material.opacity = g.open ? 0.55 + pulse * 0.3 : 0.28
       }
+      // The chute is barely there until he is going through it.
+      chuteMaterial.opacity = 0.06 + 0.7 * view.falling
 
       // The chase camera, centred. Where the chamber looks 1.1 ahead of
       // the camera and chases 0.9 + 0.6*facing ahead of him, this looks
@@ -351,6 +474,8 @@ export const createLine3D = (
       exitGlow.geometry.dispose()
       exitMaterial.dispose()
       plateMaterial.dispose()
+      slatMaterial.dispose()
+      chuteMaterial.dispose()
       mouthMaterial.dispose()
       renderer.dispose()
     },

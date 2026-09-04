@@ -296,16 +296,19 @@ export const tensionStep = (
 export type GateEnd = 'flat' | 'tall'
 
 /**
- * A gate's ask, stated in the level. Both limits are kept and the more
- * generous wins (§2.1): `tLimit` as a fraction of the range, `semis` as
- * the same ask in semitones from that end. A fixed slot height is a
- * different number of semitones for a wide voice and a narrow one, and
- * stating it in metres would give the narrowest voices the hardest
- * rooms, which is backwards.
+ * What a gate asks for, in two units, and the more generous wins (§2.1).
+ *
+ * `tLimit` is the band's EDGE as a fraction of the working range: a flat
+ * gate admits `t <= tLimit`, a tall one `t >= tLimit`. `semis` is the
+ * least width the band may have, in semitones, so a narrow voice is not
+ * handed a band a wide one would find trivial: when `semis / span` is
+ * wider than `tLimit` allows, the semitones win.
  */
 export interface Gate {
   readonly end: GateEnd
+  /** The band's edge, 0..1 along the working range. */
   readonly tLimit: number
+  /** The band's least width, in semitones. */
   readonly semis: number
 }
 
@@ -333,12 +336,18 @@ export const bandFor = (
   sweep: Sweep = SWEEP,
 ): Band => {
   const span = Math.max(1e-6, range.highMidi - range.lowMidi)
-  const ask = Math.max(gate.tLimit, gate.semis / span)
+  const least = gate.semis / span
   const rest = restTFor(sweep)
   if (gate.end === 'flat') {
-    return { lo: 0, hi: Math.min(ask, rest - REST_MARGIN) }
+    return {
+      lo: 0,
+      hi: Math.min(Math.max(gate.tLimit, least), rest - REST_MARGIN),
+    }
   }
-  return { lo: Math.max(1 - ask, rest + REST_MARGIN), hi: 1 }
+  return {
+    lo: Math.max(Math.min(gate.tLimit, 1 - least), rest + REST_MARGIN),
+    hi: 1,
+  }
 }
 
 /** The centre of a band: where the ghost stands. */
@@ -377,6 +386,16 @@ export const supportedBy = (s: Silhouette, gapWidth: number): boolean =>
 
 /** Room 1's letterbox (§4). Kept here so the probe and the level agree. */
 export const LETTERBOX: Gate = { end: 'flat', tLimit: 0.23, semis: 4 }
+
+/**
+ * Room 2's two asks, which oppose each other on purpose (§5): the mesh
+ * holds a body wide enough to span its gaps, the slot admits one narrow
+ * enough to fit, and there is exactly one solid place to swap between
+ * them. The relax is the room's clock, and the motion tests hold both
+ * crossings to one breath with slack.
+ */
+export const SCREEN_MESH: Gate = { end: 'flat', tLimit: 0.313, semis: 5 }
+export const SCREEN_SLOT: Gate = { end: 'tall', tLimit: 0.634, semis: 5 }
 
 // ------------------------------------------------------------
 // The range opens by taking it from the player (§6, from The Span).
