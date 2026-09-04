@@ -13,6 +13,10 @@ import styles from './V2OnboardingMediaStage.module.css'
 
 const DEFAULT_TRANSITION_DURATION_MS = 180
 const TRANSITION_FALLBACK_SLACK_MS = 34
+/** How long to wait for a composited video frame before presenting the
+ * stage anyway. See `scheduleVideoFrameGate`: on iOS a refused video
+ * never composites, and without this the stage waits forever. */
+const VIDEO_FRAME_GRACE_MS = 1200
 
 export interface V2OnboardingMediaCorrelation {
   readonly targetId: string
@@ -114,6 +118,12 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
     const capable = element as unknown as OptionalVideoFrameCallbacks
     if (capable.requestVideoFrameCallback !== undefined) {
       frameRequest = capable.requestVideoFrameCallback(presentVideoFrame)
+      // And a wall clock beside it. The callback fires on COMPOSITION,
+      // so a video the platform has refused to play never fires it --
+      // which on iOS leaves this stage waiting forever on a frame that
+      // is not coming. `presentVideoFrame` is guarded by `mounted` and
+      // by the token, so the loser of the race is a no-op.
+      frameFallback = setTimeout(presentVideoFrame, VIDEO_FRAME_GRACE_MS)
       return
     }
 

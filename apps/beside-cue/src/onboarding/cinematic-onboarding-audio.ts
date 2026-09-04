@@ -6,6 +6,7 @@
 // rather than opening its own, so the cinematic and everything the player
 // reaches afterwards are scheduled against a single clock.
 
+import { fetchAssetBytes } from '@/audio/asset-fetch'
 import { acquireSharedAudioContext } from '../audio/shared-audio-context'
 
 const ENVELOPE_FLOOR = 0.0001
@@ -60,15 +61,10 @@ export function createCinematicOnboardingAudioClock(
     ownContext === undefined
       ? acquireSharedAudioContext('onboarding-cinematic')
       : undefined
-  const readBytes =
-    deps.fetchArrayBuffer ??
-    (async (url: string) => {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Onboarding audio request failed: ${response.status}`)
-      }
-      return response.arrayBuffer()
-    })
+  // Not `response.ok`. On iOS every media file comes back with status 0
+  // and the whole body, because Capacitor's scheme handler answers media
+  // with a URLResponse that has no status line -- see audio/asset-fetch.
+  const readBytes = deps.fetchArrayBuffer ?? fetchAssetBytes
 
   let context: AudioContext | undefined
   let buffer: AudioBuffer | undefined
@@ -155,7 +151,13 @@ export function createCinematicOnboardingAudioClock(
       buffer = decoded
       loadedUrl = url
       return true
-    } catch {
+    } catch (error) {
+      // Was a bare `catch { return false }`, which is how a completely
+      // silent iOS build reported nothing at all for two rounds of
+      // device testing. The load is still allowed to fail quietly --
+      // onboarding without music is better than onboarding that
+      // crashes -- but it may no longer fail INVISIBLY.
+      console.warn('[onboarding] audio failed to load', url, error)
       return false
     }
   }
