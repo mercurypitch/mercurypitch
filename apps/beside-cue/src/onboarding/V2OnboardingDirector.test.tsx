@@ -22,6 +22,7 @@ const mediaStageHarness = vi.hoisted(() => ({
         | 'request'
         | 'mode'
         | 'foreground'
+        | 'transitionDurationMs'
         | 'onPresentationSettled'
         | 'onVideoEnded'
       >
@@ -49,6 +50,7 @@ vi.mock('./V2OnboardingMediaStage', () => ({
         request: props.request,
         mode: props.mode,
         foreground: props.foreground,
+        transitionDurationMs: props.transitionDurationMs,
         onPresentationSettled: props.onPresentationSettled,
         onVideoEnded: props.onVideoEnded,
       }
@@ -528,6 +530,7 @@ describe('V2OnboardingDirector', () => {
       kind: 'still',
       src: expect.stringContaining('p02-table-ready-v0_17.webp'),
     })
+    expect(currentMediaStage().props.transitionDurationMs).toBe(0)
     expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'cinematic')
     expect(screen.getByRole('region', { name: 'Meet Corky.' })).toHaveAttribute(
       'data-v2-scene-surface',

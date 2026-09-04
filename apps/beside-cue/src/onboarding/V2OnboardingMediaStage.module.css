@@ -19,6 +19,16 @@
   transition: opacity var(--v2-media-transition-duration, 180ms) ease-out;
 }
 
+/*
+ * WebKit may withhold requestVideoFrameCallback for an opacity-zero video.
+ * This sub-percent probe keeps the native surface compositor-eligible while
+ * the current decoded layer remains visually authoritative.
+ */
+.layer[data-v2-media-kind='video'][data-v2-media-phase='loading'] {
+  z-index: 2;
+  opacity: 0.001;
+}
+
 .layer[data-v2-media-phase='current'],
 .layer[data-v2-media-phase='revealed'] {
   opacity: 1;
