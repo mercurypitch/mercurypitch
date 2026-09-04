@@ -15,6 +15,7 @@
 //   /merc-probe.html?sweep=1            ...swept end to end instead
 //   /merc-probe.html?voice=baritone     which range the mic reads against
 //   /merc-probe.html?flat=0.32&tall=0.94  the two ends of the sweep, in metres
+//   /merc-probe.html?gauge=0            hide the shape gauge on the right
 //   /merc-probe.html?mic=1              the mic, without the game: runs the
 //                                       sing driver as the stage does, prints
 //                                       each step, and METERS EVERY INPUT so
@@ -25,14 +26,22 @@
 // playing, so a screenshot documents itself.
 
 import { micManager, readMicLevel } from '@irchiinnuss/pitch-engine'
+import { createSignal } from 'solid-js'
+import { render } from 'solid-js/web'
 import { Box3, Vector3 } from 'three'
+// The stage's own stylesheet, for the gauge: the probe page carries only
+// the styles its canvas and HUD need, and a component positioned by a
+// class it cannot see lands under the fold, unstyled, and reads as
+// missing rather than as unstyled.
+import '../screens/games.css'
 import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { createSingDriver } from '../games/glass/drivers/sing'
 import type { InteractionDriver } from '../games/glass/drivers/types'
 import { micErrorLine } from '../games/glass/mic-error'
 import type { HallwayView } from '../games/glass3d/render/Hallway3D'
 import { createHallway3D } from '../games/glass3d/render/Hallway3D'
-import { REST_HEIGHT, REST_WIDTH, silhouetteFor, SWEEP, tFor, workingRange, } from '../games/glass3d/sim/tension3d'
+import { ShapeGauge } from '../games/glass3d/render/ShapeGauge'
+import { bandFor, inBand, LETTERBOX, REST_HEIGHT, REST_WIDTH, silhouetteFor, SWEEP, tFor, workingRange, } from '../games/glass3d/sim/tension3d'
 import type { VoicePreset } from '../games/glass3d/voice-range'
 import { readMeasuredRange, VOICE_PRESETS } from '../games/glass3d/voice-range'
 import { WORLD3D_CONFIG } from '../games/glass3d/world3d-config'
@@ -256,6 +265,33 @@ addEventListener('keydown', (e) => {
 })
 
 setShapeT(shapeT)
+
+// The shape gauge, beside him, reading the same t. Room 1's letterbox
+// band is drawn so the band and its warming can be seen without a room.
+const [gaugeT, setGaugeT] = createSignal(shapeT)
+const [gaugeHeard, setGaugeHeard] = createSignal(true)
+const letterbox = bandFor(LETTERBOX, voiceRange)
+if (params.get('gauge') !== '0') {
+  const host = document.createElement('div')
+  document.body.append(host)
+  render(
+    () =>
+      ShapeGauge({
+        get t() {
+          return gaugeT()
+        },
+        get heard() {
+          return gaugeHeard()
+        },
+        band: letterbox,
+        get inBand() {
+          return inBand(gaugeT(), letterbox)
+        },
+        semis: voiceRange.highMidi - voiceRange.lowMidi,
+      }),
+    host,
+  )
+}
 
 // Mic diagnostics.
 // ============================================================
@@ -490,6 +526,10 @@ const tick = (now: number): void => {
     sweepPhase += dt * 0.35
     setShapeT((1 - Math.cos(sweepPhase * Math.PI * 2)) / 2)
   }
+  setGaugeT(shapeT)
+  // With no mic running the gauge is "heard" so the slider reads lit;
+  // once a driver exists, silence greys it, as the world will.
+  setGaugeHeard(driver === null || heard !== null)
 
   r.render(view, dt)
   const body = silhouetteFor(shapeT, sweep)
