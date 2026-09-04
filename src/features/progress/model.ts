@@ -3,7 +3,7 @@
 // Comparisons require explicit compatible-attempt keys; gaps stay visible.
 // ============================================================
 
-import type { Achievement, BadgeDefinition, ChallengeDefinition, SessionRecord, SessionSource, UserAchievement, UserActivity, UserBadge, } from '@/db/entities'
+import type { Achievement, AchievementCategory, BadgeDefinition, ChallengeDefinition, SessionRecord, SessionSource, UserAchievement, UserActivity, UserBadge, } from '@/db/entities'
 import type { LeagueMe } from '@/db/services/league-service'
 import type { ActivityCounts } from '@/db/services/user-activity-service'
 import { countActivity } from '@/db/services/user-activity-service'
@@ -180,6 +180,33 @@ export interface ProgressMilestone {
   tier?: BadgeDefinition['tier']
 }
 
+/** One badge from the catalogue, and whether this singer has it. */
+export interface ProgressBadgeStanding {
+  id: string
+  name: string
+  description: string
+  unlockCondition: string
+  icon: string
+  tier: BadgeDefinition['tier']
+  earned: boolean
+  earnedAt: string | null
+}
+
+/** One achievement from the catalogue, with how far along this singer is. */
+export interface ProgressAchievementStanding {
+  id: string
+  name: string
+  description: string
+  icon: string
+  points: number
+  category: AchievementCategory
+  required: number
+  /** 0-100 — what `userAchievements.progress` stores. */
+  progress: number
+  unlocked: boolean
+  unlockedAt: string | null
+}
+
 export interface ProgressRecognitionSummary {
   available: boolean
   badges: {
@@ -191,7 +218,16 @@ export interface ProgressRecognitionSummary {
     inProgress: number
     total: number
   }
+  /** What has been earned, newest first. */
   milestones: ProgressMilestone[]
+  /**
+   * Everything there is to earn, in catalogue order, with where this singer
+   * stands on each. The milestones are the highlights; this is the cabinet.
+   */
+  catalogue: {
+    badges: ProgressBadgeStanding[]
+    achievements: ProgressAchievementStanding[]
+  }
 }
 
 export interface ProgressHistoryItem {
@@ -627,6 +663,60 @@ function buildRecognition(
     return delta !== 0 ? delta : a.id.localeCompare(b.id)
   })
 
+  // ── The cabinet: every mark there is, with where this singer stands ──
+  const byOrder = <T extends { sortOrder: number; name: string }>(
+    a: T,
+    b: T,
+  ): number => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+  const earnedBadgeById = new Map(
+    input.userBadges.map((badge) => [badge.badgeId, badge]),
+  )
+  const catalogueBadges: ProgressBadgeStanding[] = [...input.badgeDefinitions]
+    .sort(byOrder)
+    .map((definition) => {
+      const earned = earnedBadgeById.get(definition.id)
+      return {
+        id: definition.id,
+        name: definition.name,
+        description: definition.description,
+        unlockCondition: definition.unlockCondition,
+        icon: definition.icon,
+        tier: definition.tier,
+        earned: earned !== undefined,
+        earnedAt:
+          earned === undefined || validTime(earned.earnedAt) === null
+            ? null
+            : earned.earnedAt,
+      }
+    })
+  const userAchievementById = new Map(
+    input.userAchievements.map((row) => [row.achievementId, row]),
+  )
+  const catalogueAchievements: ProgressAchievementStanding[] = [
+    ...input.achievementDefinitions,
+  ]
+    .sort(byOrder)
+    .map((definition) => {
+      const row = userAchievementById.get(definition.id)
+      const at = row?.unlockedAt ?? null
+      return {
+        id: definition.id,
+        name: definition.name,
+        description: definition.description,
+        icon: definition.icon,
+        points: definition.points,
+        // Older rows predate the column; the entity says they are Beginnings.
+        category: definition.category ?? 'beginnings',
+        required: definition.required,
+        progress: row?.progress ?? 0,
+        unlocked: row?.unlocked ?? false,
+        unlockedAt:
+          row?.unlocked === true && at !== null && validTime(at) !== null
+            ? at
+            : null,
+      }
+    })
+
   return {
     available: input.availability?.account ?? true,
     badges: {
@@ -641,6 +731,10 @@ function buildRecognition(
       total: input.achievementDefinitions.length,
     },
     milestones,
+    catalogue: {
+      badges: catalogueBadges,
+      achievements: catalogueAchievements,
+    },
   }
 }
 

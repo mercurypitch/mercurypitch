@@ -161,3 +161,40 @@ describe('ProgressPage', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 })
+
+describe('the cabinet', () => {
+  it('shows every badge and achievement with where the singer stands', () => {
+    render(() => <ProgressPage status="ready" snapshot={snapshot()} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Badges and achievements' }),
+    ).toBeVisible()
+
+    // Earned and locked tiles are both on the wall; only one wears the tick.
+    const earned = screen.getByTestId('cabinet-badge-steady-return')
+    expect(earned).toHaveTextContent('Steady Return')
+    expect(earned.querySelector('[title="Earned"]')).not.toBeNull()
+    const locked = screen.getByTestId('cabinet-badge-first-legend')
+    expect(locked).toHaveTextContent('First Legend')
+    expect(locked.querySelector('[title="Earned"]')).toBeNull()
+
+    // The bar carries the percentage; the label carries the count behind it.
+    expect(
+      screen.getByRole('progressbar', { name: 'Ten Runs: 3 / 10' }),
+    ).toHaveAttribute('aria-valuenow', '30')
+    expect(screen.getByRole('heading', { name: 'Beginnings' })).toBeVisible()
+  })
+
+  it('says when the marks cannot be loaded rather than showing an empty wall', () => {
+    const offline = {
+      ...snapshot(),
+      cabinet: { ...snapshot().cabinet!, available: false },
+    }
+    render(() => <ProgressPage status="ready" snapshot={offline} />)
+
+    expect(
+      screen.getByText(/Reconnect to load your badges and achievements/),
+    ).toBeVisible()
+    expect(screen.queryByTestId('cabinet-badge-steady-return')).toBeNull()
+  })
+})

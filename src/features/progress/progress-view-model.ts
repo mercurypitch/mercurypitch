@@ -7,6 +7,7 @@ import type { SessionSource, UserActivity, UserActivityKind, } from '@/db/entiti
 import { badgeArtSrc } from '@/features/challenges/badge-art'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { buildCabinet } from './cabinet-view'
 import type { ProgressActivityWeek, ProgressCoverageLabel, ProgressHistoryItem, ProgressModel, ProgressOneMoment, ProgressScorePoint, } from './model'
 import type { ProgressActionView, ProgressCoverageView, ProgressEvidenceView, ProgressHistoryItemView, ProgressHistoryView, ProgressLeagueView, ProgressMilestoneView, ProgressMomentOptionView, ProgressMomentView, ProgressPageSnapshot, ProgressPathSegmentView, ProgressPathsView, ProgressRhythmView, ProgressSkillThreadView, ProgressSourceKind, ProgressTraceView, ProgressVoiceAtlasView, ProgressWeekView, } from './ProgressPage'
 
@@ -1071,6 +1072,7 @@ export function buildProgressPageSnapshot(
     paths: buildPaths(model),
     milestones: buildMilestones(model),
     milestonesAvailable: model.recognition.available,
+    cabinet: buildCabinet(model, formatDate),
     league: buildLeague(model),
     history: buildHistory(model, options.accountHeld, options.historyFilterId),
     coverage: buildCoverageView(model, options.accountHeld),

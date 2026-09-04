@@ -14,10 +14,11 @@
 //     `achievementCount` converts back, and is checked at the edges.
 
 import { describe, expect, it } from 'vitest'
-import { achievementCount, earnedTimestamp } from '@/components/VocalChallenges'
+import { earnedTimestamp } from '@/components/VocalChallenges'
 import seedData from '@/db/seed-data.json'
 import { measurableAchievements } from '@/db/services/badge-grant-engine'
 import { countActivity } from '@/db/services/user-activity-service'
+import { achievementCount } from '@/features/progress/cabinet-view'
 
 const CATEGORIES = ['beginnings', 'building', 'mastery'] as const
 

@@ -6,6 +6,7 @@
 import type { SessionRecord } from '@/db/entities'
 import type { ProgressGrantContext } from '@/db/services/grant-context'
 import { loadProgressGrantContext } from '@/db/services/grant-context'
+import { flushGrants } from '@/db/services/grant-flush'
 import type { LeagueMe } from '@/db/services/league-service'
 import { fetchLeagueMe } from '@/db/services/league-service'
 import type { ProgressSessionRecords } from '@/db/services/session-service'
@@ -35,6 +36,11 @@ export interface ProgressDataDependencies {
   }) => Promise<ProgressActivityRecords>
   fetchLeagueMe: () => Promise<LeagueMe | null>
   loadChallengeTrace: (challengeId: string) => StoredChallengeTrace | null
+  /**
+   * Push pending badge and achievement writes before reading them back.
+   * Optional so a test can wire the readers alone.
+   */
+  flushPendingGrants?: () => Promise<unknown>
 }
 
 export interface LoadProgressModelOptions extends BuildProgressModelOptions {
@@ -48,6 +54,7 @@ export const defaultProgressDataDependencies: ProgressDataDependencies = {
   loadProgressActivityRecords,
   fetchLeagueMe,
   loadChallengeTrace,
+  flushPendingGrants: () => flushGrants(),
 }
 
 function valueOr<T>(result: PromiseSettledResult<T>, fallback: T): T {
@@ -85,6 +92,15 @@ export async function loadProgressModel(
 ): Promise<ProgressModel> {
   const dependencies = options.dependencies ?? defaultProgressDataDependencies
   const sessionLimit = options.sessionLimit ?? PROGRESS_SESSION_LIMIT
+  // Achievement progress is written on a delay, and the page that displays
+  // it is the moment worth paying the write for — otherwise a singer who
+  // finishes a run and comes straight here reads the numbers from before it.
+  // A failed flush is not fatal: the read below shows what last landed.
+  try {
+    await dependencies.flushPendingGrants?.()
+  } catch {
+    // Reported by the flush itself; nothing to add here.
+  }
   const [
     contextResult,
     sessionsResult,

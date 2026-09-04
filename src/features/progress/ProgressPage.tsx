@@ -19,6 +19,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { iconByName, renderIcon } from '@/components/hidden-features-icons'
 import { AlertTriangle, History, Repeat, RotateCcw, Share, Trophy, Voice, } from '@/components/icons'
 import { InfoPopover } from '@/components/InfoPopover'
+import { ProgressCabinet } from './ProgressCabinet'
 import styles from './ProgressPage.module.css'
 
 export type ProgressSurfaceStatus = 'loading' | 'ready' | 'empty' | 'error'
@@ -153,6 +154,51 @@ export interface ProgressMilestoneView {
   icon?: string
 }
 
+/** One badge tile in the cabinet: the whole catalogue, earned or not. */
+export interface ProgressBadgeTileView {
+  id: string
+  title: string
+  tier: string
+  earned: boolean
+  /** Present only when earned — "Earned 7 August", or just "Earned". */
+  earnedAtLabel?: string
+  howToEarn: string
+  artUrl?: string
+  /** The seed's icon name, for when there is no drawn medallion. */
+  icon: string
+}
+
+export interface ProgressAchievementRowView {
+  id: string
+  title: string
+  detail: string
+  icon: string
+  pointsLabel: string
+  unlocked: boolean
+  /** "3 / 10" — the count behind the stored percentage. */
+  countLabel: string
+  /** 0-100, for the bar. */
+  percent: number
+}
+
+/** One band of achievements: first week, keep going, long haul. */
+export interface ProgressAchievementShelfView {
+  id: string
+  title: string
+  blurb: string
+  unlockedCount: number
+  items: readonly ProgressAchievementRowView[]
+}
+
+export interface ProgressCabinetView {
+  available: boolean
+  summary: string
+  badgesLabel: string
+  achievementsLabel: string
+  badges: readonly ProgressBadgeTileView[]
+  shelves: readonly ProgressAchievementShelfView[]
+}
+
 export interface ProgressLeagueView {
   title: string
   rankLabel: string
@@ -210,6 +256,8 @@ export interface ProgressPageSnapshot {
   paths: ProgressPathsView
   milestones: readonly ProgressMilestoneView[]
   milestonesAvailable?: boolean
+  /** Every badge and achievement with where the singer stands; the Milestones shelf is the highlights. */
+  cabinet?: ProgressCabinetView
   league?: ProgressLeagueView
   history: ProgressHistoryView
   coverage: ProgressCoverageView
@@ -1317,6 +1365,10 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                     </Show>
                   </div>
                 </section>
+
+                <Show when={snapshot().cabinet}>
+                  {(cabinet) => <ProgressCabinet cabinet={cabinet()} />}
+                </Show>
 
                 <section
                   class={styles.historyChapter}
