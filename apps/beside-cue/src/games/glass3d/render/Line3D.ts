@@ -181,12 +181,14 @@ export const createLine3D = (
     blending: AdditiveBlending,
     depthWrite: false,
   })
-  // A grate's bars: paper, lit by the rig, so they read as floor that
-  // is there rather than as light. Under them the chute: an ember that
-  // is barely on until he goes through it.
+  // A grate's bars: a dull grey at rest, so that when they light (the
+  // custard of a mouth, while he is the shape they hold) the change is
+  // a change. Paper-white bars under the key light were already as
+  // bright as the light could make them. Under them the chute: an
+  // ember that is barely on until he goes through it.
   const slatMaterial = new MeshStandardMaterial({
-    color: 0xd9e4e1,
-    roughness: 0.55,
+    color: 0x6b7876,
+    roughness: 0.6,
     metalness: 0.1,
   })
   const chuteMaterial = new MeshBasicMaterial({
@@ -215,6 +217,9 @@ export const createLine3D = (
     kind: 'mesh'
     spec: { readonly from: number; readonly to: number }
     slats: Group
+    /** Its own bars, so they can light: the grate's "this will hold
+     * you now", in the mouth's custard, since a grate has no mouth. */
+    bars: MeshStandardMaterial
     glow: Mesh
     /** The gap the slats were last laid for, so a range that widens
      * re-lays them and a frame that does not changes nothing. */
@@ -244,7 +249,10 @@ export const createLine3D = (
 
   const clearRoom = (): void => {
     disposeChildren(roomGroup)
-    for (const p of parts) if (p.kind !== 'mesh') p.material.dispose()
+    for (const p of parts) {
+      if (p.kind === 'mesh') p.bars.dispose()
+      else p.material.dispose()
+    }
     parts = []
   }
 
@@ -257,7 +265,7 @@ export const createLine3D = (
     disposeChildren(g.slats)
     const { gaps, lip } = meshLayout(g.spec, size)
     const bar = (x0: number, width: number): void => {
-      const slat = new Mesh(new BoxGeometry(width, 0.025, SPAN), slatMaterial)
+      const slat = new Mesh(new BoxGeometry(width, 0.025, SPAN), g.bars)
       slat.position.set(x0 + width / 2, 0.0125, 0)
       g.slats.add(slat)
     }
@@ -335,6 +343,7 @@ export const createLine3D = (
           kind: 'mesh',
           spec: f,
           slats,
+          bars: slatMaterial.clone(),
           glow,
           laidFor: -1,
         }
@@ -447,6 +456,11 @@ export const createLine3D = (
         if (g === undefined) continue
         if (p.kind === 'mesh') {
           if (Math.abs(p.laidFor - g.size) > 0.0005) layGrate(p, g.size)
+          // Lit while he is the shape it holds, wherever he is: the
+          // same word the plates' mouths use, so a player who has seen
+          // one custard thing knows what the next one means.
+          p.bars.emissive.setHex(g.open ? CUSTARD : 0x000000)
+          p.bars.emissiveIntensity = g.open ? 0.85 + pulse * 0.3 : 0
           continue
         }
         if (p.kind === 'wedge') {

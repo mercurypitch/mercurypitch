@@ -227,6 +227,12 @@ export interface LineLevel {
   /** The one sentence this room exists to teach. Shown at the gate and
    * hidden for the acceptance test (§4). */
   readonly teaches: string
+  /** Two sentences, at most, on how: shown on the gate card in place
+   * of the world's hint once the world's hint has been read. A room
+   * whose furniture explains itself has none. maff's phone: the grate
+   * did not explain itself, and the ghosts that were to do it are gone
+   * (§15.4). */
+  readonly hint?: string
   /** Metres. */
   readonly length: number
   /** Where he comes in, in metres. */
@@ -279,6 +285,7 @@ export const LINE_1: LineLevel = {
 export const LINE_2: LineLevel = {
   id: 'line-2',
   teaches: 'The shape that carries you is not the shape that fits.',
+  hint: 'Only a wide body is carried over the grate, and only a thin one fits the slot after it. Sing low to spread and cross, then sing high on the solid ground between.',
   length: 7,
   startX: 0.2,
   exitX: 6.6,
@@ -300,6 +307,7 @@ export const LINE_2: LineLevel = {
 export const LINE_3: LineLevel = {
   id: 'line-3',
   teaches: 'Keep going down as you go through.',
+  hint: 'The ceiling falls as he walks under it. Keep the note sliding lower, a step ahead of him, and he keeps going.',
   length: 5,
   startX: 0.2,
   exitX: 4.6,
