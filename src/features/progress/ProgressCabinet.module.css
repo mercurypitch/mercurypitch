@@ -1,0 +1,415 @@
+/* ── The cabinet ──────────────────────────────────────────────────────────
+ *
+ * Sits under the Milestones shelf and shares its material: the same dark
+ * plate, the same metal rail, the same uppercase eyebrow. Badges are square
+ * tiles with the medallion filling them; achievements are three shelves of
+ * rows with a thin bar each. Locked marks are present but dimmed — the point
+ * of the whole catalogue is that the next one is in view. */
+
+.chapter {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.6rem, 3vw, 2.6rem);
+  padding: clamp(2rem, 5vw, 5rem);
+  background:
+    linear-gradient(180deg, rgb(154 131 244 / 5%), transparent 40%), #0b0d14;
+  box-shadow:
+    inset 0 1px var(--progress-line-strong),
+    inset 0 -1px var(--progress-line-strong);
+  color: var(--progress-ivory);
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.header > div > span {
+  color: var(--progress-aqua);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 0.35rem 0 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(2rem, 3.7vw, 4rem);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.summary {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--progress-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.unavailable {
+  margin: 0;
+  color: var(--progress-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Groups ─────────────────────────────────────────────────────────────── */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 580;
+  letter-spacing: -0.01em;
+}
+
+.groupTitle svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--progress-metal);
+}
+
+.groupCount {
+  margin-left: auto;
+  color: var(--progress-quiet);
+  font-family: Inter, sans-serif;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────── */
+
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid rgb(216 187 121 / 22%);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 42%, rgb(216 187 121 / 14%), transparent 62%),
+    #111116;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.badge:hover {
+  transform: translateY(-2px);
+  border-color: rgb(216 187 121 / 55%);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 38%);
+}
+
+.badgeArt {
+  position: absolute;
+  inset: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.badgeArt img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 40%));
+}
+
+/* Present, but plainly not yet yours. */
+.badgeLocked .badgeArt {
+  filter: grayscale(0.85) brightness(0.55);
+  opacity: 0.75;
+}
+
+.badgeGlyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52%;
+  height: 52%;
+  color: var(--progress-muted);
+}
+
+.badgeGlyph svg {
+  width: 100%;
+  height: 100%;
+}
+
+.badgeCheck {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--progress-metal);
+  color: #0b0d14;
+}
+
+.badgeCheck svg {
+  width: 12px;
+  height: 12px;
+}
+
+.badgeHint {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
+
+.badgeHintEarned {
+  display: block;
+  margin-top: 6px;
+  color: var(--progress-metal);
+  font-size: 0.7rem;
+}
+
+.badgeStrip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 7px 6px;
+  border-top: 1px solid rgb(225 232 255 / 10%);
+  background: linear-gradient(to top, rgb(8 10 19 / 94%), rgb(8 10 19 / 72%));
+  backdrop-filter: blur(3px);
+}
+
+.badgeName {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--progress-ivory);
+  font-size: 0.72rem;
+  font-weight: 620;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badgeTier {
+  flex: none;
+  color: var(--progress-quiet);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Achievements ───────────────────────────────────────────────────────── */
+
+.shelf + .shelf {
+  margin-top: 1.4rem;
+}
+
+.shelfHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shelfHead h4 {
+  margin: 0;
+  color: var(--progress-ivory);
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.shelfCount {
+  color: var(--progress-quiet);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shelfBlurb {
+  margin: 2px 0 10px;
+  color: var(--progress-muted);
+  font-size: 0.8rem;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--progress-line);
+  border-radius: 12px;
+  background: var(--progress-surface-raised);
+}
+
+.rowUnlocked {
+  border-color: rgb(216 187 121 / 30%);
+}
+
+.rowIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--progress-surface);
+  color: var(--progress-muted);
+}
+
+.rowUnlocked .rowIcon {
+  color: var(--progress-metal);
+}
+
+.rowIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.rowName {
+  color: var(--progress-ivory);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rowPoints {
+  flex: none;
+  color: var(--progress-metal);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rowDetail {
+  margin: 0 0 8px;
+  color: var(--progress-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.rowProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rowCount {
+  color: var(--progress-quiet);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowTrack {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(225 232 255 / 10%);
+}
+
+.rowFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--progress-aqua);
+}
+
+.rowUnlocked .rowFill {
+  background: var(--progress-metal);
+}
+
+.rowDone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(216 187 121 / 16%);
+  color: var(--progress-metal);
+}
+
+.rowDone svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Narrow ─────────────────────────────────────────────────────────────── */
+
+@container (max-width: 560px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .summary {
+    max-width: none;
+    text-align: left;
+  }
+
+  .badgeGrid {
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
+
+  .rows {
+    grid-template-columns: 1fr;
+  }
+}

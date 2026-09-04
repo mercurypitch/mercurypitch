@@ -1,24 +1,21 @@
 // ============================================================
-// VocalChallenges — Practice challenges & achievements
+// VocalChallenges — the practice challenge catalogue
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
-import { InfoPopover } from '@/components/InfoPopover'
 import modalStyles from '@/components/Modal.module.css'
-import { FancyDivider } from '@/components/shared/FancyDivider'
-import type { Achievement as DBAchievement, AchievementCategory, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
-import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
-import { flushGrants } from '@/db/services/grant-flush'
+import type { ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, } from '@/db/entities'
+import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
 import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/challenges/challenge-attempt'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
-import { launchDrill } from '@/stores/ui-store'
-import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconLeaf, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
+import { TAB_PROGRESS } from '@/features/tabs/constants'
+import { launchDrill, setActiveTab } from '@/stores/ui-store'
+import { IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconLeaf, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconTarget, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
@@ -60,54 +57,6 @@ export interface ChallengeProgress {
   rewardBadgeId?: string
   /** Difficulty — beginner challenges get a gentler drill note set */
   difficulty: string
-}
-
-export interface UserBadge {
-  /** Badge ID */
-  id: string
-  /** Badge name */
-  name: string
-  /** Badge description */
-  description: string
-  /** Icon */
-  icon: Component | string
-  /** The seed's icon NAME, kept alongside the resolved component: the
-   *  medallion art is keyed by it, and iconForName throws the string
-   *  away. */
-  iconName: string
-  /** What earns it, in the singer's words. Seeded, but never surfaced —
-   *  so the collection showed a wall of grey medals with no way to learn
-   *  what any of them wanted. */
-  unlockCondition: string
-  /** Tier */
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum'
-  /** Earned date */
-  earnedDate: number
-  /** Is earned */
-  earned: boolean
-}
-
-export interface UserAchievement {
-  /** Achievement ID */
-  id: string
-  /** Achievement name */
-  name: string
-  /** Achievement description */
-  description: string
-  /** Icon */
-  icon: Component | string
-  /** Points */
-  points: number
-  /** Is unlocked */
-  unlocked: boolean
-  /** Unlocked date */
-  unlockedDate?: number
-  /** How far along, as a PERCENTAGE — what userAchievements.progress stores */
-  progress: number
-  /** Total required */
-  required: number
-  /** Which shelf it sits on. */
-  category: AchievementCategory
 }
 
 // ============================================================
@@ -166,14 +115,6 @@ export const VocalChallenges: Component = () => {
   const [dbChallengeProg, setDbChallengeProg] = createSignal<
     DBChallengeProgress[]
   >([])
-  const [dbBadgeDefs, setDbBadgeDefs] = createSignal<DBBadgeDefinition[]>([])
-  const [dbUserBadges, setDbUserBadges] = createSignal<DBUserBadge[]>([])
-  const [dbAchievementDefs, setDbAchievementDefs] = createSignal<
-    DBAchievement[]
-  >([])
-  const [dbUserAchievements, setDbUserAchievements] = createSignal<
-    DBUserAchievement[]
-  >([])
 
   // Streak display — same source as the badge engine and leaderboard
   // (streak-service), not a local reimplementation.
@@ -186,27 +127,13 @@ export const VocalChallenges: Component = () => {
     authVersion()
     challengeAttemptVersion()
     void (async () => {
-      // Achievement progress is written on a delay, so opening the page that
-      // displays it is one of the moments worth paying the write for —
-      // otherwise a singer who finishes a run and comes straight here sees
-      // the numbers from before it.
-      await flushGrants()
-      const [defs, prog, badgeDefs, userBadges, achDefs, userAchs, streak] =
-        await Promise.all([
-          loadChallengeDefinitions(),
-          loadChallengeProgress(),
-          loadBadgeDefinitions(),
-          loadUserBadges(),
-          loadAchievementDefinitions(),
-          loadUserAchievements(),
-          getCurrentStreak(),
-        ])
+      const [defs, prog, streak] = await Promise.all([
+        loadChallengeDefinitions(),
+        loadChallengeProgress(),
+        getCurrentStreak(),
+      ])
       setDbChallengeDefs(defs)
       setDbChallengeProg(prog)
-      setDbBadgeDefs(badgeDefs)
-      setDbUserBadges(userBadges)
-      setDbAchievementDefs(achDefs)
-      setDbUserAchievements(userAchs)
       setCurrentStreak(streak)
     })()
   })
@@ -252,66 +179,6 @@ export const VocalChallenges: Component = () => {
   // Get filtered challenges with real progress
   const challenges = createMemo(() =>
     getChallengesForCategory(activeCategory()),
-  )
-
-  // User badges — earned state comes from the grant engine's records only.
-  function getBadges(): UserBadge[] {
-    return dbBadgeDefs().map((def) => {
-      const userBadge = dbUserBadges().find((ub) => ub.badgeId === def.id)
-      return {
-        id: def.id,
-        name: def.name,
-        description: def.description,
-        icon: iconForName(def.icon),
-        iconName: def.icon,
-        unlockCondition: def.unlockCondition,
-        tier: def.tier,
-        earned: !!userBadge,
-        earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
-      }
-    })
-  }
-
-  // User achievements — progress/unlocked come from the grant engine only.
-  function getAchievements(): UserAchievement[] {
-    return dbAchievementDefs().map((def) => {
-      const userAch = dbUserAchievements().find(
-        (ua) => ua.achievementId === def.id,
-      )
-      return {
-        id: def.id,
-        name: def.name,
-        description: def.description,
-        icon: iconForName(def.icon),
-        points: def.points,
-        unlocked: userAch?.unlocked ?? false,
-        unlockedDate: earnedTimestamp(userAch?.unlockedAt),
-        progress: userAch?.progress ?? 0,
-        required: def.required,
-        category: def.category ?? 'beginnings',
-      }
-    })
-  }
-
-  const badges = createMemo(() => getBadges())
-  const achievements = createMemo(() => getAchievements())
-
-  /**
-   * The three shelves, in order, each with its own goals.
-   *
-   * Fifty-nine goals in one flat grid is a wall — a singer on day one and
-   * a singer on month six were reading the same undifferentiated list. Cut
-   * into "first week", "keep going" and "long haul", there is always a
-   * near one in view and the far ones stay visible as something to aim at.
-   *
-   * A band with nothing in it is dropped rather than rendered empty, so a
-   * seed that only defines one band still looks deliberate.
-   */
-  const achievementGroups = createMemo(() =>
-    ACHIEVEMENT_GROUPS.map((group) => ({
-      ...group,
-      items: achievements().filter((a) => a.category === group.id),
-    })).filter((group) => group.items.length > 0),
   )
 
   // Category tabs with real definition counts (no hardcoded numbers, no
@@ -455,148 +322,20 @@ export const VocalChallenges: Component = () => {
         </div>
       </div>
 
-      {/* Badges Section */}
-      <div class="badges-section">
-        <h3 class="section-title">
-          <IconBadge /> Badges Earned
-        </h3>
-        <FancyDivider class="section-divider" />
-        <div class="badges-grid">
-          <For each={badges()}>
-            {(badge) => {
-              // The whole tile is the affordance: the art fills it the way
-              // a voiceprint does, the name sits on a thin strip over the
-              // bottom, and hovering anywhere on it explains the badge.
-              // The old card was a 64px medallion floating above a name,
-              // with the earned tick landing on top of the 'i'.
-              let tile: HTMLDivElement | undefined
-              return (
-                <div
-                  ref={tile}
-                  class={`badge-item ${badge.earned ? 'earned' : 'locked'}`}
-                >
-                  <div class="badge-art">
-                    <Show
-                      when={badgeArtSrc(badge.iconName)}
-                      fallback={
-                        <span class="badge-glyph">
-                          {renderIcon(badge.icon)}
-                        </span>
-                      }
-                    >
-                      {(src) => (
-                        <img
-                          class="badge-medal"
-                          src={src()}
-                          width="256"
-                          height="256"
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )}
-                    </Show>
-                  </div>
-
-                  {/* Top-left, so it stops sitting on the 'i'. */}
-                  <Show when={badge.earned}>
-                    <span class="badge-check" title="Earned">
-                      <IconCheckSolid />
-                    </span>
-                  </Show>
-
-                  {/* Only the 'i' opens it. Hovering the whole tile fired
-                      on every pass of the mouse across a 16-tile grid,
-                      which is noise rather than help. */}
-                  <InfoPopover
-                    class="badge-hint-toggle"
-                    label={`How to earn ${badge.name}`}
-                  >
-                    {badge.unlockCondition || badge.description}
-                    <Show when={badge.earned && badge.earnedDate > 0}>
-                      <span class="badge-hint-earned">
-                        Earned {new Date(badge.earnedDate).toLocaleDateString()}
-                      </span>
-                    </Show>
-                  </InfoPopover>
-
-                  <div class="badge-strip">
-                    <span class="badge-name">{badge.name}</span>
-                    <span class="badge-tier">{badge.tier}</span>
-                  </div>
-                </div>
-              )
-            }}
-          </For>
-        </div>
-      </div>
-
-      {/* Achievements Section */}
-      <div class="achievements-section">
-        <h3 class="section-title">
-          <IconStarChallenge /> Achievements
-        </h3>
-        <FancyDivider class="section-divider" />
-        <For each={achievementGroups()}>
-          {(group) => (
-            <div class="achievement-group">
-              <div class="achievement-group-head">
-                <h4 class="achievement-group-name">{group.name}</h4>
-                <span class="achievement-group-count">
-                  {group.items.filter((a) => a.unlocked).length} /{' '}
-                  {group.items.length}
-                </span>
-              </div>
-              <p class="achievement-group-blurb">{group.blurb}</p>
-              <div class="achievements-list">
-                <For each={group.items}>
-                  {(ach) => (
-                    <div
-                      class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}
-                    >
-                      <div class="achievement-icon">{renderIcon(ach.icon)}</div>
-                      <div class="achievement-content">
-                        <div class="achievement-header">
-                          <span class="achievement-name">{ach.name}</span>
-                          {ach.unlocked && (
-                            <span class="achievement-points">
-                              +{ach.points} pts
-                            </span>
-                          )}
-                        </div>
-                        <p class="achievement-desc">{ach.description}</p>
-                        <div class="achievement-progress">
-                          <div class="progress-label">
-                            <span class="current">
-                              {achievementCount(ach.progress, ach.required)}
-                            </span>
-                            <span class="separator">/</span>
-                            <span class="total">{ach.required}</span>
-                          </div>
-                          <div class="progress-bar">
-                            <div
-                              class="progress-fill"
-                              style={{
-                                width: `${Math.min(100, ach.progress)}%`,
-                                background: getAchievementColor(ach.progress),
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      {ach.unlocked && (
-                        <span class="achievement-locked">
-                          <IconCheckSolid />
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </For>
-              </div>
-            </div>
-          )}
-        </For>
-      </div>
+      {/* The badge and achievement grids sat here until the relayout moved
+          them to Progress. A badge is a record of what practice earned, and
+          Progress is the record — so that is where the cabinet is. One line
+          where the grids used to be keeps the old path from ending in
+          nothing. */}
+      <p class="challenges-cabinet-pointer">
+        <span>
+          Every badge and achievement you earn here is kept on your Progress
+          page.
+        </span>
+        <button type="button" onClick={() => setActiveTab(TAB_PROGRESS)}>
+          Open Progress
+        </button>
+      </p>
 
       {/* Challenge Modal */}
       <Show when={showChallengeModal() && selectedChallenge()}>
@@ -759,53 +498,6 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   )
 }
 
-// ============================================================
-// Achievement shelves
-// ============================================================
-//
-// Order is the journey: first week, keep going, long haul. The names and
-// blurbs live here rather than in the seed because they describe the
-// SHELF, not any one goal — a new achievement joins a band without
-// needing to restate what the band is for.
-
-const ACHIEVEMENT_GROUPS: ReadonlyArray<{
-  id: AchievementCategory
-  name: string
-  blurb: string
-}> = [
-  {
-    id: 'beginnings',
-    name: 'Beginnings',
-    blurb: 'First times. Most of these fall in your first week.',
-  },
-  {
-    id: 'building',
-    name: 'Building',
-    blurb: 'The weekly rhythm — one of these should land most weeks.',
-  },
-  {
-    id: 'mastery',
-    name: 'Mastery',
-    blurb: 'The long haul. Months, not weeks.',
-  },
-]
-
-/**
- * The raw count behind a percentage, for the "3 / 10" label.
- *
- * userAchievements.progress is stored as 0-100 (the grant engine writes a
- * percentage), but the label and the bar were both reading it as a count:
- * "Thousand Notes" at half way showed "50 / 1000" on a 5%-wide bar, and a
- * finished "50 Sessions" showed "100 / 50" on a bar twice its track. The
- * bar now takes the percentage directly and the label converts back.
- * Lossy by one percent of the target, which is invisible at these sizes.
- */
-export function achievementCount(progress: number, required: number): number {
-  if (!Number.isFinite(required) || required <= 0) return 0
-  const pct = Math.max(0, Math.min(100, progress))
-  return Math.min(required, Math.round((pct / 100) * required))
-}
-
 /**
  * "When did this land", for a column that is allowed to say "it hasn't".
  *
@@ -856,12 +548,6 @@ function getChallengeProgressColor(progress: number): string {
   if (progress >= 50) return 'var(--teal)'
   if (progress >= 25) return 'var(--yellow)'
   return 'var(--red)'
-}
-
-function getAchievementColor(progress: number): string {
-  if (progress >= 100) return 'var(--green)'
-  if (progress >= 75) return 'var(--accent)'
-  return 'var(--teal)'
 }
 
 // ============================================================

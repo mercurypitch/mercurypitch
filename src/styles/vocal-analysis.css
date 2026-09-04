@@ -2735,11 +2735,6 @@
   color: #fff;
 }
 
-/* Badges Section */
-.badges-section {
-  margin-bottom: 32px;
-}
-
 /* Icon and title travel together on the LEFT, and at a readable size.
    `.section-title` is a global class with two other owners, and both
    were beating this one: uvr.css sets `display: flex; flex-direction:
@@ -2747,31 +2742,6 @@
    centred both), and app.css pins `.badges-section .section-title` to
    0.9rem. Scoped per section so it wins on specificity without touching
    either — the UVR panel still needs its column. */
-.badges-section .section-title,
-.achievements-section .section-title {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  margin: 0 0 10px 0;
-  font-size: 1.5rem;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  text-align: left;
-  color: var(--text-primary);
-}
-
-.badges-section .section-title svg,
-.achievements-section .section-title svg,
-.badges-section .section-title .icon-svg,
-.achievements-section .section-title .icon-svg {
-  width: 22px;
-  height: 22px;
-  margin: 0;
-  flex: none;
-  color: var(--accent);
-}
 
 .section-divider {
   margin: 0 0 18px;
@@ -2783,177 +2753,14 @@
    thumbnail floating above a name, and the earned tick landed on top of
    the 'i'. Hover anywhere on the tile explains the badge (see
    InfoPopover's hoverAnchor); tap the 'i' on touch. */
-.badges-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 12px;
-}
-
-.badge-item {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 14px;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 50% 42%,
-      color-mix(in srgb, var(--accent) 12%, transparent),
-      transparent 62%
-    ),
-    var(--bg-secondary);
-  border: 1px solid var(--border-color, var(--border));
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.badge-item:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
-}
-
-.badge-art {
-  position: absolute;
-  inset: 0 0 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-}
-
-.badge-medal {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.badge-glyph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52%;
-  height: 52%;
-  color: var(--text-muted);
-}
-
-.badge-glyph svg {
-  width: 100%;
-  height: 100%;
-}
 
 /* Locked badges keep the shape and lose the metal: you can see what is
    there to earn without it looking earned. */
-.badge-item.locked .badge-medal,
-.badge-item.locked .badge-glyph {
-  filter: grayscale(0.85) brightness(0.72);
-}
 
 /* The thin strip: name and tier, over the bottom of the art. */
-.badge-strip {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 5px 7px 6px;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--bg-primary) 94%, transparent),
-    color-mix(in srgb, var(--bg-primary) 72%, transparent)
-  );
-  backdrop-filter: blur(3px);
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-}
-
-.badge-name {
-  max-width: 100%;
-  font-size: 0.72rem;
-  font-weight: 620;
-  line-height: 1.2;
-  color: var(--text-primary);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.badge-tier {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  flex: none;
-}
-
-.badge-item.earned .badge-name {
-  color: var(--accent);
-}
 
 /* Top-LEFT. The tick used to sit where the 'i' is. */
 /* Top-right. The tick is top-LEFT, so the two no longer overlap. */
-.badge-hint-toggle {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-}
-
-.badge-hint-earned {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.7rem;
-  color: var(--accent);
-}
-
-.badge-check {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--green, #3fb950);
-  color: var(--bg-primary);
-}
-
-.badge-check svg {
-  width: 12px;
-  height: 12px;
-}
-
-.badge-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.badge-tier {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.badge-check {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  color: var(--green);
-  font-size: 1rem;
-}
-
-/* Achievements Section */
-.achievements-section {
-  margin-bottom: 32px;
-}
 
 /* A grid, not a column. Each row was one achievement stretched the full
    width of a 1400px screen with its text marooned in the middle and its
@@ -2962,137 +2769,10 @@
 /* Three shelves — Beginnings / Building / Mastery — instead of one flat
    wall of sixty tiles. The head carries the band's name, how many of it
    are done, and one line on what the band is for. */
-.achievement-group + .achievement-group {
-  margin-top: 22px;
-}
-
-.achievement-group-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.achievement-group-name {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  color: var(--text-primary);
-}
-
-.achievement-group-count {
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-.achievement-group-blurb {
-  margin: 2px 0 10px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.achievements-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.achievement-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  align-items: flex-start;
-}
-
-.achievement-item.unlocked {
-  border: 1px solid var(--accent);
-  background: linear-gradient(135deg, rgba(var(--accent), 0.1), transparent);
-}
 
 /* 0.5 opacity made every locked achievement look disabled next to the
    badge tiles, which keep full contrast and only lose their colour. Same
    treatment here: a locked one is legible, an unlocked one lights up. */
-.achievement-item.locked {
-  opacity: 0.88;
-}
-
-.achievement-item.locked .achievement-icon {
-  filter: grayscale(0.7) brightness(0.85);
-}
-
-.achievement-item.unlocked .achievement-icon {
-  filter: none;
-  color: var(--accent);
-}
-
-.achievement-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
-}
-
-.achievement-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.achievement-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.achievement-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.achievement-points {
-  font-size: 0.75rem;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.achievement-desc {
-  margin: 0 0 8px 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.achievement-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.achievement-progress .progress-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.achievement-locked {
-  align-self: flex-end;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-tertiary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 1rem;
-}
 
 /* Challenge Modal */
 /* The challenge modal now uses the shared Modal.module.css overlay, like
@@ -3589,9 +3269,6 @@
   }
   .modal-actions {
     flex-direction: column;
-  }
-  .badge-item {
-    padding: 8px;
   }
 }
 
@@ -4813,4 +4490,37 @@
 .unpublish-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--red, #f85149) 18%, transparent);
   color: var(--red, #f85149);
+}
+
+/* ── Challenges → Progress pointer ────────────────────────────────────────
+ * The badge and achievement grids moved to Progress in the relayout. One
+ * line where they used to be keeps the old path from ending in nothing. */
+.challenges-cabinet-pointer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 8px 0 32px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.challenges-cabinet-pointer button {
+  padding: 5px 12px;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.challenges-cabinet-pointer button:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: var(--bg-tertiary);
 }

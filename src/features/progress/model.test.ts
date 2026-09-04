@@ -944,3 +944,104 @@ describe('records from before the Progress migration', () => {
     expect(item?.instrument).toBe('voice')
   })
 })
+
+describe('the recognition catalogue', () => {
+  const AT = '2026-01-01T00:00:00.000Z'
+  const badge = (id: string, sortOrder: number): BadgeDefinition => ({
+    id,
+    createdAt: AT,
+    updatedAt: AT,
+    name: `Badge ${sortOrder}`,
+    description: 'd',
+    icon: 'firstvoice',
+    tier: 'gold',
+    category: 'legend',
+    unlockCondition: 'Win one.',
+    sortOrder,
+  })
+  const achievement = (
+    id: string,
+    sortOrder: number,
+    category?: Achievement['category'],
+  ): Achievement => ({
+    id,
+    createdAt: AT,
+    updatedAt: AT,
+    name: `Goal ${sortOrder}`,
+    description: 'd',
+    icon: 'star',
+    points: 10,
+    condition: 'c',
+    required: 10,
+    sortOrder,
+    ...(category === undefined ? {} : { category }),
+  })
+
+  it('lists every badge in catalogue order, earned or not', () => {
+    const userBadge: UserBadge = {
+      id: 'ub',
+      createdAt: '2026-08-09T00:00:00.000Z',
+      updatedAt: '2026-08-09T00:00:00.000Z',
+      userId: 'user-1',
+      badgeId: 'b2',
+      earnedAt: '2026-08-09T00:00:00.000Z',
+    }
+    const model = buildProgressModel(
+      input({
+        badgeDefinitions: [badge('b2', 2), badge('b1', 1)],
+        userBadges: [userBadge],
+      }),
+      { now: NOW },
+    )
+
+    expect(
+      model.recognition.catalogue.badges.map((b) => [
+        b.id,
+        b.earned,
+        b.earnedAt,
+      ]),
+    ).toEqual([
+      ['b1', false, null],
+      ['b2', true, '2026-08-09T00:00:00.000Z'],
+    ])
+    // The counts and the highlights are untouched by the catalogue.
+    expect(model.recognition.badges).toEqual({ earned: 1, total: 2 })
+    expect(model.recognition.milestones.map((m) => m.name)).toEqual(['Badge 2'])
+  })
+
+  it('carries each achievement with its stored progress, and an old row lands in Beginnings', () => {
+    const row: UserAchievement = {
+      id: 'ua',
+      createdAt: AT,
+      updatedAt: AT,
+      userId: 'user-1',
+      achievementId: 'a1',
+      progress: 30,
+      unlocked: false,
+      unlockedAt: null,
+    }
+    const model = buildProgressModel(
+      input({
+        achievementDefinitions: [
+          achievement('a2', 2, 'mastery'),
+          achievement('a1', 1),
+        ],
+        userAchievements: [row],
+      }),
+      { now: NOW },
+    )
+
+    expect(
+      model.recognition.catalogue.achievements.map((a) => [
+        a.id,
+        a.category,
+        a.progress,
+        a.unlocked,
+        a.unlockedAt,
+      ]),
+    ).toEqual([
+      ['a1', 'beginnings', 30, false, null],
+      ['a2', 'mastery', 0, false, null],
+    ])
+  })
+})
