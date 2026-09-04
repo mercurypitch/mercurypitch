@@ -88,9 +88,39 @@ describe('the frozen podium', () => {
 
     const rows = [...screen.getByTestId('podium-c1').querySelectorAll('li')]
     expect(rows.map((li) => li.textContent)).toEqual([
-      '1Alto97%',
-      '2Tenor95%',
-      '3Bass91%',
+      'Alto97%',
+      'Tenor95%',
+      'Bass91%',
+    ])
+  })
+
+  it('draws the medal each place earned, not a number', async () => {
+    // The same file as the badge in the winner's cabinet — the trophy shown
+    // where it was won. A numbered ring said "1" and connected to nothing.
+    await show([
+      challenge('c1', {
+        version: 2,
+        top3: [
+          { userId: 'u1', displayName: 'Alto', best: 97, rank: 1 },
+          { userId: 'u2', displayName: 'Tenor', best: 95, rank: 2 },
+          { userId: 'u3', displayName: 'Bass', best: 91, rank: 3 },
+        ],
+        attemptedCount: 17,
+        completedCount: 6,
+        closedAt: '2026-09-02T00:20:33.088Z',
+      }),
+    ])
+
+    const medals = [...screen.getByTestId('podium-c1').querySelectorAll('img')]
+    expect(medals.map((img) => img.getAttribute('src'))).toEqual([
+      '/badges/firstvoice.webp',
+      '/badges/secondvoice.webp',
+      '/badges/thirdvoice.webp',
+    ])
+    expect(medals.map((img) => img.getAttribute('alt'))).toEqual([
+      'Place 1',
+      'Place 2',
+      'Place 3',
     ])
   })
 
@@ -125,9 +155,13 @@ describe('the frozen podium', () => {
     const rows = [...screen.getByTestId('podium-c1').querySelectorAll('li')]
     // The score and the place are the record and stay; only the name goes.
     expect(rows.map((li) => li.textContent)).toEqual([
-      '1<redacted>97%',
-      '2Tenor95%',
+      '<redacted>97%',
+      'Tenor95%',
     ])
+    // A withdrawn name still won: the medal stays on the row.
+    expect(rows[0].querySelector('img')?.getAttribute('src')).toBe(
+      '/badges/firstvoice.webp',
+    )
   })
 
   it('draws a version 1 row, numbering it by position', async () => {
@@ -145,9 +179,13 @@ describe('the frozen podium', () => {
 
     const rows = [...screen.getByTestId('podium-c1').querySelectorAll('li')]
     expect(rows.map((li) => li.textContent)).toEqual([
-      '1Singer-8df297%',
-      '2Singer-782295%',
+      'Singer-8df297%',
+      'Singer-782295%',
     ])
+    // Position stands in for the missing rank, medals included.
+    expect(
+      rows.map((li) => li.querySelector('img')?.getAttribute('src')),
+    ).toEqual(['/badges/firstvoice.webp', '/badges/secondvoice.webp'])
   })
 
   it('shows no podium for a challenge that was closed without one', async () => {

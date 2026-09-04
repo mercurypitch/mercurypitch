@@ -1,36 +1,35 @@
 // ============================================================
-// PastWeeklyChallenges — replay closed weekly Legends without ranking
+// PastWeeklyChallenges — every closed Legend, with how it finished
 // ============================================================
-// The weekly archive remains useful as a practice library after its board
-// freezes. Every replay opens the same zen challenge stage in explicit
-// practice mode and disarms any abandoned live-week take first, so an archive
-// run can never be published to the weekly board.
+// Two jobs. The archive is the public record: each closed challenge with its
+// frozen podium, the medal each place earned, and how many sang. And it is a
+// practice library: every replay opens the same zen challenge stage in
+// explicit practice mode and disarms any abandoned live take first, so an
+// archive run can never be published to a board.
+//
+// Lives on the Leaderboard's Legends view, directly under the live challenge.
+// It used to be a rail on the Challenges tab, which put the one competitive
+// thing in the app on the page for personal practice drills and left the
+// Leaderboard — the page for competition — without it.
 
 import type { Component } from 'solid-js'
-import { createEffect, createResource, For, Show } from 'solid-js'
+import { createResource, For, Show } from 'solid-js'
 import { History, Play } from '@/components/icons'
 import { openChallengeStage } from '@/stores/ui-store'
+import { badgeArtSrc } from './badge-art'
 import styles from './PastWeeklyChallenges.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
 import type { WeeklyChallenge } from './weekly-service'
 import { getWeeklyArchive, podiumOf } from './weekly-service'
 
-export const PAST_WEEKLY_CHALLENGES_ID = 'past-weekly-challenges'
-const PAST_SCROLL_REQUEST_KEY = 'mercurypitch_scroll_past_challenges'
+const PAST_WEEKLY_CHALLENGES_ID = 'past-weekly-challenges'
 
-/** Request archive alignment before or after the lazy Challenges tab mounts. */
-export function requestPastChallengesScroll(): void {
-  const archive = document.getElementById(PAST_WEEKLY_CHALLENGES_ID)
-  if (archive !== null) {
-    archive.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    return
-  }
-  try {
-    sessionStorage.setItem(PAST_SCROLL_REQUEST_KEY, '1')
-  } catch {
-    // The tab still opens when browser storage is unavailable.
-  }
-}
+/**
+ * The badge each podium place earns, by rank. The medal drawn beside a name
+ * here is the same file as the badge in that singer's cabinet — the trophy,
+ * shown where it was won.
+ */
+const PLACE_ICONS = ['firstvoice', 'secondvoice', 'thirdvoice'] as const
 
 function endedLabel(endsAt: string): string {
   const ended = new Date(endsAt)
@@ -61,38 +60,6 @@ export function practisePastChallenge(challenge: WeeklyChallenge): void {
 export const PastWeeklyChallenges: Component = () => {
   const [archive] = createResource(getWeeklyArchive)
 
-  // Wait for the archive response before aligning the section. Scrolling as
-  // soon as the shell mounts can stop short because the empty loading state
-  // has not made enough scrollable room for the finished challenge cards.
-  createEffect(() => {
-    if (archive.loading) return
-    try {
-      if (sessionStorage.getItem(PAST_SCROLL_REQUEST_KEY) !== '1') return
-      sessionStorage.removeItem(PAST_SCROLL_REQUEST_KEY)
-    } catch {
-      return
-    }
-    // The ordinary challenge catalogue loads alongside the archive and adds
-    // most of the panel's scroll height. Wait for its first card (bounded for
-    // an intentionally empty catalogue), otherwise scrollIntoView can stop
-    // halfway because the panel is still too short.
-    let framesRemaining = 60
-    const alignWhenPageReady = (): void => {
-      const catalogueReady =
-        document.querySelector('.challenges-grid .challenge-card') !== null
-      framesRemaining -= 1
-      if (catalogueReady || framesRemaining <= 0) {
-        document.getElementById(PAST_WEEKLY_CHALLENGES_ID)?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        })
-        return
-      }
-      requestAnimationFrame(alignWhenPageReady)
-    }
-    requestAnimationFrame(alignWhenPageReady)
-  })
-
   return (
     <section
       id={PAST_WEEKLY_CHALLENGES_ID}
@@ -105,10 +72,10 @@ export const PastWeeklyChallenges: Component = () => {
           <History />
         </div>
         <div>
-          <h3 id="past-weekly-challenges-title">Past challenges</h3>
+          <h3 id="past-weekly-challenges-title">Past Legends</h3>
           <p>
-            Missed a week? Revisit its melody here. Practice runs never change
-            the weekly board.
+            How each one finished, and who finished first. Missed one? Its
+            melody is still here to practise; practice runs never touch a board.
           </p>
         </div>
       </div>
@@ -121,7 +88,7 @@ export const PastWeeklyChallenges: Component = () => {
           when={(archive() ?? []).length > 0}
           fallback={
             <p class={styles.state}>
-              No past Legends yet. Finished weeks will collect here.
+              No past Legends yet. Finished ones will collect here.
             </p>
           }
         >
@@ -142,7 +109,7 @@ export const PastWeeklyChallenges: Component = () => {
 
                     {/* ── How it finished ─────────────────────────── */}
                     {/* The board froze when the window shut; this is what
-                        it said. A week with no podium — closed by hand
+                        it said. A Legend with no podium — closed by hand
                         before results were snapshotted, or one nobody
                         consented to be named on — simply shows none. */}
                     <Show when={podiumOf(challenge.results).length > 0}>
@@ -153,7 +120,31 @@ export const PastWeeklyChallenges: Component = () => {
                         <For each={podiumOf(challenge.results)}>
                           {(place) => (
                             <li class={styles.place}>
-                              <span class={styles.placeRank}>{place.rank}</span>
+                              {/* The medal for the place, when it has one;
+                                  the numbered ring otherwise. Fourth place
+                                  and beyond never reach this list, but the
+                                  fallback keeps a missing file from leaving
+                                  a hole. */}
+                              <Show
+                                when={badgeArtSrc(PLACE_ICONS[place.rank - 1])}
+                                fallback={
+                                  <span class={styles.placeRank}>
+                                    {place.rank}
+                                  </span>
+                                }
+                              >
+                                {(src) => (
+                                  <img
+                                    class={styles.placeMedal}
+                                    src={src()}
+                                    width="28"
+                                    height="28"
+                                    alt={`Place ${place.rank}`}
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                )}
+                              </Show>
                               <span
                                 class={styles.placeName}
                                 classList={{

@@ -604,7 +604,7 @@ export interface WalkthroughProgress {
 // ============================================================
 
 /** Leaderboard view mode */
-export type LeaderboardView = 'global' | 'friends' | 'weekly' | 'league'
+export type LeaderboardView = 'global' | 'friends' | 'legends' | 'league'
 
 /** User ranking in leaderboard */
 export interface LeaderboardUser {

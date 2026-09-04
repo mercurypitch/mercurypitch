@@ -18,11 +18,11 @@ import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Trophy } from '@/components/icons'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
-import { TAB_CHALLENGES } from '@/features/tabs/constants'
+import { TAB_LEADERBOARD } from '@/features/tabs/constants'
+import { stashRequestedLeaderboardView } from '@/lib/pending-leaderboard-view'
 import { showNotification } from '@/stores/notifications-store'
 import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
 import { grantBoardConsent, hasBoardConsent } from './board-consent'
-import { requestPastChallengesScroll } from './PastWeeklyChallenges'
 import { beginWeeklyAttempt, clearWeeklyAttempt, weeklyAttemptVersion, } from './weekly-attempt'
 import { getActiveWeekly, getWeeklyBoard, hoursUntil } from './weekly-service'
 import styles from './WeeklyLegendHero.module.css'
@@ -34,7 +34,16 @@ function countdownLabel(endsAt: string): string {
   return `${Math.floor(h / 24)}d left`
 }
 
-export const WeeklyLegendHero: Component = () => {
+interface WeeklyLegendHeroProps {
+  /**
+   * Whether to offer the way to past challenges. On by default for Home;
+   * the Legends view turns it off because the archive is right underneath,
+   * and a link to where you already are is a link to nowhere.
+   */
+  showPastLink?: boolean
+}
+
+export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
   const [challenge] = createResource(getActiveWeekly)
   const [board, { refetch: refetchBoard }] = createResource(
     () => challenge()?.id,
@@ -127,9 +136,14 @@ export const WeeklyLegendHero: Component = () => {
     })
   }
 
+  /**
+   * Past challenges live on the Leaderboard's Legends view now, beside the
+   * live board and its winners. The request is stashed before the tab
+   * switch so the lazily mounted leaderboard opens straight onto it.
+   */
   function showPastChallenges(): void {
-    requestPastChallengesScroll()
-    setActiveTab(TAB_CHALLENGES)
+    stashRequestedLeaderboardView('legends')
+    setActiveTab(TAB_LEADERBOARD)
   }
 
   return (
@@ -236,9 +250,11 @@ export const WeeklyLegendHero: Component = () => {
           </div>
         </Show>
 
-        <button class={styles.allLink} onClick={showPastChallenges}>
-          See past challenges
-        </button>
+        <Show when={props.showPastLink !== false}>
+          <button class={styles.allLink} onClick={showPastChallenges}>
+            See past challenges
+          </button>
+        </Show>
       </Show>
 
       <ConfirmDialog

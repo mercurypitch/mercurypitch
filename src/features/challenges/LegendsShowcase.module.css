@@ -1,0 +1,36 @@
+/* ── Legends view ─────────────────────────────────────────────────────
+ *
+ * A single column: the intro, the live card, the archive. The hero is the
+ * Home card and carries its own surface, so this only spaces the pieces and
+ * caps the live card's width — full-bleed on a wide leaderboard it read as a
+ * banner, not a card. */
+.showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.lede {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.live {
+  max-width: 640px;
+}

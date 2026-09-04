@@ -182,10 +182,21 @@
 
 .place {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   font-size: 0.7rem;
   line-height: 1.5;
+}
+
+/* The medal is the same 192px enamel medallion as the badge in the singer's
+ * cabinet, drawn small. Three times the box it renders in, so a hi-DPI screen
+ * downscales rather than stretches — the image-sharpness rule. */
+.placeMedal {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .placeRank {
