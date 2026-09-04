@@ -674,3 +674,187 @@ describe('a singer with no display name of their own', () => {
     )
   })
 })
+
+// ── Awarding a podium that closed before there was one ───────────────
+//
+// Every challenge that closed before podium badges shipped has a snapshot and
+// no winners' badges, and `closeWeekly` will never select it again — it is
+// already closed. Without this the whole history is permanently unawarded.
+//
+// The interesting constraint is that a version 1 snapshot holds display names
+// and no ids, so there is no singer in it to award. The recompute goes back to
+// `sessionRecords`, which means today's consent rules decide — and the stored
+// record must not be rewritten on the way past.
+
+function reaward(id = CHALLENGE_ID, query = ''): Promise<Response> {
+  return workerRequest(`/api/weekly/${id}/reaward${query}`, {
+    method: 'POST',
+    headers: { 'X-Admin-Key': ADMIN_KEY },
+  })
+}
+
+interface Reaward {
+  challenge: { id: string; title: string }
+  dryRun: boolean
+  attemptedCount: number
+  rankedCount: number
+  grants: Array<{
+    rank: number
+    userId: string
+    displayName: string
+    badge: string | null
+    outcome: string
+  }>
+}
+
+/** A challenge closed the way it was before badges existed. */
+function closeAsVersionOne(
+  podium: Array<{ displayName: string; best: number }>,
+) {
+  sqlite
+    .prepare(
+      `UPDATE weeklyChallenges SET status = 'closed', resultsJson = ? WHERE id = ?`,
+    )
+    .run(
+      JSON.stringify({
+        top3: podium,
+        attemptedCount: podium.length,
+        completedCount: 1,
+        closedAt: '2026-09-02T09:11:06.833Z',
+      }),
+      CHALLENGE_ID,
+    )
+}
+
+describe('re-awarding a challenge that closed before badges existed', () => {
+  it('awards the podium a version 1 snapshot could not', async () => {
+    seedPodiumBadges()
+    const first = seedSinger('Brucey')
+    const second = seedSinger('Maff')
+    seedScore(first.id, 74)
+    seedScore(second.id, 40)
+    // No ids in the stored podium — the recompute is the only way back to a
+    // singer who can hold a badge.
+    closeAsVersionOne([
+      { displayName: 'Brucey', best: 74 },
+      { displayName: 'Maff', best: 40 },
+    ])
+    expect(badgeHolders('badge-first')).toEqual([])
+
+    const response = await reaward()
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as Reaward
+
+    expect(body.grants.map((g) => [g.displayName, g.badge, g.outcome])).toEqual(
+      [
+        ['Brucey', 'First Voice', 'granted'],
+        ['Maff', 'Second Voice', 'granted'],
+      ],
+    )
+    expect(badgeHolders('badge-first')).toEqual([first.id])
+    expect(badgeHolders('badge-second')).toEqual([second.id])
+  })
+
+  it('leaves the published record exactly as it was', async () => {
+    seedPodiumBadges()
+    const singer = seedSinger('Brucey')
+    seedScore(singer.id, 74)
+    closeAsVersionOne([{ displayName: 'Brucey', best: 74 }])
+    const before = snapshot()
+
+    await reaward()
+
+    // Recomputing the stored podium would quietly drop anyone who has since
+    // withdrawn — rewriting a published record rather than redacting it.
+    expect(snapshot()).toEqual(before)
+  })
+
+  it('applies today consent, not the consent at close time', async () => {
+    seedPodiumBadges()
+    const withdrawn = seedSinger('Since Withdrew', { optedIn: false })
+    const staying = seedSinger('Still In')
+    seedScore(withdrawn.id, 99)
+    seedScore(staying.id, 74)
+    closeAsVersionOne([
+      { displayName: 'Since Withdrew', best: 99 },
+      { displayName: 'Still In', best: 74 },
+    ])
+
+    const body = (await (await reaward()).json()) as Reaward
+    // The same answer they would get if the challenge closed now.
+    expect(body.grants.map((g) => g.displayName)).toEqual(['Still In'])
+    expect(badgeHolders('badge-first')).toEqual([staying.id])
+  })
+
+  it('says who would be awarded without awarding them', async () => {
+    seedPodiumBadges()
+    const singer = seedSinger('Brucey')
+    seedScore(singer.id, 74)
+    closeAsVersionOne([{ displayName: 'Brucey', best: 74 }])
+
+    const body = (await (
+      await reaward(CHALLENGE_ID, '?dryRun=1')
+    ).json()) as Reaward
+    expect(body.dryRun).toBe(true)
+    expect(body.grants.map((g) => g.displayName)).toEqual(['Brucey'])
+    // A write to somebody else's account, visible in their app — worth being
+    // able to look before doing.
+    expect(badgeHolders('badge-first')).toEqual([])
+  })
+
+  it('is safe to run twice', async () => {
+    seedPodiumBadges()
+    const singer = seedSinger('Brucey')
+    seedScore(singer.id, 74)
+    closeAsVersionOne([{ displayName: 'Brucey', best: 74 }])
+
+    await reaward()
+    const body = (await (await reaward()).json()) as Reaward
+    expect(body.grants[0].outcome).toBe('already-held')
+    expect(badgeHolders('badge-first')).toEqual([singer.id])
+    expect(
+      (
+        sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
+          c: number
+        }
+      ).c,
+    ).toBe(1)
+  })
+
+  it('reports an unseeded badge rather than pretending it awarded one', async () => {
+    const singer = seedSinger('Brucey')
+    seedScore(singer.id, 74)
+    closeAsVersionOne([{ displayName: 'Brucey', best: 74 }])
+
+    const body = (await (await reaward()).json()) as Reaward
+    expect(body.grants[0].outcome).toBe('no-definition')
+    expect(
+      (
+        sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
+          c: number
+        }
+      ).c,
+    ).toBe(0)
+  })
+
+  it('refuses a challenge that is still running', async () => {
+    seedPodiumBadges()
+    const singer = seedSinger('Brucey')
+    seedScore(singer.id, 74)
+
+    const response = await reaward()
+    expect(response.status).toBe(400)
+    expect(badgeHolders('badge-first')).toEqual([])
+  })
+
+  it('404s an unknown challenge, and refuses without the admin key', async () => {
+    seedPodiumBadges()
+    expect((await reaward('no-such-challenge')).status).toBe(404)
+
+    const unauthorized = await workerRequest(
+      `/api/weekly/${CHALLENGE_ID}/reaward`,
+      { method: 'POST' },
+    )
+    expect(unauthorized.status).toBe(403)
+  })
+})

@@ -1607,24 +1607,47 @@ const PODIUM_BADGE_NAMES: Record<number, string> = {
  * Idempotent per singer: a second win re-grants nothing, which is how badges
  * work everywhere else in the app (`grantBadgeByRef` dedupes on badgeId too).
  */
+type GrantOutcome = 'granted' | 'already-held' | 'no-definition' | 'failed'
+
+export interface PodiumGrant {
+  rank: number
+  userId: string
+  displayName: string
+  badge: string | null
+  outcome: GrantOutcome
+}
+
 async function grantPodiumBadges(
   podium: readonly PodiumEntry[],
   env: Env,
-): Promise<void> {
+): Promise<PodiumGrant[]> {
+  const report: PodiumGrant[] = []
   for (const entry of podium) {
     const name = PODIUM_BADGE_NAMES[entry.rank]
-    if (name === undefined) continue
+    const line = {
+      rank: entry.rank,
+      userId: entry.userId,
+      displayName: entry.displayName,
+      badge: name ?? null,
+    }
+    if (name === undefined) {
+      report.push({ ...line, outcome: 'no-definition' })
+      continue
+    }
     try {
       const badge = await env.DB.prepare(
         `SELECT id FROM badgeDefinitions WHERE name = ? LIMIT 1`,
       )
         .bind(name)
         .first<{ id: string }>()
-      if (!badge) continue
+      if (!badge) {
+        report.push({ ...line, outcome: 'no-definition' })
+        continue
+      }
       const now = new Date().toISOString()
       // INSERT ... WHERE NOT EXISTS rather than a read-then-write: two closes
       // racing on the same row would both see "not held" and both insert.
-      await env.DB.prepare(
+      const result = await env.DB.prepare(
         `INSERT INTO userBadges (id, createdAt, updatedAt, userId, badgeId, earnedAt)
          SELECT ?, ?, ?, ?, ?, ?
           WHERE NOT EXISTS (
@@ -1642,10 +1665,85 @@ async function grantPodiumBadges(
           badge.id,
         )
         .run()
+      report.push({
+        ...line,
+        outcome: (result.meta?.changes ?? 0) > 0 ? 'granted' : 'already-held',
+      })
     } catch (error) {
       console.error('[weekly] podium badge grant failed', name, error)
+      report.push({ ...line, outcome: 'failed' })
     }
   }
+  return report
+}
+
+// ── Awarding a podium that closed before there was one ───────────────
+//
+// Challenges that closed before podium badges existed have a snapshot but no
+// winners' badges, and `closeWeekly` will never run on them again — they are
+// already `closed`, so neither the rotation nor the admin PATCH selects them.
+// Without a way to reach back, every challenge that ran before this shipped is
+// permanently unawarded.
+//
+// It recomputes from `sessionRecords` rather than reading the stored podium,
+// because a version 1 snapshot holds display names and no ids — there is no
+// singer in it to give a badge to. That means today's consent rules apply:
+// somebody who has since opted out of public boards is not awarded, which is
+// the same answer they would get if the challenge closed now.
+//
+// It deliberately does NOT rewrite `resultsJson`. The stored podium is what
+// was published, and recomputing it now would quietly drop anyone who has
+// since withdrawn — rewriting a record rather than redacting it. Badges are
+// additive; the record is left alone.
+async function reawardWeekly(
+  id: string,
+  url: URL,
+  env: Env,
+): Promise<Response> {
+  const row = await env.DB.prepare(
+    `SELECT * FROM weeklyChallenges WHERE id = ?`,
+  )
+    .bind(id)
+    .first<WeeklyRow>()
+  if (!row) return respond({ error: 'Not found' }, { status: 404 })
+  if (row.status !== 'closed') {
+    return respond(
+      { error: 'Only a closed challenge has winners to award' },
+      { status: 400 },
+    )
+  }
+
+  const { perUser, attemptedCount } = await computeWeeklyBoard(row, env)
+  const podium: PodiumEntry[] = rankableSingers(perUser)
+    .slice(0, PODIUM_PLACES)
+    .map((u, i) => ({
+      userId: u.userId,
+      displayName: u.displayName,
+      best: Math.round(u.best),
+      rank: i + 1,
+    }))
+
+  // `dryRun` so an operator can see who would be awarded before awarding
+  // them — the grant is idempotent but it is still a write to other people's
+  // accounts, and one that shows up in their app.
+  const dryRun = url.searchParams.get('dryRun') === '1'
+  const grants = dryRun
+    ? podium.map((entry) => ({
+        rank: entry.rank,
+        userId: entry.userId,
+        displayName: entry.displayName,
+        badge: PODIUM_BADGE_NAMES[entry.rank] ?? null,
+        outcome: 'granted' as const,
+      }))
+    : await grantPodiumBadges(podium, env)
+
+  return respondNoStore({
+    challenge: { id: row.id, title: row.title },
+    dryRun,
+    attemptedCount,
+    rankedCount: rankableSingers(perUser).length,
+    grants,
+  })
 }
 
 /** Encore: clone a random evergreen closed row as this week's active challenge. */
@@ -2009,7 +2107,9 @@ async function handleWeekly(
   request: Request,
   env: Env,
 ): Promise<Response> {
-  const sub = url.pathname.replace(/^\/api\/weekly\/?/, '').split('/')[0]
+  const segments = url.pathname.replace(/^\/api\/weekly\/?/, '').split('/')
+  const sub = segments[0]
+  const action = segments[1] ?? ''
   const method = request.method
 
   // ── Admin writes ──
@@ -2017,6 +2117,13 @@ async function handleWeekly(
     if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
     return createWeekly(request, env)
+  }
+  // Award the podium of a challenge that closed before badges existed. Add
+  // `?dryRun=1` to see who would be awarded without writing anything.
+  if (method === 'POST' && sub !== '' && action === 'reaward') {
+    if (!(await isAdmin(request, env)))
+      return respond({ error: 'Admin key required' }, { status: 403 })
+    return reawardWeekly(sub, url, env)
   }
   if (
     method === 'PATCH' &&
