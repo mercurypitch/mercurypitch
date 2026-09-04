@@ -127,16 +127,17 @@ name on screen.
 
 `t` is his silhouette, and the volume of mercury is conserved:
 
-| t   | what he is | height | width  |
-| --- | ---------- | ------ | ------ |
-| 0.0 | a puddle   | 0.16 m | 0.67 m |
-| 0.5 | a drop     | 0.55 m | 0.36 m |
-| 1.0 | a thread   | 0.94 m | 0.28 m |
+| t    | what he is | height | width  |
+| ---- | ---------- | ------ | ------ |
+| 0.00 | a puddle   | 0.32 m | 0.47 m |
+| 0.37 | a drop     | 0.55 m | 0.36 m |
+| 1.00 | a thread   | 0.94 m | 0.28 m |
 
-Height is linear in `t` (`h = 0.16 + 0.78t`); width falls out of
-`w = sqrt(0.0713 / h)`, which holds `w²h` constant. `t = 0.5` is exactly
-the Merc that already ships, which is what makes rest a shape rather
-than a null state.
+Height is linear in `t` (`h = 0.32 + 0.62t`); width falls out of
+`w = sqrt(0.0713 / h)`, which holds `w²h` constant. The drop -- the Merc
+who already ships -- lies on the sweep at `t ≈ 0.37`, which is what
+makes rest a shape rather than a null state. It sat at 0.5 in the first
+draft, with the puddle at 0.16 m; §14.5 says why the flat end came up.
 
 **The room is inert.** Every plate, gap and slot is dumb geometry that
 would sit there unchanged if the microphone never opened. The voice
@@ -763,14 +764,14 @@ they were put rather than decided.
 
 Each step lands green and leaves the app working before the next begins.
 
-| #   | Step                                                                                                                                                  | Done when                                                                                                                                                                                |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4a  | **The squash test.** Pose Merc from the voice by root scale in the Hallway, re-derive the hover offset, sweep `t` from 0 to 1 on a dev dial. No rooms | A 0.16 × 0.67 Merc reads as a puddle rather than a broken character on a real phone, the clamp (if any) is written down, and nothing else in the app has changed                         |
-| 4b  | **`sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch            | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
-| 4c  | **Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                    | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
-| 4d  | **Room 2, the trade.** Width-aware ground sampler as a closure, the mesh floor, the chute, the return                                                 | The Screen is playable, a thread falls through it, the chute returns him to the start of the stretch, gates already passed stay passed — and §8's question is asked out loud             |
-| 4e  | **The wedge gate**, plus `chamber-track.ts` generalised and a second card in the games list                                                           | A gate exists that a one-dimensional pitch cursor cannot pass, both circles run on one track module, and the list shows two cards with progress                                          |
-| 4f  | **The grade and the end card.** Slide and overshoot recorded per gate, best per room kept, the walk card                                              | The run reports cents past the gate and first-try count per room and for the walk, replaying returns to the card, and nothing is gated on any of it                                      |
+| #   | Step                                                                                                                                                                     | Done when                                                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4a  | **The squash test. LANDED -- see §14.** Pose Merc from the voice by root scale in the Hallway, re-derive the hover offset, sweep `t` from 0 to 1 on a dev dial. No rooms | A 0.16 × 0.67 Merc reads as a puddle rather than a broken character on a real phone, the clamp (if any) is written down, and nothing else in the app has changed                         |
+| 4b  | **`sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch                               | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
+| 4c  | **Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                                       | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
+| 4d  | **Room 2, the trade.** Width-aware ground sampler as a closure, the mesh floor, the chute, the return                                                                    | The Screen is playable, a thread falls through it, the chute returns him to the start of the stretch, gates already passed stay passed — and §8's question is asked out loud             |
+| 4e  | **The wedge gate**, plus `chamber-track.ts` generalised and a second card in the games list                                                                              | A gate exists that a one-dimensional pitch cursor cannot pass, both circles run on one track module, and the list shows two cards with progress                                          |
+| 4f  | **The grade and the end card.** Slide and overshoot recorded per gate, best per room kept, the walk card                                                                 | The run reports cents past the gate and first-try count per room and for the walk, replaying returns to the card, and nothing is gated on any of it                                      |
 
 **4a is first on purpose**, and it is the same reasoning that put step 2b
 early in slice 2: it puts the new thing into a scene that already works,
@@ -778,3 +779,144 @@ so an aesthetic problem cannot be confused with a room problem. It is
 also the cheapest possible off-ramp — if a flattened Merc reads as a bug
 rather than a joke, the answer arrives in an evening, before a room
 exists around it, and §1.3's fallback is still cheap.
+
+---
+
+## 14. What step 4a found
+
+Run 2026-09-04, on the real asset in the real environment, through
+`/merc-probe.html`. Three things came out of it and only one of them was
+the question that was asked.
+
+### 14.1 The silhouette reads, and §1.3's off-ramp is not needed
+
+The sweep, at 375x812:
+
+| `t`  | body        | reads as                                     |
+| ---- | ----------- | -------------------------------------------- |
+| 1.00 | 0.94 x 0.28 | a tall teardrop, face clear. Beautiful.      |
+| 0.50 | 0.55 x 0.36 | the shipped Merc, unchanged.                 |
+| 0.33 | 0.42 x 0.41 | a squat wide Merc, face clear. Charming.     |
+| 0.25 | 0.35 x 0.45 | still clearly a face. The comfortable floor. |
+| 0.15 | 0.28 x 0.51 | eyes sliding onto the lower rim. Borderline. |
+| 0.00 | 0.16 x 0.67 | **a puddle with no face.**                   |
+
+So the answer to §1.3 is yes: a flattened Merc reads as a joke rather
+than as a bug, across almost the whole range. **The Top Shelf fallback
+is not triggered and the Sorting Line stands.**
+
+### 14.2 The clamp, and why it is a finding rather than a policy
+
+_Superseded the same evening -- see §14.5. maff looked at the flat end on
+his phone and chose to dial the sweep rather than fix the face in art,
+so the floor is now applied: `SWEEP.flat` sits on the measured line and
+a test holds it there. The reasoning below is kept because it is why the
+line is where it is._
+
+At the very flat end the eyes and mouth flatten onto the silhouette's
+lower rim, and a camera that looks slightly down at him stops seeing
+them. He stops being a squashed character and becomes a spill.
+
+**It cannot be fixed by scale, and that was checked rather than
+assumed.** Counter-scaling `merc_face` changes nothing: it is a
+`SkinnedMesh`, and three cancels a node transform through
+`bindMatrixInverse`, so the face rides the skeleton. Recovering it is
+art -- a shape key, a head bone that resists the squash, or features
+that migrate as he flattens -- or it is mapping the voice onto
+`[0.2, 1]` and giving up the flattest shape.
+
+`FLAT_READS_ABOVE = 0.2` records the edge in `sim/tension3d.ts`, and
+**nothing applies it**. A floor quietly baked into `silhouetteFor` would
+make §4b's choice by default, and the two options have very different
+consequences: clamping changes every slot height §2.1 derives, while
+fixing the face changes none of them.
+
+### 14.3 The thing that was not the question: he was never anchored
+
+The plan's §7.2 predicted the trap in the right place and for a slightly
+wrong reason. `createMerc` did compute a hover offset from the load-time
+height -- but **it never ran**. Every caller, both stages and the probe,
+assigns `root.position.y` from the simulation on the next frame, so the
+offset was overwritten before it was ever seen.
+
+What actually anchors Merc is the root origin, and the origin sits at his
+**vertical centre**: `bounds.min.y` is -0.9519 against a height of
+1.9028, so half of him is below whatever `y` the simulation gives him.
+That is invisible today, because the floor is a non-occluding gradient
+(`depthWrite: false`) and half a hovering droplet under the floor line
+reads as hovering.
+
+It stops being invisible the moment the shape moves. Anchored at his
+centre, scaling his height grows him downward as much as upward, so a
+squashed Merc rises off the floor and a stretched one sinks through it --
+silently, and neither reads as squash or stretch. **The player just sees
+him bob.**
+
+So the body now lives inside a wrapper. `root` is the wrapper and carries
+nothing but what the caller puts there; the body carries the scale and a
+counter-offset that holds his lowest point exactly where the rest shape
+left it. `setShape(1, 1)` is the shipped Merc, to the last bit, and the
+two shipped worlds render identically to before.
+
+### 14.4 Two things for §4b to inherit
+
+**Width means the torso.** §2's table reproduces from the `merc_body`
+shell (0.3595 wide at h=0.55, giving `w²h` = 0.0711 against the stated
+0.0713), not from the whole actor (0.5282, giving 0.1534). The mitts add
+8.4 cm per side and hang off their own bones, so `fitsSlot` should gate
+on the torso -- gating on the mitts would gate on a limb pose any clip
+can move.
+
+**The flat end outruns the Hallway's framing**, separately from the face.
+At `t = 0` and 375 px wide, a 0.67 m Merc has a mitt clipped off the left
+edge by a chase camera framed for a 0.36 m one. Centring him recovers the
+frame but not the face, so the two problems are independent: the framing
+one belongs to the Sorting Line's own camera and is not evidence against
+the shape.
+
+### 14.5 What the phone said
+
+maff ran the probe on his phone with his own voice, the same evening.
+Three things, and only one of them was expected.
+
+**The morph works.** The voice moves him and so does the slider, and the
+tall end is good. That is the question 4a existed to ask, answered.
+
+**"He squished too much on low notes."** The face went, exactly as
+§14.2 measured, and maff's call was to dial rather than to fix the face
+in art. So the sweep is now `0.32 m` to `0.94 m`: the flat end sits on
+the line the face was seen to survive (`FLAT_READS_ABOVE_HEIGHT`), the
+tall end is the one he called good, and the shipped Merc lies on the
+curve at `t ≈ 0.37` rather than 0.5. `silhouetteFor` takes the sweep as
+an argument and the probe reads it from `?flat=&tall=`, so the next
+argument about these numbers can happen on a phone.
+
+**"He goes below the screen as he stretches."** That was mine. The
+anchor in §14.3 had its sign backwards -- it held his TOP still, so a
+thread sank 39 cm and a puddle floated 39 cm -- and the check I called
+verification looked only at rest, where the offset is zero whichever
+sign it carries. The arithmetic now lives in `render/merc-anchor.ts`,
+pure and tested across the whole sweep and past both ends of it.
+
+Fixing it surfaced a second, quieter thing: the anchor was on the whole
+box, and the whole box's bottom is a **mitt**, hanging 25 cm below the
+body in the bind pose and beside it in every clip that plays. Holding a
+point nobody sees still lets the body itself drift by the difference,
+scaled -- 4 cm at the flat end. The anchor is the torso now
+(`merc_body`, 0.2023 m under the root; the box would say 0.2751), which
+is also the shell §14.4 says width means.
+
+**And a test that would have caught all of it.** `e2e/merc-probe-shape.e2e.ts`
+drives the probe in Playwright at 390x844: at `t` = 0, 0.25, 0.5 and 1 it
+screenshots him and asserts the torso is inside the frame, and with the
+clip frozen it asserts his feet have not moved -- in world units to a
+millimetre and on the screen to a pixel and a half. The first run
+failed both ways, which is the point.
+
+One number the test carries rather than asserts: the Hallway's chase
+camera frames him 0.4 m left of centre by design (`lookAt` is always
+`mercX + 0.4`), and at the flat end that puts the torso's left edge 4 px
+past a 390 px phone and a mitt 8 px past it. The flat end therefore
+asserts top and bottom only, with the reason in the file. **The Sorting
+Line's camera (step 4c) must frame him centred or wider**; the day the
+probe can use it, the contract tightens to every edge and the whole box.
