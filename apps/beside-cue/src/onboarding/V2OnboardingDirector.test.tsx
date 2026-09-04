@@ -230,10 +230,6 @@ function createDirectorProbe(
       foreground: true,
       muted: false,
       onMutedChange,
-      reminderPresets: [
-        { id: 'morning', label: 'Morning', localTime: '08:30' },
-        { id: 'evening', label: 'Evening', localTime: '20:30' },
-      ],
       onSavePlan,
       onSetReminder,
       onComplete,
@@ -1460,14 +1456,30 @@ describe('V2OnboardingDirector', () => {
     ).toBeVisible()
 
     await advance(950)
-    fireEvent.click(screen.getByRole('radio', { name: /Evening/u }))
+    const reminderHeading = screen.getByRole('heading', {
+      name: 'Bring this plan back later?',
+    })
+    const reminderDial = screen.getByRole('slider', {
+      name: 'Turn the record to choose a reminder time',
+    })
+    expect(reminderDial).toBeVisible()
+    expect(
+      reminderHeading.compareDocumentPosition(reminderDial) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0)
     const reminderButton = screen.getByRole('button', { name: 'Set reminder' })
+    expect(reminderButton).toBeDisabled()
+    fireEvent.input(screen.getByLabelText('Choose a time'), {
+      target: { value: '20:30' },
+    })
     expect(reminderButton).toBeEnabled()
     fireEvent.input(screen.getByLabelText('Choose a time'), {
       target: { value: '' },
     })
     expect(reminderButton).toBeDisabled()
-    fireEvent.click(screen.getByRole('radio', { name: /Evening/u }))
+    fireEvent.input(screen.getByLabelText('Choose a time'), {
+      target: { value: '20:30' },
+    })
     fireEvent.click(reminderButton)
     await Promise.resolve()
     await Promise.resolve()

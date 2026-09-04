@@ -1542,7 +1542,7 @@ svg {
 }
 
 .schedule-options {
-  margin-top: 1rem;
+  margin-top: 0.35rem;
   border-top: 1px solid rgb(36 25 19 / 32%);
 }
 
@@ -1645,6 +1645,23 @@ svg {
 
 .custom-time .secondary-button {
   white-space: nowrap;
+}
+
+.custom-time.custom-time--punched {
+  justify-items: center;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.custom-time--punched > .secondary-button {
+  width: min(100%, 25rem);
+  min-height: 3.35rem;
+}
+
+.schedule-options--single {
+  width: min(100%, 25rem);
+  margin-inline: auto;
 }
 
 .schedule-status {

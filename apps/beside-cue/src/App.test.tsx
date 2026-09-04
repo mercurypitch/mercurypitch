@@ -1965,11 +1965,10 @@ describe('Beside Cue app', () => {
     await screen.findByText('Not now is okay')
     fireEvent.click(screen.getByRole('button', { name: /back to home/iu }))
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /morning a small beginning 09:00/iu,
-      }),
-    )
+    fireEvent.input(screen.getByLabelText('Type exact time'), {
+      target: { value: '09:00' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Set reminder' }))
     await waitFor(() =>
       expect(repository.snapshot()?.scheduleRules).toHaveLength(1),
     )
@@ -2399,17 +2398,18 @@ describe('Beside Cue app', () => {
 
     await saveFirstPlanFromWelcome()
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /morning a small beginning 09:00/iu,
-      }),
-    )
+    fireEvent.input(screen.getByLabelText('Type exact time'), {
+      target: { value: '09:05' },
+    })
+    expect(repository.snapshot()?.scheduleRules).toEqual([])
+    expect(probe.calls.scheduled).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Set reminder' }))
 
     await waitFor(() => {
       expect(repository.snapshot()?.scheduleRules).toMatchObject([
         {
           kind: 'target_time',
-          localTime: '09:00',
+          localTime: '09:05',
           enabled: true,
         },
       ])
@@ -2417,7 +2417,7 @@ describe('Beside Cue app', () => {
     await waitFor(() => expect(probe.calls.scheduled.at(-1)).toHaveLength(1))
     expect(probe.calls.permissionRequests).toBe(0)
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Reminder set for 9:00. You can change it in Settings.',
+      'Reminder set for 9:05. You can change it in Settings.',
     )
 
     const scheduled = probe.calls.scheduled.at(-1)?.[0]
@@ -2425,7 +2425,7 @@ describe('Beside Cue app', () => {
     expect(scheduled.schedule).toEqual({
       kind: 'daily',
       hour: 9,
-      minute: 0,
+      minute: 5,
     })
     await probe.emitNotificationAction({
       notificationId: scheduled.id,
@@ -2557,11 +2557,10 @@ describe('Beside Cue app', () => {
 
     await saveFirstPlanFromWelcome()
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /morning a small beginning 09:00/iu,
-      }),
-    )
+    fireEvent.input(screen.getByLabelText('Type exact time'), {
+      target: { value: '09:00' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Set reminder' }))
 
     await waitFor(() => expect(probe.calls.scheduled).toHaveLength(1))
     fireEvent.click(screen.getByRole('button', { name: /back/iu }))

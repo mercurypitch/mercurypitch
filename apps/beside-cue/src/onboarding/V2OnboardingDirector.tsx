@@ -10,6 +10,7 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show
 import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
 import { BrandMark } from '@/components/BrandMark'
+import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
 import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
 import type { V2OnboardingAudioBeat } from './v2-onboarding-audio-director'
@@ -27,12 +28,6 @@ export type V2OnboardingMutationResult =
   | { readonly ok: true }
   | { readonly ok: false; readonly message: string }
 
-export interface V2OnboardingReminderPreset {
-  readonly id: string
-  readonly label: string
-  readonly localTime: string
-}
-
 export interface V2OnboardingDirectorProps {
   readonly sessionKind: V2OnboardingSessionKind
   readonly pullOptions: readonly PullOption[]
@@ -42,13 +37,13 @@ export interface V2OnboardingDirectorProps {
   readonly foreground: boolean
   readonly muted: boolean
   readonly onMutedChange: (muted: boolean) => void
-  readonly reminderPresets: readonly V2OnboardingReminderPreset[]
   readonly onSavePlan: (
     plan: V2OnboardingPlanDraft,
   ) => Promise<V2OnboardingMutationResult>
   readonly onSetReminder: (
     localTime: string,
   ) => Promise<V2OnboardingMutationResult>
+  readonly onTimeHaptic?: (strength: 'light' | 'medium') => void
   readonly onComplete: () => void
 }
 
@@ -1022,6 +1017,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     ].includes(state().phase),
   )
 
+  const isReminderPhase = createMemo(() =>
+    ['B07_REMINDER_HOLD', 'B07_REMINDER_COMMIT'].includes(state().phase),
+  )
+
   const isCinematicPhase = createMemo(() =>
     [
       'B01_CORKY_GREETING',
@@ -1149,6 +1148,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           [styles.stageBrand]: isBrandPhase(),
           [styles.stageCinematic]: isCinematicPhase(),
           [styles.stageRecord]: isRecordPhase(),
+          [styles.stageReminder]: isReminderPhase(),
         }}
         data-v2-scene-surface={isCinematicPhase() ? 'full-viewport' : 'paper'}
         data-v2-record-scene={isRecordPhase() ? 'true' : 'false'}
@@ -1160,6 +1160,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           aria-hidden="true"
         >
           <Switch>
+            <Match when={isReminderPhase()}>
+              <span />
+            </Match>
+
             <Match when={isRecordPhase()}>
               <div class={styles.recordFrame}>
                 <div class={styles.platterFrame}>
@@ -1270,7 +1274,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
         <div
           class={styles.copy}
-          classList={{ [styles.copyCinematic]: isCinematicPhase() }}
+          classList={{
+            [styles.copyCinematic]: isCinematicPhase(),
+            [styles.copyReminder]: isReminderPhase(),
+          }}
         >
           <header class={styles.copyHeading}>
             <h1
@@ -1291,6 +1298,22 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               )}
             </Show>
           </header>
+
+          <Show when={isReminderPhase()}>
+            <div class={styles.reminderDial}>
+              <PunchedTimeDial
+                value={state().reminderTime ?? ''}
+                defaultValue="18:30"
+                compact
+                disabled={state().phase === 'B07_REMINDER_COMMIT'}
+                inputLabel="Choose a time"
+                onValueChange={(localTime) =>
+                  dispatch({ type: 'SELECT_REMINDER', localTime })
+                }
+                onHaptic={props.onTimeHaptic}
+              />
+            </div>
+          </Show>
 
           <div class={styles.copyControls}>
             <Switch>
@@ -1589,43 +1612,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               </Match>
 
               <Match when={state().phase === 'B07_REMINDER_HOLD'}>
-                <div
-                  class={styles.reminderGrid}
-                  role="radiogroup"
-                  aria-label="Reminder times"
-                >
-                  <For each={props.reminderPresets}>
-                    {(preset) => (
-                      <ChoiceButton
-                        name="v2-reminder"
-                        value={preset.id}
-                        selected={state().reminderTime === preset.localTime}
-                        label={preset.label}
-                        description={preset.localTime}
-                        onChoose={() =>
-                          dispatch({
-                            type: 'SELECT_REMINDER',
-                            localTime: preset.localTime,
-                          })
-                        }
-                      />
-                    )}
-                  </For>
-                </div>
-                <label class={styles.textField}>
-                  <span>Choose a time</span>
-                  <input
-                    aria-label="Choose a time"
-                    type="time"
-                    value={state().reminderTime ?? ''}
-                    onInput={(event) =>
-                      dispatch({
-                        type: 'SELECT_REMINDER',
-                        localTime: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
                 <Show when={state().reminderError}>
                   {(message) => (
                     <p class={styles.error} role="alert">

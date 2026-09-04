@@ -22,7 +22,7 @@ import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, 
 import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
 import { V2_ONBOARDING_MEDIA_PACK } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
-import type { V2OnboardingMutationResult, V2OnboardingReminderPreset, } from './onboarding/V2OnboardingDirector'
+import type { V2OnboardingMutationResult } from './onboarding/V2OnboardingDirector'
 import { V2OnboardingDirector } from './onboarding/V2OnboardingDirector'
 import { createProAccess } from './purchases/pro-access'
 import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
@@ -413,14 +413,6 @@ export function App(props: AppProps) {
       text: action.label.replace(/[.]$/, ''),
     }))
   })
-  const v2ReminderPresets = createMemo<readonly V2OnboardingReminderPreset[]>(
-    () =>
-      config().dailyCue.presets.map((preset) => ({
-        id: preset.id,
-        label: preset.label,
-        localTime: preset.localTime,
-      })),
-  )
   const progress = createMemo(() =>
     aggregateSevenDayBSides(appState(), today()),
   )
@@ -506,6 +498,16 @@ export function App(props: AppProps) {
     kind: 'cue' | 'success' | 'quiet',
   ): void {
     playHapticWithRuntime(enabled, kind, services().runtime)
+  }
+
+  function playTimeDialHaptic(strength: 'light' | 'medium'): void {
+    const enabled = appState().settings.hapticsEnabled
+    const runtimePromise = services().runtime
+    if (!enabled) return
+
+    void runtimePromise
+      .then((runtime) => runtime.haptics.impact(strength))
+      .catch(() => undefined)
   }
 
   function prepareCueMomentEntry(): void {
@@ -1836,10 +1838,10 @@ export function App(props: AppProps) {
           audioSession={onboardingAudioSession}
           foreground={v2OnboardingForeground()}
           muted={v2Muted()}
-          reminderPresets={v2ReminderPresets()}
           onMutedChange={setV2OnboardingMuted}
           onSavePlan={saveV2OnboardingPlan}
           onSetReminder={setV2OnboardingReminder}
+          onTimeHaptic={playTimeDialHaptic}
           onComplete={completeV2Onboarding}
         />
       </Show>
@@ -2004,7 +2006,6 @@ export function App(props: AppProps) {
           paused={cue()?.status === 'paused'}
           voiceEnabled={appState().settings.voiceEnabled}
           resetArmed={resetArmed()}
-          dailyCuePresets={config().dailyCue.presets}
           scheduleTime={dailyRule()?.localTime}
           schedulePending={schedulePending()}
           scheduleMessage={scheduleMessage()}
@@ -2016,6 +2017,7 @@ export function App(props: AppProps) {
           onReplace={() => beginSetup('replace')}
           onSetSchedule={keepDailyCue}
           onDisableSchedule={disableDailyCue}
+          onTimeHaptic={playTimeDialHaptic}
           onReset={resetAllData}
         />
       ) : null}

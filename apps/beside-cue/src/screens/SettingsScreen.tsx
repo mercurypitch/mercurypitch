@@ -1,8 +1,8 @@
 import type { JSX } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
-import type { DailyCuePreset } from '@/app-config'
+import { createEffect, createSignal, Show, untrack } from 'solid-js'
 import { buildLabel } from '@/build-info'
 import { AppHeader } from '@/components/AppHeader'
+import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { DeviceSupport } from '@/platform/device-support'
 import { probeDeviceSupport } from '@/platform/device-support'
 
@@ -12,7 +12,6 @@ interface SettingsScreenProps {
   paused: boolean
   voiceEnabled: boolean
   resetArmed: boolean
-  dailyCuePresets: readonly DailyCuePreset[]
   scheduleTime?: string
   schedulePending: boolean
   scheduleMessage?: string
@@ -24,15 +23,23 @@ interface SettingsScreenProps {
   onReplace: () => void
   onSetSchedule: (localTime: string) => void
   onDisableSchedule: () => void
+  onTimeHaptic?: (strength: 'light' | 'medium') => void
   onReset: () => void
 }
 
 export function SettingsScreen(props: SettingsScreenProps) {
-  const [customTime, setCustomTime] = createSignal('10:00')
+  const [customTime, setCustomTime] = createSignal(
+    untrack(() => props.scheduleTime ?? ''),
+  )
   // What the device reports about itself — filled in on demand, because
   // requesting a GPU adapter at screen load costs something and nobody
   // needs this until they are diagnosing.
   const [support, setSupport] = createSignal<DeviceSupport | undefined>()
+
+  createEffect(() => {
+    const scheduledTime = props.scheduleTime
+    if (scheduledTime !== undefined) setCustomTime(scheduledTime)
+  })
 
   return (
     <main class="settings-screen app-screen">
@@ -61,7 +68,34 @@ export function SettingsScreen(props: SettingsScreenProps) {
           Beside Cue can send one discreet reminder at this time. Your Pull and
           Side B stay off the lock screen.
         </p>
-        <div class="schedule-options" aria-label="Daily reminder time">
+        <form
+          class="custom-time custom-time--punched"
+          onSubmit={(event) => {
+            event.preventDefault()
+            props.onSetSchedule(customTime())
+          }}
+        >
+          <PunchedTimeDial
+            value={customTime()}
+            defaultValue={props.scheduleTime ?? '10:00'}
+            disabled={props.paused || props.schedulePending}
+            onValueChange={setCustomTime}
+            onHaptic={props.onTimeHaptic}
+          />
+          <button
+            class="secondary-button"
+            type="submit"
+            disabled={
+              props.paused || props.schedulePending || customTime() === ''
+            }
+          >
+            {props.schedulePending ? 'Setting…' : 'Set reminder'}
+          </button>
+        </form>
+        <div
+          class="schedule-options schedule-options--single"
+          aria-label="Daily reminder state"
+        >
           <button
             class="schedule-option"
             classList={{
@@ -78,55 +112,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
             </span>
             <span class="schedule-option__mark" aria-hidden="true" />
           </button>
-          <For each={props.dailyCuePresets}>
-            {(preset) => (
-              <button
-                class="schedule-option"
-                classList={{
-                  'schedule-option--active':
-                    props.scheduleTime === preset.localTime,
-                }}
-                type="button"
-                aria-pressed={props.scheduleTime === preset.localTime}
-                disabled={props.paused || props.schedulePending}
-                onClick={() => props.onSetSchedule(preset.localTime)}
-              >
-                <span>
-                  <strong>{preset.label}</strong>
-                  <small>{preset.note}</small>
-                </span>
-                <time dateTime={preset.localTime}>{preset.localTime}</time>
-                <span class="schedule-option__mark" aria-hidden="true" />
-              </button>
-            )}
-          </For>
         </div>
-        <form
-          class="custom-time"
-          onSubmit={(event) => {
-            event.preventDefault()
-            props.onSetSchedule(customTime())
-          }}
-        >
-          <label for="custom-cue-time">
-            <span>Custom time</span>
-            <input
-              id="custom-cue-time"
-              type="time"
-              value={customTime()}
-              disabled={props.paused || props.schedulePending}
-              onInput={(event) => setCustomTime(event.currentTarget.value)}
-              required
-            />
-          </label>
-          <button
-            class="secondary-button"
-            type="submit"
-            disabled={props.paused || props.schedulePending}
-          >
-            {props.schedulePending ? 'Setting…' : 'Set reminder'}
-          </button>
-        </form>
         {props.paused ? (
           <p class="schedule-status">
             This reminder stays off while your plan is paused. Resume the plan
