@@ -767,8 +767,8 @@ Each step lands green and leaves the app working before the next begins.
 | #   | Step                                                                                                                                                                     | Done when                                                                                                                                                                                |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 4a  | **The squash test. LANDED -- see §14.** Pose Merc from the voice by root scale in the Hallway, re-derive the hover offset, sweep `t` from 0 to 1 on a dev dial. No rooms | A 0.16 × 0.67 Merc reads as a puddle rather than a broken character on a real phone, the clamp (if any) is written down, and nothing else in the app has changed                         |
-| 4b  | **`sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch                               | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
-| 4c  | **Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                                       | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
+| 4b  | **LANDED -- `sim/tension3d.ts` + tests.** Pure: `t`, the spring, `silhouetteFor`, `fitsSlot`, `supportedBy`, the relax with its half-rate gap branch                     | Pinned tests say a slot admits exactly the band the ghost is drawn from, a low-confidence frame holds rather than relaxing, and a 2.0 m mesh crosses in one breath with the stated slack |
+| 4c  | **LANDED, see §15 -- Room 1, on a forked stage.** `Line3D`, the slotted plate, the ghost, the shape gauge, range calibration at entry                                    | The Letterbox is playable end to end **with its `teaches` line hidden**, and a baritone on a soprano preset gets a world whose bottom end exists                                         |
 | 4d  | **Room 2, the trade.** Width-aware ground sampler as a closure, the mesh floor, the chute, the return                                                                    | The Screen is playable, a thread falls through it, the chute returns him to the start of the stretch, gates already passed stay passed — and §8's question is asked out loud             |
 | 4e  | **The wedge gate**, plus `chamber-track.ts` generalised and a second card in the games list                                                                              | A gate exists that a one-dimensional pitch cursor cannot pass, both circles run on one track module, and the list shows two cards with progress                                          |
 | 4f  | **The grade and the end card.** Slide and overshoot recorded per gate, best per room kept, the walk card                                                                 | The run reports cents past the gate and first-try count per room and for the walk, replaying returns to the card, and nothing is gated on any of it                                      |
@@ -920,3 +920,118 @@ past a 390 px phone and a mitt 8 px past it. The flat end therefore
 asserts top and bottom only, with the reason in the file. **The Sorting
 Line's camera (step 4c) must frame him centred or wider**; the day the
 probe can use it, the contract tightens to every edge and the whole box.
+
+---
+
+## 15. What landed in 4b and 4c, and what moved
+
+Both steps landed on 2026-09-04, the same day as 4a, in three commits
+on PR #706. The plan held; four numbers and one object did not, and
+each is recorded here with why.
+
+### 15.1 The rule (4b)
+
+`sim/tension3d.ts` holds all of it and no three.js: the critically
+damped spring at ω = 9 (settles in about half a second, never
+overshoots -- both pinned), the relax at 6 s toward rest with the
+Blackout's half-rate branch for a doubtful frame, the gate bands, the
+furniture derived from them, and the Span's widening. Room 2's clock is
+checked against the relax from both ends, with slack.
+
+**The clamp is derived, not declared.** §2.1 wrote a per-gate `clamp`
+literal (0.42 for the letterbox) against a rest of 0.5. Rest moved to
+0.371 when the flat end came up (§14.5), and a literal that quietly
+admitted the resting drop would have turned the letterbox into a
+doorway. `REST_MARGIN = 0.08` is stated once, against wherever rest is;
+a test walks every gate over spans from 8 to 30 semitones and checks
+the resting drop fits none of them.
+
+**The narrowest voices get less band than §2.1's table said.** With
+rest at 0.371 a flat gate can offer at most `0.291` of the range, so a
+ten-semitone measured span gets 2.9 semitones of letterbox, not four.
+The promise is held for every voice PRESET (24 semitones, trimmed to
+22), which is what a first-time player has; a narrow measurement gets
+what it gets and the widening grows it as they sing. That is the
+consequence of maff's dial, and it is the right trade.
+
+### 15.2 The gauge
+
+The tube from the ChatGPT states sheet, as SVG: brass caps, a column of
+mercury with a custard meniscus, ticks per semitone with the octaves
+longer, a turquoise enamel band for the stretch the gate admits that
+warms when he is inside it. The column moves by `transform`, never by
+`height`, because SVG geometry animates through CSS on desktop Chrome
+and on nothing older, and the one place it has to be smooth is an iOS
+WebView. When the mic loses the voice the column greys and never hides.
+It sits on the right edge, half the screen tall; `line-gauge` in
+storage remembers whether it is shown.
+
+### 15.3 The room (4c)
+
+**The track is generalised** (`levels/track.ts`); `chamber-track.ts` is
+the chambers' instance and kept every name. **Rooms are stated in
+metres**, as the plan wrote them. **Line3D is Chamber3D with the glass
+taken out**, plus a plate whose bottom edge is the slot height, a mouth
+on the floor that lights custard when he fits, and a ghost -- an
+ellipsoid at the band's centre, standing at the standoff so that a
+player who walks up to a shut plate is standing inside the shape they
+need to be.
+
+**The camera is centred**, 0.15 m off rather than the chamber's 0.4,
+and 0.3 further back: §14.5's finding, applied. The probe's e2e cannot
+see this camera yet -- it borrows the Hallway's -- so the whole-box
+contract in `merc-probe-shape.e2e.ts` is still waiting on a probe
+mode that uses `Line3D`.
+
+**The ghost is not a pancake any more.** With the flat end at 0.32 m
+the letterbox's centre body is 0.39 x 0.43: a squat drop, which is what
+the ghost honestly draws. §4's "wide, flat, faintly glowing pancake"
+described the old sweep.
+
+**The jump is hidden** (`TouchControls` gained a `jump` prop; the
+pad's tap-to-jump goes with it). **The grade is deferred to 4f**: a
+clear records the walk and nothing about how it went, and the end card
+says "walked" rather than a percentage that would have to be invented.
+**`LINE_CONFIG` is deferred** with the tension dials; the stage reads
+only locomotion and the loop from `CHAMBER_CONFIG`.
+
+**Verified in the browser, driven by `__w3l()`**: tall at the plate he
+stops at 1.26 (the standoff) and the mouth stays turquoise; flat, the
+mouth goes custard and he walks through; at the exit the room clears,
+the card reads "1 of 1 · walked", and `beside-cue:games:line-track`
+holds the clear. Not yet verified: a real voice through the spring on
+a phone, which is the first thing to do with it.
+
+### 15.4 What the phone said about 4c, and what changed
+
+Three findings from maff's phone, all on room 1.
+
+1. **The plate sat visibly above his head while the sim said he did not
+   fit.** Root cause, not a tuning: Merc's root origin is his vertical
+   centre (§14.3), and every stage puts the root at floor level, so half
+   of him is below the floor plane. Against a floor that is only a
+   gradient that read as hovering; against a plate with a real bottom
+   edge it read as a lie. Two changes, both in the rule rather than the
+   art. `Line3D` now stands his TORSO on the floor
+   (`root.y = mercY + feetBelowRoot`, the anchor's own number), and the
+   slot is sized and judged by the torso: `TORSO_OF_HEIGHT = 1.6509 /
+   1.9028` from the measured shell, `slotHeightFor` returns
+   `torsoHeight(silhouetteFor(band.hi))`, and `fitsSlotHeight` compares
+   the torso. At rest his torso is 0.477 m against a letterbox of
+   0.401 m, so the tip visibly does not clear; at the band's edge the
+   two are equal by construction. The e2e probe is untouched; it
+   measures the actor, not a room.
+2. **The ghost is gone.** It read as a circular bulge aligned with the
+   plate -- as the thing passing, not as him -- and maff asked whether
+   it was needed at all. The slot, the mouth and the gauge's band carry
+   the instruction now. §7.2's second skinned draw is not coming back
+   unless a playtest asks for it by name.
+3. **The room does not teach itself, and does not need a guide.** The
+   gate card now carries two sentences: what his body does with a
+   voice, and what to do with that. A full guide is for a concept that
+   does not explain itself (vibrato, the chamber); a voice that changes
+   a shape does.
+
+Also from the phone: the tube reads, and is a little bigger now
+(`min(54vh, 27rem)` tall, `4.1rem` wide). Seen on a tablet only, so the
+phone sizes are still a question.

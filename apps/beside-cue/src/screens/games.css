@@ -1286,3 +1286,99 @@
   line-height: 1.35;
   color: rgb(255 255 255 / 42%);
 }
+
+/* The shape gauge: a glass tube on the right edge, half the screen tall,
+   over the 3D scene. It never takes a touch. */
+.shape-gauge {
+  position: absolute;
+  right: max(10px, env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  height: min(54vh, 27rem);
+  width: 4.1rem;
+  z-index: 20;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 55%));
+}
+
+.shape-gauge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.shape-gauge__ticks line {
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 0.7;
+}
+
+.shape-gauge__ticks line.is-octave {
+  stroke: rgb(255 255 255 / 55%);
+  stroke-width: 1;
+}
+
+.shape-gauge__band {
+  fill: var(--turquoise, #00777d);
+  fill-opacity: 0.22;
+  transition:
+    fill 160ms linear,
+    fill-opacity 160ms linear;
+}
+
+.shape-gauge__band-ring {
+  fill: var(--turquoise, #00777d);
+  stroke: rgb(0 0 0 / 55%);
+  stroke-width: 0.5;
+  transition: fill 160ms linear;
+}
+
+.shape-gauge.is-lit .shape-gauge__band {
+  fill: var(--custard, #f2c84b);
+  fill-opacity: 0.3;
+}
+
+.shape-gauge.is-lit .shape-gauge__band-ring {
+  fill: var(--custard, #f2c84b);
+}
+
+/* The column slides; the source is already spring-smoothed, so this only
+   bridges frames. Short enough that a fast slide still reads as fast. */
+.shape-gauge__column {
+  transition: transform 140ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+}
+
+.shape-gauge__meniscus {
+  fill: var(--custard, #f2c84b);
+  transition: fill 160ms linear;
+}
+
+.shape-gauge__meniscus-glow {
+  fill: var(--custard, #f2c84b);
+  opacity: 0.85;
+  transition: opacity 160ms linear;
+}
+
+/* The mic lost the voice: grey, never gone. A dead mic and a held note
+   must not look the same. */
+.shape-gauge.is-lost .shape-gauge__meniscus {
+  fill: #8a8f93;
+}
+
+.shape-gauge.is-lost .shape-gauge__meniscus-glow {
+  opacity: 0;
+}
+
+.shape-gauge.is-lost .shape-gauge__column {
+  filter: saturate(0.4) brightness(0.8);
+}
+
+/* The Sorting Line's two-sentence hint on the gate. Scoped through the
+   gate so `.stage3d__gate p` does not turn it into a headline. */
+.stage3d__gate .stage3d__gate-how {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 72%);
+}

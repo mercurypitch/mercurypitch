@@ -10,8 +10,10 @@ import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
 import { progressLabel, readTrack } from '@/games/glass3d/levels/chamber-track'
+import { lineTrack } from '@/games/glass3d/levels/line-track'
 import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
+import { LineStage } from '@/games/glass3d/render/LineStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
 import { RangeFinder } from './RangeFinder'
@@ -30,6 +32,8 @@ type PlayPick =
   | 'hallway3d'
   /** The Standing Wave: one path through every chamber. */
   | 'chambers'
+  /** The Sorting Line: the voice shapes Merc, and the room is inert. */
+  | 'line'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -91,6 +95,7 @@ export function GamesScreen(props: GamesScreenProps) {
   // How far along the chamber path they are, for the card. Re-read when
   // a game is left, because the walk happens inside the stage.
   const [track, setTrack] = createSignal(readTrack())
+  const [line, setLine] = createSignal(lineTrack.readTrack())
   const [voice, setVoice] = createSignal(voiceCentre())
   const pickVoice = (midi: number): void => {
     setVoice(writeVoiceCentre(midi))
@@ -154,11 +159,20 @@ export function GamesScreen(props: GamesScreenProps) {
               }}
             />
           </Show>
+          <Show when={playing() === 'line'}>
+            <LineStage
+              onExit={() => {
+                setLine(lineTrack.readTrack())
+                setPlaying(null)
+              }}
+            />
+          </Show>
           <Show
             when={
               playing() !== 'cabinet3d' &&
               playing() !== 'hallway3d' &&
-              playing() !== 'chambers'
+              playing() !== 'chambers' &&
+              playing() !== 'line'
             }
           >
             <JourneyPrototype
@@ -302,6 +316,39 @@ export function GamesScreen(props: GamesScreenProps) {
             </span>
           </span>
           <span class="game-card__count">{progressLabel(track())}</span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* The second circle. One card for the same reason as the first:
+            its rooms teach in order, and the trade in room two only
+            lands after room one has shown that the voice is his body. */}
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('line')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Sorting Line
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              Your voice is his body. Sing low to spread flat, high to draw up
+              thin, and get a drop of mercury through the furniture.
+            </span>
+          </span>
+          <span class="game-card__count">
+            {lineTrack.progressLabel(line())}
+          </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 5 7 7-7 7" />
           </svg>

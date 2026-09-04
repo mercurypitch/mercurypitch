@@ -12,13 +12,18 @@
 // forever. `touch-action: none` in the CSS is what stops the browser
 // deciding a horizontal drag was a scroll and swallowing the moves.
 
-import { onCleanup } from 'solid-js'
+import { onCleanup, Show } from 'solid-js'
 import type { IntentSource, PadConfig } from '../input/pad-intent'
 import { isTap, PAD_CONFIG, padMove } from '../input/pad-intent'
 
 interface TouchControlsProps {
   source: IntentSource
   cfg?: PadConfig
+  /** Whether to offer the jump button at all. A room with no vertical
+   * geometry says no: a button that does nothing is a button the player
+   * believes they are failing to use. The pad's tap-to-jump goes with
+   * it, since the intent is the same. Default on. */
+  jump?: boolean
 }
 
 export const TouchControls = (props: TouchControlsProps) => {
@@ -72,7 +77,8 @@ export const TouchControls = (props: TouchControlsProps) => {
     // from when the finger actually lifted rather than from whenever
     // this handler happened to run.
     const held = (event.timeStamp - downAt) / 1000
-    if (isTap(held, maxOff, cfg())) props.source.pulseJump(event.timeStamp)
+    if (props.jump !== false && isTap(held, maxOff, cfg()))
+      props.source.pulseJump(event.timeStamp)
   }
 
   const onLost = (): void => {
@@ -110,19 +116,21 @@ export const TouchControls = (props: TouchControlsProps) => {
         </svg>
       </div>
 
-      <button
-        class="stage3d__jump"
-        type="button"
-        aria-label="Jump"
-        onPointerDown={() => props.source.setHeldJump(true)}
-        onPointerUp={() => props.source.setHeldJump(false)}
-        onPointerCancel={() => props.source.setHeldJump(false)}
-        onPointerLeave={() => props.source.setHeldJump(false)}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 19V6m0 0-6 6m6-6 6 6" />
-        </svg>
-      </button>
+      <Show when={props.jump !== false}>
+        <button
+          class="stage3d__jump"
+          type="button"
+          aria-label="Jump"
+          onPointerDown={() => props.source.setHeldJump(true)}
+          onPointerUp={() => props.source.setHeldJump(false)}
+          onPointerCancel={() => props.source.setHeldJump(false)}
+          onPointerLeave={() => props.source.setHeldJump(false)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 19V6m0 0-6 6m6-6 6 6" />
+          </svg>
+        </button>
+      </Show>
     </div>
   )
 }
