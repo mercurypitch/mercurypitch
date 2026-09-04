@@ -29,11 +29,11 @@ import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { lineTrack } from '../levels/line-track'
 import type { LineGate, LineLevel } from '../levels/lines'
-import { admits, crossed, furnitureOf, LINES, overGaps, PLATE_STANDOFF, sizeFor, } from '../levels/lines'
+import { admits, bandsFor, crossed, fitFor, furnitureOf, LINES, overGaps, PLATE_STANDOFF, wedgeStop, } from '../levels/lines'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import type { Band, Range, Spring } from '../sim/tension3d'
-import { bandFor, inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, widenRange, workingRange, } from '../sim/tension3d'
+import { inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, torsoHeight, widenRange, workingRange, } from '../sim/tension3d'
 import { readMeasuredRange, voiceCentre } from '../voice-range'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { LineGateView, LineView } from './Line3D'
@@ -158,9 +158,12 @@ export const LineStage = (props: LineStageProps) => {
 
       interface GateState {
         spec: LineGate
+        /** Where he has to be to get through: the gauge's band. */
         band: Band
-        /** Its one derived number: slot height, slot width or gap. */
+        /** Its derived numbers: slot height, slot width, gap, or a
+         * wedge's two ceilings. */
         size: number
+        sizeOut: number
         open: boolean
         passed: boolean
       }
@@ -169,11 +172,13 @@ export const LineStage = (props: LineStageProps) => {
        * range widens, which is what "the room re-scales" means. */
       const buildGates = (): GateState[] =>
         live.gates.map((spec) => {
-          const b = bandFor(spec.gate, range)
+          const bands = bandsFor(spec, range)
+          const fit = fitFor(spec, bands)
           return {
             spec,
-            band: b,
-            size: sizeFor(spec, b),
+            band: bands.band,
+            size: fit.size,
+            sizeOut: fit.sizeOut,
             open: false,
             passed: false,
           }
@@ -182,8 +187,11 @@ export const LineStage = (props: LineStageProps) => {
 
       const refit = (): void => {
         for (const g of gates) {
-          g.band = bandFor(g.spec.gate, range)
-          g.size = sizeFor(g.spec, g.band)
+          const bands = bandsFor(g.spec, range)
+          const fit = fitFor(g.spec, bands)
+          g.band = bands.band
+          g.size = fit.size
+          g.sizeOut = fit.sizeOut
         }
         setSpan(range.highMidi - range.lowMidi)
       }
@@ -195,9 +203,20 @@ export const LineStage = (props: LineStageProps) => {
        * either holds or does not. */
       const closeWalls = (): void => {
         let stop = live.length
+        const body = silhouetteFor(spring.t)
         for (const g of gates) {
-          if (g.spec.kind !== 'slot' || g.passed || g.open) continue
-          const at = g.spec.x - PLATE_STANDOFF
+          if (g.passed) continue
+          let at: number
+          if (g.spec.kind === 'slot') {
+            if (g.open) continue
+            at = g.spec.x - PLATE_STANDOFF
+          } else if (g.spec.kind === 'wedge') {
+            // The wedge's wall moves with his shape: it is wherever
+            // the falling ceiling meets his head, less his front.
+            at = wedgeStop(g.spec, g, torsoHeight(body), body.width / 2)
+          } else {
+            continue
+          }
           if (at >= loco.x && at < stop) stop = at
         }
         walls.maxX = stop
@@ -320,7 +339,12 @@ export const LineStage = (props: LineStageProps) => {
       )
 
       const viewsFor = (): LineGateView[] =>
-        gates.map((g) => ({ size: g.size, open: false, passed: false }))
+        gates.map((g) => ({
+          size: g.size,
+          sizeOut: g.sizeOut,
+          open: false,
+          passed: false,
+        }))
       let gateViews: LineGateView[] = viewsFor()
       const view: LineView = {
         mercX: loco.x,
@@ -389,7 +413,7 @@ export const LineStage = (props: LineStageProps) => {
           const body = silhouetteFor(spring.t)
 
           for (const g of gates) {
-            g.open = admits(g.spec, body, g.size)
+            g.open = admits(g.spec, body, g, loco.x)
             // Passing is crossing, which the walls only allow while he
             // fits a plate, and which a grate only allows by holding
             // him all the way. Passed stays passed (§5).
@@ -447,6 +471,7 @@ export const LineStage = (props: LineStageProps) => {
           const g = gates[i]!
           const v = gateViews[i]!
           v.size = g.size
+          v.sizeOut = g.sizeOut
           v.open = g.open
           v.passed = g.passed
         }

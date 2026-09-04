@@ -10,6 +10,7 @@
 //
 //   1  any sound changes him, and a flat one gets under things
 //   2  the shape that carries you is not the shape that fits
+//   3  keep going down as you go through
 //
 // THE ROOM IS INERT. Every plate, gap and slot would sit there
 // unchanged if the microphone never opened. The voice touches Merc and
@@ -23,8 +24,8 @@
 // them that way, and a room whose plate is "at 1.5" is easier to argue
 // with on a phone than one whose plate is "at 0.3".
 
-import type { Band, Gate, Silhouette } from '../sim/tension3d'
-import { fitsSlotHeight, fitsSlotWidth, gapWidthFor, LETTERBOX, SCREEN_MESH, SCREEN_SLOT, slotHeightFor, slotWidthFor, supportedBy, } from '../sim/tension3d'
+import type { Band, Gate, Range, Silhouette } from '../sim/tension3d'
+import { bandFor, fitsSlotHeight, fitsSlotWidth, gapWidthFor, LETTERBOX, SCREEN_MESH, SCREEN_SLOT, slotHeightFor, slotWidthFor, supportedBy, torsoHeight, WEDGE_IN, WEDGE_OUT, } from '../sim/tension3d'
 
 /** A plate across the corridor with a slot in it. */
 export interface SlotPlate {
@@ -47,35 +48,135 @@ export interface MeshFloor {
   readonly gate: Gate
 }
 
-export type LineGate = SlotPlate | MeshFloor
-
 /**
- * The one number a piece of furniture is, for THIS player's band:
- * a horizontal slot's height, a vertical slot's width, a grate's gap.
- * Drawn from it and judged by it, so the two cannot disagree (§6).
+ * A slot whose ceiling falls along its length: `gate` is what it admits
+ * at its mouth, `out` what it admits at its far end, and between them
+ * the ceiling is a straight line. He cannot stand in it at one shape
+ * and walk: the voice has to keep going down while he goes forward,
+ * at the rate the wedge sets (§16.2).
  */
-export const sizeFor = (gate: LineGate, band: Band): number => {
-  if (gate.kind === 'mesh') return gapWidthFor(band)
-  return gate.gate.end === 'flat' ? slotHeightFor(band) : slotWidthFor(band)
+export interface WedgeSlot {
+  readonly kind: 'wedge'
+  readonly from: number
+  readonly to: number
+  /** What the mouth admits. Always a flat gate. */
+  readonly gate: Gate
+  /** What the far end admits. Flat, and tighter than the mouth. */
+  readonly out: Gate
 }
 
-/** Does this body get past this furniture right now? For a grate that
- * means being held by it. */
+export type LineGate = SlotPlate | MeshFloor | WedgeSlot
+
+/**
+ * A piece of furniture's bands for THIS player. `band` is the one the
+ * gauge shows and the grade judges: where he has to be to get through.
+ * `entry` is where he has to be to get IN, which for everything but a
+ * wedge is the same band.
+ */
+export const bandsFor = (
+  gate: LineGate,
+  range: Range,
+): { band: Band; entry: Band } => {
+  if (gate.kind === 'wedge') {
+    return { band: bandFor(gate.out, range), entry: bandFor(gate.gate, range) }
+  }
+  const band = bandFor(gate.gate, range)
+  return { band, entry: band }
+}
+
+/**
+ * The numbers a piece of furniture is, for THIS player: a horizontal
+ * slot's height, a vertical slot's width, a grate's gap, and for a
+ * wedge the ceiling at each end. Drawn from them and judged by them,
+ * so the two cannot disagree (§6). `sizeOut` is 0 for anything that
+ * is one number.
+ */
+export interface Fit {
+  readonly size: number
+  readonly sizeOut: number
+}
+
+export const fitFor = (
+  gate: LineGate,
+  bands: { band: Band; entry: Band },
+): Fit => {
+  if (gate.kind === 'mesh') return { size: gapWidthFor(bands.band), sizeOut: 0 }
+  if (gate.kind === 'wedge') {
+    return {
+      size: slotHeightFor(bands.entry),
+      sizeOut: slotHeightFor(bands.band),
+    }
+  }
+  return {
+    size:
+      gate.gate.end === 'flat'
+        ? slotHeightFor(bands.band)
+        : slotWidthFor(bands.band),
+    sizeOut: 0,
+  }
+}
+
+/** The one number a piece of furniture is, where it is one number. */
+export const sizeFor = (gate: LineGate, band: Band): number =>
+  fitFor(gate, { band, entry: band }).size
+
+/** A wedge's ceiling at `x`, in metres. Flat at its mouth's height
+ * before the mouth, and at its far end's beyond it. */
+export const wedgeCeiling = (gate: WedgeSlot, fit: Fit, x: number): number => {
+  const along = Math.max(
+    0,
+    Math.min(1, (x - gate.from) / (gate.to - gate.from)),
+  )
+  return fit.size + (fit.sizeOut - fit.size) * along
+}
+
+/** Does this body get past this furniture right now, standing at `x`?
+ * For a grate that means being held by it; for a wedge, fitting under
+ * the ceiling at his FRONT edge, which is where a falling ceiling meets
+ * him first -- so he has to be lower than where he stands, which is
+ * the wedge's whole ask. */
 export const admits = (
   gate: LineGate,
   body: Silhouette,
-  size: number,
+  fit: Fit,
+  x: number,
 ): boolean => {
-  if (gate.kind === 'mesh') return supportedBy(body, size)
+  if (gate.kind === 'mesh') return supportedBy(body, fit.size)
+  if (gate.kind === 'wedge') {
+    const front = x + body.width / 2
+    return torsoHeight(body) <= wedgeCeiling(gate, fit, front) + 1e-9
+  }
   return gate.gate.end === 'flat'
-    ? fitsSlotHeight(body, size)
-    : fitsSlotWidth(body, size)
+    ? fitsSlotHeight(body, fit.size)
+    : fitsSlotWidth(body, fit.size)
+}
+
+/**
+ * Where a wedge stops a body of this height and half-width: the `x`
+ * his front edge reaches before the ceiling meets his head. Infinity
+ * when the far end admits him, so it is no wall at all; before the
+ * mouth when the mouth does not.
+ */
+export const wedgeStop = (
+  gate: WedgeSlot,
+  fit: Fit,
+  torso: number,
+  halfWidth: number,
+): number => {
+  if (torso <= fit.sizeOut + 1e-9) return Infinity
+  if (torso > fit.size) return gate.from - halfWidth
+  const along = (fit.size - torso) / (fit.size - fit.sizeOut)
+  return gate.from + (gate.to - gate.from) * along - halfWidth
 }
 
 /** Is he through? A plate is passed a hand's width beyond it; a grate
- * when its far lip is behind him. Passed stays passed (§5). */
-export const crossed = (gate: LineGate, x: number): boolean =>
-  gate.kind === 'mesh' ? x >= gate.to : x >= gate.x + 0.05
+ * when its far lip is behind him; a wedge a hand past its far end.
+ * Passed stays passed (§5). */
+export const crossed = (gate: LineGate, x: number): boolean => {
+  if (gate.kind === 'mesh') return x >= gate.to
+  if (gate.kind === 'wedge') return x >= gate.to + 0.05
+  return x >= gate.x + 0.05
+}
 
 /** How wide a grate's bar is, in metres. */
 export const SLAT = 0.05
@@ -110,11 +211,16 @@ export const overGaps = (
 export type LineFurniture =
   | { readonly kind: 'slot'; readonly axis: 'h' | 'v'; readonly x: number }
   | { readonly kind: 'mesh'; readonly from: number; readonly to: number }
+  | { readonly kind: 'wedge'; readonly from: number; readonly to: number }
 
-export const furnitureOf = (gate: LineGate): LineFurniture =>
-  gate.kind === 'mesh'
-    ? { kind: 'mesh', from: gate.from, to: gate.to }
-    : { kind: 'slot', axis: gate.gate.end === 'flat' ? 'h' : 'v', x: gate.x }
+export const furnitureOf = (gate: LineGate): LineFurniture => {
+  if (gate.kind === 'mesh')
+    return { kind: 'mesh', from: gate.from, to: gate.to }
+  if (gate.kind === 'wedge') {
+    return { kind: 'wedge', from: gate.from, to: gate.to }
+  }
+  return { kind: 'slot', axis: gate.gate.end === 'flat' ? 'h' : 'v', x: gate.x }
+}
 
 export interface LineLevel {
   readonly id: string
@@ -184,7 +290,26 @@ export const LINE_2: LineLevel = {
   jump: false,
 }
 
-export const LINES: readonly LineLevel[] = [LINE_1, LINE_2]
+/**
+ * Room 3, "The Wedge". Five metres, and the gate §8 asked for, as far
+ * as one degree of freedom allows (§16.2): a slot whose ceiling falls
+ * along its metre, from what a low note fits to what a lower one does.
+ * He cannot stop in it and be right; the voice has to keep going down
+ * at the pace he walks. A hummed glide with a target.
+ */
+export const LINE_3: LineLevel = {
+  id: 'line-3',
+  teaches: 'Keep going down as you go through.',
+  length: 5,
+  startX: 0.2,
+  exitX: 4.6,
+  gates: [
+    { kind: 'wedge', from: 1.8, to: 2.8, gate: WEDGE_IN, out: WEDGE_OUT },
+  ],
+  jump: false,
+}
+
+export const LINES: readonly LineLevel[] = [LINE_1, LINE_2, LINE_3]
 
 /** How far short of a plate he stops while it is shut, in metres. */
 export const PLATE_STANDOFF = 0.24

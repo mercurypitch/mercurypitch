@@ -17,7 +17,7 @@
 // Merc is wide by design, so its camera keeps him nearer the middle and
 // pulls back a little further.
 
-import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BoxGeometry, CircleGeometry, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene, SpotLight, Vector3, } from 'three'
+import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BoxGeometry, CircleGeometry, ExtrudeGeometry, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene, Shape, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import type { LineFurniture, LineLevel } from '../levels/lines'
 import { meshLayout, SLAT } from '../levels/lines'
@@ -44,9 +44,12 @@ const PLATE_HEIGHT = 2.1
 const EMBER = 0xff7a45
 
 export interface LineGateView {
-  /** The furniture's one derived number, in metres: a horizontal
-   * slot's height, a vertical slot's width, a grate's gap. */
+  /** The furniture's derived number, in metres: a horizontal slot's
+   * height, a vertical slot's width, a grate's gap, a wedge's ceiling
+   * at its mouth. */
   size: number
+  /** A wedge's ceiling at its far end. 0 for everything else. */
+  sizeOut: number
   /** Whether he currently gets past it. Lights the mouth. */
   open: boolean
   /** Whether he has been through. */
@@ -217,7 +220,16 @@ export const createLine3D = (
      * re-lays them and a frame that does not changes nothing. */
     laidFor: number
   }
-  type Parts = PlateParts | GrateParts
+  interface WedgeParts {
+    kind: 'wedge'
+    spec: { readonly from: number; readonly to: number }
+    plate: Mesh
+    mouth: Mesh
+    material: MeshBasicMaterial
+    /** The ceilings the plate was last cut for. */
+    cutFor: { size: number; sizeOut: number }
+  }
+  type Parts = PlateParts | GrateParts | WedgeParts
   let parts: Parts[] = []
   let current = room
 
@@ -232,7 +244,7 @@ export const createLine3D = (
 
   const clearRoom = (): void => {
     disposeChildren(roomGroup)
-    for (const p of parts) if (p.kind === 'slot') p.material.dispose()
+    for (const p of parts) if (p.kind !== 'mesh') p.material.dispose()
     parts = []
   }
 
@@ -262,8 +274,49 @@ export const createLine3D = (
     g.laidFor = size
   }
 
+  /** Cut a wedge's plate: the part above a ceiling that falls from
+   * `size` at the mouth to `sizeOut` at the far end. A trapezoid in
+   * x-y, extruded across the corridor. */
+  const cutWedge = (w: WedgeParts, size: number, sizeOut: number): void => {
+    w.plate.geometry.dispose()
+    const shape = new Shape()
+    shape.moveTo(w.spec.from, size)
+    shape.lineTo(w.spec.to, sizeOut)
+    shape.lineTo(w.spec.to, PLATE_HEIGHT)
+    shape.lineTo(w.spec.from, PLATE_HEIGHT)
+    shape.closePath()
+    w.plate.geometry = new ExtrudeGeometry(shape, {
+      depth: SPAN,
+      bevelEnabled: false,
+    })
+    w.plate.position.set(0, 0, -SPAN / 2)
+    w.cutFor = { size, sizeOut }
+  }
+
   const buildRoom = (furniture: readonly LineFurniture[]): void => {
     parts = furniture.map((f): Parts => {
+      if (f.kind === 'wedge') {
+        const plate = new Mesh(new BoxGeometry(0.01, 0.01, 0.01), plateMaterial)
+        roomGroup.add(plate)
+        const material = mouthMaterial.clone()
+        // The mouth runs the wedge's whole floor: it is lit while he
+        // fits where he stands, which changes as he walks.
+        const mouth = new Mesh(
+          new BoxGeometry(f.to - f.from, 0.012, SPAN),
+          material,
+        )
+        mouth.position.set((f.from + f.to) / 2, 0.006, 0)
+        roomGroup.add(mouth)
+        const w: WedgeParts = {
+          kind: 'wedge',
+          spec: f,
+          plate,
+          mouth,
+          material,
+          cutFor: { size: -1, sizeOut: -1 },
+        }
+        return w
+      }
       if (f.kind === 'mesh') {
         const slats = new Group()
         roomGroup.add(slats)
@@ -394,6 +447,17 @@ export const createLine3D = (
         if (g === undefined) continue
         if (p.kind === 'mesh') {
           if (Math.abs(p.laidFor - g.size) > 0.0005) layGrate(p, g.size)
+          continue
+        }
+        if (p.kind === 'wedge') {
+          if (
+            Math.abs(p.cutFor.size - g.size) > 0.0005 ||
+            Math.abs(p.cutFor.sizeOut - g.sizeOut) > 0.0005
+          ) {
+            cutWedge(p, g.size, g.sizeOut)
+          }
+          p.material.color.setHex(g.open ? CUSTARD : TURQUOISE)
+          p.material.opacity = g.open ? 0.4 + pulse * 0.2 : 0.18
           continue
         }
         if (p.axis === 'h') {
