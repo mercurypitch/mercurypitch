@@ -482,6 +482,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm metrics:check` | `node scripts/code-metrics.mjs --check` |
 | `pnpm metrics:update` | `node scripts/code-metrics.mjs --update` |
 | `pnpm audit:dup` | `jscpd src workers --min-tokens 70 --reporters console --format typescript,tsx --ignore '**/*.test.ts,**/*.test.tsx,**/*.spec.ts'` |
+| `pnpm knip` | `knip` |
+| `pnpm knip:prod` | `knip --production` |
 | `pnpm lines` | `cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'` |
 | `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
 | `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |

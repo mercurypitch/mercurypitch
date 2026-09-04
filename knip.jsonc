@@ -1,0 +1,76 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // An export that is only used inside its own file is a needless `export`
+  // keyword, not dead code. Report the dead code first; the keyword count is
+  // one config flip away.
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": [
+        // One main.tsx per *.html page listed in vite.config.ts
+        // build.rollupOptions.input. Knip does not read HTML, and the default
+        // src/index.tsx entry only covers index.html.
+        "src/features/*/main.tsx!",
+        // The two workers under workers/ are not pnpm workspaces, so the
+        // `main` of their own wrangler.jsonc has to be named here. The root
+        // wrangler.jsonc (src/worker.ts) is read by the wrangler plugin.
+        "workers/db-worker/src/index.ts!",
+        "workers/jam-worker/src/index.ts!",
+        // vitest.config.ts aliases `cloudflare:workers` to this stub.
+        "workers/jam-worker/test-support/*.ts",
+        // Hand-run tooling: nothing in package.json wires these; agents, skills
+        // and docs run them by path. Listing them as entries keeps their
+        // imports resolved (a broken import is still reported) without
+        // reporting the scripts themselves as unused files.
+        "scripts/*.{mjs,js,ts}",
+        "tools/**/*.ts",
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}!",
+        "workers/**/*.ts!",
+        "scripts/**/*.{mjs,js,ts}",
+        "tools/**/*.ts",
+        // Test infrastructure is production-irrelevant: `knip --production`
+        // would otherwise list every helper and fixture as an unused file.
+        "!src/tests/**!",
+        "!src/e2e/**!",
+        "!src/e2e-devices/**!",
+        "!src/**/*.fixture.ts!",
+        "!src/**/*.test-fixtures.ts!",
+        "!workers/**/node-tests/**!",
+      ],
+      "ignoreBinaries": [
+        "dot", // graphviz, `pnpm arch:graph`
+        "du", // `pnpm size`
+        "ffmpeg", // scripts/drum-kit-opus.mjs
+        "magick", // ImageMagick, scripts/gen-legend-tiers.mjs
+        "wrangler.uvr-dev.jsonc", // knip misreads `wrangler dev -c <file>` in dev:uvr-worker
+      ],
+      "ignoreDependencies": [
+        "typescript-plugin-css-modules", // tsconfig.json "plugins": editor-only TS service plugin
+        "cloudflare", // the `cloudflare:workers` runtime module, not an npm package
+      ],
+      "ignoreUnresolved": [
+        // scripts/capture-marketing.mjs imports app modules inside
+        // page.evaluate(); Vite serves those /src/... URLs to the browser.
+        "^/src/.+",
+      ],
+    },
+    "apps/beside-cue": {
+      "entry": [
+        // Dev-only probe pages Vite serves in dev: mic-probe.html, merc-probe.html.
+        "src/dev/*.ts",
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}!",
+        "!src/**/*.test-fixtures.ts!",
+        // predev/prebuild hook; package.json scripts are not read in production mode.
+        "scripts/**/*.mjs",
+      ],
+      "ignoreDependencies": [
+        // gltf-transform is invoked from scripts/assets-merc.sh.
+        "@gltf-transform/cli",
+      ],
+    },
+  },
+}
