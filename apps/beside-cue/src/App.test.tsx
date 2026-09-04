@@ -134,6 +134,16 @@ vi.mock('./onboarding/V2OnboardingDirector', () => ({
             ? props.mediaPack.pulls.scrolling.recede.src
             : undefined
         }
+        data-record-start={
+          props.mediaPack?.record?.start.kind === 'video'
+            ? props.mediaPack.record.start.src
+            : undefined
+        }
+        data-record-spin={
+          props.mediaPack?.record?.spin.kind === 'video'
+            ? props.mediaPack.record.spin.src
+            : undefined
+        }
       >
         <h1>V2 introduction</h1>
         <button
@@ -1012,7 +1022,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.4-media-v3',
+      'corky-v2.5-media-v1',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
@@ -1021,6 +1031,14 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute(
       'data-scroll-recede',
       '/onboarding/corky-v2.4/picture/b05-scrolling-recede-v0_2.mp4',
+    )
+    expect(harness).toHaveAttribute(
+      'data-record-start',
+      '/onboarding/corky-v2.5/picture/b06-corky-starts-record-v0_1.mp4',
+    )
+    expect(harness).toHaveAttribute(
+      'data-record-spin',
+      '/onboarding/corky-v2.5/picture/b06-whole-vinyl-spin-v0_1.mp4',
     )
     expect(harness).toHaveAttribute('data-muted', 'false')
     fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
@@ -1067,7 +1085,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     await waitFor(() => expect(repository.saveCalls()).toBe(1))
     expect(
-      onboardingPreferences.read('beside-cue-v2.4-main-v1'),
+      onboardingPreferences.read('beside-cue-v2.5-main-v1'),
     ).toBeUndefined()
 
     saveGate.resolve()
@@ -1085,7 +1103,7 @@ describe('Beside Cue V2 onboarding integration', () => {
         },
       ]),
     )
-    expect(onboardingPreferences.read('beside-cue-v2.4-main-v1')).toMatchObject(
+    expect(onboardingPreferences.read('beside-cue-v2.5-main-v1')).toMatchObject(
       { outcome: 'finished' },
     )
 

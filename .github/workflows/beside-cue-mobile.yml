@@ -213,7 +213,9 @@ jobs:
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
       - name: Verify the debug build contains the V2 onboarding media
-        run: test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
+        run: |
+          test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
+          test -f apps/beside-cue/dist/onboarding/corky-v2.5/SHA256SUMS
 
       - name: Synchronize Android project
         run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
@@ -279,7 +281,9 @@ jobs:
       - name: Verify release assets contain the V2 onboarding media
         run: |
           test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
+          test -f apps/beside-cue/dist/onboarding/corky-v2.5/SHA256SUMS
           test -f apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.4/SHA256SUMS
+          test -f apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.5/SHA256SUMS
 
       - name: Build release bundle and APK
         env:

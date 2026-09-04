@@ -80,7 +80,7 @@ export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
   mascotSetId: 'corktop-v1',
   onboarding: Object.freeze({
     delivery: 'v2-first-run',
-    revision: 'beside-cue-v2.4-main-v1',
+    revision: 'beside-cue-v2.5-main-v1',
     contractVersion: '1.0',
   }),
   pullOptions,

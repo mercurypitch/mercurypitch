@@ -473,6 +473,37 @@
   transform: translateY(-50%);
 }
 
+.recordFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.recordFrame .platterFrame,
+.recordMediaLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.recordMediaLayer {
+  z-index: 2;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-out);
+}
+
+.recordMediaLayerHidden {
+  opacity: 0;
+}
+
+.recordMediaStage {
+  width: 100%;
+  height: 100%;
+}
+
 .error {
   padding: 0.75rem 0.85rem;
   border-radius: 12px;
@@ -696,7 +727,7 @@
   }
 }
 
-/* Cinematic phases use the V2.4 picture as the stage, never as a card. */
+/* Cinematic phases use the reviewed V2 picture as the stage, never as a card. */
 .directorCinematic {
   width: 100%;
   max-width: none;
@@ -886,5 +917,9 @@
   .primaryAction:active,
   .stopAction:active {
     transform: none;
+  }
+
+  .recordMediaLayer {
+    transition: none;
   }
 }

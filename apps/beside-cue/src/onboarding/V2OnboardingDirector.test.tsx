@@ -316,12 +316,8 @@ async function reachPullChoice(): Promise<void> {
     settleCurrentMedia('intro-b01-token')
     endCurrentMedia('intro-b01-token')
     await advance(1_550)
-    expect(currentMediaStage().targetId).toBe('intro:b02')
-    settleCurrentMedia('intro-b02-token')
-    endCurrentMedia('intro-b02-token')
-    await advance(750)
   } else {
-    await advance(2_300)
+    await advance(1_550)
   }
   expect(
     screen.getByRole('heading', {
@@ -353,6 +349,48 @@ async function reachStopHold(): Promise<void> {
   expect(
     screen.getByRole('button', { name: 'Stop and save plan' }),
   ).toHaveTextContent('Stop the record')
+}
+
+async function reachRecordStartWithMedia(): Promise<void> {
+  await reachPullChoice()
+  fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  settleCurrentMedia('scrolling-present-token')
+  endCurrentMedia('scrolling-present-token')
+  await advance(1_450)
+  fireEvent.click(screen.getByRole('radio', { name: /Not sure yet/u }))
+  fireEvent.click(screen.getByRole('button', { name: 'Choose Side B' }))
+  fireEvent.click(screen.getByRole('radio', { name: 'Play one guitar riff.' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Start the record' }))
+  settleCurrentMedia('scrolling-recede-token')
+  endCurrentMedia('scrolling-recede-token')
+  await advance(1_150)
+
+  expect(
+    screen.getByRole('heading', { name: 'Corky starts the record.' }),
+  ).toBeVisible()
+  expect(currentMediaStage().targetId).toBe('record:start')
+}
+
+async function enterRecordSpinWithMedia(): Promise<void> {
+  await reachRecordStartWithMedia()
+  await advance(1_250)
+  settleCurrentMedia('record-start-token')
+  expect(
+    screen.getByRole('heading', { name: 'Corky starts the record.' }),
+  ).toBeVisible()
+  endCurrentMedia('record-start-token')
+
+  expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
+  expect(currentMediaStage().targetId).toBe('record:spin')
+}
+
+function currentRecordMediaLayer(): HTMLElement {
+  const layer = screen
+    .getByTestId('v2-media-stage')
+    .closest<HTMLElement>(`.${styles.recordMediaLayer}`)
+  if (layer === null) throw new Error('Expected a V2 record media layer.')
+  return layer
 }
 
 describe('V2OnboardingDirector', () => {
@@ -402,7 +440,7 @@ describe('V2OnboardingDirector', () => {
     expect(probe.audio.disposeScope).toHaveBeenCalledTimes(1)
   })
 
-  it('starts the score with Corky and cues the table Foley at its authored boundary', async () => {
+  it('starts the score with Corky without replaying the omitted table entrance', async () => {
     const probe = createDirectorProbe()
     render(() => <V2OnboardingDirector {...probe.props} />)
 
@@ -420,9 +458,14 @@ describe('V2OnboardingDirector', () => {
     )
 
     await advance(1_550)
-    expect(probe.audio.play).toHaveBeenCalledWith(
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
       V2_ONBOARDING_AUDIO_ASSET_IDS.introTableSlide,
     )
+    expect(
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
+    ).toBeVisible()
   })
 
   it('waits for the visual dwell when automatic dialogue finishes first', async () => {
@@ -439,7 +482,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -456,11 +501,13 @@ describe('V2OnboardingDirector', () => {
     finished.resolve({ kind: 'ended' })
     await Promise.resolve()
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
-  it('uses current V2.4 Corky and table media on the full-viewport scene', async () => {
+  it('uses the direct-to-P02 V2.5 greeting and skips the duplicate B02 scene', async () => {
     const probe = createDirectorProbe()
     render(() => (
       <V2OnboardingDirector
@@ -474,7 +521,11 @@ describe('V2OnboardingDirector', () => {
     expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b01' })
     expect(currentMediaStage().props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b01-corky-greeting-v0_4.mp4'),
+      src: expect.stringContaining('b01-corky-greeting-direct-to-p02-v0_1.mp4'),
+    })
+    expect(currentMediaStage().props.request?.reducedStill).toMatchObject({
+      kind: 'still',
+      src: expect.stringContaining('p02-table-ready-v0_17.webp'),
     })
     expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'cinematic')
     expect(screen.getByRole('region', { name: 'Meet Corky.' })).toHaveAttribute(
@@ -485,11 +536,15 @@ describe('V2OnboardingDirector', () => {
     settleCurrentMedia('intro-b01-token')
     endCurrentMedia('intro-b01-token')
     await advance(1_550)
-    expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b02' })
-    expect(currentMediaStage().props.request?.primary).toMatchObject({
-      kind: 'video',
-      src: expect.stringContaining('b02-table-reveal-v0_1.mp4'),
-    })
+    expect(
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
+    ).toBeVisible()
+    expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
+      'data-v2-media-target',
+      'plate:p02',
+    )
   })
 
   it('keeps the animated Corky entrance visible until its delayed greeting finishes', async () => {
@@ -521,9 +576,11 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
 
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
-    expect(currentMediaStage().targetId).toBe('intro:b02')
+    expect(currentMediaStage().targetId).toBe('plate:p02')
   })
 
   it('waits for the current Scroll picture, dialogue and dwell across Present and Recede', async () => {
@@ -605,6 +662,197 @@ describe('V2OnboardingDirector', () => {
     expect(
       screen.getByRole('heading', { name: 'Corky starts the record.' }),
     ).toBeVisible()
+  })
+
+  it('gates the full H06 press and starts the spin dwell at the correlated visible frame', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    await reachRecordStartWithMedia()
+    expect(currentMediaStage().props.request).toMatchObject({
+      targetKind: 'automatic',
+      primary: {
+        kind: 'video',
+        src: expect.stringContaining('b06-corky-starts-record-v0_1.mp4'),
+      },
+    })
+    expect(document.querySelector('[data-v2-platter-preview]')).not.toBeNull()
+    expect(platterHarness.props?.phase).toBe('stopped')
+
+    await advance(5_000)
+    expect(
+      screen.getByRole('heading', { name: 'Corky starts the record.' }),
+    ).toBeVisible()
+    endCurrentMedia('record-start-token')
+    expect(
+      screen.getByRole('heading', { name: 'Corky starts the record.' }),
+    ).toBeVisible()
+    settleCurrentMedia('record-start-token')
+
+    expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
+    expect(currentMediaStage()).toMatchObject({ targetId: 'record:spin' })
+    expect(currentMediaStage().props.request).toMatchObject({
+      targetKind: 'hold',
+      primary: {
+        kind: 'video',
+        src: expect.stringContaining('b06-whole-vinyl-spin-v0_1.mp4'),
+      },
+    })
+    expect(platterHarness.props?.phase).toBe('stopped')
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+
+    await advance(5_000)
+    expect(
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
+    ).not.toBeInTheDocument()
+    expect(platterHarness.props?.phase).toBe('stopped')
+
+    settleCurrentMedia('record-spin-token')
+    expect(platterHarness.props?.phase).toBe('spinning')
+    await advance(1_799)
+    expect(
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
+    ).not.toBeInTheDocument()
+    await advance(1)
+    expect(
+      screen.getByRole('button', { name: 'Stop and save plan' }),
+    ).toBeVisible()
+
+    endCurrentMedia('record-spin-token')
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('spinning')
+  })
+
+  it('retires a live standing-spin overlay on Stop and still waits for the correlated native stop', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    await enterRecordSpinWithMedia()
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    settleCurrentMedia('record-spin-token')
+    expect(platterHarness.props?.phase).toBe('spinning')
+    await advance(1_800)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('stopping')
+    expect(
+      screen.getByRole('heading', { name: 'Saving your plan…' }),
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Your plan is saved.' }),
+    ).not.toBeInTheDocument()
+
+    finishCurrentPlatterStop()
+    expect(
+      screen.getByRole('heading', { name: 'Your plan is saved.' }),
+    ).toBeVisible()
+  })
+
+  it('fails open to the native platter when the standing spin never presents', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    await enterRecordSpinWithMedia()
+    await advance(0)
+    await advance(7_999)
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    expect(platterHarness.props?.phase).toBe('stopped')
+    expect(
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
+    ).not.toBeInTheDocument()
+
+    await advance(1)
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('spinning')
+    await advance(1_799)
+    expect(
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
+    ).not.toBeInTheDocument()
+    await advance(1)
+    expect(
+      screen.getByRole('button', { name: 'Stop and save plan' }),
+    ).toBeVisible()
+  })
+
+  it('retires a presented standing-spin overlay when its end event never arrives', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    await enterRecordSpinWithMedia()
+    settleCurrentMedia('record-spin-stalled-token')
+    await advance(5_999)
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    expect(platterHarness.props?.phase).toBe('spinning')
+
+    await advance(1)
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(
+      screen.getByRole('button', { name: 'Stop and save plan' }),
+    ).toBeVisible()
+  })
+
+  it('counts the standing-spin presentation watchdog only while foregrounded', async () => {
+    const probe = createDirectorProbe()
+    const [foreground, setForeground] = createSignal(true)
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        foreground={foreground()}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    await enterRecordSpinWithMedia()
+    await advance(4_000)
+    setForeground(false)
+    await Promise.resolve()
+    await advance(20_000)
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    expect(platterHarness.props?.phase).toBe('stopped')
+
+    setForeground(true)
+    await Promise.resolve()
+    await advance(3_999)
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    await advance(1)
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('spinning')
   })
 
   it.each([
@@ -744,7 +992,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -761,7 +1011,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -774,7 +1026,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -797,7 +1051,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
     expect(
       probe.audio.play.mock.calls.filter(
@@ -822,7 +1078,9 @@ describe('V2OnboardingDirector', () => {
     setForeground(true)
     await Promise.resolve()
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -843,7 +1101,9 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
     await advance(1)
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -886,7 +1146,9 @@ describe('V2OnboardingDirector', () => {
     finished.resolve({ kind: 'ended' })
     await Promise.resolve()
     expect(
-      screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+      screen.getByRole('heading', {
+        name: 'Which Pull do you want to notice sooner?',
+      }),
     ).toBeVisible()
   })
 
@@ -1343,7 +1605,94 @@ describe('V2OnboardingDirector', () => {
     ).not.toBeChecked()
   })
 
-  it('uses a 1.5 second static dwell when reduced motion is requested', async () => {
+  it('restores record media after developer review re-enters the start or spin scene', () => {
+    const probe = createDirectorProbe('developer-review')
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    const next = screen.getByRole('button', { name: 'Next scene' })
+    for (let index = 0; index < 10; index += 1) {
+      fireEvent.click(next)
+    }
+    expect(currentMediaStage().targetId).toBe('record:spin')
+    const staleSpinSettled = currentMediaStage().props.onPresentationSettled
+    const staleSpinEnded = currentMediaStage().props.onVideoEnded
+    settleCurrentMedia('review-spin-token')
+    expect(platterHarness.props?.phase).toBe('spinning')
+    endCurrentMedia('review-spin-token')
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(platterHarness.props?.phase).toBe('spinning')
+
+    fireEvent.click(next)
+    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    fireEvent.click(screen.getByRole('button', { name: 'Previous scene' }))
+    expect(currentMediaStage().targetId).toBe('record:spin')
+    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous scene' }))
+    expect(currentMediaStage().targetId).toBe('record:start')
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+    staleSpinSettled?.({
+      targetId: 'record:spin',
+      token: 'late-review-spin-token',
+      recoveryStage: 'reduced-still',
+    })
+    staleSpinEnded?.({
+      targetId: 'record:spin',
+      token: 'late-review-spin-token',
+    })
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+
+    fireEvent.click(next)
+    expect(currentMediaStage().targetId).toBe('record:spin')
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+  })
+
+  it('keeps an unsettled review spin gated when Stop is visited and reversed', async () => {
+    const probe = createDirectorProbe('developer-review')
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+
+    const next = screen.getByRole('button', { name: 'Next scene' })
+    for (let index = 0; index < 10; index += 1) {
+      fireEvent.click(next)
+    }
+    expect(currentMediaStage().targetId).toBe('record:spin')
+    expect(platterHarness.props?.phase).toBe('stopped')
+
+    fireEvent.click(next)
+    expect(platterHarness.props?.phase).toBe('spinning')
+    fireEvent.click(screen.getByRole('button', { name: 'Previous scene' }))
+    expect(currentMediaStage().targetId).toBe('record:spin')
+    expect(platterHarness.props?.phase).toBe('stopped')
+    expect(currentRecordMediaLayer()).not.toHaveClass(
+      styles.recordMediaLayerHidden,
+    )
+
+    await advance(7_999)
+    expect(platterHarness.props?.phase).toBe('stopped')
+    await advance(1)
+    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+  })
+
+  it('uses P02 instead of moving record media and a 1.5 second reduced-motion spin dwell', async () => {
     vi.mocked(window.matchMedia).mockReturnValue({
       matches: true,
       addEventListener: vi.fn(),
@@ -1370,8 +1719,26 @@ describe('V2OnboardingDirector', () => {
       screen.getByRole('radio', { name: 'Play one guitar riff.' }),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Start the record' }))
-    await advance(1_300)
+    await advance(650)
+    expect(
+      screen.getByRole('heading', { name: 'Corky starts the record.' }),
+    ).toBeVisible()
+    expect(currentMediaStage()).toMatchObject({ targetId: 'record:start' })
+    expect(currentMediaStage().props.mode).toBe('reduced')
+    expect(currentMediaStage().props.request?.reducedStill).toMatchObject({
+      kind: 'still',
+      src: expect.stringContaining('p02-table-ready-v0_17.webp'),
+    })
+
+    await advance(650)
     expect(screen.getByRole('heading', { name: 'Let it spin.' })).toBeVisible()
+    expect(currentMediaStage()).toMatchObject({ targetId: 'record:spin' })
+    expect(currentMediaStage().props.mode).toBe('reduced')
+    expect(currentMediaStage().props.request?.reducedStill).toMatchObject({
+      kind: 'still',
+      src: expect.stringContaining('p02-table-ready-v0_17.webp'),
+    })
+    settleCurrentMedia('record-spin-reduced-token', 'reduced-still')
     await advance(1_499)
     expect(
       screen.queryByRole('button', { name: 'Stop and save plan' }),
