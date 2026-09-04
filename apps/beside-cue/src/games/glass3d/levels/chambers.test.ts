@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { belliesFor, groundIn, isFloorSafe, modeMidi, nodesFor, rangeSlackSemis, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
 import { CHAMBER_CONFIG, FLOOR_STRIPS } from '../world3d-config'
 import type { ChamberLevel } from './chambers'
-import { CHAMBER_1, CHAMBER_2, CHAMBER_3, CHAMBER_4, CHAMBER_5, chamberById, CHAMBERS, } from './chambers'
+import { CHAMBER_1, CHAMBER_2, CHAMBER_3, CHAMBER_4, CHAMBER_5, CHAMBERS, } from './chambers'
 
 /** Which of the room's modes shake a pane at `at` apart. */
 const breakersOf = (room: ChamberLevel, at: number): number[] =>
@@ -431,11 +431,6 @@ describe('tuning a chamber to the singer', () => {
 })
 
 describe('the list', () => {
-  it('finds a room by name, and admits when there is none', () => {
-    expect(chamberById('chamber-2')).toBe(CHAMBER_2)
-    expect(chamberById('chamber-9')).toBeNull()
-  })
-
   it('has no two rooms sharing an id', () => {
     expect(new Set(CHAMBERS.map((c) => c.id)).size).toBe(CHAMBERS.length)
   })

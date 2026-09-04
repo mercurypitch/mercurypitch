@@ -22,7 +22,7 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -77,6 +77,12 @@ interface HallwayStageProps {
   onExit: () => void
 }
 
+/** The dev dials, behind a dynamic import behind `DEV` -- see
+ * `ChamberStage` for why this shape rather than a plain import. */
+const DevDials = import.meta.env.DEV
+  ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
+  : null
+
 export const HallwayStage = (props: HallwayStageProps) => {
   let canvas!: HTMLCanvasElement
   // A page with no microphone API says so before the tap rather than
@@ -107,6 +113,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
   const input = createIntentSource()
 
   const cfg = WORLD3D_CONFIG
+  const [dials, setDials] = createSignal(false)
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
@@ -420,6 +427,28 @@ export const HallwayStage = (props: HallwayStageProps) => {
       <canvas class="stage3d__canvas" ref={canvas} />
 
       <span class="stage3d__chip">{backend()}</span>
+
+      <Show when={DevDials !== null}>
+        <button
+          type="button"
+          class="dev-dials__open"
+          onClick={() => setDials((on) => !on)}
+        >
+          dials
+        </button>
+      </Show>
+      <Show when={DevDials !== null && dials()}>
+        {(() => {
+          const Panel = DevDials!
+          return (
+            <Panel
+              config={cfg}
+              title="The Hallway"
+              onClose={() => setDials(false)}
+            />
+          )
+        })()}
+      </Show>
 
       <Show when={started()}>
         <TouchControls source={input} />

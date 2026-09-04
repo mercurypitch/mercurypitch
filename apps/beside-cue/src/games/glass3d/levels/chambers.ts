@@ -214,6 +214,3 @@ export const CHAMBERS: readonly ChamberLevel[] = [
   CHAMBER_4,
   CHAMBER_5,
 ]
-
-export const chamberById = (id: string): ChamberLevel | null =>
-  CHAMBERS.find((c) => c.id === id) ?? null

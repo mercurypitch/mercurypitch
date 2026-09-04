@@ -1113,3 +1113,176 @@
   color: inherit;
   background: rgb(255 255 255 / 8%);
 }
+
+/* The developer dials.
+   ------------------------------------------------------------------
+   Dev builds only — `DevDials` is imported behind `import.meta.env.DEV`,
+   so none of this is reachable in a shipped app. It stays in this file
+   rather than a module of its own because the stage it sits over is
+   styled here, and a panel that floats over a canvas has to know what
+   the canvas does with safe areas.
+
+   Everything is scoped through `.dev-dials`. The stage already claims
+   `.stage3d__card button` and `.stage3d__gate button` at 0-1-1, and a
+   single-class rule loses to those wherever it sits in the file. */
+.dev-dials__open {
+  position: absolute;
+  /* Below the backend chip, not over it. Both live in the top-right and
+     the chip is `pointer-events: none`, so an overlap is silent -- you
+     just read "WEBGL2" through a button. */
+  top: calc(env(safe-area-inset-top, 0px) + 2.3rem);
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 40;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: rgb(10 14 15 / 80%);
+  color: rgb(255 255 255 / 70%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dev-dials {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  /* Half the screen, so the thing being tuned stays visible while it is
+     tuned. A panel that covers the glass cannot be used to tune the
+     glass. */
+  max-height: 58vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgb(8 11 12 / 96%);
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  backdrop-filter: blur(10px);
+  color: rgb(255 255 255 / 90%);
+}
+
+.dev-dials__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem 0.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.dev-dials__title {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 45%);
+}
+
+.dev-dials .dev-dials__ghost {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.4rem;
+  background: none;
+  color: rgb(255 255 255 / 78%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.dev-dials .dev-dials__ghost svg {
+  display: block;
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.dev-dials__actions,
+.dev-dials__tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  /* The row scrolls; the page must not. */
+  scrollbar-width: none;
+}
+
+.dev-dials__actions::-webkit-scrollbar,
+.dev-dials__tabs::-webkit-scrollbar,
+.dev-dials__rows::-webkit-scrollbar {
+  display: none;
+}
+
+.dev-dials .dev-dials__action,
+.dev-dials .dev-dials__tab {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: rgb(255 255 255 / 76%);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.dev-dials .dev-dials__action {
+  border-color: rgb(242 200 75 / 30%);
+  color: var(--custard, #f2c84b);
+}
+
+.dev-dials .dev-dials__tab.is-on {
+  background: rgb(255 255 255 / 14%);
+  color: rgb(255 255 255 / 95%);
+}
+
+.dev-dials__rows {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0.75rem 0.9rem;
+  scrollbar-width: none;
+}
+
+.dev-dials__row {
+  display: block;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
+}
+
+.dev-dials__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.dev-dials__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-style: normal;
+  color: rgb(255 255 255 / 55%);
+}
+
+/* Changed from where this session started — the only thing the Copy
+   button will emit, marked so it can be seen without pressing it. */
+.dev-dials__row.is-changed .dev-dials__value {
+  color: var(--custard, #f2c84b);
+}
+
+.dev-dials__row input[type='range'] {
+  display: block;
+  width: 100%;
+  /* Tall enough to hit with a thumb without a stylus. */
+  height: 1.6rem;
+  margin: 0.15rem 0 0.1rem;
+  accent-color: var(--custard, #f2c84b);
+}
+
+.dev-dials__does {
+  display: block;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgb(255 255 255 / 42%);
+}

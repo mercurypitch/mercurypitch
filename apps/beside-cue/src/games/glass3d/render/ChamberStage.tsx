@@ -24,13 +24,14 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, For, lazy, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
+import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, roomIndex, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
@@ -109,6 +110,18 @@ const writeToggle = (key: string, on: boolean): void => {
  * line and the controls all have to agree about it.
  */
 type Phase = 'walking' | 'falling' | 'cleared' | 'done'
+
+/**
+ * The dev panel, behind a dynamic import behind `DEV`.
+ *
+ * `lazy` rather than a plain import so the panel's code -- and the dial
+ * table it carries -- is a chunk the production build never asks for,
+ * and Vite's DEV constant lets Rollup drop the call entirely. A tuning
+ * panel is not something to ship to a player by accident.
+ */
+const DevDials = import.meta.env.DEV
+  ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
+  : null
 
 interface ChamberStageProps {
   onExit: () => void
@@ -197,6 +210,12 @@ export const ChamberStage = (props: ChamberStageProps) => {
    * end card to press.
    */
   let goToRoom: ((next: ChamberLevel) => void) | null = null
+  /** What the dev panel can do to the running room. Published by the
+   * loop for the same reason `goToRoom` is: the panel is JSX and the
+   * simulation is a closure, and the seam between them is one variable
+   * rather than a signal per verb. */
+  let devActions: readonly DevAction[] = []
+  const [dials, setDials] = createSignal(false)
   /**
    * Set while a room is being re-walked from the end card.
    *
@@ -709,6 +728,42 @@ export const ChamberStage = (props: ChamberStageProps) => {
       }
 
       if (import.meta.env.DEV) {
+        // The same verbs the console hook offers, as buttons. A phone has
+        // no console, and the phone is where the feel is judged.
+        devActions = [
+          {
+            label: 'Break next pane',
+            run: () => {
+              const next = targets.findIndex((t) => !t.broken)
+              if (next >= 0) breakPane(next)
+            },
+          },
+          {
+            label: 'Break all',
+            run: () => {
+              for (let i = 0; i < targets.length; i++) {
+                if (!targets[i]!.broken) breakPane(i)
+              }
+            },
+          },
+          { label: 'Jump', run: () => input.pulseJump(performance.now()) },
+          {
+            label: 'To the exit',
+            run: () => {
+              closeWalls()
+              loco.x = Math.min(walls.maxX, live.exitAt * live.length)
+            },
+          },
+          { label: 'Back to the start', run: () => restart() },
+          { label: 'Drop him', run: () => drop() },
+          { label: 'Clear this room', run: () => clearRoom() },
+          ...live.modes.map((mode) => ({
+            label: `Hold mode ${mode}`,
+            run: () => {
+              forcedMode = forcedMode === mode ? null : mode
+            },
+          })),
+        ]
         ;(window as unknown as Record<string, unknown>).__w3c = () => ({
           phase: phaseNow,
           x: loco.x,
@@ -807,6 +862,29 @@ export const ChamberStage = (props: ChamberStageProps) => {
       <canvas class="stage3d__canvas" ref={canvas} />
 
       <span class="stage3d__chip">{backend()}</span>
+
+      <Show when={DevDials !== null}>
+        <button
+          type="button"
+          class="dev-dials__open"
+          onClick={() => setDials((on) => !on)}
+        >
+          dials
+        </button>
+      </Show>
+      <Show when={DevDials !== null && dials()}>
+        {(() => {
+          const Panel = DevDials!
+          return (
+            <Panel
+              config={cfg}
+              title="The Standing Wave"
+              actions={devActions}
+              onClose={() => setDials(false)}
+            />
+          )
+        })()}
+      </Show>
 
       <Show when={started() && phase() !== 'done'}>
         <Show when={showLadder()}>

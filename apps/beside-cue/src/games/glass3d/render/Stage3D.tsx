@@ -15,7 +15,7 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -46,6 +46,12 @@ const TEXT_INTERVAL = 0.1
 interface Stage3DProps {
   onExit: () => void
 }
+
+/** The dev dials, behind a dynamic import behind `DEV` -- see
+ * `ChamberStage` for why this shape rather than a plain import. */
+const DevDials = import.meta.env.DEV
+  ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
+  : null
 
 export const Stage3D = (props: Stage3DProps) => {
   let canvas!: HTMLCanvasElement
@@ -85,6 +91,7 @@ export const Stage3D = (props: Stage3DProps) => {
   // break rescaled to a world about a fifth the size. Absolute metres
   // per second in a small room read as a much faster break.
   const cfg = CABINET_CONFIG
+  const [dials, setDials] = createSignal(false)
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
@@ -363,6 +370,28 @@ export const Stage3D = (props: Stage3DProps) => {
       {/* Top RIGHT. The Leave pill is fixed to the top left and sits on
           z-index 50, so anything put there is simply not on screen. */}
       <span class="stage3d__chip">{chipLine()}</span>
+
+      <Show when={DevDials !== null}>
+        <button
+          type="button"
+          class="dev-dials__open"
+          onClick={() => setDials((on) => !on)}
+        >
+          dials
+        </button>
+      </Show>
+      <Show when={DevDials !== null && dials()}>
+        {(() => {
+          const Panel = DevDials!
+          return (
+            <Panel
+              config={cfg}
+              title="The Cabinet"
+              onClose={() => setDials(false)}
+            />
+          )
+        })()}
+      </Show>
 
       <Show when={started() && !broken()}>
         <VoiceCoach
