@@ -1,5 +1,5 @@
 // ============================================================
-// CommunityLeaderboard — Global/Friends/Weekly Leaderboards
+// CommunityLeaderboard — League / Friends / Legends / Global
 // ============================================================
 
 import type { Component } from 'solid-js'
@@ -7,20 +7,22 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { FriendRequests } from '@/components/friends/FriendRequests'
-import { CheckCircle, ChevronDown, Play } from '@/components/icons'
-import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
+import { CheckCircle, ChevronDown } from '@/components/icons'
+import type { LeaderboardCategory as DBLeaderboardCategory } from '@/db/entities'
 import { accountHeld, hasValidToken } from '@/db/services/auth-service'
-import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import type { FriendRequest } from '@/db/services/follow-service'
 import { acceptFriend, FRIENDS_NEED_ACCOUNT, listFriendRequests, loadFollowState, removeFriend, requestFriend, } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
 import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
+import { LegendsShowcase } from '@/features/challenges/LegendsShowcase'
+import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { API_BASE_URL } from '@/lib/defaults'
 import { peekPendingFriendCode } from '@/lib/pending-friend-code'
+import { takeRequestedLeaderboardView } from '@/lib/pending-leaderboard-view'
 import { showNotification } from '@/stores/notifications-store'
-import { openAuthModal } from '@/stores/ui-store'
+import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
@@ -156,6 +158,22 @@ const IconTrophy = () => (
   </svg>
 )
 
+const IconLegends = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg tab-icon"
+  >
+    <path d="M12 3.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.8l5-.7z" />
+    <path d="M5 14.5c-1.4 1.6-1.4 3.8 0 5.4" />
+    <path d="M19 14.5c1.4 1.6 1.4 3.8 0 5.4" />
+  </svg>
+)
+
 const IconChallenge = () => (
   <svg
     viewBox="0 0 24 24"
@@ -262,16 +280,6 @@ const leaderboardCategories = [
   { id: 'sessions' as const, name: 'Most Sessions', icon: IconSessions },
 ]
 
-/** A challenge definition joined with the user's own progress. */
-interface WeeklyChallengeCard {
-  challengeId: string
-  name: string
-  description: string
-  targetScore: number
-  userScore: number
-  completed: boolean
-}
-
 // ============================================================
 // Component
 // ============================================================
@@ -286,7 +294,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     peekPendingFriendCode() != null
       ? 'friends'
       : // eslint-disable-next-line solid/reactivity -- one-time signal init
-        (props.view ?? 'league')
+        (takeRequestedLeaderboardView() ?? props.view ?? 'league')
   ) as LeaderboardView
   // eslint-disable-next-line solid/reactivity -- one-time signal init
   const initialCategory = (props.category ?? 'overall') as LeaderboardCategory
@@ -340,11 +348,6 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   const [following, setFollowing] = createSignal<string[]>([])
   const [requested, setRequested] = createSignal<string[]>([])
   const [incoming, setIncoming] = createSignal<FriendRequest[]>([])
-
-  // Real weekly challenges: definitions + own progress
-  const [weeklyChallenges, setWeeklyChallenges] = createSignal<
-    WeeklyChallengeCard[]
-  >([])
 
   function toLeaderboardUser(u: {
     userId: string
@@ -500,28 +503,6 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   createEffect(() => {
     authVersion()
     void refreshFollowing()
-    void (async () => {
-      const [defs, progress] = await Promise.all([
-        loadChallengeDefinitions(),
-        loadChallengeProgress(),
-      ])
-      const progressById = new Map<string, ChallengeProgress>(
-        progress.map((p) => [p.challengeId, p]),
-      )
-      setWeeklyChallenges(
-        defs.map((d: ChallengeDefinition) => {
-          const p = progressById.get(d.id)
-          return {
-            challengeId: d.id,
-            name: d.title,
-            description: d.description,
-            targetScore: d.targetScore,
-            userScore: p?.currentScore ?? 0,
-            completed: p?.completed ?? false,
-          }
-        }),
-      )
-    })()
   })
 
   async function loadMore(): Promise<void> {
@@ -673,15 +654,13 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 run behind them. Finish an exercise or a Legend and yours lands
                 here.
               </p>
-              <Show when={props.onOpenChallenges !== undefined}>
-                <button
-                  type="button"
-                  class="primary-btn"
-                  onClick={() => props.onOpenChallenges?.()}
-                >
-                  <IconChallenge /> Take on a challenge
-                </button>
-              </Show>
+              <button
+                type="button"
+                class="primary-btn"
+                onClick={() => setActiveTab(TAB_CHALLENGES)}
+              >
+                <IconChallenge /> Take on a challenge
+              </button>
             </>
           }
         >
@@ -791,12 +770,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           <span class="tab-count">{following().length}</span>
         </button>
         <button
-          class={`leaderboard-tab ${activeView() === 'weekly' ? 'active' : ''}`}
-          onClick={() => setActiveView('weekly')}
+          class={`leaderboard-tab ${activeView() === 'legends' ? 'active' : ''}`}
+          onClick={() => setActiveView('legends')}
+          data-testid="legends-tab"
         >
-          <IconStreak />
-          <span class="tab-name">Weekly</span>
-          <span class="tab-count">{weeklyChallenges().length}</span>
+          <IconLegends />
+          <span class="tab-name">Legends</span>
         </button>
         <button
           class={`leaderboard-tab ${activeView() === 'global' ? 'active' : ''}`}
@@ -810,7 +789,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       </div>
 
       {/* Category Tabs */}
-      {activeView() !== 'weekly' && activeView() !== 'league' && (
+      {activeView() !== 'legends' && activeView() !== 'league' && (
         <div class="category-tabs">
           <For each={visibleCategories()}>
             {(cat) => (
@@ -1078,78 +1057,17 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         </div>
       </Show>
 
-      {/* Weekly Challenges View */}
-      <Show when={activeView() === 'weekly'}>
-        <div class="weekly-challenges">
-          <h3 class="weekly-challenges-title">Weekly Challenges</h3>
-          <p class="weekly-challenges-desc">
-            Complete challenges to earn special badges and climb the ranks!
-          </p>
-
-          <Show
-            when={weeklyChallenges().length > 0}
-            fallback={
-              <p class="weekly-challenges-desc">No challenges available.</p>
-            }
-          >
-            <div class="challenges-grid">
-              <For each={weeklyChallenges()}>
-                {(challenge) => (
-                  <div
-                    class="challenge-card"
-                    data-challenge={challenge.challengeId}
-                  >
-                    <div class="challenge-icon">{IconChallenge()}</div>
-                    <div class="challenge-content">
-                      <h4 class="challenge-name">{challenge.name}</h4>
-                      <p class="challenge-desc">{challenge.description}</p>
-                    </div>
-                    {/* One reading of the number, not two. The stats row
-                        said "Your progress: 0 / 55" and the bar's caption
-                        said "0 / 55" directly beneath it. Label, bar, count
-                        — and the bar spans the card instead of the 80px the
-                        shared .progress-bar gives it. */}
-                    <div class="challenge-progress">
-                      <span class="challenge-progress-label">
-                        {challenge.completed ? 'Completed' : 'Your progress'}
-                      </span>
-                      <div class="progress-bar">
-                        <div
-                          class="progress-fill"
-                          style={{
-                            width: `${Math.min((challenge.userScore / Math.max(challenge.targetScore, 1)) * 100, 100)}%`,
-                            '--progress-color': getScoreColor(
-                              challenge.userScore,
-                            ),
-                          }}
-                        />
-                      </div>
-                      <span class="progress-text">
-                        {challenge.userScore} / {challenge.targetScore}
-                      </span>
-                    </div>
-                    <button
-                      class="challenge-join-btn"
-                      disabled={challenge.completed}
-                      onClick={() => props.onOpenChallenges?.()}
-                      aria-label={
-                        challenge.completed ? 'Completed' : 'Practice now'
-                      }
-                      title={challenge.completed ? 'Completed' : 'Practice now'}
-                    >
-                      {challenge.completed ? <CheckCircle /> : <Play />}
-                      {challenge.completed ? 'Completed' : 'Practice Now'}
-                    </button>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
+      {/* Legends — the live challenge and every past one with its podium.
+          The view used to list the 24 static Vocal Challenges under the
+          heading "Weekly", none of which were weekly; the real Legend, the
+          one thing on this page with a board and winners, appeared nowhere
+          on it. */}
+      <Show when={activeView() === 'legends'}>
+        <LegendsShowcase />
       </Show>
 
       {/* Leaderboard Table View */}
-      <Show when={activeView() !== 'weekly' && activeView() !== 'league'}>
+      <Show when={activeView() !== 'legends' && activeView() !== 'league'}>
         <div class="leaderboard-content">
           {/* Friends tab: share/redeem codes, then the empty-state hint */}
           <Show when={activeView() === 'friends' && cloudConfigured}>
@@ -1448,15 +1366,6 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 interface LeaderboardProps {
   view?: LeaderboardView
   category?: LeaderboardCategory
-  /** Navigate to the challenges tab (weekly cards' "Practice Now"). */
-  onOpenChallenges?: () => void
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 75) return 'var(--green)'
-  if (score >= 50) return 'var(--accent)'
-  if (score >= 25) return 'var(--teal)'
-  return 'var(--yellow)'
 }
 
 function getStreakColor(streak: number): string {

@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const began: unknown[] = []
 const staged: Array<{ mode: string }> = []
+const tabs: string[] = []
 const notes: Array<{ message: string; kind: string }> = []
 let consented = false
 let consentWriteSucceeds = true
@@ -63,7 +64,7 @@ vi.mock('@/features/challenges/weekly-attempt', () => ({
 
 vi.mock('@/stores/ui-store', () => ({
   openChallengeStage: (o: { mode: string }) => staged.push(o),
-  setActiveTab: () => {},
+  setActiveTab: (tab: string) => tabs.push(tab),
 }))
 
 vi.mock('@/stores/notifications-store', () => ({
@@ -71,12 +72,10 @@ vi.mock('@/stores/notifications-store', () => ({
     notes.push({ message, kind }),
 }))
 
-vi.mock('@/features/challenges/PastWeeklyChallenges', () => ({
-  requestPastChallengesScroll: () => {},
-}))
-
 const { WeeklyLegendHero } =
   await import('@/features/challenges/WeeklyLegendHero')
+const { takeRequestedLeaderboardView } =
+  await import('@/lib/pending-leaderboard-view')
 
 async function openHero(): Promise<void> {
   render(() => <WeeklyLegendHero />)
@@ -90,6 +89,8 @@ async function tapSingIt(): Promise<void> {
 beforeEach(() => {
   began.length = 0
   staged.length = 0
+  tabs.length = 0
+  takeRequestedLeaderboardView()
   notes.length = 0
   consented = false
   consentWriteSucceeds = true
@@ -232,5 +233,32 @@ describe('what the board says about you', () => {
     expect(row.textContent).toContain('top 100% of 2')
     expect(row.textContent).not.toContain('of 4')
     expect(screen.queryByTestId('you-unranked')).toBeNull()
+  })
+})
+
+// ── Where "See past challenges" goes ────────────────────────────────
+//
+// The archive moved from a rail on the Challenges tab to the Leaderboard's
+// Legends view. The leaderboard is lazy and owns its own view state, so the
+// card has to say which view it wants before switching tabs, or the singer
+// lands on League and has to find the archive themselves.
+
+describe('the way to past challenges', () => {
+  it('opens the leaderboard on the Legends view', async () => {
+    await openHero()
+    fireEvent.click(screen.getByText('See past challenges'))
+
+    expect(tabs).toEqual(['leaderboard'])
+    // Stashed BEFORE the tab switch, so it is there when the leaderboard
+    // mounts and picks its initial view.
+    expect(takeRequestedLeaderboardView()).toBe('legends')
+  })
+
+  it('is not offered on the Legends view itself', async () => {
+    // The archive is the next thing down the page there; a link to where
+    // you already are is a link to nowhere.
+    render(() => <WeeklyLegendHero showPastLink={false} />)
+    await waitFor(() => screen.getByText('Sing it'))
+    expect(screen.queryByText('See past challenges')).toBeNull()
   })
 })

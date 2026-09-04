@@ -1566,17 +1566,6 @@
   border-color: var(--accent);
 }
 
-/* Weekly Challenges */
-.weekly-challenges {
-  margin-bottom: 32px;
-}
-
-.weekly-challenges-title {
-  margin: 0 0 8px 0;
-  font-size: 1.25rem;
-  color: var(--text-primary);
-}
-
 .weekly-challenges-desc {
   margin: 0 0 24px 0;
   color: var(--text-muted);
@@ -3111,37 +3100,6 @@
    an absolutely positioned .modal-backdrop SIBLING of the content — and
    the module's .modalContent carries no `position`, so the scrim painted
    over the dialog instead of behind it. Only the blur is kept, scoped. */
-/* ── Challenges: rail + main ────────────────────────────────────────
-   The Legend and the past-weeks archive were full-width centred blocks
-   with the right half of a wide screen empty, and the category pills
-   wrapped onto two rows below them. Side by side above 1080px; one
-   column, rail first, below. */
-.challenges-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  align-items: start;
-}
-
-@media (min-width: 1080px) {
-  .challenges-layout {
-    /* An even split. The Legend is the headline of the page and a 360px
-       rail made it the narrowest thing on screen. */
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .challenges-rail {
-    position: sticky;
-    top: 12px;
-  }
-}
-
-.challenges-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
 .challenges-main {
   display: flex;
   flex-direction: column;

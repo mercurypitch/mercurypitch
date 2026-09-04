@@ -51,6 +51,7 @@ const SURFACES = [
   'src/features/challenges/ChallengeStage.tsx',
   'src/features/challenges/ChallengeResultCard.tsx',
   'src/features/challenges/PastWeeklyChallenges.tsx',
+  'src/features/challenges/LegendsShowcase.tsx',
 ]
 
 // "This week", "weekly", "monthly", "this month" — a period in the name.
