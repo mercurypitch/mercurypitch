@@ -239,26 +239,125 @@ describe('V2OnboardingMediaStage', () => {
       token: expect.any(String),
       recoveryStage: 'primary',
     })
+    expect(vi.getTimerCount()).toBe(0)
+
+    vi.advanceTimersByTime(1_200)
+    expect(currentVideo()).toBe(incoming)
+    expect(harness.onPresentationSettled).toHaveBeenCalledTimes(2)
   })
 
-  it('uses one deferred loaded-data task when the WebView has no video-frame callback', () => {
+  it('uses authored still recovery when no compositor callback exists', () => {
     delete (HTMLVideoElement.prototype as Partial<HTMLVideoElement>)
       .requestVideoFrameCallback
     delete (HTMLVideoElement.prototype as Partial<HTMLVideoElement>)
       .cancelVideoFrameCallback
     const harness = renderStage({ request: automaticRequest('legacy') })
-    const element = currentVideo()
+    const primary = currentVideo()
 
-    fireEvent.loadedData(element)
-    expect(layerFor(element)).toHaveAttribute('data-v2-media-phase', 'loading')
+    fireEvent.loadedData(primary)
     vi.advanceTimersByTime(0)
+    const retry = currentVideo()
 
-    expect(layerFor(element)).toHaveAttribute('data-v2-media-phase', 'revealed')
-    vi.runAllTimers()
+    expect(retry).not.toBe(primary)
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-stage', 'retry')
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-phase', 'loading')
+
+    fireEvent.loadedData(retry)
+    vi.advanceTimersByTime(0)
+    const reduced = currentImage()
+
+    expect(document.querySelector('video')).toBeNull()
+    expect(reduced.src).toContain('/legacy-reduced.webp')
+    expect(layerFor(reduced)).toHaveAttribute(
+      'data-v2-media-stage',
+      'reduced-still',
+    )
+    expect(harness.onPresentationSettled).not.toHaveBeenCalled()
+
+    decodeImage(reduced)
+    fireEvent.transitionEnd(layerFor(reduced), { propertyName: 'opacity' })
+
     expect(harness.onPresentationSettled).toHaveBeenCalledWith({
       targetId: 'legacy',
       token: expect.any(String),
-      recoveryStage: 'primary',
+      recoveryStage: 'reduced-still',
+    })
+  })
+
+  it('recovers when a bundled video never reaches loaded data', () => {
+    const harness = renderStage({ request: automaticRequest('decode-stall') })
+    const primary = currentVideo()
+
+    vi.advanceTimersByTime(2_999)
+    expect(currentVideo()).toBe(primary)
+    expect(layerFor(primary)).toHaveAttribute('data-v2-media-phase', 'loading')
+
+    vi.advanceTimersByTime(1)
+    const retry = currentVideo()
+    expect(retry).not.toBe(primary)
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-stage', 'retry')
+
+    vi.advanceTimersByTime(3_000)
+    const reduced = currentImage()
+    expect(document.querySelector('video')).toBeNull()
+    expect(reduced.src).toContain('/decode-stall-reduced.webp')
+
+    decodeImage(reduced)
+    fireEvent.transitionEnd(layerFor(reduced), { propertyName: 'opacity' })
+    expect(harness.onPresentationSettled).toHaveBeenCalledWith({
+      targetId: 'decode-stall',
+      token: expect.any(String),
+      recoveryStage: 'reduced-still',
+    })
+  })
+
+  it('keeps the decoded outgoing picture until a stalled video recovers to a real still', () => {
+    const harness = renderStage({ request: holdRequest('table') })
+    const table = currentImage()
+    decodeImage(table)
+    fireEvent.transitionEnd(layerFor(table), { propertyName: 'opacity' })
+
+    harness.setRequest(automaticRequest('stalled'))
+    const primary = currentVideo()
+    fireEvent.loadedMetadata(primary)
+    fireEvent.loadedData(primary)
+    const stalePrimaryFrame = frameCallbacks.get(primary)
+
+    vi.advanceTimersByTime(1_199)
+    expect(currentVideo()).toBe(primary)
+    expect(layerFor(primary)).toHaveAttribute('data-v2-media-phase', 'loading')
+    expect(document.body.contains(table)).toBe(true)
+
+    vi.advanceTimersByTime(1)
+    const retry = currentVideo()
+    expect(retry).not.toBe(primary)
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-stage', 'retry')
+
+    stalePrimaryFrame?.()
+    expect(currentVideo()).toBe(retry)
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-phase', 'loading')
+
+    fireEvent.loadedMetadata(retry)
+    fireEvent.loadedData(retry)
+    vi.advanceTimersByTime(1_200)
+    const reduced = currentImage()
+
+    expect(document.querySelector('video')).toBeNull()
+    expect(document.body.contains(table)).toBe(true)
+    expect(reduced.src).toContain('/stalled-reduced.webp')
+    expect(layerFor(reduced)).toHaveAttribute('data-v2-media-phase', 'loading')
+    expect(harness.onPresentationSettled).toHaveBeenCalledTimes(1)
+
+    decodeImage(reduced)
+    expect(layerFor(reduced)).toHaveAttribute('data-v2-media-phase', 'revealed')
+    expect(document.body.contains(table)).toBe(true)
+
+    fireEvent.transitionEnd(layerFor(reduced), { propertyName: 'opacity' })
+    expect(document.body.contains(table)).toBe(false)
+    expect(harness.onPresentationSettled).toHaveBeenLastCalledWith({
+      targetId: 'stalled',
+      token: expect.any(String),
+      recoveryStage: 'reduced-still',
     })
   })
 
@@ -386,6 +485,41 @@ describe('V2OnboardingMediaStage', () => {
 
     expect(playedElements.slice(playsBeforeReplacement)).toEqual([second])
     expect(playedElements.slice(playsBeforeReplacement)).not.toContain(first)
+  })
+
+  it('pauses decode watchdogs while backgrounded and restarts their full grace on resume', () => {
+    const harness = renderStage({
+      request: automaticRequest('backgrounded'),
+      foreground: false,
+    })
+    const primary = currentVideo()
+
+    vi.advanceTimersByTime(10_000)
+    expect(currentVideo()).toBe(primary)
+
+    fireEvent.loadedData(primary)
+    vi.advanceTimersByTime(10_000)
+    expect(currentVideo()).toBe(primary)
+
+    harness.setForeground(true)
+    vi.advanceTimersByTime(1_199)
+    expect(currentVideo()).toBe(primary)
+
+    vi.advanceTimersByTime(1)
+    const retry = currentVideo()
+    expect(retry).not.toBe(primary)
+    expect(layerFor(retry)).toHaveAttribute('data-v2-media-stage', 'retry')
+
+    harness.setForeground(false)
+    vi.advanceTimersByTime(10_000)
+    expect(currentVideo()).toBe(retry)
+
+    harness.setForeground(true)
+    vi.advanceTimersByTime(2_999)
+    expect(currentVideo()).toBe(retry)
+
+    vi.advanceTimersByTime(1)
+    expect(currentImage().src).toContain('/backgrounded-reduced.webp')
   })
 
   it('cancels frame work and makes every deferred callback inert on cleanup', () => {

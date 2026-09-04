@@ -3,8 +3,9 @@
 // ============================================================
 //
 // Readiness is evidence, not an optimistic load event: video stays hidden
-// until a compositor-frame callback (or the bounded legacy fallback), and the
-// decoded outgoing node survives until its successor finishes the crossfade.
+// until a compositor-frame callback. An unavailable or stalled compositor
+// gate walks the explicit still recovery chain instead of inventing evidence,
+// and the decoded outgoing node survives until its successor crossfades.
 
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationEvidence, V2OnboardingMediaPresentationRequest, V2OnboardingMediaPresenterEvent, V2OnboardingMediaPresenterState, V2OnboardingMediaRecoveryStage, V2OnboardingMediaResource, } from './v2-onboarding-media-presenter'
@@ -13,9 +14,9 @@ import styles from './V2OnboardingMediaStage.module.css'
 
 const DEFAULT_TRANSITION_DURATION_MS = 180
 const TRANSITION_FALLBACK_SLACK_MS = 34
-/** How long to wait for a composited video frame before presenting the
- * stage anyway. See `scheduleVideoFrameGate`: on iOS a refused video
- * never composites, and without this the stage waits forever. */
+/** Bundled local video should reach its first decoded frame well inside this. */
+const VIDEO_LOAD_GRACE_MS = 3000
+/** How long to wait for a composited frame before recovering to authored art. */
 const VIDEO_FRAME_GRACE_MS = 1200
 
 export interface V2OnboardingMediaCorrelation {
@@ -47,6 +48,7 @@ interface MediaLayerProps {
   readonly recoveryStage: V2OnboardingMediaRecoveryStage
   readonly resource?: V2OnboardingMediaResource
   readonly phase: LayerPhase
+  readonly foreground: boolean
   readonly transitionDurationMs: number
   readonly onMetadataReady: (token: string) => void
   readonly onPlaying: (token: string) => void
@@ -89,15 +91,26 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
   let mounted = true
   let videoElement: HTMLVideoElement | undefined
   let frameRequest: number | undefined
+  let loadFallback: ReturnType<typeof setTimeout> | undefined
   let frameFallback: ReturnType<typeof setTimeout> | undefined
   let frameGateScheduled = false
+  let frameGateSettled = false
+  let frameCallbackExpected = false
   let brandPresented = false
 
-  function cancelFrameGate(): void {
+  function cancelWatchdogs(): void {
+    if (loadFallback !== undefined) {
+      clearTimeout(loadFallback)
+      loadFallback = undefined
+    }
     if (frameFallback !== undefined) {
       clearTimeout(frameFallback)
       frameFallback = undefined
     }
+  }
+
+  function cancelFrameGate(): void {
+    cancelWatchdogs()
     if (frameRequest !== undefined && videoElement !== undefined) {
       const capable = videoElement as unknown as OptionalVideoFrameCallbacks
       capable.cancelVideoFrameCallback?.(frameRequest)
@@ -106,37 +119,90 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
   }
 
   function presentVideoFrame(): void {
-    if (!mounted) return
+    if (!mounted || frameGateSettled) return
+    frameGateSettled = true
+    if (frameFallback !== undefined) clearTimeout(frameFallback)
     frameRequest = undefined
     frameFallback = undefined
     props.onPresented(props.token, 'decoded-video-frame')
   }
 
+  function expireVideoFrameGate(): void {
+    if (!mounted || frameGateSettled) return
+    frameGateSettled = true
+    cancelFrameGate()
+    props.onFailed(props.token)
+  }
+
+  function scheduleVideoLoadGate(): void {
+    if (
+      !mounted ||
+      !props.foreground ||
+      frameGateSettled ||
+      frameGateScheduled ||
+      loadFallback !== undefined
+    ) {
+      return
+    }
+    loadFallback = setTimeout(expireVideoFrameGate, VIDEO_LOAD_GRACE_MS)
+  }
+
+  function scheduleVideoFrameWatchdog(): void {
+    if (
+      !mounted ||
+      !props.foreground ||
+      frameGateSettled ||
+      frameFallback !== undefined
+    ) {
+      return
+    }
+    frameFallback = setTimeout(
+      expireVideoFrameGate,
+      frameCallbackExpected ? VIDEO_FRAME_GRACE_MS : 0,
+    )
+  }
+
   function scheduleVideoFrameGate(element: HTMLVideoElement): void {
     if (frameGateScheduled) return
     frameGateScheduled = true
+    if (loadFallback !== undefined) {
+      clearTimeout(loadFallback)
+      loadFallback = undefined
+    }
     const capable = element as unknown as OptionalVideoFrameCallbacks
     if (capable.requestVideoFrameCallback !== undefined) {
+      frameCallbackExpected = true
       frameRequest = capable.requestVideoFrameCallback(presentVideoFrame)
-      // And a wall clock beside it. The callback fires on COMPOSITION,
-      // so a video the platform has refused to play never fires it --
-      // which on iOS leaves this stage waiting forever on a frame that
-      // is not coming. `presentVideoFrame` is guarded by `mounted` and
-      // by the token, so the loser of the race is a no-op.
-      frameFallback = setTimeout(presentVideoFrame, VIDEO_FRAME_GRACE_MS)
-      return
+      // The callback fires on composition. If iOS accepts loaded data but
+      // never composites it, move to the retry/still chain; never label the
+      // stalled video itself as decoded.
+    } else {
+      frameCallbackExpected = false
     }
 
-    // Older WebViews expose loadeddata but no compositor callback. Defer one
-    // task so an already-decoded current frame can reach paint; the token and
-    // mount guards keep this fallback from reviving a retired candidate.
-    frameFallback = setTimeout(presentVideoFrame, 0)
+    // Without compositor evidence, use the same deterministic recovery path.
+    // The watchdog is paused while the app is backgrounded because WebKit also
+    // suspends frame composition there.
+    scheduleVideoFrameWatchdog()
   }
 
   createEffect(() => {
     if (props.resource?.kind !== 'brand' || brandPresented) return
     brandPresented = true
     props.onPresented(props.token, 'native-brand')
+  })
+
+  createEffect(() => {
+    if (!props.foreground) {
+      cancelWatchdogs()
+      return
+    }
+    if (videoElement === undefined || frameGateSettled) return
+    if (frameGateScheduled) {
+      scheduleVideoFrameWatchdog()
+    } else {
+      scheduleVideoLoadGate()
+    }
   })
 
   onCleanup(() => {
@@ -181,6 +247,7 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
               element.defaultMuted = true
               element.muted = true
               props.onVideoMounted(props.token, element)
+              scheduleVideoLoadGate()
             }}
             class={styles.media}
             style={{
@@ -473,6 +540,7 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
             recoveryStage={renderedLayer(token)?.candidate.stage ?? 'brand'}
             resource={renderedLayer(token)?.candidate.resource}
             phase={renderedLayer(token)?.phase ?? 'loading'}
+            foreground={props.foreground}
             transitionDurationMs={transitionDurationMs()}
             onMetadataReady={(eventToken) => {
               sendPresenterEvent({

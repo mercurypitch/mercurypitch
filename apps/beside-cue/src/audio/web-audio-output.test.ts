@@ -179,6 +179,8 @@ let requestCounter = 0
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 function request(
@@ -268,6 +270,32 @@ describe('web audio output', () => {
     expect(fake.sources[0]?.stops).toEqual([10.24])
   })
 
+  it('decodes the body of the status-0 response returned by iOS', async () => {
+    const fake = createFakeContext()
+    const fetchMock = vi.fn(async () =>
+      Promise.resolve({
+        ok: false,
+        status: 0,
+        arrayBuffer: async () => new ArrayBuffer(8),
+      } as Response),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const output = createWebAudioOutput({
+      createContext: () => fake.context,
+      supportsMimeType: () => true,
+      resolveAssetUrl: (src) => src,
+    })
+    const playRequest = request()
+    const playback = output.play(playRequest)
+
+    await expect(playback.started).resolves.toBe('started')
+    expect(fetchMock).toHaveBeenCalledWith(playRequest.source.src, {
+      signal: expect.any(AbortSignal),
+    })
+    expect(fake.decodeCount()).toBe(1)
+    expect(fake.sources[0]?.starts).toEqual([0])
+  })
+
   it('disconnects a suspended graph so a later unlock cannot revive it', async () => {
     const fake = createFakeContext()
     const output = createWebAudioOutput({
@@ -317,6 +345,7 @@ describe('web audio output', () => {
   })
 
   it('reports decode and invalid loop failures without starting sound', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const failing = createFakeContext({
       decode: async () => {
         throw new DOMException('Bad bytes', 'EncodingError')
@@ -327,10 +356,16 @@ describe('web audio output', () => {
       fetchArrayBuffer: async () => new ArrayBuffer(8),
       supportsMimeType: () => true,
     })
-    const failed = failedOutput.play(request())
+    const failedRequest = request()
+    const failed = failedOutput.play(failedRequest)
     await expect(failed.started).resolves.toBe('failed')
     await expect(failed.finished).resolves.toBe('failed')
     expect(failing.sources).toHaveLength(0)
+    expect(warn).toHaveBeenCalledWith(
+      '[beside-cue:audio] playback failed',
+      failedRequest.source.src,
+      expect.any(DOMException),
+    )
 
     const short = createFakeContext({ decode: async () => fakeBuffer(1) })
     const shortOutput = createWebAudioOutput({

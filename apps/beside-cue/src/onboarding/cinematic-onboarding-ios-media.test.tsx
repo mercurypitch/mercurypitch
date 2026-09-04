@@ -124,8 +124,8 @@ describe('a video the platform never composites', () => {
       <CinematicOnboardingDirector
         media={mediaManifest()}
         bSideOptions={B_SIDE_OPTIONS}
-        onSavePlan={async () => ({ ok: true })}
-        onSetReminder={async () => ({ ok: true, message: 'ok' })}
+        onSavePlan={() => Promise.resolve({ ok: true })}
+        onSetReminder={() => Promise.resolve({ ok: true, message: 'ok' })}
         onSkipReminder={() => undefined}
         onComplete={() => undefined}
       />
@@ -141,37 +141,49 @@ describe('a video the platform never composites', () => {
     return video!
   }
 
-  const surface = (video: HTMLVideoElement): Element =>
-    video.closest('.cinematic-onboarding__media') ?? video
-
-  it('registers the frame callback, and does not depend on it firing', async () => {
-    const video = await begin()
+  const recoverToStill = async (): Promise<HTMLImageElement> => {
+    const primary = await begin()
     expect(registered.length).toBeGreaterThan(0)
 
-    // Before the grace runs out, the reveal is still the callback's to
-    // make -- nothing here is trying to pre-empt a real frame.
-    expect(
-      surface(video).classList.contains(
-        'cinematic-onboarding__media--revealed',
-      ),
-    ).toBe(false)
+    expect(primary).not.toHaveClass('cinematic-onboarding__media--revealed')
 
-    await vi.advanceTimersByTimeAsync(2000)
+    await vi.advanceTimersByTimeAsync(1_200)
     await flush()
+    const retry = document.querySelector('video')
+    expect(retry).toBeInstanceOf(HTMLVideoElement)
+    expect(retry).not.toBe(primary)
 
-    // ...and after it, the picture is on screen anyway. A still is a far
-    // better failure than a void.
-    expect(
-      surface(video).classList.contains(
-        'cinematic-onboarding__media--revealed',
-      ),
-    ).toBe(true)
+    registered[0]?.()
+    await flush()
+    expect(retry).not.toHaveClass('cinematic-onboarding__media--revealed')
+
+    fireEvent.loadedData(retry!)
+    fireEvent.playing(retry!)
+    await flush()
+    expect(registered).toHaveLength(2)
+
+    await vi.advanceTimersByTimeAsync(1_200)
+    await flush()
+    const image = document.querySelector(
+      'img.cinematic-onboarding__media--revealed',
+    )
+    expect(image).toBeInstanceOf(HTMLImageElement)
+    expect(document.querySelector('video')).toBeNull()
+    return image as HTMLImageElement
+  }
+
+  it('recovers two stalled video attempts to the authored still', async () => {
+    const image = await recoverToStill()
+
+    expect(image.src).toContain('-reduced.webp')
+    registered[0]?.()
+    registered[1]?.()
+    await flush()
+    expect(document.querySelector('video')).toBeNull()
   })
 
   it('still shows the caption, so the intro is readable either way', async () => {
-    await begin()
-    await vi.advanceTimersByTimeAsync(2000)
-    await flush()
+    await recoverToStill()
     expect(screen.getByText('Hi there, I am Corky.')).toBeVisible()
   })
 })

@@ -19,7 +19,11 @@ const mediaStageHarness = vi.hoisted(() => ({
   props: undefined as
     | Pick<
         V2OnboardingMediaStageProps,
-        'request' | 'mode' | 'onPresentationSettled' | 'onVideoEnded'
+        | 'request'
+        | 'mode'
+        | 'foreground'
+        | 'onPresentationSettled'
+        | 'onVideoEnded'
       >
     | undefined,
 }))
@@ -44,6 +48,7 @@ vi.mock('./V2OnboardingMediaStage', () => ({
       mediaStageHarness.props = {
         request: props.request,
         mode: props.mode,
+        foreground: props.foreground,
         onPresentationSettled: props.onPresentationSettled,
         onVideoEnded: props.onVideoEnded,
       }
@@ -703,6 +708,7 @@ describe('V2OnboardingDirector', () => {
     expect(currentRecordMediaLayer()).not.toHaveClass(
       styles.recordMediaLayerHidden,
     )
+    expect(mediaStageHarness.props?.foreground).toBe(true)
 
     await advance(5_000)
     expect(
@@ -711,7 +717,7 @@ describe('V2OnboardingDirector', () => {
     expect(platterHarness.props?.phase).toBe('stopped')
 
     settleCurrentMedia('record-spin-token')
-    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(platterHarness.props?.phase).toBe('stopped')
     await advance(1_799)
     expect(
       screen.queryByRole('button', { name: 'Stop and save plan' }),
@@ -723,6 +729,7 @@ describe('V2OnboardingDirector', () => {
 
     endCurrentMedia('record-spin-token')
     expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(mediaStageHarness.props?.foreground).toBe(false)
     expect(platterHarness.props?.phase).toBe('spinning')
   })
 
@@ -740,13 +747,14 @@ describe('V2OnboardingDirector', () => {
       styles.recordMediaLayerHidden,
     )
     settleCurrentMedia('record-spin-token')
-    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(platterHarness.props?.phase).toBe('stopped')
     await advance(1_800)
     fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
     await Promise.resolve()
     await Promise.resolve()
 
     expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(mediaStageHarness.props?.foreground).toBe(false)
     expect(platterHarness.props?.phase).toBe('stopping')
     expect(
       screen.getByRole('heading', { name: 'Saving your plan…' }),
@@ -783,6 +791,7 @@ describe('V2OnboardingDirector', () => {
 
     await advance(1)
     expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
+    expect(mediaStageHarness.props?.foreground).toBe(false)
     expect(platterHarness.props?.phase).toBe('spinning')
     await advance(1_799)
     expect(
@@ -809,7 +818,7 @@ describe('V2OnboardingDirector', () => {
     expect(currentRecordMediaLayer()).not.toHaveClass(
       styles.recordMediaLayerHidden,
     )
-    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(platterHarness.props?.phase).toBe('stopped')
 
     await advance(1)
     expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
@@ -1634,7 +1643,7 @@ describe('V2OnboardingDirector', () => {
     const staleSpinSettled = currentMediaStage().props.onPresentationSettled
     const staleSpinEnded = currentMediaStage().props.onVideoEnded
     settleCurrentMedia('review-spin-token')
-    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(platterHarness.props?.phase).toBe('stopped')
     endCurrentMedia('review-spin-token')
     expect(currentRecordMediaLayer()).toHaveClass(styles.recordMediaLayerHidden)
     expect(platterHarness.props?.phase).toBe('spinning')
@@ -1689,7 +1698,7 @@ describe('V2OnboardingDirector', () => {
     expect(platterHarness.props?.phase).toBe('stopped')
 
     fireEvent.click(next)
-    expect(platterHarness.props?.phase).toBe('spinning')
+    expect(platterHarness.props?.phase).toBe('stopped')
     fireEvent.click(screen.getByRole('button', { name: 'Previous scene' }))
     expect(currentMediaStage().targetId).toBe('record:spin')
     expect(platterHarness.props?.phase).toBe('stopped')

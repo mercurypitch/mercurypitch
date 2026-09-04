@@ -527,13 +527,12 @@ export function CinematicOnboardingDirector(
   let controlsTimer: ReturnType<typeof setTimeout> | undefined
   let reminderAdvanceTimer: ReturnType<typeof setTimeout> | undefined
   let videoPlayRequest = 0
-  /** How long to wait for a composited frame before showing the surface
-   * anyway. Long enough that it never pre-empts a real frame on a slow
-   * device, short enough that nobody reads it as a broken app. */
+  /** How long to wait for a composited frame before recovering to a still. */
   const VIDEO_FRAME_GRACE_MS = 1200
 
   let videoFrameRequest = 0
   let pendingVideoFrameKey: string | undefined
+  let videoFrameFallbackTimer: ReturnType<typeof setTimeout> | undefined
   let activeVideoStartKey: string | undefined
   let saveRequest = 0
   let reminderRequest = 0
@@ -745,6 +744,10 @@ export function CinematicOnboardingDirector(
   function invalidatePendingVideoFrame(): void {
     videoFrameRequest += 1
     pendingVideoFrameKey = undefined
+    if (videoFrameFallbackTimer !== undefined) {
+      clearTimeout(videoFrameFallbackTimer)
+      videoFrameFallbackTimer = undefined
+    }
   }
 
   function revealVideoPresentation(
@@ -779,6 +782,10 @@ export function CinematicOnboardingDirector(
         ) {
           return
         }
+        if (videoFrameFallbackTimer !== undefined) {
+          clearTimeout(videoFrameFallbackTimer)
+          videoFrameFallbackTimer = undefined
+        }
         pendingVideoFrameKey = undefined
         setRevealedVideoKey(token)
         setReadyPresentationKey(token)
@@ -793,23 +800,26 @@ export function CinematicOnboardingDirector(
 
     if (typeof video.requestVideoFrameCallback === 'function') {
       video.requestVideoFrameCallback(() => reveal())
-      // ...and a wall clock beside it.
-      //
-      // `requestVideoFrameCallback` fires when a frame is COMPOSITED, so
-      // a video the platform has quietly refused to play never fires it
-      // at all -- and this surface is at opacity 0 until it does. On
-      // iOS that is a whole class of refusal (the autoplay policy, a
-      // decoder it will not give a WebView, a range request the asset
-      // handler answered wrongly), and every one of them ends the same
-      // way: a black rectangle where the intro should be, for as long as
-      // the player is willing to wait.
-      //
-      // Racing it costs nothing, because `reveal` is already idempotent
-      // against its own generation guard -- whichever arrives first
-      // wins and the second returns. A frame that has genuinely not
-      // been composited will show as a still rather than motion, which
-      // is a far better failure than a void.
-      setTimeout(() => reveal(), VIDEO_FRAME_GRACE_MS)
+      // A callback that never arrives is not decoded-frame evidence. Walk the
+      // existing retry/still chain instead of exposing the stalled video.
+      videoFrameFallbackTimer = setTimeout(
+        () =>
+          untrack(() => {
+            videoFrameFallbackTimer = undefined
+            if (
+              request !== videoFrameRequest ||
+              pendingVideoFrameKey !== token ||
+              !isCurrentPresentation(token) ||
+              videoElement !== video ||
+              playbackPaused() ||
+              !documentVisible()
+            ) {
+              return
+            }
+            recoverMedia(token, 'video-frame-timeout')
+          }),
+        VIDEO_FRAME_GRACE_MS,
+      )
       return
     }
     reveal()

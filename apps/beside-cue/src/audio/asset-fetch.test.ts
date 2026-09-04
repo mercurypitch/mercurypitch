@@ -34,7 +34,7 @@ describe('what counts as a failed asset read', () => {
     expect(assetResponseFailed(response({ ok: true, status: 200 }))).toBe(false)
   })
 
-  it.each([404, 403, 500, 206 - 6])('still rejects %i', (status) => {
+  it.each([400, 403, 404, 500])('still rejects %i', (status) => {
     expect(assetResponseFailed(response({ ok: false, status }))).toBe(true)
   })
 })
@@ -58,12 +58,16 @@ describe('reading the bytes', () => {
 
   // The one case a zero status could genuinely be hiding, and the reason
   // the check is on the bytes rather than only on the status.
-  it('rejects an empty body, whatever the status says', async () => {
-    await expect(
-      readAssetBytes(
-        'capacitor://localhost/score.m4a',
-        response({ ok: true, status: 200, body: bytes(0) }),
-      ),
-    ).rejects.toThrow(/empty/)
-  })
+  it.each([0, 200])(
+    'rejects an empty body even when status %i is otherwise accepted',
+    async (status) => {
+      const ok = status === 200
+      await expect(
+        readAssetBytes(
+          'capacitor://localhost/score.m4a',
+          response({ ok, status, body: bytes(0) }),
+        ),
+      ).rejects.toThrow(/empty/)
+    },
+  )
 })
