@@ -1456,7 +1456,26 @@ async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
     .bind(JSON.stringify(results), new Date().toISOString(), row.id)
     .run()
 
-  await grantPodiumBadges(podium, env)
+  reportMissingPodiumDefinitions(row.id, await grantPodiumBadges(podium, env))
+}
+
+/**
+ * A close never fails on a missing badge row -- the next challenge cannot
+ * start until the close lands -- but a podium that granted nothing must not
+ * pass in silence either: the winners are owed a badge, and `reaward` can
+ * pay it once the definitions exist (migration 0042 seeds them). Error
+ * level, so it stands out in the worker's tail.
+ */
+function reportMissingPodiumDefinitions(
+  challengeId: string,
+  grants: readonly PodiumGrant[],
+): void {
+  for (const grant of grants) {
+    if (grant.outcome !== 'no-definition' || grant.badge === null) continue
+    console.error(
+      `[weekly] challenge ${challengeId}: no badgeDefinitions row named "${grant.badge}" -- rank ${grant.rank} was not granted; seed the definitions and run reaward`,
+    )
+  }
 }
 
 // ── Redaction on the way out ─────────────────────────────────────────

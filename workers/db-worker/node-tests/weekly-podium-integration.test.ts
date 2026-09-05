@@ -24,7 +24,7 @@
 // and a stub that agrees with the SQL would prove nothing about the SQL.
 
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
@@ -157,8 +157,22 @@ function seedScore(
     )
 }
 
-/** The three podium badges, as `pnpm db:seed` would have written them. */
+/**
+ * Migration 0042 ships the three podium rows to every database, so a test
+ * that models one WITHOUT them (a dev database whose migration failed, or
+ * whose rows were deleted by hand) has to remove them first.
+ */
+function unseedPodiumBadges(): void {
+  sqlite.prepare(`DELETE FROM badgeDefinitions WHERE category = 'legend'`).run()
+}
+
+/**
+ * The three podium badges under the test's own ids. The migration's rows are
+ * replaced rather than kept beside them: the grant looks a badge up by name,
+ * and two rows per name would make `badgeHolders('badge-first')` a coin toss.
+ */
 function seedPodiumBadges(): void {
+  unseedPodiumBadges()
   const rows: Array<[string, string, string]> = [
     ['badge-first', 'First Voice', 'gold'],
     ['badge-second', 'Second Voice', 'silver'],
@@ -420,22 +434,44 @@ describe('the podium badge', () => {
   })
 
   it('closes the challenge even when the badges were never seeded', async () => {
-    // A dev database that has not run `pnpm db:seed`. The close is the
-    // load-bearing act — the next challenge cannot start until it lands — so a
-    // missing definition must not be able to stop it.
-    const winner = seedSinger('Unbadged Winner')
-    seedScore(winner.id, 91)
+    // A database without the podium rows (migration 0042 carries them, so
+    // this is a failed or hand-edited one). The close is the load-bearing
+    // act — the next challenge cannot start until it lands — so a missing
+    // definition must not be able to stop it. It must not pass in silence
+    // either: the winner is owed a badge that `reaward` can pay later.
+    unseedPodiumBadges()
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const winner = seedSinger('Unbadged Winner')
+      seedScore(winner.id, 91)
+      const response = await close()
+      expect(response.status).toBe(200)
+      expect(snapshot().top3).toHaveLength(1)
+      expect(
+        (
+          sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
+            c: number
+          }
+        ).c,
+      ).toBe(0)
+      expect(errors).toHaveBeenCalledTimes(1)
+      expect(errors.mock.calls[0]?.[0]).toMatch(/"First Voice".*rank 1/)
+    } finally {
+      errors.mockRestore()
+    }
+  })
 
-    const response = await close()
-    expect(response.status).toBe(200)
-    expect(snapshot().top3).toHaveLength(1)
-    expect(
-      (
-        sqlite.prepare(`SELECT COUNT(*) c FROM userBadges`).get() as {
-          c: number
-        }
-      ).c,
-    ).toBe(0)
+  it('grants the podium from the migration-seeded definitions alone', async () => {
+    // No seed script ran: the rows migration 0042 wrote are the only ones.
+    const winner = seedSinger('Migrated Winner')
+    seedScore(winner.id, 91)
+    await close()
+    const held = sqlite
+      .prepare(
+        `SELECT d.name FROM userBadges ub JOIN badgeDefinitions d ON d.id = ub.badgeId WHERE ub.userId = ?`,
+      )
+      .all(winner.id) as Array<{ name: string }>
+    expect(held.map((h) => h.name)).toEqual(['First Voice'])
   })
 
   it('skips a singer who is on the podium but not in the top three', async () => {
@@ -822,6 +858,7 @@ describe('re-awarding a challenge that closed before badges existed', () => {
   })
 
   it('reports an unseeded badge rather than pretending it awarded one', async () => {
+    unseedPodiumBadges()
     const singer = seedSinger('Brucey')
     seedScore(singer.id, 74)
     closeAsVersionOne([{ displayName: 'Brucey', best: 74 }])
