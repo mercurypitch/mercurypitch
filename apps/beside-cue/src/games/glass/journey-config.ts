@@ -504,3 +504,15 @@ export const JOURNEY_CONFIG = {
 } as const
 
 export type JourneyConfig = typeof JOURNEY_CONFIG
+
+/** World units across the screen width: portrait sees fewer so platforms
+ *  keep a playable size. The one rule for drawing, the camera clamp and
+ *  the tap hit-test. Three readings of it once disagreed: the camera
+ *  clamped to the landscape width while portrait drew seven units, so on
+ *  a phone held upright the last three units of the journey were never
+ *  on screen. */
+export function viewUnitsFor(width: number, height: number): number {
+  return width / height < 0.8
+    ? JOURNEY_CONFIG.art.viewUnitsPortrait
+    : JOURNEY_CONFIG.view.viewUnits
+}

@@ -125,9 +125,15 @@ export const Stage3D = (props: Stage3DProps) => {
     const observer = new ResizeObserver(fit)
     observer.observe(canvas)
 
+    /** Set the moment the stage goes away. `begin` runs from an async
+     * init, so without this a player who leaves during the load starts a
+     * frame loop after teardown that nothing holds a handle to. */
+    let gone = false
+
     void r
       .init()
       .then(() => {
+        if (gone) return
         fit()
         setBackend(r.backend())
         begin()
@@ -140,6 +146,7 @@ export const Stage3D = (props: Stage3DProps) => {
       })
 
     onCleanup(() => {
+      gone = true
       observer.disconnect()
       stopLoop?.()
       driver?.stop()

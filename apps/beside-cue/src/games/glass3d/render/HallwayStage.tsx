@@ -368,9 +368,15 @@ export const HallwayStage = (props: HallwayStageProps) => {
       stopLoop = () => cancelAnimationFrame(frame)
     }
 
+    /** Set the moment the stage goes away. `begin` runs from an async
+     * init, so without this a player who leaves during the load starts a
+     * frame loop after teardown that nothing holds a handle to. */
+    let gone = false
+
     void r
       .init()
       .then(() => {
+        if (gone) return
         fit()
         setBackend(r.backend())
         begin()
@@ -381,6 +387,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       })
 
     onCleanup(() => {
+      gone = true
       observer.disconnect()
       unbindKeys()
       stopLoop?.()
