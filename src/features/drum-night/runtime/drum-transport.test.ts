@@ -517,6 +517,34 @@ describe('Drum Night transport', () => {
     expect(clock.pendingFrames()).toBe(0)
   })
 
+  it('plays again from the top after a natural end even when the timing was re-applied', () => {
+    // The stem play-along pipeline re-applies its authored timing before
+    // every Play; that cleared the end flag, so Play resumed at the end
+    // and stopped again on the first frame.
+    const clock = new FakeClock()
+    const transport = createDrumTransport({
+      clock,
+      countInBeats: 0,
+      authoredTiming: {
+        tempoBpm: 60,
+        durationBeats: 4,
+      },
+    })
+    transport.start()
+    clock.advance(4_000)
+    expect(transport.state().phase).toBe('stopped')
+
+    transport.setAuthoredTiming({ tempoBpm: 60, durationBeats: 4 })
+    transport.start()
+    expect(transport.state()).toMatchObject({
+      phase: 'playing',
+      positionBeats: 0,
+    })
+    expect(clock.pendingFrames()).toBe(1)
+    clock.advance(1_000)
+    expect(transport.state().positionBeats).toBeCloseTo(1)
+  })
+
   it.each([0, 2])(
     'replays from beat zero after natural end with %i count-in beats',
     (countInBeats) => {
