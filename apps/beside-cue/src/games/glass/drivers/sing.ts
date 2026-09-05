@@ -26,19 +26,41 @@ const audioUnavailable = (): Error =>
 export const createSingDriver = (micId: string): InteractionDriver => {
   const lease = acquireSharedAudioContext(`sing-driver:${micId}`)
   let f0: F0Stream | null = null
+  /** stop() has run -- possibly while start() was still waiting on the
+   *  permission prompt, in which case start() hands back what it was
+   *  given instead of wiring up a stream nobody will ever stop. */
+  let stopped = false
 
   return {
     async start(): Promise<void> {
       const audioContext = lease.ensure()
-      if (audioContext === null) throw audioUnavailable()
+      if (audioContext === null) {
+        lease.release()
+        throw audioUnavailable()
+      }
       const unlocked = lease.unlock()
-      const stream = await micManager.acquire(micId)
-      await unlocked
+      let stream: MediaStream
+      try {
+        stream = await micManager.acquire(micId)
+        await unlocked
+      } catch (err) {
+        // A driver that never came up gets no stop(): the stage drops it
+        // and shows the error. So the mic and the lease go back from here,
+        // or the shared context is never parked again.
+        micManager.release(micId)
+        lease.release()
+        throw err
+      }
+      if (stopped) {
+        micManager.release(micId)
+        return
+      }
       f0 = createF0Stream(audioContext, stream)
       f0.startTask()
     },
 
     stop(): void {
+      stopped = true
       f0?.dispose()
       f0 = null
       micManager.release(micId)

@@ -17,17 +17,23 @@ import { computeTapLatency, tapOffsets } from '@/games/glass/tap-latency'
 const T = JOURNEY_CONFIG.tap
 const beatS = 60 / T.calBpm
 
-/** One sharp metronome tick, scheduled at an exact audio-clock time. */
-const tickSound = (ctx: AudioContext, at: number): void => {
+/** One sharp metronome tick, scheduled at an exact audio-clock time,
+ *  through the bus that Cancel can take off the output. */
+const tickSound = (
+  ctx: AudioContext,
+  bus: GainNode,
+  at: number,
+): OscillatorNode => {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.frequency.value = 880
   g.gain.setValueAtTime(0.4, at)
   g.gain.exponentialRampToValueAtTime(0.001, at + 0.08)
   osc.connect(g)
-  g.connect(ctx.destination)
+  g.connect(bus)
   osc.start(at)
   osc.stop(at + 0.1)
+  return osc
 }
 
 type Phase = 'ready' | 'tapping' | 'result' | 'short'
@@ -44,9 +50,30 @@ export function TapTuner(props: {
 
   const lease = acquireSharedAudioContext('tap-tuner')
   let ctx: AudioContext | null = null
+  /** The ticks on the clock and the bus they play through, so Cancel --
+   *  or the next Start -- can take them off it. Sixteen ticks are eleven
+   *  seconds of metronome that used to play on over the next screen. */
+  let bus: GainNode | null = null
+  let ticks: OscillatorNode[] = []
   let raf = 0
   let firstBeatAt = 0
   let taps: number[] = []
+
+  const silenceTicks = (): void => {
+    const audio = ctx
+    const out = bus
+    const scheduled = ticks
+    bus = null
+    ticks = []
+    if (audio === null || out === null) return
+    const now = audio.currentTime
+    // Anchor, then decay: a step to zero would click on a tick mid-ring.
+    out.gain.cancelScheduledValues(now)
+    out.gain.setValueAtTime(out.gain.value, now)
+    out.gain.setTargetAtTime(0, now, 0.012)
+    for (const osc of scheduled) osc.stop(now + 0.08)
+    setTimeout(() => out.disconnect(), 100)
+  }
 
   const finish = (): void => {
     const lat = computeTapLatency(taps, firstBeatAt, beatS, {
@@ -87,12 +114,16 @@ export function TapTuner(props: {
     if (ctx === null) return
     void lease.unlock().then((ready) => {
       if (!ready || ctx === null) return
+      silenceTicks()
       taps = []
       setTapCount(0)
       setBeatsLeft(T.calBeats)
       firstBeatAt = ctx.currentTime + 1
+      const out = ctx.createGain()
+      out.connect(ctx.destination)
+      bus = out
       for (let i = 0; i < T.calBeats; i++) {
-        tickSound(ctx, firstBeatAt + i * beatS)
+        ticks.push(tickSound(ctx, out, firstBeatAt + i * beatS))
       }
       setPhase('tapping')
       watch()
@@ -113,6 +144,7 @@ export function TapTuner(props: {
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
+    silenceTicks()
     ctx = null
     // The context is the app's; closing it would cost a gesture to get back.
     lease.release()

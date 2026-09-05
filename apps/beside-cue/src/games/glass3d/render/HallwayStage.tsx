@@ -406,6 +406,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // audio/input-device.ts. Must happen before acquire(), because the
       // device is chosen by the constraints that open the stream.
       await applyPreferredInput()
+      // A previous attempt may have left a live driver: a second tap while
+      // the permission prompt is up, or a switch that came good. Overwriting
+      // it stranded its detector worker, its worklet and its share of the
+      // audio lease for the life of the page.
+      driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
       setStarted(true)
@@ -423,6 +428,9 @@ export const HallwayStage = (props: HallwayStageProps) => {
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      // The switch IS the retry. Leaving the gate up after a device that
+      // works is what put two drivers on the same capture.
+      setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
