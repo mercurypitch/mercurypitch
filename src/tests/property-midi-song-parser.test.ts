@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import type {LegacyMidiSongPitchedTrack, MidiSong, MidiSongPercussionTrack, MidiSongPitchedTrack} from '@/lib/midi-song';
-import { defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, isPitchedMidiSongTrack,     normalizeMidiSong, parseMidiSong } from '@/lib/midi-song'
+import type { LegacyMidiSongPitchedTrack, MidiSong, MidiSongPercussionTrack, MidiSongPitchedTrack, } from '@/lib/midi-song'
+import { defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, isPitchedMidiSongTrack, normalizeMidiSong, parseMidiSong, } from '@/lib/midi-song'
 
 describe('Property-Based Tests: MIDI Song Parser & GM Instruments', () => {
   it('gmInstrumentName never throws and always returns non-empty string for any integer', () => {

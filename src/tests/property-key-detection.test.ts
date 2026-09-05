@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import type {KeyNote} from '@/lib/key-detection/key-detector';
-import { detectKeyFromHistogram, detectKeyFromNotes, detectRegionalKeys,  pitchClassHistogram } from '@/lib/key-detection/key-detector'
+import type { KeyNote } from '@/lib/key-detection/key-detector'
+import { detectKeyFromHistogram, detectKeyFromNotes, detectRegionalKeys, pitchClassHistogram, } from '@/lib/key-detection/key-detector'
 
 const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
 
