@@ -221,7 +221,13 @@ export function ShazamListen(props: ShazamListenProps) {
       whisperSource = null
     }
     if (whisperAudioCtx) {
-      void whisperAudioCtx.close()
+      if (whisperAudioCtx.state !== 'closed') {
+        try {
+          void whisperAudioCtx.close().catch(() => {})
+        } catch {
+          // Ignore
+        }
+      }
       whisperAudioCtx = null
     }
     if (whisperIntervalId) {

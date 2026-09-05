@@ -2328,10 +2328,36 @@ export class AudioEngine {
     this.micLostCallbacks.clear()
     this.stopTone()
     this.stopAllNotes()
-    if (this.audioCtx) {
-      this.audioCtx.close()
-      this.audioCtx = null
+
+    // Take the graph apart before closing the context that owns it. One try
+    // per node, so a node that has already gone cannot stop the rest from
+    // being released.
+    const nodes: Array<AudioNode | null> = [
+      this.analyser,
+      this.playbackAnalyser,
+      this.micAnalyser,
+      this.micGain,
+      this.uvrOutput,
+      this.metronomeGain,
+      this.drumGain,
+      this.mainGain,
+      this.noteBusLimiter,
+      this.reverbNode,
+      this.reverbSendGain,
+      this.reverbReturnGain,
+    ]
+    for (const node of nodes) {
+      try {
+        node?.disconnect()
+      } catch {
+        // Already gone.
+      }
     }
+    this.analyser = null
+    this.playbackAnalyser = null
+    this.micAnalyser = null
+    this.micGain = null
+    this.uvrOutput = null
     this.metronomeGain = null
     this.drumGain = null
     this.mainGain = null
@@ -2339,6 +2365,16 @@ export class AudioEngine {
     this.reverbNode = null
     this.reverbSendGain = null
     this.reverbReturnGain = null
+
+    if (this.audioCtx) {
+      // close() on a context that is already closed rejects, and destroy()
+      // runs from several cleanup paths — the second one must not surface
+      // that as an unhandled rejection.
+      if (this.audioCtx.state !== 'closed') {
+        void this.audioCtx.close().catch(() => {})
+      }
+      this.audioCtx = null
+    }
   }
 
   /** Get whether audio context is initialized */
