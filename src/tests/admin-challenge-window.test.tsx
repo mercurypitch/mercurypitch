@@ -365,7 +365,26 @@ const NOT_YET_OPEN = row({
   endsAt: '2026-10-12T00:00:00.000Z',
 })
 
+const CLOSED = row({
+  id: 'done',
+  title: 'Already ran and closed',
+  status: 'closed',
+  startsAt: '2026-07-06T00:00:00.000Z',
+  endsAt: '2026-08-03T00:00:00.000Z',
+})
+
 describe('setting a challenge live', () => {
+  it('offers no set-live control on a closed challenge', async () => {
+    // A closed row is a record — its podium is frozen and its badges were
+    // granted. Setting it live again ran it a second time on top of that
+    // record; Encore is how a challenge runs again.
+    rows = [LIVE, CLOSED, FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    expect(screen.getByText('Already ran and closed')).toBeTruthy()
+    expect(screen.queryByTestId('set-live-done')).toBeNull()
+  })
+
   it('keeps the challenge own length instead of cutting it to a week', async () => {
     rows = [LIVE, FOUR_WEEK]
     render(() => <AdminWeeklyPage />)

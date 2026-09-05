@@ -1949,6 +1949,27 @@ async function updateWeekly(
     else binds.push(value as SqlValue)
   }
   if (sets.length === 0) return respond({ error: 'No fields' }, { status: 400 })
+  // A closed challenge is a record: its podium was snapshotted and its
+  // badges granted. Set active again it would run a second time on top of
+  // that record — the first run's scores on the new board, and at the next
+  // close either the podium overwritten (by rotation) or the snapshot
+  // skipped (by hand). Encore clones a challenge to run it again.
+  if (body.status === 'active') {
+    const current = await env.DB.prepare(
+      `SELECT resultsJson FROM weeklyChallenges WHERE id = ?`,
+    )
+      .bind(id)
+      .first<{ resultsJson: string | null }>()
+    if (current && current.resultsJson !== null) {
+      return respond(
+        {
+          error:
+            'A closed challenge keeps its record; run it again as an Encore',
+        },
+        { status: 409 },
+      )
+    }
+  }
   sets.push(`"updatedAt" = ?`)
   binds.push(new Date().toISOString())
   binds.push(id)
