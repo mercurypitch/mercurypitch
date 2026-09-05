@@ -27,7 +27,7 @@ export const V2_ONBOARDING_AUDIO_ASSET_IDS = Object.freeze({
 export const V2_ONBOARDING_AUDIO_ASSET_MANIFEST: AudioAssetManifest =
   Object.freeze({
     schemaVersion: AUDIO_MANIFEST_SCHEMA_VERSION,
-    revision: 'beside-cue-onboarding-v2.4-audio-v5',
+    revision: 'beside-cue-onboarding-v2.4-audio-v6',
     locale: 'en',
     assets: Object.freeze([
       ...SELECTED_CHARACTER_VOICE_AUDIO_ASSETS,

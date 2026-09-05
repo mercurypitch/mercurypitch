@@ -1,14 +1,14 @@
 // ============================================================
-// Selected character recordings — approved V1 Corky, Sugarlump and Scroll
+// Selected character recordings — approved V1 Corky and all 14 Pulls
 // ============================================================
 //
-// Corky 02-i, Sugarlump 02-e and Scroll 02-f. These are exact packaged
-// delivery bytes; canonical captions and semantic ids remain authoritative.
+// Exact user-approved designs are pinned in the delivery audit. Packaged
+// bytes, canonical captions and semantic ids remain authoritative.
 
 import { registerCharacterVoiceRecordings } from './character-voice-recordings'
 
 export const SELECTED_CHARACTER_VOICE_REVISION =
-  'besidecue-v1-selected-voices-01'
+  'besidecue-v1-selected-voices-02'
 
 export const SELECTED_CHARACTER_VOICE_AUDIO_ASSETS =
   registerCharacterVoiceRecordings([
@@ -534,6 +534,618 @@ export const SELECTED_CHARACTER_VOICE_AUDIO_ASSETS =
             'c90f0f55105b8e19293767cf32e972b86ad2d832ac8f2c5fa9268d9d0fedec71',
           byteLength: 52076,
           durationMs: 3320,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.avoidance.meet',
+      captionSha256:
+        '354f881afac8a220e1f763bcf809dbb3147042c734be7d9f65a42f53af46d5a2',
+      sources: [
+        {
+          src: '/audio/voice/en/the-fog/en__the-fog__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '782b8796d736fd0a7667945714dd7fd3e72610dcce709818f6f5f6e5ffcf7d2b',
+          byteLength: 207943,
+          durationMs: 12940,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.avoidance.present',
+      captionSha256:
+        '487f6ae4a039bd51852652d119cf959d70458617f1add6e97a42d739bd30869c',
+      sources: [
+        {
+          src: '/audio/voice/en/the-fog/en__the-fog__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '06a38ab83c5f53ee0919a8017648d35eb22da228d1d3a8130c93476d10f1bcc1',
+          byteLength: 151543,
+          durationMs: 9340,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.avoidance.recede',
+      captionSha256:
+        'b3e09cbbc16f280ddf51743c874e249297d5a90f8f6a5d82fa164251f329f256',
+      sources: [
+        {
+          src: '/audio/voice/en/the-fog/en__the-fog__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '673b825abfd952c2bc2aec44729a4fc2ce903f42b442ceb35efb0875ba79d82c',
+          byteLength: 154652,
+          durationMs: 9880.833,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.one-tap-convenience.meet',
+      captionSha256:
+        '93ff13b3f18c1b4d5f1f141393b2dab6f90cf4bddb3fe794fb2475cf099143d7',
+      sources: [
+        {
+          src: '/audio/voice/en/dinger/en__dinger__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '0e202eaed68a1892b0a7770a7024d3443ef07d7b3c517aa29e2b22a7c3ae3403',
+          byteLength: 120440,
+          durationMs: 7420,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.one-tap-convenience.present',
+      captionSha256:
+        '1458f912babc626dc4d87a1099364ef22b1b094c71578b96466f3071b7f5fb67',
+      sources: [
+        {
+          src: '/audio/voice/en/dinger/en__dinger__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '8dc1cc6fc13e712604221e2b1de3befbb1922d8d2e0d0c6263b3a03703fc9ee6',
+          byteLength: 102244,
+          durationMs: 6280,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.one-tap-convenience.recede',
+      captionSha256:
+        '860b9d15570e900d0e5412974d24c1840167fe17e4dba00ebd6b83bf84338540',
+      sources: [
+        {
+          src: '/audio/voice/en/dinger/en__dinger__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'b77f0658f8b7c3b72da7173e831343e1f3a7774a37d1fc5a9ef811e4231449d2',
+          byteLength: 60622,
+          durationMs: 3996.125,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.familiar-ritual.meet',
+      captionSha256:
+        '1dcb4ee30aa75cc8a7fd154064eb6697a112224a61d6f3d3a9bfdd7d417035f8',
+      sources: [
+        {
+          src: '/audio/voice/en/the-usual/en__the-usual__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'a70a8dfe4f3f22fd63e328de554a507cf8fde06342a54f71b0c8b2777b364d87',
+          byteLength: 113537,
+          durationMs: 7200,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.familiar-ritual.present',
+      captionSha256:
+        '4e1d4a0848b8760922973d9ccb68c5c82442cab94f80c1a067f3b689fa6cb5ef',
+      sources: [
+        {
+          src: '/audio/voice/en/the-usual/en__the-usual__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '84776d9f0163d62454c39e5d3761e652ddb6e974d4b354546bcc0757202da790',
+          byteLength: 142967,
+          durationMs: 8980,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.familiar-ritual.recede',
+      captionSha256:
+        '8a87875698dfc05d8d20d44950e316d5933012713ac9245331ba68236184b2f9',
+      sources: [
+        {
+          src: '/audio/voice/en/the-usual/en__the-usual__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '17730507a76d1879509cea557e2f1b197b42ee30bee6c69f147df120dd48c5b9',
+          byteLength: 103478,
+          durationMs: 6772.667,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.two-minute-pause.meet',
+      captionSha256:
+        '3f907d6a6d42907c3e291da6fe0f74e4f343ff48e35fae6c0647132ea28d5e56',
+      sources: [
+        {
+          src: '/audio/voice/en/ember/en__ember__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '37fd823da8b622b65dbe01584c5a527a2d8b7cb954139f76a0bba4a9cef4cd4a',
+          byteLength: 102894,
+          durationMs: 6300,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.two-minute-pause.present',
+      captionSha256:
+        '36d62b8fc9ec84522e74272221059687e5a5bcc5dbd0cad5fe20f76a6a159924',
+      sources: [
+        {
+          src: '/audio/voice/en/ember/en__ember__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '1c56510bb4c977dce6ff6a271aba2089fa01b0454b0bb8a8d90d102cbb3f9cb6',
+          byteLength: 66600,
+          durationMs: 4080,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.two-minute-pause.recede',
+      captionSha256:
+        'a7559c1a930415ae271a1ab9880708bc6934d45d4b084bf17555311afaead9c4',
+      sources: [
+        {
+          src: '/audio/voice/en/ember/en__ember__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '268b9ef60dc0843a4e1b6cad25d208401ed9a13889eaed59cc74915325830c11',
+          byteLength: 83407,
+          durationMs: 5269.979,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-bookmark.meet',
+      captionSha256:
+        'b50a68a3877ebd991ce202d7fcb7ca81cc4235b56bf0df530768a7bcc034504e',
+      sources: [
+        {
+          src: '/audio/voice/en/the-bookmark/en__the-bookmark__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '26e54fead7037dfcebd3319e747165f2544c1771a845f97c75e36dd789c2b543',
+          byteLength: 90353,
+          durationMs: 5590,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-bookmark.present',
+      captionSha256:
+        '175531d064129fdc091bdeefc3c9bf2e0c7b58573260e8a702078facc653d3c8',
+      sources: [
+        {
+          src: '/audio/voice/en/the-bookmark/en__the-bookmark__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '48ef83e49fce21bdff511a920a3b37ecca990ae67a20684dd919bccb5abc4b61',
+          byteLength: 59233,
+          durationMs: 3610,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-bookmark.recede',
+      captionSha256:
+        '687c78b794eaac50b037985664cd28311e878aeff650e15512f6b99fdef722d1',
+      sources: [
+        {
+          src: '/audio/voice/en/the-bookmark/en__the-bookmark__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '85de93812a8cf9b29c2dc577aa52c6699585589a4ad85fe22f58492d548ec038',
+          byteLength: 55033,
+          durationMs: 3579.396,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-ticker.meet',
+      captionSha256:
+        '7f8d9a389f7b4ff50e2833a8729698e1be5c54ed43e08a2b729b60e8a1be5c81',
+      sources: [
+        {
+          src: '/audio/voice/en/the-ticker/en__the-ticker__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '84c6421b85465b8c723b8312aeb37abc1d677607db61a0b11b1741bc8b18f8f9',
+          byteLength: 90239,
+          durationMs: 5430,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-ticker.present',
+      captionSha256:
+        '7ec21da0b7db01923a806bb941e88a551e4f3c483e81006afcd436e207740bc3',
+      sources: [
+        {
+          src: '/audio/voice/en/the-ticker/en__the-ticker__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '510601051fbf32bb47e921658429947019d2ca4a7973310b3c1111044016f215',
+          byteLength: 65360,
+          durationMs: 3980,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-ticker.recede',
+      captionSha256:
+        '0f9378f26c7a4abbad66374499a2b7c2aba95bfe05f4cc928e8392222e1f8451',
+      sources: [
+        {
+          src: '/audio/voice/en/the-ticker/en__the-ticker__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'b8855d4e3418b87152e8c439b79b9c2da7ceedb156f4c8d4fc75ab2f5baed85b',
+          byteLength: 58342,
+          durationMs: 3707.771,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-thimble.meet',
+      captionSha256:
+        'a8a0713bfc7faba221f68dcad5ade1cfe5f5404898035f1eaccf89d3ee22c880',
+      sources: [
+        {
+          src: '/audio/voice/en/the-thimble/en__the-thimble__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '53f46243e88f180fddf93f1a71e3d45832a23fd89c5020bc628e46503e2ea96a',
+          byteLength: 92238,
+          durationMs: 5680,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-thimble.present',
+      captionSha256:
+        '75e9be1a5bab978190bec2b7acdda7135d37b89eb418896aca76469d1a4a3938',
+      sources: [
+        {
+          src: '/audio/voice/en/the-thimble/en__the-thimble__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '3fd5049ae631b9eeadafde3e7a64cffb2ced24158b2c10df43e4d9592f8f4da3',
+          byteLength: 76569,
+          durationMs: 4680,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-thimble.recede',
+      captionSha256:
+        'b840fbb570756528e5f833f3513dd131ebe803665d296182c6214c133d5b9aff',
+      sources: [
+        {
+          src: '/audio/voice/en/the-thimble/en__the-thimble__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '6a2519ca218f23319fda7ea44b2e9ef381744e78a07ab6fce2f4521d8bb91495',
+          byteLength: 50027,
+          durationMs: 3120,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tab.meet',
+      captionSha256:
+        'c4992e0a62a4c24f32825ba59bbc838c2b7b6b64adc62890c41d4bd47ab08d79',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tab/en__the-tab__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '214437fca4d3ae62744628b8b65312b19e7c1209d90a80d6b09e4953b509df1d',
+          byteLength: 78107,
+          durationMs: 4850,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tab.present',
+      captionSha256:
+        'fb45f26e2147a67f5eb33aa383dfd2f01ffb5afe493c3d31873f82c0a5f0617a',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tab/en__the-tab__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '758b09075abb0f2dd51ac504d3c69b6e01797802075dcc1b6a5d047cb397dd5d',
+          byteLength: 59314,
+          durationMs: 3630,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tab.recede',
+      captionSha256:
+        '24a2fef0b47eb63d85066f3e27803eb91220b9aa81e51ce325ad8009424fefb1',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tab/en__the-tab__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'e041f4e3d348036a1dcf3dca424126ffd5bf6ee319865d5e0b2e211a5fefee0a',
+          byteLength: 43629,
+          durationMs: 2809.187,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tape.meet',
+      captionSha256:
+        'b818c12404525a7993ccb868743bbd2bf53c2be30f9db0b48cc056ba3dffda4b',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tape/en__the-tape__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '0af94cc00a233964146b1606a2fe56001a60686ba0726b9d02ef441d7cf25f40',
+          byteLength: 79225,
+          durationMs: 4810,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tape.present',
+      captionSha256:
+        '6d2509bccce3da1692201a45f80c1bdd4a8a3ff17c71bad3ba67c766f38d3574',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tape/en__the-tape__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '32826b3c3494ca2d0eadadd6ac37b6b107ed9df92fa9133c76ffab1ebf505a80',
+          byteLength: 66242,
+          durationMs: 4140,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-tape.recede',
+      captionSha256:
+        'b2f11deeeb2beb792a57ab9b32518a201d66d4c1407fc59fa7dfd92da4269b1c',
+      sources: [
+        {
+          src: '/audio/voice/en/the-tape/en__the-tape__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '5a74bc4249900e0889c3f7ef8307893180793bc6f8433f233f93cd14ec3a7a0c',
+          byteLength: 56509,
+          durationMs: 3652.458,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-kettle.meet',
+      captionSha256:
+        '5baca0bda8c2b0ec8a42bac04055ab0edbaac36441338c66ac4b98f4fb6dd47b',
+      sources: [
+        {
+          src: '/audio/voice/en/the-kettle/en__the-kettle__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '500691e8447092a378a78df95825ebc83aa64e9819e2496fa9a160900c5db52f',
+          byteLength: 87309,
+          durationMs: 5360,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-kettle.present',
+      captionSha256:
+        '618d178c1689230ce7544db8cc57932b19ab7ced888c6d712d7a04a2dfb60429',
+      sources: [
+        {
+          src: '/audio/voice/en/the-kettle/en__the-kettle__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '205b5d4491b60ed3b7db5901ae80481e4110e8ebf8e16b053749de946298b58a',
+          byteLength: 72805,
+          durationMs: 4470,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-kettle.recede',
+      captionSha256:
+        'b2eb585ecbb3f8e6b47c9fc99b579bc029b1c26a2f80dd1192ee746128d05f03',
+      sources: [
+        {
+          src: '/audio/voice/en/the-kettle/en__the-kettle__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'b1ee0f7af3d4330af56ec61d7bb5632190e033aa77705fff2ea3d376df934d40',
+          byteLength: 48165,
+          durationMs: 3109.9790000000003,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-match.meet',
+      captionSha256:
+        'e2030223ab1befea734271b4c9451ed6a50509de44deaa31d1f90152c7ed34c6',
+      sources: [
+        {
+          src: '/audio/voice/en/the-match/en__the-match__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'dea38a19ff2648ed443990731ebf92de4b44e3b4cb5c1df3cda92ed40f6dd749',
+          byteLength: 90301,
+          durationMs: 5540,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-match.present',
+      captionSha256:
+        '00ae5be27952e873d3f96a809714e496957c21b27fb555e217acd5f448565e93',
+      sources: [
+        {
+          src: '/audio/voice/en/the-match/en__the-match__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '0d6494f506b8555ced0924b4bc8db5ecc64bdcb1cd6ad30bbd3d53ef0668c207',
+          byteLength: 55846,
+          durationMs: 3420,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-match.recede',
+      captionSha256:
+        'f3d99f7d63fcd37b33f2add3236af1a66d2fe91646a68e6ebf8fbf7fc27f5491',
+      sources: [
+        {
+          src: '/audio/voice/en/the-match/en__the-match__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'd1925d0e9c7c4ea372927d921688e4dc3700b0189a53b839bc804f9f2cf5ac21',
+          byteLength: 43220,
+          durationMs: 2929,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-pillow.meet',
+      captionSha256:
+        'fdd83bf88ac8746230fa9d9e68e73f17c98e19eb432b553610ed868992e7c6d9',
+      sources: [
+        {
+          src: '/audio/voice/en/the-pillow/en__the-pillow__meet__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            'a67a8a4c8735478bb1e80bb078027bc38bde9f953457ddf87321670821f55c21',
+          byteLength: 104384,
+          durationMs: 6360,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-pillow.present',
+      captionSha256:
+        'b80bc3897829c9b8f58d7ff415b894d8958433cc26e9dc84cad9115d60c6362f',
+      sources: [
+        {
+          src: '/audio/voice/en/the-pillow/en__the-pillow__present__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '7198d9626084f05ff95e726484f00de32387fcde22e7c510d4d986cbd1cf123b',
+          byteLength: 78763,
+          durationMs: 4880,
+          sampleRateHz: 48000,
+          channels: 1,
+        },
+      ],
+    },
+    {
+      lineId: 'pull.the-pillow.recede',
+      captionSha256:
+        'fd1cc9f2ced0089d84156279743f702d210a1d66d00e7e89c27504bcbe3e94d0',
+      sources: [
+        {
+          src: '/audio/voice/en/the-pillow/en__the-pillow__recede__v1_01.m4a',
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256:
+            '23d7e9553e1a0ce25d31d998c67071325534390d341eef9764dd425d935697a1',
+          byteLength: 64044,
+          durationMs: 4232.4580000000005,
           sampleRateHz: 48000,
           channels: 1,
         },
