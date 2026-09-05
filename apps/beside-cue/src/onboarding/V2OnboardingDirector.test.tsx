@@ -431,17 +431,34 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     const tape = screen.getByRole('radio', { name: 'Another quick fix' })
     expect(tape).toBeDisabled()
+    // The shelf now contains real packaged premium recordings. Revealing a
+    // locked preview must still be silent, including a synthetic click.
+    fireEvent.click(tape)
+    expect(
+      probe.audio.play.mock.calls.some(([assetId]) =>
+        String(assetId).startsWith('dialogue.pull.the-'),
+      ),
+    ).toBe(false)
     expect(
       screen.getByRole('radio', { name: 'Endless scrolling' }),
     ).toBeEnabled()
     setPro(true)
     expect(tape).toBeEnabled()
     fireEvent.click(tape)
+    expect(probe.audio.play).toHaveBeenCalledWith('dialogue.pull.the-tape.meet')
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      'dialogue.pull.the-tape.present',
+    )
     expect(currentMediaStage().props.request?.primary?.src).toContain(
       'b03-the-tape-present',
     )
+    const dialogueStopCount = () =>
+      probe.audio.stopLane.mock.calls.filter(([lane]) => lane === 'dialogue')
+        .length
+    const stopsBeforeRevocation = dialogueStopCount()
     setPro(false)
+    expect(dialogueStopCount()).toBeGreaterThan(stopsBeforeRevocation)
     expect(view.container.querySelector('main')).toHaveAttribute(
       'data-phase',
       'B03_PULL_CHOICE_HOLD',

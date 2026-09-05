@@ -14,7 +14,7 @@
 import type { AssetSlot } from './assets'
 import type { AudioAssetManifest } from './audio-manifest'
 import { validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
-import { PREMIUM_PULL_DEFINITIONS, PREMIUM_PULL_LINES } from './premium-pulls'
+import { PREMIUM_PULL_DEFINITIONS } from './premium-pulls'
 import { canonicalPullId, pullOptions } from './pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_MANIFEST } from './v2-onboarding-audio-manifest'
 import type { VoiceLineKind, VoiceSpeakerId } from './voice-lines'
@@ -160,7 +160,8 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
       alt: '',
     },
     noticeLayout: 'token' as const,
-    voiceNote: 'Caption-only. Optional voice has not been recorded.',
+    voiceNote:
+      'Use this character’s selected voice and preserve the canonical captions.',
   })),
   pullCharacter(
     'scrolling',
@@ -246,7 +247,7 @@ export const DEFAULT_CONTENT_PACK: ContentPack = {
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,
   cueEntities: PULL_CHARACTERS,
-  lines: [...CANONICAL_VOICE_LINES, ...PREMIUM_PULL_LINES],
+  lines: CANONICAL_VOICE_LINES,
   audio: V2_ONBOARDING_AUDIO_ASSET_MANIFEST,
 }
 

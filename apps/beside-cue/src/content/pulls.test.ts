@@ -7,8 +7,23 @@ import { describe, expect, it } from 'vitest'
 import { ACTION_DEFINITIONS } from './actions'
 import { PREMIUM_PULL_IDS, PREMIUM_PULL_LINES } from './premium-pulls'
 import { BUILT_IN_PULL_IDS, canonicalPullId, canSelectPull, findPullOption, FREE_PULL_IDS, freePullOptions, isPremiumPull, pullOptions, } from './pulls'
+import { findCanonicalVoiceLine } from './voice-lines'
 
 describe('Pull catalog', () => {
+  it('shares every premium beat with the canonical registry without changing access', () => {
+    expect(PREMIUM_PULL_LINES.map((line) => line.id)).toEqual(
+      PREMIUM_PULL_IDS.flatMap((id) =>
+        ['meet', 'present', 'recede'].map((kind) => `pull.${id}.${kind}`),
+      ),
+    )
+    for (const line of PREMIUM_PULL_LINES) {
+      expect(line).toBe(findCanonicalVoiceLine(line.id))
+      expect(findPullOption(line.speakerId)?.access).toBe('pro')
+      expect(canSelectPull(line.speakerId, false)).toBe(false)
+      expect(canSelectPull(line.speakerId, true)).toBe(true)
+    }
+  })
+
   it('keeps all 24 premium recording captions aligned with the output document', () => {
     const document = readFileSync(
       `${process.cwd()}/docs/premium-pull-voice-recording-pack-2026-09-05.md`,

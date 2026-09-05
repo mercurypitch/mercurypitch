@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type { AudioSourceVariant } from './audio-manifest'
 import type { CharacterVoiceRecording } from './character-voice-recordings'
 import { registerCharacterVoiceRecordings } from './character-voice-recordings'
+import { PREMIUM_PULL_LINES } from './premium-pulls'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 const GREETING = CANONICAL_VOICE_LINES[0]
@@ -54,7 +55,35 @@ describe('character voice recording registration', () => {
     expect(registerCharacterVoiceRecordings([recording()])).toHaveLength(1)
   })
 
-  it('rejects changed captions and unregistered premium identities', () => {
+  it('registers every premium beat against its exact canonical caption', () => {
+    const deliveries = PREMIUM_PULL_LINES.map(
+      (line): CharacterVoiceRecording => ({
+        lineId: line.id,
+        captionSha256: line.captionSha256,
+        sources: [
+          {
+            ...recording().sources[0],
+            src: `/audio/voice/test/${line.fileStem}.m4a`,
+          },
+        ],
+      }),
+    )
+
+    const assets = registerCharacterVoiceRecordings(deliveries)
+
+    expect(assets).toHaveLength(24)
+    expect(assets.map((asset) => asset.id)).toEqual(
+      PREMIUM_PULL_LINES.map((line) => `dialogue.${line.id}`),
+    )
+    for (const [index, asset] of assets.entries()) {
+      expect(asset.dialogue).toEqual({
+        lineId: deliveries[index]?.lineId,
+        captionSha256: deliveries[index]?.captionSha256,
+      })
+    }
+  })
+
+  it('rejects changed captions and reserve-only companion identities', () => {
     expect(() =>
       registerCharacterVoiceRecordings([
         {
@@ -67,7 +96,7 @@ describe('character voice recording registration', () => {
       registerCharacterVoiceRecordings([
         {
           ...recording(),
-          lineId: 'pull.the-tape.meet',
+          lineId: 'pocket-turner.hello',
         },
       ]),
     ).toThrow('Unknown recorded character line')

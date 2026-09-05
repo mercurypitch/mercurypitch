@@ -5,6 +5,7 @@
 import type { BuiltInActionId } from './actions'
 import { findActionDefinition } from './actions'
 import type { BuiltInPullOption } from './pulls'
+import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 export const PREMIUM_PULL_IDS = [
   'the-thimble',
@@ -23,9 +24,6 @@ interface PremiumPullDefinition {
   readonly label: string
   readonly moment: string
   readonly sideA: string
-  readonly meet: string
-  readonly present: string
-  readonly recede: string
   readonly anchors: readonly [string, string, string]
   readonly actions: readonly BuiltInActionId[]
 }
@@ -37,9 +35,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Putting my guard up',
     moment: 'When feedback makes me close up before I can listen.',
     sideA: 'Put my guard up',
-    meet: 'I’m The Thimble. I put a little armour around words that might sting.',
-    present: 'A little armour feels safer. We could stay inside it.',
-    recede: 'All right. I can leave a little room.',
     anchors: [
       'When someone offers feedback.',
       'When I feel myself getting defensive.',
@@ -57,9 +52,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Too many tabs',
     moment: 'When switching tasks takes over from doing one thing.',
     sideA: 'Open another tab',
-    meet: 'I’m The Tab. I keep opening possibilities before the last one’s finished.',
-    present: 'One more tab. We might need all of these.',
-    recede: 'All right. The other tabs can wait.',
     anchors: [
       'When I open another browser tab.',
       'When I switch tasks without finishing.',
@@ -73,9 +65,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Just one more minute',
     moment: 'When leaving feels like losing my place.',
     sideA: 'Stay a little longer',
-    meet: 'I’m The Bookmark. I make leaving feel like losing your place.',
-    present: 'Just one more minute. What if we lose our place?',
-    recede: 'I’ll keep the place. This bit can wait.',
     anchors: [
       'When I reach a good stopping point.',
       'When I keep saying one more minute.',
@@ -93,9 +82,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Going all out',
     moment: 'When a burst of effort leaves no room to pause.',
     sideA: 'Keep pushing without a break',
-    meet: 'I’m The Match. I turn a little spark into doing everything at once.',
-    present: 'We have a spark. Let’s do it all right now.',
-    recede: 'All right. I’ll leave the rest for later.',
     anchors: [
       'When I skip a break to keep working.',
       'When I start several things at once.',
@@ -109,9 +95,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Putting off sleep',
     moment: 'When I stay up even though I am tired.',
     sideA: 'Stay up past tiredness',
-    meet: 'I’m The Pillow. I make staying up feel like getting a little time back.',
-    present: 'The day was busy. A little longer just for us?',
-    recede: 'All right. I can let tonight be enough.',
     anchors: [
       'When I take my phone to bed.',
       'When I notice I am tired.',
@@ -129,9 +112,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Reacting in a rush',
     moment: 'When urgency gets ahead of a considered response.',
     sideA: 'React before pausing',
-    meet: 'I’m The Kettle. I make an answer feel urgent before it’s ready.',
-    present: 'It feels urgent. Shall we answer straight away?',
-    recede: 'All right. This answer can wait a moment.',
     anchors: [
       'When a message feels urgent.',
       'When I want to answer immediately.',
@@ -145,9 +125,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Always rushing',
     moment: 'When feeling behind makes me rush through the moment.',
     sideA: 'Rush to the next thing',
-    meet: 'I’m The Ticker. I make the next thing feel late before we get there.',
-    present: 'We might be late. Better hurry through this bit.',
-    recede: 'All right. I’ll leave this moment to you.',
     anchors: [
       'When I check the time again.',
       'Between two tasks.',
@@ -161,9 +138,6 @@ export const PREMIUM_PULL_DEFINITIONS: readonly PremiumPullDefinition[] = [
     label: 'Another quick fix',
     moment: 'When I patch something quickly without giving it time.',
     sideA: 'Reach for another quick fix',
-    meet: 'I’m The Tape. I make a quick patch feel like the whole repair.',
-    present: 'A little patch will do. We can look underneath later.',
-    recede: 'All right. I can stay on the roll for now.',
     anchors: [
       'When the same problem returns.',
       'When I want to fix everything at once.',
@@ -197,14 +171,7 @@ export const PREMIUM_PULL_OPTIONS: readonly BuiltInPullOption[] =
     }
   })
 
-// Caption-only by design. No recording or voice-play control is invented.
-export const PREMIUM_PULL_LINES = PREMIUM_PULL_DEFINITIONS.flatMap(
-  (definition) => [
-    { id: `pull.${definition.id}.meet`, text: definition.meet },
-    { id: `pull.${definition.id}.present`, text: definition.present },
-    {
-      id: `pull.${definition.id}.recede`,
-      text: definition.recede,
-    },
-  ],
+// A view of the canonical registry, never a second caption authority.
+export const PREMIUM_PULL_LINES = CANONICAL_VOICE_LINES.filter((line) =>
+  PREMIUM_PULL_IDS.some((id) => line.id.startsWith(`pull.${id}.`)),
 )

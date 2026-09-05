@@ -11,9 +11,7 @@ import { SELECTED_CHARACTER_VOICE_AUDIO_ASSETS, SELECTED_CHARACTER_VOICE_REVISIO
 import { createVoicePlayer } from './voice'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
-const SELECTED_LINES = CANONICAL_VOICE_LINES.filter((line) =>
-  ['corky', 'sugarlump', 'the-scroll'].includes(line.speakerId),
-)
+const SELECTED_LINES = CANONICAL_VOICE_LINES
 
 function packageRoot(): string {
   const root = [process.cwd(), resolve(process.cwd(), 'apps/beside-cue')].find(
@@ -30,14 +28,18 @@ function packageRoot(): string {
 }
 
 describe('selected V1 character voice delivery', () => {
-  it('registers exactly the selected 25 Corky and six pull captions once each', () => {
+  it('registers exactly the selected 25 Corky and 42 pull captions once each', () => {
     expect(SELECTED_CHARACTER_VOICE_REVISION).toBe(
-      'besidecue-v1-selected-voices-01',
+      'besidecue-v1-selected-voices-02',
     )
     expect(
       SELECTED_LINES.filter((line) => line.speakerId === 'corky'),
     ).toHaveLength(25)
-    expect(SELECTED_CHARACTER_VOICE_AUDIO_ASSETS).toHaveLength(31)
+    expect(
+      SELECTED_LINES.filter((line) => line.speakerId !== 'corky'),
+    ).toHaveLength(42)
+    expect(new Set(SELECTED_LINES.map((line) => line.speakerId)).size).toBe(15)
+    expect(SELECTED_CHARACTER_VOICE_AUDIO_ASSETS).toHaveLength(67)
     expect(
       SELECTED_CHARACTER_VOICE_AUDIO_ASSETS.map(
         (asset) => asset.dialogue.lineId,
@@ -46,7 +48,7 @@ describe('selected V1 character voice delivery', () => {
     expect(
       new Set(SELECTED_CHARACTER_VOICE_AUDIO_ASSETS.map((asset) => asset.id))
         .size,
-    ).toBe(31)
+    ).toBe(67)
     for (const line of SELECTED_LINES) {
       const asset = SELECTED_CHARACTER_VOICE_AUDIO_ASSETS.find(
         (candidate) => candidate.dialogue.lineId === line.id,
@@ -63,7 +65,7 @@ describe('selected V1 character voice delivery', () => {
     }
   })
 
-  it('pins all 31 packaged recordings to their real delivery bytes', () => {
+  it('pins all 67 packaged recordings to their real delivery bytes', () => {
     const root = packageRoot()
     for (const asset of SELECTED_CHARACTER_VOICE_AUDIO_ASSETS) {
       expect(asset.sources, asset.id).toHaveLength(1)
@@ -78,8 +80,10 @@ describe('selected V1 character voice delivery', () => {
       expect(source.mimeType).toBe('audio/mp4; codecs="mp4a.40.2"')
       expect(source.sampleRateHz).toBe(48_000)
       expect(source.channels).toBe(1)
-      // Leave substantial loading headroom under the automatic-scene 15s guard.
-      expect(source.durationMs).toBeLessThan(9_000)
+      // Preserve Fog's approved, slower performance; every delivered clip
+      // still leaves at least two seconds under the 15s automatic-scene guard.
+      expect(source.durationMs).toBeGreaterThan(0)
+      expect(source.durationMs).toBeLessThan(13_000)
     }
   })
 
