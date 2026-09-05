@@ -99,7 +99,14 @@ export async function enableTwofa(code: string): Promise<string[]> {
     body: JSON.stringify({ code }),
   })
   if (!res.ok) throw new Error(await messageOf(res, 'That code did not match'))
-  const body = (await res.json()) as { recoveryCodes: string[] }
+  const body = (await res.json()) as {
+    recoveryCodes: string[]
+    session?: AuthResponse
+  }
+  // A token from before per-device sessions cannot be kept apart from the
+  // others, so the server revoked every token and issued this one fresh:
+  // adopt it, or the enrolment signs the enroller out.
+  if (body.session !== undefined) adoptSession(body.session)
   return body.recoveryCodes
 }
 

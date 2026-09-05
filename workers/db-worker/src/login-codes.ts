@@ -180,6 +180,20 @@ export async function claimLoginCode(
   // at 1, so it can never name a real row.
   if (!Number.isInteger(id) || id <= 0) return { ok: false }
 
+  // Spend the attempt first, and atomically: the row's five-attempt burn is
+  // what bounds guessing (RATE_LIMITS is roomy on that basis), and a read of
+  // `attempts` followed by a separate increment let N parallel guesses all
+  // see a budget and all be compared. The WHERE is the cap; a guess that
+  // finds no budget, or a spent or expired row, is refused before any
+  // comparison.
+  const spent = await db
+    .prepare(
+      'UPDATE loginCodes SET attempts = attempts + 1 WHERE id = ? AND usedAt IS NULL AND attempts < ? AND expiresAt > ?',
+    )
+    .bind(id, LOGIN_CODE_MAX_ATTEMPTS, new Date(nowMs).toISOString())
+    .run()
+  if (spent.meta.changes !== 1) return { ok: false }
+
   const row = await db
     .prepare(
       'SELECT userId, email, codeHash, attempts, expiresAt, usedAt FROM loginCodes WHERE id = ?',
@@ -187,17 +201,8 @@ export async function claimLoginCode(
     .bind(id)
     .first<LoginCodeRow>()
   if (!row) return { ok: false }
-  if (row.usedAt !== null) return { ok: false }
-  if (Date.parse(row.expiresAt) <= nowMs) return { ok: false }
-  if (row.attempts >= LOGIN_CODE_MAX_ATTEMPTS) return { ok: false }
 
-  if (!sameHash(row.codeHash, await hashLoginCode(code))) {
-    await db
-      .prepare('UPDATE loginCodes SET attempts = attempts + 1 WHERE id = ?')
-      .bind(id)
-      .run()
-    return { ok: false }
-  }
+  if (!sameHash(row.codeHash, await hashLoginCode(code))) return { ok: false }
 
   const claimed = await db
     .prepare('UPDATE loginCodes SET usedAt = ? WHERE id = ? AND usedAt IS NULL')

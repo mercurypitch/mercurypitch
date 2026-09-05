@@ -19,7 +19,7 @@ import type { AuthenticationResponseJSON, RegistrationResponseJSON, } from '@sim
 import type { Env } from './auth'
 import { checkRateLimit, getAuth, issueSessionFor, sessionOrigin, verifyAccountPassword, } from './auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
-import { allowedOrigins, deletePasskey, findPasskey, listPasskeys, MAX_PASSKEYS_PER_USER, passkeyName, passkeySummary, passkeysConfigured, rpIdFor, savePasskey, SUDO_WINDOW_MS, touchPasskey, transportsOf, } from './passkeys'
+import { deletePasskey, expectedOrigins, findPasskey, listPasskeys, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, passkeySummary, rpIdFor, savePasskey, SUDO_WINDOW_MS, touchPasskey, transportsOf } from './passkeys'
 import { verifySecondFactor } from './twofa-routes'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
@@ -255,7 +255,7 @@ async function handleRegisterVerify(
     verification = await verifyRegistrationResponse({
       response: body.response as RegistrationResponseJSON,
       expectedChallenge: claims.challenge as string,
-      expectedOrigin: allowedOrigins(env),
+      expectedOrigin: expectedOrigins(request, env),
       expectedRPID: rpIdFor(env) as string,
       requireUserVerification: true,
     })
@@ -353,7 +353,7 @@ async function handleLoginVerify(
     verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: claims.challenge as string,
-      expectedOrigin: allowedOrigins(env),
+      expectedOrigin: expectedOrigins(request, env),
       expectedRPID: rpIdFor(env) as string,
       credential: {
         id: row.id,

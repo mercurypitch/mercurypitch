@@ -248,7 +248,7 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
   )
 }
 
-interface JwtPayload {
+export interface JwtPayload {
   sub: string
   provider: string
   iat: number
@@ -258,7 +258,11 @@ interface JwtPayload {
   sid?: string
 }
 
-async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
+/** Exported for the integration test that mints a pre-0038 token (no `sid`). */
+export async function signJwt(
+  payload: JwtPayload,
+  secret: string,
+): Promise<string> {
   const header = b64urlEncode(
     encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
   )
@@ -1754,6 +1758,35 @@ export async function issueSessionFor(
   const row = await findUserById(env.DB, userId)
   if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
   return issueSession(env, row, respond, false, origin, provider)
+}
+
+/**
+ * Every token this account holds, gone — and one fresh session for the
+ * caller. For enrolling 2FA from a token minted before migration 0038: such
+ * a token names no session, so ending sessions cannot reach it, nor any other
+ * legacy token the account still holds. Only the version can, and bumping it
+ * revokes the enroller's own token too, so they get a new one back.
+ */
+export async function reissueLegacySession(
+  env: Env,
+  userId: string,
+  origin: SessionOrigin,
+): Promise<{
+  token: string
+  userId: string
+  isNew: boolean
+  user: ReturnType<typeof publicUser>
+} | null> {
+  await env.DB.prepare(
+    'UPDATE users SET tokenVersion = tokenVersion + 1 WHERE id = ?',
+  )
+    .bind(userId)
+    .run()
+  const row = await findUserById(env.DB, userId)
+  if (row === null) return null
+  const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
+  const token = await createSession(env, row, origin)
+  return { token, userId: row.id, isNew: false, user: publicUser(row, testAccount) }
 }
 
 /** Find-or-create the user for verified Google claims (shared by the

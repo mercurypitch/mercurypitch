@@ -11,7 +11,7 @@
 // way — this file imports auth.ts, never the reverse.
 
 import type { Env } from './auth'
-import { checkRateLimit, clearRateLimit, getAuth, issueSessionFor, sessionOrigin, } from './auth'
+import { checkRateLimit, clearRateLimit, getAuth, issueSessionFor, reissueLegacySession, sessionOrigin } from './auth'
 import { readCeremony } from './auth-ceremony'
 import { endOtherSessions } from './auth-sessions'
 import { generateTotpSecret, otpauthUri, verifyTotp } from './totp'
@@ -207,7 +207,20 @@ async function handleEnable(
   // Every session that predates enrollment got in on one factor — including,
   // in the case this feature exists for, an intruder's. Only the session doing
   // the enrolling survives.
-  await endOtherSessions(env.DB, auth.userId, auth.sessionId ?? null)
+  if (auth.sessionId === undefined) {
+    // The enroller's token predates per-device sessions, and so may an
+    // intruder's: those name no session row, so deleting rows revokes
+    // nothing. Bumping the token version revokes every one of them, the
+    // enroller's included, who gets a fresh session back with the codes.
+    await endOtherSessions(env.DB, auth.userId, null)
+    const session = await reissueLegacySession(
+      env,
+      auth.userId,
+      sessionOrigin(request),
+    )
+    return respond(session === null ? { recoveryCodes } : { recoveryCodes, session })
+  }
+  await endOtherSessions(env.DB, auth.userId, auth.sessionId)
   // The only moment the raw codes exist outside the singer's own copy: the
   // table holds nothing but their hashes.
   return respond({ recoveryCodes })

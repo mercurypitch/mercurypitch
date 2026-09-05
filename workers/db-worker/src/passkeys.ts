@@ -81,11 +81,31 @@ export function rpIdFor(env: PasskeyEnv): string | null {
 }
 
 /** Every origin the app is served from in this environment. */
-export function allowedOrigins(env: PasskeyEnv): string[] {
+/** Only the origin list matters here; a full env is welcome. */
+type OriginEnv = Pick<PasskeyEnv, 'ALLOWED_ORIGINS'> & Partial<PasskeyEnv>
+
+export function allowedOrigins(env: OriginEnv): string[] {
   return (env.ALLOWED_ORIGINS ?? '')
     .split(',')
     .map((o) => o.trim())
     .filter((o) => o !== '')
+}
+
+/**
+ * What a ceremony's clientDataJSON origin may be.
+ *
+ * ALLOWED_ORIGINS carries rules (`localhost`, `*.workers.dev`) that the
+ * worker's own originAllowed() understands and the WebAuthn verifier does
+ * not: simplewebauthn matches `expectedOrigin` as exact strings, so under a
+ * rule no local or preview ceremony could ever verify. The request's Origin
+ * has already passed originAllowed() at the door, so it is the one sure
+ * value; the list's full origins stay as fallbacks.
+ */
+export function expectedOrigins(request: Request, env: OriginEnv): string[] {
+  const full = allowedOrigins(env).filter((entry) => /^https?:\/\//.test(entry))
+  const origin = request.headers.get('Origin')?.trim() ?? ''
+  if (origin === '' || full.includes(origin)) return full
+  return [origin, ...full]
 }
 
 export function passkeysConfigured(env: PasskeyEnv): boolean {

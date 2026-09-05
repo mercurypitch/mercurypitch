@@ -183,6 +183,27 @@ describe('signing in with a mailed code', () => {
     expect((await verify(ceremony, code)).status).toBe(401)
   })
 
+  it('holds the cap under a burst of parallel guesses', async () => {
+    // The attempt used to be read, compared, then incremented in a second
+    // statement, so guesses in flight together all saw a budget. Spending
+    // the attempt first, in one UPDATE with the cap in its WHERE, is what
+    // bounds a burst.
+    await register('burst@example.com')
+    const { ceremony, code } = await requestCode('burst@example.com')
+    const wrongs = Array.from({ length: 20 }, (_, i) =>
+      String((Number(code) + i + 1) % 1_000_000).padStart(6, '0'),
+    )
+    const responses = await Promise.all(
+      wrongs.map((wrong) => verify(ceremony, wrong)),
+    )
+    for (const response of responses) expect(response.status).toBe(401)
+    const row = sqlite
+      .prepare('SELECT attempts FROM loginCodes WHERE email = ?')
+      .get('burst@example.com') as { attempts: number }
+    expect(row.attempts).toBe(LOGIN_CODE_MAX_ATTEMPTS)
+    expect((await verify(ceremony, code)).status).toBe(401)
+  })
+
   it('refuses a code past its ten minutes', async () => {
     await register('stale@example.com')
     const { ceremony, code } = await requestCode('stale@example.com')
