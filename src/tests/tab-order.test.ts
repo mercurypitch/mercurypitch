@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TAB_META } from '@/components/AppNavTabs'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -82,8 +82,23 @@ describe('tab groups', () => {
       TAB_PIANO,
       TAB_GUITAR,
       TAB_EXERCISES,
+      TAB_CHALLENGES,
       TAB_EAR_LAB,
     ])
+  })
+
+  it('keeps Play for performing and other people — the drills went to Practice', () => {
+    // The vocal challenges lived in Play while they carried the Legend and
+    // the trophies. Once both moved out, what remained was scored drills, and
+    // a drill beside the exercise library is where a singer looks for one.
+    const play = TAB_GROUPS.find((g) => g.id === 'play')
+    expect(play?.tabs).toEqual([
+      TAB_KARAOKE,
+      TAB_JAM,
+      TAB_COMMUNITY,
+      TAB_LEADERBOARD,
+    ])
+    expect(tabGroupOf(TAB_CHALLENGES)?.id).toBe('practice')
   })
 
   it('never lets Settings overflow — it is the way back from simple mode', () => {
@@ -174,8 +189,18 @@ describe('simple mode after the regrouping', () => {
   })
 
   it('still hides the Play and Studio surfaces', () => {
-    expect(isTabVisible(TAB_CHALLENGES, 'all', 'simple')).toBe(false)
+    expect(isTabVisible(TAB_KARAOKE, 'all', 'simple')).toBe(false)
+    expect(isTabVisible(TAB_LEADERBOARD, 'all', 'simple')).toBe(false)
     expect(isTabVisible(TAB_COMPOSE, 'all', 'simple')).toBe(false)
+  })
+
+  it('brings the vocal challenges into simple mode with the other drills', () => {
+    // They are practice now, so a simple-mode singer gets them the way they
+    // get Exercises — and only a singer: the scope stays singing-only.
+    expect(isTabVisible(TAB_CHALLENGES, 'singing', 'simple')).toBe(true)
+    expect(visibleTabOrder('singing', 'simple')).toContain(TAB_CHALLENGES)
+    expect(isTabVisible(TAB_CHALLENGES, 'guitar', 'simple')).toBe(false)
+    expect(isTabVisible(TAB_CHALLENGES, 'piano', 'advanced')).toBe(false)
   })
 
   it('keeps Settings, the way back out of simple mode', () => {
