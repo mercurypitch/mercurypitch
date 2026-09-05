@@ -30,7 +30,7 @@ vi.mock('@/features/challenges/weekly-service', async (importOriginal) => {
     },
     updateWeekly: (_id: string, patch: Record<string, unknown>) => {
       saved.push(patch)
-      return Promise.resolve(true)
+      return Promise.resolve({ ok: true })
     },
   }
 })
