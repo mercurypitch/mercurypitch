@@ -3292,11 +3292,37 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       document.sourceFormat === 'prepared' &&
       scheduledDocument?.sourceFormat === 'prepared' &&
       preparedVariation === scheduledPreparedVariation
+    const preparedVariationSwitch =
+      backingSource === null &&
+      scheduledBackingSource === null &&
+      document !== null &&
+      document !== scheduledDocument &&
+      document.sourceFormat === 'prepared' &&
+      scheduledDocument?.sourceFormat === 'prepared' &&
+      preparedVariation !== scheduledPreparedVariation
 
-    if (hotPreparedRevision) {
+    if (hotPreparedRevision || preparedVariationSwitch) {
       scheduledDocument = document
+      scheduledPreparedVariation = preparedVariation
       sessionScheduler.updateSession(document)
       authoredPlayAlong.setSession(document)
+      if (preparedVariationSwitch) {
+        // Another variation is the same song in another feel, not a new
+        // document: the tempo the user set, the loop and the take evidence
+        // stay, and playback carries on. Only the timing's shape follows the
+        // new arrangement, re-applied under the user's tempo. Through the
+        // cross-document reset below, a Classic to Funk click stopped
+        // playback, dropped the loop and put the canonical 84 on the
+        // readout while the project still said what the user had set.
+        // No tempo map: the song's carries its canonical 84 at beat zero and
+        // would take the readout back over the user's tempo (the hydration
+        // path applies a saved project the same way).
+        const arrangement = authoredPlayAlong.snapshot().arrangement
+        runtime.transportPort.setAuthoredTiming({
+          tempoBpm: untrack(authoredTempoBpm),
+          durationBeats: arrangement?.durationBeats ?? document.durationBeats,
+        })
+      }
       return
     }
 

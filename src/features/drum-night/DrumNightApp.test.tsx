@@ -1435,6 +1435,67 @@ describe('DrumNightApp', () => {
     expect(project.markDirty).toHaveBeenCalled()
   })
 
+  it('switches a prepared variation without resetting the tempo, the loop or playback', async () => {
+    // A variation is the same song in another feel. Through the
+    // cross-document reset, Classic to Funk stopped playback, dropped the
+    // loop and put the canonical 84 on the readout.
+    const clock = new TestClock()
+    renderRoom({ clock })
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    expect(
+      within(screen.getByLabelText('Authored tempo')).getByText('86'),
+    ).toBeVisible()
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+
+    const grooveDrawer = await openGrooveDrawer()
+    const rail = within(grooveDrawer).getByRole('group', {
+      name: 'Prepared groove variation',
+    })
+    fireEvent.click(within(rail).getByRole('button', { name: /^Funk/ }))
+    expect(within(rail).getByRole('button', { name: /^Funk/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    expect(
+      within(screen.getByLabelText('Authored tempo')).getByText('86'),
+    ).toBeVisible()
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'true',
+    )
+  })
+
   it('opens a hydrated same-variation project as a silent hard boundary', async () => {
     const clock = new TestClock()
     const click = clickHarness()
