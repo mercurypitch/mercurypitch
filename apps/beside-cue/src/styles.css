@@ -1690,7 +1690,7 @@ svg {
   margin-top: 1rem;
 }
 
-/* Development-only stand-in for the native paywall and Customer Center. It is
+/* Development/internal-beta stand-in for the native paywall and Customer Center. It is
    deliberately styled as its own surface, and labelled, so it is never mistaken
    for the real store sheet. */
 .mock-store {
@@ -1698,6 +1698,7 @@ svg {
   z-index: 120;
   inset: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   overflow-y: auto;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   background: rgb(36 25 19 / 55%);
@@ -1706,6 +1707,8 @@ svg {
 
 .mock-store__panel {
   display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   width: min(100%, 26rem);
   gap: 0.75rem;
   padding: 1.25rem;
@@ -1713,6 +1716,11 @@ svg {
   border-radius: 16px;
   background: var(--paper-light);
   box-shadow: 0.35rem 0.45rem 0 var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.mock-store__panel button {
+  min-width: 0;
 }
 
 .mock-store__badge {

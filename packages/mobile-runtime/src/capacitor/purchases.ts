@@ -7,6 +7,7 @@
 // Store error codes are translated here: a customer who backs out of the
 // payment sheet gets a cancelled outcome, never a thrown error.
 
+import { Capacitor } from '@capacitor/core'
 import type { CustomerInfo, PurchasesEntitlementInfo, PurchasesOffering, PurchasesPackage, } from '@revenuecat/purchases-capacitor'
 import { LOG_LEVEL, PACKAGE_TYPE, Purchases, PURCHASES_ERROR_CODE, } from '@revenuecat/purchases-capacitor'
 import type { CustomerListener, CustomerSnapshot, EntitlementPeriodKind, EntitlementStatus, PurchaseFailureReason, PurchaseOffering, PurchaseOutcome, PurchasePlan, PurchasePlanHandle, PurchasePlanKind, PurchasesListenerHandle, PurchasesPort, } from '../contracts'
@@ -315,6 +316,24 @@ export function createCapacitorPurchasesPort(
         const { customerInfo } = await Purchases.restorePurchases()
         return toCustomerSnapshot(customerInfo)
       }, 'Previous purchases could not be restored.')
+    },
+    async presentCodeRedemptionSheet() {
+      if (Capacitor.getPlatform() !== 'ios') {
+        throw new PurchasesFailure(
+          'unavailable',
+          'Redeem this code in the store app.',
+        )
+      }
+      return ready(
+        () => Purchases.presentCodeRedemptionSheet(),
+        'The code redemption sheet could not be opened.',
+      )
+    },
+    async syncPurchases() {
+      return ready(
+        () => Purchases.syncPurchases(),
+        'Store purchases could not be synchronized.',
+      )
     },
     async addCustomerListener(
       listener: CustomerListener,

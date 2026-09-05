@@ -1,6 +1,9 @@
 import type { EntitlementStatus } from '@irchiinnuss/mobile-runtime'
-import { Show } from 'solid-js'
+import { Show, untrack } from 'solid-js'
+import { message } from '@/i18n/messages'
+import { Selectable } from '@/interaction/selection'
 import type { ProAccessStatus } from '@/purchases/pro-access'
+import styles from './ProSection.module.css'
 
 interface ProSectionProps {
   name: string
@@ -12,9 +15,15 @@ interface ProSectionProps {
   notice?: string
   error?: string
   locale: string
-  onUpgrade: () => void
-  onManage: () => void
+  onUpgrade: (() => void) | (() => Promise<unknown>)
+  onManage: (() => void) | (() => Promise<unknown>)
   onRestore: () => void
+  platform?: 'web' | 'ios' | 'android'
+  mock?: boolean
+  supportId?: string
+  onRedeemCode?: (() => void) | (() => Promise<unknown>)
+  onCheckAccess?: () => void
+  onExternalRedemption?: () => void
 }
 
 function formatDate(value: Date, locale: string): string {
@@ -32,6 +41,18 @@ function renewalNote(entitlement: EntitlementStatus, locale: string): string {
 }
 
 export function ProSection(props: ProSectionProps) {
+  async function openSheet(
+    trigger: HTMLButtonElement,
+    action: (() => void) | (() => Promise<unknown>),
+  ) {
+    try {
+      await action()
+    } finally {
+      // Capture the trigger before busy disables it and the browser drops focus.
+      if (trigger.isConnected) trigger.focus()
+    }
+  }
+
   return (
     <section class="settings-group" aria-labelledby="pro-settings-title">
       <div class="settings-group__heading">
@@ -43,6 +64,10 @@ export function ProSection(props: ProSectionProps) {
           <strong>Active</strong>
         </Show>
       </div>
+
+      <Show when={props.mock}>
+        <p class="settings-group__intro">{message('purchases.betaNotice')}</p>
+      </Show>
 
       <Show
         when={props.available}
@@ -61,7 +86,7 @@ export function ProSection(props: ProSectionProps) {
           }
         >
           <Show
-            when={props.entitlement}
+            when={props.isPro ? props.entitlement : undefined}
             fallback={
               <p class="settings-group__intro">
                 The six original Pulls, your own words, and the cue loop stay
@@ -93,7 +118,9 @@ export function ProSection(props: ProSectionProps) {
                   class="secondary-button"
                   type="button"
                   disabled={props.busy}
-                  onClick={() => props.onUpgrade()}
+                  onClick={(event) =>
+                    void openSheet(event.currentTarget, props.onUpgrade)
+                  }
                 >
                   {props.busy ? 'Opening…' : `Unlock ${props.name}`}
                 </button>
@@ -103,7 +130,9 @@ export function ProSection(props: ProSectionProps) {
                 class="secondary-button"
                 type="button"
                 disabled={props.busy}
-                onClick={() => props.onManage()}
+                onClick={(event) =>
+                  void openSheet(event.currentTarget, props.onManage)
+                }
               >
                 Manage subscription
               </button>
@@ -117,6 +146,89 @@ export function ProSection(props: ProSectionProps) {
               Restore purchases
             </button>
           </div>
+
+          <Show
+            when={
+              props.onRedeemCode !== undefined &&
+              (props.mock === true || props.platform === 'ios')
+            }
+          >
+            <button
+              class="settings-row"
+              type="button"
+              disabled={props.busy}
+              onClick={(event) =>
+                void openSheet(event.currentTarget, () =>
+                  untrack(() => props.onRedeemCode?.()),
+                )
+              }
+            >
+              <span>
+                <strong>
+                  {message(
+                    props.mock === true
+                      ? 'purchases.redeemMock'
+                      : 'purchases.redeemApple',
+                  )}
+                </strong>
+                <small>
+                  {message(
+                    props.mock === true
+                      ? 'purchases.mockOfferHelp'
+                      : 'purchases.offerTerms',
+                  )}
+                </small>
+              </span>
+            </button>
+          </Show>
+          <Show when={props.mock !== true && props.platform === 'android'}>
+            <div class={styles.promo}>
+              <a
+                class={styles.storeLink}
+                href="https://play.google.com/redeem"
+                onClick={(event) => {
+                  if (props.busy) event.preventDefault()
+                  else props.onExternalRedemption?.()
+                }}
+                aria-disabled={props.busy}
+              >
+                {message('purchases.redeemGoogle')}
+              </a>
+              <p class="settings-group__intro">
+                {message('purchases.googleHelp')}
+              </p>
+              <p class="settings-group__intro">
+                {message('purchases.offerTerms')}
+              </p>
+            </div>
+          </Show>
+          <Show when={props.onCheckAccess !== undefined}>
+            <button
+              class="text-button"
+              type="button"
+              disabled={props.busy}
+              onClick={() => props.onCheckAccess?.()}
+            >
+              {message('purchases.checkAccess')}
+            </button>
+          </Show>
+          <Show when={props.mock !== true ? props.supportId : undefined}>
+            <details class={styles.support}>
+              <summary>{message('purchases.support')}</summary>
+              <p class="settings-group__intro">
+                {message('purchases.supportHelp')}
+              </p>
+              <label>
+                {message('purchases.supportId')}
+                <input
+                  {...Selectable}
+                  readOnly
+                  value={props.supportId}
+                  spellcheck={false}
+                />
+              </label>
+            </details>
+          </Show>
         </Show>
 
         <Show when={props.notice}>

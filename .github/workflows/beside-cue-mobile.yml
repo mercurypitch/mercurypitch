@@ -206,10 +206,15 @@ jobs:
       # cannot reach Play Billing at all — Play only serves an app it installed
       # itself. So this one is built against the RevenueCat Test Store, which
       # needs no Play products and works on any device. The release build below
-      # gets the real store key instead.
+      # gets the real store key instead. Tag runs use the real key throughout,
+      # including their debug artifact, so no tag can carry Test Store assets.
       - name: Build web assets for the debug APK
         env:
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
+          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.IS_RELEASE == 'true' && 'store' || '' }}
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'android'
+          VITE_MOCK_PURCHASES: '0'
+          VITE_REVENUECAT_ALLOW_TEST_STORE: ${{ env.IS_RELEASE == 'true' && '0' || '1' }}
+          VITE_REVENUECAT_ANDROID_KEY: ${{ env.IS_RELEASE == 'true' && secrets.VITE_REVENUECAT_ANDROID_KEY || '' }}
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
       - name: Verify the debug build contains the V2 onboarding media
@@ -272,6 +277,10 @@ jobs:
       # The debug APK has already been packaged and uploaded by this point.
       - name: Rebuild web assets for release
         env:
+          VITE_BESIDE_CUE_DISTRIBUTION: 'store'
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'android'
+          VITE_MOCK_PURCHASES: '0'
+          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
           VITE_REVENUECAT_ANDROID_KEY: ${{ secrets.VITE_REVENUECAT_ANDROID_KEY }}
         run: |
           set -euo pipefail
@@ -341,6 +350,8 @@ jobs:
       HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
       # Every run archives. Only a run that is not a pull request uploads.
       UPLOAD: ${{ github.event_name != 'pull_request' }}
+      # Mocks are app-owned, not RevenueCat Test Store. Tags always use StoreKit.
+      PURCHASE_MODE: ${{ startsWith(github.ref, 'refs/tags/') && 'store' || vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
 
     steps:
       - name: Checkout
@@ -364,15 +375,19 @@ jobs:
         if: env.HAS_ASC == 'true'
         run: pnpm install --frozen-lockfile
 
-      # The real store key, not the Test Store: this binary is a Release
-      # build, and the SDK aborts a release binary that configures the
-      # Test Store (same reasoning as the tag-release job below).
+      # Main/PR builds default to a clearly labelled, internal-only app mock.
+      # Select `store` for real Apple sandbox testing; release tags force it.
       - name: Build web assets
         if: env.HAS_ASC == 'true'
         env:
+          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.PURCHASE_MODE == 'mock' && 'testflight-internal' || 'store' }}
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
+          VITE_MOCK_PURCHASES: ${{ env.PURCHASE_MODE == 'mock' && '1' || '0' }}
+          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
           VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
         run: |
           set -euo pipefail
+          case "$PURCHASE_MODE" in mock|store) ;; *) echo "Invalid TestFlight purchase mode"; exit 1 ;; esac
           pnpm --filter @irchiinnuss/beside-cue-app exec vite build
           pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
 
@@ -515,6 +530,8 @@ jobs:
 
           # destination=upload makes xcodebuild itself deliver the build to
           # App Store Connect -- no altool, no Transporter, no IPA artifact.
+          internal_only=false
+          if [[ "$PURCHASE_MODE" == "mock" ]]; then internal_only=true; fi
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -530,6 +547,7 @@ jobs:
               <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
             </dict>
             <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>testFlightInternalTestingOnly</key><${internal_only}/>
           </dict>
           </plist>
           PLIST
@@ -544,6 +562,7 @@ jobs:
 
           echo "Uploaded $version (${{ github.run_number }}) to App Store Connect." >> "$GITHUB_STEP_SUMMARY"
           echo "TestFlight shows it after processing, usually a few minutes." >> "$GITHUB_STEP_SUMMARY"
+          echo "Purchases: $PURCHASE_MODE. Internal-only distribution: $internal_only." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report missing secrets
         if: env.HAS_ASC != 'true'
@@ -584,10 +603,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Same reasoning as the Android job: the simulator build is for testing,
-      # so it gets the Test Store rather than no store at all.
+      # so non-tag builds get Test Store. Tags use the real key throughout.
       - name: Build web assets for the simulator
         env:
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
+          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.IS_RELEASE == 'true' && 'store' || '' }}
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
+          VITE_MOCK_PURCHASES: '0'
+          VITE_REVENUECAT_ALLOW_TEST_STORE: ${{ env.IS_RELEASE == 'true' && '0' || '1' }}
+          VITE_REVENUECAT_IOS_KEY: ${{ env.IS_RELEASE == 'true' && secrets.VITE_REVENUECAT_IOS_KEY || '' }}
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
       - name: Synchronize iOS project
@@ -654,6 +677,10 @@ jobs:
       - name: Rebuild web assets for release
         if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
         env:
+          VITE_BESIDE_CUE_DISTRIBUTION: 'store'
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
+          VITE_MOCK_PURCHASES: '0'
+          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
           VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
         run: |
           set -euo pipefail
