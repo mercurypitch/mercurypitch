@@ -38,14 +38,11 @@ export const createTapDriver = (): InteractionDriver => {
   return {
     async start(): Promise<void> {
       // Reached before the await so the resume rides the starting tap.
+      if (stopped) return
       lease.ensure()
-      try {
-        await lease.unlock()
-      } catch (err) {
-        // Nobody calls stop() on a driver that never came up.
-        lease.release()
-        throw err
-      }
+      // unlock() reports failure as false, never by throwing; a resume
+      // that did not happen is the same tap-only game with no clock.
+      await lease.unlock()
       if (stopped) return
       window.addEventListener('pointerdown', onPointer)
       window.addEventListener('keydown', onKey)

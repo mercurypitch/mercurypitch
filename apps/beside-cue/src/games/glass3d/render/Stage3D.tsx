@@ -344,7 +344,13 @@ export const Stage3D = (props: Stage3DProps) => {
     stopLoop = () => cancelAnimationFrame(frame)
   }
 
+  /** One startMic at a time: two taps during the permission prompt
+   *  shared `driver`, and the first one's catch nulled the second's. */
+  let micStarting = false
+
   const startMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     setMicError(null)
     tone.start()
     try {
@@ -363,14 +369,20 @@ export const Stage3D = (props: Stage3DProps) => {
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
   /** Re-open on a different input, without leaving the game. */
   const switchMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     driver?.stop()
     driver = null
     setMicError(null)
+    // The switch may be the first way in: the game's tone starts with it.
+    if (!started()) tone.start()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
@@ -380,6 +392,8 @@ export const Stage3D = (props: Stage3DProps) => {
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 

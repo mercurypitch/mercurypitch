@@ -23,16 +23,34 @@ const audioUnavailable = (): Error =>
     { kind: 'no-audio-context' },
   )
 
+/** Every driver holds the microphone under its own consumer id. The
+ *  stages open a new driver under the same mic id before the old one
+ *  has let go (a second tap during the permission prompt, a switch),
+ *  and MicManager counts consumers by id: a late release from the old
+ *  driver used to delete the new driver's hold, and the manager's
+ *  linger then tore the live stream down two seconds later. */
+let instances = 0
+
 export const createSingDriver = (micId: string): InteractionDriver => {
-  const lease = acquireSharedAudioContext(`sing-driver:${micId}`)
+  const consumer = `${micId}#${(instances += 1)}`
+  const lease = acquireSharedAudioContext(`sing-driver:${consumer}`)
   let f0: F0Stream | null = null
   /** stop() has run -- possibly while start() was still waiting on the
    *  permission prompt, in which case start() hands back what it was
    *  given instead of wiring up a stream nobody will ever stop. */
   let stopped = false
+  /** The mic reference this driver holds; released exactly once. */
+  let holding = false
+
+  const letGo = (): void => {
+    if (!holding) return
+    holding = false
+    micManager.release(consumer)
+  }
 
   return {
     async start(): Promise<void> {
+      if (stopped) return
       const audioContext = lease.ensure()
       if (audioContext === null) {
         lease.release()
@@ -41,18 +59,19 @@ export const createSingDriver = (micId: string): InteractionDriver => {
       const unlocked = lease.unlock()
       let stream: MediaStream
       try {
-        stream = await micManager.acquire(micId)
+        stream = await micManager.acquire(consumer)
+        holding = true
         await unlocked
       } catch (err) {
         // A driver that never came up gets no stop(): the stage drops it
         // and shows the error. So the mic and the lease go back from here,
         // or the shared context is never parked again.
-        micManager.release(micId)
+        letGo()
         lease.release()
         throw err
       }
       if (stopped) {
-        micManager.release(micId)
+        letGo()
         return
       }
       f0 = createF0Stream(audioContext, stream)
@@ -60,10 +79,11 @@ export const createSingDriver = (micId: string): InteractionDriver => {
     },
 
     stop(): void {
+      if (stopped) return
       stopped = true
       f0?.dispose()
       f0 = null
-      micManager.release(micId)
+      letGo()
       // Never close: the context is the app's, not this driver's.
       lease.release()
     },
