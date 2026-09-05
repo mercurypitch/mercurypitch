@@ -34,7 +34,10 @@ settled = Image.new('RGB', (720, 430 * 4), '#fff5dd')
 for index, (pull_id, definition) in enumerate(manifest['pulls'].items()):
     frames = []
     for beat, prefix, count in [('present', 'b03', 96), ('recede', 'b05', 102)]:
-        path = PUBLIC / f'{prefix}-{pull_id}-{beat}-v0_1.mp4'
+        path = PUBLIC / f'{prefix}-{pull_id}-{beat}-{manifest.get("movieVersion", "v0_1")}.mp4'
+        edge = definition['edgeAudit'][beat]
+        assert not edge['exposedFrames'], (pull_id, beat, 'exposed source boundary')
+        assert all(edge['xByFrame'][n] <= 0 for n in edge['contactFrames']), (pull_id, beat)
         data = path.read_bytes()
         assert data.index(b'moov') < data.index(b'mdat'), path.name
         info = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', str(path)]))

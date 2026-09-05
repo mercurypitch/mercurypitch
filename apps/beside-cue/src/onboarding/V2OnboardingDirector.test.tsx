@@ -511,6 +511,28 @@ describe('V2OnboardingDirector', () => {
     ).toBeVisible()
   })
 
+  it('unlocks the app-owned music synchronously before the replay greeting', async () => {
+    const probe = createDirectorProbe('replay')
+    const calls: string[] = []
+    const unlockMusic = vi.fn(() => calls.push('unlock-music'))
+    probe.audio.play.mockImplementation((assetId: string) => {
+      calls.push(assetId)
+      return settledCue(assetId)
+    })
+    render(() => (
+      <V2OnboardingDirector {...probe.props} onUnlockAudio={unlockMusic} />
+    ))
+
+    await advance(1_300)
+    expect(unlockMusic).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+
+    expect(calls[0]).toBe('unlock-music')
+    expect(calls).toContain(V2_ONBOARDING_AUDIO_ASSET_IDS.greeting)
+    expect(unlockMusic).toHaveBeenCalledOnce()
+    expect(probe.audio.unlock).not.toHaveBeenCalled()
+  })
+
   it('waits for the visual dwell when automatic dialogue finishes first', async () => {
     const { finished } = renderWithControlledDialogue(
       'corky.onboarding.greeting',
@@ -650,7 +672,7 @@ describe('V2OnboardingDirector', () => {
     const presentStage = currentMediaStage()
     expect(presentStage.props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b03-scrolling-present-v0_2.mp4'),
+      src: expect.stringContaining('b03-scrolling-present-v0_3.mp4'),
     })
     expect(presentStage.targetId).toContain(':present')
     expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
@@ -688,7 +710,7 @@ describe('V2OnboardingDirector', () => {
     const recedeStage = currentMediaStage()
     expect(recedeStage.props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b05-scrolling-recede-v0_2.mp4'),
+      src: expect.stringContaining('b05-scrolling-recede-v0_3.mp4'),
     })
     expect(recedeStage.targetId).toContain(':recede')
     await advance(1_150)

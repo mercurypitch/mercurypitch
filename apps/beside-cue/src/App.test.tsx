@@ -95,6 +95,7 @@ interface V2DirectorHarnessProps {
   readonly foreground: boolean
   readonly muted: boolean
   readonly onMutedChange: (muted: boolean) => void
+  readonly onUnlockAudio?: () => void
   readonly onSavePlan: (
     plan: V2OnboardingPlanDraft,
   ) => Promise<{ readonly ok: boolean; readonly message?: string }>
@@ -204,6 +205,7 @@ vi.mock('./onboarding/V2OnboardingDirector', () => ({
         <button
           type="button"
           onClick={() => {
+            props.onUnlockAudio?.()
             audioScope ??= props.audioSession.createScope('v2-app-test-harness')
             audioScope.play('test.v2.score')
           }}
@@ -1176,15 +1178,15 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.5-pull-expansion-v1',
+      'corky-v2.5-pull-expansion-v2-edge-safe',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
-      '/onboarding/corky-v2.4/picture/b03-scrolling-present-v0_2.mp4',
+      '/onboarding/pull-expansion-v1/b03-scrolling-present-v0_3.mp4',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-recede',
-      '/onboarding/corky-v2.4/picture/b05-scrolling-recede-v0_2.mp4',
+      '/onboarding/pull-expansion-v1/b05-scrolling-recede-v0_3.mp4',
     )
     expect(harness).toHaveAttribute(
       'data-record-start',
@@ -1370,6 +1372,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /set v2 reminder/iu }))
     fireEvent.click(screen.getByRole('button', { name: /start v2 audio/iu }))
     await waitFor(() => expect(output.playbacks).toHaveLength(1))
+    expect(output.calls.unlock).toBe(1)
     fireEvent.click(
       screen.getByRole('button', { name: /finish v2 introduction/iu }),
     )

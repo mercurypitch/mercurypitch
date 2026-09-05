@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { applyDialAngularDelta, classifyTimeDialLayer, formatClockTime, normalizeAngularDelta, parseClockTime, PUNCHED_DIAL_GEOMETRY, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
+import { applyDialAngularDelta, classifyTimeDialLayer, classifyTimeDialTouchIntent, formatClockTime, normalizeAngularDelta, parseClockTime, PUNCHED_DIAL_GEOMETRY, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
 
 describe('punched time dial clock values', () => {
   it('round-trips every canonical edge time without dropping zero padding', () => {
@@ -108,6 +108,50 @@ describe('punched time dial gesture mapping', () => {
     // Assert
     expect(formatClockTime(midnight)).toBe('00:00')
     expect(formatClockTime(tenPast)).toBe('10:10')
+  })
+
+  it('waits through touch slop, yields vertical motion, and claims a tangential turn', () => {
+    // Arrange
+    const topEdge = {
+      startX: 220,
+      startY: 40,
+      centerX: 220,
+      centerY: 220,
+    }
+    const rightEdge = {
+      startX: 390,
+      startY: 220,
+      centerX: 220,
+      centerY: 220,
+    }
+
+    // Act
+    const stillInsideSlop = classifyTimeDialTouchIntent({
+      ...topEdge,
+      currentX: 226,
+      currentY: 45,
+    })
+    const verticalPageIntent = classifyTimeDialTouchIntent({
+      ...rightEdge,
+      currentX: 390,
+      currentY: 300,
+    })
+    const tangentialTurn = classifyTimeDialTouchIntent({
+      ...topEdge,
+      currentX: 300,
+      currentY: 60,
+    })
+    const radialSwipe = classifyTimeDialTouchIntent({
+      ...rightEdge,
+      currentX: 310,
+      currentY: 220,
+    })
+
+    // Assert
+    expect(stillInsideSlop).toBe('pending')
+    expect(verticalPageIntent).toBe('yield')
+    expect(tangentialTurn).toBe('spin')
+    expect(radialSwipe).toBe('yield')
   })
 })
 
