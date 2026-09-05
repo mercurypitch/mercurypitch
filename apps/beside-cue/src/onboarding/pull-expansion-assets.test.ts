@@ -25,12 +25,12 @@ describe('packaged Pull expansion', () => {
     }
   })
 
-  it('matches all 44 generated files and keeps every MP4 faststart', () => {
+  it('matches all 46 generated files and keeps every MP4 faststart', () => {
     const root = `${process.cwd()}/public/onboarding/pull-expansion-v1`
     const entries = readFileSync(`${root}/SHA256SUMS`, 'utf8')
       .trim()
       .split('\n')
-    expect(entries).toHaveLength(44)
+    expect(entries).toHaveLength(46)
     for (const entry of entries) {
       const [expected, name] = entry.split('  ')
       const bytes = readFileSync(`${root}/${name}`)

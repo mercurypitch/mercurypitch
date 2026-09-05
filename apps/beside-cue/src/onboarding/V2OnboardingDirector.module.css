@@ -795,6 +795,15 @@
   background: #ead6ad;
 }
 
+@media (orientation: portrait) {
+  .directorCinematic .visualCinematic {
+    /* Browser chrome can make a portrait phone wider than the authored 9:16
+       plate. Keep the picture full-bleed; video and native platter both cover
+       their container, so their registration remains identical. */
+    width: 100%;
+  }
+}
+
 .stageCinematic .mediaStage,
 .stageCinematic .platterFrame {
   width: 100%;

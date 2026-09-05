@@ -2,12 +2,12 @@
   {
     "pullId": "familiar-ritual",
     "decoded": true,
-    "endPlateMeanError": 1.5
+    "endPlateMeanError": 1.502
   },
   {
     "pullId": "two-minute-pause",
     "decoded": true,
-    "endPlateMeanError": 1.5
+    "endPlateMeanError": 1.502
   },
   {
     "pullId": "one-tap-convenience",
@@ -22,7 +22,7 @@
   {
     "pullId": "the-tab",
     "decoded": true,
-    "endPlateMeanError": 1.5
+    "endPlateMeanError": 1.502
   },
   {
     "pullId": "the-bookmark",
@@ -32,7 +32,7 @@
   {
     "pullId": "the-match",
     "decoded": true,
-    "endPlateMeanError": 1.5
+    "endPlateMeanError": 1.502
   },
   {
     "pullId": "the-pillow",
@@ -47,7 +47,7 @@
   {
     "pullId": "the-ticker",
     "decoded": true,
-    "endPlateMeanError": 1.5
+    "endPlateMeanError": 1.502
   },
   {
     "pullId": "the-tape",

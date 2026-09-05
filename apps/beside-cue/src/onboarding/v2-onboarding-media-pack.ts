@@ -95,7 +95,7 @@ const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
 
 /** Founder-approved V2.5 scene pack used by every product build. */
 export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
-  revision: 'corky-v2.5-pull-expansion-v1',
+  revision: 'corky-v2.5-pull-expansion-v2-edge-safe',
   brand: Object.freeze({ kind: 'brand', alt: '' }),
   poster: TABLE_READY,
   plate: TABLE_READY,
@@ -144,7 +144,7 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
         Object.freeze({
           present: Object.freeze({
             kind: 'video' as const,
-            src: `${EXPANSION_ROOT}/b03-${id}-present-v0_1.mp4`,
+            src: `${EXPANSION_ROOT}/b03-${id}-present-v0_2.mp4`,
             alt: '',
           }),
           hold: Object.freeze({
@@ -154,7 +154,7 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
           }),
           recede: Object.freeze({
             kind: 'video' as const,
-            src: `${EXPANSION_ROOT}/b05-${id}-recede-v0_1.mp4`,
+            src: `${EXPANSION_ROOT}/b05-${id}-recede-v0_2.mp4`,
             alt: '',
           }),
           end: TABLE_READY,
@@ -164,13 +164,13 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
     scrolling: Object.freeze({
       present: Object.freeze({
         kind: 'video',
-        src: `${MEDIA_ROOT}/picture/b03-scrolling-present-v0_2.mp4`,
+        src: `${EXPANSION_ROOT}/b03-scrolling-present-v0_3.mp4`,
         alt: '',
       }),
       hold: SCROLLING_SETTLED,
       recede: Object.freeze({
         kind: 'video',
-        src: `${MEDIA_ROOT}/picture/b05-scrolling-recede-v0_2.mp4`,
+        src: `${EXPANSION_ROOT}/b05-scrolling-recede-v0_3.mp4`,
         alt: '',
       }),
       end: TABLE_READY,

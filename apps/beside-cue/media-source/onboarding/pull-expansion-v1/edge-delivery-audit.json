@@ -1,0 +1,178 @@
+[
+  {
+    "pullId": "familiar-ritual",
+    "moment": "present",
+    "file": "b03-familiar-ritual-present-v0_2.mp4",
+    "endMeanPixelError": 1.4548,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "familiar-ritual",
+    "moment": "recede",
+    "file": "b05-familiar-ritual-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "two-minute-pause",
+    "moment": "present",
+    "file": "b03-two-minute-pause-present-v0_2.mp4",
+    "endMeanPixelError": 1.4729,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "two-minute-pause",
+    "moment": "recede",
+    "file": "b05-two-minute-pause-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "one-tap-convenience",
+    "moment": "present",
+    "file": "b03-one-tap-convenience-present-v0_2.mp4",
+    "endMeanPixelError": 1.4409,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "one-tap-convenience",
+    "moment": "recede",
+    "file": "b05-one-tap-convenience-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-thimble",
+    "moment": "present",
+    "file": "b03-the-thimble-present-v0_2.mp4",
+    "endMeanPixelError": 1.4558,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-thimble",
+    "moment": "recede",
+    "file": "b05-the-thimble-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-tab",
+    "moment": "present",
+    "file": "b03-the-tab-present-v0_2.mp4",
+    "endMeanPixelError": 1.4495,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-tab",
+    "moment": "recede",
+    "file": "b05-the-tab-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-bookmark",
+    "moment": "present",
+    "file": "b03-the-bookmark-present-v0_2.mp4",
+    "endMeanPixelError": 1.435,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-bookmark",
+    "moment": "recede",
+    "file": "b05-the-bookmark-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-match",
+    "moment": "present",
+    "file": "b03-the-match-present-v0_2.mp4",
+    "endMeanPixelError": 1.4393,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-match",
+    "moment": "recede",
+    "file": "b05-the-match-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-pillow",
+    "moment": "present",
+    "file": "b03-the-pillow-present-v0_2.mp4",
+    "endMeanPixelError": 1.4828,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-pillow",
+    "moment": "recede",
+    "file": "b05-the-pillow-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-kettle",
+    "moment": "present",
+    "file": "b03-the-kettle-present-v0_2.mp4",
+    "endMeanPixelError": 1.4419,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-kettle",
+    "moment": "recede",
+    "file": "b05-the-kettle-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-ticker",
+    "moment": "present",
+    "file": "b03-the-ticker-present-v0_2.mp4",
+    "endMeanPixelError": 1.4665,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-ticker",
+    "moment": "recede",
+    "file": "b05-the-ticker-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-tape",
+    "moment": "present",
+    "file": "b03-the-tape-present-v0_2.mp4",
+    "endMeanPixelError": 1.452,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  },
+  {
+    "pullId": "the-tape",
+    "moment": "recede",
+    "file": "b05-the-tape-recede-v0_2.mp4",
+    "endMeanPixelError": 1.5021,
+    "decoded": true,
+    "sourceEdgeOffscreen": true
+  }
+]

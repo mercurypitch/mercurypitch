@@ -9,12 +9,13 @@ import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, 
 
 const BASE_ROOT = '/onboarding/corky-v2.4'
 const V2_5_ROOT = '/onboarding/corky-v2.5'
+const EXPANSION_ROOT = '/onboarding/pull-expansion-v1'
 
 describe('V2 onboarding media pack', () => {
   it('publishes the V2.5 intro and record performances over one P02 authority', () => {
     const pack = V2_ONBOARDING_MEDIA_PACK
 
-    expect(pack.revision).toBe('corky-v2.5-pull-expansion-v1')
+    expect(pack.revision).toBe('corky-v2.5-pull-expansion-v2-edge-safe')
     expect(Object.keys(pack.pulls).sort()).toEqual(
       [...BUILT_IN_PULL_IDS].sort(),
     )
@@ -60,7 +61,7 @@ describe('V2 onboarding media pack', () => {
     expect(pack.pulls.scrolling).toMatchObject({
       present: {
         kind: 'video',
-        src: `${BASE_ROOT}/picture/b03-scrolling-present-v0_2.mp4`,
+        src: `${EXPANSION_ROOT}/b03-scrolling-present-v0_3.mp4`,
       },
       hold: {
         kind: 'still',
@@ -68,7 +69,7 @@ describe('V2 onboarding media pack', () => {
       },
       recede: {
         kind: 'video',
-        src: `${BASE_ROOT}/picture/b05-scrolling-recede-v0_2.mp4`,
+        src: `${EXPANSION_ROOT}/b05-scrolling-recede-v0_3.mp4`,
       },
       end: {
         kind: 'still',
@@ -125,17 +126,19 @@ describe('V2 onboarding media pack', () => {
   )
 
   it.each([
-    ['scrolling', 'v0_2', 'v0_2'],
+    ['scrolling', 'v0_3', 'v0_3'],
     ['snacking', 'v0_3', 'v0_4'],
     ['avoidance', 'v0_1', 'v0_1'],
   ] as const)(
     'maps the complete %s enter, shared hold, exit, and P02 endpoint',
     (pullId, presentVersion, recedeVersion) => {
       const pull = V2_ONBOARDING_MEDIA_PACK.pulls[pullId]
+      const root =
+        pullId === 'scrolling' ? EXPANSION_ROOT : `${BASE_ROOT}/picture`
       expect(pull).toBeDefined()
       expect(pull?.present).toMatchObject({
         kind: 'video',
-        src: `${BASE_ROOT}/picture/b03-${pullId}-present-${presentVersion}.mp4`,
+        src: `${root}/b03-${pullId}-present-${presentVersion}.mp4`,
       })
       expect(pull?.hold).toMatchObject({
         kind: 'still',
@@ -143,7 +146,7 @@ describe('V2 onboarding media pack', () => {
       })
       expect(pull?.recede).toMatchObject({
         kind: 'video',
-        src: `${BASE_ROOT}/picture/b05-${pullId}-recede-${recedeVersion}.mp4`,
+        src: `${root}/b05-${pullId}-recede-${recedeVersion}.mp4`,
       })
       expect(pull?.end).toEqual(
         V2_ONBOARDING_MEDIA_PACK.record?.stoppedAuthority,
