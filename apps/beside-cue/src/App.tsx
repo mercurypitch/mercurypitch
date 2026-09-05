@@ -839,7 +839,7 @@ export function App(props: AppProps) {
 
     resetSetup(setupMode())
     setSetupError(
-      'Pro is no longer active. Choose a free Pull or your own words.',
+      notice('Pro is no longer active. Choose a free Pull or your own words.'),
     )
     setScreen('choose-pull')
   })
