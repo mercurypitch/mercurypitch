@@ -261,6 +261,7 @@ export function useThresholdRun(
           spread: estimate.spread,
           tracks: 1,
           source: 'practice',
+          provisional: estimate.provisional,
         })
       }
       setResult({ estimate, trials: trials(), mode: 'practice' })

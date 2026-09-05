@@ -94,6 +94,8 @@ async function beginAndListen(): Promise<void> {
   await vi.advanceTimersByTimeAsync(CADENCE + 10)
   // Four chords planted, the first degree sounding, the beam level.
   expect(engine.playChord).toHaveBeenCalledTimes(4)
+  for (const [notes] of engine.playChord.mock.calls)
+    expect(notes).toHaveLength(3)
   expect(engine.playTone).toHaveBeenCalledTimes(1)
   expect(
     beam()?.querySelector('[data-part="beam"]')?.getAttribute('data-tilt'),

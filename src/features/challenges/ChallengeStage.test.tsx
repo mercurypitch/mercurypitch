@@ -252,7 +252,6 @@ describe('ChallengeStage weekly voice handoff', () => {
       startMic: () => Promise.resolve(true),
       stopMic: () => undefined,
       playTone: () => Promise.resolve(),
-      playChord: vi.fn().mockResolvedValue(undefined),
       stopTone: () => undefined,
       onClose: () => undefined,
     }

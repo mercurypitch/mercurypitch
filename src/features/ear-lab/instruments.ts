@@ -215,7 +215,11 @@ function thresholdReading(drillId: string): InstrumentReading | null {
   if (!reading) return null
   const unit = findThresholdDrill(drillId)?.unitShort ?? ''
   const decimals = unit === 'ms' ? 0 : 1
-  return { value: reading.value.toFixed(decimals), unit, settling: false }
+  return {
+    value: reading.value.toFixed(decimals),
+    unit,
+    settling: reading.provisional === true,
+  }
 }
 
 function ratingReading(drillId: string): InstrumentReading | null {

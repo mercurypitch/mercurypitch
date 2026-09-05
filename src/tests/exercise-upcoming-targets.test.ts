@@ -45,10 +45,7 @@ function createMockBase(): BaseExerciseController {
   }
 }
 
-const audioEngine = {
-  playTone: async () => {},
-  playChord: vi.fn().mockResolvedValue(undefined),
-}
+const audioEngine = { playTone: async () => {} }
 
 const C4 = 60
 

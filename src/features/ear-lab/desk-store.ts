@@ -41,6 +41,9 @@ const IDLE: DeskSourceState = {
 }
 const [state, setState] = createSignal<DeskSourceState>(IDLE)
 let inFlight: Promise<DeskSource> | null = null
+/** Bumped by every reset, so a render in flight at the reset cannot
+ *  land afterwards. */
+let epoch = 0
 
 export function deskSourceState(): DeskSourceState {
   return state()
@@ -65,6 +68,7 @@ export function reportDeskProgress(pct: number | null, note: string): void {
  *  its drills. A failed song falls back to the house loop. */
 export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
   if (inFlight) return inFlight
+  const renderEpoch = epoch
   setState({
     status: 'rendering',
     source: null,
@@ -82,10 +86,14 @@ export function ensureDeskSource(loaders: DeskLoaders): Promise<DeskSource> {
     return source ?? (await loaders.house())
   })()
     .then((source) => {
+      // A reset while this rendered (the lab was left) must win: the
+      // render's result would otherwise repopulate the store after it.
+      if (renderEpoch !== epoch) return source
       setState({ status: 'ready', source, error: '', pct: null, note: '' })
       return source
     })
     .catch((error: unknown) => {
+      if (renderEpoch !== epoch) throw error
       inFlight = null
       setState({
         status: 'error',
@@ -108,6 +116,7 @@ export function primeDeskSource(source: DeskSource): void {
 }
 
 export function resetDeskStore(): void {
+  epoch += 1
   inFlight = null
   setState(IDLE)
 }

@@ -40,10 +40,7 @@ function createMockBase(
   return mock
 }
 
-const audioEngineMock = {
-  playTone: async () => {},
-  playChord: vi.fn().mockResolvedValue(undefined),
-}
+const audioEngineMock = { playTone: async () => {} }
 
 /** A wide stand-in for the singer's comfortable range. */
 const RANGE = { min: 36, max: 84 }

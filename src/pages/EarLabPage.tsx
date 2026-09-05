@@ -36,6 +36,7 @@ import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
+import { disarmSprintSegment } from '@/stores/ear-lab-store'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
 export function EarLabPage(): JSX.Element {
@@ -44,10 +45,16 @@ export function EarLabPage(): JSX.Element {
   // song) along with the desk's rendered source. The books they were
   // read into stay, so coming back does not read the songs again.
   onCleanup(() => {
+    disarmSprintSegment()
     releaseWildStems()
     resetDeskStore()
   })
-  const back = () => setView('dashboard')
+  // Backing out of a drill without starting it forgets what the sprint
+  // card armed for it; the arming is only meant for the run that tap opened.
+  const back = () => {
+    disarmSprintSegment()
+    setView('dashboard')
+  }
 
   // A drill asked for from elsewhere (The Ascent's ear week). Cleared
   // as it is consumed, so coming back to the tab later lands on the

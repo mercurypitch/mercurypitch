@@ -243,28 +243,49 @@ describe('a calibration you can see the end of', () => {
 })
 
 describe('a sprint segment', () => {
-  it('runs to the turns its card promised, and only that run', async () => {
+  it('runs to the turns its card promised, records it as settling, and only that run', async () => {
     armSprintSegment({
       kind: 'threshold',
       drillId: 'hairline',
       reason: 'unmeasured',
       reversals: 4,
     })
-    await createRoot(async (dispose) => {
-      const stim = pendingStimulus()
-      const run = useThresholdRun(drill, stim.play, {
-        cancelStimulus: stim.cancelStimulus,
+    vi.useFakeTimers()
+    try {
+      await createRoot(async (dispose) => {
+        const stim = pendingStimulus()
+        const run = useThresholdRun(drill, stim.play, {
+          cancelStimulus: stim.cancelStimulus,
+        })
+        run.start('practice')
+        expect(run.trackTarget()).toBe(4)
+        expect(run.reversalTarget()).toBe(4)
+        for (let i = 0; i < 300 && run.phase() !== 'done'; i++) {
+          if (run.phase() === 'stimulus') {
+            stim.release()
+            await vi.advanceTimersByTimeAsync(1)
+          } else if (run.phase() === 'answer') {
+            run.answerCorrect(i % 3 !== 2)
+            await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
+          } else {
+            await vi.advanceTimersByTimeAsync(5)
+          }
+        }
+        expect(run.phase()).toBe('done')
+        expect(run.reversalsDone()).toBe(4)
+        // Four turns average fewer than the drill asks for: the reading
+        // lands, and says it is still settling.
+        expect(latestThresholdReading('hairline')?.provisional).toBe(true)
+
+        // The arming was taken: a run opened from the bench afterwards is
+        // the catalogue's full length again.
+        run.start('practice')
+        expect(run.trackTarget()).toBe(drill.staircase.reversalsToStop)
+        dispose()
       })
-      run.start('practice')
-      expect(run.trackTarget()).toBe(4)
-      expect(run.reversalTarget()).toBe(4)
-      run.stop()
-      // The arming was taken: a run opened from the bench afterwards is
-      // the catalogue's full length again.
-      run.start('practice')
-      expect(run.trackTarget()).toBe(drill.staircase.reversalsToStop)
-      dispose()
-    })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('is not taken by a different drill', async () => {

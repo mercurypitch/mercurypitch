@@ -1394,6 +1394,9 @@ export class AudioEngine {
       this.chordVoices.add(member)
       const cleanup = (): void => {
         this.chordVoices.delete(member)
+        if (this.chordVoices.size === 0 && this.toneOscillator === null) {
+          this.isPlaying = false
+        }
         for (const node of [...voice.allOscillators, ...voice.lfos]) {
           try {
             node.stop()
