@@ -163,7 +163,10 @@ describe('Contour, stopped mid-pair', () => {
       CONTOUR_TIMING.gapMs + CONTOUR_TIMING.toneMs + 40,
     )
     expect(engine.playTone).toHaveBeenCalledTimes(1)
-    expect(screen.getByTestId('ear-stage-plate')).toBeTruthy()
+    // Nothing answered: the plate says so instead of "0 of 0".
+    expect(screen.getByTestId('ear-stage-plate').textContent).toContain(
+      'Stopped before the first answer',
+    )
   })
 
   it('keeps the old pair quiet when Begin follows Stop within the pair', async () => {

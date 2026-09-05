@@ -424,7 +424,9 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 </PlateBadge>
               </Show>
               <PlateLine>
-                {result().correct} of {result().total} named correctly
+                {result().total === 0
+                  ? 'Stopped before the first answer — nothing marked.'
+                  : `${result().correct} of ${result().total} named correctly`}
                 {result().skipped > 0
                   ? ` · ${result().skipped} skipped (unclear)`
                   : ''}
