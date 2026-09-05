@@ -70,6 +70,11 @@ export interface DrumKitPrewarmHit {
  */
 export interface DrumKitPlayerPort {
   activate(): boolean | Promise<boolean>
+  /** Whether the audio the player owns is running right now. A browser
+   *  suspends or interrupts a context behind the app's back (a call, a
+   *  lock, a tab put away); the runtime asks before trusting an earlier
+   *  activation. Optional: a port without it is taken as running. */
+  running?(): boolean
   /** Legacy/test ports may return undefined when routing truth is unavailable. */
   trigger(hit: DrumKitTrigger): DrumKitTriggerOutcome | undefined
   /** Optional only for legacy injected ports; concrete players implement it. */
