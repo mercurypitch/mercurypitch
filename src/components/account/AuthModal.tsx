@@ -248,7 +248,10 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         })
         // Resolved means the server verified it and the session is in
         // place -- even if an abort raced the verify round-trip (a press on
-        // the passkey button, the dialog closing). The screen follows.
+        // the passkey button). The screen follows, unless the dialog was
+        // dismissed meanwhile: the store already shows the sign-in, and
+        // onAuthenticated starts work the surface no longer wants.
+        if (authModalMode() == null) return
         showNotification('Signed in', 'info')
         props.onAuthenticated?.()
         close()
