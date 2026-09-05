@@ -872,9 +872,10 @@ describe('Beside Cue character voice integration', () => {
         })}
       />
     ))
-    await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
-    })
+    // Home is up (its heading depends on the local date the seeded outcome
+    // falls on, which differs between a CI runner on UTC and a desk in
+    // Zagreb; the Settings button does not).
+    await screen.findByRole('button', { name: 'Settings' })
 
     await runtime.emitNotificationAction({
       notificationId: notificationId(1),
