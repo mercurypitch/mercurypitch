@@ -113,6 +113,47 @@ function manifest(assets: readonly AudioAsset[]): AudioAssetManifest {
 }
 
 describe('audio session', () => {
+  it('resolves a changed language manifest at playback without restarting the shared score', async () => {
+    const output = new FakeOutput()
+    const scoreAsset = asset('score.loop', 'score', {
+      kind: 'loop',
+      loopStartMs: 0,
+      loopEndMs: 1000,
+    })
+    const english = asset('dialogue.hello', 'dialogue')
+    const spanish = asset('dialogue.hello', 'dialogue')
+    let currentManifest = manifest([scoreAsset, english])
+    const session = createAudioSession({
+      get manifest() {
+        return currentManifest
+      },
+      output,
+    })
+    const musicScope = session.createScope('ambient')
+    const speechScope = session.createScope('onboarding')
+    musicScope.play(scoreAsset.id)
+    output.playbacks[0]!.startedDeferred.resolve('started')
+    const first = speechScope.play(english.id)
+    speechScope.stopAll('replaced')
+    currentManifest = { ...manifest([scoreAsset, spanish]), locale: 'es' }
+    const next = speechScope.play(spanish.id)
+    expect(output.requests[1]?.source).toBe(english.sources[0])
+    expect(output.requests[2]?.source).toBe(spanish.sources[0])
+    expect(output.playbacks[0]?.stopCount).toBe(0)
+    output.playbacks[1]!.startedDeferred.resolve('started')
+    await expect(first.started).resolves.toEqual({
+      kind: 'silent',
+      reason: 'cancelled',
+    })
+    output.playbacks[2]!.startedDeferred.resolve('started')
+    await expect(next.started).resolves.toEqual({ kind: 'started' })
+    expect(
+      output.requests.filter(
+        (request) => request.source === scoreAsset.sources[0],
+      ),
+    ).toHaveLength(1)
+    session.dispose()
+  })
   it('composes a scope level and dialogue duck while music is still loading', async () => {
     const output = new FakeOutput()
     const session = createAudioSession({

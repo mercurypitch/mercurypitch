@@ -1,10 +1,40 @@
 import { describe, expect, it } from 'vitest'
+import { getLocalizedMoments } from './localized-catalog'
+import { getVoiceLines } from './localized-voice-lines'
 import { MOMENTS, resolveMoment } from './moments'
 import { DEFAULT_CONTENT_PACK } from './pack'
 
 const pack = DEFAULT_CONTENT_PACK
 
 describe('moment engine', () => {
+  it.each([
+    ['es', 'Girar hacia la cara B'],
+    ['de', 'Hin zu Seite B'],
+  ] as const)(
+    'resolves a %s heading and line without altering the narrative beat',
+    (locale, heading) => {
+      const localizedPack = { ...pack, lines: getVoiceLines(locale) }
+      const shown = resolveMoment(
+        localizedPack,
+        'turn.b-side',
+        { rotation: 1 },
+        getLocalizedMoments(locale),
+      )
+      const english = resolveMoment(pack, 'turn.b-side', { rotation: 1 })
+
+      expect(shown.caption).toBe(heading)
+      expect(shown.line).toBe(
+        getVoiceLines(locale).find((line) => line.id === 'corky.side-b.02'),
+      )
+      expect(shown.line.text).not.toBe(english.line.text)
+      expect(shown.character).toBe(english.character)
+      expect(shown.characterState).toBe(english.characterState)
+      expect(shown.art).toBe(english.art)
+      expect(shown.pullCharacter).toBeUndefined()
+      expect(english.caption).toBe('Turn toward Side B')
+    },
+  )
+
   it('resolves a beat into art, caption and line', () => {
     const shown = resolveMoment(pack, 'cue.open', { pullId: 'snacking' })
 

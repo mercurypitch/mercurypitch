@@ -111,6 +111,8 @@ function itemAt<T>(items: readonly T[], index: number): T {
 
 /**
  * Resolves one beat into everything a screen needs to draw it.
+ * Localized headings are passed explicitly, keeping this engine independent
+ * of locale state and preserving the English default for existing callers.
  *
  * Throws only for a genuinely broken pack — a missing lead character or a line
  * id a moment references but the pack does not define. Both are caught by the
@@ -120,8 +122,9 @@ export function resolveMoment(
   pack: ContentPack,
   moment: MomentId,
   context: MomentContext = {},
+  definitions: Readonly<Record<MomentId, MomentDefinition>> = MOMENTS,
 ): MomentPresentation {
-  const definition = MOMENTS[moment]
+  const definition = definitions[moment]
   const character = findCharacter(pack, pack.leadCharacterId)
   if (character === undefined) {
     throw new Error(

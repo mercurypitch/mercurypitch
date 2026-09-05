@@ -1,5 +1,6 @@
 import { For, onMount } from 'solid-js'
 import { AppHeader } from '@/components/AppHeader'
+import { useCopy } from '@/i18n/ui-copy'
 
 interface BSideChoicePresentation {
   readonly key: string
@@ -23,6 +24,7 @@ interface ChooseBSideScreenProps {
 }
 
 export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
+  const copy = useCopy()
   let headingElement: HTMLHeadingElement | undefined
 
   onMount(() => {
@@ -36,7 +38,9 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
     <main class="setup-screen app-screen">
       <AppHeader label={props.headerLabel} onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="bside-title">
-        <p class="step-label step-label--bside">Side B · your chosen turn</p>
+        <p class="step-label step-label--bside">
+          {copy.t('Side B · your chosen turn')}
+        </p>
         <h1
           ref={(element) => {
             headingElement = element
@@ -44,14 +48,13 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
           id="bside-title"
           tabIndex={-1}
         >
-          What small action would you rather begin?
+          {copy.t('What small action would you rather begin?')}
         </h1>
-        <p>
-          When{' '}
-          <strong data-selection="text" dir="auto">
-            {props.pullText}
-          </strong>{' '}
-          shows up, choose something concrete enough to begin without planning.
+        <p data-selection="text" dir="auto">
+          {copy.t(
+            'When {pull} shows up, choose something concrete enough to begin without planning.',
+            { pull: props.pullText },
+          )}
         </p>
       </section>
       <div
@@ -99,8 +102,10 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
             aria-hidden="true"
           />
           <span class="choice-row__copy">
-            <strong>Write my own</strong>
-            <small>Begin with a verb: open, walk, play, fill, call.</small>
+            <strong>{copy.t('Write my own')}</strong>
+            <small>
+              {copy.t('Begin with a verb: open, walk, play, fill, call.')}
+            </small>
           </span>
           <span class="choice-row__check" aria-hidden="true">
             <svg viewBox="0 0 24 24">
@@ -111,13 +116,13 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
       </div>
       {props.customSelected ? (
         <label class="text-field">
-          <span>Your Side B</span>
+          <span>{copy.t('Your Side B')}</span>
           <input
             value={props.customText}
             onInput={(event) => props.onCustomInput(event.currentTarget.value)}
             maxLength={120}
             autocomplete="off"
-            placeholder="For example, play one guitar riff"
+            placeholder={copy.t('For example, play one guitar riff')}
             aria-describedby={
               props.error === undefined ? undefined : 'bside-error'
             }
@@ -136,7 +141,7 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
           disabled={props.pending}
           onClick={() => props.onContinue()}
         >
-          {props.pending ? 'Saving…' : 'Save my plan'}
+          {props.pending ? copy.t('Saving…') : copy.t('Save my plan')}
         </button>
       </div>
     </main>

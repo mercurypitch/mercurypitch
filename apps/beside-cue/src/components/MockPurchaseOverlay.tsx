@@ -4,7 +4,7 @@
 
 import type { Accessor } from 'solid-js'
 import { For, Match, onMount, Show, Switch } from 'solid-js'
-import { message } from '@/i18n/messages'
+import { useCopy } from '@/i18n/ui-copy'
 import type { MockPurchaseRequest } from '@/purchases/mock-purchases'
 
 interface MockPurchaseOverlayProps {
@@ -29,6 +29,7 @@ function MockPurchaseDialog(props: {
   request: Accessor<MockPurchaseRequest>
   name: string
 }) {
+  const copy = useCopy()
   let dialog!: HTMLDivElement
   const request = () => props.request()
   const buttons = () => [
@@ -62,24 +63,28 @@ function MockPurchaseDialog(props: {
       }}
     >
       <div class="mock-store__panel">
-        <p class="mock-store__badge">{message('purchases.mockBadge')}</p>
+        <p class="mock-store__badge">{copy.t('Test purchases — no charge')}</p>
         <h2 id="mock-store-title">
           {request().kind === 'redeem-code'
-            ? message('purchases.mockOfferTitle')
+            ? copy.t('Test a premium offer')
             : request().kind === 'paywall'
-              ? `Unlock ${props.name}`
-              : 'Manage subscription'}
+              ? copy.t('Unlock {name}', { name: props.name })
+              : copy.t('Manage subscription')}
         </h2>
 
         <Switch>
           <Match when={request().kind === 'redeem-code'}>
-            <p>{message('purchases.mockOfferHelp')}</p>
+            <p>
+              {copy.t(
+                'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.',
+              )}
+            </p>
             <button
               class="secondary-button"
               type="button"
               onClick={() => request().choose({ kind: 'redeem-offer' })}
             >
-              {message('purchases.mockOfferApply')}
+              {copy.t('Apply a 60-day test offer')}
             </button>
           </Match>
           <Match when={request().kind === 'customer-center'}>
@@ -89,21 +94,21 @@ function MockPurchaseDialog(props: {
                 type="button"
                 onClick={() => request().choose({ kind: 'stop-renewal' })}
               >
-                Turn off renewal
+                {copy.t('Turn off renewal')}
               </button>
               <button
                 class="secondary-button"
                 type="button"
                 onClick={() => request().choose({ kind: 'billing-issue' })}
               >
-                Simulate a billing problem
+                {copy.t('Simulate a billing problem')}
               </button>
               <button
                 class="secondary-button"
                 type="button"
                 onClick={() => request().choose({ kind: 'expire' })}
               >
-                Expire the entitlement
+                {copy.t('Expire the entitlement')}
               </button>
             </div>
           </Match>
@@ -137,7 +142,7 @@ function MockPurchaseDialog(props: {
           type="button"
           onClick={() => request().choose({ kind: 'cancel' })}
         >
-          Close without changing anything
+          {copy.t('Close without changing anything')}
         </button>
       </div>
     </div>

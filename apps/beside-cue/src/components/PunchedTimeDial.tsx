@@ -1,4 +1,5 @@
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { useCopy } from '@/i18n/ui-copy'
 import { NoSelect } from '@/interaction/selection'
 import type { TimeDialLayer } from './punched-time-dial-math'
 import { applyDialAngularDelta, classifyTimeDialLayer, classifyTimeDialTouchIntent, formatClockTime, normalizeAngularDelta, parseClockTime, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
@@ -100,6 +101,7 @@ function eventTime(event: PointerEvent): number {
 }
 
 export function PunchedTimeDial(props: PunchedTimeDialProps) {
+  const copy = useCopy()
   const id = createUniqueId()
   const initialValue = untrack(() => parseClockTime(props.value))
   const initialDefault = untrack(() => parseClockTime(props.defaultValue ?? ''))
@@ -133,13 +135,26 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
 
   const formattedTime = createMemo(() => formatClockTime(displayMinutes()))
   const modeLabel = createMemo(() =>
-    activeLayer() === 'hour' ? 'Gold hub · hours' : 'Vinyl edge · minutes',
+    copy.t(
+      activeLayer() === 'hour' ? 'Gold hub · hours' : 'Vinyl edge · minutes',
+    ),
   )
-  const sliderValueText = createMemo(() =>
-    selectionMade()
-      ? `Around ${formattedTime()}; editing ${activeLayer()}s`
-      : `Preview ${formattedTime()}; no reminder time selected; editing ${activeLayer()}s`,
-  )
+  const sliderValueText = createMemo(() => {
+    if (selectionMade()) {
+      return copy.t(
+        activeLayer() === 'hour'
+          ? 'Around {time}; editing hours'
+          : 'Around {time}; editing minutes',
+        { time: formattedTime() },
+      )
+    }
+    return copy.t(
+      activeLayer() === 'hour'
+        ? 'Preview {time}; no reminder time selected; editing hours'
+        : 'Preview {time}; no reminder time selected; editing minutes',
+      { time: formattedTime() },
+    )
+  })
 
   function syncFromControlledValue(
     value: string,
@@ -229,7 +244,9 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
         props.defaultValue,
         totalMinutes,
       )
-      setAnnouncement(`Around ${formatClockTime(latestMinutes)}`)
+      setAnnouncement(
+        copy.t('Around {time}', { time: formatClockTime(latestMinutes) }),
+      )
     }
 
     if (reducedMotion() || typeof window.requestAnimationFrame !== 'function') {
@@ -527,7 +544,9 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       emitMinutes(nextMinutes)
       syncRotors(nextMinutes)
       triggerFeedback(nextMinutes, activeLayer(), true)
-      setAnnouncement(`Around ${formatClockTime(nextMinutes)}`)
+      setAnnouncement(
+        copy.t('Around {time}', { time: formatClockTime(nextMinutes) }),
+      )
       return
     }
 
@@ -549,7 +568,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     if (value === '') {
       setSelectionMade(false)
       props.onValueChange('')
-      setAnnouncement('No reminder time chosen')
+      setAnnouncement(copy.t('No reminder time chosen'))
       return
     }
 
@@ -558,7 +577,9 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     emitMinutes(nextMinutes)
     syncRotors(nextMinutes)
     triggerFeedback(nextMinutes, activeLayer(), true)
-    setAnnouncement(`Around ${formatClockTime(nextMinutes)}`)
+    setAnnouncement(
+      copy.t('Around {time}', { time: formatClockTime(nextMinutes) }),
+    )
   }
 
   createEffect(() => {
@@ -607,7 +628,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       data-compact={props.compact === true ? 'true' : undefined}
       data-mode={activeLayer()}
       data-dragging={dragging() ? 'true' : 'false'}
-      aria-label="Punched Clock time picker"
+      aria-label={copy.t('Punched Clock time picker')}
     >
       <header class={styles.header}>
         <div class={styles.modeCopy}>
@@ -618,11 +639,13 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
           class={styles.readout}
           aria-label={
             selectionMade()
-              ? `Around ${formattedTime()}`
-              : `Preview ${formattedTime()}; no reminder time selected`
+              ? copy.t('Around {time}', { time: formattedTime() })
+              : copy.t('Preview {time}; no reminder time selected', {
+                  time: formattedTime(),
+                })
           }
         >
-          <span>{selectionMade() ? 'Around' : 'Preview'}</span>
+          <span>{copy.t(selectionMade() ? 'Around' : 'Preview')}</span>
           <strong>{formattedTime()}</strong>
         </p>
       </header>
@@ -636,7 +659,8 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
           role="slider"
           tabIndex={props.disabled === true ? -1 : 0}
           aria-label={
-            props.ariaLabel ?? 'Turn the record to choose a reminder time'
+            props.ariaLabel ??
+            copy.t('Turn the record to choose a reminder time')
           }
           aria-valuemin="0"
           aria-valuemax="1439"
@@ -808,11 +832,11 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
           <span class={styles.gestureHint} aria-hidden="true">
             {dragging()
               ? activeLayer() === 'hour'
-                ? 'Turning hours'
-                : 'Turning minutes'
+                ? copy.t('Turning hours')
+                : copy.t('Turning minutes')
               : selectionMade()
-                ? 'Sweep sideways'
-                : 'Sweep to choose'}
+                ? copy.t('Sweep sideways')
+                : copy.t('Sweep to choose')}
           </span>
           <Show when={pulse()} keyed>
             {(currentPulse) => (
@@ -830,55 +854,56 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       <div
         class={styles.modeControl}
         role="group"
-        aria-label="Choose dial layer"
+        aria-label={copy.t('Choose dial layer')}
       >
         <button
           type="button"
           class={styles.modeButton}
           classList={{ [styles.modeButtonActive]: activeLayer() === 'hour' }}
-          aria-label="Edit hours"
+          aria-label={copy.t('Edit hours')}
           aria-pressed={activeLayer() === 'hour'}
           disabled={props.disabled}
           onClick={() => chooseLayer('hour')}
         >
           <span class={styles.hourSwatch} aria-hidden="true" />
           <span>
-            <strong>Hours</strong>
-            <small>Gold hub</small>
+            <strong>{copy.t('Hours')}</strong>
+            <small>{copy.t('Gold hub')}</small>
           </span>
         </button>
         <button
           type="button"
           class={styles.modeButton}
           classList={{ [styles.modeButtonActive]: activeLayer() === 'minute' }}
-          aria-label="Edit minutes"
+          aria-label={copy.t('Edit minutes')}
           aria-pressed={activeLayer() === 'minute'}
           disabled={props.disabled}
           onClick={() => chooseLayer('minute')}
         >
           <span class={styles.minuteSwatch} aria-hidden="true" />
           <span>
-            <strong>Minutes</strong>
-            <small>Vinyl edge</small>
+            <strong>{copy.t('Minutes')}</strong>
+            <small>{copy.t('Vinyl edge')}</small>
           </span>
         </button>
       </div>
 
       <label class={styles.exactTime}>
-        <span>{props.inputLabel ?? 'Type exact time'}</span>
+        <span>{props.inputLabel ?? copy.t('Type exact time')}</span>
         <input
           type="time"
           step="300"
           required
-          aria-label={props.inputLabel ?? 'Type exact time'}
+          aria-label={props.inputLabel ?? copy.t('Type exact time')}
           value={selectionMade() ? formattedTime() : ''}
           disabled={props.disabled}
           onInput={(event) => handleExactTime(event.currentTarget.value)}
         />
       </label>
       <p class={styles.mechanicCaption}>
-        Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub
-        sets hours.
+        {copy.t(
+          'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.',
+        )}
       </p>
       <span class={styles.srOnly} aria-live="polite" aria-atomic="true">
         {announcement()}

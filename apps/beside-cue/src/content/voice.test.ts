@@ -5,6 +5,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AudioAssetManifest, AudioSourceVariant, DialogueAudioAsset, } from './audio-manifest'
 import { DEFAULT_AUDIO_ASSET_MANIFEST } from './audio-manifest'
+import { getVoiceLines } from './localized-voice-lines'
 import type { ContentPack, Line } from './pack'
 import { DEFAULT_CONTENT_PACK, findLine } from './pack'
 import type { VoiceAudioFinish, VoiceAudioHandle, VoiceAudioPort, VoicePlaybackStatus, } from './voice'
@@ -158,6 +159,45 @@ async function flushPromises(): Promise<void> {
 }
 
 describe('caption-first voice player', () => {
+  it('uses current translated captions and bytes after stopping a pending old-language preview', async () => {
+    const audio = controlledAudio({ startPlans: ['pending', 'resolved'] })
+    let pack = recordedPack
+    const player = createVoicePlayer({
+      get pack() {
+        return pack
+      },
+      audio,
+    })
+    const old = player.playLine(FIRST_LINE_ID)
+    player.stop('replaced')
+    const lines = getVoiceLines('de')
+    const translated = lines.find((line) => line.id === FIRST_LINE_ID)!
+    const germanSource = audioSource(
+      '/audio/voice/de/the-scroll/meet.m4a',
+      MP4_MIME_TYPE,
+    )
+    pack = {
+      ...recordedPack,
+      lines,
+      audio: {
+        ...recordedManifest,
+        locale: 'de',
+        assets: [dialogueAsset(translated, [germanSource])],
+      },
+    }
+    const current = player.playLine(FIRST_LINE_ID)
+    audio.handles[0]!.settleStart.resolve(undefined)
+    await expect(old.started).resolves.toEqual({
+      kind: 'silent',
+      reason: 'cancelled',
+    })
+    await expect(current.started).resolves.toEqual({ kind: 'started' })
+    expect(current.caption).toBe(translated.text)
+    expect(audio.playedSources).toEqual([firstMp4, germanSource])
+    expect(audio.handles[1]!.stop).not.toHaveBeenCalled()
+    expect(player.hasRecording(SECOND_LINE_ID)).toBe(false)
+    player.dispose()
+  })
   it('returns the exact caption when no recording has shipped', async () => {
     const audio = controlledAudio()
     const player = createVoicePlayer({

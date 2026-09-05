@@ -11,6 +11,7 @@
 // Plan text stays stationary, selectable HTML outside the decorative vinyl.
 
 import { createSignal, createUniqueId, For } from 'solid-js'
+import { useCopy } from '@/i18n/ui-copy'
 import { NoSelect, Selectable } from '@/interaction/selection'
 import styles from './HomePressing.module.css'
 
@@ -24,6 +25,7 @@ const GROOVES = Array.from({ length: 26 }, (_, index) => 84 + index * 4)
 const STRIPES = [100, 116, 132, 148, 163, 177, 188]
 
 export function HomePressing(props: HomePressingProps) {
+  const copy = useCopy()
   const [side, setSide] = createSignal<'A' | 'B'>('A')
   const id = createUniqueId()
 
@@ -128,10 +130,10 @@ export function HomePressing(props: HomePressingProps) {
     )
   }
   return (
-    <section class={styles.pressing} aria-label="Your current plan">
+    <section class={styles.pressing} aria-label={copy.t('Your current plan')}>
       <div class={styles.topline}>
         <span>COMPANION PRESSING · BC-000</span>
-        <span>{props.paused ? 'Paused' : 'Ready'}</span>
+        <span>{copy.t(props.paused ? 'Paused' : 'Ready')}</span>
       </div>
       <div class={styles.record} {...NoSelect} data-callout="none">
         <div
@@ -142,20 +144,20 @@ export function HomePressing(props: HomePressingProps) {
           {face('B')}
         </div>
       </div>
-      <div class={styles.sides} role="group" aria-label="Record side">
+      <div class={styles.sides} role="group" aria-label={copy.t('Record side')}>
         <button
           type="button"
           aria-pressed={side() === 'A'}
           onClick={() => setSide('A')}
         >
-          Side A · The Pull
+          {copy.t('Side A · The Pull')}
         </button>
         <button
           type="button"
           aria-pressed={side() === 'B'}
           onClick={() => setSide('B')}
         >
-          Side B · My choice
+          {copy.t('Side B · My choice')}
         </button>
       </div>
       <p class={styles.plan} {...Selectable}>

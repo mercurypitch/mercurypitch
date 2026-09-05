@@ -6,8 +6,10 @@ interface BottomNavProps {
 }
 
 export function BottomNav(props: BottomNavProps) {
+  const copy = useCopy()
+
   return (
-    <nav class="bottom-nav" aria-label="Main navigation">
+    <nav class="bottom-nav" aria-label={copy.t('Main navigation')}>
       <button
         type="button"
         classList={{ 'bottom-nav__item--active': props.active === 'cue' }}
@@ -18,7 +20,7 @@ export function BottomNav(props: BottomNavProps) {
           <circle cx="12" cy="12" r="8" />
           <circle cx="12" cy="12" r="2.5" />
         </svg>
-        <span>Cue</span>
+        <span>{copy.t('Cue')}</span>
       </button>
       <button
         type="button"
@@ -31,8 +33,9 @@ export function BottomNav(props: BottomNavProps) {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 18v-5M12 18V7M19 18v-8" />
         </svg>
-        <span>Reflection</span>
+        <span>{copy.t('Reflection')}</span>
       </button>
     </nav>
   )
 }
+import { useCopy } from '@/i18n/ui-copy'

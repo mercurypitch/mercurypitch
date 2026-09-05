@@ -1,6 +1,7 @@
 import type { EntitlementStatus } from '@irchiinnuss/mobile-runtime'
 import { Show, untrack } from 'solid-js'
-import { message } from '@/i18n/messages'
+import type { Copy } from '@/i18n/ui-copy'
+import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 import type { ProAccessStatus } from '@/purchases/pro-access'
 import styles from './ProSection.module.css'
@@ -34,13 +35,21 @@ function formatDate(value: Date, locale: string): string {
   })
 }
 
-function renewalNote(entitlement: EntitlementStatus, locale: string): string {
-  if (entitlement.expiresAt === null) return 'Yours for good.'
+function renewalNote(
+  entitlement: EntitlementStatus,
+  locale: string,
+  copy: Copy,
+): string {
+  if (entitlement.expiresAt === null) return copy.t('Yours for good.')
   const date = formatDate(entitlement.expiresAt, locale)
-  return entitlement.willRenew ? `Renews ${date}.` : `Active until ${date}.`
+  return entitlement.willRenew
+    ? copy.t('Renews {date}.', { date })
+    : copy.t('Active until {date}.', { date })
 }
 
 export function ProSection(props: ProSectionProps) {
+  const copy = useCopy()
+
   async function openSheet(
     trigger: HTMLButtonElement,
     action: (() => void) | (() => Promise<unknown>),
@@ -57,23 +66,27 @@ export function ProSection(props: ProSectionProps) {
     <section class="settings-group" aria-labelledby="pro-settings-title">
       <div class="settings-group__heading">
         <div>
-          <p class="screen-kicker">Support</p>
+          <p class="screen-kicker">{copy.t('Support')}</p>
           <h2 id="pro-settings-title">{props.name}</h2>
         </div>
         <Show when={props.isPro}>
-          <strong>Active</strong>
+          <strong>{copy.t('Active')}</strong>
         </Show>
       </div>
 
       <Show when={props.mock}>
-        <p class="settings-group__intro">{message('purchases.betaNotice')}</p>
+        <p class="settings-group__intro">
+          {copy.t(
+            'Beta purchase testing. No payment is taken. Test access does not transfer to the store release.',
+          )}
+        </p>
       </Show>
 
       <Show
         when={props.available}
         fallback={
           <p class="settings-group__intro">
-            {props.error ?? 'Purchases need the Android or iOS app.'}
+            {props.error ?? copy.t('Purchases need the Android or iOS app.')}
           </p>
         }
       >
@@ -81,7 +94,7 @@ export function ProSection(props: ProSectionProps) {
           when={props.status !== 'loading'}
           fallback={
             <p class="settings-group__intro" role="status">
-              Checking your purchases…
+              {copy.t('Checking your purchases…')}
             </p>
           }
         >
@@ -89,24 +102,27 @@ export function ProSection(props: ProSectionProps) {
             when={props.isPro ? props.entitlement : undefined}
             fallback={
               <p class="settings-group__intro">
-                The six original Pulls, your own words, and the cue loop stay
-                free. {props.name} unlocks the extra character cast and supports
-                the work.
+                {copy.t(
+                  'The six original Pulls, your own words, and the cue loop stay free. {name} unlocks the extra character cast and supports the work.',
+                  { name: props.name },
+                )}
               </p>
             }
           >
             {(entitlement) => (
               <p class="settings-group__intro">
-                Thank you for supporting Beside Cue.{' '}
-                {renewalNote(entitlement(), props.locale)}
+                {copy.t('Thank you for supporting Beside Cue.')}{' '}
+                {renewalNote(entitlement(), props.locale, copy)}
               </p>
             )}
           </Show>
 
           <Show when={props.entitlement?.billingIssueDetectedAt != null}>
             <p class="schedule-status schedule-status--error" role="alert">
-              The store could not take the last payment. Manage your
-              subscription to keep {props.name} active.
+              {copy.t(
+                'The store could not take the last payment. Manage your subscription to keep {name} active.',
+                { name: props.name },
+              )}
             </p>
           </Show>
 
@@ -122,7 +138,9 @@ export function ProSection(props: ProSectionProps) {
                     void openSheet(event.currentTarget, props.onUpgrade)
                   }
                 >
-                  {props.busy ? 'Opening…' : `Unlock ${props.name}`}
+                  {props.busy
+                    ? copy.t('Opening…')
+                    : copy.t('Unlock {name}', { name: props.name })}
                 </button>
               }
             >
@@ -134,7 +152,7 @@ export function ProSection(props: ProSectionProps) {
                   void openSheet(event.currentTarget, props.onManage)
                 }
               >
-                Manage subscription
+                {copy.t('Manage subscription')}
               </button>
             </Show>
             <button
@@ -143,7 +161,7 @@ export function ProSection(props: ProSectionProps) {
               disabled={props.busy}
               onClick={() => props.onRestore()}
             >
-              Restore purchases
+              {copy.t('Restore purchases')}
             </button>
           </div>
 
@@ -165,17 +183,17 @@ export function ProSection(props: ProSectionProps) {
             >
               <span>
                 <strong>
-                  {message(
+                  {copy.t(
                     props.mock === true
-                      ? 'purchases.redeemMock'
-                      : 'purchases.redeemApple',
+                      ? 'Test an offer'
+                      : 'Redeem App Store code',
                   )}
                 </strong>
                 <small>
-                  {message(
+                  {copy.t(
                     props.mock === true
-                      ? 'purchases.mockOfferHelp'
-                      : 'purchases.offerTerms',
+                      ? 'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.'
+                      : 'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
                   )}
                 </small>
               </span>
@@ -192,13 +210,17 @@ export function ProSection(props: ProSectionProps) {
                 }}
                 aria-disabled={props.busy}
               >
-                {message('purchases.redeemGoogle')}
+                {copy.t('Redeem on Google Play')}
               </a>
               <p class="settings-group__intro">
-                {message('purchases.googleHelp')}
+                {copy.t(
+                  'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
+                )}
               </p>
               <p class="settings-group__intro">
-                {message('purchases.offerTerms')}
+                {copy.t(
+                  'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
+                )}
               </p>
             </div>
           </Show>
@@ -209,17 +231,19 @@ export function ProSection(props: ProSectionProps) {
               disabled={props.busy}
               onClick={() => props.onCheckAccess?.()}
             >
-              {message('purchases.checkAccess')}
+              {copy.t('Check premium access')}
             </button>
           </Show>
           <Show when={props.mock !== true ? props.supportId : undefined}>
             <details class={styles.support}>
-              <summary>{message('purchases.support')}</summary>
+              <summary>{copy.t('Purchase support')}</summary>
               <p class="settings-group__intro">
-                {message('purchases.supportHelp')}
+                {copy.t(
+                  'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.',
+                )}
               </p>
               <label>
-                {message('purchases.supportId')}
+                {copy.t('Purchase support ID')}
                 <input
                   {...Selectable}
                   readOnly

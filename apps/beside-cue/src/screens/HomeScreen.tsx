@@ -2,7 +2,7 @@ import { AppHeader } from '@/components/AppHeader'
 import type { MainView } from '@/components/BottomNav'
 import { BottomNav } from '@/components/BottomNav'
 import { HomePressing } from '@/components/HomePressing'
-import { message } from '@/i18n/messages'
+import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 import styles from './HomeScreen.module.css'
 
@@ -25,29 +25,36 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen(props: HomeScreenProps) {
+  const copy = useCopy()
+
   return (
     <main class="home-screen app-screen app-screen--with-nav">
       <div class={styles.header}>
-        <AppHeader actionLabel="Settings" onAction={props.onOpenSettings} />
-        <button
-          class={`icon-button ${styles.soundToggle}`}
-          type="button"
-          aria-label={message(props.muted ? 'audio.unmute' : 'audio.mute')}
-          aria-pressed={props.muted}
-          onClick={() => props.onMuteToggle()}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-            {props.muted ? (
-              <path d="m16 9 5 6m0-6-5 6" />
-            ) : (
-              <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
-            )}
-          </svg>
-        </button>
+        <AppHeader
+          actionLabel={copy.t('Settings')}
+          onAction={props.onOpenSettings}
+          actionAccessory={
+            <button
+              class={`icon-button ${styles.soundToggle}`}
+              type="button"
+              aria-label={copy.t(props.muted ? 'Unmute audio' : 'Mute audio')}
+              aria-pressed={props.muted}
+              onClick={() => props.onMuteToggle()}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                {props.muted ? (
+                  <path d="m16 9 5 6m0-6-5 6" />
+                ) : (
+                  <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+                )}
+              </svg>
+            </button>
+          }
+        />
       </div>
       <section class={styles.intro} aria-labelledby="home-title">
-        <h1 id="home-title">{message('home.title')}</h1>
+        <h1 id="home-title">{copy.t('Your current pressing')}</h1>
       </section>
       <HomePressing
         sideA={props.pullText}
@@ -56,8 +63,8 @@ export function HomeScreen(props: HomeScreenProps) {
       />
 
       {props.cueContextText === undefined ? null : (
-        <section class="plan-cue-note" aria-label="Your cue">
-          <span>Your cue</span>
+        <section class="plan-cue-note" aria-label={copy.t('Your cue')}>
+          <span>{copy.t('Your cue')}</span>
           <p {...Selectable}>{props.cueContextText}</p>
         </section>
       )}
@@ -73,11 +80,11 @@ export function HomeScreen(props: HomeScreenProps) {
           <span />
         </span>
         <span>
-          <strong>Cue me now</strong>
+          <strong>{copy.t('Cue me now')}</strong>
           <small>
             {props.paused
-              ? 'Resume this plan first'
-              : 'Show the action I chose'}
+              ? copy.t('Resume this plan first')
+              : copy.t('Show the action I chose')}
           </small>
         </span>
       </button>
@@ -89,8 +96,8 @@ export function HomeScreen(props: HomeScreenProps) {
       >
         <img src="games/merc.webp" alt="" width="34" height="34" />
         <span>
-          <strong>B-side games</strong>
-          <small>Sing a few quiet minutes with Merc</small>
+          <strong>{copy.t('B-side games')}</strong>
+          <small>{copy.t('Sing a few quiet minutes with Merc')}</small>
         </span>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m9 5 7 7-7 7" />
@@ -105,15 +112,16 @@ export function HomeScreen(props: HomeScreenProps) {
           onClick={() => props.onPauseToggle()}
         >
           {props.cueStatePending
-            ? 'Updating plan…'
+            ? copy.t('Updating plan…')
             : props.paused
-              ? 'Resume this plan'
-              : 'Pause this plan'}
+              ? copy.t('Resume this plan')
+              : copy.t('Pause this plan')}
         </button>
         {props.paused ? (
           <p id="paused-note">
-            Your plan and history are still here. The daily reminder and Cue me
-            now stay off until you resume it.
+            {copy.t(
+              'Your plan and history are still here. The daily reminder and Cue me now stay off until you resume it.',
+            )}
           </p>
         ) : null}
       </div>

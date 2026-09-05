@@ -4,8 +4,9 @@ import { AppHeader } from '@/components/AppHeader'
 import { AssetStage } from '@/components/AssetStage'
 import { PremiumPullChoices } from '@/components/PremiumPullChoices'
 import type { AssetSlot, PullOption } from '@/content'
-import { GENERIC_PULL_CHARACTER } from '@/content'
+import { getLocalizedGenericPullCharacter } from '@/content/localized-pack'
 import { canSelectPull, isPremiumPull } from '@/content/pulls'
+import { useCopy } from '@/i18n/ui-copy'
 import styles from './ChoosePullScreen.module.css'
 
 export interface PullChoicePresentation {
@@ -104,6 +105,7 @@ function PullCard(props: PullCardProps) {
 }
 
 export function ChoosePullScreen(props: ChoosePullScreenProps) {
+  const copy = useCopy()
   let headingElement: HTMLHeadingElement | undefined
   let previewElement: HTMLElement | undefined
   let observedInitialSelection = false
@@ -123,12 +125,12 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
   }
   const selectedLabel = (): string =>
     customSelected()
-      ? 'Something else'
-      : (selectedOption()?.label ?? 'Your Pull')
+      ? copy.t('Something else')
+      : (selectedOption()?.label ?? copy.t('Your Pull'))
   const selectedCaption = (): string =>
     selectedPresentation()?.previewCaption ??
     selectedOption()?.moment ??
-    'Use your own words for the moment you want to notice sooner.'
+    copy.t('Use your own words for the moment you want to notice sooner.')
   const canHearSelected = (): boolean =>
     selectedPresentation()?.recordingAvailable === true &&
     props.previewVoiceState !== 'unavailable' &&
@@ -138,20 +140,20 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
     props.previewVoiceState === 'starting' ||
     props.previewVoiceState === 'playing'
   const voiceButtonLabel = (): string => {
-    if (props.previewVoiceState === 'starting') return 'Starting voice…'
-    if (props.previewVoiceState === 'playing') return 'Voice playing'
-    if (props.previewVoiceState === 'played') return 'Replay voice'
-    return 'Hear voice'
+    if (props.previewVoiceState === 'starting') return copy.t('Starting voice…')
+    if (props.previewVoiceState === 'playing') return copy.t('Voice playing')
+    if (props.previewVoiceState === 'played') return copy.t('Replay voice')
+    return copy.t('Hear voice')
   }
   const voiceStatus = (): string | undefined => {
     if (props.previewVoiceState === 'muted') {
-      return 'Voice is muted in Settings. The full caption is shown.'
+      return copy.t('Voice is muted in Settings. The full caption is shown.')
     }
-    if (props.previewVoiceState === 'starting') return 'Voice loading.'
-    if (props.previewVoiceState === 'playing') return 'Voice playing.'
-    if (props.previewVoiceState === 'played') return 'Voice stopped.'
+    if (props.previewVoiceState === 'starting') return copy.t('Voice loading.')
+    if (props.previewVoiceState === 'playing') return copy.t('Voice playing.')
+    if (props.previewVoiceState === 'played') return copy.t('Voice stopped.')
     if (props.previewVoiceState === 'failed') {
-      return 'Voice could not play. The full caption is shown.'
+      return copy.t('Voice could not play. The full caption is shown.')
     }
     return undefined
   }
@@ -198,7 +200,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
     <main class="setup-screen app-screen">
       <AppHeader label={props.headerLabel} onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="pull-title">
-        <p class="step-label">Your Pull · the familiar pattern</p>
+        <p class="step-label">{copy.t('Your Pull · the familiar pattern')}</p>
         <h1
           ref={(element) => {
             headingElement = element
@@ -206,11 +208,12 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
           id="pull-title"
           tabIndex={-1}
         >
-          Choose your Pull
+          {copy.t('Choose your Pull')}
         </h1>
         <p>
-          Choose a starting point. You can use your own words, and they stay on
-          this device.
+          {copy.t(
+            'Choose a starting point. You can use your own words, and they stay on this device.',
+          )}
         </p>
       </section>
 
@@ -233,8 +236,10 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
         </For>
         <PullCard
           id="custom"
-          label="Something else"
-          description="Name the moment in language that feels natural to you."
+          label={copy.t('Something else')}
+          description={copy.t(
+            'Name the moment in language that feels natural to you.',
+          )}
           selected={customSelected()}
           presentation={presentationFor('custom')}
           onSelect={props.onSelect}
@@ -247,7 +252,8 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
         isPro={props.isPro}
         radioName="pull-choice"
         artFor={(id) =>
-          presentationFor(id)?.art ?? GENERIC_PULL_CHARACTER.token
+          presentationFor(id)?.art ??
+          getLocalizedGenericPullCharacter(copy.locale()).token
         }
         onSelect={props.onSelect}
       />
@@ -258,11 +264,11 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
             previewElement = element
           }}
           class={styles.selectionPreview}
-          aria-label="Selected Pull preview"
+          aria-label={copy.t('Selected Pull preview')}
           tabIndex={-1}
         >
           <div class={styles.previewCopy} aria-live="polite" aria-atomic="true">
-            <p>Selected Pull</p>
+            <p>{copy.t('Selected Pull')}</p>
             <h2>{selectedLabel()}</h2>
             <p>{selectedCaption()}</p>
           </div>
@@ -297,19 +303,21 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
 
       <Show when={customSelected()}>
         <label class="text-field">
-          <span>Your words</span>
+          <span>{copy.t('Your words')}</span>
           <input
             value={props.customText}
             onInput={(event) => props.onCustomInput(event.currentTarget.value)}
             maxLength={120}
             autocomplete="off"
-            placeholder="For example, opening the feed again"
-            aria-label="Your words"
+            placeholder={copy.t('For example, opening the feed again')}
+            aria-label={copy.t('Your words')}
             aria-describedby={
               props.error === undefined ? 'pull-private-note' : 'pull-error'
             }
           />
-          <small id="pull-private-note">Stored only on this device.</small>
+          <small id="pull-private-note">
+            {copy.t('Stored only on this device.')}
+          </small>
         </label>
       </Show>
 
@@ -343,7 +351,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
               props.onContinue()
           }}
         >
-          Confirm {selectedLabel()}
+          {copy.t('Confirm {pull}', { pull: selectedLabel() })}
         </button>
       </div>
     </main>
