@@ -39,7 +39,7 @@ describe('V2 onboarding audio manifest', () => {
       V2_ONBOARDING_AUDIO_ASSET_IDS.introTableSlide,
       V2_ONBOARDING_AUDIO_ASSET_IDS.platterStop,
     ])
-    expect(V2_ONBOARDING_AUDIO_ASSET_MANIFEST.assets).toHaveLength(34)
+    expect(V2_ONBOARDING_AUDIO_ASSET_MANIFEST.assets).toHaveLength(70)
   })
 
   it('keeps the complete composition running through an indefinite decision', () => {

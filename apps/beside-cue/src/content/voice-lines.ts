@@ -14,6 +14,14 @@ export const VOICE_SPEAKER_IDS = [
   'ember',
   'dinger',
   'the-fog',
+  'the-thimble',
+  'the-tab',
+  'the-bookmark',
+  'the-match',
+  'the-pillow',
+  'the-kettle',
+  'the-ticker',
+  'the-tape',
 ] as const
 
 export type VoiceSpeakerId = (typeof VOICE_SPEAKER_IDS)[number]
@@ -428,6 +436,222 @@ export const CANONICAL_VOICE_LINES = [
       'b3e09cbbc16f280ddf51743c874e249297d5a90f8f6a5d82fa164251f329f256',
     speakerId: 'the-fog',
     fileStem: 'en__the-fog__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-thimble.meet',
+    text: 'I’m The Thimble. I put a little armour around words that might sting.',
+    captionSha256:
+      'a8a0713bfc7faba221f68dcad5ade1cfe5f5404898035f1eaccf89d3ee22c880',
+    speakerId: 'the-thimble',
+    fileStem: 'en__the-thimble__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-thimble.present',
+    text: 'A little armour feels safer. We could stay inside it.',
+    captionSha256:
+      '75e9be1a5bab978190bec2b7acdda7135d37b89eb418896aca76469d1a4a3938',
+    speakerId: 'the-thimble',
+    fileStem: 'en__the-thimble__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-thimble.recede',
+    text: 'All right. I can leave a little room.',
+    captionSha256:
+      'b840fbb570756528e5f833f3513dd131ebe803665d296182c6214c133d5b9aff',
+    speakerId: 'the-thimble',
+    fileStem: 'en__the-thimble__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-tab.meet',
+    text: 'I’m The Tab. I keep opening possibilities before the last one’s finished.',
+    captionSha256:
+      'c4992e0a62a4c24f32825ba59bbc838c2b7b6b64adc62890c41d4bd47ab08d79',
+    speakerId: 'the-tab',
+    fileStem: 'en__the-tab__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-tab.present',
+    text: 'One more tab. We might need all of these.',
+    captionSha256:
+      'fb45f26e2147a67f5eb33aa383dfd2f01ffb5afe493c3d31873f82c0a5f0617a',
+    speakerId: 'the-tab',
+    fileStem: 'en__the-tab__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-tab.recede',
+    text: 'All right. The other tabs can wait.',
+    captionSha256:
+      '24a2fef0b47eb63d85066f3e27803eb91220b9aa81e51ce325ad8009424fefb1',
+    speakerId: 'the-tab',
+    fileStem: 'en__the-tab__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-bookmark.meet',
+    text: 'I’m The Bookmark. I make leaving feel like losing your place.',
+    captionSha256:
+      'b50a68a3877ebd991ce202d7fcb7ca81cc4235b56bf0df530768a7bcc034504e',
+    speakerId: 'the-bookmark',
+    fileStem: 'en__the-bookmark__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-bookmark.present',
+    text: 'Just one more minute. What if we lose our place?',
+    captionSha256:
+      '175531d064129fdc091bdeefc3c9bf2e0c7b58573260e8a702078facc653d3c8',
+    speakerId: 'the-bookmark',
+    fileStem: 'en__the-bookmark__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-bookmark.recede',
+    text: 'I’ll keep the place. This bit can wait.',
+    captionSha256:
+      '687c78b794eaac50b037985664cd28311e878aeff650e15512f6b99fdef722d1',
+    speakerId: 'the-bookmark',
+    fileStem: 'en__the-bookmark__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-match.meet',
+    text: 'I’m The Match. I turn a little spark into doing everything at once.',
+    captionSha256:
+      'e2030223ab1befea734271b4c9451ed6a50509de44deaa31d1f90152c7ed34c6',
+    speakerId: 'the-match',
+    fileStem: 'en__the-match__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-match.present',
+    text: 'We have a spark. Let’s do it all right now.',
+    captionSha256:
+      '00ae5be27952e873d3f96a809714e496957c21b27fb555e217acd5f448565e93',
+    speakerId: 'the-match',
+    fileStem: 'en__the-match__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-match.recede',
+    text: 'All right. I’ll leave the rest for later.',
+    captionSha256:
+      'f3d99f7d63fcd37b33f2add3236af1a66d2fe91646a68e6ebf8fbf7fc27f5491',
+    speakerId: 'the-match',
+    fileStem: 'en__the-match__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-pillow.meet',
+    text: 'I’m The Pillow. I make staying up feel like getting a little time back.',
+    captionSha256:
+      'fdd83bf88ac8746230fa9d9e68e73f17c98e19eb432b553610ed868992e7c6d9',
+    speakerId: 'the-pillow',
+    fileStem: 'en__the-pillow__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-pillow.present',
+    text: 'The day was busy. A little longer just for us?',
+    captionSha256:
+      'b80bc3897829c9b8f58d7ff415b894d8958433cc26e9dc84cad9115d60c6362f',
+    speakerId: 'the-pillow',
+    fileStem: 'en__the-pillow__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-pillow.recede',
+    text: 'All right. I can let tonight be enough.',
+    captionSha256:
+      'fd1cc9f2ced0089d84156279743f702d210a1d66d00e7e89c27504bcbe3e94d0',
+    speakerId: 'the-pillow',
+    fileStem: 'en__the-pillow__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-kettle.meet',
+    text: 'I’m The Kettle. I make an answer feel urgent before it’s ready.',
+    captionSha256:
+      '5baca0bda8c2b0ec8a42bac04055ab0edbaac36441338c66ac4b98f4fb6dd47b',
+    speakerId: 'the-kettle',
+    fileStem: 'en__the-kettle__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-kettle.present',
+    text: 'It feels urgent. Shall we answer straight away?',
+    captionSha256:
+      '618d178c1689230ce7544db8cc57932b19ab7ced888c6d712d7a04a2dfb60429',
+    speakerId: 'the-kettle',
+    fileStem: 'en__the-kettle__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-kettle.recede',
+    text: 'All right. This answer can wait a moment.',
+    captionSha256:
+      'b2eb585ecbb3f8e6b47c9fc99b579bc029b1c26a2f80dd1192ee746128d05f03',
+    speakerId: 'the-kettle',
+    fileStem: 'en__the-kettle__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-ticker.meet',
+    text: 'I’m The Ticker. I make the next thing feel late before we get there.',
+    captionSha256:
+      '7f8d9a389f7b4ff50e2833a8729698e1be5c54ed43e08a2b729b60e8a1be5c81',
+    speakerId: 'the-ticker',
+    fileStem: 'en__the-ticker__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-ticker.present',
+    text: 'We might be late. Better hurry through this bit.',
+    captionSha256:
+      '7ec21da0b7db01923a806bb941e88a551e4f3c483e81006afcd436e207740bc3',
+    speakerId: 'the-ticker',
+    fileStem: 'en__the-ticker__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-ticker.recede',
+    text: 'All right. I’ll leave this moment to you.',
+    captionSha256:
+      '0f9378f26c7a4abbad66374499a2b7c2aba95bfe05f4cc928e8392222e1f8451',
+    speakerId: 'the-ticker',
+    fileStem: 'en__the-ticker__recede',
+    kind: 'recede',
+  },
+  {
+    id: 'pull.the-tape.meet',
+    text: 'I’m The Tape. I make a quick patch feel like the whole repair.',
+    captionSha256:
+      'b818c12404525a7993ccb868743bbd2bf53c2be30f9db0b48cc056ba3dffda4b',
+    speakerId: 'the-tape',
+    fileStem: 'en__the-tape__meet',
+    kind: 'meet',
+  },
+  {
+    id: 'pull.the-tape.present',
+    text: 'A little patch will do. We can look underneath later.',
+    captionSha256:
+      '6d2509bccce3da1692201a45f80c1bdd4a8a3ff17c71bad3ba67c766f38d3574',
+    speakerId: 'the-tape',
+    fileStem: 'en__the-tape__present',
+    kind: 'present',
+  },
+  {
+    id: 'pull.the-tape.recede',
+    text: 'All right. I can stay on the roll for now.',
+    captionSha256:
+      'b2f11deeeb2beb792a57ab9b32518a201d66d4c1407fc59fa7dfd92da4269b1c',
+    speakerId: 'the-tape',
+    fileStem: 'en__the-tape__recede',
     kind: 'recede',
   },
 ] as const satisfies readonly CanonicalVoiceLine[]
