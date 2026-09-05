@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 32.7k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.1k | Drum Night session boundary — import, score, kit, and evidence coaching. |
+| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.7k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 14.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
@@ -341,7 +341,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.2k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.1k |
+| [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.2k |
 | [src/App.tsx](../../src/App.tsx) | 4.5k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.4k |
