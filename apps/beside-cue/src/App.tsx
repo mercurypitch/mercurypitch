@@ -1913,6 +1913,7 @@ export function App(props: AppProps) {
           foreground={v2OnboardingForeground()}
           muted={v2Muted()}
           onMutedChange={setV2OnboardingMuted}
+          onUnlockAudio={ambientMusic.unlock}
           onSavePlan={saveV2OnboardingPlan}
           onSetReminder={setV2OnboardingReminder}
           onTimeHaptic={playTimeDialHaptic}

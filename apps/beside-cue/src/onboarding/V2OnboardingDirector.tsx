@@ -40,6 +40,8 @@ export interface V2OnboardingDirectorProps {
   readonly foreground: boolean
   readonly muted: boolean
   readonly onMutedChange: (muted: boolean) => void
+  /** Gesture-scoped permission also lets the app-owned music recover a failed start. */
+  readonly onUnlockAudio?: () => void
   readonly onSavePlan: (
     plan: V2OnboardingPlanDraft,
   ) => Promise<V2OnboardingMutationResult>
@@ -696,13 +698,23 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     if (text !== '') selectSideB({ text }, 'custom')
   }
 
+  function unlockAudio(): void {
+    if (props.onUnlockAudio !== undefined) {
+      props.onUnlockAudio()
+    } else {
+      void props.audioSession.unlock().catch(() => false)
+    }
+  }
+
   function begin(): void {
-    void props.audioSession.unlock().catch(() => false)
+    unlockAudio()
     dispatch({ type: 'BEGIN' })
   }
 
   function toggleMuted(): void {
-    props.onMutedChange(!props.muted)
+    const unmuting = props.muted
+    props.onMutedChange(!unmuting)
+    if (unmuting) unlockAudio()
   }
 
   function replayReview(): void {

@@ -5,10 +5,21 @@ import { PunchedTimeDial } from './PunchedTimeDial'
 
 class FakePointerEvent extends MouseEvent {
   readonly pointerId: number
+  readonly pointerType: string
+  readonly isPrimary: boolean
 
-  constructor(type: string, init: MouseEventInit & { pointerId?: number }) {
-    super(type, { bubbles: true, ...init })
+  constructor(
+    type: string,
+    init: MouseEventInit & {
+      pointerId?: number
+      pointerType?: string
+      isPrimary?: boolean
+    },
+  ) {
+    super(type, { bubbles: true, cancelable: true, ...init })
     this.pointerId = init.pointerId ?? 1
+    this.pointerType = init.pointerType ?? 'mouse'
+    this.isPrimary = init.isPrimary ?? true
   }
 }
 
@@ -18,14 +29,17 @@ function dispatchPointer(
   clientX: number,
   clientY: number,
   timeStamp: number,
-): void {
+  pointerType = 'mouse',
+): FakePointerEvent {
   const event = new FakePointerEvent(type, {
     clientX,
     clientY,
     pointerId: 7,
+    pointerType,
   })
   Object.defineProperty(event, 'timeStamp', { value: timeStamp })
   element.dispatchEvent(event)
+  return event
 }
 
 afterEach(() => {
@@ -105,7 +119,7 @@ describe('PunchedTimeDial', () => {
     ))
 
     expect(screen.getByText('09:00')).toBeVisible()
-    expect(screen.getByText('Turn to choose')).toBeVisible()
+    expect(screen.getByText('Sweep to choose')).toBeVisible()
     expect(screen.getByRole('slider')).toHaveAttribute(
       'aria-valuetext',
       'Preview 09:00; no reminder time selected; editing minutes',
@@ -232,5 +246,134 @@ describe('PunchedTimeDial', () => {
       'rotate(0deg)',
       'rotate(0deg)',
     ])
+  })
+
+  it('leaves a vertical touch gesture available to page scrolling', () => {
+    const onValueChange = vi.fn<(value: string) => void>()
+    render(() => (
+      <PunchedTimeDial value="18:30" onValueChange={onValueChange} />
+    ))
+    const dial = screen.getByRole('slider') as HTMLDivElement
+    dial.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 440,
+        height: 440,
+        right: 440,
+        bottom: 440,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    let capturedPointer: number | undefined
+    dial.setPointerCapture = (pointerId) => {
+      capturedPointer = pointerId
+    }
+
+    const down = dispatchPointer(dial, 'pointerdown', 390, 220, 10, 'touch')
+    const move = dispatchPointer(dial, 'pointermove', 390, 300, 30, 'touch')
+
+    expect(down.defaultPrevented).toBe(false)
+    expect(move.defaultPrevented).toBe(false)
+    expect(capturedPointer).toBeUndefined()
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(dial.closest('section')).not.toHaveAttribute('data-dragging', 'true')
+  })
+
+  it('promotes a settled tangential touch into a deliberate record turn', () => {
+    const onValueChange = vi.fn<(value: string) => void>()
+    render(() => (
+      <PunchedTimeDial value="18:30" onValueChange={onValueChange} />
+    ))
+    const dial = screen.getByRole('slider') as HTMLDivElement
+    dial.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 440,
+        height: 440,
+        right: 440,
+        bottom: 440,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    let capturedPointer: number | undefined
+    dial.setPointerCapture = (pointerId) => {
+      capturedPointer = pointerId
+    }
+
+    const down = dispatchPointer(dial, 'pointerdown', 220, 40, 10, 'touch')
+    const move = dispatchPointer(dial, 'pointermove', 300, 60, 30, 'touch')
+
+    expect(down.defaultPrevented).toBe(false)
+    expect(move.defaultPrevented).toBe(true)
+    expect(capturedPointer).toBe(7)
+    expect(onValueChange).toHaveBeenCalled()
+    expect(dial.closest('section')).toHaveAttribute('data-dragging', 'true')
+  })
+
+  it('refuses pointer turns while the record is clipped or scrolling is still settling', () => {
+    const onValueChange = vi.fn<(value: string) => void>()
+    render(() => (
+      <div style={{ overflow: 'hidden' }}>
+        <PunchedTimeDial value="18:30" onValueChange={onValueChange} />
+      </div>
+    ))
+    const dial = screen.getByRole('slider') as HTMLDivElement
+    vi.stubGlobal('innerWidth', 440)
+    vi.stubGlobal('innerHeight', 440)
+    let clippingBottom = 351
+    dial.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 440,
+        height: 440,
+        right: 440,
+        bottom: 440,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const clippingParent = dial.closest('section')?.parentElement
+    if (clippingParent === null || clippingParent === undefined) {
+      throw new Error('Punched Clock clipping parent is missing.')
+    }
+    clippingParent.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 440,
+        height: clippingBottom,
+        right: 440,
+        bottom: clippingBottom,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    let capturedPointer: number | undefined
+    dial.setPointerCapture = (pointerId) => {
+      capturedPointer = pointerId
+    }
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000)
+
+    dispatchPointer(dial, 'pointerdown', 400, 220, 10)
+
+    expect(capturedPointer).toBeUndefined()
+    expect(onValueChange).not.toHaveBeenCalled()
+
+    clippingBottom = 440
+    window.dispatchEvent(new Event('scroll'))
+    now.mockReturnValue(1_100)
+    dispatchPointer(dial, 'pointerdown', 400, 220, 20)
+
+    expect(capturedPointer).toBeUndefined()
+
+    now.mockReturnValue(1_300)
+    dispatchPointer(dial, 'pointerdown', 400, 220, 30)
+
+    expect(capturedPointer).toBe(7)
   })
 })

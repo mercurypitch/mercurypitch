@@ -3,6 +3,9 @@
   align-items: center;
   gap: 0.75rem;
   width: 100%;
+  /* Both controls share the inset; centering sound beside a separately padded
+     AppHeader otherwise pulls it halfway into the native status bar. */
+  padding-top: var(--safe-top);
 }
 
 .intro h1 {
@@ -14,6 +17,8 @@
 .header > :first-child {
   flex: 1;
   min-width: 0;
+  min-height: 3rem;
+  padding-top: 0;
   grid-template-columns: minmax(0, 1fr) auto;
 }
 

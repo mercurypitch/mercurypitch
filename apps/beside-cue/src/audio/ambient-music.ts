@@ -15,6 +15,7 @@ export interface AmbientMusicState {
 export function createAmbientMusic(session: AudioSession, assetId: string) {
   const scope = session.createScope('ambient-music')
   let current: AudioSessionCue | undefined
+  let unlockGeneration = 0
   let state: AmbientMusicState = {
     active: false,
     muted: true,
@@ -33,10 +34,22 @@ export function createAmbientMusic(session: AudioSession, assetId: string) {
       return
     }
     if (current !== undefined) return
+    const attemptedUnlockGeneration = unlockGeneration
     const cue = scope.play(assetId)
     current = cue
-    void cue.finished.then(() => {
-      if (current === cue) current = undefined
+    void cue.finished.then((result) => {
+      if (current !== cue) return
+      current = undefined
+      // A non-gesture resume can fail after the begin tap has already unlocked
+      // iOS. Retry that superseded attempt once, not on every render or failure.
+      // A retry records the new generation, so a real load error cannot spin.
+      if (
+        result.kind === 'silent' &&
+        result.reason === 'load-failed' &&
+        attemptedUnlockGeneration < unlockGeneration
+      ) {
+        update(state)
+      }
     })
   }
 
@@ -44,10 +57,18 @@ export function createAmbientMusic(session: AudioSession, assetId: string) {
     update,
     /** Synchronous gesture entry also unlocks a returning iOS browser tab. */
     unlock() {
-      if (disposed || !state.active || state.muted || !state.foreground) return
-      void session.unlock().then((ready) => {
-        if (ready) update(state)
-      })
+      if (disposed || !state.active || !state.foreground) return
+      // The session's mute flag updates inside the unmute handler; this
+      // controller's reactive snapshot may still be muted until its batch ends.
+      // Ask permission now. The session and update() still forbid muted sound.
+      void session
+        .unlock()
+        .then((ready) => {
+          if (!ready || disposed) return
+          unlockGeneration += 1
+          update(state)
+        })
+        .catch(() => undefined)
     },
     dispose() {
       if (disposed) return
