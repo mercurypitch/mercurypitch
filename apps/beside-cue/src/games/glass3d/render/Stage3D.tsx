@@ -347,6 +347,13 @@ export const Stage3D = (props: Stage3DProps) => {
   /** One startMic at a time: two taps during the permission prompt
    *  shared `driver`, and the first one's catch nulled the second's. */
   let micStarting = false
+  /** The stage has been left. A permission prompt outlives a stage that
+   *  was navigated away from; the driver it would have opened after the
+   *  prompt had nobody to stop it. */
+  let left = false
+  onCleanup(() => {
+    left = true
+  })
 
   const startMic = async (): Promise<void> => {
     if (micStarting) return
@@ -358,6 +365,7 @@ export const Stage3D = (props: Stage3DProps) => {
       // audio/input-device.ts. Must happen before acquire(), because the
       // device is chosen by the constraints that open the stream.
       await applyPreferredInput()
+      if (left) return
       // A previous attempt may have left a live driver: a second tap while
       // the permission prompt is up, or a switch that came good. Overwriting
       // it stranded its detector worker, its worklet and its share of the
@@ -365,6 +373,11 @@ export const Stage3D = (props: Stage3DProps) => {
       driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -386,6 +399,11 @@ export const Stage3D = (props: Stage3DProps) => {
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
       setStarted(true)

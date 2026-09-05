@@ -209,6 +209,9 @@ export function createF0Stream(
 
   const startFrameLoop = (): void => {
     if (disposed) return
+    // Coming from the audio-clock path the assembler still runs at that
+    // hop; the frame loop's pace is the display's.
+    assembler.setHopSeconds(FRAME_HOP_SECONDS)
     const node = audioContext.createAnalyser()
     node.fftSize = F0_WINDOW
     source.connect(node)

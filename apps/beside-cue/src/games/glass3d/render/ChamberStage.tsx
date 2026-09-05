@@ -829,6 +829,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
   /** One startMic at a time: two taps during the permission prompt
    *  shared `driver`, and the first one's catch nulled the second's. */
   let micStarting = false
+  /** The stage has been left. A permission prompt outlives a stage that
+   *  was navigated away from; the driver it would have opened after the
+   *  prompt had nobody to stop it. */
+  let left = false
+  onCleanup(() => {
+    left = true
+  })
 
   const startMic = async (): Promise<void> => {
     if (micStarting) return
@@ -837,6 +844,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
     tone.start()
     try {
       await applyPreferredInput()
+      if (left) return
       // A previous attempt may have left a live driver: `switchMic`
       // succeeds without lifting the gate, so the next tap on "Walk in"
       // arrives with one already running. Overwriting it stranded its
@@ -845,6 +853,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
       driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -865,6 +878,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
       setStarted(true)

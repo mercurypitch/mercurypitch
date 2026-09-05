@@ -1629,11 +1629,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 </button>
                 {/* A save that keeps failing (or a plan the reader thinks
                     better of) needs a way out other than killing the app;
-                    the runtime has taken BACK from this hold all along. */}
+                    the runtime has taken BACK from this hold all along. A
+                    save in flight lives in its own phase, so no guard. */}
                 <button
                   type="button"
                   class={styles.backAction}
-                  disabled={state().stopCommit?.planStatus === 'pending'}
                   onClick={() => dispatch({ type: 'BACK' })}
                 >
                   Back
