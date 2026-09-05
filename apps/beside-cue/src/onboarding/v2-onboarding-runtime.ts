@@ -137,6 +137,7 @@ export type V2OnboardingRuntimeEvent =
   | { readonly type: 'BEGIN' }
   | { readonly type: 'SELECT_PULL'; readonly choice: V2OnboardingPullChoice }
   | { readonly type: 'CONFIRM_PULL' }
+  | { readonly type: 'PULL_ACCESS_REVOKED' }
   | {
       readonly type: 'SELECT_CUE_CONTEXT'
       readonly choice: V2OnboardingCueContextChoice
@@ -486,6 +487,28 @@ export function reduceV2OnboardingRuntime(
     return state.phase === 'B03_PULL_CHOICE_HOLD'
       ? noEffect({ ...state, selectedPull: clonePull(event.choice) })
       : noEffect(state)
+  }
+
+  if (event.type === 'PULL_ACCESS_REVOKED') {
+    // Do not cancel a submitted write or erase an already-saved plan.
+    if (
+      state.pendingSave !== undefined ||
+      V2_ONBOARDING_PHASES.indexOf(state.phase) >=
+        V2_ONBOARDING_PHASES.indexOf('B07_SAVED_ACK')
+    )
+      return noEffect(state)
+    return noEffect(
+      enterPhase(
+        {
+          ...createV2OnboardingRuntimeState({
+            sessionKind: state.sessionKind,
+            motionMode: state.motionMode,
+          }),
+          generation: state.generation,
+        },
+        'B03_PULL_CHOICE_HOLD',
+      ),
+    )
   }
 
   if (event.type === 'CONFIRM_PULL') {

@@ -47,8 +47,11 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
           What small action would you rather begin?
         </h1>
         <p>
-          When <strong>{props.pullText}</strong> shows up, choose something
-          concrete enough to begin without planning.
+          When{' '}
+          <strong data-selection="text" dir="auto">
+            {props.pullText}
+          </strong>{' '}
+          shows up, choose something concrete enough to begin without planning.
         </p>
       </section>
       <div

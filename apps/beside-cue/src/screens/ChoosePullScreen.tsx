@@ -2,7 +2,10 @@
 import { createEffect, For, onMount, Show } from 'solid-js'
 import { AppHeader } from '@/components/AppHeader'
 import { AssetStage } from '@/components/AssetStage'
+import { PremiumPullChoices } from '@/components/PremiumPullChoices'
 import type { AssetSlot, PullOption } from '@/content'
+import { GENERIC_PULL_CHARACTER } from '@/content'
+import { canSelectPull, isPremiumPull } from '@/content/pulls'
 import styles from './ChoosePullScreen.module.css'
 
 export interface PullChoicePresentation {
@@ -26,6 +29,7 @@ export type PullPreviewVoiceState =
 interface ChoosePullScreenProps {
   headerLabel: string
   options: readonly PullOption[]
+  isPro?: boolean
   presentations: readonly PullChoicePresentation[]
   selectedId?: string
   customText: string
@@ -202,7 +206,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
           id="pull-title"
           tabIndex={-1}
         >
-          Which Pull do you want to notice sooner?
+          Choose your Pull
         </h1>
         <p>
           Choose a starting point. You can use your own words, and they stay on
@@ -215,7 +219,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
         role="radiogroup"
         aria-labelledby="pull-title"
       >
-        <For each={props.options}>
+        <For each={props.options.filter((option) => !isPremiumPull(option))}>
           {(option) => (
             <PullCard
               id={option.id}
@@ -236,6 +240,17 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
           onSelect={props.onSelect}
         />
       </div>
+
+      <PremiumPullChoices
+        options={props.options.filter(isPremiumPull)}
+        selectedId={props.selectedId}
+        isPro={props.isPro}
+        radioName="pull-choice"
+        artFor={(id) =>
+          presentationFor(id)?.art ?? GENERIC_PULL_CHARACTER.token
+        }
+        onSelect={props.onSelect}
+      />
 
       <Show when={props.selectedId !== undefined}>
         <section
@@ -310,8 +325,23 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
         <button
           class="primary-button primary-button--wide"
           type="button"
-          disabled={props.selectedId === undefined}
-          onClick={() => props.onContinue()}
+          disabled={
+            !canSelectPull(
+              props.selectedId,
+              props.isPro === true,
+              props.options,
+            )
+          }
+          onClick={() => {
+            if (
+              canSelectPull(
+                props.selectedId,
+                props.isPro === true,
+                props.options,
+              )
+            )
+              props.onContinue()
+          }}
         >
           Confirm {selectedLabel()}
         </button>

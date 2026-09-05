@@ -1,5 +1,7 @@
 import { createSignal, Match, onCleanup, onMount, Switch } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
+import { CORKY_V023_REST_ART } from '@/content'
+import { Selectable } from '@/interaction/selection'
 import type { LocalActionStarter } from '../action-starters/action-starter'
 
 type QuietScreenPhase = 'ready' | 'running' | 'complete'
@@ -137,11 +139,14 @@ export function QuietScreen(props: QuietScreenProps) {
             : 'Side B is yours'
           : 'Not now is okay'}
       </p>
-      <MascotStage state={props.choseBSide ? 'turn' : 'quiet'} />
+      <MascotStage
+        state={props.choseBSide ? 'turn' : 'quiet'}
+        artOverride={CORKY_V023_REST_ART}
+      />
 
       <Switch>
         <Match when={!props.choseBSide}>
-          <section class="quiet-screen__copy">
+          <section class="quiet-screen__copy" {...Selectable}>
             <h1
               id="quiet-title"
               ref={(element) => {
@@ -165,7 +170,7 @@ export function QuietScreen(props: QuietScreenProps) {
         </Match>
 
         <Match when={phase() === 'ready'}>
-          <section class="quiet-screen__copy">
+          <section class="quiet-screen__copy" {...Selectable}>
             <p class="quiet-screen__section-label">Your Side B</p>
             <h1
               id="quiet-title"
@@ -214,7 +219,10 @@ export function QuietScreen(props: QuietScreenProps) {
         </Match>
 
         <Match when={phase() === 'running'}>
-          <section class="quiet-screen__copy quiet-screen__copy--timer">
+          <section
+            class="quiet-screen__copy quiet-screen__copy--timer"
+            {...Selectable}
+          >
             <h1
               id="quiet-title"
               ref={(element) => {
@@ -262,7 +270,7 @@ export function QuietScreen(props: QuietScreenProps) {
             </h1>
             <div class="quiet-screen__finished-action">
               <span>Your Side B</span>
-              <p>{instruction()}</p>
+              <p {...Selectable}>{instruction()}</p>
             </div>
             <p>Your choice was already recorded. No check-in needed.</p>
           </section>

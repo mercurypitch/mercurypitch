@@ -18,6 +18,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
 import './journey.css'
+import { isNativeInteractionTarget } from '@/interaction/selection'
 import { createSingDriver } from './drivers/sing'
 import { createTapDriver } from './drivers/tap'
 import type { InteractionDriver } from './drivers/types'
@@ -2862,13 +2863,14 @@ export const JourneyPrototype: Component<{
 
   const setKey = (down: boolean) => (e: KeyboardEvent) => {
     if (!isTrials()) return
+    if (down && isNativeInteractionTarget(e)) return
     const k = e.key
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') {
       keys.left = down
-      e.preventDefault()
+      if (down) e.preventDefault()
     } else if (k === 'ArrowRight' || k === 'd' || k === 'D') {
       keys.right = down
-      e.preventDefault()
+      if (down) e.preventDefault()
     }
   }
   const keyDown = setKey(true)

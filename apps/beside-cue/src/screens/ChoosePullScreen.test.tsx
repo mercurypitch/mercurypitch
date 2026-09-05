@@ -98,7 +98,7 @@ describe('choose Pull screen', () => {
     })
     expect(
       screen.getByRole('heading', {
-        name: /which Pull do you want to notice sooner/iu,
+        name: /choose your Pull/iu,
       }),
     ).toHaveFocus()
   })

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { BUILT_IN_PULL_IDS } from '@/content/pulls'
 import type { V2OnboardingMediaPack } from './v2-onboarding-media-pack'
 import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingRecordMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_MEDIA_PACK, } from './v2-onboarding-media-pack'
 
@@ -13,12 +14,10 @@ describe('V2 onboarding media pack', () => {
   it('publishes the V2.5 intro and record performances over one P02 authority', () => {
     const pack = V2_ONBOARDING_MEDIA_PACK
 
-    expect(pack.revision).toBe('corky-v2.5-media-v1')
-    expect(Object.keys(pack.pulls)).toEqual([
-      'scrolling',
-      'snacking',
-      'avoidance',
-    ])
+    expect(pack.revision).toBe('corky-v2.5-pull-expansion-v1')
+    expect(Object.keys(pack.pulls).sort()).toEqual(
+      [...BUILT_IN_PULL_IDS].sort(),
+    )
     expect(pack.poster?.src).toBe(
       `${BASE_ROOT}/stills/p02-table-ready-v0_17.webp`,
     )

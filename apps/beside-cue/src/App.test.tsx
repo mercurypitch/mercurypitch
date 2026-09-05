@@ -3,7 +3,7 @@ import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { createEffect, untrack } from 'solid-js'
+import { createEffect, createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
@@ -105,6 +105,7 @@ interface V2DirectorHarnessProps {
 
 vi.mock('./onboarding/V2OnboardingDirector', () => ({
   V2OnboardingDirector: (props: V2DirectorHarnessProps) => {
+    const [saveFeedback, setSaveFeedback] = createSignal('')
     let audioScope: ReturnType<AudioSession['createScope']> | undefined
     let previousForeground = untrack(() => props.foreground)
 
@@ -146,6 +147,27 @@ vi.mock('./onboarding/V2OnboardingDirector', () => ({
         }
       >
         <h1>V2 introduction</h1>
+        <output aria-label="Plan save result">{saveFeedback()}</output>
+        <button
+          type="button"
+          onClick={() => {
+            void props
+              .onSavePlan({
+                pullId: 'the-tape',
+                pullLabel: 'Another quick fix',
+                sideAText: 'Reach for another quick fix',
+                bSideSuggestionId: 'bside.quiet-work',
+                bSideText: 'One quiet minute of work',
+              })
+              .then((result) =>
+                setSaveFeedback(
+                  result.ok ? 'Saved' : (result.message ?? 'Rejected'),
+                ),
+              )
+          }}
+        >
+          Save premium V2 plan
+        </button>
         <button
           type="button"
           onClick={() =>
@@ -660,7 +682,7 @@ async function saveFirstPlanFromWelcome(): Promise<void> {
   fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
   fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
   await screen.findByRole('heading', {
-    name: /a better choice, kept close/iu,
+    name: /your current pressing/iu,
   })
 }
 
@@ -785,7 +807,7 @@ describe('Beside Cue character voice integration', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /close cue/iu }))
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
 
     const scheduled = runtime.calls.scheduled.at(-1)?.[0]
@@ -1004,6 +1026,26 @@ describe('Beside Cue character voice integration', () => {
 })
 
 describe('Beside Cue V2 onboarding integration', () => {
+  it('rejects a premium plan at the persistence boundary even if the picker is bypassed', async () => {
+    const repository = createMemoryRepository()
+    render(() => <App services={createTestServices(repository)} />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save premium V2 plan' }),
+    )
+    await waitFor(() =>
+      expect(screen.getByLabelText('Plan save result')).toHaveTextContent(
+        'Choose a free Pull',
+      ),
+    )
+    expect(repository.saveCalls()).toBe(0)
+    expect(repository.snapshot()).toBeNull()
+    // A denied submission must not poison the save promise for a free choice.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save suggested V2 plan' }),
+    )
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    expect(repository.snapshot()?.cues[0]?.pullCategoryId).toBe('scrolling')
+  })
   it('carries music into home quietly, persists its mute and stops it before games', async () => {
     const repository = createMemoryRepository()
     const output = createAudioOutputProbe()
@@ -1025,7 +1067,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       screen.getByRole('button', { name: /finish v2 introduction/iu }),
     )
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
     expect(output.playbacks).toHaveLength(1)
     expect(music.stopCalls).toBe(0)
@@ -1061,7 +1103,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.5-media-v1',
+      'corky-v2.5-pull-expansion-v1',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',
@@ -1151,7 +1193,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     expect(
       await screen.findByRole('heading', {
-        name: /a better choice, kept close/iu,
+        name: /your current pressing/iu,
       }),
     ).toBeInTheDocument()
   })
@@ -1456,7 +1498,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
     expect(repository.snapshot()?.cues[0]).toMatchObject({
       cueContextSuggestionId: 'anchor.scrolling.in-bed',
@@ -1494,7 +1536,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
     const savedCue = repository.snapshot()?.cues[0]
     expect(savedCue).toMatchObject({ cueContextText: 'After lunch' })
@@ -1573,7 +1615,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
     const savedCue = repository.snapshot()?.cues[0]
     expect(savedCue).toMatchObject({
@@ -1674,7 +1716,7 @@ describe('Beside Cue app', () => {
     ))
     expect(
       await screen.findByRole('heading', {
-        name: /a better choice, kept close/iu,
+        name: /your current pressing/iu,
       }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Your first plan')).not.toBeInTheDocument()
@@ -1725,22 +1767,21 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /a better choice, kept close/iu,
+        name: /your current pressing/iu,
       }),
     ).toBeInTheDocument()
     expect(repository.snapshot()?.scheduleRules).toEqual([])
     expect(screen.queryByText('Your first plan')).not.toBeInTheDocument()
 
-    const tracks = screen
-      .getByText('Keep scrolling')
-      .closest('.active-sleeve__tracks')
-    const art = document.querySelector('.active-sleeve__art')
-    expect(tracks).not.toBeNull()
+    const text = screen.getByText('Keep scrolling')
+    const art = document.querySelector('[data-callout="none"]')
+    expect(text).toHaveAttribute('data-selection', 'text')
     expect(art).not.toBeNull()
-    expect(tracks?.contains(art)).toBe(false)
-    expect(art?.querySelector('img')?.getAttribute('src')).toContain(
-      'corky-home-rest-v0_23-1024.webp',
-    )
+    expect(art?.contains(text)).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Side B · My choice' }))
+    expect(
+      screen.getByRole('button', { name: 'Side B · My choice' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('sets a real onboarding reminder only after the user asks', async () => {
@@ -1776,7 +1817,11 @@ describe('Beside Cue app', () => {
       screen.getByRole('button', { name: /finish introduction/iu }),
     )
     expect(
-      await screen.findByText('Put the phone in another room'),
+      await screen.findByRole('button', { name: 'Side B · My choice' }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Side B · My choice' }))
+    expect(
+      screen.getByText('Put the phone in another room'),
     ).toBeInTheDocument()
   })
 
@@ -1924,7 +1969,7 @@ describe('Beside Cue app', () => {
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
     await screen.findByRole('heading', {
-      name: /which pull do you want to notice sooner/iu,
+      name: /choose your pull/iu,
     })
     fireEvent.click(screen.getByRole('button', { name: /back/iu }))
     expect(repository.snapshot()).toEqual(original)
@@ -1934,7 +1979,7 @@ describe('Beside Cue app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
     await screen.findByRole('heading', {
-      name: /which pull do you want to notice sooner/iu,
+      name: /choose your pull/iu,
     })
     fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
     fireEvent.click(
@@ -1956,7 +2001,7 @@ describe('Beside Cue app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
     await screen.findByRole('heading', {
-      name: /a better choice, kept close/iu,
+      name: /your current pressing/iu,
     })
     const cues = repository.snapshot()?.cues ?? []
     expect(cues.filter((cue) => cue.status === 'active')).toMatchObject([
@@ -2311,7 +2356,7 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /a better choice, kept close/iu,
+        name: /your current pressing/iu,
       }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
@@ -2395,7 +2440,7 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /a better choice, kept close/iu,
+        name: /your current pressing/iu,
       }),
     ).toBeInTheDocument()
     expect(repository.snapshot()?.occurrences).toMatchObject([

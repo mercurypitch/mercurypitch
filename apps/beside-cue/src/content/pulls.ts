@@ -8,6 +8,7 @@
 
 import type { ActionDefinition, BuiltInActionId } from './actions'
 import { findActionDefinition } from './actions'
+import { PREMIUM_PULL_IDS, PREMIUM_PULL_OPTIONS } from './premium-pulls'
 
 export type PullAnchorKind =
   | 'device'
@@ -24,6 +25,7 @@ export interface PullAnchorSuggestion {
 
 export interface PullOption {
   readonly id: string
+  readonly access?: 'pro'
   readonly label: string
   readonly moment: string
   /** Familiar response shown as Side A after this Pull is chosen. */
@@ -47,13 +49,18 @@ export interface BuiltInPullOption extends PullOption {
   readonly bSideSuggestions: readonly ActionDefinition[]
 }
 
-export const BUILT_IN_PULL_IDS = [
+export const FREE_PULL_IDS = [
   'scrolling',
   'snacking',
   'familiar-ritual',
   'two-minute-pause',
   'one-tap-convenience',
   'avoidance',
+] as const
+
+export const BUILT_IN_PULL_IDS = [
+  ...FREE_PULL_IDS,
+  ...PREMIUM_PULL_IDS,
 ] as const
 
 export type BuiltInPullId = (typeof BUILT_IN_PULL_IDS)[number]
@@ -101,7 +108,7 @@ function definePull(definition: PullDefinition): BuiltInPullOption {
   }
 }
 
-export const pullOptions: readonly BuiltInPullOption[] = [
+export const freePullOptions: readonly BuiltInPullOption[] = [
   definePull({
     id: 'scrolling',
     label: 'Endless scrolling',
@@ -277,6 +284,31 @@ export const pullOptions: readonly BuiltInPullOption[] = [
     ],
   }),
 ]
+
+export const pullOptions: readonly BuiltInPullOption[] = [
+  ...freePullOptions,
+  ...PREMIUM_PULL_OPTIONS,
+]
+
+export function isPremiumPull(option: PullOption): boolean {
+  return (
+    option.access === 'pro' ||
+    (PREMIUM_PULL_IDS as readonly string[]).includes(canonicalPullId(option.id))
+  )
+}
+
+/** Shared by selection and save boundaries; an unknown or pending Pro state is locked. */
+export function canSelectPull(
+  id: string | undefined,
+  isPro: boolean,
+  options: readonly PullOption[] = pullOptions,
+): boolean {
+  if (id === 'custom') return true
+  if (id === undefined) return false
+  const canonicalId = canonicalPullId(id)
+  const option = options.find((candidate) => candidate.id === canonicalId)
+  return option !== undefined && (!isPremiumPull(option) || isPro)
+}
 
 export function canonicalPullId(id: string): string {
   return LEGACY_PULL_ID_ALIASES[id] ?? id

@@ -6,6 +6,7 @@
 // beats instead of inventing an unsafe fallback, while a complete Pull maps
 // directly onto the presenter's deterministic recovery chain.
 
+import { PREMIUM_PULL_IDS } from '@/content/premium-pulls'
 import type { V2OnboardingBrandResource, V2OnboardingLoadableResource, V2OnboardingMediaPresentationRequest, V2OnboardingStillResource, } from './v2-onboarding-media-presenter'
 
 export type V2OnboardingPullMediaMoment = 'present' | 'hold' | 'recede' | 'end'
@@ -54,6 +55,7 @@ export interface V2OnboardingMediaTarget {
 
 const MEDIA_ROOT = '/onboarding/corky-v2.4'
 const V2_5_MEDIA_ROOT = '/onboarding/corky-v2.5'
+const EXPANSION_ROOT = '/onboarding/pull-expansion-v1'
 
 const EMPTY_SET: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
@@ -93,7 +95,7 @@ const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
 
 /** Founder-approved V2.5 scene pack used by every product build. */
 export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
-  revision: 'corky-v2.5-media-v1',
+  revision: 'corky-v2.5-pull-expansion-v1',
   brand: Object.freeze({ kind: 'brand', alt: '' }),
   poster: TABLE_READY,
   plate: TABLE_READY,
@@ -131,6 +133,34 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
     stoppedAuthority: TABLE_READY,
   }),
   pulls: Object.freeze({
+    ...Object.fromEntries(
+      [
+        'familiar-ritual',
+        'two-minute-pause',
+        'one-tap-convenience',
+        ...PREMIUM_PULL_IDS,
+      ].map((id) => [
+        id,
+        Object.freeze({
+          present: Object.freeze({
+            kind: 'video' as const,
+            src: `${EXPANSION_ROOT}/b03-${id}-present-v0_1.mp4`,
+            alt: '',
+          }),
+          hold: Object.freeze({
+            kind: 'still' as const,
+            src: `${EXPANSION_ROOT}/p03-${id}-settled-v0_1.webp`,
+            alt: '',
+          }),
+          recede: Object.freeze({
+            kind: 'video' as const,
+            src: `${EXPANSION_ROOT}/b05-${id}-recede-v0_1.mp4`,
+            alt: '',
+          }),
+          end: TABLE_READY,
+        }),
+      ]),
+    ),
     scrolling: Object.freeze({
       present: Object.freeze({
         kind: 'video',

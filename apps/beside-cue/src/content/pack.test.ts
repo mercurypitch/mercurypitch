@@ -44,9 +44,16 @@ function manifestWithRecording(
 
 describe('content pack', () => {
   it('ships the exact canonical V2 registry with its approved audio layer', () => {
-    expect(DEFAULT_CONTENT_PACK.version).toBe('0.5.0')
-    expect(DEFAULT_CONTENT_PACK.lines).toBe(CANONICAL_VOICE_LINES)
-    expect(DEFAULT_CONTENT_PACK.lines).toHaveLength(43)
+    expect(DEFAULT_CONTENT_PACK.version).toBe('0.6.0')
+    expect(DEFAULT_CONTENT_PACK.lines.slice(0, 43)).toEqual(
+      CANONICAL_VOICE_LINES,
+    )
+    expect(DEFAULT_CONTENT_PACK.lines).toHaveLength(67)
+    expect(
+      DEFAULT_CONTENT_PACK.lines
+        .slice(43)
+        .every((line) => line.captionSha256 === undefined),
+    ).toBe(true)
     expect(DEFAULT_CONTENT_PACK.audio).toBe(V2_ONBOARDING_AUDIO_ASSET_MANIFEST)
     expect(DEFAULT_CONTENT_PACK.audio.assets).toHaveLength(4)
     expect(validateContentPack(DEFAULT_CONTENT_PACK)).toEqual([])
@@ -207,7 +214,9 @@ describe('content pack', () => {
   it('uses the approved versioned Pull studies with literal descriptions', () => {
     for (const pullCharacter of DEFAULT_CONTENT_PACK.pullCharacters) {
       expect(pullCharacter.token.still).toMatch(
-        /[/]art[/]pulls[/]pull-.+-nanobanana-v0_1-512[.]webp$/u,
+        pullCharacter.noticeLayout === 'token'
+          ? /[/]onboarding[/]pull-expansion-v1[/]the-.+-token-v0_1[.]webp$/u
+          : /[/]art[/]pulls[/]pull-.+-nanobanana-v0_1-512[.]webp$/u,
       )
       expect(pullCharacter.token.alt).toMatch(
         new RegExp(`^${pullCharacter.name}`, 'u'),

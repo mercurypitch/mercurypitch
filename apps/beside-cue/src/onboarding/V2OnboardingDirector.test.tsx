@@ -416,6 +416,45 @@ describe('V2OnboardingDirector', () => {
     vi.useRealTimers()
   })
 
+  it('locks premium previews until Pro is active, then clears an expired uncommitted selection', async () => {
+    const probe = createDirectorProbe()
+    const [isPro, setPro] = createSignal(false)
+    const view = render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        isPro={isPro()}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+    await reachPullChoice()
+    fireEvent.click(screen.getByText('Show premium'))
+    await advance(1)
+    const tape = screen.getByRole('radio', { name: 'Another quick fix' })
+    expect(tape).toBeDisabled()
+    expect(
+      screen.getByRole('radio', { name: 'Endless scrolling' }),
+    ).toBeEnabled()
+    setPro(true)
+    expect(tape).toBeEnabled()
+    fireEvent.click(tape)
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(currentMediaStage().props.request?.primary?.src).toContain(
+      'b03-the-tape-present',
+    )
+    setPro(false)
+    expect(view.container.querySelector('main')).toHaveAttribute(
+      'data-phase',
+      'B03_PULL_CHOICE_HOLD',
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Pro is no longer active',
+    )
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    expect(probe.onSavePlan).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
+  })
+
   it('reveals the brand before one sound-enabled begin action', async () => {
     const probe = createDirectorProbe()
     const view = render(() => <V2OnboardingDirector {...probe.props} />)

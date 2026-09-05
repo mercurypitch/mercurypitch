@@ -1,5 +1,10 @@
+// ============================================================
+// Cue handoff — a fresh, focused view of the chosen Side B
+// ============================================================
+import { onMount } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
 import { CORKY_V023_REST_ART } from '@/content'
+import { Selectable } from '@/interaction/selection'
 
 interface CueMomentScreenProps {
   pullText: string
@@ -19,6 +24,14 @@ interface CueMomentScreenProps {
 }
 
 export function CueMomentScreen(props: CueMomentScreenProps) {
+  let heading: HTMLHeadingElement | undefined
+  onMount(() => {
+    heading?.focus({ preventScroll: true })
+    // A scrolled Home (notably at enlarged text) must not carry its offset
+    // into this new task and hide the close control or the cue introduction.
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  })
   return (
     <main
       class="cue-moment app-screen"
@@ -47,16 +60,18 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
       />
       <section class="cue-moment__copy">
         <p>{props.phrase}</p>
-        <h1 id="cue-title">{props.bSideText}</h1>
+        <h1 id="cue-title" ref={heading} tabIndex={-1} {...Selectable}>
+          {props.bSideText}
+        </h1>
         <dl class="cue-moment__context">
           <div>
             <dt>Instead of</dt>
-            <dd>{props.pullText}</dd>
+            <dd {...Selectable}>{props.pullText}</dd>
           </div>
           {props.cueContextText === undefined ? null : (
             <div>
               <dt>Your cue</dt>
-              <dd>{props.cueContextText}</dd>
+              <dd {...Selectable}>{props.cueContextText}</dd>
             </div>
           )}
         </dl>

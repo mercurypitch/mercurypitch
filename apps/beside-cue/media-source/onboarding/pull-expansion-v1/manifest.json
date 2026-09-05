@@ -1,0 +1,249 @@
+{
+  "revision": "pull-expansion-v1",
+  "plateSha256": "8eddf8927b6b3bbc806c31454216497ba06a8487e5d5afe99c992f323b57abc9",
+  "pulls": {
+    "familiar-ritual": {
+      "sources": {
+        "present": {
+          "file": "b03-familiar-ritual-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "45af54e49f77a20a05db3d2d62921f74038f2360b3ad0442f28855a7217f1ba5"
+        },
+        "recede": {
+          "file": "v1_eyes_poping_out_b05-familiar-ritual-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "b7be908d1d9f037c7a6aa0334e446342ac5ef6f0f7aaa9c404c23724a560f87c"
+        }
+      },
+      "registration": {
+        "scale": 0.4387755102040816,
+        "offset": [84, 516],
+        "edgeTravelPx": 124
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "knownSourceIssue": "Open-eye recede variant: eyes become glossy/protruding during the exit. Matched start preferred over closed-eye alternative; replacement generation remains pending.",
+      "matte": "chroma-ratio"
+    },
+    "two-minute-pause": {
+      "sources": {
+        "present": {
+          "file": "b03-two-minute-pause-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "cde98757762c85de2ae03cc1735dd384e65dbb398d978057d78df9b4c959f922"
+        },
+        "recede": {
+          "file": "b05-two-minute-pause-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "aa0658695a40e25db9eff45018e0ca34887304e1612d7ac44070896aff1bbe51"
+        }
+      },
+      "registration": {
+        "scale": 0.48863636363636365,
+        "offset": [89, 445],
+        "edgeTravelPx": 129
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "one-tap-convenience": {
+      "sources": {
+        "present": {
+          "file": "b03-one-tap-convenience-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "03f5d9760aecc21fb06ca0e47f18e2594d5d7c3c641b1ba26add26cff972a0b7"
+        },
+        "recede": {
+          "file": "b05-one-tap-convenience-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "b622e357823e37916ae78c203b8ecc49ad75491e19be3c132bd488ae3193322b"
+        }
+      },
+      "registration": {
+        "scale": 0.424901185770751,
+        "offset": [91, 516],
+        "edgeTravelPx": 131
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "the-thimble": {
+      "sources": {
+        "present": {
+          "file": "b03-the-thimble-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "102e9ed1bf9617edea70a3e422fba2966e79a6d5fcf1939a4ed2072c96351e22"
+        },
+        "recede": {
+          "file": "b05-the-thimble-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "6b61dda3ea568122c47df765e8e77be2b07b810301a019626091466077dae731"
+        }
+      },
+      "registration": {
+        "scale": 0.46130952380952384,
+        "offset": [75, 453],
+        "edgeTravelPx": 115
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "the-tab": {
+      "sources": {
+        "present": {
+          "file": "b03-the-tab-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "95c416b72bc65519ed4743b62208e5e83a3b3f8fec537ae715c963d538732491"
+        },
+        "recede": {
+          "file": "b05-the-tab-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "b0d3ddbc8261f152f98081310e7098e4e6923cfa96d4a6c0b1956e895f2f39ec"
+        }
+      },
+      "registration": {
+        "scale": 0.48423423423423423,
+        "offset": [64, 463],
+        "edgeTravelPx": 104
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "paper-chroma"
+    },
+    "the-bookmark": {
+      "sources": {
+        "present": {
+          "file": "b03-the-bookmark-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "db6d4714bd0ef29345fb41cf3c7e84c1e4d68666e859f85917ed368ff4534c49"
+        },
+        "recede": {
+          "file": "b05-the-bookmark-actual-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "1776e45542a16b402a02a60af8e82d9065ae82e2c9d863f4d2ed59d5a45b2846"
+        }
+      },
+      "registration": {
+        "scale": 0.3817733990147783,
+        "offset": [106, 524],
+        "edgeTravelPx": 146
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "paper-chroma"
+    },
+    "the-match": {
+      "sources": {
+        "present": {
+          "file": "b03-the-match-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "8aaa814a5d8c41f0b67496b9c0679b473ed08d071cda5dd926cbd43c79996130"
+        },
+        "recede": {
+          "file": "b05-the-match-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "4a8d1aaeb968fd9805ed5629880f09de1aa55bae9b664464ef97a3cc20ea927e"
+        }
+      },
+      "registration": {
+        "scale": 0.40103492884864167,
+        "offset": [98, 543],
+        "edgeTravelPx": 138
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "the-pillow": {
+      "sources": {
+        "present": {
+          "file": "b03-the-pillow-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "8af4aeb4ba790ecc40a7b30953371993935834d531797162fc699505cbc74a2e"
+        },
+        "recede": {
+          "file": "b05-the-pillow-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "4392d048e165f3a17e6de1fdb19a7416069adc6fb6bb75043f8b585859e0c79b"
+        }
+      },
+      "registration": {
+        "scale": 0.36317567567567566,
+        "offset": [116, 577],
+        "edgeTravelPx": 156
+      },
+      "matte": "pillow-beat-chroma-silhouette",
+      "frames": {
+        "present": 96,
+        "recede": 102
+      }
+    },
+    "the-kettle": {
+      "sources": {
+        "present": {
+          "file": "b03-the-kettle-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "1d408900191aa8e17eeaec69d54d650d597ff3df4407816098d290ec4f1d9513"
+        },
+        "recede": {
+          "file": "b05-the-kettle-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "82050d7b9aa5931293975b48ee1d794d14b214e318664ddeac6707984d3c744b"
+        }
+      },
+      "registration": {
+        "scale": 0.3887884267631103,
+        "offset": [102, 579],
+        "edgeTravelPx": 142
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "the-ticker": {
+      "sources": {
+        "present": {
+          "file": "b03-the-ticker-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "9db91e8935d1f7676fc48acfd76456eef8c26f52abb43414d9eb2dcd6b9b2473"
+        },
+        "recede": {
+          "file": "b05-the-ticker-recede-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "eaa4884da65fbc23d0be7231b10b81067f56e93073ebc4c568472b33b8f49016"
+        }
+      },
+      "registration": {
+        "scale": 0.5,
+        "offset": [88, 467],
+        "edgeTravelPx": 128
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    },
+    "the-tape": {
+      "sources": {
+        "present": {
+          "file": "b03-the-tape-present-google-flow-omni-1_1-flash-raw-v0_1.mp4",
+          "sha256": "e80c64973b5cb0a4ed85e8ec2c71b1a4f67da02c28658d176afcb6300ab872c3"
+        },
+        "recede": {
+          "file": "b05-the-tape-recede-google-flow-omni-1_1-flash-raw-v0_2.mp4",
+          "sha256": "fa50e7a669afbc8a1ef3c4cbb6ccbde4be86477b691235f0a97f67cf53400552"
+        }
+      },
+      "registration": {
+        "scale": 0.42828685258964144,
+        "offset": [94, 536],
+        "edgeTravelPx": 134
+      },
+      "frames": {
+        "present": 96,
+        "recede": 102
+      },
+      "matte": "chroma-ratio"
+    }
+  }
+}

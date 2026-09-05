@@ -1,0 +1,31 @@
+/* Application chrome is not a document. User-authored text and native editing
+   explicitly opt back in. No pointer, keyboard, zoom or contextmenu blocker. */
+#root,
+[data-selection='none'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-selection='text'],
+input:not([type='radio']):not([type='checkbox']):not([type='range']),
+textarea,
+[contenteditable]:not([contenteditable='false']),
+.schedule-status,
+[role='alert'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+select,
+option {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+[data-callout='none'] {
+  -webkit-touch-callout: none;
+}
+
+img[data-callout='none'] {
+  -webkit-user-drag: none;
+}

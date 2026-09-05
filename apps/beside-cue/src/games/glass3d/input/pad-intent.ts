@@ -25,7 +25,7 @@
 // thumb gets the tap, and pays for it by not being able to jump while
 // already walking. Both are real ways to play, and the player picks
 // without being asked.
-
+import { isNativeInteractionTarget } from '@/interaction/selection'
 import type { LocomotionIntent } from '../sim/locomotion3d'
 
 export interface PadConfig {
@@ -178,6 +178,7 @@ export const bindKeyboard = (
   }
 
   const onDown = (event: Event): void => {
+    if (isNativeInteractionTarget(event)) return
     const key = (event as KeyboardEvent).key
     if (!LEFT_KEYS.has(key) && !RIGHT_KEYS.has(key) && !JUMP_KEYS.has(key)) {
       return

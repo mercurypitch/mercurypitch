@@ -98,6 +98,44 @@ function reachStopHold(
 }
 
 describe('V2 onboarding runtime', () => {
+  it('returns an uncommitted revoked Pull to choice and rejects its old completion token', () => {
+    let state = reachPullChoice()
+    state = send(state, {
+      type: 'SELECT_PULL',
+      choice: {
+        pullId: 'the-tape',
+        pullLabel: 'Another quick fix',
+        sideAText: 'Reach for another quick fix',
+      },
+    })
+    state = send(state, { type: 'CONFIRM_PULL' })
+    const oldToken = state.presentation!.token
+    const reset = send(state, { type: 'PULL_ACCESS_REVOKED' })
+    expect(reset.phase).toBe('B03_PULL_CHOICE_HOLD')
+    expect(reset.selectedPull).toBeUndefined()
+    expect(reset.confirmedPull).toBeUndefined()
+    expect(reset.frozenPlan).toBeUndefined()
+    expect(
+      send(reset, {
+        type: 'PRESENTATION_COMPLETED',
+        token: oldToken,
+        nowMs: 1_000,
+      }),
+    ).toBe(reset)
+  })
+
+  it('does not discard an authorized in-flight or already saved plan on entitlement loss', () => {
+    let state = send(reachStopHold(), { type: 'STOP_AND_SAVE' })
+    expect(state.pendingSave).toBeDefined()
+    expect(send(state, { type: 'PULL_ACCESS_REVOKED' })).toBe(state)
+    state = send(state, {
+      type: 'PLAN_SAVE_SUCCEEDED',
+      requestId: state.pendingSave!.requestId,
+    })
+    state = finishPlatterStop(state)
+    expect(state.phase).toBe('B07_SAVED_ACK')
+    expect(send(state, { type: 'PULL_ACCESS_REVOKED' })).toBe(state)
+  })
   it('requires correlated presentation tokens and an explicit Begin', () => {
     let state = createV2OnboardingRuntimeState({
       sessionKind: 'first-run',

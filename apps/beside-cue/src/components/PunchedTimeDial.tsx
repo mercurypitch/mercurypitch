@@ -1,4 +1,5 @@
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { NoSelect } from '@/interaction/selection'
 import type { TimeDialLayer } from './punched-time-dial-math'
 import { applyDialAngularDelta, classifyTimeDialLayer, formatClockTime, normalizeAngularDelta, parseClockTime, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
 import styles from './PunchedTimeDial.module.css'
@@ -525,6 +526,8 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
         <div
           ref={dialElement}
           class={styles.stage}
+          {...NoSelect}
+          data-callout="none"
           role="slider"
           tabIndex={props.disabled === true ? -1 : 0}
           aria-label={
