@@ -834,6 +834,13 @@ not necessarily keep their desktop tab id.
 selects the destination by its exact accessible name.
 **See:** `scripts/audit-exercises-mobile.mjs`
 
+### Set dial touch ownership before contact, not after detecting a drag
+
+**Symptom:** the reminder record turns sideways but its circular arcs scroll the iPhone page.
+**Cause:** `pan-y` allows native vertical panning; pointer capture and a later `preventDefault` cannot reclaim it.
+**Rule:** publish visibility/scroll readiness before contact, use `pinch-zoom` on the ready disc, and require both published and fresh readiness when admitting a turn. Never promote a page-owned contact mid-stream.
+**See:** `apps/beside-cue/src/components/punched-time-dial-readiness.ts`, `apps/beside-cue/e2e/punched-time-dial.e2e.ts` (trusted touch at both side tangents, partial visibility, gutter scrolling and quiet-window contact).
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked

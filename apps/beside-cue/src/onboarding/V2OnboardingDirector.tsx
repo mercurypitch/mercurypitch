@@ -201,7 +201,6 @@ function phaseHeading(state: V2OnboardingRuntimeState, copy: Copy): string {
   const pullLabel = state.confirmedPull?.pullLabel ?? copy.t('this Pull')
   switch (state.phase) {
     case 'B00_BRAND_REVEAL':
-      return 'Beside Cue'
     case 'B00_BEGIN_HOLD':
       return copy.t('One Pull. One chosen turn.')
     case 'B01_CORKY_GREETING':
@@ -1186,6 +1185,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       'COMPLETE',
     ].includes(state().phase),
   )
+  const isOpeningBrandPhase = createMemo(
+    () =>
+      state().phase === 'B00_BRAND_REVEAL' ||
+      state().phase === 'B00_BEGIN_HOLD',
+  )
 
   return (
     <main
@@ -1354,8 +1358,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               <div
                 class={styles.brandReveal}
                 classList={{
-                  [styles.brandRevealOpening]:
-                    state().phase === 'B00_BRAND_REVEAL',
+                  [styles.brandRevealOpening]: isOpeningBrandPhase(),
                 }}
               >
                 <BrandMark />
@@ -1419,6 +1422,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               }}
               id="v2-onboarding-title"
               tabIndex={-1}
+              aria-label={
+                isOpeningBrandPhase()
+                  ? `Beside Cue. ${copy.t('One Pull. One chosen turn.')}`
+                  : undefined
+              }
             >
               {phaseHeading(state(), copy)}
             </h1>

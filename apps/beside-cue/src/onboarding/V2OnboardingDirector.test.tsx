@@ -481,8 +481,12 @@ describe('V2OnboardingDirector', () => {
     const probe = createDirectorProbe()
     const view = render(() => <V2OnboardingDirector {...probe.props} />)
 
-    const openingHeading = screen.getByRole('heading', { name: 'Beside Cue' })
+    const openingHeading = screen.getByRole('heading', {
+      name: 'Beside Cue. One Pull. One chosen turn.',
+    })
+    const openingBrand = view.container.querySelector('.brand-mark')
     expect(openingHeading).toBeVisible()
+    expect(openingBrand).not.toBeNull()
     expect(openingHeading.closest('section')).toHaveClass(styles.stageBrand)
     expect(
       screen.queryByRole('button', { name: 'Tap to begin' }),
@@ -494,6 +498,12 @@ describe('V2OnboardingDirector', () => {
     ).not.toBeInTheDocument()
 
     await advance(1_300)
+    expect(
+      screen.getByRole('heading', {
+        name: 'Beside Cue. One Pull. One chosen turn.',
+      }),
+    ).toBe(openingHeading)
+    expect(view.container.querySelector('.brand-mark')).toBe(openingBrand)
     fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
     expect(probe.audio.unlock).toHaveBeenCalledTimes(1)
     expect(probe.audio.createScope).toHaveBeenCalledTimes(1)

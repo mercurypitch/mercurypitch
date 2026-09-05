@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { applyDialAngularDelta, classifyTimeDialLayer, classifyTimeDialTouchIntent, formatClockTime, normalizeAngularDelta, parseClockTime, PUNCHED_DIAL_GEOMETRY, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
+import { applyDialAngularDelta, classifyTimeDialLayer, formatClockTime, normalizeAngularDelta, parseClockTime, PUNCHED_DIAL_GEOMETRY, segmentCrossesTimeDialSpindle, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
 
 describe('punched time dial clock values', () => {
   it('round-trips every canonical edge time without dropping zero padding', () => {
@@ -109,53 +109,100 @@ describe('punched time dial gesture mapping', () => {
     expect(formatClockTime(midnight)).toBe('00:00')
     expect(formatClockTime(tenPast)).toBe('10:10')
   })
-
-  it('waits through touch slop, yields vertical motion, and claims a tangential turn', () => {
-    // Arrange
-    const topEdge = {
-      startX: 220,
-      startY: 40,
-      centerX: 220,
-      centerY: 220,
-    }
-    const rightEdge = {
-      startX: 390,
-      startY: 220,
-      centerX: 220,
-      centerY: 220,
-    }
-
-    // Act
-    const stillInsideSlop = classifyTimeDialTouchIntent({
-      ...topEdge,
-      currentX: 226,
-      currentY: 45,
-    })
-    const verticalPageIntent = classifyTimeDialTouchIntent({
-      ...rightEdge,
-      currentX: 390,
-      currentY: 300,
-    })
-    const tangentialTurn = classifyTimeDialTouchIntent({
-      ...topEdge,
-      currentX: 300,
-      currentY: 60,
-    })
-    const radialSwipe = classifyTimeDialTouchIntent({
-      ...rightEdge,
-      currentX: 310,
-      currentY: 220,
-    })
-
-    // Assert
-    expect(stillInsideSlop).toBe('pending')
-    expect(verticalPageIntent).toBe('yield')
-    expect(tangentialTurn).toBe('spin')
-    expect(radialSwipe).toBe('yield')
-  })
 })
 
 describe('punched time dial hit zones', () => {
+  it.each([
+    {
+      name: 'sparse horizontal crossing',
+      start: [40, 0],
+      end: [-40, 0],
+      crosses: true,
+    },
+    {
+      name: 'sparse vertical crossing',
+      start: [0, -40],
+      end: [0, 40],
+      crosses: true,
+    },
+    {
+      name: 'sparse diagonal crossing',
+      start: [-40, -40],
+      end: [40, 40],
+      crosses: true,
+    },
+    {
+      name: 'tangent at the spindle boundary',
+      start: [-40, 24],
+      end: [40, 24],
+      crosses: true,
+    },
+    {
+      name: 'just outside the spindle boundary',
+      start: [-40, 24.01],
+      end: [40, 24.01],
+      crosses: false,
+    },
+    {
+      name: 'ordinary quarter-circle sample',
+      start: [40, 0],
+      end: [0, 40],
+      crosses: false,
+    },
+    {
+      name: 'segment ending inside the spindle',
+      start: [40, 0],
+      end: [10, 0],
+      crosses: true,
+    },
+    {
+      name: 'segment starting inside the spindle',
+      start: [10, 0],
+      end: [40, 0],
+      crosses: true,
+    },
+    {
+      name: 'spindle behind the segment start',
+      start: [40, 0],
+      end: [80, 0],
+      crosses: false,
+    },
+    {
+      name: 'spindle beyond the segment end',
+      start: [-80, 0],
+      end: [-40, 0],
+      crosses: false,
+    },
+    {
+      name: 'stationary point at the centre',
+      start: [0, 0],
+      end: [0, 0],
+      crosses: true,
+    },
+    {
+      name: 'stationary point on the boundary',
+      start: [24, 0],
+      end: [24, 0],
+      crosses: true,
+    },
+    {
+      name: 'stationary point outside the boundary',
+      start: [24.01, 0],
+      end: [24.01, 0],
+      crosses: false,
+    },
+  ] as const)('detects $name', ({ start, end, crosses }) => {
+    // Arrange: samples are normalized coordinates relative to the dial centre.
+    const [startX, startY] = start
+    const [endX, endY] = end
+
+    // Act
+    const result = segmentCrossesTimeDialSpindle(startX, startY, endX, endY)
+
+    // Assert
+    expect(result).toBe(crosses)
+  })
+
   it('keeps the spindle and space outside the record inert', () => {
     // Arrange
     const { spindleDeadZoneRadius, recordOuterRadius } = PUNCHED_DIAL_GEOMETRY
