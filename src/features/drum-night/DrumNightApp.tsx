@@ -178,6 +178,9 @@ const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
 const INITIAL_KIT_VOLUME = 82
 const FIRST_POCKET_TEMPO_BPM = 84
+/** The recovery loop's playback speed; setAuthoredTiming resets the
+ *  transport to 1, so every path that re-authors timing restores this. */
+const RECOVERY_SPEED_SCALE = 0.7
 const MAX_IMPORTED_SESSION_PREWARM_HITS = 128
 const WORKSPACE_TITLES: Record<Workspace, string> = {
   groove: 'Shape the groove',
@@ -2525,7 +2528,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       showToast('That recovery bar is outside the authored take range.')
       return
     }
-    runtime.setSpeedScale(0.7)
+    runtime.setSpeedScale(RECOVERY_SPEED_SCALE)
     setRecoveryLoopActive(true)
     showToast(
       `Recovery loop set to bar ${loop.barNumber} at 70% of the authored tempo.`,
@@ -3331,7 +3334,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         })
         // Re-timing resets the transport's speed scale; a recovery loop
         // keeps its 70%.
-        if (untrack(recoveryLoopActive)) runtime.setSpeedScale(0.7)
+        if (untrack(recoveryLoopActive))
+          runtime.setSpeedScale(RECOVERY_SPEED_SCALE)
       }
       return
     }
