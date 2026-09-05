@@ -30,13 +30,13 @@ import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { keepBest, readStats, writeStats } from '../levels/line-stats'
 import { lineTrack } from '../levels/line-track'
 import type { LineGate, LineLevel } from '../levels/lines'
-import { admits, bandsFor, crossed, fitFor, furnitureOf, LINES, overGaps, PLATE_STANDOFF, wedgeStop, } from '../levels/lines'
+import { admits, bandAt, bandsFor, crossed, fitFor, furnitureOf, LINES, overGaps, wallAt, } from '../levels/lines'
 import { createLoopState, runLoop } from '../runtime/loop'
 import type { GateGrade, RoomStats } from '../sim/line-grade'
 import { emptySlide, medalFor, midiBandFor, NO_STOPS, roomLine, slideStep, statsOf, walkLine, withStop, } from '../sim/line-grade'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import type { Band, Range, Spring } from '../sim/tension3d'
-import { inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, torsoHeight, widenRange, workingRange, } from '../sim/tension3d'
+import { inBand, REST_HEIGHT, REST_WIDTH, restTFor, silhouetteFor, springAt, tensionStep, widenRange, workingRange, } from '../sim/tension3d'
 import { readMeasuredRange, voiceCentre } from '../voice-range'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { LineGateView, LineView } from './Line3D'
@@ -173,8 +173,12 @@ export const LineStage = (props: LineStageProps) => {
 
       interface GateState {
         spec: LineGate
-        /** Where he has to be to get through: the gauge's band. */
+        /** Where he has to be to get through: the gauge's band, and
+         * what a stop is graded against. A wedge's closes as he walks
+         * into it (`bandAt`), so it is set per frame. */
         band: Band
+        /** Its bands as built, for `bandAt`. */
+        bands: { band: Band; entry: Band }
         /** Its derived numbers: slot height, slot width, gap, or a
          * wedge's two ceilings. */
         size: number
@@ -192,6 +196,7 @@ export const LineStage = (props: LineStageProps) => {
           return {
             spec,
             band: bands.band,
+            bands,
             size: fit.size,
             sizeOut: fit.sizeOut,
             open: false,
@@ -204,6 +209,7 @@ export const LineStage = (props: LineStageProps) => {
         for (const g of gates) {
           const bands = bandsFor(g.spec, range)
           const fit = fitFor(g.spec, bands)
+          g.bands = bands
           g.band = bands.band
           g.size = fit.size
           g.sizeOut = fit.sizeOut
@@ -212,27 +218,16 @@ export const LineStage = (props: LineStageProps) => {
       }
 
       const walls = { ...cfg.locomotion, minX: 0, maxX: live.length }
-      /** The nearest shut plate ahead of him is the wall. A plate whose
-       * slot he fits is no wall at all, and one he has passed cannot
-       * reach back. A grate is never a wall: it is walked onto, and
-       * either holds or does not. */
+      /** The nearest thing he may not pass is the wall: a shut plate
+       * ahead, or a wedge wherever its ceiling meets his head. Never
+       * behind him (`wallAt`): a gate that closes on him pins him. */
       const closeWalls = (): void => {
-        let stop = live.length
         const body = silhouetteFor(spring.t)
+        let stop = live.length
         for (const g of gates) {
           if (g.passed) continue
-          let at: number
-          if (g.spec.kind === 'slot') {
-            if (g.open) continue
-            at = g.spec.x - PLATE_STANDOFF
-          } else if (g.spec.kind === 'wedge') {
-            // The wedge's wall moves with his shape: it is wherever
-            // the falling ceiling meets his head, less his front.
-            at = wedgeStop(g.spec, g, torsoHeight(body), body.width / 2)
-          } else {
-            continue
-          }
-          if (at >= loco.x && at < stop) stop = at
+          const at = wallAt(g.spec, g, body, loco.x, g.open)
+          if (at < stop) stop = at
         }
         walls.maxX = stop
       }
@@ -458,6 +453,7 @@ export const LineStage = (props: LineStageProps) => {
           const body = silhouetteFor(spring.t)
 
           for (const g of gates) {
+            g.band = bandAt(g.spec, g.bands, g, body, loco.x)
             g.open = admits(g.spec, body, g, loco.x)
             // Passing is crossing, which the walls only allow while he
             // fits a plate, and which a grate only allows by holding

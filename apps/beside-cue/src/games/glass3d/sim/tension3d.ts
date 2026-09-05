@@ -155,6 +155,15 @@ export const silhouetteFor = (t: number, sweep: Sweep = SWEEP): Silhouette => {
 export const restTFor = (sweep: Sweep = SWEEP): number =>
   clamp01((REST_HEIGHT - sweep.flat) / (sweep.tall - sweep.flat))
 
+/** The sweep run backwards: the `t` at which he is this tall. Clamped
+ * to the sweep, so a height he cannot reach is its nearest end. */
+export const tForHeight = (height: number, sweep: Sweep = SWEEP): number =>
+  clamp01((height - sweep.flat) / (sweep.tall - sweep.flat))
+
+/** The `t` at which his TORSO is this tall. What a ceiling asks for. */
+export const tForTorso = (torso: number, sweep: Sweep = SWEEP): number =>
+  tForHeight(torso / TORSO_OF_HEIGHT, sweep)
+
 /**
  * How far in from each end the playable range sits, in semitones.
  *

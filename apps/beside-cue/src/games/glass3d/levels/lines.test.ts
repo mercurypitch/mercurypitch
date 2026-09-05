@@ -2,9 +2,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { bandFor, inBand, REST_WIDTH, restTFor, silhouetteFor, torsoHeight, workingRange, } from '../sim/tension3d'
+import { bandFor, inBand, RELAX_SECONDS, relaxToward, REST_WIDTH, restTFor, silhouetteFor, torsoHeight, workingRange, } from '../sim/tension3d'
 import { VOICE_PRESETS } from '../voice-range'
-import { admits, bandsFor, crossed, fitFor, furnitureOf, LINE_2, LINE_3, LINES, meshLayout, overGaps, PLATE_STANDOFF, sizeFor, SLAT, wedgeCeiling, wedgeStop, } from './lines'
+import { admits, bandAt, bandsFor, crossed, fitFor, furnitureOf, LINE_2, LINE_3, LINES, meshLayout, overGaps, PLATE_STANDOFF, sizeFor, SLAT, wallAt, wedgeCeiling, wedgeStop, } from './lines'
 
 type AnyGate = (typeof LINES)[number]['gates'][number]
 const startOf = (gate: AnyGate): number =>
@@ -206,7 +206,7 @@ describe('what is drawn is what is judged', () => {
     expect(furnitureOf(LINE_3.gates[0]!)).toEqual({
       kind: 'wedge',
       from: 1.8,
-      to: 2.8,
+      to: 3.8,
     })
   })
 })
@@ -290,5 +290,102 @@ describe('room 3, the wedge', () => {
   it('is crossed a hand past its far end', () => {
     expect(crossed(wedge, wedge.to)).toBe(false)
     expect(crossed(wedge, wedge.to + 0.06)).toBe(true)
+  })
+})
+
+describe('the band where he stands', () => {
+  const range = { lowMidi: 48, highMidi: 70 }
+  const wedge = LINE_3.gates[0]!
+  if (wedge.kind !== 'wedge') throw new Error('room 3 starts with its wedge')
+  const bands = bandsFor(wedge, range)
+  const fit = fitFor(wedge, bands)
+
+  it("is the gate's band for anything that is not a wedge", () => {
+    for (const gate of [...LINES[0]!.gates, ...LINE_2.gates]) {
+      const b = bandsFor(gate, range)
+      const f = fitFor(gate, b)
+      expect(bandAt(gate, b, f, silhouetteFor(0.5), 0)).toEqual(b.band)
+    }
+  })
+
+  // The tube says "keep going down" only where it is true: the entry
+  // band at the door, the exit band at the far end, closing between.
+  it('closes as he walks into the wedge', () => {
+    const body = silhouetteFor(bands.entry.hi)
+    const door = bandAt(wedge, bands, fit, body, wedge.from - 1)
+    expect(door.hi).toBeCloseTo(bands.entry.hi, 6)
+    const far = bandAt(wedge, bands, fit, body, wedge.to + 1)
+    expect(far.hi).toBeCloseTo(bands.band.hi, 6)
+    let last = door.hi
+    for (let x = wedge.from - body.width / 2; x <= wedge.to; x += 0.1) {
+      const now = bandAt(wedge, bands, fit, body, x).hi
+      expect(now).toBeLessThanOrEqual(last + 1e-9)
+      last = now
+    }
+    expect(last).toBeLessThan(door.hi)
+  })
+})
+
+describe('the wall', () => {
+  const range = { lowMidi: 48, highMidi: 70 }
+  const wedge = LINE_3.gates[0]!
+  if (wedge.kind !== 'wedge') throw new Error('room 3 starts with its wedge')
+  const bands = bandsFor(wedge, range)
+  const fit = fitFor(wedge, bands)
+  const plate = LINES[0]!.gates[0]!
+  if (plate.kind !== 'slot') throw new Error('room 1 starts with its plate')
+  const plateFit = fitFor(plate, bandsFor(plate, range))
+
+  it('is never behind him: a wedge that has come down on him pins him', () => {
+    const rest = silhouetteFor(restTFor())
+    const inside = wedge.from + 0.8
+    expect(
+      wedgeStop(wedge, fit, torsoHeight(rest), rest.width / 2),
+    ).toBeLessThan(inside)
+    expect(wallAt(wedge, fit, rest, inside, false)).toBe(inside)
+    // Before the mouth the wall is the mouth, ahead of him.
+    expect(wallAt(wedge, fit, rest, 0.5, false)).toBeGreaterThan(0.5)
+    expect(wallAt(wedge, fit, rest, 0.5, false)).toBeLessThan(wedge.from)
+  })
+
+  it('is no wall at all for the shape that fits the far end, or for a grate', () => {
+    const out = silhouetteFor(bands.band.hi)
+    expect(wallAt(wedge, fit, out, wedge.from + 1, false)).toBe(Infinity)
+    const grate = LINE_2.gates[0]!
+    expect(
+      wallAt(grate, fitFor(grate, bandsFor(grate, range)), out, 2, false),
+    ).toBe(Infinity)
+  })
+
+  it("pins him in a plate's doorway if it shuts on him", () => {
+    const rest = silhouetteFor(restTFor())
+    expect(wallAt(plate, plateFit, rest, 0.5, true)).toBe(Infinity)
+    expect(wallAt(plate, plateFit, rest, 0.5, false)).toBe(
+      plate.x - PLATE_STANDOFF,
+    )
+    const doorway = plate.x - 0.05
+    expect(wallAt(plate, plateFit, rest, doorway, false)).toBe(doorway)
+  })
+
+  // The room's clock (§16.6): release the note at the mouth, at the
+  // mouth's shape, and walk. The relax brings him up; the ceiling has
+  // to meet his head before the far end, or the glide is optional.
+  it('meets a released note before the far end of the wedge', () => {
+    const walk = 1.15
+    const dt = 1 / 120
+    let t = bands.entry.hi
+    let x = wedge.from
+    let met: number | null = null
+    while (x < wedge.to + 0.5) {
+      const body = silhouetteFor(t)
+      if (wallAt(wedge, fit, body, x, false) <= x) {
+        met = x
+        break
+      }
+      t = relaxToward(t, restTFor(), dt, RELAX_SECONDS)
+      x += walk * dt
+    }
+    expect(met).not.toBeNull()
+    expect(met!).toBeLessThan(wedge.to - 0.4)
   })
 })

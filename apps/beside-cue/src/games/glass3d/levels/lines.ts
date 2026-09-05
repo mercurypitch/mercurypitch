@@ -25,7 +25,7 @@
 // with on a phone than one whose plate is "at 0.3".
 
 import type { Band, Gate, Range, Silhouette } from '../sim/tension3d'
-import { bandFor, fitsSlotHeight, fitsSlotWidth, gapWidthFor, LETTERBOX, SCREEN_MESH, SCREEN_SLOT, slotHeightFor, slotWidthFor, supportedBy, torsoHeight, WEDGE_IN, WEDGE_OUT, } from '../sim/tension3d'
+import { bandFor, fitsSlotHeight, fitsSlotWidth, gapWidthFor, LETTERBOX, SCREEN_MESH, SCREEN_SLOT, slotHeightFor, slotWidthFor, supportedBy, tForTorso, torsoHeight, WEDGE_IN, WEDGE_OUT, } from '../sim/tension3d'
 
 /** A plate across the corridor with a slot in it. */
 export interface SlotPlate {
@@ -152,6 +152,28 @@ export const admits = (
 }
 
 /**
+ * The band that applies where he stands. For everything but a wedge it
+ * is the gate's band. For a wedge it is what the ceiling at his FRONT
+ * admits: the entry band before the mouth, the exit band at the far
+ * end, and between them a band that closes as he walks -- which is
+ * what the gauge shows and what a stop is graded against, so the tube
+ * says "keep going down" in the one place it is true, and a note held
+ * before the mouth is not marked against the far end (maff's phone:
+ * a low note at the door graded 0, the same note the next time 100).
+ */
+export const bandAt = (
+  gate: LineGate,
+  bands: { band: Band; entry: Band },
+  fit: Fit,
+  body: Silhouette,
+  x: number,
+): Band => {
+  if (gate.kind !== 'wedge') return bands.band
+  const ceiling = wedgeCeiling(gate, fit, x + body.width / 2)
+  return { lo: 0, hi: Math.min(bands.entry.hi, tForTorso(ceiling)) }
+}
+
+/**
  * Where a wedge stops a body of this height and half-width: the `x`
  * his front edge reaches before the ceiling meets his head. Infinity
  * when the far end admits him, so it is no wall at all; before the
@@ -167,6 +189,30 @@ export const wedgeStop = (
   if (torso > fit.size) return gate.from - halfWidth
   const along = (fit.size - torso) / (fit.size - fit.sizeOut)
   return gate.from + (gate.to - gate.from) * along - halfWidth
+}
+
+/**
+ * The `x` this piece of furniture will not let him pass right now, or
+ * Infinity. A grate is never a wall: it is walked onto and holds or
+ * does not. A wall is NEVER behind him: a wedge whose ceiling has come
+ * down on him, or a plate that shut while he was in its doorway, pins
+ * him where he stands until he is the shape again -- he stops with his
+ * head against it, and can back out. (maff's phone: a note released in
+ * the wedge let him walk on out, because the wall had moved behind him
+ * and a wall behind him was ignored.)
+ */
+export const wallAt = (
+  gate: LineGate,
+  fit: Fit,
+  body: Silhouette,
+  x: number,
+  open: boolean,
+): number => {
+  if (gate.kind === 'mesh') return Infinity
+  if (gate.kind === 'wedge') {
+    return Math.max(x, wedgeStop(gate, fit, torsoHeight(body), body.width / 2))
+  }
+  return open ? Infinity : Math.max(x, gate.x - PLATE_STANDOFF)
 }
 
 /** Is he through? A plate is passed a hand's width beyond it; a grate
@@ -298,21 +344,27 @@ export const LINE_2: LineLevel = {
 }
 
 /**
- * Room 3, "The Wedge". Five metres, and the gate §8 asked for, as far
- * as one degree of freedom allows (§16.2): a slot whose ceiling falls
- * along its metre, from what a low note fits to what a lower one does.
- * He cannot stop in it and be right; the voice has to keep going down
- * at the pace he walks. A hummed glide with a target.
+ * Room 3, "The Wedge". Six and a half metres, and the gate §8 asked
+ * for, as far as one degree of freedom allows (§16.2): a slot whose
+ * ceiling falls along its length, from what a low note fits to what a
+ * lower one does. He cannot stop in it and be right; the voice has to
+ * keep going down at the pace he walks. A hummed glide with a target.
+ *
+ * Two metres long, not one: at one metre a note released at the mouth
+ * still fitted the far end before the relax had brought him up, so
+ * the glide never had to be sustained (maff's phone). At two, silence
+ * from the mouth's shape reaches the far end's ceiling with half a
+ * metre to go, and he has to keep singing down to get out.
  */
 export const LINE_3: LineLevel = {
   id: 'line-3',
   teaches: 'Keep going down as you go through.',
   hint: 'The ceiling falls as he walks under it. Keep the note sliding lower, a step ahead of him, and he keeps going.',
-  length: 5,
+  length: 6.5,
   startX: 0.2,
-  exitX: 4.6,
+  exitX: 6.0,
   gates: [
-    { kind: 'wedge', from: 1.8, to: 2.8, gate: WEDGE_IN, out: WEDGE_OUT },
+    { kind: 'wedge', from: 1.8, to: 3.8, gate: WEDGE_IN, out: WEDGE_OUT },
   ],
   jump: false,
 }
