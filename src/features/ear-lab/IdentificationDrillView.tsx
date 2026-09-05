@@ -287,7 +287,9 @@ export function IdentificationDrillView(
                 </PlateBadge>
               </Show>
               <PlateLine>
-                {result().correct} of {result().total} named correctly
+                {result().total === 0
+                  ? 'Stopped before the first answer — nothing marked.'
+                  : `${result().correct} of ${result().total} named correctly`}
               </PlateLine>
               <OutcomeDots
                 outcomes={result().outcomes.map((outcome) => ({
