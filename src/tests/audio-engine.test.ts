@@ -575,9 +575,57 @@ describe('AudioEngine', () => {
   })
 
   describe('destroy', () => {
+    type MockFn = ReturnType<typeof vi.fn>
+    type MockCtx = {
+      state: string
+      close: MockFn
+      createGain: MockFn
+      createAnalyser: MockFn
+      createDynamicsCompressor: MockFn
+    }
+    type MockNode = { disconnect: MockFn }
+    const currentCtx = (): MockCtx => {
+      const ctor = globalThis.AudioContext as unknown as MockFn
+      return (ctor.mock.results.at(-1)?.value ??
+        ctor.mock.instances.at(-1)) as MockCtx
+    }
+    // Only nodes whose disconnect is a spy count; the analyser mock has none.
+    const nodesOf = (ctx: MockCtx): MockNode[] =>
+      [ctx.createGain, ctx.createAnalyser, ctx.createDynamicsCompressor]
+        .flatMap((factory) => factory.mock.results.map((r) => r.value))
+        .filter(
+          (node): node is MockNode =>
+            typeof (node as MockNode | undefined)?.disconnect === 'function' &&
+            'mock' in (node as MockNode).disconnect,
+        )
+
     it('cleans up without error', () => {
       engine.destroy()
-      // Should not error
+    })
+
+    it('takes the graph apart before closing the context', () => {
+      const ctx = currentCtx()
+      const before = nodesOf(ctx).reduce(
+        (n, node) => n + node.disconnect.mock.calls.length,
+        0,
+      )
+      engine.destroy()
+      const disconnects = nodesOf(ctx).flatMap(
+        (node) => node.disconnect.mock.invocationCallOrder,
+      )
+      expect(disconnects.length).toBeGreaterThan(before)
+      expect(ctx.close).toHaveBeenCalledTimes(1)
+      const closeOrder = ctx.close.mock.invocationCallOrder[0] ?? 0
+      expect(Math.max(...disconnects)).toBeLessThan(closeOrder)
+    })
+
+    it('does not close a context that is already closed, and survives a second destroy', () => {
+      const ctx = currentCtx()
+      ctx.state = 'closed'
+      expect(() => engine.destroy()).not.toThrow()
+      expect(ctx.close).not.toHaveBeenCalled()
+      expect(() => engine.destroy()).not.toThrow()
+      expect(engine.getIsInitialized()).toBe(false)
     })
   })
 

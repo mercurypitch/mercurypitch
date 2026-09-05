@@ -161,9 +161,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
       const response = await fetch(vocalUrl)
       const arrayBuffer = await response.arrayBuffer()
-      const audioCtx = new AudioContext()
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
-      await audioCtx.close()
+      let audioCtx: AudioContext | null = null
+      let audioBuffer: AudioBuffer
+      try {
+        audioCtx = new AudioContext()
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+      } finally {
+        if (audioCtx) {
+          try {
+            await audioCtx.close()
+          } catch {
+            /* ignore */
+          }
+        }
+      }
 
       const denoise = karaokeStemDenoise()
       const fp = await extractStemFingerprint(
