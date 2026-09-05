@@ -592,31 +592,61 @@ export const LineStage = (props: LineStageProps) => {
     })
   })
 
+  /** One startMic at a time: two taps during the permission prompt
+   *  shared `driver`, and the first one's catch nulled the second's. */
+  let micStarting = false
+  /** The stage has been left. A permission prompt outlives a stage that
+   *  was navigated away from; the driver it would have opened after the
+   *  prompt had nobody to stop it. */
+  let left = false
+  onCleanup(() => {
+    left = true
+  })
+
   const startMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     setMicError(null)
     try {
       await applyPreferredInput()
+      if (left) return
       driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
   const switchMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     driver?.stop()
     driver = null
     setMicError(null)
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
