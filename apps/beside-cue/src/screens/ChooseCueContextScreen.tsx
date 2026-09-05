@@ -3,6 +3,7 @@
 // ============================================================
 import { For, onMount, Show } from 'solid-js'
 import { AppHeader } from '@/components/AppHeader'
+import { useCopy } from '@/i18n/ui-copy'
 import styles from './ChooseCueContextScreen.module.css'
 
 export interface CueContextChoicePresentation {
@@ -74,6 +75,7 @@ function CueContextChoice(props: CueContextChoiceProps) {
 }
 
 export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
+  const copy = useCopy()
   let headingElement: HTMLHeadingElement | undefined
 
   const suggestionSelected = (id: string): boolean => {
@@ -94,7 +96,9 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
     <main class="setup-screen app-screen">
       <AppHeader label={props.headerLabel} onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="cue-context-title">
-        <p class="step-label">Cue · what brings the Pull into view</p>
+        <p class="step-label">
+          {copy.t('Cue · what brings the Pull into view')}
+        </p>
         <h1
           ref={(element) => {
             headingElement = element
@@ -102,12 +106,13 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
           id="cue-context-title"
           tabIndex={-1}
         >
-          When does this Pull usually show up?
+          {copy.t('When does this Pull usually show up?')}
         </h1>
         <p id="cue-context-description">
-          For <strong>{props.pullLabel}</strong>, choose a familiar moment or
-          use your own words. This is a private note; Beside Cue will not detect
-          it automatically.
+          {copy.t(
+            'For {pull}, choose a familiar moment or use your own words. This is a private note; Beside Cue will not detect it automatically.',
+            { pull: props.pullLabel },
+          )}
         </p>
       </section>
 
@@ -116,7 +121,7 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
         aria-describedby="cue-context-description"
       >
         <legend class="visually-hidden">
-          When does this Pull usually show up?
+          {copy.t('When does this Pull usually show up?')}
         </legend>
         <div class={styles.choiceList}>
           <For each={props.suggestions}>
@@ -133,16 +138,18 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
           </For>
           <CueContextChoice
             id="custom"
-            label="Write my own"
-            description="Name the moment in words that feel natural to you."
+            label={copy.t('Write my own')}
+            description={copy.t(
+              'Name the moment in words that feel natural to you.',
+            )}
             selected={customSelected()}
             tone="custom"
             onSelect={() => props.onSelect({ kind: 'custom' })}
           />
           <CueContextChoice
             id="not-sure"
-            label="Not sure yet"
-            description="Your plan works without this."
+            label={copy.t('Not sure yet')}
+            description={copy.t('Your plan works without this.')}
             selected={notSureSelected()}
             tone="not-sure"
             onSelect={() => props.onSelect({ kind: 'not-sure' })}
@@ -152,21 +159,23 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
 
       <Show when={customSelected()}>
         <label class="text-field">
-          <span>Your cue</span>
+          <span>{copy.t('Your cue')}</span>
           <input
             value={props.customText}
             onInput={(event) => props.onCustomInput(event.currentTarget.value)}
             maxLength={120}
             autocomplete="off"
-            placeholder="For example, when I get into bed with my phone"
-            aria-label="Your cue"
+            placeholder={copy.t(
+              'For example, when I get into bed with my phone',
+            )}
+            aria-label={copy.t('Your cue')}
             aria-describedby={`cue-context-private-note${
               props.error === undefined ? '' : ' cue-context-error'
             }`}
             aria-invalid={props.error !== undefined}
           />
           <small id="cue-context-private-note">
-            Stored only on this device.
+            {copy.t('Stored only on this device.')}
           </small>
         </label>
       </Show>
@@ -186,7 +195,7 @@ export function ChooseCueContextScreen(props: ChooseCueContextScreenProps) {
           disabled={props.selection === undefined}
           onClick={() => props.onContinue()}
         >
-          Choose Side B
+          {copy.t('Choose Side B')}
         </button>
       </div>
     </main>

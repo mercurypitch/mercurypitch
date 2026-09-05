@@ -11,11 +11,15 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show
 import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
 import { BrandMark } from '@/components/BrandMark'
+import { LanguageSelector } from '@/components/LanguageSelector'
 import { PremiumPullChoices } from '@/components/PremiumPullChoices'
 import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
-import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import { getLocalizedGenericPullCharacter } from '@/content/localized-pack'
 import { canSelectPull, isPremiumPull } from '@/content/pulls'
+import type { Copy } from '@/i18n/ui-copy'
+import { useCopy } from '@/i18n/ui-copy'
 import type { V2OnboardingAudioBeat } from './v2-onboarding-audio-director'
 import { createV2OnboardingAudioDirector } from './v2-onboarding-audio-director'
 import type { V2OnboardingMediaPack, V2OnboardingPullMediaMoment, } from './v2-onboarding-media-pack'
@@ -68,6 +72,7 @@ const AUTOMATIC_DURATION_MS: Readonly<
 
 const REDUCED_AUTOMATIC_DURATION_MS = 650
 const DIALOGUE_SAFETY_TIMEOUT_MS = 15_000
+const MAX_DIALOGUE_SAFETY_TIMEOUT_MS = 60_000
 const MEDIA_SAFETY_TIMEOUT_MS = 15_000
 const RECORD_SPIN_PRESENTATION_SAFETY_TIMEOUT_MS = 8_000
 const RECORD_SPIN_END_SAFETY_TIMEOUT_MS = 6_000
@@ -192,45 +197,45 @@ function errorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
-function phaseHeading(state: V2OnboardingRuntimeState): string {
-  const pullLabel = state.confirmedPull?.pullLabel ?? 'this Pull'
+function phaseHeading(state: V2OnboardingRuntimeState, copy: Copy): string {
+  const pullLabel = state.confirmedPull?.pullLabel ?? copy.t('this Pull')
   switch (state.phase) {
     case 'B00_BRAND_REVEAL':
       return 'Beside Cue'
     case 'B00_BEGIN_HOLD':
-      return 'One Pull. One chosen turn.'
+      return copy.t('One Pull. One chosen turn.')
     case 'B01_CORKY_GREETING':
-      return 'Meet Corky.'
+      return copy.t('Meet Corky.')
     case 'B02_TABLE_REVEAL':
-      return 'Let’s make one plan.'
+      return copy.t('Let’s make one plan.')
     case 'B03_PULL_CHOICE_HOLD':
-      return 'Choose your Pull'
+      return copy.t('Choose your Pull')
     case 'B03_PULL_PRESENTATION':
       return pullLabel
     case 'B04_CUE_CONTEXT_HOLD':
-      return 'When does it show up?'
+      return copy.t('When does it show up?')
     case 'B05_SIDE_B_CHOICE_HOLD':
-      return 'Choose your Side B'
+      return copy.t('Choose your Side B')
     case 'B05_PULL_RECEDES':
-      return 'A second side comes into view.'
+      return copy.t('A second side comes into view.')
     case 'B06_CORKY_STARTS_RECORD':
-      return 'Corky starts the record.'
+      return copy.t('Corky starts the record.')
     case 'B06_RIGID_SPIN':
-      return 'Let it spin.'
+      return copy.t('Let it spin.')
     case 'B06_STOP_SAVE_HOLD':
-      return 'Stop the record to save this plan.'
+      return copy.t('Stop the record to save this plan.')
     case 'B06_SAVE_COMMIT':
-      return 'Saving your plan…'
+      return copy.t('Saving your plan…')
     case 'B07_SAVED_ACK':
-      return 'Your plan is saved.'
+      return copy.t('Your plan is saved.')
     case 'B07_REMINDER_HOLD':
-      return 'A reminder for later?'
+      return copy.t('A reminder for later?')
     case 'B07_REMINDER_COMMIT':
-      return 'Setting your reminder…'
+      return copy.t('Setting your reminder…')
     case 'B08_CLOSE_HOME':
-      return 'Your plan is ready.'
+      return copy.t('Your plan is ready.')
     case 'COMPLETE':
-      return 'Ready.'
+      return copy.t('Ready.')
   }
 }
 
@@ -276,6 +281,7 @@ interface SideBPresentation {
 }
 
 export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
+  const copy = useCopy()
   const motionMode = prefersReducedMotion() ? 'reduced' : 'normal'
   const initialSessionKind = untrack(() => props.sessionKind)
   const [state, setState] = createSignal(
@@ -327,7 +333,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   const activePullCharacter = createMemo(() => {
     const pullId = state().confirmedPull?.pullId ?? state().selectedPull?.pullId
     return (
-      findPullCharacter(props.contentPack, pullId) ?? GENERIC_PULL_CHARACTER
+      findPullCharacter(props.contentPack, pullId) ??
+      getLocalizedGenericPullCharacter(copy.locale())
     )
   })
   const corky = createMemo(() =>
@@ -477,6 +484,29 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     })?.id
   }
 
+  function dialogueSafetyTimeoutMs(snapshot: V2OnboardingRuntimeState): number {
+    const lineId = lineIdForState(snapshot)
+    if (lineId === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
+    const line = findLine(props.contentPack, lineId)
+    if (line?.captionSha256 === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
+    const asset = findDialogueAudioAssetForLine(props.contentPack.audio, {
+      lineId,
+      captionSha256: line.captionSha256,
+    })
+    if (asset === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
+    const longestDeclaredSourceMs = Math.max(
+      0,
+      ...asset.sources.map((source) => source.durationMs),
+    )
+    return Math.min(
+      MAX_DIALOGUE_SAFETY_TIMEOUT_MS,
+      Math.max(
+        DIALOGUE_SAFETY_TIMEOUT_MS,
+        Math.ceil(longestDeclaredSourceMs + 3_000),
+      ),
+    )
+  }
+
   function audioBeatForState(
     snapshot: V2OnboardingRuntimeState,
   ): V2OnboardingAudioBeat {
@@ -523,7 +553,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           dispatch({
             type: 'PLAN_SAVE_FAILED',
             requestId: effect.requestId,
-            message: errorMessage(error, 'Could not save this plan.'),
+            message: errorMessage(error, copy.t('Could not save this plan.')),
           })
         })
       return
@@ -549,7 +579,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         dispatch({
           type: 'REMINDER_FAILED',
           requestId: effect.requestId,
-          message: errorMessage(error, 'Could not set this reminder.'),
+          message: errorMessage(error, copy.t('Could not set this reminder.')),
         })
       })
   }
@@ -653,7 +683,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     setCueContextKey(undefined)
     setSideBKey(undefined)
     setPullAccessNotice(
-      'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+      copy.t(
+        'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+      ),
     )
     dispatch({ type: 'PULL_ACCESS_REVOKED' })
   })
@@ -902,7 +934,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
       if (dialogueCue !== undefined) {
         safetyClock = createPausableDelay(
-          DIALOGUE_SAFETY_TIMEOUT_MS,
+          dialogueSafetyTimeoutMs(snapshot),
           markDialogueReady,
           initiallyRunning,
         )
@@ -1166,10 +1198,19 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       data-layout={isCinematicPhase() ? 'cinematic' : 'paper'}
       data-session-kind={props.sessionKind}
     >
+      <Show
+        when={
+          props.sessionKind === 'first-run' &&
+          (state().phase === 'B00_BRAND_REVEAL' ||
+            state().phase === 'B00_BEGIN_HOLD')
+        }
+      >
+        <LanguageSelector compact />
+      </Show>
       <button
         type="button"
         class={styles.soundButton}
-        aria-label={props.muted ? 'Unmute audio' : 'Mute audio'}
+        aria-label={copy.t(props.muted ? 'Unmute audio' : 'Mute audio')}
         aria-pressed={props.muted}
         onClick={toggleMuted}
       >
@@ -1190,15 +1231,18 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           }
           onClick={() => dispatch({ type: 'RETURN_FROM_REPLAY' })}
         >
-          Return to settings
+          {copy.t('Return to settings')}
         </button>
       </Show>
 
       <Show when={props.sessionKind === 'developer-review'}>
-        <nav class={styles.reviewTools} aria-label="Onboarding review controls">
+        <nav
+          class={styles.reviewTools}
+          aria-label={copy.t('Onboarding review controls')}
+        >
           <button
             type="button"
-            aria-label="Previous scene"
+            aria-label={copy.t('Previous scene')}
             disabled={V2_ONBOARDING_PHASES.indexOf(state().phase) <= 0}
             onClick={() => navigateReview(-1)}
           >
@@ -1207,7 +1251,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           <code>{state().phase}</code>
           <button
             type="button"
-            aria-label="Next scene"
+            aria-label={copy.t('Next scene')}
             disabled={
               V2_ONBOARDING_PHASES.indexOf(state().phase) >=
               V2_ONBOARDING_PHASES.length - 1
@@ -1221,7 +1265,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
             class={styles.reviewReplay}
             onClick={replayReview}
           >
-            Replay
+            {copy.t('Replay')}
           </button>
         </nav>
       </Show>
@@ -1376,7 +1420,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               id="v2-onboarding-title"
               tabIndex={-1}
             >
-              {phaseHeading(state())}
+              {phaseHeading(state(), copy)}
             </h1>
 
             <Show when={captionLine()}>
@@ -1395,7 +1439,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 defaultValue="18:30"
                 compact
                 disabled={state().phase === 'B07_REMINDER_COMMIT'}
-                inputLabel="Choose a time"
+                inputLabel={copy.t('Choose a time')}
                 onValueChange={(localTime) =>
                   dispatch({ type: 'SELECT_REMINDER', localTime })
                 }
@@ -1412,10 +1456,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                   class={styles.primaryAction}
                   onClick={begin}
                 >
-                  Tap to begin
+                  {copy.t('Tap to begin')}
                 </button>
                 <p class={styles.note}>
-                  Sound starts after your tap. Captions stay on.
+                  {copy.t('Sound starts after your tap. Captions stay on.')}
                 </p>
               </Match>
 
@@ -1430,7 +1474,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 <div
                   class={styles.pullGrid}
                   role="radiogroup"
-                  aria-label="Pull choices"
+                  aria-label={copy.t('Pull choices')}
                 >
                   <For
                     each={props.pullOptions.filter(
@@ -1440,7 +1484,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     {(option) => {
                       const character = () =>
                         findPullCharacter(props.contentPack, option.id) ??
-                        GENERIC_PULL_CHARACTER
+                        getLocalizedGenericPullCharacter(copy.locale())
                       return (
                         <label
                           class={styles.pullChoice}
@@ -1486,17 +1530,19 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                       type="radio"
                       name="v2-pull"
                       value="custom"
-                      aria-label="Something else"
+                      aria-label={copy.t('Something else')}
                       checked={selectedPullKey() === 'custom'}
                       onChange={chooseCustomPull}
                     />
                     <AssetStage
-                      slot={GENERIC_PULL_CHARACTER.token}
+                      slot={
+                        getLocalizedGenericPullCharacter(copy.locale()).token
+                      }
                       ceiling="still"
                       class={styles.pullChoiceArt}
                       size={256}
                     />
-                    <span>Something else</span>
+                    <span>{copy.t('Something else')}</span>
                   </label>
                 </div>
                 <PremiumPullChoices
@@ -1507,7 +1553,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                   artFor={(id) =>
                     (
                       findPullCharacter(props.contentPack, id) ??
-                      GENERIC_PULL_CHARACTER
+                      getLocalizedGenericPullCharacter(copy.locale())
                     ).token
                   }
                   onSelect={(id) => {
@@ -1519,18 +1565,20 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 />
                 <Show when={selectedPullKey() === 'custom'}>
                   <label class={styles.textField}>
-                    <span>Your Pull</span>
+                    <span>{copy.t('Your Pull')}</span>
                     <input
-                      aria-label="Your Pull"
+                      aria-label={copy.t('Your Pull')}
                       value={customPullText()}
                       maxlength={120}
                       autocomplete="off"
-                      placeholder="For example, opening the feed again"
+                      placeholder={copy.t(
+                        'For example, opening the feed again',
+                      )}
                       onInput={(event) =>
                         updateCustomPull(event.currentTarget.value)
                       }
                     />
-                    <small>Stored only on this device.</small>
+                    <small>{copy.t('Stored only on this device.')}</small>
                   </label>
                 </Show>
                 <Show when={selectedPullPreview()}>
@@ -1555,7 +1603,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                         if (option !== undefined) playPullPreview(option)
                       }}
                     >
-                      Hear again
+                      {copy.t('Hear again')}
                     </button>
                   </Show>
                   <button
@@ -1571,7 +1619,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     }
                     onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
                   >
-                    Continue
+                    {copy.t('Continue')}
                   </button>
                 </div>
               </Match>
@@ -1580,7 +1628,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 <div
                   class={styles.choiceList}
                   role="radiogroup"
-                  aria-label="Cue context choices"
+                  aria-label={copy.t('Cue context choices')}
                 >
                   <For each={cueSuggestions()}>
                     {(suggestion) => (
@@ -1603,32 +1651,34 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     name="v2-cue-context"
                     value="custom"
                     selected={cueContextKey() === 'custom'}
-                    label="Write my own"
+                    label={copy.t('Write my own')}
                     onChoose={chooseCustomCueContext}
                   />
                   <ChoiceButton
                     name="v2-cue-context"
                     value="omitted"
                     selected={cueContextKey() === 'omitted'}
-                    label="Not sure yet"
-                    description="Your plan works without this."
+                    label={copy.t('Not sure yet')}
+                    description={copy.t('Your plan works without this.')}
                     onChoose={() => selectCueContext({ kind: 'omitted' })}
                   />
                 </div>
                 <Show when={cueContextKey() === 'custom'}>
                   <label class={styles.textField}>
-                    <span>Your cue</span>
+                    <span>{copy.t('Your cue')}</span>
                     <input
-                      aria-label="Your cue"
+                      aria-label={copy.t('Your cue')}
                       value={customCueContext()}
                       maxlength={120}
                       autocomplete="off"
-                      placeholder="For example, when I get into bed with my phone"
+                      placeholder={copy.t(
+                        'For example, when I get into bed with my phone',
+                      )}
                       onInput={(event) =>
                         updateCustomCueContext(event.currentTarget.value)
                       }
                     />
-                    <small>Stored only on this device.</small>
+                    <small>{copy.t('Stored only on this device.')}</small>
                   </label>
                 </Show>
                 <div class={styles.actions}>
@@ -1637,7 +1687,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     class={styles.backAction}
                     onClick={() => dispatch({ type: 'BACK' })}
                   >
-                    Back
+                    {copy.t('Back')}
                   </button>
                   <button
                     type="button"
@@ -1645,7 +1695,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     disabled={!cueContextValid()}
                     onClick={() => dispatch({ type: 'CONFIRM_CUE_CONTEXT' })}
                   >
-                    Choose Side B
+                    {copy.t('Choose Side B')}
                   </button>
                 </div>
               </Match>
@@ -1653,21 +1703,24 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               <Match when={state().phase === 'B05_SIDE_B_CHOICE_HOLD'}>
                 <dl class={styles.planPair}>
                   <div>
-                    <dt>Side A</dt>
+                    <dt>{copy.t('Side A')}</dt>
                     <dd>
                       {state().confirmedPull?.sideAText ??
-                        'The familiar pattern'}
+                        copy.t('The familiar pattern')}
                     </dd>
                   </div>
                   <div>
-                    <dt>Side B</dt>
-                    <dd>{state().selectedSideB?.text ?? 'Your chosen turn'}</dd>
+                    <dt>{copy.t('Side B')}</dt>
+                    <dd>
+                      {state().selectedSideB?.text ??
+                        copy.t('Your chosen turn')}
+                    </dd>
                   </div>
                 </dl>
                 <div
                   class={styles.choiceList}
                   role="radiogroup"
-                  aria-label="Side B choices"
+                  aria-label={copy.t('Side B choices')}
                 >
                   <For each={sideBSuggestions()}>
                     {(suggestion) => (
@@ -1694,19 +1747,19 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     name="v2-side-b"
                     value="custom"
                     selected={sideBKey() === 'custom'}
-                    label="Write my own"
+                    label={copy.t('Write my own')}
                     onChoose={chooseCustomSideB}
                   />
                 </div>
                 <Show when={sideBKey() === 'custom'}>
                   <label class={styles.textField}>
-                    <span>Your Side B</span>
+                    <span>{copy.t('Your Side B')}</span>
                     <input
-                      aria-label="Your Side B"
+                      aria-label={copy.t('Your Side B')}
                       value={customSideB()}
                       maxlength={120}
                       autocomplete="off"
-                      placeholder="For example, play one guitar riff"
+                      placeholder={copy.t('For example, play one guitar riff')}
                       onInput={(event) =>
                         updateCustomSideB(event.currentTarget.value)
                       }
@@ -1719,7 +1772,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     class={styles.backAction}
                     onClick={() => dispatch({ type: 'BACK' })}
                   >
-                    Back
+                    {copy.t('Back')}
                   </button>
                   <button
                     type="button"
@@ -1727,23 +1780,23 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     disabled={!sideBValid()}
                     onClick={() => dispatch({ type: 'CONFIRM_SIDE_B' })}
                   >
-                    Start the record
+                    {copy.t('Start the record')}
                   </button>
                 </div>
               </Match>
 
               <Match when={state().phase === 'B06_RIGID_SPIN'}>
-                <p class={styles.note}>Let it spin for a moment.</p>
+                <p class={styles.note}>{copy.t('Let it spin for a moment.')}</p>
               </Match>
 
               <Match when={state().phase === 'B06_STOP_SAVE_HOLD'}>
                 <dl class={styles.planPair}>
                   <div>
-                    <dt>Side A</dt>
+                    <dt>{copy.t('Side A')}</dt>
                     <dd>{state().confirmedPull?.sideAText}</dd>
                   </div>
                   <div>
-                    <dt>Side B</dt>
+                    <dt>{copy.t('Side B')}</dt>
                     <dd>{state().confirmedSideB?.text}</dd>
                   </div>
                 </dl>
@@ -1757,10 +1810,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 <button
                   type="button"
                   class={styles.stopAction}
-                  aria-label="Stop and save plan"
+                  aria-label={copy.t('Stop and save plan')}
                   onClick={() => dispatch({ type: 'STOP_AND_SAVE' })}
                 >
-                  Stop the record
+                  {copy.t('Stop the record')}
                 </button>
                 {/* A save that keeps failing (or a plan the reader thinks
                     better of) needs a way out other than killing the app;
@@ -1771,7 +1824,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                   class={styles.backAction}
                   onClick={() => dispatch({ type: 'BACK' })}
                 >
-                  Back
+                  {copy.t('Back')}
                 </button>
               </Match>
 
@@ -1789,7 +1842,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     class={styles.backAction}
                     onClick={() => dispatch({ type: 'SKIP_REMINDER' })}
                   >
-                    Not now
+                    {copy.t('Not now')}
                   </button>
                   <button
                     type="button"
@@ -1797,7 +1850,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     disabled={normalizedText(state().reminderTime ?? '') === ''}
                     onClick={() => dispatch({ type: 'CONFIRM_REMINDER' })}
                   >
-                    Set reminder
+                    {copy.t('Set reminder')}
                   </button>
                 </div>
               </Match>

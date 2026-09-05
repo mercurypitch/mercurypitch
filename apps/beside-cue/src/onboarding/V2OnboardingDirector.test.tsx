@@ -8,6 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioSession, AudioSessionCue, AudioSessionFinishResult, AudioSessionScope, } from '@/audio'
 import type { ContentPack, PullOption } from '@/content'
 import { DEFAULT_CONTENT_PACK, pullOptions, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import { getLocalizedContentPack } from '@/content/localized-pack'
+import { LocaleProvider } from '@/i18n/context'
+import type { AppLocale } from '@/i18n/locale'
 import { V2_ONBOARDING_MEDIA_PACK } from './v2-onboarding-media-pack'
 import type { V2OnboardingDirectorProps, V2OnboardingMutationResult, } from './V2OnboardingDirector'
 import { V2OnboardingDirector } from './V2OnboardingDirector'
@@ -135,6 +138,7 @@ function controlledCue(assetId: string): {
 function contentPackWithDialogue(
   lineId: string,
   assetId = `dialogue.${lineId}`,
+  durationMs = 1,
 ): ContentPack {
   const line = DEFAULT_CONTENT_PACK.lines.find(
     (candidate) => candidate.id === lineId,
@@ -160,7 +164,7 @@ function contentPackWithDialogue(
               mimeType: 'audio/mpeg',
               sha256: '0'.repeat(64),
               byteLength: 1,
-              durationMs: 1,
+              durationMs,
               sampleRateHz: 44_100,
               channels: 1,
             },
@@ -253,6 +257,7 @@ function createDirectorProbe(
 function renderWithControlledDialogue(
   lineId: string,
   sessionKind: V2OnboardingDirectorProps['sessionKind'] = 'first-run',
+  durationMs = 1,
 ): {
   readonly probe: DirectorProbe
   readonly finished: TestDeferred<AudioSessionFinishResult>
@@ -268,7 +273,7 @@ function renderWithControlledDialogue(
   render(() => (
     <V2OnboardingDirector
       {...probe.props}
-      contentPack={contentPackWithDialogue(lineId, assetId)}
+      contentPack={contentPackWithDialogue(lineId, assetId, durationMs)}
       foreground={foreground()}
     />
   ))
@@ -498,6 +503,36 @@ describe('V2OnboardingDirector', () => {
 
     view.unmount()
     expect(probe.audio.disposeScope).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers language on the first-run brand only and updates copy before the tap', async () => {
+    const probe = createDirectorProbe()
+    const [locale, setLocale] = createSignal<AppLocale>('en')
+    render(() => (
+      <LocaleProvider locale={locale()} onLocaleChange={setLocale}>
+        <V2OnboardingDirector
+          {...probe.props}
+          contentPack={getLocalizedContentPack(locale())}
+        />
+      </LocaleProvider>
+    ))
+
+    const language = screen.getByRole('combobox', {
+      name: 'Choose interface language',
+    })
+    fireEvent.change(language, { target: { value: 'de' } })
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Sprache der Benutzeroberfläche wählen',
+      }),
+    ).toHaveValue('de')
+
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Zum Starten tippen' }))
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Lerne Corky kennen.' }),
+    ).toBeVisible()
   })
 
   it('starts Corky dialogue without replacing the app-owned score', async () => {
@@ -1116,6 +1151,25 @@ describe('V2OnboardingDirector', () => {
       screen.getByRole('heading', {
         name: 'Choose your Pull',
       }),
+    ).toBeVisible()
+  })
+
+  it('extends dialogue safety beyond 15 seconds for a declared 17-second line', async () => {
+    renderWithControlledDialogue(
+      'corky.onboarding.greeting',
+      'first-run',
+      17_000,
+    )
+
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    await advance(15_000)
+    expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
+    await advance(4_999)
+    expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
+    await advance(1)
+    expect(
+      screen.getByRole('heading', { name: 'Choose your Pull' }),
     ).toBeVisible()
   })
 

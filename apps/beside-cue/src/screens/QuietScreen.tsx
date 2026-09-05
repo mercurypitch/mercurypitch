@@ -1,6 +1,8 @@
-import { createSignal, Match, onCleanup, onMount, Switch } from 'solid-js'
+import { createMemo, createSignal, Match, onCleanup, onMount, Switch, } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
 import { CORKY_V023_REST_ART } from '@/content'
+import type { Copy } from '@/i18n/ui-copy'
+import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 import type { LocalActionStarter } from '../action-starters/action-starter'
 
@@ -27,25 +29,40 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-function describeCountdown(totalSeconds: number): string {
+function describeCountdown(totalSeconds: number, copy: Copy): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   const parts: string[] = []
   if (minutes > 0) {
-    parts.push(`${String(minutes)} ${minutes === 1 ? 'minute' : 'minutes'}`)
+    parts.push(
+      copy.t(minutes === 1 ? '{count} minute' : '{count} minutes', {
+        count: minutes,
+      }),
+    )
   }
   if (seconds > 0 || parts.length === 0) {
-    parts.push(`${String(seconds)} ${seconds === 1 ? 'second' : 'seconds'}`)
+    parts.push(
+      copy.t(seconds === 1 ? '{count} second' : '{count} seconds', {
+        count: seconds,
+      }),
+    )
   }
-  return `${parts.join(' ')} remaining`
+  return copy.t('{duration} remaining', { duration: parts.join(' ') })
 }
 
 export function QuietScreen(props: QuietScreenProps) {
+  const copy = useCopy()
   const [phase, setPhase] = createSignal<QuietScreenPhase>('ready')
   const [remainingSeconds, setRemainingSeconds] = createSignal(0)
   const [announcement, setAnnouncement] = createSignal('')
   const durationMinutes = () => wholeDurationMinutes(props.starter)
   const instruction = () => props.starter?.instruction ?? props.message
+  const corkyArt = createMemo(() => ({
+    ...CORKY_V023_REST_ART,
+    alt: copy.t(
+      'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
+    ),
+  }))
 
   let deadlineMs = 0
   let timerHandle: ReturnType<typeof setInterval> | undefined
@@ -98,7 +115,12 @@ export function QuietScreen(props: QuietScreenProps) {
     setRemainingSeconds(durationMs / 1000)
     setPhase('running')
     setAnnouncement(
-      `Timer started for ${String(minutes)} ${minutes === 1 ? 'minute' : 'minutes'}.`,
+      copy.t(
+        minutes === 1
+          ? 'Timer started for {count} minute.'
+          : 'Timer started for {count} minutes.',
+        { count: minutes },
+      ),
     )
     timerHandle = setInterval(refreshTimer, 1000)
     focusHeading()
@@ -135,13 +157,13 @@ export function QuietScreen(props: QuietScreenProps) {
       <p class="quiet-screen__label">
         {props.choseBSide
           ? phase() === 'running'
-            ? 'Quiet timer'
-            : 'Side B is yours'
-          : 'Not now is okay'}
+            ? copy.t('Quiet timer')
+            : copy.t('Side B is yours')
+          : copy.t('Not now is okay')}
       </p>
       <MascotStage
         state={props.choseBSide ? 'turn' : 'quiet'}
-        artOverride={CORKY_V023_REST_ART}
+        artOverride={corkyArt()}
       />
 
       <Switch>
@@ -156,7 +178,7 @@ export function QuietScreen(props: QuietScreenProps) {
             >
               {props.message}
             </h1>
-            <p>You made a choice. The next cue stays gentle.</p>
+            <p>{copy.t('You made a choice. The next cue stays gentle.')}</p>
           </section>
           <div class="quiet-screen__actions">
             <button
@@ -164,14 +186,14 @@ export function QuietScreen(props: QuietScreenProps) {
               type="button"
               onClick={() => props.onDone()}
             >
-              Back to home
+              {copy.t('Back to home')}
             </button>
           </div>
         </Match>
 
         <Match when={phase() === 'ready'}>
           <section class="quiet-screen__copy" {...Selectable}>
-            <p class="quiet-screen__section-label">Your Side B</p>
+            <p class="quiet-screen__section-label">{copy.t('Your Side B')}</p>
             <h1
               id="quiet-title"
               ref={(element) => {
@@ -184,8 +206,12 @@ export function QuietScreen(props: QuietScreenProps) {
             <p class="quiet-screen__acknowledgement">{props.message}</p>
             <p>
               {durationMinutes() === undefined
-                ? 'Your choice is recorded. You can leave Beside Cue and begin.'
-                : 'A short timer is here if it helps. Your choice is already recorded.'}
+                ? copy.t(
+                    'Your choice is recorded. You can leave Beside Cue and begin.',
+                  )
+                : copy.t(
+                    'A short timer is here if it helps. Your choice is already recorded.',
+                  )}
             </p>
           </section>
           <div class="quiet-screen__actions">
@@ -195,7 +221,7 @@ export function QuietScreen(props: QuietScreenProps) {
                 type="button"
                 onClick={() => props.onDone()}
               >
-                Back to home
+                {copy.t('Back to home')}
               </button>
             ) : (
               <>
@@ -204,14 +230,18 @@ export function QuietScreen(props: QuietScreenProps) {
                   type="button"
                   onClick={startTimer}
                 >
-                  Start {durationMinutes()}-minute timer
+                  {durationMinutes() === 1
+                    ? copy.t('Start one-minute timer')
+                    : copy.t('Start {count}-minute timer', {
+                        count: durationMinutes() ?? 0,
+                      })}
                 </button>
                 <button
                   class="quiet-button quiet-screen__quiet-action"
                   type="button"
                   onClick={() => props.onDone()}
                 >
-                  Continue without timer
+                  {copy.t('Continue without timer')}
                 </button>
               </>
             )}
@@ -236,14 +266,15 @@ export function QuietScreen(props: QuietScreenProps) {
               class="quiet-screen__timer"
               role="timer"
               aria-live="off"
-              aria-label={describeCountdown(remainingSeconds())}
+              aria-label={describeCountdown(remainingSeconds(), copy)}
               dateTime={`PT${String(remainingSeconds())}S`}
             >
               {formatCountdown(remainingSeconds())}
             </time>
             <p>
-              Keep this screen open for the finish haptic. You can end the timer
-              at any point; your choice stays recorded.
+              {copy.t(
+                'Keep this screen open for the finish haptic. You can end the timer at any point; your choice stays recorded.',
+              )}
             </p>
           </section>
           <div class="quiet-screen__actions">
@@ -252,7 +283,7 @@ export function QuietScreen(props: QuietScreenProps) {
               type="button"
               onClick={endTimer}
             >
-              End timer
+              {copy.t('End timer')}
             </button>
           </div>
         </Match>
@@ -266,13 +297,15 @@ export function QuietScreen(props: QuietScreenProps) {
               }}
               tabIndex={-1}
             >
-              Timer finished
+              {copy.t('Timer finished')}
             </h1>
             <div class="quiet-screen__finished-action">
-              <span>Your Side B</span>
+              <span>{copy.t('Your Side B')}</span>
               <p {...Selectable}>{instruction()}</p>
             </div>
-            <p>Your choice was already recorded. No check-in needed.</p>
+            <p>
+              {copy.t('Your choice was already recorded. No check-in needed.')}
+            </p>
           </section>
           <div class="quiet-screen__actions">
             <button
@@ -280,7 +313,7 @@ export function QuietScreen(props: QuietScreenProps) {
               type="button"
               onClick={() => props.onDone()}
             >
-              Back to home
+              {copy.t('Back to home')}
             </button>
           </div>
         </Match>

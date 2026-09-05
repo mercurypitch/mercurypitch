@@ -1,12 +1,20 @@
 // ============================================================
-// UI copy seam — ship complete English; never advertise partial translations
+// UI copy seam — released locales share one complete, typed catalog
 // ============================================================
 
-export const PLANNED_LOCALES = ['en', 'es', 'hr', 'de', 'it'] as const
-export const AVAILABLE_LOCALES = ['en'] as const
-export type AppLocale = (typeof AVAILABLE_LOCALES)[number]
+import type { AppLocale } from './locale'
+import type { UiCopySource } from './ui-copy'
+import { translateUi } from './ui-copy'
 
-const english = {
+export type { AppLocale } from './locale'
+export {
+  AVAILABLE_LOCALES,
+  LANGUAGE_NAMES,
+  PLANNED_LOCALES,
+  resolveAppLocale,
+} from './locale'
+
+const semanticSources = {
   'home.title': 'Your current pressing',
   'premium.show': 'Show premium',
   'premium.hide': 'Hide premium',
@@ -44,17 +52,12 @@ const english = {
   'purchases.mockOfferApply': 'Apply a 60-day test offer',
   'purchases.mockOfferHelp':
     'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.',
-} as const
+} as const satisfies Readonly<Record<string, UiCopySource>>
 
-export type MessageKey = keyof typeof english
+export type MessageKey = keyof typeof semanticSources
 
-/** Until a complete reviewed catalog ships, unsupported device locales use English. */
-export function resolveAppLocale(_requested?: string): AppLocale {
-  return 'en'
-}
-
-export function message(key: MessageKey, _locale: AppLocale = 'en'): string {
-  return english[key]
+export function message(key: MessageKey, locale: AppLocale = 'en'): string {
+  return translateUi(semanticSources[key], locale)
 }
 
 /** Domain/storage still uses strict local HH:mm; only its visible label is localized. */

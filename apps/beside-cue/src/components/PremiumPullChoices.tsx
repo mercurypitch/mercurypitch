@@ -10,7 +10,7 @@
 import { createSignal, createUniqueId, For, Show } from 'solid-js'
 import type { AssetSlot, PullOption } from '@/content'
 import { canSelectPull } from '@/content/pulls'
-import { message } from '@/i18n/messages'
+import { useCopy } from '@/i18n/ui-copy'
 import { NoSelect } from '@/interaction/selection'
 import { AssetStage } from './AssetStage'
 import styles from './PremiumPullChoices.module.css'
@@ -25,6 +25,7 @@ interface PremiumPullChoicesProps {
 }
 
 export function PremiumPullChoices(props: PremiumPullChoicesProps) {
+  const copy = useCopy()
   const [expanded, setExpanded] = createSignal(false)
   const id = createUniqueId()
   return (
@@ -35,8 +36,10 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
         {...NoSelect}
       >
         <summary class={styles.toggle}>
-          <span>{message(expanded() ? 'premium.hide' : 'premium.show')}</span>
-          <span class={styles.edition}>PRO · {props.options.length} Pulls</span>
+          <span>{copy.t(expanded() ? 'Hide premium' : 'Show premium')}</span>
+          <span class={styles.edition}>
+            PRO · {copy.t('{count} Pulls', { count: props.options.length })}
+          </span>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
             <path
               d="m6 9 6 6 6-6"
@@ -48,14 +51,16 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
         </summary>
         <Show when={expanded()}>
           <p class={styles.note} id={`${id}-note`}>
-            {message(
-              props.isPro === true ? 'premium.available' : 'premium.locked',
+            {copy.t(
+              props.isPro === true
+                ? 'Your Pro cast. Choose the Pull you want to notice.'
+                : 'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.',
             )}
           </p>
           <div
             class={styles.grid}
             role="radiogroup"
-            aria-label={message('premium.choices')}
+            aria-label={copy.t('Premium Pull choices')}
             aria-describedby={`${id}-note`}
           >
             <For each={props.options}>
@@ -83,7 +88,7 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
                       }}
                     />
                     <span class={styles.badge}>
-                      {allowed() ? 'PRO' : 'PRO · Locked'}
+                      {allowed() ? 'PRO' : copy.t('PRO · Locked')}
                     </span>
                     <AssetStage
                       slot={props.artFor(option.id)}

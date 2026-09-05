@@ -5,8 +5,8 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untra
 import { BuildStamp } from '@/components/BuildStamp'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
+import { localizeActionStarter } from './action-starters/localized-action-starter'
 import type { BesideCueAppConfig } from './app-config'
-import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import { createDefaultAppServices } from './app-services'
 import { createAmbientMusic } from './audio/ambient-music'
@@ -16,9 +16,20 @@ import { BrandMark } from './components/BrandMark'
 import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
 import type { ActionDefinition, ContentPack, PullOption, VoicePlaybackStatus, } from './content'
-import { createVoicePlayer, CUSTOM_PULL_ACTIONS, DEFAULT_CONTENT_PACK, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, resolveActionDefinition, resolveMoment, } from './content'
+import { createVoicePlayer, findLine, findPullCharacter, resolveActionDefinition, resolveMoment, } from './content'
+import { getLocalizedCustomPullActions, getLocalizedMoments, } from './content/localized-catalog'
+import { localizeCueForDisplay } from './content/localized-cue'
+import { getLocalizedContentPack, getLocalizedGenericPullCharacter, } from './content/localized-pack'
+import type { MomentContext, MomentId } from './content/moments'
 import { canSelectPull } from './content/pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_IDS } from './content/v2-onboarding-audio-manifest'
+import type { AppCopySource } from './i18n/app-copy'
+import { LocaleProvider } from './i18n/context'
+import type { AppLocale } from './i18n/locale'
+import { resolveAppLocale } from './i18n/locale'
+import type { CopyParams } from './i18n/ui-copy'
+import { createCopy } from './i18n/ui-copy'
+import { getLocalizedAppConfig } from './localized-app-config'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
@@ -146,11 +157,35 @@ function displayReminderTime(localTime: string): string {
   return `${String(Number(hours))}:${minutes ?? '00'}`
 }
 
-function messageForValidation(error: unknown, subject: string): string {
-  if (error instanceof RangeError) {
-    return `${subject} needs between 1 and 120 characters.`
+type ValidationSubject = 'Side A' | 'Side B' | 'Your cue'
+
+interface AppNotice {
+  readonly source: AppCopySource
+  readonly params?: CopyParams
+  readonly subject?: {
+    readonly source: ValidationSubject
+    readonly lowercaseInEnglish?: boolean
   }
-  return `We could not keep that ${subject.toLowerCase()}. Please try again.`
+}
+
+function notice(source: AppCopySource, params?: CopyParams): AppNotice {
+  return params === undefined ? { source } : { source, params }
+}
+
+function messageForValidation(
+  error: unknown,
+  subject: ValidationSubject,
+): AppNotice {
+  if (error instanceof RangeError) {
+    return {
+      source: '{subject} needs between 1 and 120 characters.',
+      subject: { source: subject },
+    }
+  }
+  return {
+    source: 'We could not keep that {subject}. Please try again.',
+    subject: { source: subject, lowercaseInEnglish: true },
+  }
 }
 
 function firstRunScreen(
@@ -178,9 +213,28 @@ function firstRunScreen(
 }
 
 export function App(props: AppProps) {
-  const config = createMemo(() => props.config ?? DEFAULT_BESIDE_CUE_CONFIG)
+  const initialState = createInitialState()
+  const [appState, setAppState] = createSignal<BesideCueStateV1>(initialState)
+  const locale = createMemo(() => resolveAppLocale(appState().settings.locale))
+  const copy = createCopy(() => locale())
+
+  function renderNotice(value: AppNotice): string
+  function renderNotice(value: AppNotice | undefined): string | undefined
+  function renderNotice(value: AppNotice | undefined): string | undefined {
+    if (value === undefined) return undefined
+    if (value.subject === undefined) return copy.t(value.source, value.params)
+    const translatedSubject = copy.t(value.subject.source)
+    const subject =
+      value.subject.lowercaseInEnglish === true && locale() === 'en'
+        ? translatedSubject.toLowerCase()
+        : translatedSubject
+    return copy.t(value.source, { ...value.params, subject })
+  }
+  const config = createMemo(
+    () => props.config ?? getLocalizedAppConfig(locale()),
+  )
   const contentPack = createMemo(
-    () => props.contentPack ?? DEFAULT_CONTENT_PACK,
+    () => props.contentPack ?? getLocalizedContentPack(locale()),
   )
   const cinematicConfig = createMemo(() => {
     const onboarding = config().onboarding
@@ -204,8 +258,6 @@ export function App(props: AppProps) {
   )
     ? 'developer-review'
     : 'first-run'
-  const initialState = createInitialState()
-  const [appState, setAppState] = createSignal<BesideCueStateV1>(initialState)
   const [screen, setScreen] = createSignal<AppScreen>('loading')
   const [activeView, setActiveView] = createSignal<MainView>('cue')
   const [settingsReturnView, setSettingsReturnView] =
@@ -232,18 +284,21 @@ export function App(props: AppProps) {
   const [selectedBSideText, setSelectedBSideText] = createSignal('')
   const [customBSideText, setCustomBSideText] = createSignal('')
   const [customBSideSelected, setCustomBSideSelected] = createSignal(false)
-  const [setupError, setSetupError] = createSignal<string>()
+  const [setupError, setSetupError] = createSignal<AppNotice>()
   const [activeOccurrenceId, setActiveOccurrenceId] = createSignal<string>()
   const [cuePhrase, setCuePhrase] = createSignal('')
   const [quietMessage, setQuietMessage] = createSignal('')
   const [quietChoseBSide, setQuietChoseBSide] = createSignal(false)
   const [quietStarter, setQuietStarter] = createSignal<LocalActionStarter>()
   const [cueResolutionPending, setCueResolutionPending] = createSignal(false)
-  const [storageError, setStorageError] = createSignal<string>()
+  const [storageError, setStorageError] = createSignal<AppNotice>()
   const [resetArmed, setResetArmed] = createSignal(false)
   const [schedulePending, setSchedulePending] = createSignal(false)
-  const [scheduleMessage, setScheduleMessage] = createSignal<string>()
-  const [scheduleError, setScheduleError] = createSignal<string>()
+  const [atomicSavesPending, setAtomicSavesPending] = createSignal(0)
+  const localeChangeDisabled = () =>
+    schedulePending() || cueResolutionPending() || atomicSavesPending() > 0
+  const [scheduleMessage, setScheduleMessage] = createSignal<AppNotice>()
+  const [scheduleError, setScheduleError] = createSignal<AppNotice>()
   const [today, setToday] = createSignal(localDate(new Date()))
   const proAccess = createMemo(() => {
     const appServices = services()
@@ -279,7 +334,11 @@ export function App(props: AppProps) {
     | Promise<V2OnboardingMutationResult>
     | undefined
   const onboardingAudioSession = createAudioSession({
-    manifest: untrack(contentPack).audio,
+    // Resolve at each play: state hydration and language changes must not
+    // leave the app-scoped audio session pinned to its initial English pack.
+    get manifest() {
+      return untrack(contentPack).audio
+    },
     output: untrack(services).audioOutput,
     muted: !initialState.settings.voiceEnabled,
     foreground: characterVoiceForeground,
@@ -301,13 +360,45 @@ export function App(props: AppProps) {
     })
   })
   const characterVoicePlayer = createVoicePlayer({
-    pack: untrack(contentPack),
+    get pack() {
+      return untrack(contentPack)
+    },
     audio: untrack(services).voiceAudio,
     muted: () => !latestState.settings.voiceEnabled,
     onStatusChange: setVoiceStatus,
   })
 
+  const originalDocumentLanguage =
+    typeof document === 'undefined' ? undefined : document.documentElement.lang
+  createEffect(() => {
+    if (typeof document !== 'undefined')
+      document.documentElement.lang = locale()
+  })
+  onCleanup(() => {
+    if (
+      typeof document !== 'undefined' &&
+      originalDocumentLanguage !== undefined
+    ) {
+      document.documentElement.lang = originalDocumentLanguage
+    }
+  })
+
+  function resolveContentMoment(moment: MomentId, context: MomentContext = {}) {
+    return resolveMoment(
+      contentPack(),
+      moment,
+      context,
+      getLocalizedMoments(locale()),
+    )
+  }
+
   const cue = createMemo(() => currentCue(appState()))
+  const displayedCue = createMemo(() => {
+    const storedCue = cue()
+    return storedCue === undefined
+      ? undefined
+      : localizeCueForDisplay(storedCue, locale())
+  })
   const dailyRule = createMemo(() => {
     const current = cue()
     return current === undefined
@@ -338,9 +429,10 @@ export function App(props: AppProps) {
       }),
       {
         pullId: 'custom',
-        art: GENERIC_PULL_CHARACTER.token,
-        previewCaption:
+        art: getLocalizedGenericPullCharacter(locale()).token,
+        previewCaption: copy.t(
           'Use your own words for the familiar moment you want to notice sooner.',
+        ),
         recordingAvailable: false,
       },
     ],
@@ -399,7 +491,9 @@ export function App(props: AppProps) {
     const legacy = (pull?.suggestions ?? []).map((suggestion, index) =>
       legacyChoice(pull?.id ?? 'custom', suggestion, index),
     )
-    return legacy.length > 0 ? legacy : CUSTOM_PULL_ACTIONS.map(actionChoice)
+    return legacy.length > 0
+      ? legacy
+      : getLocalizedCustomPullActions(locale()).map(actionChoice)
   })
   const cinematicBSideOptions = createMemo<
     readonly CinematicOnboardingBSideOption[]
@@ -424,7 +518,7 @@ export function App(props: AppProps) {
             }
       })
     }
-    return CUSTOM_PULL_ACTIONS.map((action) => ({
+    return getLocalizedCustomPullActions(locale()).map((action) => ({
       id: action.id,
       text: action.label.replace(/[.]$/, ''),
     }))
@@ -435,10 +529,9 @@ export function App(props: AppProps) {
   const reflectionDays = createMemo<readonly ReflectionDay[]>(() =>
     progress().days.map((day) => ({
       key: day.date,
-      label: new Date(`${day.date}T12:00:00`).toLocaleDateString(
-        appState().settings.locale,
-        { weekday: 'short' },
-      ),
+      label: new Date(`${day.date}T12:00:00`).toLocaleDateString(locale(), {
+        weekday: 'short',
+      }),
       count: day.count,
       today: day.date === today(),
     })),
@@ -453,7 +546,9 @@ export function App(props: AppProps) {
     setStorageError(undefined)
     void repository.saveState(nextState).catch(() => {
       setStorageError(
-        'This change is visible now, but could not be saved on this device.',
+        notice(
+          'This change is visible now, but could not be saved on this device.',
+        ),
       )
     })
   }
@@ -469,7 +564,9 @@ export function App(props: AppProps) {
       await repository.saveState(nextState)
     } catch (error) {
       setStorageError(
-        'This change is visible now, but could not be saved on this device.',
+        notice(
+          'This change is visible now, but could not be saved on this device.',
+        ),
       )
       throw error
     }
@@ -480,13 +577,16 @@ export function App(props: AppProps) {
     repository: BesideCueAppServices['repository'],
   ): Promise<void> {
     setStorageError(undefined)
+    setAtomicSavesPending((count) => count + 1)
     try {
       await repository.saveState(nextState)
       latestState = nextState
       setAppState(nextState)
     } catch (error) {
-      setStorageError('That change could not be saved on this device.')
+      setStorageError(notice('That change could not be saved on this device.'))
       throw error
+    } finally {
+      setAtomicSavesPending((count) => count - 1)
     }
   }
 
@@ -542,15 +642,19 @@ export function App(props: AppProps) {
 
   function messageForDailyCueResult(
     result: DailyCueReconcileResult,
-  ): string | undefined {
+  ): AppNotice | undefined {
     if (result === 'permission-denied') {
-      return 'Daily reminder is off because notifications are off for this app.'
+      return notice(
+        'Daily reminder is off because notifications are off for this app.',
+      )
     }
     if (result === 'permission-needed') {
-      return 'Daily reminder is off until notification permission is allowed.'
+      return notice(
+        'Daily reminder is off until notification permission is allowed.',
+      )
     }
     if (result === 'unsupported') {
-      return 'Daily reminders are not available on this device.'
+      return notice('Daily reminders are not available on this device.')
     }
     return undefined
   }
@@ -573,8 +677,12 @@ export function App(props: AppProps) {
         if (surfaceFailure) {
           setStorageError(
             rule === undefined
-              ? 'The device reminder could not be removed. Open Settings and try again.'
-              : 'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.',
+              ? notice(
+                  'The device reminder could not be removed. Open Settings and try again.',
+                )
+              : notice(
+                  'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.',
+                ),
           )
         }
         throw error
@@ -650,7 +758,7 @@ export function App(props: AppProps) {
       }
 
       const phraseIndex = nextState.occurrences.length - 1
-      const presentation = resolveMoment(contentPack(), 'cue.open', {
+      const presentation = resolveContentMoment('cue.open', {
         pullId: selectedCue.pullCategoryId,
         rotation: phraseIndex,
       })
@@ -767,7 +875,9 @@ export function App(props: AppProps) {
     ) {
       return Promise.resolve({
         ok: false,
-        message: 'Choose a free Pull, or restore Pro to use this character.',
+        message: copy.t(
+          'Choose a free Pull, or restore Pro to use this character.',
+        ),
       })
     }
     if (cinematicRehearsal()) {
@@ -784,7 +894,7 @@ export function App(props: AppProps) {
       if (onboarding.delivery !== 'cinematic-first-run') {
         return {
           ok: false,
-          message: 'This introduction is not available in this build.',
+          message: copy.t('This introduction is not available in this build.'),
         }
       }
 
@@ -848,8 +958,10 @@ export function App(props: AppProps) {
           ok: false,
           message:
             error instanceof RangeError
-              ? 'Choose one small Side B, then try again.'
-              : 'Your plan could not be saved on this device. Try again.',
+              ? copy.t('Choose one small Side B, then try again.')
+              : copy.t(
+                  'Your plan could not be saved on this device. Try again.',
+                ),
         }
       }
     })()
@@ -898,7 +1010,9 @@ export function App(props: AppProps) {
     ) {
       return Promise.resolve({
         ok: false,
-        message: 'Choose a free Pull, or restore Pro to use this character.',
+        message: copy.t(
+          'Choose a free Pull, or restore Pro to use this character.',
+        ),
       })
     }
 
@@ -912,7 +1026,9 @@ export function App(props: AppProps) {
       ) {
         return {
           ok: false,
-          message: 'This V2 introduction is not available in this build.',
+          message: copy.t(
+            'This V2 introduction is not available in this build.',
+          ),
         }
       }
 
@@ -980,8 +1096,10 @@ export function App(props: AppProps) {
           ok: false,
           message:
             error instanceof RangeError
-              ? 'Choose one clear Side A and Side B, then try again.'
-              : 'Your plan could not be saved on this device. Try again.',
+              ? copy.t('Choose one clear Side A and Side B, then try again.')
+              : copy.t(
+                  'Your plan could not be saved on this device. Try again.',
+                ),
         }
       }
     })()
@@ -998,7 +1116,9 @@ export function App(props: AppProps) {
   function choosePull(pullId: string): void {
     if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
       setSetupError(
-        'This character needs Pro. Choose a free Pull or your own words.',
+        notice(
+          'This character needs Pro. Choose a free Pull or your own words.',
+        ),
       )
       return
     }
@@ -1060,7 +1180,7 @@ export function App(props: AppProps) {
         config().pullOptions,
       )
     ) {
-      setSetupError('Choose a free Pull, or restore Pro in Settings.')
+      setSetupError(notice('Choose a free Pull, or restore Pro in Settings.'))
       return
     }
     try {
@@ -1076,7 +1196,7 @@ export function App(props: AppProps) {
   function continueFromCueContext(): void {
     const selection = cueContextSelection()
     if (selection === undefined) {
-      setSetupError('Choose a cue moment, or choose Not sure yet.')
+      setSetupError(notice('Choose a cue moment, or choose Not sure yet.'))
       return
     }
 
@@ -1086,7 +1206,7 @@ export function App(props: AppProps) {
           (candidate) => candidate.id === selection.id,
         )
         if (suggestion === undefined) {
-          setSetupError('Choose one of the cue moments shown here.')
+          setSetupError(notice('Choose one of the cue moments shown here.'))
           return
         }
         normalizeCueText(suggestion.text)
@@ -1129,7 +1249,9 @@ export function App(props: AppProps) {
       )
     ) {
       setSetupError(
-        'Pro is no longer active. Choose a free Pull or your own words.',
+        notice(
+          'Pro is no longer active. Choose a free Pull or your own words.',
+        ),
       )
       setScreen('choose-pull')
       return
@@ -1221,8 +1343,12 @@ export function App(props: AppProps) {
           setSchedulePending(false)
           setSetupError(
             replacing
-              ? 'Your current plan is still active. The new plan could not be saved; try again.'
-              : 'Your plan could not be saved on this device. Try again.',
+              ? notice(
+                  'Your current plan is still active. The new plan could not be saved; try again.',
+                )
+              : notice(
+                  'Your plan could not be saved on this device. Try again.',
+                ),
           )
         })
         .finally(() => setSchedulePending(false))
@@ -1237,7 +1363,7 @@ export function App(props: AppProps) {
     if (schedulePending()) {
       return {
         ok: false,
-        message: 'A reminder update is already in progress.',
+        message: copy.t('A reminder update is already in progress.'),
       }
     }
 
@@ -1246,7 +1372,7 @@ export function App(props: AppProps) {
     if (selectedCue?.status !== 'active') {
       return {
         ok: false,
-        message: 'Resume your plan before setting a daily reminder.',
+        message: copy.t('Resume your plan before setting a daily reminder.'),
       }
     }
 
@@ -1273,10 +1399,10 @@ export function App(props: AppProps) {
     try {
       applyRule(currentState)
     } catch {
-      const message = 'Choose a valid time and try again.'
+      const message = notice('Choose a valid time and try again.')
       setScheduleError(message)
       setScheduleMessage(undefined)
-      return { ok: false, message }
+      return { ok: false, message: renderNotice(message) }
     }
 
     let savedRuleId: string | undefined
@@ -1312,9 +1438,9 @@ export function App(props: AppProps) {
     try {
       const permission = await dailyCueCoordinator.permission(true)
       if (appServices.platform !== 'web' && permission !== 'granted') {
-        const message = 'Daily reminder is off. Cue me now still works.'
+        const message = notice('Daily reminder is off. Cue me now still works.')
         setScheduleError(message)
-        return { ok: false, message }
+        return { ok: false, message: renderNotice(message) }
       }
 
       const rebased = applyRule(latestState)
@@ -1331,16 +1457,21 @@ export function App(props: AppProps) {
         const time = displayReminderTime(localTime)
         const message =
           result === 'foreground-only'
-            ? `Reminder set for ${time} while Beside Cue is open.`
-            : `Reminder set for ${time}. You can change it in Settings.`
+            ? notice('Reminder set for {time} while Beside Cue is open.', {
+                time,
+              })
+            : notice(
+                'Reminder set for {time}. You can change it in Settings.',
+                { time },
+              )
         setScheduleMessage(message)
-        return { ok: true, message }
+        return { ok: true, message: renderNotice(message) }
       }
 
       await rollbackSavedRule()
-      const message = 'Daily reminder is off. Cue me now still works.'
+      const message = notice('Daily reminder is off. Cue me now still works.')
       setScheduleError(message)
-      return { ok: false, message }
+      return { ok: false, message: renderNotice(message) }
     } catch {
       try {
         await rollbackSavedRule()
@@ -1348,9 +1479,9 @@ export function App(props: AppProps) {
         // The storage alert already names the failed recovery. Keep the
         // reminder result literal so the film can continue with its saved plan.
       }
-      const message = 'Daily reminder is off. Cue me now still works.'
+      const message = notice('Daily reminder is off. Cue me now still works.')
       setScheduleError(message)
-      return { ok: false, message }
+      return { ok: false, message: renderNotice(message) }
     } finally {
       setSchedulePending(false)
     }
@@ -1366,7 +1497,7 @@ export function App(props: AppProps) {
     if (cinematicRehearsal()) {
       return Promise.resolve({
         ok: true,
-        message: 'Rehearsal only. Your reminder has not changed.',
+        message: copy.t('Rehearsal only. Your reminder has not changed.'),
       })
     }
     return setDailyReminder(localTime)
@@ -1396,7 +1527,7 @@ export function App(props: AppProps) {
         ? undefined
         : enabledDailyRule(currentState, selectedCue.id)
     if (rule === undefined) {
-      setScheduleMessage('Cue me now stays ready whenever you ask.')
+      setScheduleMessage(notice('Cue me now stays ready whenever you ask.'))
       setScheduleError(undefined)
       return
     }
@@ -1417,11 +1548,13 @@ export function App(props: AppProps) {
         if (result !== 'cleared' && result !== 'superseded') {
           throw new Error('Daily reminder clear did not settle.')
         }
-        setScheduleMessage('Cue me now stays ready whenever you ask.')
+        setScheduleMessage(notice('Cue me now stays ready whenever you ask.'))
       })
       .catch(() => {
         setScheduleError(
-          'The device could not remove that daily reminder. Please try again.',
+          notice(
+            'The device could not remove that daily reminder. Please try again.',
+          ),
         )
       })
       .finally(() => setSchedulePending(false))
@@ -1440,7 +1573,7 @@ export function App(props: AppProps) {
       at,
     })
     const phraseIndex = result.state.occurrences.length - 1
-    const presentation = resolveMoment(contentPack(), 'cue.open', {
+    const presentation = resolveContentMoment('cue.open', {
       pullId: activeCue.pullCategoryId,
       rotation: phraseIndex,
     })
@@ -1479,8 +1612,7 @@ export function App(props: AppProps) {
       })
       const acknowledgementIndex = result.state.occurrences.length - 1
       const choseBSide = outcome === 'b_side'
-      const acknowledgement = resolveMoment(
-        contentPack(),
+      const acknowledgement = resolveContentMoment(
         choseBSide ? 'turn.b-side' : 'turn.a-side',
         { rotation: acknowledgementIndex },
       )
@@ -1489,7 +1621,10 @@ export function App(props: AppProps) {
       )
       const starter =
         choseBSide && occurrenceCue !== undefined
-          ? resolveLocalActionStarter(occurrenceCue)
+          ? localizeActionStarter(
+              resolveLocalActionStarter(occurrenceCue),
+              locale(),
+            )
           : undefined
 
       await persistAtomicallyWithRepository(
@@ -1514,7 +1649,9 @@ export function App(props: AppProps) {
     } catch {
       if (!disposed) {
         setStorageError(
-          'Your choice could not be saved on this device. Please try again.',
+          notice(
+            'Your choice could not be saved on this device. Please try again.',
+          ),
         )
       }
     } finally {
@@ -1570,7 +1707,9 @@ export function App(props: AppProps) {
       .then(() => reconcileDailyCue(result.state, appConfig, true))
       .then((reconcileResult) => {
         setScheduleMessage(
-          resuming ? 'Your plan is active again.' : 'Your plan is paused.',
+          resuming
+            ? notice('Your plan is active again.')
+            : notice('Your plan is paused.'),
         )
         const issue = resuming
           ? messageForDailyCueResult(reconcileResult)
@@ -1580,8 +1719,12 @@ export function App(props: AppProps) {
       .catch(() => {
         setScheduleError(
           resuming
-            ? 'Your plan is active, but the daily reminder could not be restored.'
-            : 'Your plan is paused, but the daily reminder could not be stopped.',
+            ? notice(
+                'Your plan is active, but the daily reminder could not be restored.',
+              )
+            : notice(
+                'Your plan is paused, but the daily reminder could not be stopped.',
+              ),
         )
       })
       .finally(() => setSchedulePending(false))
@@ -1616,6 +1759,22 @@ export function App(props: AppProps) {
       ...currentState,
       settings: { ...currentState.settings, voiceEnabled },
     })
+  }
+
+  function changeLocale(requested: AppLocale): void {
+    const nextLocale = resolveAppLocale(requested)
+    if (!stateLoaded || localeChangeDisabled() || nextLocale === locale())
+      return
+    // The selector is available in Settings and before Tap to start only.
+    // Cancel any legacy preview request without interrupting the music session.
+    stopCharacterVoice('replaced')
+    attemptedPullPreviews.clear()
+    setPlayedPullPreviewIds([])
+    persist({
+      ...latestState,
+      settings: { ...latestState.settings, locale: nextLocale },
+    })
+    void reconcileDailyCue(latestState, config(), true).catch(() => undefined)
   }
 
   function toggleCharacterVoice(): void {
@@ -1661,7 +1820,9 @@ export function App(props: AppProps) {
       return
     }
     if (cinematicConfig() === undefined) {
-      setStorageError('Corky’s introduction is not available in this build.')
+      setStorageError(
+        notice('Corky’s introduction is not available in this build.'),
+      )
       return
     }
 
@@ -1713,7 +1874,9 @@ export function App(props: AppProps) {
         )
       })
       .catch(() => {
-        setStorageError('Local data could not be reset. Please try again.')
+        setStorageError(
+          notice('Local data could not be reset. Please try again.'),
+        )
       })
       .finally(() => setSchedulePending(false))
   }
@@ -1744,7 +1907,7 @@ export function App(props: AppProps) {
               appServices.onboardingPreferences,
             ),
           )
-          restoreDailyCue(nextState, appConfig)
+          restoreDailyCue(nextState, config())
           if (pendingDailyCue !== undefined) {
             const pending = pendingDailyCue
             pendingDailyCue = undefined
@@ -1785,7 +1948,9 @@ export function App(props: AppProps) {
         )
       })
       .catch(() =>
-        setStorageError('Local data could not be reset. Please try again.'),
+        setStorageError(
+          notice('Local data could not be reset. Please try again.'),
+        ),
       )
       .finally(() => setSchedulePending(false))
   }
@@ -1803,7 +1968,6 @@ export function App(props: AppProps) {
 
   onMount(() => {
     const appServices = services()
-    const appConfig = config()
     dailyCueCoordinator = createDailyCueCoordinator(
       appServices.runtime,
       appServices.platform,
@@ -1823,7 +1987,7 @@ export function App(props: AppProps) {
       onboardingAudioSession.setForeground(true)
       setV2OnboardingForeground(true)
       refreshLocalDay(appServices)
-      restoreDailyCue(latestState, appConfig)
+      restoreDailyCue(latestState, untrack(config))
     }
     pageHideListener = () => {
       characterVoiceForeground = false
@@ -1866,15 +2030,19 @@ export function App(props: AppProps) {
   })
 
   return (
-    <>
+    <LocaleProvider
+      locale={locale()}
+      onLocaleChange={changeLocale}
+      changeDisabled={localeChangeDisabled()}
+    >
       <BuildStamp />
 
       {screen() === 'loading' ? (
         <main class="system-screen app-screen" aria-busy="true">
           <BrandMark />
           <div>
-            <p class="screen-kicker">Opening Beside Cue</p>
-            <h1>Loading your plan…</h1>
+            <p class="screen-kicker">{copy.t('Opening Beside Cue')}</p>
+            <h1>{copy.t('Loading your plan…')}</h1>
           </div>
         </main>
       ) : null}
@@ -1886,24 +2054,26 @@ export function App(props: AppProps) {
         >
           <BrandMark />
           <div>
-            <p class="screen-kicker">Saved data unavailable</p>
-            <h1 id="load-error-title">Your saved data could not be opened.</h1>
+            <p class="screen-kicker">{copy.t('Saved data unavailable')}</p>
+            <h1 id="load-error-title">
+              {copy.t('Your saved data could not be opened.')}
+            </h1>
             <p>
-              Try again first. Deleting saved data removes your plan, choice
-              history, reminder settings, and onboarding progress from this
-              device.
+              {copy.t(
+                'Try again first. Deleting saved data removes your plan, choice history, reminder settings, and onboarding progress from this device.',
+              )}
             </p>
           </div>
           <div class="system-screen__actions">
             <button class="primary-button" type="button" onClick={load}>
-              Try again
+              {copy.t('Try again')}
             </button>
             <button
               class="danger-button"
               type="button"
               onClick={clearUnreadableData}
             >
-              Delete saved data
+              {copy.t('Delete saved data')}
             </button>
           </div>
         </main>
@@ -1954,7 +2124,9 @@ export function App(props: AppProps) {
       {screen() === 'choose-pull' ? (
         <ChoosePullScreen
           headerLabel={
-            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+            setupMode() === 'replace'
+              ? copy.t('Change plan')
+              : copy.t('Your first plan')
           }
           options={config().pullOptions}
           isPro={proAccess().isPro()}
@@ -1962,7 +2134,7 @@ export function App(props: AppProps) {
           selectedId={selectedPullId()}
           previewVoiceState={selectedPullPreviewVoiceState()}
           customText={customPullText()}
-          error={setupError()}
+          error={renderNotice(setupError())}
           onSelect={choosePull}
           onHearPreview={playPullPreview}
           onCustomInput={(value) => {
@@ -1980,13 +2152,15 @@ export function App(props: AppProps) {
       {screen() === 'choose-cue-context' ? (
         <ChooseCueContextScreen
           headerLabel={
-            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+            setupMode() === 'replace'
+              ? copy.t('Change plan')
+              : copy.t('Your first plan')
           }
           pullLabel={selectedPullLabel()}
           suggestions={cueContextChoices()}
           selection={cueContextSelection()}
           customText={customCueContextText()}
-          error={setupError()}
+          error={renderNotice(setupError())}
           onSelect={(selection) => {
             setCueContextSelection(selection)
             setSetupError(undefined)
@@ -2006,14 +2180,16 @@ export function App(props: AppProps) {
       {screen() === 'choose-b-side' ? (
         <ChooseBSideScreen
           headerLabel={
-            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+            setupMode() === 'replace'
+              ? copy.t('Change plan')
+              : copy.t('Your first plan')
           }
           pullText={selectedPullLabel()}
           suggestions={bSideChoices()}
           selectedKey={selectedBSideKey()}
           customText={customBSideText()}
           customSelected={customBSideSelected()}
-          error={setupError()}
+          error={renderNotice(setupError())}
           pending={schedulePending()}
           onSelect={chooseBSide}
           onSelectCustom={() => {
@@ -2034,9 +2210,9 @@ export function App(props: AppProps) {
 
       {screen() === 'home' && cue() !== undefined ? (
         <HomeScreen
-          pullText={cue()?.pullText ?? ''}
-          bSideText={cue()?.bSideText ?? ''}
-          cueContextText={cue()?.cueContextText}
+          pullText={displayedCue()?.pullText ?? ''}
+          bSideText={displayedCue()?.bSideText ?? ''}
+          cueContextText={displayedCue()?.cueContextText}
           todayCount={progress().today}
           weekCount={progress().total}
           paused={cue()?.status === 'paused'}
@@ -2058,9 +2234,9 @@ export function App(props: AppProps) {
 
       {screen() === 'cue-moment' && cue() !== undefined ? (
         <CueMomentScreen
-          pullText={cue()?.pullText ?? ''}
-          bSideText={cue()?.bSideText ?? ''}
-          cueContextText={cue()?.cueContextText}
+          pullText={displayedCue()?.pullText ?? ''}
+          bSideText={displayedCue()?.bSideText ?? ''}
+          cueContextText={displayedCue()?.cueContextText}
           phrase={cuePhrase()}
           pending={cueResolutionPending()}
           {...(cue()?.pullCategoryId === undefined
@@ -2105,7 +2281,7 @@ export function App(props: AppProps) {
               busy={proAccess().busy()}
               notice={proAccess().notice()}
               error={proAccess().error()}
-              locale={appState().settings.locale}
+              locale={locale()}
               onUpgrade={() => proAccess().openPaywall()}
               onManage={() => proAccess().openCustomerCenter()}
               onRestore={() => void proAccess().restore()}
@@ -2124,8 +2300,8 @@ export function App(props: AppProps) {
           resetArmed={resetArmed()}
           scheduleTime={dailyRule()?.localTime}
           schedulePending={schedulePending()}
-          scheduleMessage={scheduleMessage()}
-          scheduleError={scheduleError()}
+          scheduleMessage={renderNotice(scheduleMessage())}
+          scheduleError={renderNotice(scheduleError())}
           onBack={() => changeMainView(settingsReturnView())}
           onPauseToggle={togglePause}
           onVoiceToggle={toggleCharacterVoice}
@@ -2141,9 +2317,9 @@ export function App(props: AppProps) {
       <Show when={storageError()}>
         {(message) => (
           <div class="storage-alert" role="alert">
-            <span>{message()}</span>
+            <span>{renderNotice(message())}</span>
             <button type="button" onClick={() => setStorageError(undefined)}>
-              Dismiss
+              {copy.t('Dismiss')}
             </button>
           </div>
         )}
@@ -2164,6 +2340,6 @@ export function App(props: AppProps) {
           )}
         </Show>
       ) : null}
-    </>
+    </LocaleProvider>
   )
 }

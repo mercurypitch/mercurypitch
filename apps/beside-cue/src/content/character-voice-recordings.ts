@@ -7,7 +7,8 @@
 
 import type { AudioSourceVariant, DialogueAudioAsset, DialogueAudioBinding, } from './audio-manifest'
 import { AUDIO_MANIFEST_SCHEMA_VERSION, validateAudioAssetManifest, } from './audio-manifest'
-import { findCanonicalVoiceLine } from './voice-lines'
+import type { CanonicalVoiceLine } from './voice-lines'
+import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 export interface CharacterVoiceRecording extends DialogueAudioBinding {
   readonly sources: readonly [AudioSourceVariant, ...AudioSourceVariant[]]
@@ -15,9 +16,15 @@ export interface CharacterVoiceRecording extends DialogueAudioBinding {
 
 export function registerCharacterVoiceRecordings(
   recordings: readonly CharacterVoiceRecording[],
+  registry: {
+    readonly locale: string
+    readonly lines: readonly CanonicalVoiceLine[]
+  } = { locale: 'en', lines: CANONICAL_VOICE_LINES },
 ): readonly DialogueAudioAsset[] {
   const assets = recordings.map((recording): DialogueAudioAsset => {
-    const line = findCanonicalVoiceLine(recording.lineId)
+    const line = registry.lines.find(
+      (candidate) => candidate.id === recording.lineId,
+    )
     if (line === undefined) {
       throw new Error(`Unknown recorded character line "${recording.lineId}".`)
     }
@@ -38,7 +45,7 @@ export function registerCharacterVoiceRecordings(
   const problems = validateAudioAssetManifest({
     schemaVersion: AUDIO_MANIFEST_SCHEMA_VERSION,
     revision: 'character-voice-recordings-v1',
-    locale: 'en',
+    locale: registry.locale,
     assets,
   })
   if (problems.length > 0) {

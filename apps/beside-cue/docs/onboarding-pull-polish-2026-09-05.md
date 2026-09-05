@@ -90,6 +90,10 @@ are carried forward in this branch.
 
 ## Localization boundary
 
+Follow-up: the [Spanish/German voice preview](localization-voice-preview-2026-09-05.md)
+supersedes the English-only state below for the core app route. This section
+records the earlier polish milestone, not the current language availability.
+
 The app is **not fully localized yet**. `i18n/messages.ts` introduces typed
 English keys for touched Home/shared premium/audio copy, explicit supported
 locale resolution and a presentation-only local-time formatter. English is

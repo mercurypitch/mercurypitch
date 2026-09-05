@@ -1,9 +1,10 @@
 // ============================================================
 // Cue handoff — a fresh, focused view of the chosen Side B
 // ============================================================
-import { onMount } from 'solid-js'
+import { createMemo, onMount } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
 import { CORKY_V023_REST_ART } from '@/content'
+import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 
 interface CueMomentScreenProps {
@@ -24,6 +25,13 @@ interface CueMomentScreenProps {
 }
 
 export function CueMomentScreen(props: CueMomentScreenProps) {
+  const copy = useCopy()
+  const corkyArt = createMemo(() => ({
+    ...CORKY_V023_REST_ART,
+    alt: copy.t(
+      'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
+    ),
+  }))
   let heading: HTMLHeadingElement | undefined
   onMount(() => {
     heading?.focus({ preventScroll: true })
@@ -42,7 +50,7 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
         class="icon-button cue-moment__close"
         type="button"
         onClick={() => props.onClose()}
-        aria-label="Close cue"
+        aria-label={copy.t('Close cue')}
         disabled={props.pending}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,11 +59,11 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
       </button>
       <div class="cue-moment__label">
         <span class="cue-pulse" aria-hidden="true" />
-        One gentle cue
+        {copy.t('One gentle cue')}
       </div>
       <MascotStage
         state="notice"
-        artOverride={CORKY_V023_REST_ART}
+        artOverride={corkyArt()}
         {...(props.pullId === undefined ? {} : { pullId: props.pullId })}
       />
       <section class="cue-moment__copy">
@@ -65,12 +73,12 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
         </h1>
         <dl class="cue-moment__context">
           <div>
-            <dt>Instead of</dt>
+            <dt>{copy.t('Instead of')}</dt>
             <dd {...Selectable}>{props.pullText}</dd>
           </div>
           {props.cueContextText === undefined ? null : (
             <div>
-              <dt>Your cue</dt>
+              <dt>{copy.t('Your cue')}</dt>
               <dd {...Selectable}>{props.cueContextText}</dd>
             </div>
           )}
@@ -78,7 +86,7 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
       </section>
       <div class="cue-moment__actions">
         {props.pending ? (
-          <p role="status">Saving your choice on this device…</p>
+          <p role="status">{copy.t('Saving your choice on this device…')}</p>
         ) : null}
         <button
           class="primary-button primary-button--wide primary-button--bside"
@@ -86,7 +94,9 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
           onClick={() => props.onChooseBSide()}
           disabled={props.pending}
         >
-          {props.pending ? 'Saving your choice…' : 'Choose Side B'}
+          {props.pending
+            ? copy.t('Saving your choice…')
+            : copy.t('Choose Side B')}
         </button>
         <button
           class="quiet-button"
@@ -94,7 +104,7 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
           onClick={() => props.onNotNow()}
           disabled={props.pending}
         >
-          {props.pending ? 'Saving…' : 'Not now'}
+          {props.pending ? copy.t('Saving…') : copy.t('Not now')}
         </button>
       </div>
     </main>

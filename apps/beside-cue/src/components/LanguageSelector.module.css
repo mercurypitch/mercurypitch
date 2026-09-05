@@ -1,0 +1,100 @@
+.selector {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.control > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.control select {
+  flex: 0 1 12rem;
+  min-width: 8.5rem;
+  min-height: 48px;
+  padding: 0.7rem 2.4rem 0.7rem 0.85rem;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper-light);
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  border-radius: 12px;
+}
+
+.control select:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+.note {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.compact {
+  position: absolute;
+  inset-block-start: calc(var(--safe-top) + 0.75rem);
+  inset-inline-start: max(var(--safe-left), 0.75rem);
+  z-index: 4;
+  justify-items: start;
+  pointer-events: none;
+}
+
+.compact .control {
+  pointer-events: auto;
+}
+
+.compact .control > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.compact .control select {
+  min-width: 0;
+  width: auto;
+  max-width: min(11rem, calc(100vw - 5.5rem));
+  min-height: 48px;
+  background: color-mix(in srgb, var(--paper-light) 92%, transparent);
+}
+
+@media (max-width: 360px) {
+  .control {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control select {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  .compact .control {
+    align-items: flex-start;
+  }
+
+  .compact .control select {
+    width: auto;
+    max-width: min(10rem, calc(100vw - 5.5rem));
+  }
+}

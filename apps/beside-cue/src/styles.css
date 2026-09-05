@@ -299,11 +299,16 @@ svg {
   min-height: 4.6rem;
   align-items: center;
   padding-top: var(--safe-top);
-  grid-template-columns: minmax(3rem, 1fr) auto minmax(3rem, 1fr);
+  grid-template-columns: minmax(48px, 1fr) minmax(0, auto) minmax(48px, 1fr);
 }
 
 .app-header > :first-child {
   justify-self: start;
+}
+
+.app-header > .icon-button {
+  width: 48px;
+  height: 48px;
 }
 
 .app-header > :last-child {
@@ -311,16 +316,19 @@ svg {
 }
 
 .app-header__label {
+  min-width: 0;
   font-family: var(--font-label);
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.075em;
+  overflow-wrap: anywhere;
+  text-align: center;
   text-transform: uppercase;
 }
 
 .app-header__spacer {
   display: block;
-  width: 3rem;
+  width: min(100%, 3rem);
 }
 
 .mascot-stage {
@@ -1432,6 +1440,11 @@ svg {
   font-weight: 400;
 }
 
+.settings-group h2 {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
 .week-grooves__heading span,
 .settings-group > h2 {
   color: var(--ink-soft);
@@ -1521,9 +1534,15 @@ svg {
 
 .settings-group__heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
+}
+
+.settings-group__heading > div {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .settings-group__heading .screen-kicker {
@@ -1532,10 +1551,15 @@ svg {
 
 .settings-group__heading > strong,
 .settings-group__heading > span {
+  max-width: 100%;
   color: var(--turquoise-dark);
   font-family: var(--font-label);
   font-size: 0.88rem;
   letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}
+
+.settings-group__heading > strong {
   white-space: nowrap;
 }
 
@@ -1650,7 +1674,8 @@ svg {
 }
 
 .custom-time .secondary-button {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .custom-time.custom-time--punched {
@@ -1800,12 +1825,14 @@ svg {
   background: transparent;
   cursor: pointer;
   text-align: left;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .settings-row span {
   display: grid;
+  min-width: 0;
   gap: 0.2rem;
+  overflow-wrap: anywhere;
 }
 
 .settings-row small,

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type { AudioSourceVariant } from './audio-manifest'
 import type { CharacterVoiceRecording } from './character-voice-recordings'
 import { registerCharacterVoiceRecordings } from './character-voice-recordings'
+import { getVoiceLines } from './localized-voice-lines'
 import { PREMIUM_PULL_LINES } from './premium-pulls'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
@@ -31,6 +32,27 @@ function recording(): CharacterVoiceRecording {
 }
 
 describe('character voice recording registration', () => {
+  it.each(['es', 'de'] as const)(
+    'binds %s only to its exact translated caption',
+    (locale) => {
+      const lines = getVoiceLines(locale)
+      const greeting = lines.find((line) => line.id === GREETING.id)!
+      expect(() =>
+        registerCharacterVoiceRecordings([recording()], { locale, lines }),
+      ).toThrow('Recording caption does not match')
+      const localized = {
+        ...recording(),
+        captionSha256: greeting.captionSha256,
+      }
+      expect(
+        registerCharacterVoiceRecordings([localized], { locale, lines })[0]
+          ?.dialogue,
+      ).toEqual({ lineId: GREETING.id, captionSha256: greeting.captionSha256 })
+      expect(() => registerCharacterVoiceRecordings([localized])).toThrow(
+        'Recording caption does not match',
+      )
+    },
+  )
   it('keeps the greeting semantic identity and exact canonical caption binding', () => {
     const delivery = recording()
 

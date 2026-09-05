@@ -2,7 +2,9 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show, untrack } from 'solid-js'
 import { buildLabel } from '@/build-info'
 import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelector } from '@/components/LanguageSelector'
 import { PunchedTimeDial } from '@/components/PunchedTimeDial'
+import { useCopy } from '@/i18n/ui-copy'
 import type { DeviceSupport } from '@/platform/device-support'
 import { probeDeviceSupport } from '@/platform/device-support'
 
@@ -28,6 +30,7 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen(props: SettingsScreenProps) {
+  const copy = useCopy()
   const [customTime, setCustomTime] = createSignal(
     untrack(() => props.scheduleTime ?? ''),
   )
@@ -43,30 +46,35 @@ export function SettingsScreen(props: SettingsScreenProps) {
 
   return (
     <main class="settings-screen app-screen">
-      <AppHeader label="Settings" onBack={props.onBack} />
+      <AppHeader label={copy.t('Settings')} onBack={props.onBack} />
       <section class="settings-screen__intro">
-        <p class="screen-kicker">Your plan, your control</p>
-        <h1>Keep only what helps.</h1>
+        <p class="screen-kicker">{copy.t('Your plan, your control')}</p>
+        <h1>{copy.t('Keep only what helps.')}</h1>
         <p>
-          Your plan and choice history stay on this device. Notification
-          permission is requested only if you set a reminder.
+          {copy.t(
+            'Your plan and choice history stay on this device. Notification permission is requested only if you set a reminder.',
+          )}
         </p>
+      </section>
+      <section class="settings-group" aria-label={copy.t('Language')}>
+        <LanguageSelector showVoiceNote />
       </section>
       <section class="settings-group" aria-labelledby="daily-cue-title">
         <div class="settings-group__heading">
           <div>
-            <p class="screen-kicker">Optional</p>
-            <h2 id="daily-cue-title">Daily reminder</h2>
+            <p class="screen-kicker">{copy.t('Optional')}</p>
+            <h2 id="daily-cue-title">{copy.t('Daily reminder')}</h2>
           </div>
           {props.scheduleTime === undefined ? (
-            <span>No daily reminder</span>
+            <span>{copy.t('No daily reminder')}</span>
           ) : (
             <strong>{props.scheduleTime}</strong>
           )}
         </div>
         <p class="settings-group__intro">
-          Beside Cue can send one discreet reminder at this time. Your Pull and
-          Side B stay off the lock screen.
+          {copy.t(
+            'Beside Cue can send one discreet reminder at this time. Your Pull and Side B stay off the lock screen.',
+          )}
         </p>
         <form
           class="custom-time custom-time--punched"
@@ -89,12 +97,12 @@ export function SettingsScreen(props: SettingsScreenProps) {
               props.paused || props.schedulePending || customTime() === ''
             }
           >
-            {props.schedulePending ? 'Setting…' : 'Set reminder'}
+            {copy.t(props.schedulePending ? 'Setting…' : 'Set reminder')}
           </button>
         </form>
         <div
           class="schedule-options schedule-options--single"
-          aria-label="Daily reminder state"
+          aria-label={copy.t('Daily reminder state')}
         >
           <button
             class="schedule-option"
@@ -107,16 +115,17 @@ export function SettingsScreen(props: SettingsScreenProps) {
             onClick={() => props.onDisableSchedule()}
           >
             <span>
-              <strong>Only when I ask</strong>
-              <small>No automatic reminder</small>
+              <strong>{copy.t('Only when I ask')}</strong>
+              <small>{copy.t('No automatic reminder')}</small>
             </span>
             <span class="schedule-option__mark" aria-hidden="true" />
           </button>
         </div>
         {props.paused ? (
           <p class="schedule-status">
-            This reminder stays off while your plan is paused. Resume the plan
-            to change it or receive reminders.
+            {copy.t(
+              'This reminder stays off while your plan is paused. Resume the plan to change it or receive reminders.',
+            )}
           </p>
         ) : null}
         {props.scheduleMessage !== undefined ? (
@@ -131,7 +140,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
         ) : null}
       </section>
       <section class="settings-group" aria-labelledby="voice-settings-title">
-        <h2 id="voice-settings-title">Character voice</h2>
+        <h2 id="voice-settings-title">{copy.t('Character voice')}</h2>
         <button
           class="settings-row"
           type="button"
@@ -141,18 +150,21 @@ export function SettingsScreen(props: SettingsScreenProps) {
         >
           <span>
             <strong>
-              {props.voiceEnabled ? 'Voice is on' : 'Voice is muted'}
+              {copy.t(props.voiceEnabled ? 'Voice is on' : 'Voice is muted')}
             </strong>
             <small>
-              Character captions always remain visible. This setting only
-              changes whether their recorded lines play.
+              {copy.t(
+                'Character captions always remain visible. This setting only changes whether their recorded lines play.',
+              )}
             </small>
           </span>
-          <span aria-hidden="true">{props.voiceEnabled ? 'On' : 'Off'}</span>
+          <span aria-hidden="true">
+            {copy.t(props.voiceEnabled ? 'On' : 'Off')}
+          </span>
         </button>
       </section>
       <section class="settings-group" aria-labelledby="cue-settings-title">
-        <h2 id="cue-settings-title">Current plan</h2>
+        <h2 id="cue-settings-title">{copy.t('Current plan')}</h2>
         <button
           class="settings-row"
           type="button"
@@ -161,12 +173,14 @@ export function SettingsScreen(props: SettingsScreenProps) {
         >
           <span>
             <strong>
-              {props.paused ? 'Resume this plan' : 'Pause this plan'}
+              {copy.t(props.paused ? 'Resume this plan' : 'Pause this plan')}
             </strong>
             <small>
-              {props.paused
-                ? 'Make reminders and Cue me now available again.'
-                : 'Keep the plan and history, but stop reminders and Cue me now.'}
+              {copy.t(
+                props.paused
+                  ? 'Make reminders and Cue me now available again.'
+                  : 'Keep the plan and history, but stop reminders and Cue me now.',
+              )}
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -180,10 +194,11 @@ export function SettingsScreen(props: SettingsScreenProps) {
           onClick={() => props.onReplace()}
         >
           <span>
-            <strong>Change this plan</strong>
+            <strong>{copy.t('Change this plan')}</strong>
             <small>
-              Choose a new Pull, cue, and Side B. Your current plan stays active
-              until the new one is saved.
+              {copy.t(
+                'Choose a new Pull, cue, and Side B. Your current plan stays active until the new one is saved.',
+              )}
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -197,21 +212,24 @@ export function SettingsScreen(props: SettingsScreenProps) {
           onClick={() => props.onReplayIntroduction()}
         >
           <span>
-            <strong>Watch Corky’s introduction again</strong>
+            <strong>{copy.t('Watch Corky’s introduction again')}</strong>
             <small>
-              Replay the film without changing your plan, history, or reminder.
+              {copy.t(
+                'Replay the film without changing your plan, history, or reminder.',
+              )}
             </small>
           </span>
         </button>
       </section>
       {props.proSection}
       <section class="settings-group" aria-labelledby="privacy-settings-title">
-        <h2 id="privacy-settings-title">Local data</h2>
+        <h2 id="privacy-settings-title">{copy.t('Local data')}</h2>
         <div class="privacy-note">
-          <strong>On this device only</strong>
+          <strong>{copy.t('On this device only')}</strong>
           <p>
-            Pull, cue, and Side B text, settings, and choices stay local in this
-            build.
+            {copy.t(
+              'Pull, cue, and Side B text, settings, and choices stay local in this build.',
+            )}
           </p>
         </div>
         <button
@@ -220,13 +238,13 @@ export function SettingsScreen(props: SettingsScreenProps) {
           disabled={props.schedulePending}
           onClick={() => props.onReset()}
         >
-          {props.resetArmed ? 'Confirm reset' : 'Reset all local data'}
+          {copy.t(props.resetArmed ? 'Confirm reset' : 'Reset all local data')}
         </button>
         {props.resetArmed ? (
           <p class="reset-warning" role="alert">
-            This deletes your saved plan, choice history, reminder settings, and
-            onboarding progress from this device. Press Confirm reset to
-            continue.
+            {copy.t(
+              'This deletes your saved plan, choice history, reminder settings, and onboarding progress from this device. Press Confirm reset to continue.',
+            )}
           </p>
         ) : null}
       </section>
@@ -249,17 +267,19 @@ export function SettingsScreen(props: SettingsScreenProps) {
       >
         Beside Cue · {buildLabel()}
         <span class="settings-screen__version-hint">
-          {support() === undefined ? 'Show device info' : 'Hide device info'}
+          {copy.t(
+            support() === undefined ? 'Show device info' : 'Hide device info',
+          )}
         </span>
       </button>
       <Show when={support()}>
         {(facts) => (
           <dl class="device-support">
-            <dt>Engine</dt>
+            <dt>{copy.t('Engine')}</dt>
             <dd>{facts().engine}</dd>
-            <dt>Graphics</dt>
+            <dt>{copy.t('Graphics')}</dt>
             <dd>{facts().graphics}</dd>
-            <dt>Microphone</dt>
+            <dt>{copy.t('Microphone')}</dt>
             <dd>{facts().microphone}</dd>
           </dl>
         )}
