@@ -201,3 +201,22 @@ export function peakEnvelopeToAudioBuffer(
   buffer.copyToChannel(envelope.data as Float32Array<ArrayBuffer>, 0)
   return buffer
 }
+
+// ── Lanes written in place ────────────────────────────────────
+//
+// A streamed lane is written into as playback decodes windows, and the
+// overview keeps a segment tree of its peaks keyed by the buffer. The tree
+// was built once, from the zeros the lane starts with, and kept for good —
+// so the lane never filled in. Every window bumps the lane's revision and
+// the cache rebuilds when it sees a new one.
+
+const laneRevisions = new WeakMap<object, number>()
+
+/** How many windows have been written into this lane so far. */
+export function envelopeRevision(lane: object): number {
+  return laneRevisions.get(lane) ?? 0
+}
+
+export function markEnvelopeWritten(lane: object): void {
+  laneRevisions.set(lane, envelopeRevision(lane) + 1)
+}

@@ -21,6 +21,7 @@ import { clampOverviewWindow, columnSampleRange, nearestMarker, timeToX, visible
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
 import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
 import type { EditableNote } from './pitch-edit-model'
+import { envelopeRevision } from './stem-peak-envelope'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -201,15 +202,23 @@ export const useStemMixerCanvasController = (
   // 4-minute 44.1 kHz stereo buffer is roughly 42 MB, and a session that plays
   // several songs without a reload decodes 2-4 stems each. Matches
   // liveWaveformData and liveWaveformGain immediately below.
-  const peakCache = new WeakMap<AudioBuffer, WaveformPeakCache>()
+  const peakCache = new WeakMap<
+    AudioBuffer,
+    { revision: number; peaks: WaveformPeakCache }
+  >()
   const liveWaveformData = new WeakMap<AnalyserNode, Uint8Array<ArrayBuffer>>()
   const liveWaveformGain = new WeakMap<AnalyserNode, number>()
 
   const getPeaks = (buffer: AudioBuffer): WaveformPeakCache => {
-    if (peakCache.has(buffer)) return peakCache.get(buffer)!
+    // A streamed lane is written into as the song plays; its revision says
+    // when the tree built from it is stale (see stem-peak-envelope.ts).
+    const revision = envelopeRevision(buffer)
+    const cached = peakCache.get(buffer)
+    if (cached !== undefined && cached.revision === revision)
+      return cached.peaks
     const data = buffer.getChannelData(0)
     const peaks = buildWaveformPeakCache(data)
-    peakCache.set(buffer, peaks)
+    peakCache.set(buffer, { revision, peaks })
     return peaks
   }
 

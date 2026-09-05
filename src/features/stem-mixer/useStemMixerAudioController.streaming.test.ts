@@ -198,7 +198,7 @@ function stemTrack(label: string, url: string) {
   }
 }
 
-function harness() {
+function harness(overrides: Partial<StemMixerAudioDeps> = {}) {
   const [vocal, setVocal] = createSignal(stemTrack('Vocal', VOCAL))
   const [instrumental, setInstrumental] = createSignal(
     stemTrack('Instrumental', INSTRUMENTAL),
@@ -250,6 +250,7 @@ function harness() {
     stems: { vocal: VOCAL, instrumental: INSTRUMENTAL },
     songTitle: 'A long one',
     showNotification: (message: string) => notifications.push(message),
+    ...overrides,
   } as unknown as StemMixerAudioDeps
 
   let controller!: ReturnType<typeof useStemMixerAudioController>
@@ -363,6 +364,23 @@ describe('opening a song on a phone', () => {
     h.dispose()
     // A demuxer and a WebCodecs decoder per stem, released with the room.
     expect(disposedStreams).toBe(2)
+  })
+})
+
+describe('asking a phone for the MIDI practice track', () => {
+  it('says why it cannot, instead of an empty silent mixer', async () => {
+    // The vocal loads, so the "could not be loaded" error never fired; the
+    // MIDI track needs samples a streamed vocal does not have, and the
+    // only trace of that was a diagnostic log.
+    deviceClass = 'mobile'
+    const h = harness({ practiceMode: 'midi' })
+    await h.controller.loadStems()
+
+    expect(h.notifications.some((m) => /MIDI practice track/.test(m))).toBe(
+      true,
+    )
+    expect(h.controller.loadError()).toMatch(/MIDI practice track/)
+    h.dispose()
   })
 })
 
