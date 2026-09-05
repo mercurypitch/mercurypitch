@@ -427,6 +427,12 @@ svg {
   inset: 0;
 }
 
+.mascot-stage__cue--token {
+  inset: auto 7% 8% auto;
+  width: 24%;
+  height: 32%;
+}
+
 .mascot-stage__wash {
   position: absolute;
   inset: 0;

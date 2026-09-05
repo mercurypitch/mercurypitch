@@ -64,8 +64,9 @@ export function ProSection(props: ProSectionProps) {
             when={props.entitlement}
             fallback={
               <p class="settings-group__intro">
-                Every part of the cue loop stays free. {props.name} is a way to
-                support the work if it has earned a place in your day.
+                The six original Pulls, your own words, and the cue loop stay
+                free. {props.name} unlocks the extra character cast and supports
+                the work.
               </p>
             }
           >

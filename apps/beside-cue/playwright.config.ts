@@ -42,6 +42,10 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Opt in locally to the Safari-engine gate; routine CI installs Chromium.
+    ...(process.env.BESIDE_CUE_WEBKIT === '1'
+      ? [{ name: 'webkit', use: { ...devices['Desktop Safari'] } }]
+      : []),
   ],
   webServer: {
     command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${e2ePort} --strictPort`,

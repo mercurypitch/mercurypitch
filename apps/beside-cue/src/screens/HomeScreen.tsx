@@ -1,8 +1,9 @@
 import { AppHeader } from '@/components/AppHeader'
 import type { MainView } from '@/components/BottomNav'
 import { BottomNav } from '@/components/BottomNav'
-import { MascotStage } from '@/components/MascotStage'
-import { CORKY_V023_REST_ART } from '@/content'
+import { HomePressing } from '@/components/HomePressing'
+import { message } from '@/i18n/messages'
+import { Selectable } from '@/interaction/selection'
 import styles from './HomeScreen.module.css'
 
 interface HomeScreenProps {
@@ -31,7 +32,7 @@ export function HomeScreen(props: HomeScreenProps) {
         <button
           class={`icon-button ${styles.soundToggle}`}
           type="button"
-          aria-label={props.muted ? 'Unmute audio' : 'Mute audio'}
+          aria-label={message(props.muted ? 'audio.unmute' : 'audio.mute')}
           aria-pressed={props.muted}
           onClick={() => props.onMuteToggle()}
         >
@@ -45,43 +46,19 @@ export function HomeScreen(props: HomeScreenProps) {
           </svg>
         </button>
       </div>
-      <section class="home-screen__intro" aria-labelledby="home-title">
-        <p class="screen-kicker">Your current plan</p>
-        <h1 id="home-title">A better choice, kept close.</h1>
+      <section class={styles.intro} aria-labelledby="home-title">
+        <h1 id="home-title">{message('home.title')}</h1>
       </section>
-
-      <section
-        class="active-sleeve"
-        classList={{ 'active-sleeve--paused': props.paused }}
-        aria-label="Your current plan"
-      >
-        <div class="active-sleeve__art">
-          <MascotStage
-            state={props.paused ? 'quiet' : 'rest'}
-            artOverride={CORKY_V023_REST_ART}
-            compact
-          />
-          <span class="status-chip">{props.paused ? 'Paused' : 'Ready'}</span>
-        </div>
-        <div class="active-sleeve__tracks">
-          <div class="track-line track-line--a">
-            <span>Side A</span>
-            <p>{props.pullText}</p>
-          </div>
-          <svg class="track-turn" viewBox="0 0 40 24" aria-hidden="true">
-            <path d="M3 12h31M27 5l7 7-7 7" />
-          </svg>
-          <div class="track-line track-line--b">
-            <span>Side B</span>
-            <p>{props.bSideText}</p>
-          </div>
-        </div>
-      </section>
+      <HomePressing
+        sideA={props.pullText}
+        sideB={props.bSideText}
+        paused={props.paused}
+      />
 
       {props.cueContextText === undefined ? null : (
         <section class="plan-cue-note" aria-label="Your cue">
           <span>Your cue</span>
-          <p>{props.cueContextText}</p>
+          <p {...Selectable}>{props.cueContextText}</p>
         </section>
       )}
 
@@ -104,19 +81,6 @@ export function HomeScreen(props: HomeScreenProps) {
           </small>
         </span>
       </button>
-
-      <section class="today-strip" aria-label="Recent reflection">
-        <div>
-          <span>Today</span>
-          <strong>{props.todayCount}</strong>
-          <small>Side B {props.todayCount === 1 ? 'choice' : 'choices'}</small>
-        </div>
-        <div>
-          <span>Seven days</span>
-          <strong>{props.weekCount}</strong>
-          <small>No score to defend</small>
-        </div>
-      </section>
 
       <button
         class="games-entry"

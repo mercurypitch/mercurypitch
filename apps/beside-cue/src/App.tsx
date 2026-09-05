@@ -17,6 +17,7 @@ import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
 import type { ActionDefinition, ContentPack, PullOption, VoicePlaybackStatus, } from './content'
 import { createVoicePlayer, CUSTOM_PULL_ACTIONS, DEFAULT_CONTENT_PACK, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, resolveActionDefinition, resolveMoment, } from './content'
+import { canSelectPull } from './content/pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_IDS } from './content/v2-onboarding-audio-manifest'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
@@ -731,6 +732,18 @@ export function App(props: AppProps) {
   function saveCinematicPlan(
     selection: CinematicOnboardingPlanSelection,
   ): Promise<CinematicOnboardingSaveResult> {
+    if (
+      !canSelectPull(
+        selection.pullId,
+        proAccess().isPro(),
+        config().pullOptions,
+      )
+    ) {
+      return Promise.resolve({
+        ok: false,
+        message: 'Choose a free Pull, or restore Pro to use this character.',
+      })
+    }
     if (cinematicRehearsal()) {
       return Promise.resolve({ ok: true })
     }
@@ -854,6 +867,14 @@ export function App(props: AppProps) {
     if (v2OnboardingPlanSavePromise !== undefined) {
       return v2OnboardingPlanSavePromise
     }
+    if (
+      !canSelectPull(plan.pullId, proAccess().isPro(), config().pullOptions)
+    ) {
+      return Promise.resolve({
+        ok: false,
+        message: 'Choose a free Pull, or restore Pro to use this character.',
+      })
+    }
 
     const savePromise = (async (): Promise<V2OnboardingMutationResult> => {
       const appServices = services()
@@ -949,6 +970,12 @@ export function App(props: AppProps) {
   }
 
   function choosePull(pullId: string): void {
+    if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
+      setSetupError(
+        'This character needs Pro. Choose a free Pull or your own words.',
+      )
+      return
+    }
     const selectionChanged = selectedPullId() !== pullId
     if (selectionChanged) {
       setCueContextSelection(undefined)
@@ -996,6 +1023,16 @@ export function App(props: AppProps) {
   }
 
   function continueFromPull(): void {
+    if (
+      !canSelectPull(
+        selectedPullId(),
+        proAccess().isPro(),
+        config().pullOptions,
+      )
+    ) {
+      setSetupError('Choose a free Pull, or restore Pro in Settings.')
+      return
+    }
     try {
       normalizeCueText(selectedPullLabel())
       setSetupError(undefined)
@@ -1054,6 +1091,19 @@ export function App(props: AppProps) {
 
   function finishSetup(): void {
     if (schedulePending()) return
+    if (
+      !canSelectPull(
+        selectedPullId(),
+        proAccess().isPro(),
+        config().pullOptions,
+      )
+    ) {
+      setSetupError(
+        'Pro is no longer active. Choose a free Pull or your own words.',
+      )
+      setScreen('choose-pull')
+      return
+    }
 
     const currentState = latestState
     const existingCue = currentCue(currentState)
@@ -1856,6 +1906,7 @@ export function App(props: AppProps) {
         <V2OnboardingDirector
           sessionKind={v2OnboardingSessionKind()}
           pullOptions={config().pullOptions}
+          isPro={proAccess().isPro()}
           contentPack={contentPack()}
           mediaPack={V2_ONBOARDING_MEDIA_PACK}
           audioSession={onboardingAudioSession}
@@ -1875,6 +1926,7 @@ export function App(props: AppProps) {
             setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
           }
           options={config().pullOptions}
+          isPro={proAccess().isPro()}
           presentations={pullChoicePresentations()}
           selectedId={selectedPullId()}
           previewVoiceState={selectedPullPreviewVoiceState()}

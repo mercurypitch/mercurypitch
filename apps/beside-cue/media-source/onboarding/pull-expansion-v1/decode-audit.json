@@ -1,0 +1,57 @@
+[
+  {
+    "pullId": "familiar-ritual",
+    "decoded": true,
+    "endPlateMeanError": 1.5
+  },
+  {
+    "pullId": "two-minute-pause",
+    "decoded": true,
+    "endPlateMeanError": 1.5
+  },
+  {
+    "pullId": "one-tap-convenience",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  },
+  {
+    "pullId": "the-thimble",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  },
+  {
+    "pullId": "the-tab",
+    "decoded": true,
+    "endPlateMeanError": 1.5
+  },
+  {
+    "pullId": "the-bookmark",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  },
+  {
+    "pullId": "the-match",
+    "decoded": true,
+    "endPlateMeanError": 1.5
+  },
+  {
+    "pullId": "the-pillow",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  },
+  {
+    "pullId": "the-kettle",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  },
+  {
+    "pullId": "the-ticker",
+    "decoded": true,
+    "endPlateMeanError": 1.5
+  },
+  {
+    "pullId": "the-tape",
+    "decoded": true,
+    "endPlateMeanError": 1.502
+  }
+]

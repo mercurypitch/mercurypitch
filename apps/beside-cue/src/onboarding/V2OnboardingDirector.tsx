@@ -10,9 +10,11 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show
 import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
 import { BrandMark } from '@/components/BrandMark'
+import { PremiumPullChoices } from '@/components/PremiumPullChoices'
 import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
 import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import { canSelectPull, isPremiumPull } from '@/content/pulls'
 import type { V2OnboardingAudioBeat } from './v2-onboarding-audio-director'
 import { createV2OnboardingAudioDirector } from './v2-onboarding-audio-director'
 import type { V2OnboardingMediaPack, V2OnboardingPullMediaMoment, } from './v2-onboarding-media-pack'
@@ -31,6 +33,7 @@ export type V2OnboardingMutationResult =
 export interface V2OnboardingDirectorProps {
   readonly sessionKind: V2OnboardingSessionKind
   readonly pullOptions: readonly PullOption[]
+  readonly isPro?: boolean
   readonly contentPack: ContentPack
   readonly mediaPack?: V2OnboardingMediaPack
   readonly audioSession: AudioSession
@@ -276,6 +279,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     }),
   )
   const [selectedPullKey, setSelectedPullKey] = createSignal<string>()
+  const [pullAccessNotice, setPullAccessNotice] = createSignal<string>()
   const [customPullText, setCustomPullText] = createSignal('')
   const [cueContextKey, setCueContextKey] = createSignal<string>()
   const [customCueContext, setCustomCueContext] = createSignal('')
@@ -545,6 +549,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   }
 
   function dispatch(event: V2OnboardingRuntimeEvent): void {
+    if (
+      event.type === 'CONFIRM_PULL' &&
+      !canSelectPull(selectedPullKey(), props.isPro === true, props.pullOptions)
+    )
+      return
     const previousState = state()
     const transition = reduceV2OnboardingRuntime(previousState, event)
     if (transition.state !== previousState) {
@@ -580,6 +589,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   }
 
   function selectPull(option: PullOption): void {
+    if (!canSelectPull(option.id, props.isPro === true, props.pullOptions))
+      return
+    setPullAccessNotice(undefined)
     setSelectedPullKey(option.id)
     const sideAText = normalizedText(option.defaultSideAText ?? option.label)
     const choice: V2OnboardingPullChoice = {
@@ -598,6 +610,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   }
 
   function updateCustomPull(value: string): void {
+    setPullAccessNotice(undefined)
     setCustomPullText(value)
     setSelectedPullKey('custom')
     const text = normalizedText(value)
@@ -609,12 +622,35 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   }
 
   function chooseCustomPull(): void {
+    setPullAccessNotice(undefined)
     setSelectedPullKey('custom')
     audioScope.stopLane('dialogue', 'lane-stopped')
     if (normalizedText(customPullText()) !== '') {
       updateCustomPull(customPullText())
     }
   }
+
+  createEffect(() => {
+    if (props.isPro === true) return
+    const selected = props.pullOptions.find(
+      (option) => option.id === selectedPullKey(),
+    )
+    if (selected === undefined || !isPremiumPull(selected)) return
+    const snapshot = state()
+    if (
+      snapshot.pendingSave !== undefined ||
+      V2_ONBOARDING_PHASES.indexOf(snapshot.phase) >=
+        V2_ONBOARDING_PHASES.indexOf('B07_SAVED_ACK')
+    )
+      return
+    setSelectedPullKey(undefined)
+    setCueContextKey(undefined)
+    setSideBKey(undefined)
+    setPullAccessNotice(
+      'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+    )
+    dispatch({ type: 'PULL_ACCESS_REVOKED' })
+  })
 
   function selectCueContext(choice: V2OnboardingCueContextChoice): void {
     setCueContextKey(
@@ -1368,12 +1404,23 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               </Match>
 
               <Match when={state().phase === 'B03_PULL_CHOICE_HOLD'}>
+                <Show when={pullAccessNotice()}>
+                  {(notice) => (
+                    <p role="status" class={styles.note}>
+                      {notice()}
+                    </p>
+                  )}
+                </Show>
                 <div
                   class={styles.pullGrid}
                   role="radiogroup"
                   aria-label="Pull choices"
                 >
-                  <For each={props.pullOptions}>
+                  <For
+                    each={props.pullOptions.filter(
+                      (option) => !isPremiumPull(option),
+                    )}
+                  >
                     {(option) => {
                       const character = () =>
                         findPullCharacter(props.contentPack, option.id) ??
@@ -1436,6 +1483,24 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     <span>Something else</span>
                   </label>
                 </div>
+                <PremiumPullChoices
+                  options={props.pullOptions.filter(isPremiumPull)}
+                  selectedId={selectedPullKey()}
+                  isPro={props.isPro}
+                  radioName="v2-pull"
+                  artFor={(id) =>
+                    (
+                      findPullCharacter(props.contentPack, id) ??
+                      GENERIC_PULL_CHARACTER
+                    ).token
+                  }
+                  onSelect={(id) => {
+                    const option = props.pullOptions.find(
+                      (candidate) => candidate.id === id,
+                    )
+                    if (option) selectPull(option)
+                  }}
+                />
                 <Show when={selectedPullKey() === 'custom'}>
                   <label class={styles.textField}>
                     <span>Your Pull</span>
@@ -1481,7 +1546,14 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 <button
                   type="button"
                   class={styles.primaryAction}
-                  disabled={!pullChoiceValid()}
+                  disabled={
+                    !pullChoiceValid() ||
+                    !canSelectPull(
+                      selectedPullKey(),
+                      props.isPro === true,
+                      props.pullOptions,
+                    )
+                  }
                   onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
                 >
                   Continue

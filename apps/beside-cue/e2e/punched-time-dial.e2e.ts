@@ -47,7 +47,7 @@ test('the Punched Clock follows a real mouse turn and releases cleanly @smoke', 
   await page.goto('/?devSeed')
 
   await expect(
-    page.getByRole('heading', { name: 'A better choice, kept close.' }),
+    page.getByRole('heading', { name: 'Your current pressing' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Settings' }).click()
   await expect(

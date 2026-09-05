@@ -13,6 +13,7 @@ import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { computeTapLatency, tapOffsets } from '@/games/glass/tap-latency'
+import { isNativeInteractionTarget } from '@/interaction/selection'
 
 const T = JOURNEY_CONFIG.tap
 const beatS = 60 / T.calBpm
@@ -120,7 +121,7 @@ export function TapTuner(props: {
 
   const onTap = (e: PointerEvent): void => {
     if (phase() !== 'tapping' || ctx === null) return
-    if ((e.target as HTMLElement).closest('button') !== null) return
+    if (isNativeInteractionTarget(e)) return
     taps.push(ctx.currentTime)
     setTapCount(taps.length)
   }

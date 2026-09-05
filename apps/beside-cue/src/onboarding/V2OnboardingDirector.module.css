@@ -874,15 +874,17 @@
 /* Interactive holds use one content flow. A separate capped choices panel
    hid the end of captions and consumed most of a short Safari viewport. */
 .directorInteractive {
-  height: auto;
-  overflow: visible;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .stageChoices,
 .stageReminder {
   position: relative;
-  height: auto;
-  min-height: 100dvh;
+  height: calc(100dvh - var(--safe-bottom) - 4rem);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .stageChoices .visualCinematic,
@@ -898,11 +900,12 @@
 .copyReminder {
   width: min(100%, 40rem);
   height: auto;
-  min-height: 100dvh;
-  align-content: center;
+  min-height: calc(100dvh - var(--safe-bottom) - 4rem);
+  align-content: safe center;
+  align-self: start;
   gap: 0.85rem;
-  padding: var(--safe-top) max(var(--safe-right), 0.85rem)
-    calc(var(--safe-bottom) + 4rem) max(var(--safe-left), 0.85rem);
+  padding: var(--safe-top) max(var(--safe-right), 0.85rem) 1rem
+    max(var(--safe-left), 0.85rem);
   overflow: visible;
   grid-template-rows: auto auto;
 }
@@ -935,8 +938,23 @@
 }
 
 .copyChoices .copyControls {
-  gap: 0.65rem;
+  gap: 0.45rem;
   align-self: start;
+}
+
+@media (min-width: 23rem) {
+  .copyChoices .pullPreview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.35rem;
+  }
+  .copyChoices .previewCaption {
+    flex: 1;
+  }
+  .copyChoices .previewReplay {
+    flex-shrink: 0;
+  }
 }
 
 .copyChoices .pullGrid {
@@ -952,7 +970,7 @@
 }
 
 .copyChoices .pullChoiceArt {
-  width: min(100%, clamp(4.1rem, 11.5svh, 6.5rem));
+  width: min(100%, clamp(3.8rem, 9.8svh, 6.5rem));
 }
 
 .copyChoices .customPullChoice {

@@ -9,17 +9,15 @@
 // have measured that gap with two different stopwatches.
 
 import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
+import { isNativeInteractionTarget } from '@/interaction/selection'
 import type { DiscreteIntent, InteractionDriver } from './types'
 
 export const createTapDriver = (): InteractionDriver => {
   const lease = acquireSharedAudioContext('tap-driver')
   let queue: DiscreteIntent[] = []
 
-  const isUiTarget = (e: Event): boolean =>
-    e.target instanceof Element && e.target.closest('button') !== null
-
   const onPointer = (e: PointerEvent): void => {
-    if (isUiTarget(e)) return // buttons stay buttons, not beats
+    if (isNativeInteractionTarget(e)) return // native controls are not beats
     queue.push({
       type: 'tap',
       tAudio: lease.peek()?.currentTime ?? 0,
@@ -29,7 +27,7 @@ export const createTapDriver = (): InteractionDriver => {
   }
   const onKey = (e: KeyboardEvent): void => {
     if (e.key !== ' ' && e.key !== 'Enter') return
-    if (isUiTarget(e)) return
+    if (isNativeInteractionTarget(e)) return
     e.preventDefault()
     queue.push({ type: 'tap', tAudio: lease.peek()?.currentTime ?? 0 })
   }

@@ -135,7 +135,9 @@ describe('the keyboard', () => {
         listeners.get(type)?.delete(fn)
       },
       fire: (type: string, event: Partial<KeyboardEvent> = {}) => {
-        const e = { preventDefault: vi.fn(), ...event } as unknown as Event
+        const e = new KeyboardEvent(type, { key: event.key, cancelable: true })
+        if (event.preventDefault !== undefined)
+          e.preventDefault = event.preventDefault
         for (const fn of listeners.get(type) ?? []) fn(e)
       },
       count: (type: string) => listeners.get(type)?.size ?? 0,
@@ -203,5 +205,32 @@ describe('the keyboard', () => {
     expect(w.count('keydown')).toBe(0)
     expect(w.count('keyup')).toBe(0)
     expect(w.count('blur')).toBe(0)
+  })
+
+  it('leaves native editing and select keys alone, but still releases a held game key', () => {
+    const s = createIntentSource(CFG)
+    const off = bindKeyboard(s, window)
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }),
+    )
+    expect(s.read(0).move).toBe(1)
+    for (const tag of ['input', 'textarea', 'select', 'button']) {
+      const control = document.createElement(tag)
+      document.body.append(control)
+      const down = new KeyboardEvent('keydown', {
+        key: ' ',
+        bubbles: true,
+        cancelable: true,
+      })
+      control.dispatchEvent(down)
+      expect(down.defaultPrevented).toBe(false)
+      expect(s.read(0).jump).toBe(false)
+      control.dispatchEvent(
+        new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true }),
+      )
+      expect(s.read(0).move).toBe(0)
+      control.remove()
+    }
+    off()
   })
 })

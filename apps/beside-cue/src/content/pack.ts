@@ -14,6 +14,7 @@
 import type { AssetSlot } from './assets'
 import type { AudioAssetManifest } from './audio-manifest'
 import { validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
+import { PREMIUM_PULL_DEFINITIONS, PREMIUM_PULL_LINES } from './premium-pulls'
 import { canonicalPullId, pullOptions } from './pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_MANIFEST } from './v2-onboarding-audio-manifest'
 import type { VoiceLineKind, VoiceSpeakerId } from './voice-lines'
@@ -60,6 +61,7 @@ export interface PullCharacter {
    * character looks at a fixed point, and the Pull character lands there.
    */
   readonly noticeOverlay: AssetSlot
+  readonly noticeLayout?: 'token'
   /** Direction for the voice actor. Never shown in the interface. */
   readonly voiceNote: string
 }
@@ -145,6 +147,21 @@ const corky: Character = {
 // The cast personifies Pulls. Voice notes describe temperament, never a
 // diagnosis or a specific substance or behaviour.
 export const PULL_CHARACTERS: readonly PullCharacter[] = [
+  ...PREMIUM_PULL_DEFINITIONS.map((definition) => ({
+    id: definition.id,
+    name: definition.name,
+    token: {
+      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
+      alt: definition.name,
+    },
+    // Standalone cutouts need placement; they are not the legacy camera's overlays.
+    noticeOverlay: {
+      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
+      alt: '',
+    },
+    noticeLayout: 'token' as const,
+    voiceNote: 'Caption-only. Optional voice has not been recorded.',
+  })),
   pullCharacter(
     'scrolling',
     'The Scroll',
@@ -224,12 +241,12 @@ export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.5.0',
+  version: '0.6.0',
   leadCharacterId: corky.id,
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,
   cueEntities: PULL_CHARACTERS,
-  lines: CANONICAL_VOICE_LINES,
+  lines: [...CANONICAL_VOICE_LINES, ...PREMIUM_PULL_LINES],
   audio: V2_ONBOARDING_AUDIO_ASSET_MANIFEST,
 }
 

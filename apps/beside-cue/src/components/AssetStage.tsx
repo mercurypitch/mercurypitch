@@ -1,6 +1,7 @@
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { AssetSlot, RenderableTierName } from '@/content'
 import { resolveAsset } from '@/content'
+import { NonCopyableArt } from '@/interaction/selection'
 
 // ============================================================
 // AssetStage — draws whichever tier of a slot is actually available
@@ -99,6 +100,7 @@ export function AssetStage(props: AssetStageProps) {
       data-tier={resolution().tier}
     >
       <img
+        {...NonCopyableArt}
         class="asset-stage__still"
         src={resolution().still}
         alt={resolution().alt}
@@ -110,6 +112,7 @@ export function AssetStage(props: AssetStageProps) {
         {(url) => (
           // Decorative: the still beneath already carries the description.
           <img
+            {...NonCopyableArt}
             class="asset-stage__motion"
             src={url()}
             width={size()}

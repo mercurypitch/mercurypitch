@@ -57,7 +57,11 @@ export function MascotStage(props: MascotStageProps) {
             // Rendered through the same camera and crop as the character, so
             // it lands exactly where he is looking with no positioning here.
             <AssetStage
-              class="mascot-stage__cue"
+              class={
+                entity().noticeLayout === 'token'
+                  ? 'mascot-stage__cue mascot-stage__cue--token'
+                  : 'mascot-stage__cue'
+              }
               slot={entity().noticeOverlay}
               size={1024}
             />
