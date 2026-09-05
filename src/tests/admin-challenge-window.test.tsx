@@ -23,7 +23,7 @@ vi.mock('@/features/challenges/weekly-service', () => ({
   getAdminKey: () => 'test-key',
   setAdminKey: () => {},
   listAllWeekly: () => Promise.resolve(rows),
-  createWeekly: () => Promise.resolve(true),
+  createWeekly: () => Promise.resolve({ id: 'new' }),
   deleteWeekly: () => Promise.resolve(true),
   updateWeekly: (id: string, patch: Record<string, unknown>) => {
     updates.push({ id, patch })
