@@ -29,13 +29,22 @@ export function countGraphemes(value: string): number {
   return Array.from(GRAPHEME_SEGMENTER.segment(value)).length
 }
 
+/**
+ * Whether the text says anything once whitespace, control characters
+ * and default-ignorable code points (a pasted zero-width space, a soft
+ * hyphen) are set aside. The UI's "not empty" must agree with this, or
+ * a field passes Continue and fails the save.
+ */
+export function hasCueText(value: string): boolean {
+  return value.replace(NON_SEMANTIC_CODE_POINTS, '').length > 0
+}
+
 /** NFC-normalize, trim, collapse whitespace, then enforce 1–120 graphemes. */
 export function normalizeCueText(value: string): string {
   const normalized = value.normalize('NFC').replace(/\s+/gu, ' ').trim()
   const graphemeCount = countGraphemes(normalized)
-  const semanticText = normalized.replace(NON_SEMANTIC_CODE_POINTS, '')
 
-  if (graphemeCount === 0 || semanticText.length === 0) {
+  if (graphemeCount === 0 || !hasCueText(normalized)) {
     throw new CueTextValidationError('empty', normalized, graphemeCount)
   }
   if (graphemeCount > 120) {

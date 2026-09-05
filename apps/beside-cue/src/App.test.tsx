@@ -1,6 +1,7 @@
 import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
 import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
+import { notificationId } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { createEffect, untrack } from 'solid-js'
@@ -819,11 +820,11 @@ describe('Beside Cue character voice integration', () => {
         bSideText: 'Put the phone in another room.',
       }),
     )
+    const rule = seeded.scheduleRules[0]
+    if (rule?.kind !== 'target_time') throw new Error('Expected a daily rule.')
     const repository = createMemoryRepository({
       ...seeded,
-      scheduleRules: [
-        { ...seeded.scheduleRules[0], localTime: '09:30', updatedAt: movedAt },
-      ],
+      scheduleRules: [{ ...rule, localTime: '09:30', updatedAt: movedAt }],
       occurrences: [
         {
           id: 'daily:seed-daily-rule:2026-08-06',
@@ -854,7 +855,7 @@ describe('Beside Cue character voice integration', () => {
     })
 
     await runtime.emitNotificationAction({
-      notificationId: 'daily-cue',
+      notificationId: notificationId(1),
       actionId: 'open',
       extra: {
         type: 'beside-cue-daily',
