@@ -9,6 +9,16 @@ import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { getUserId } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { showNotification } from '@/stores/notifications-store'
+
+/**
+ * One toast per failure, replacing the last: three runs in a row while
+ * offline should read as one warning, not a stack of three.
+ */
+export const SESSION_SAVE_FAILURE_CHANNEL = 'session-save'
+
+export const SESSION_SAVE_FAILURE_MESSAGE =
+  'Your run was scored, but it could not be saved to your account. Check your connection and try another run.'
 
 /**
  * Bumped whenever a session record lands. Every producer — session mode,
@@ -135,8 +145,27 @@ export async function saveSessionRecord(
     trackEvent('session_complete')
     bumpSessionRecordVersion((v) => v + 1)
     return record
-  } catch {
+  } catch (error) {
+    // Signed out (or switched account) while the write was in flight: the
+    // record belongs to nobody who is here, and the silent null is right.
+    // Anything else is a real loss -- a 429 storm, an offline moment, a 5xx
+    // past the adapter's retries -- and for years it wore the same null as
+    // "signed out", so the singer learned about it from DevTools or never.
+    // Every producer (session, exercises, challenges, the weekly attempt)
+    // funnels through here, so one warning covers all four.
+    if (getUserId() === ownerId) reportSessionSaveFailure(error)
     return null
+  }
+}
+
+function reportSessionSaveFailure(error: unknown): void {
+  console.warn('[session] the run could not be saved:', error)
+  try {
+    showNotification(SESSION_SAVE_FAILURE_MESSAGE, 'warning', {
+      channel: SESSION_SAVE_FAILURE_CHANNEL,
+    })
+  } catch {
+    // The toast must never turn a lost save into a thrown error.
   }
 }
 
