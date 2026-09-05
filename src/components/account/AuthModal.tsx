@@ -246,7 +246,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
           conditional: true,
           signal: controller.signal,
         })
-        if (controller.signal.aborted) return
+        // Resolved means the server verified it and the session is in
+        // place -- even if an abort raced the verify round-trip (a press on
+        // the passkey button, the dialog closing). The screen follows.
         showNotification('Signed in', 'info')
         props.onAuthenticated?.()
         close()
@@ -289,7 +291,8 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       if (request === requestGeneration) {
         setBusy(false)
         // Cancelled or failed, the form is still up: autofill goes back on.
-        // After a sign-in the dialog is closed and the effect arms nothing.
+        // (A sign-in closed the dialog, which moved the generation on, so
+        // this branch is only ever the form staying up.)
         setConditionalArm((n) => n + 1)
       }
     }

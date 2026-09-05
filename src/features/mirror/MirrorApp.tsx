@@ -332,7 +332,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         targets: state.targets,
         range: state.range,
       })
-      history.replaceState(null, '', `#${CHECKPOINT_HASH}`)
+      history.replaceState(history.state, '', `#${CHECKPOINT_HASH}`)
     }
     setPeekLegend(legend)
     setSubPhase('twin-peek')

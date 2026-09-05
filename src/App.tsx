@@ -2796,7 +2796,7 @@ const AppShell: Component<AppProps> = (props) => {
       applyExerciseSlug(slugMatch[1])
       // Clean the deep path so a reload/share doesn't re-trigger the launch;
       // the hash router takes over the URL (e.g. #/exercises) from here.
-      history.replaceState(null, '', '/')
+      history.replaceState(history.state, '', '/')
     }
 
     // Saved volume

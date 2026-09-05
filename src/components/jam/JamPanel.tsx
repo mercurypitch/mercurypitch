@@ -157,9 +157,13 @@ export const JamPanel: Component = () => {
 
   createEffect(() => {
     if (jamState() === 'active') {
-      window.history.replaceState(null, '', `/#/jam:${jamRoomId()}`)
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `/#/jam:${jamRoomId()}`,
+      )
     } else if (jamState() === 'idle') {
-      window.history.replaceState(null, '', '/#/jam')
+      window.history.replaceState(window.history.state, '', '/#/jam')
     }
   })
 
