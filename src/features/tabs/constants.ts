@@ -94,23 +94,29 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     tabs: [TAB_HOME, TAB_PATH, TAB_PROGRESS, TAB_VOICE_HISTORY],
   },
   {
-    // An instrument selector, plus the drills that back it. Karaoke moved
-    // to Play — it is a performance, not a practice surface.
+    // An instrument selector, plus the drills that back it: the exercise
+    // library, the vocal challenges (drill-backed, scored against a target)
+    // and the ear lab. Karaoke moved to Play — it is a performance, not a
+    // practice surface — and the challenges came the other way once the
+    // Legend and the trophies had moved out of them: what remained was
+    // drills, and drills belong with drills.
     id: 'practice',
     label: 'Practice',
-    tabs: [TAB_SINGING, TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_EAR_LAB],
+    tabs: [
+      TAB_SINGING,
+      TAB_PIANO,
+      TAB_GUITAR,
+      TAB_EXERCISES,
+      TAB_CHALLENGES,
+      TAB_EAR_LAB,
+    ],
   },
   {
-    // Singing at something or with someone.
+    // Singing at something or with someone: a performance, a session, the
+    // other singers, and the boards — the Legend included.
     id: 'play',
     label: 'Play',
-    tabs: [
-      TAB_KARAOKE,
-      TAB_JAM,
-      TAB_CHALLENGES,
-      TAB_COMMUNITY,
-      TAB_LEADERBOARD,
-    ],
+    tabs: [TAB_KARAOKE, TAB_JAM, TAB_COMMUNITY, TAB_LEADERBOARD],
   },
   {
     // Power-user surfaces. Settings is last on purpose: it is the way back
