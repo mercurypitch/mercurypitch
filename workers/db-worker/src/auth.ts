@@ -1786,7 +1786,12 @@ export async function reissueLegacySession(
   if (row === null) return null
   const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
   const token = await createSession(env, row, origin)
-  return { token, userId: row.id, isNew: false, user: publicUser(row, testAccount) }
+  return {
+    token,
+    userId: row.id,
+    isNew: false,
+    user: publicUser(row, testAccount),
+  }
 }
 
 /** Find-or-create the user for verified Google claims (shared by the

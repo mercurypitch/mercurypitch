@@ -7,7 +7,7 @@
 // those is a line somebody could quietly change.
 
 import { describe, expect, it } from 'vitest'
-import { allowedOrigins, expectedOrigins, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, rpIdFor, SUDO_WINDOW_MS, transportsOf } from './passkeys'
+import { allowedOrigins, expectedOrigins, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, rpIdFor, SUDO_WINDOW_MS, transportsOf, } from './passkeys'
 import type { PasskeyRow } from './passkeys'
 
 const DB = null as unknown as D1Database

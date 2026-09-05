@@ -11,7 +11,7 @@
 // way — this file imports auth.ts, never the reverse.
 
 import type { Env } from './auth'
-import { checkRateLimit, clearRateLimit, getAuth, issueSessionFor, reissueLegacySession, sessionOrigin } from './auth'
+import { checkRateLimit, clearRateLimit, getAuth, issueSessionFor, reissueLegacySession, sessionOrigin, } from './auth'
 import { readCeremony } from './auth-ceremony'
 import { endOtherSessions } from './auth-sessions'
 import { generateTotpSecret, otpauthUri, verifyTotp } from './totp'
@@ -218,7 +218,9 @@ async function handleEnable(
       auth.userId,
       sessionOrigin(request),
     )
-    return respond(session === null ? { recoveryCodes } : { recoveryCodes, session })
+    return respond(
+      session === null ? { recoveryCodes } : { recoveryCodes, session },
+    )
   }
   await endOtherSessions(env.DB, auth.userId, auth.sessionId)
   // The only moment the raw codes exist outside the singer's own copy: the
