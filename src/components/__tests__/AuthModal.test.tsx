@@ -787,6 +787,44 @@ describe('passkey autofill', () => {
     await waitFor(() => expect(captured?.aborted).toBe(true))
   })
 
+  it('cancels the autofill request before a press asks for a passkey outright', async () => {
+    // WebAuthn runs one request per document: a modal get() on top of the
+    // live conditional one is refused, or tears it down with an error the
+    // effect would print under the form.
+    armConditional()
+    const signals: Array<AbortSignal | undefined> = []
+    passkeyMocks.signInWithPasskey.mockImplementation(
+      (opts?: { conditional?: boolean; signal?: AbortSignal }) => {
+        signals.push(opts?.signal)
+        return opts?.conditional === true
+          ? new Promise(() => {})
+          : Promise.reject(new Error('That was cancelled.'))
+      },
+    )
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await waitFor(() => expect(signals).toHaveLength(1))
+    expect(signals[0]?.aborted).toBe(false)
+
+    fireEvent.click(screen.getByTestId('auth-passkey'))
+    await waitFor(() => expect(signals.length).toBeGreaterThanOrEqual(2))
+    // Cancelled before the modal request went out, and that one is modal.
+    expect(signals[0]?.aborted).toBe(true)
+    expect(passkeyMocks.signInWithPasskey.mock.calls[1][0]).toBeUndefined()
+
+    // The dialog was cancelled and the form is still up: autofill is armed
+    // again on a fresh signal, and the abort never showed as an error.
+    await waitFor(() =>
+      expect(screen.getByText('That was cancelled.')).toBeTruthy(),
+    )
+    await waitFor(() => expect(signals).toHaveLength(3))
+    expect(signals[2]?.aborted).toBe(false)
+    expect(passkeyMocks.signInWithPasskey.mock.calls[2][0]).toMatchObject({
+      conditional: true,
+    })
+  })
+
   it('signs in when the reader picks the passkey out of autofill', async () => {
     armConditional()
     passkeyMocks.signInWithPasskey.mockResolvedValue({ token: 'jwt' })
