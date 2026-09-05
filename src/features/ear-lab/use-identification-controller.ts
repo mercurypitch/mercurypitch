@@ -123,6 +123,7 @@ export function useIdentificationController(
       setTotalRounds(armed?.rounds ?? IDENTIFICATION_ROUNDS)
       setRound(0)
       setResult(null)
+      setReplaying(false)
       setRating(earPlayerRating(trackId()))
     })
     void playRound()
@@ -202,7 +203,8 @@ export function useIdentificationController(
     void replay
       .catch(() => undefined)
       .then(() => {
-        setReplaying(false)
+        // A stale run's replay resolving must not flick the new run's flag.
+        if (mine === run) setReplaying(false)
         if (cancelled || mine !== run) return
         pacer.hold()
       })

@@ -28,7 +28,11 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
   if (!drill) throw new Error('stack drill missing from catalogue')
 
   /** Set by Stop; the broken replay in flight reads it between notes. */
-  let cancelled = false
+  /** Which pair (or replay) is the live one. A flag reset at the top of
+   *  every pair let a pair still sounding when Stop and Begin came within
+   *  a second pass its check and play its second tone over the new run;
+   *  a token only the newest pair holds cannot. */
+  let pair = 0
 
   function makeTrial(item: (typeof STACK_BANK)[number]): IdentificationTrial {
     const root = 48 + Math.floor(Math.random() * 13) // C3..C4
@@ -46,17 +50,17 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
       replayOnWrong: async () => {
         // Broken, then re-stacked. Stop lands between the notes: stopTone
         // silences the one sounding, and the checks keep the rest quiet.
-        cancelled = false
+        const mine = ++pair
         await playToneFor(audioEngine, rootFreq, STACK_TIMING.brokenNoteMs)
         for (const semis of intervals) {
-          if (cancelled) return
+          if (mine !== pair) return
           await playToneFor(
             audioEngine,
             midiToFreq(root + semis),
             STACK_TIMING.brokenNoteMs,
           )
         }
-        if (cancelled) return
+        if (mine !== pair) return
         await playBlock(STACK_TIMING.replayChordMs)
       },
     }
@@ -64,7 +68,7 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
 
   const controller = useIdentificationController(drill, STACK_BANK, makeTrial, {
     cancelAudio: () => {
-      cancelled = true
+      pair += 1
       audioEngine.stopTone(60)
     },
   })

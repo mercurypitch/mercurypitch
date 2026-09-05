@@ -37,7 +37,11 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
   const [sounding, setSounding] = createSignal<0 | 1 | 2>(0)
 
   /** Set by Stop; the pair in flight reads it between its tones. */
-  let cancelled = false
+  /** Which pair (or replay) is the live one. A flag reset at the top of
+   *  every pair let a pair still sounding when Stop and Begin came within
+   *  a second pass its check and play its second tone over the new run;
+   *  a token only the newest pair holds cannot. */
+  let pair = 0
 
   function makeTrial(item: (typeof LEAP_BANK)[number]): IdentificationTrial {
     const root = 48 + Math.floor(Math.random() * 22) // C3..A4
@@ -51,12 +55,12 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
       // note would otherwise cut the first at the gap. Stop lands between
       // the awaits: stopTone silences the tone sounding now, and the
       // check keeps the second from sounding after it.
-      cancelled = false
+      const mine = ++pair
       setSounding(1)
       await playToneFor(audioEngine, first, toneMs)
-      if (cancelled) return
+      if (mine !== pair) return
       await new Promise((resolve) => setTimeout(resolve, gapMs))
-      if (cancelled) return
+      if (mine !== pair) return
       setSounding(2)
       await playToneFor(audioEngine, second, toneMs)
       setSounding(0)
@@ -72,7 +76,7 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
 
   const controller = useIdentificationController(drill, LEAP_BANK, makeTrial, {
     cancelAudio: () => {
-      cancelled = true
+      pair += 1
       setSounding(0)
       audioEngine.stopTone(60)
     },

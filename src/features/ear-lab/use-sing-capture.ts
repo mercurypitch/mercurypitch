@@ -44,8 +44,13 @@ export function useSingCapture(
 ): SingCaptureHandle {
   let f0: F0Stream | null = null
   let acquiring: Promise<void> | null = null
+  /** Bumped by release(): an acquisition still waiting on the permission
+   *  prompt when the drill let go (unmount, or a switch to tapping) hands
+   *  its stream straight back instead of holding it for nobody. */
+  let generation = 0
 
   const release = (): void => {
+    generation += 1
     f0?.dispose()
     f0 = null
     micManager.release(consumer)
@@ -58,11 +63,18 @@ export function useSingCapture(
       // One acquisition at a time: a second Begin during the permission
       // prompt used to open a second stream and orphan the first.
       acquiring ??= (async () => {
+        const mine = generation
         await audioEngine.init()
         await audioEngine.resume()
         const ctx = audioEngine.getAudioContext()
         if (!ctx) throw new Error('Audio engine has no context')
         const stream = await micManager.acquire(consumer)
+        if (mine !== generation) {
+          // Released meanwhile: the caller carries on in whatever mode it
+          // is in now (held() says no), and the mic goes back.
+          micManager.release(consumer)
+          return
+        }
         f0 = createF0Stream(ctx, stream)
       })().finally(() => {
         acquiring = null
