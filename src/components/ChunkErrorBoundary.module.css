@@ -1,0 +1,44 @@
+/* A quiet notice where the chunk would have rendered. Colours ride on the
+ * room's own text colour so it reads on any of the dark stages. */
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  max-width: 44ch;
+  margin: 12px auto;
+  padding: 12px 14px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 12px;
+  background: rgb(0 0 0 / 35%);
+  color: inherit;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.text {
+  flex: 1 1 18ch;
+  margin: 0;
+}
+
+.hint {
+  opacity: 0.72;
+}
+
+.button {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover,
+.button:focus-visible {
+  background: rgb(255 255 255 / 18%);
+}
