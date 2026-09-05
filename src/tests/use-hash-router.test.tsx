@@ -125,6 +125,56 @@ describe('tab hash navigation guard', () => {
     expect(router.setActiveTab).not.toHaveBeenCalled()
   })
 
+  it('travels back to the accepted entry instead of rewriting the one Back reached', async () => {
+    // Rewriting the entry the browser had moved to made it a duplicate of
+    // the current screen: every vetoed Back put the real previous page one
+    // step further away.
+    history.replaceState(null, '', '#/voice-history')
+    let accept = true
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(accept),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    // Two accepted navigations, each its own entry.
+    history.pushState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    history.pushState(null, '', '#/compose')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_COMPOSE),
+    )
+    router.setActiveTab.mockClear()
+    const reached: string[] = []
+    window.addEventListener('hashchange', () =>
+      reached.push(window.location.hash),
+    )
+
+    // Back to Home with unsaved work: vetoed, and undone by travelling
+    // forward again -- Home's entry is left as it was.
+    accept = false
+    history.back()
+    await waitFor(() => expect(reached).toEqual(['#/home', '#/compose']))
+    expect(window.location.hash).toBe('#/compose')
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+
+    // With the veto lifted, one Back lands on Home, not on a copy of Compose.
+    accept = true
+    history.back()
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    expect(window.location.hash).toBe('#/home')
+    expect(reached).toEqual(['#/home', '#/compose', '#/home'])
+  })
+
   it('vetoes a shared melody before importing it and restores voice history', async () => {
     const payload =
       'eyJ2IjoxLCJ0IjoibWVsb2R5IiwiZCI6eyJuIjoiVGVzdCIsImIiOjEyMCwiaSI6W119fQ'

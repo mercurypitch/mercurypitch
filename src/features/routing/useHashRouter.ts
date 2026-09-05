@@ -100,6 +100,21 @@ export interface UseHashRouterDeps {
 export function useHashRouter(deps: UseHashRouterDeps): void {
   let hashSyncing = false
   let lastAcceptedHash = ''
+  /**
+   * Every history entry the router accepts carries its position in
+   * history.state, so a vetoed Back or Forward can be undone by travelling
+   * back to the accepted entry. Rewriting the entry the browser had moved
+   * to -- the previous page's -- turned it into a duplicate of the current
+   * screen: the next Back landed on the same page, and the real previous
+   * one was a step further away for every veto.
+   */
+  let acceptedIndex: number | null = null
+  /** history.length when the router last accepted an entry: growth since
+   *  then means an unstamped entry is a new one, not an old one revisited. */
+  let lengthAtAccept = 0
+  /** A traversal the router asked for is under way; the hashchange it
+   *  fires is the accepted route coming back, not a navigation. */
+  let restoring = false
   // The state→hash sync effects must not run until the initial route has been
   // restored from the URL on mount — otherwise the default tab (singing) would
   // overwrite the preserved hash (e.g. #/piano) before it's read, sending every
@@ -251,12 +266,49 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     hashSyncing = false
   }
 
+  const stampedIndex = (): number | null => {
+    const state = window.history.state as { routeIndex?: unknown } | null
+    return typeof state?.routeIndex === 'number' ? state.routeIndex : null
+  }
+
+  const stampEntry = (position: number): number => {
+    const state: unknown = window.history.state
+    const carried = typeof state === 'object' && state !== null ? state : {}
+    window.history.replaceState(
+      { ...carried, routeIndex: position },
+      '',
+      window.location.href,
+    )
+    return position
+  }
+
+  /** Where the current entry sits, stamping it when it is new. Null for
+   *  an entry the router cannot place (one from before the stamps, or
+   *  one whose stamp was lost); a veto there falls back to rewriting. */
+  const positionOfCurrentEntry = (): number | null => {
+    const stamped = stampedIndex()
+    if (stamped !== null) return stamped
+    if (lengthAtAccept === 0) return stampEntry(0)
+    if (acceptedIndex !== null && window.history.length > lengthAtAccept) {
+      return stampEntry(acceptedIndex + 1)
+    }
+    return null
+  }
+
   const acceptRoute = (route: HashRoute): void => {
     applyRoute(route)
     lastAcceptedHash = window.location.hash
+    acceptedIndex = positionOfCurrentEntry()
+    lengthAtAccept = window.history.length
   }
 
   const restoreAcceptedHash = (): void => {
+    const vetoed = stampedIndex()
+    if (acceptedIndex !== null && vetoed !== null && vetoed !== acceptedIndex) {
+      restoring = true
+      window.history.go(acceptedIndex - vetoed)
+      return
+    }
     if (lastAcceptedHash !== '') {
       window.history.replaceState(window.history.state, '', lastAcceptedHash)
       return
@@ -290,6 +342,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   }
 
   const onHashChange = () => {
+    if (restoring) {
+      restoring = false
+      if (window.location.hash === lastAcceptedHash) return
+    }
     dispatchRoute(parseHash(window.location.hash))
   }
 
@@ -320,10 +376,15 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const expectedHash = `#${buildHash(route)}`
     if (window.location.hash !== expectedHash) {
       if (lastSyncedTab !== null && lastSyncedTab !== tab) {
+        const current = acceptedIndex ?? stampedIndex() ?? 0
         pushHash(route)
+        // A new entry, right after the one the router was on.
+        acceptedIndex = stampEntry(current + 1)
       } else {
         replaceHash(route)
+        acceptedIndex = stampedIndex() ?? acceptedIndex
       }
+      lengthAtAccept = window.history.length
     }
     lastAcceptedHash = window.location.hash
     lastSyncedTab = tab

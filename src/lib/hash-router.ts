@@ -451,5 +451,7 @@ export function pushHash(route: HashRoute): void {
 export function replaceHash(route: HashRoute): void {
   const hash = `#${buildHash(route)}`
   if (window.location.hash === hash) return
-  history.replaceState(null, '', hash)
+  // The entry stays the same entry: whatever it carries in state (the
+  // router's position stamp) comes along.
+  history.replaceState(history.state, '', hash)
 }
