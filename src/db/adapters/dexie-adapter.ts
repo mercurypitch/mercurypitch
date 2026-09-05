@@ -422,6 +422,17 @@ export class DexieAdapter implements DatabaseAdapter {
     return this.db.table(entityName).delete(id)
   }
 
+  /** Delete every row matching an index value by key alone. The rows'
+   *  values are never read, which is the point for stores whose rows are
+   *  whole recordings. */
+  async deleteByIndexStrict(
+    entityName: string,
+    indexName: string,
+    value: string | number,
+  ): Promise<void> {
+    await this.db.table(entityName).where(indexName).equals(value).delete()
+  }
+
   /** Clear one local store while preserving transaction and failure semantics. */
   clearStrict(entityName: string): Promise<void> {
     return this.db.table(entityName).clear()

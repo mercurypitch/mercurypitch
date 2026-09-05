@@ -34,6 +34,33 @@ async function localTransaction<R>(
     : db.transaction(fn)
 }
 
+/** The key-only deletes DexieAdapter offers (and HybridAdapter's local
+ *  half reaches). An audio row is a whole recording, so a delete must
+ *  never read one just to learn its id. */
+interface StrictDeleteAdapter extends DatabaseAdapter {
+  deleteByIdStrict(entityName: string, id: string): Promise<void>
+  deleteByIndexStrict(
+    entityName: string,
+    indexName: string,
+    value: string | number,
+  ): Promise<void>
+  clearStrict(entityName: string): Promise<void>
+}
+
+function requireStrictDeletes(db: DatabaseAdapter): StrictDeleteAdapter {
+  const candidate = db as Partial<StrictDeleteAdapter>
+  if (
+    typeof candidate.deleteByIdStrict !== 'function' ||
+    typeof candidate.deleteByIndexStrict !== 'function' ||
+    typeof candidate.clearStrict !== 'function'
+  ) {
+    throw new Error(
+      'Voice history needs a local database with key-only deletes',
+    )
+  }
+  return db as StrictDeleteAdapter
+}
+
 export interface VoiceTakeDraft {
   source: VoiceTakeSource
   comparisonKey: string
@@ -263,26 +290,14 @@ export async function deleteVoiceTake(takeId: string): Promise<boolean> {
   try {
     const db = await getDb()
     await localTransaction(db, async (transactionDb) => {
-      const audioRepo =
-        transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
-      const contourRepo =
-        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      // Resolve every dependent row before the first mutation. In addition to
-      // the transaction rollback, this prevents a failed authoritative read
-      // from being mistaken for an empty store and leaving an orphaned take.
-      const rows = await audioRepo.findAll({
-        where: { takeId },
-        throwOnError: true,
-      })
-      const contours = await contourRepo.findAll({
-        where: { takeId },
-        throwOnError: true,
-      })
-      for (const row of rows) await audioRepo.delete(row.id)
-      for (const contour of contours) await contourRepo.delete(contour.id)
-      await transactionDb
-        .getRepository<VoiceTakeRecord>('voiceTakes')
-        .delete(takeId)
+      // Dependent rows go by their takeId index, never by value: reading an
+      // audio row to learn its id copied the whole recording into memory on
+      // its way to the bin. One transaction over all three stores, so a
+      // failure anywhere leaves nothing half-deleted.
+      const local = requireStrictDeletes(transactionDb)
+      await local.deleteByIndexStrict('voiceTakeAudio', 'takeId', takeId)
+      await local.deleteByIndexStrict('voiceTakeContours', 'takeId', takeId)
+      await local.deleteByIdStrict('voiceTakes', takeId)
     })
     return true
   } catch {
@@ -300,37 +315,17 @@ export async function deleteVoiceThread(
     await localTransaction(db, async (transactionDb) => {
       const takeRepo =
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
-      const audioRepo =
-        transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
-      const contourRepo =
-        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+      const local = requireStrictDeletes(transactionDb)
+      // The take rows are small; their dependants are deleted by index.
       const takes = await takeRepo.findAll({
         where: { comparisonKey },
         throwOnError: true,
       })
       if (takes.length === 0) throw new Error('Voice thread not found')
-
-      const dependentRows: Array<{
-        take: VoiceTakeRecord
-        audio: VoiceTakeAudioRecord[]
-        contours: VoiceTakeContourRecord[]
-      }> = []
       for (const take of takes) {
-        const audioRows = await audioRepo.findAll({
-          where: { takeId: take.id },
-          throwOnError: true,
-        })
-        const contourRows = await contourRepo.findAll({
-          where: { takeId: take.id },
-          throwOnError: true,
-        })
-        dependentRows.push({ take, audio: audioRows, contours: contourRows })
-      }
-
-      for (const { take, audio, contours } of dependentRows) {
-        for (const row of audio) await audioRepo.delete(row.id)
-        for (const row of contours) await contourRepo.delete(row.id)
-        await takeRepo.delete(take.id)
+        await local.deleteByIndexStrict('voiceTakeAudio', 'takeId', take.id)
+        await local.deleteByIndexStrict('voiceTakeContours', 'takeId', take.id)
+        await local.deleteByIdStrict('voiceTakes', take.id)
       }
     })
     return true
@@ -343,20 +338,13 @@ export async function wipeVoiceTakes(): Promise<boolean> {
   try {
     const db = await getDb()
     await localTransaction(db, async (transactionDb) => {
-      const takeRepo =
-        transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
-      const audioRepo =
-        transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
-      const contourRepo =
-        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      // Keep every store read in an explicit sequence; deletion must not rely
-      // on parallel jobs retaining the same active IndexedDB transaction.
-      const takes = await takeRepo.findAll({ throwOnError: true })
-      const audioRows = await audioRepo.findAll({ throwOnError: true })
-      const contourRows = await contourRepo.findAll({ throwOnError: true })
-      for (const row of audioRows) await audioRepo.delete(row.id)
-      for (const row of contourRows) await contourRepo.delete(row.id)
-      for (const take of takes) await takeRepo.delete(take.id)
+      // Whole stores, cleared by key: the wipe used to load the entire audio
+      // library into memory to iterate its ids. Sequential, inside the one
+      // transaction, so a failure rolls all three back.
+      const local = requireStrictDeletes(transactionDb)
+      await local.clearStrict('voiceTakeAudio')
+      await local.clearStrict('voiceTakeContours')
+      await local.clearStrict('voiceTakes')
     })
     return true
   } catch {
