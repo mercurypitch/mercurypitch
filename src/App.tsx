@@ -242,6 +242,7 @@ import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_S
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
+import { bottomHudVisible } from '@/features/voice-control/hud-placement'
 import { createNavigationVoiceCommands } from '@/features/voice-control/navigation-commands'
 import { createTransportVoiceCommands } from '@/features/voice-control/transport-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
@@ -4383,7 +4384,17 @@ const AppShell: Component<AppProps> = (props) => {
             above — because down here it covers the bottom of whatever page is
             open. The lab surfaces render no header at all, so there it is
             still the only place the pill can be, on any width. */}
-        <Show when={labTab() === null ? !isNarrow() : voiceControl.enabled()}>
+        <Show
+          when={bottomHudVisible({
+            labOpen: labTab() !== null,
+            narrow: isNarrow(),
+            headerHidden:
+              focusMode() ||
+              singingZenLaunch() !== null ||
+              challengeStageLaunch() !== null,
+            voiceEnabled: voiceControl.enabled(),
+          })}
+        >
           <VoiceControlHud
             controller={voiceControl}
             onShowCommands={() => setShowVoiceHelp(true)}
