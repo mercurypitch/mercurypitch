@@ -91,6 +91,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
   const noMicApi = micApiBlocker()
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
+  /** The stage itself failed to come up (an asset that would not
+   *  fetch, a renderer that threw). Kept apart from the mic error: the
+   *  mic path cleared that one, and a tap on the gate then put the HUD
+   *  over a black canvas for good. */
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
   const [ringing, setRinging] = createSignal(false)
@@ -383,7 +388,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
-        setMicError(err instanceof Error ? err.message : String(err))
+        setRenderError(err instanceof Error ? err.message : String(err))
       })
 
     onCleanup(() => {
@@ -491,9 +496,16 @@ export const HallwayStage = (props: HallwayStageProps) => {
             A pane stands between Merc and the rest of the hallway. Walk him up
             to it, then hold {targetName} until it rings and let the note waver.
           </p>
-          <button type="button" onClick={() => void startMic()}>
+          <button
+            type="button"
+            disabled={renderError() !== null}
+            onClick={() => void startMic()}
+          >
             Walk with him
           </button>
+          <Show when={renderError() !== null}>
+            <p class="stage3d__error">{renderError()}</p>
+          </Show>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
             {/* A picker is no use when the browser is withholding the

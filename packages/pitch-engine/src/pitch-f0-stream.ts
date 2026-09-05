@@ -162,6 +162,21 @@ export function createF0Stream(
         ])
       }
 
+      detectorWorker.onerror = () => {
+        // The worker's script never loaded (a stale index.html after a
+        // redeploy, a CSP without worker-src). The worklet kept the meter
+        // moving while every window posted into a dead worker and pitch
+        // stayed null for good. The frame loop needs no worker.
+        if (disposed || worker !== detectorWorker) return
+        node.port.onmessage = null
+        source.disconnect(node)
+        node.disconnect()
+        detectorWorker.terminate()
+        workletNode = null
+        worker = null
+        startFrameLoop()
+      }
+
       detectorWorker.onmessage = (event: MessageEvent<F0WorkerResult>) => {
         const { atFrame, rms, f0, conf } = event.data
         assembler.ingest({

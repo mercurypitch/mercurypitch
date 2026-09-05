@@ -1059,7 +1059,11 @@ export const JourneyPrototype: Component<{
       const t = now / 1000
       groundSamples.push({ t, midi })
       groundSamples = groundSamples.filter((s) => t - s.t < 0.9)
-      if (groundSamples.length > 24) {
+      // Held for long enough, not for enough frames: at 30 fps (Low Power
+      // Mode, a budget phone) fewer than 25 samples ever fit the window,
+      // so the lock was unreachable and the first prompt never left.
+      const heldS = t - (groundSamples[0]?.t ?? t)
+      if (groundSamples.length >= 8 && heldS >= 0.45) {
         const ms = groundSamples.map((s) => s.midi).sort((a, b) => a - b)
         if (ms[ms.length - 1] - ms[0] < 1.6) {
           groundMidi = Math.round(ms[Math.floor(ms.length / 2)])
