@@ -40,9 +40,13 @@ export interface WindowedStemVoiceOptions {
 export interface WindowedStemVoice {
   /** The engine's fade target; the window chain feeds it. */
   readonly envelope: GainNode
-  /** True once the final window has ended or the voice was stopped. */
+  /** True once the final window has ended, or every window a stop left
+   *  live has reached its stop time. */
   readonly ended: boolean
-  /** Stop every scheduled window at the given context time. */
+  /** Stop every scheduled window at the given context time. The voice
+   *  reports its end when the last of them gets there, not before, so
+   *  the engine's release on `envelope` plays out. Calling it again with
+   *  an earlier time pulls the stop forward. */
   stop(atContextTime: number): void
   dispose(): void
 }
@@ -99,8 +103,18 @@ export function createWindowedStemVoice(
   let scheduledWindows = 0
   let finishedWindows = 0
   let stopped = false
+  /** Where the live windows were told to stop, once they were. */
+  let stopAt: number | null = null
   let ended = false
   let scheduling = false
+
+  const disconnectSource = (source: AudioBufferSourceNode): void => {
+    try {
+      source.disconnect()
+    } catch {
+      // Already disconnected by dispose.
+    }
+  }
 
   const finish = (): void => {
     if (ended) return
@@ -147,12 +161,15 @@ export function createWindowedStemVoice(
         activeSources.add(source)
         source.onended = () => {
           activeSources.delete(source)
-          try {
-            source.disconnect()
-          } catch {
-            // Already disconnected by dispose.
-          }
+          disconnectSource(source)
           finishedWindows += 1
+          if (stopped) {
+            // A stopped voice ends with its last live window. Ending it at
+            // stop() instead had the engine tear the envelope down while
+            // the release it had just scheduled was still sounding.
+            if (activeSources.size === 0) finish()
+            return
+          }
           if (finishedWindows >= totalWindows) {
             finish()
             return
@@ -188,18 +205,22 @@ export function createWindowedStemVoice(
       return ended
     },
     stop(stopAtContextTime: number) {
-      if (stopped) return
-      stopped = true
       const at = Math.max(context.currentTime, stopAtContextTime)
+      if (stopped && (stopAt === null || at >= stopAt)) return
+      stopped = true
+      stopAt = at
       for (const source of activeSources) {
         try {
-          source.onended = null
+          // The handler stays: it is what ends the voice.
           source.stop(at)
         } catch {
-          // Not started yet or already stopped; either way it is inert.
+          // Never started, so it will never end on its own: it is inert,
+          // and it must not keep the voice waiting.
+          activeSources.delete(source)
+          disconnectSource(source)
         }
       }
-      finish()
+      if (activeSources.size === 0) finish()
     },
     dispose() {
       stopped = true

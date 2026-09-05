@@ -853,9 +853,20 @@ describe('windowed playback', () => {
 
     room.engine.pause(11)
     expect(room.engine.getStatus()).toBe('paused')
+    // The pause schedules the 180 ms release on the envelope and stops the
+    // windows after it plus the slack. Nothing in the graph may come apart
+    // before then: the voice used to report its end at once, and the
+    // engine disposed it under the release it had just scheduled.
     for (const source of room.context.sources) {
-      expect(source.stop).toHaveBeenCalled()
+      expect(source.stop).toHaveBeenCalledWith(11 + 0.18 + 0.06)
     }
+    for (const gain of room.context.gains) {
+      expect(gain.disconnect).not.toHaveBeenCalled()
+    }
+    for (const source of room.context.sources) source.end()
+    expect(
+      room.context.gains.some((gain) => gain.disconnect.mock.calls.length > 0),
+    ).toBe(true)
 
     expect(
       room.engine.seek({
