@@ -4,6 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { AudioAssetManifest, AudioSourceVariant, DialogueAudioAsset, } from './audio-manifest'
+import { DEFAULT_AUDIO_ASSET_MANIFEST } from './audio-manifest'
 import type { ContentPack, Line } from './pack'
 import { DEFAULT_CONTENT_PACK, findLine } from './pack'
 import type { VoiceAudioFinish, VoiceAudioHandle, VoiceAudioPort, VoicePlaybackStatus, } from './voice'
@@ -160,7 +161,7 @@ describe('caption-first voice player', () => {
   it('returns the exact caption when no recording has shipped', async () => {
     const audio = controlledAudio()
     const player = createVoicePlayer({
-      pack: DEFAULT_CONTENT_PACK,
+      pack: { ...DEFAULT_CONTENT_PACK, audio: DEFAULT_AUDIO_ASSET_MANIFEST },
       audio,
     })
 

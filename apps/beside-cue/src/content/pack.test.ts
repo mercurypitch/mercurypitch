@@ -55,7 +55,7 @@ describe('content pack', () => {
         .every((line) => line.captionSha256 === undefined),
     ).toBe(true)
     expect(DEFAULT_CONTENT_PACK.audio).toBe(V2_ONBOARDING_AUDIO_ASSET_MANIFEST)
-    expect(DEFAULT_CONTENT_PACK.audio.assets).toHaveLength(4)
+    expect(DEFAULT_CONTENT_PACK.audio.assets).toHaveLength(34)
     expect(validateContentPack(DEFAULT_CONTENT_PACK)).toEqual([])
   })
 
