@@ -2,7 +2,7 @@ import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
 import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { notificationId } from '@irchiinnuss/mobile-runtime'
-import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
+import { createCustomerSnapshot, createMobileRuntimeProbe, } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { createEffect, createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -704,6 +704,71 @@ afterEach(() => {
 })
 
 describe('Beside Cue character voice integration', () => {
+  it('stops and clears an uncommitted premium preview when Pro expires', async () => {
+    const entitlementId = 'BeSideCue Pro'
+    const existingPlan = stateWithActiveCue({
+      bSideSuggestionId: 'bside.quiet-work',
+      bSideText: 'One quiet minute of work.',
+    })
+    const savedPremiumPlan: BesideCueStateV1 = {
+      ...existingPlan,
+      cues: existingPlan.cues.map((cue) => ({
+        ...cue,
+        pullCategoryId: 'the-tape',
+        pullText: 'Reach for another quick fix',
+      })),
+    }
+    const repository = createMemoryRepository(savedPremiumPlan)
+    const runtime = createMobileRuntimeProbe({
+      customer: createCustomerSnapshot([entitlementId]),
+    })
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'ios',
+          runtime: runtime.runtime,
+          purchases: {
+            entitlementId,
+            config: { apiKey: 'test_key', logLevel: 'warn' },
+          },
+          voiceAudio: voice.port,
+        })}
+        contentPack={packWithRecordedLines('pull.the-tape.meet')}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
+    fireEvent.click(screen.getByText('Show premium'))
+    const tape = await screen.findByRole('radio', {
+      name: /another quick fix/iu,
+    })
+    await waitFor(() => expect(tape).toBeEnabled())
+    fireEvent.click(tape)
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+    expect(voice.playbacks[0]?.source.src).toContain('en__the-tape__meet.m4a')
+
+    await runtime.emitCustomer(createCustomerSnapshot([]))
+
+    await waitFor(() => expect(voice.playbacks[0]?.stopCalls).toBe(1))
+    expect(tape).toBeDisabled()
+    expect(tape).not.toBeChecked()
+    expect(
+      screen.queryByRole('button', {
+        name: /hear voice|replay voice|voice playing/iu,
+      }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Pro is no longer active',
+    )
+    expect(repository.snapshot()?.cues).toMatchObject([
+      { pullCategoryId: 'the-tape', status: 'active' },
+    ])
+    expect(repository.saveCalls()).toBe(0)
+  })
+
   it('attempts a delivered Pull introduction once and leaves replay explicit', async () => {
     const repository = createMemoryRepository()
     const voice = createVoiceAudioProbe()

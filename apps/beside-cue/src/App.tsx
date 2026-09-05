@@ -713,6 +713,29 @@ export function App(props: AppProps) {
     setScreen('choose-pull')
   }
 
+  createEffect(() => {
+    const currentScreen = screen()
+    const selectedId = selectedPullId()
+    const isEditingPlan =
+      currentScreen === 'choose-pull' ||
+      currentScreen === 'choose-cue-context' ||
+      currentScreen === 'choose-b-side'
+    if (
+      !isEditingPlan ||
+      schedulePending() ||
+      selectedId === undefined ||
+      canSelectPull(selectedId, proAccess().isPro(), config().pullOptions)
+    ) {
+      return
+    }
+
+    resetSetup(setupMode())
+    setSetupError(
+      'Pro is no longer active. Choose a free Pull or your own words.',
+    )
+    setScreen('choose-pull')
+  })
+
   function completeCinematicOnboarding(
     _outcome: 'finished' | 'dismissed',
   ): void {
@@ -1005,6 +1028,10 @@ export function App(props: AppProps) {
   }
 
   function playPullPreview(pullId: string): void {
+    if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
+      stopCharacterVoice('replaced')
+      return
+    }
     const request = (pullPreviewRequest += 1)
     const previewLineId = config().pullOptions.find(
       (option) => option.id === pullId,
