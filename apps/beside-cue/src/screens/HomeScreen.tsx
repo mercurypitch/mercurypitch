@@ -3,6 +3,7 @@ import type { MainView } from '@/components/BottomNav'
 import { BottomNav } from '@/components/BottomNav'
 import { MascotStage } from '@/components/MascotStage'
 import { CORKY_V023_REST_ART } from '@/content'
+import styles from './HomeScreen.module.css'
 
 interface HomeScreenProps {
   pullText: string
@@ -18,12 +19,32 @@ interface HomeScreenProps {
   onPauseToggle: () => void
   onOpenSettings: () => void
   onOpenGames: () => void
+  muted: boolean
+  onMuteToggle: () => void
 }
 
 export function HomeScreen(props: HomeScreenProps) {
   return (
     <main class="home-screen app-screen app-screen--with-nav">
-      <AppHeader actionLabel="Settings" onAction={props.onOpenSettings} />
+      <div class={styles.header}>
+        <AppHeader actionLabel="Settings" onAction={props.onOpenSettings} />
+        <button
+          class={`icon-button ${styles.soundToggle}`}
+          type="button"
+          aria-label={props.muted ? 'Unmute audio' : 'Mute audio'}
+          aria-pressed={props.muted}
+          onClick={() => props.onMuteToggle()}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+            {props.muted ? (
+              <path d="m16 9 5 6m0-6-5 6" />
+            ) : (
+              <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+            )}
+          </svg>
+        </button>
+      </div>
       <section class="home-screen__intro" aria-labelledby="home-title">
         <p class="screen-kicker">Your current plan</p>
         <h1 id="home-title">A better choice, kept close.</h1>

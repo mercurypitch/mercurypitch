@@ -2,9 +2,9 @@
 // V2 onboarding audio director — exact-once hold transitions
 // ============================================================
 //
-// Omitting music means continuity, not stop: one finite score can span scene
-// beats and naturally end. A configured score or hold bed still replaces its
-// lane only after the successor start settles.
+// Omitting music preserves it. The app owns the continuous background score;
+// this director owns scene dialogue and effects, plus any explicitly authored
+// score/hold replacement. Retiring this scope cannot stop the app's music.
 
 import type { AudioSessionCue, AudioSessionScope, AudioSessionStartResult, } from '../audio/audio-session'
 

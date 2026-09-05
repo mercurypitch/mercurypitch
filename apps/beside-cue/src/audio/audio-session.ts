@@ -78,6 +78,8 @@ export interface AudioSessionCue {
 export interface AudioSessionScope {
   readonly owner: string
   play(assetId: string): AudioSessionCue
+  /** Pop-safe mix level for this feature, composed with dialogue ducking. */
+  setGain(gain: number): void
   stopLane(lane: AudioLane, reason?: AudioSessionStopReason): void
   stopAll(reason?: AudioSessionStopReason): void
   dispose(): void
@@ -114,6 +116,7 @@ interface ScopeState {
   readonly owner: string
   generation: number
   disposed: boolean
+  gain: number
 }
 
 interface ActiveRequest {
@@ -212,7 +215,9 @@ export function createAudioSession(options: AudioSessionOptions): AudioSession {
   function setMusicGain(gain: number): void {
     for (const lane of ['score', 'hold-bed'] as const) {
       const request = activeByLane.get(lane)
-      if (request?.didStart === true) request.outputPlayback?.setGain(gain)
+      if (request !== undefined) {
+        request.outputPlayback?.setGain(gain * request.scope.gain)
+      }
     }
   }
 
@@ -333,11 +338,12 @@ export function createAudioSession(options: AudioSessionOptions): AudioSession {
             source,
             playback: request.asset.playback,
             initialGain:
-              dialogueDuckActive &&
+              request.scope.gain *
+              (dialogueDuckActive &&
               (request.asset.lane === 'score' ||
                 request.asset.lane === 'hold-bed')
                 ? duckGain
-                : 1,
+                : 1),
           })
         } catch {
           continue
@@ -444,11 +450,27 @@ export function createAudioSession(options: AudioSessionOptions): AudioSession {
         owner,
         generation: 0,
         disposed: false,
+        gain: 1,
       }
       scopes.set(scope.id, scope)
       return {
         owner,
         play: (assetId) => play(scope, assetId),
+        setGain(gain) {
+          if (scope.disposed || !Number.isFinite(gain)) return
+          const nextGain = Math.max(0.0001, Math.min(1, gain))
+          if (scope.gain === nextGain) return
+          scope.gain = nextGain
+          for (const request of activeByLane.values()) {
+            if (request.scope !== scope) continue
+            const music =
+              request.asset.lane === 'score' ||
+              request.asset.lane === 'hold-bed'
+            request.outputPlayback?.setGain(
+              scope.gain * (music && dialogueDuckActive ? duckGain : 1),
+            )
+          }
+        },
         stopLane(lane, reason = 'lane-stopped') {
           const request = activeByLane.get(lane)
           if (request?.scope === scope) stopRequest(request, reason)

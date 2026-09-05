@@ -2,9 +2,9 @@
 // V2 onboarding media presenter — pure dual-layer transition authority
 // ============================================================
 //
-// A decoded outgoing layer stays mounted until its successor has presented a
-// real frame and completed the visual transition. Independently encoded hold
-// plates are recovery candidates, never implicit bridges between valid clips.
+// A decoded outgoing layer stays mounted until its successor has decoded data,
+// started playback, and completed the visual transition. Independently encoded
+// hold plates are recovery candidates, never implicit bridges between clips.
 
 export type V2OnboardingMediaMode = 'normal' | 'reduced'
 
@@ -227,9 +227,9 @@ export function requestV2OnboardingMediaPresentation(
 }
 
 /**
- * Applies only events correlated to the current candidate token. Metadata and
- * playback do not prove that a video frame reached the compositor, so neither
- * can reveal a layer.
+ * Applies only events correlated to the current candidate token. The DOM
+ * adapter combines loaded video data with playback start before presenting;
+ * metadata or playback notifications alone therefore remain informational.
  */
 export function updateV2OnboardingMediaPresenter(
   state: V2OnboardingMediaPresenterState,

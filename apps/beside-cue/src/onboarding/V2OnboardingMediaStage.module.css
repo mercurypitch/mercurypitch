@@ -20,13 +20,13 @@
 }
 
 /*
- * WebKit may withhold requestVideoFrameCallback for an opacity-zero video.
- * This sub-percent probe keeps the native surface compositor-eligible while
- * the current decoded layer remains visually authoritative.
+ * The incoming movie owns the visible surface from mount. In particular, do
+ * not hide it behind a requestVideoFrameCallback gate: iOS can omit that
+ * callback while the same H.264 resource continues valid playback.
  */
 .layer[data-v2-media-kind='video'][data-v2-media-phase='loading'] {
   z-index: 2;
-  opacity: 0.001;
+  opacity: 1;
 }
 
 .layer[data-v2-media-phase='current'],

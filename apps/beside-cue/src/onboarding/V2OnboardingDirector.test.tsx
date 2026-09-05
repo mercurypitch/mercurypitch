@@ -188,6 +188,7 @@ function createAudioProbe(): {
     play,
     stopLane,
     stopAll: vi.fn(),
+    setGain: vi.fn(),
     dispose: disposeScope,
   }
   const createScope = vi.fn(() => scope)
@@ -324,7 +325,7 @@ async function reachPullChoice(): Promise<void> {
   }
   expect(
     screen.getByRole('heading', {
-      name: 'Which Pull do you want to notice sooner?',
+      name: 'Choose your Pull',
     }),
   ).toBeVisible()
 }
@@ -443,14 +444,14 @@ describe('V2OnboardingDirector', () => {
     expect(probe.audio.disposeScope).toHaveBeenCalledTimes(1)
   })
 
-  it('starts the score with Corky without replaying the omitted table entrance', async () => {
+  it('starts Corky dialogue without replacing the app-owned score', async () => {
     const probe = createDirectorProbe()
     render(() => <V2OnboardingDirector {...probe.props} />)
 
     await advance(1_300)
     fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
 
-    expect(probe.audio.play).toHaveBeenCalledWith(
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
       V2_ONBOARDING_AUDIO_ASSET_IDS.score,
     )
     expect(probe.audio.play).toHaveBeenCalledWith(
@@ -466,7 +467,7 @@ describe('V2OnboardingDirector', () => {
     )
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -486,7 +487,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -505,7 +506,7 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -542,7 +543,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1_550)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
     expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
@@ -581,7 +582,7 @@ describe('V2OnboardingDirector', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
     expect(currentMediaStage().targetId).toBe('plate:p02')
@@ -632,7 +633,7 @@ describe('V2OnboardingDirector', () => {
     endCurrentMedia('present-token')
     expect(
       screen.getByRole('heading', {
-        name: 'When does Endless scrolling usually show up?',
+        name: 'When does it show up?',
       }),
     ).toBeVisible()
     expect(currentMediaStage().targetId).toBe('pull:scrolling:hold')
@@ -940,7 +941,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'When does Endless scrolling usually show up?',
+        name: 'When does it show up?',
       }),
     ).toBeVisible()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -975,7 +976,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'When does Endless scrolling usually show up?',
+        name: 'When does it show up?',
       }),
     ).toBeVisible()
   })
@@ -1001,7 +1002,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1020,7 +1021,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1035,7 +1036,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1060,7 +1061,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
     expect(
@@ -1087,7 +1088,7 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1110,7 +1111,7 @@ describe('V2OnboardingDirector', () => {
     await advance(1)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1155,7 +1156,7 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1167,7 +1168,7 @@ describe('V2OnboardingDirector', () => {
     await advance(15_001)
     expect(
       screen.getByRole('heading', {
-        name: 'Which Pull do you want to notice sooner?',
+        name: 'Choose your Pull',
       }),
     ).toBeVisible()
   })
@@ -1276,7 +1277,7 @@ describe('V2OnboardingDirector', () => {
     ).toBeEnabled()
   })
 
-  it('stops an earlier Pull voice when the next Pull has no recording', async () => {
+  it('replays an available Pull voice and stops it when the next Pull has no recording', async () => {
     const line = DEFAULT_CONTENT_PACK.lines.find(
       (candidate) => candidate.id === 'pull.scrolling.meet',
     )
@@ -1323,6 +1324,18 @@ describe('V2OnboardingDirector', () => {
     expect(probe.audio.play).toHaveBeenCalledWith(
       'dialogue.pull.scrolling.meet',
     )
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === 'dialogue.pull.scrolling.meet',
+      ),
+    ).toHaveLength(1)
+    fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hear again' }))
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([assetId]) => assetId === 'dialogue.pull.scrolling.meet',
+      ),
+    ).toHaveLength(3)
 
     const dialogueStopCount = () =>
       probe.audio.stopLane.mock.calls.filter(([lane]) => lane === 'dialogue')
@@ -1333,8 +1346,11 @@ describe('V2OnboardingDirector', () => {
       probe.audio.play.mock.calls.filter(
         ([assetId]) => assetId === 'dialogue.pull.scrolling.meet',
       ),
-    ).toHaveLength(1)
+    ).toHaveLength(3)
     expect(dialogueStopCount()).toBe(stopsBeforeMissingPull + 1)
+    expect(
+      screen.queryByRole('button', { name: 'Hear again' }),
+    ).not.toBeInTheDocument()
 
     const stopsBeforeCustomPull = dialogueStopCount()
     fireEvent.click(screen.getByRole('radio', { name: 'Something else' }))
@@ -1469,7 +1485,7 @@ describe('V2OnboardingDirector', () => {
 
     await advance(950)
     const reminderHeading = screen.getByRole('heading', {
-      name: 'Bring this plan back later?',
+      name: 'A reminder for later?',
     })
     const reminderDial = screen.getByRole('slider', {
       name: 'Turn the record to choose a reminder time',

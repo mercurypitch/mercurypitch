@@ -1,7 +1,7 @@
 import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTimeScheduleRule, } from '@irchiinnuss/beside-cue-core'
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
-import { createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { BuildStamp } from '@/components/BuildStamp'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
@@ -9,6 +9,7 @@ import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import { createDefaultAppServices } from './app-services'
+import { createAmbientMusic } from './audio/ambient-music'
 import { createAudioSession } from './audio/audio-session'
 import type { MainView } from './components/BottomNav'
 import { BrandMark } from './components/BrandMark'
@@ -16,6 +17,7 @@ import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
 import type { ActionDefinition, ContentPack, PullOption, VoicePlaybackStatus, } from './content'
 import { createVoicePlayer, CUSTOM_PULL_ACTIONS, DEFAULT_CONTENT_PACK, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, resolveActionDefinition, resolveMoment, } from './content'
+import { V2_ONBOARDING_AUDIO_ASSET_IDS } from './content/v2-onboarding-audio-manifest'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
@@ -280,9 +282,22 @@ export function App(props: AppProps) {
     output: untrack(services).audioOutput,
     muted: !initialState.settings.voiceEnabled,
     foreground: characterVoiceForeground,
-    // The V2.4 score stem already carries its approved opening dialogue
-    // automation. Preserve that authored gain instead of ducking it twice.
-    dialogueDuckGain: 1,
+    // The full song has no baked-in film dialogue automation. Duck only while
+    // speech is actually playing, including a replayed Pull introduction.
+    dialogueDuckGain: 0.35,
+  })
+  const ambientMusic = createAmbientMusic(
+    onboardingAudioSession,
+    V2_ONBOARDING_AUDIO_ASSET_IDS.score,
+  )
+  createEffect(() => {
+    const currentScreen = screen()
+    ambientMusic.update({
+      active: currentScreen === 'v2-onboarding' || currentScreen === 'home',
+      muted: v2Muted(),
+      foreground: v2OnboardingForeground(),
+      gain: currentScreen === 'home' ? 0.16 : 0.4,
+    })
   })
   const characterVoicePlayer = createVoicePlayer({
     pack: untrack(contentPack),
@@ -1515,8 +1530,8 @@ export function App(props: AppProps) {
     if (!voiceEnabled) {
       stopCharacterVoice('muted')
     }
-    setV2Muted(!voiceEnabled)
     onboardingAudioSession.setMuted(!voiceEnabled)
+    setV2Muted(!voiceEnabled)
     persist({
       ...currentState,
       settings: { ...currentState.settings, voiceEnabled },
@@ -1525,11 +1540,12 @@ export function App(props: AppProps) {
 
   function toggleCharacterVoice(): void {
     setCharacterVoiceEnabled(!latestState.settings.voiceEnabled)
+    ambientMusic.unlock()
   }
 
   function setV2OnboardingMuted(muted: boolean): void {
-    setV2Muted(muted)
     onboardingAudioSession.setMuted(muted)
+    setV2Muted(muted)
     if (muted) stopCharacterVoice('muted')
 
     if (
@@ -1737,6 +1753,10 @@ export function App(props: AppProps) {
     }
     pageShowListener = () => visibilityListener?.()
     document.addEventListener('visibilitychange', visibilityListener)
+    document.addEventListener('pointerdown', ambientMusic.unlock, {
+      passive: true,
+    })
+    document.addEventListener('keydown', ambientMusic.unlock)
     window.addEventListener('pagehide', pageHideListener)
     window.addEventListener('pageshow', pageShowListener)
     load()
@@ -1745,7 +1765,10 @@ export function App(props: AppProps) {
   onCleanup(() => {
     disposed = true
     characterVoicePlayer.dispose()
+    ambientMusic.dispose()
     onboardingAudioSession.dispose()
+    document.removeEventListener('pointerdown', ambientMusic.unlock)
+    document.removeEventListener('keydown', ambientMusic.unlock)
     if (midnightTimer !== undefined) clearTimeout(midnightTimer)
     if (visibilityListener !== undefined) {
       document.removeEventListener('visibilitychange', visibilityListener)
@@ -1941,6 +1964,8 @@ export function App(props: AppProps) {
           onPauseToggle={togglePause}
           onOpenSettings={openSettings}
           onOpenGames={() => setScreen('games')}
+          muted={v2Muted()}
+          onMuteToggle={toggleCharacterVoice}
         />
       ) : null}
 

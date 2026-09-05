@@ -35,14 +35,18 @@ describe('V2 onboarding audio manifest', () => {
     ).toEqual(Object.values(V2_ONBOARDING_AUDIO_ASSET_IDS))
   })
 
-  it('keeps the reviewed score finite instead of inventing a loop', () => {
+  it('keeps the complete composition running through an indefinite decision', () => {
     const score = V2_ONBOARDING_AUDIO_ASSET_MANIFEST.assets.find(
       (asset) => asset.id === V2_ONBOARDING_AUDIO_ASSET_IDS.score,
     )
 
     expect(score?.lane).toBe('score')
-    expect(score?.playback).toEqual({ kind: 'one-shot' })
-    expect(score?.sources[0]?.durationMs).toBe(32_833.333)
+    expect(score?.playback).toEqual({
+      kind: 'loop',
+      loopStartMs: 1_500,
+      loopEndMs: 77_880,
+    })
+    expect(score?.sources[0]?.durationMs).toBe(77_880)
   })
 
   it('binds the accepted Kling greeting to its authored speech window', () => {
