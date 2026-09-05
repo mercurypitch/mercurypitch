@@ -2715,14 +2715,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         <Show when={audio.loadError()}>
           <div class="sm-error">
             <span>{audio.loadError()}</span>
-            <button
-              class="sm-error-retry"
-              onClick={() => {
-                void audio.loadStems()
-              }}
-            >
-              Retry
-            </button>
+            <Show when={audio.loadErrorRetryable()}>
+              <button
+                class="sm-error-retry"
+                onClick={() => {
+                  void audio.loadStems()
+                }}
+              >
+                Retry
+              </button>
+            </Show>
           </div>
         </Show>
 
