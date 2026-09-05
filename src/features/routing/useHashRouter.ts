@@ -97,6 +97,10 @@ export interface UseHashRouterDeps {
   selectedWalkthrough: Accessor<string | null>
 }
 
+/** A numbering id for the position stamps of one page load. */
+const newEpoch = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
 export function useHashRouter(deps: UseHashRouterDeps): void {
   let hashSyncing = false
   let lastAcceptedHash = ''
@@ -109,6 +113,14 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
    * one was a step further away for every veto.
    */
   let acceptedIndex: number | null = null
+  /**
+   * The numbering the stamps belong to. Stamps survive a reload in
+   * history.state, and a few surfaces rewrite entries with a null state;
+   * a position read against another load's numbering would send go()
+   * the wrong way, so only stamps of this numbering count, and the
+   * numbering starts afresh from any entry the router cannot place.
+   */
+  let epoch = newEpoch()
   /** history.length when the router last accepted an entry: growth since
    *  then means an unstamped entry is a new one, not an old one revisited. */
   let lengthAtAccept = 0
@@ -267,15 +279,19 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   }
 
   const stampedIndex = (): number | null => {
-    const state = window.history.state as { routeIndex?: unknown } | null
-    return typeof state?.routeIndex === 'number' ? state.routeIndex : null
+    const state = window.history.state as {
+      routeIndex?: unknown
+      routeEpoch?: unknown
+    } | null
+    if (state?.routeEpoch !== epoch) return null
+    return typeof state.routeIndex === 'number' ? state.routeIndex : null
   }
 
   const stampEntry = (position: number): number => {
     const state: unknown = window.history.state
     const carried = typeof state === 'object' && state !== null ? state : {}
     window.history.replaceState(
-      { ...carried, routeIndex: position },
+      { ...carried, routeIndex: position, routeEpoch: epoch },
       '',
       window.location.href,
     )
@@ -285,14 +301,38 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   /** Where the current entry sits, stamping it when it is new. Null for
    *  an entry the router cannot place (one from before the stamps, or
    *  one whose stamp was lost); a veto there falls back to rewriting. */
+  /** Number afresh from the current entry: see `epoch`. */
+  const restartNumbering = (): number => {
+    epoch = newEpoch()
+    return stampEntry(0)
+  }
+
   const positionOfCurrentEntry = (): number | null => {
     const stamped = stampedIndex()
     if (stamped !== null) return stamped
-    if (lengthAtAccept === 0) return stampEntry(0)
-    if (acceptedIndex !== null && window.history.length > lengthAtAccept) {
-      return stampEntry(acceptedIndex + 1)
+    if (lengthAtAccept === 0) return restartNumbering()
+    if (window.history.length > lengthAtAccept) {
+      // Grown since the last accept: a new entry, pushed from the accepted
+      // one (a link, a hash assignment) -- or from one the router could not
+      // place, in which case the numbering starts again here.
+      return acceptedIndex === null
+        ? restartNumbering()
+        : stampEntry(acceptedIndex + 1)
     }
+    // Revisited, and carrying no stamp of this numbering: cannot be placed.
     return null
+  }
+
+  /**
+   * Place the entry a navigation has just created, before the guard sees
+   * it, so a veto can travel back from it instead of rewriting it.
+   */
+  const placeArrivedEntry = (): void => {
+    if (stampedIndex() !== null) return
+    if (acceptedIndex !== null && window.history.length > lengthAtAccept) {
+      stampEntry(acceptedIndex + 1)
+      lengthAtAccept = window.history.length
+    }
   }
 
   const acceptRoute = (route: HashRoute): void => {
@@ -311,9 +351,13 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     }
     if (lastAcceptedHash !== '') {
       window.history.replaceState(window.history.state, '', lastAcceptedHash)
-      return
+    } else {
+      replaceHash({ type: 'tab', tab: deps.activeTab() })
     }
-    replaceHash({ type: 'tab', tab: deps.activeTab() })
+    // The rewrite made this entry the accepted one; the router stands
+    // wherever it is placed, if it is placed at all.
+    acceptedIndex = stampedIndex()
+    lengthAtAccept = window.history.length
   }
 
   const dispatchRoute = (route: HashRoute) => {
@@ -344,9 +388,23 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   const onHashChange = () => {
     if (restoring) {
       restoring = false
-      if (window.location.hash === lastAcceptedHash) return
+      // The traversal the router asked for, recognised by its stamp: a
+      // panel may have rewritten the accepted entry's hash behind the
+      // router, and re-dispatching that would be a navigation nobody made.
+      if (stampedIndex() === acceptedIndex) return
     }
+    placeArrivedEntry()
     dispatchRoute(parseHash(window.location.hash))
+  }
+
+  const onPopState = () => {
+    if (!restoring) return
+    // popstate comes first and the hashchange right after it in the same
+    // task -- or not at all, when the two entries share a hash. Either way
+    // the traversal is over once this task is.
+    queueMicrotask(() => {
+      restoring = false
+    })
   }
 
   onMount(() => {
@@ -354,10 +412,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     dispatchRoute(parseHash(window.location.hash))
     setInitialized(true)
     window.addEventListener('hashchange', onHashChange)
+    window.addEventListener('popstate', onPopState)
   })
 
   onCleanup(() => {
     window.removeEventListener('hashchange', onHashChange)
+    window.removeEventListener('popstate', onPopState)
   })
 
   /**
@@ -376,10 +436,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const expectedHash = `#${buildHash(route)}`
     if (window.location.hash !== expectedHash) {
       if (lastSyncedTab !== null && lastSyncedTab !== tab) {
-        const current = acceptedIndex ?? stampedIndex() ?? 0
+        const current = acceptedIndex
         pushHash(route)
-        // A new entry, right after the one the router was on.
-        acceptedIndex = stampEntry(current + 1)
+        // A new entry, right after the one the router was on -- or a fresh
+        // numbering, when that one could not be placed.
+        acceptedIndex =
+          current === null ? restartNumbering() : stampEntry(current + 1)
       } else {
         replaceHash(route)
         acceptedIndex = stampedIndex() ?? acceptedIndex
@@ -409,7 +471,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showResetPassword() ||
       deps.voiceConstellationOpen() ||
       deps.whatsNewOpen()
-    if (!initialized() || hashSyncing) return
+    if (!initialized() || hashSyncing || restoring) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
       // Settings carries its sub-tab in the URL (#/settings/<slug>) so each
@@ -448,7 +510,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const selectionOpen = deps.showSelection()
     const guideOpen = deps.showGuideSelection()
     const constellationOpen = deps.voiceConstellationOpen()
-    if (!initialized() || hashSyncing || constellationOpen) return
+    if (!initialized() || hashSyncing || restoring || constellationOpen) {
+      return
+    }
     if (modalOpen && walkthroughId !== null) {
       const expectedHash = `#/learn/${walkthroughId}`
       if (window.location.hash !== expectedHash) {
