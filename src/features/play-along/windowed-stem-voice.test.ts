@@ -194,6 +194,43 @@ describe('createWindowedStemVoice', () => {
     expect(readCalls).toHaveLength(2)
     expect(context.sources[0].stopCalls).toEqual([101.5])
     expect(context.sources[1].stopCalls).toEqual([101.5])
+    // The engine's release is still sounding on the envelope until the
+    // last live window reaches its stop time; ending the voice at stop()
+    // let the engine tear the envelope down under it.
+    expect(handle.ended).toBe(false)
+    expect(onEnded).not.toHaveBeenCalled()
+
+    context.sources[1].end()
+    expect(handle.ended).toBe(true)
+    expect(onEnded).toHaveBeenCalledOnce()
+  })
+
+  it('a second stop() only ever pulls the stop forward', async () => {
+    const context = new FakeContext()
+    const { handle } = voice(context)
+    await settled()
+
+    handle.stop(101.5)
+    handle.stop(102)
+    handle.stop(101.2)
+    expect(context.sources[0].stopCalls).toEqual([101.5, 101.2])
+    expect(handle.ended).toBe(false)
+  })
+
+  it('does not wait on a window that was never started', async () => {
+    const context = new FakeContext()
+    const { handle, onEnded } = voice(context)
+    await settled()
+
+    // A source refuses stop() until start() has been called on it.
+    context.sources[1].stop = () => {
+      throw new DOMException('not started', 'InvalidStateError')
+    }
+    handle.stop(101.5)
+    expect(context.sources[1].disconnect).toHaveBeenCalled()
+    expect(handle.ended).toBe(false)
+
+    context.sources[0].end()
     expect(handle.ended).toBe(true)
     expect(onEnded).toHaveBeenCalledOnce()
   })
