@@ -132,6 +132,10 @@ export function useHomeController(
   let ratingAtStart = 0
   let startedAt = 0
   let cancelled = false
+  /** Bumped by every start(): a round still sounding its cadence when the
+   *  run was stopped and started again must not carry on into the new
+   *  run once its await resolves. */
+  let run = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   const pacer = createRevealPacer(
     () => {
@@ -165,6 +169,7 @@ export function useHomeController(
 
   function start(runMode: HomeAnswerMode): void {
     cancelled = false
+    run += 1
     startedAt = performance.now()
     outcomes = []
     skipped = 0
@@ -183,9 +188,11 @@ export function useHomeController(
   }
 
   async function playRound(): Promise<void> {
-    if (cancelled) return
+    const mine = run
+    const stale = (): boolean => cancelled || mine !== run
+    if (stale()) return
     if (round() >= totalRounds()) {
-      finish()
+      finish(true)
       return
     }
 
@@ -208,12 +215,12 @@ export function useHomeController(
 
     const chords = cadenceChordMidis(rootMidi)
     for (let i = 0; i < chords.length; i++) {
-      if (cancelled) return
+      if (stale()) return
       setCadenceStep(i + 1)
       await playChord(chords[i], HOME_TIMING.chordMs)
       await wait(HOME_TIMING.chordGapMs)
     }
-    if (cancelled) return
+    if (stale()) return
 
     setPhase('probe')
     await audioEngine.playTone(
@@ -223,9 +230,10 @@ export function useHomeController(
     // The answer opens once the probe has died away, so a sung answer
     // is never captured over the probe still sounding from the speakers.
     await wait(HOME_TIMING.probeMs)
-    // Stop may have landed while the probe was sounding; arming the
-    // answer here would resurrect a finished run.
-    if (cancelled) return
+    // Stop may have landed while the probe was sounding, or the run may
+    // have been started again; arming the answer here would resurrect a
+    // finished run.
+    if (stale()) return
     setPhase('answer')
 
     if (mode() === 'mic') void listenForAnswer()
@@ -236,9 +244,10 @@ export function useHomeController(
    *  production noise must not masquerade as a perception error. */
   async function listenForAnswer(): Promise<void> {
     if (!singCapture) return
+    const mine = run
     singCapture.startWindow()
     await wait(HOME_TIMING.singWindowMs)
-    if (cancelled || phase() !== 'answer') return
+    if (cancelled || mine !== run || phase() !== 'answer') return
 
     const sung = detectSungDegree(
       singCapture.takeFrames(),
@@ -274,6 +283,7 @@ export function useHomeController(
   function submit(degree: number, centsOff?: number): void {
     const target = currentDegree()
     if (!target || cancelled) return
+    const mine = run
 
     const isMic = mode() === 'mic'
     const correct = degree === target.degree
@@ -317,7 +327,7 @@ export function useHomeController(
     void resolution
       .catch(() => undefined)
       .then(() => {
-        if (cancelled) return
+        if (cancelled || mine !== run) return
         pacer.hold()
       })
   }
@@ -344,7 +354,7 @@ export function useHomeController(
     await wait(HOME_TIMING.resolutionTonicMs)
   }
 
-  function finish(): void {
+  function finish(complete: boolean): void {
     const current = rating()
     const centsValues = outcomes
       .filter((o) => o.correct && o.centsOff !== undefined)
@@ -365,8 +375,9 @@ export function useHomeController(
     })
     creditEarSession(performance.now() - startedAt)
     // Always the tap id: the sprint schedules the drill, not the way
-    // you chose to answer it, and singing your answers is still Home.
-    markSprintSegmentDone(set.tapDrillId)
+    // you chose to answer it, and singing your answers is still Home. A
+    // segment counts when the run reached its end, not when abandoned.
+    if (complete) markSprintSegmentDone(set.tapDrillId)
     setPhase('done')
   }
 
@@ -381,7 +392,23 @@ export function useHomeController(
     clearTimeout(timer)
     pacer.cancel()
     options?.cancelAudio?.()
-    finish()
+    if (outcomes.length === 0 && skipped === 0) {
+      // Nothing answered: the end card reports an empty run, and no sprint
+      // segment, session or streak is booked for it.
+      setResult({
+        correct: 0,
+        total: 0,
+        skipped: 0,
+        rating: rating(),
+        ratingDelta: 0,
+        mode: mode(),
+        medianAbsCents: null,
+        outcomes: [],
+      })
+      setPhase('done')
+      return
+    }
+    finish(false)
   }
 
   function reset(): void {

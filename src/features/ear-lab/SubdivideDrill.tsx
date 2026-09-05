@@ -43,14 +43,20 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
     for (const timer of timers) clearTimeout(timer)
     timers = []
     if (master) {
+      const held = master
+      master = null
       try {
-        master.gain.cancelScheduledValues(0)
-        master.gain.value = 0
-        master.disconnect()
+        // Anchor, then decay (docs/agent/MISTAKES.md, "Pop-free audio"):
+        // a jump to zero was a click on every Stop. The node comes off
+        // the graph once the tail is inaudible.
+        const now = held.context.currentTime
+        held.gain.cancelScheduledValues(now)
+        held.gain.setValueAtTime(held.gain.value, now)
+        held.gain.setTargetAtTime(0, now, 0.012)
+        setTimeout(() => held.disconnect(), 80)
       } catch {
         // Already torn down with its context.
       }
-      master = null
     }
     setLit(0)
   }

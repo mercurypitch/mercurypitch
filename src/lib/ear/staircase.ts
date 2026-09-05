@@ -144,7 +144,15 @@ export function recordTrial(
       ? 'harder'
       : null
 
-  if (move === null) return { ...state, trials, runOfCorrect }
+  if (move === null) {
+    // A held level is still a trial: the cap counts it too.
+    return {
+      ...state,
+      trials,
+      runOfCorrect,
+      done: state.done || trials >= config.maxTrials,
+    }
+  }
 
   // A turnaround is booked at the level that was just tested — that
   // is the point the track actually pivoted on.

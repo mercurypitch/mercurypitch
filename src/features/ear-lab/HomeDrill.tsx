@@ -110,7 +110,22 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   // The controller registers its own cleanup; this one owns the mic.
   onCleanup(releaseMic)
 
+  /** True while Begin is waiting on the microphone prompt. A second
+   *  Begin then (the pad, Space, the sprint's Start) used to open a
+   *  second stream and start a second run over the first. */
+  let starting = false
+
   async function handleStart(): Promise<void> {
+    if (starting) return
+    starting = true
+    try {
+      await startRun()
+    } finally {
+      starting = false
+    }
+  }
+
+  async function startRun(): Promise<void> {
     setMicError('')
     let mode: HomeAnswerMode = homeAnswerMode()
     if (mode === 'mic' && f0 === null) {

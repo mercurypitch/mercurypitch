@@ -41,6 +41,7 @@ const param = () => ({
   linearRampToValueAtTime: vi.fn(),
   exponentialRampToValueAtTime: vi.fn(),
   cancelScheduledValues: vi.fn(),
+  setTargetAtTime: vi.fn(),
 })
 const ctx = {
   currentTime: 1,

@@ -76,9 +76,13 @@ export function scheduleDyad(
       cancelled = true
       for (const { osc, gain } of voices) {
         try {
-          gain.gain.cancelScheduledValues(ctx.currentTime)
-          gain.gain.setValueAtTime(0, ctx.currentTime)
-          osc.stop(ctx.currentTime)
+          // Anchor, then decay (docs/agent/MISTAKES.md, "Pop-free audio");
+          // the source stops once the tail is inaudible.
+          const now = ctx.currentTime
+          gain.gain.cancelScheduledValues(now)
+          gain.gain.setValueAtTime(gain.gain.value, now)
+          gain.gain.setTargetAtTime(0, now, 0.012)
+          osc.stop(now + 0.08)
         } catch {
           // Already stopped by its own schedule — nothing to undo.
         }

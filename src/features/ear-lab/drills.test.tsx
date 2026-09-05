@@ -35,6 +35,7 @@ function fakeAudioContext() {
     linearRampToValueAtTime: vi.fn(),
     exponentialRampToValueAtTime: vi.fn(),
     cancelScheduledValues: vi.fn(),
+    setTargetAtTime: vi.fn(),
   })
   return {
     currentTime: 0,
@@ -140,6 +141,29 @@ describe('Contour', () => {
     // The direction is drawn at random, so the one answer may have hit or missed.
     expect(plate.textContent).toMatch(/[01] of 1 named correctly/)
     expect(engine.stopTone).toHaveBeenCalled()
+  })
+})
+
+describe('Contour, stopped mid-pair', () => {
+  it('lets the second tone stay silent', async () => {
+    render(() => (
+      <Stage>
+        <ContourDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs - 20)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: /Stop/ }))
+    expect(engine.stopTone).toHaveBeenCalled()
+    // Before: stopTone silenced the first tone, then the pair carried on
+    // and sounded the second over the end card.
+    await vi.advanceTimersByTimeAsync(
+      CONTOUR_TIMING.gapMs + CONTOUR_TIMING.toneMs + 40,
+    )
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('ear-stage-plate')).toBeTruthy()
   })
 })
 

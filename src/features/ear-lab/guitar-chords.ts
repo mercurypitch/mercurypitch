@@ -75,15 +75,23 @@ export function createStrummer(
       cancelled = true
       for (const timer of timers) clearTimeout(timer)
       timers = []
+      // The house release (docs/agent/MISTAKES.md, "Pop-free audio"):
+      // anchor, then decay. A step to zero was a click on every Stop.
+      const now = ctx.currentTime
       try {
-        master.gain.cancelScheduledValues(ctx.currentTime)
-        master.gain.setValueAtTime(0, ctx.currentTime)
+        master.gain.cancelScheduledValues(now)
+        master.gain.setValueAtTime(master.gain.value, now)
+        master.gain.setTargetAtTime(0, now, 0.012)
       } catch {
         // A context already closed has nothing left to silence.
       }
-      for (const voice of voices) voice.dispose()
+      const sounding = voices
       voices = []
-      master.disconnect()
+      // The graph comes down once the decay is inaudible.
+      setTimeout(() => {
+        for (const voice of sounding) voice.dispose()
+        master.disconnect()
+      }, 80)
     },
   }
 }

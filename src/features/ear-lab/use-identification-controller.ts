@@ -95,6 +95,10 @@ export function useIdentificationController(
   let ratingAtStart = 0
   let startedAt = 0
   let cancelled = false
+  /** Bumped by every start(): a round still awaiting its prompt when the
+   *  run was stopped and started again must not arm the new run's
+   *  answer when that prompt resolves. */
+  let run = 0
   const pacer = createRevealPacer(
     () => {
       setRound((r) => r + 1)
@@ -109,6 +113,7 @@ export function useIdentificationController(
 
   function start(): void {
     cancelled = false
+    run += 1
     startedAt = performance.now()
     outcomes = []
     runTrack = options?.track?.() ?? null
@@ -124,9 +129,11 @@ export function useIdentificationController(
   }
 
   async function playRound(): Promise<void> {
-    if (cancelled) return
+    const mine = run
+    const stale = (): boolean => cancelled || mine !== run
+    if (stale()) return
     if (round() >= totalRounds()) {
-      finish()
+      finish(true)
       return
     }
 
@@ -144,14 +151,16 @@ export function useIdentificationController(
     })
 
     await trial.play()
-    // Stop may have landed while the prompt was sounding; arming the
-    // answer here would resurrect a finished run.
-    if (cancelled) return
+    // Stop may have landed while the prompt was sounding, or the run may
+    // have been started again; arming the answer here would resurrect a
+    // finished run.
+    if (stale()) return
     setPhase('answer')
   }
 
   function answer(choiceId: string): void {
     if (phase() !== 'answer' || cancelled) return
+    const mine = run
     const item = currentItem
     const expected = trial?.expectedId
     if (!item || expected === undefined) return
@@ -194,12 +203,12 @@ export function useIdentificationController(
       .catch(() => undefined)
       .then(() => {
         setReplaying(false)
-        if (cancelled) return
+        if (cancelled || mine !== run) return
         pacer.hold()
       })
   }
 
-  function finish(): void {
+  function finish(complete: boolean): void {
     const current = rating()
     setResult({
       correct: outcomes.filter((o) => o.correct).length,
@@ -209,7 +218,9 @@ export function useIdentificationController(
       outcomes: [...outcomes],
     })
     creditEarSession(performance.now() - startedAt)
-    markSprintSegmentDone(drill.id)
+    // A segment counts when the run reached its end, not when it was
+    // abandoned part-way.
+    if (complete) markSprintSegmentDone(drill.id)
     setPhase('done')
   }
 
@@ -219,7 +230,20 @@ export function useIdentificationController(
     cancelled = true
     pacer.cancel()
     options?.cancelAudio?.()
-    finish()
+    if (outcomes.length === 0) {
+      // Nothing answered: the end card reports an empty run, and no sprint
+      // segment, session or streak is booked for it.
+      setResult({
+        correct: 0,
+        total: 0,
+        rating: rating(),
+        ratingDelta: 0,
+        outcomes: [],
+      })
+      setPhase('done')
+      return
+    }
+    finish(false)
   }
 
   function dispose(): void {

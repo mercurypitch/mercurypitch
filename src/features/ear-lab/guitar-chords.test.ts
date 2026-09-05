@@ -58,7 +58,12 @@ vi.mock('@/lib/guitar/guitar-synth', () => ({
 
 function fakeContext() {
   const master = {
-    gain: { setValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() },
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      cancelScheduledValues: vi.fn(),
+      setTargetAtTime: vi.fn(),
+    },
     connect: vi.fn(),
     disconnect: vi.fn(),
   }
@@ -114,7 +119,15 @@ describe('guitar-chords', () => {
     strummer.cancel()
     strummer.cancel()
     expect(master.gain.cancelScheduledValues).toHaveBeenCalledTimes(1)
-    expect(master.gain.setValueAtTime).toHaveBeenLastCalledWith(0, 2)
+    // Anchor, then decay: a step to zero was a click on every Stop. The
+    // graph comes down once the tail is inaudible.
+    expect(master.gain.setValueAtTime).toHaveBeenLastCalledWith(
+      master.gain.value,
+      2,
+    )
+    expect(master.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 2, 0.012)
+    expect(master.disconnect).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(80)
     expect(master.disconnect).toHaveBeenCalledTimes(1)
     for (const voice of voices) expect(voice.dispose).toHaveBeenCalledTimes(1)
     strummer.strum([60], 4, 1)

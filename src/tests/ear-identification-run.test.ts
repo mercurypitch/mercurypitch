@@ -16,7 +16,7 @@ import type { EarBankItem } from '@/lib/ear/banks'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { armSprintSegment, earPlayerRating, resetEarLabStore, } from '@/stores/ear-lab-store'
+import { armSprintSegment, earPlayerRating, resetEarLabStore, sprintProgress, } from '@/stores/ear-lab-store'
 
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
 
@@ -310,6 +310,73 @@ describe('a sprint segment', () => {
       // The arming was taken with that run.
       run.start()
       expect(run.totalRounds).toBe(IDENTIFICATION_ROUNDS)
+      dispose()
+    })
+  })
+})
+
+describe('stop, then run again', () => {
+  it('lets the old prompt die when it finally resolves', async () => {
+    const resolvers: Array<() => void> = []
+    const makeTrial = (item: EarBankItem) => ({
+      expectedId: item.itemId,
+      play: () =>
+        new Promise<void>((resolve) => {
+          resolvers.push(resolve)
+        }),
+    })
+    await createRoot(async (dispose) => {
+      const run = useIdentificationController(drill, CONTOUR_BANK, makeTrial)
+      run.start()
+      run.stop()
+      run.start()
+      expect(run.phase()).toBe('playing')
+      expect(resolvers).toHaveLength(2)
+
+      resolvers[0]()
+      await flush()
+      expect(run.phase()).toBe('playing')
+
+      resolvers[1]()
+      await flush()
+      expect(run.phase()).toBe('answer')
+      dispose()
+    })
+  })
+})
+
+describe('stopping before anything was answered', () => {
+  it('books no sprint segment for an empty run', async () => {
+    await createRoot(async (dispose) => {
+      const pending = pendingTrial()
+      const run = useIdentificationController(
+        drill,
+        CONTOUR_BANK,
+        pending.makeTrial,
+      )
+      run.start()
+      run.stop()
+      expect(run.phase()).toBe('done')
+      expect(run.result()?.total).toBe(0)
+      expect(sprintProgress().done).toEqual([])
+      dispose()
+    })
+  })
+
+  it('does not count an abandoned run as a finished segment', async () => {
+    await createRoot(async (dispose) => {
+      const trials = instantTrials()
+      const run = useIdentificationController(
+        drill,
+        CONTOUR_BANK,
+        trials.makeTrial,
+      )
+      run.start()
+      await flush()
+      run.answer(run.expectedId() as string)
+      run.stop()
+      expect(run.result()?.total).toBe(1)
+      expect(sprintProgress().done).toEqual([])
       dispose()
     })
   })

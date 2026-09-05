@@ -13,9 +13,11 @@ function fakeContext() {
   }> = []
   const gains: Array<{
     gain: {
+      value: number
       setValueAtTime: ReturnType<typeof vi.fn>
       linearRampToValueAtTime: ReturnType<typeof vi.fn>
       cancelScheduledValues: ReturnType<typeof vi.fn>
+      setTargetAtTime: ReturnType<typeof vi.fn>
     }
     connect: ReturnType<typeof vi.fn>
     disconnect: ReturnType<typeof vi.fn>
@@ -41,7 +43,9 @@ function fakeContext() {
         gain: {
           setValueAtTime: vi.fn(),
           linearRampToValueAtTime: vi.fn(),
+          value: 1,
           cancelScheduledValues: vi.fn(),
+          setTargetAtTime: vi.fn(),
         },
         connect: vi.fn(),
         disconnect: vi.fn(),
@@ -89,10 +93,15 @@ describe('dyad-synth', () => {
     dyad.cancel()
     for (const gain of gains) {
       expect(gain.gain.cancelScheduledValues).toHaveBeenCalledTimes(1)
-      expect(gain.gain.setValueAtTime).toHaveBeenLastCalledWith(0, 2)
+      // Anchor, then decay: a step to zero was a click on every Stop.
+      expect(gain.gain.setValueAtTime).toHaveBeenLastCalledWith(
+        gain.gain.value,
+        2,
+      )
+      expect(gain.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 2, 0.012)
     }
     for (const osc of oscillators) {
-      expect(osc.stop).toHaveBeenLastCalledWith(2)
+      expect(osc.stop).toHaveBeenLastCalledWith(2.08)
       osc.onended?.()
       expect(osc.disconnect).toHaveBeenCalledTimes(1)
     }

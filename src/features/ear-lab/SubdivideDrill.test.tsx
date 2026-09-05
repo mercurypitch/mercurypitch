@@ -45,7 +45,13 @@ const ctx = {
   currentTime: 1,
   destination: {},
   createGain: vi.fn(() => ({
-    gain: { value: 1, cancelScheduledValues: vi.fn() },
+    gain: {
+      value: 1,
+      cancelScheduledValues: vi.fn(),
+      setValueAtTime: vi.fn(),
+      setTargetAtTime: vi.fn(),
+    },
+    context: { currentTime: 0 },
     connect: vi.fn(),
     disconnect: vi.fn(),
   })),
@@ -162,7 +168,10 @@ describe('SubdivideDrill', () => {
     await vi.advanceTimersByTimeAsync(LEAD + SUBDIVIDE_TIMING.quarterMs)
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
     const master = ctx.createGain.mock.results[0]?.value
-    expect(master?.gain.value).toBe(0)
+    // Anchor, then decay: a jump to zero was a click on every Stop.
+    expect(master?.gain.setTargetAtTime).toHaveBeenCalledWith(0, 0, 0.012)
+    expect(master?.disconnect).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(80)
     expect(master?.disconnect).toHaveBeenCalled()
     // The stage is on its plate now; the lattice, if still drawn, is dark.
     expect(lattice()?.querySelector('[data-lit="true"]') ?? null).toBeNull()

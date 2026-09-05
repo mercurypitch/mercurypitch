@@ -13,7 +13,7 @@ import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
 import { CALIBRATION_STAIRCASE } from '@/lib/ear/calibration'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { armSprintSegment, latestThresholdReading, recordThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
+import { armSprintSegment, latestThresholdReading, recordThresholdReading, resetEarLabStore, sprintProgress, } from '@/stores/ear-lab-store'
 
 const drill = findThresholdDrill('hairline')
 if (!drill) throw new Error('hairline drill missing from catalogue')
@@ -302,6 +302,71 @@ describe('a sprint segment', () => {
       })
       run.start('practice')
       expect(run.trackTarget()).toBe(drill.staircase.reversalsToStop)
+      dispose()
+    })
+  })
+})
+
+describe('stop, then run again', () => {
+  it('lets the old stimulus die when it finally resolves', async () => {
+    // One flag reset by start() was the bug: the first run's stimulus
+    // was still awaiting its promise when the second run began, and
+    // resolving it armed the second run's question over the old trial.
+    const resolvers: Array<() => void> = []
+    const play = () =>
+      new Promise<void>((resolve) => {
+        resolvers.push(resolve)
+      })
+    await createRoot(async (dispose) => {
+      const run = useThresholdRun(drill, play)
+      run.start('practice')
+      run.stop()
+      run.start('practice')
+      expect(run.phase()).toBe('stimulus')
+      expect(resolvers).toHaveLength(2)
+
+      resolvers[0]()
+      await settle()
+      expect(run.phase()).toBe('stimulus')
+
+      resolvers[1]()
+      await settle()
+      expect(run.phase()).toBe('answer')
+      dispose()
+    })
+  })
+})
+
+describe('stopping before anything was answered', () => {
+  it('books no sprint segment, reading or session', async () => {
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play)
+      run.start('practice')
+      run.stop()
+      expect(run.phase()).toBe('done')
+      expect(run.result()).toEqual({
+        estimate: null,
+        trials: 0,
+        mode: 'practice',
+      })
+      expect(sprintProgress().done).toEqual([])
+      expect(latestThresholdReading('hairline')).toBeNull()
+      dispose()
+    })
+  })
+
+  it('does not count an abandoned run as a finished segment', async () => {
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play)
+      run.start('practice')
+      stim.release()
+      await settle()
+      run.answerCorrect(true)
+      run.stop()
+      expect(run.result()?.trials).toBe(1)
+      expect(sprintProgress().done).toEqual([])
       dispose()
     })
   })

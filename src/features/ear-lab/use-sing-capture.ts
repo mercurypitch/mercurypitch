@@ -43,6 +43,7 @@ export function useSingCapture(
   consumer: string,
 ): SingCaptureHandle {
   let f0: F0Stream | null = null
+  let acquiring: Promise<void> | null = null
 
   const release = (): void => {
     f0?.dispose()
@@ -52,14 +53,21 @@ export function useSingCapture(
   onCleanup(release)
 
   return {
-    acquire: async () => {
-      if (f0) return
-      await audioEngine.init()
-      await audioEngine.resume()
-      const ctx = audioEngine.getAudioContext()
-      if (!ctx) throw new Error('Audio engine has no context')
-      const stream = await micManager.acquire(consumer)
-      f0 = createF0Stream(ctx, stream)
+    acquire: () => {
+      if (f0) return Promise.resolve()
+      // One acquisition at a time: a second Begin during the permission
+      // prompt used to open a second stream and orphan the first.
+      acquiring ??= (async () => {
+        await audioEngine.init()
+        await audioEngine.resume()
+        const ctx = audioEngine.getAudioContext()
+        if (!ctx) throw new Error('Audio engine has no context')
+        const stream = await micManager.acquire(consumer)
+        f0 = createF0Stream(ctx, stream)
+      })().finally(() => {
+        acquiring = null
+      })
+      return acquiring
     },
     release,
     held: () => f0 !== null,
