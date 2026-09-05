@@ -26,6 +26,7 @@ import { midiToFreq } from '@/lib/scale-data'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
+import { playChordMidis } from './ear-sound'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
 import { soundRung } from './ladder-voice'
 import { PhraseConsole, SungStrip } from './PhraseConsole'
@@ -88,11 +89,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
 
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (api.cancelled()) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), SPAN_TIMING.chordMs),
-        ),
-      )
+      await playChordMidis(audioEngine, chord, SPAN_TIMING.chordMs)
       await wait(SPAN_TIMING.chordMs + SPAN_TIMING.chordGapMs)
     }
     await wait(SPAN_TIMING.restMs)

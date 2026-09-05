@@ -33,6 +33,7 @@ import { ECHO_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
+import { playChordMidis } from './ear-sound'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { soundRung } from './ladder-voice'
@@ -85,11 +86,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   async function plant(): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (cancelled) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), ECHO_TIMING.chordMs),
-        ),
-      )
+      await playChordMidis(audioEngine, chord, ECHO_TIMING.chordMs)
       await wait(ECHO_TIMING.chordMs + ECHO_TIMING.chordGapMs)
     }
     await wait(ECHO_TIMING.restMs)

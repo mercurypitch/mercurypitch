@@ -23,6 +23,7 @@ import { degreeSemitone } from '@/lib/ear/phrase'
 import { leaningWord, morePulling, PULL_BANK, pullOf, resolvesTo, } from '@/lib/ear/tendency'
 import { PULL_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
+import { playChordMidis } from './ear-sound'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { PullBeam } from './PullBeam'
 import type { IdentificationTrial } from './use-identification-controller'
@@ -67,11 +68,7 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
   async function plant(): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (cancelled) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), PULL_TIMING.chordMs),
-        ),
-      )
+      await playChordMidis(audioEngine, chord, PULL_TIMING.chordMs)
       await wait(PULL_TIMING.chordMs + PULL_TIMING.chordGapMs)
     }
     await wait(PULL_TIMING.restMs)

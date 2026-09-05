@@ -10,6 +10,7 @@
 // ============================================================
 
 import { createClampedPreference } from '@/lib/clamped-preference'
+import { midiToFreq } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import type { ClickVoice } from './click-synth'
 
@@ -85,4 +86,56 @@ export async function playToneFor(
     chordIntervals,
   )
   await new Promise<void>((resolve) => setTimeout(resolve, durationMs))
+}
+
+/** The engine surface a chord needs: `playTone` with its block-chord tail. */
+type ToneEngine = Parameters<typeof playToneFor>[0]
+
+/**
+ * A block chord as the engine voices it: the lowest note is the voice's
+ * root, the rest ride along as semitone intervals above it (the root's own
+ * interval, 0, and any doubling are dropped -- the engine skips 0 anyway).
+ */
+export function chordVoicing(midis: readonly number[]): {
+  rootMidi: number
+  intervals: number[]
+} {
+  if (midis.length === 0) throw new Error('a chord needs at least one note')
+  const rootMidi = Math.min(...midis)
+  const intervals = [...new Set(midis.map((midi) => midi - rootMidi))]
+    .filter((interval) => interval !== 0)
+    .sort((a, b) => a - b)
+  return { rootMidi, intervals }
+}
+
+/**
+ * Sounds `midis` together as ONE voice. Resolves when the chord is
+ * scheduled, like `playTone`, so the caller keeps its own timing.
+ *
+ * `Promise.all(midis.map(playTone))` looked like a chord and sounded like
+ * its last note: `playTone` is monophonic -- every call releases the voice
+ * before it, and three calls in one tick leave the first two silent (the
+ * cadences and plants in Home, Echo, Span, Pull and the Field Book all did
+ * this). The engine's block-chord path is polyphonic: one root voice plus
+ * sine members sharing its envelope, the way Stack voices its stacks.
+ */
+export async function playChordMidis(
+  engine: ToneEngine,
+  midis: readonly number[],
+  durationMs: number,
+): Promise<void> {
+  const { rootMidi, intervals } = chordVoicing(midis)
+  await engine.playTone(
+    midiToFreq(rootMidi),
+    durationMs,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    intervals,
+  )
 }

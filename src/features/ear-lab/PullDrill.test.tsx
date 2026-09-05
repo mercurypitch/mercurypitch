@@ -88,10 +88,10 @@ async function beginAndListen(): Promise<void> {
   ))
   fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
   await vi.advanceTimersByTimeAsync(0)
-  expect(engine.playTone).toHaveBeenCalledTimes(3)
+  expect(engine.playTone).toHaveBeenCalledTimes(1)
   await vi.advanceTimersByTimeAsync(CADENCE + 10)
   // Four chords planted, the first degree sounding, the beam level.
-  expect(engine.playTone).toHaveBeenCalledTimes(13)
+  expect(engine.playTone).toHaveBeenCalledTimes(5)
   expect(
     beam()?.querySelector('[data-part="beam"]')?.getAttribute('data-tilt'),
   ).toBe('0')
@@ -108,7 +108,7 @@ async function beginAndListen(): Promise<void> {
       .getAttribute('data-lamp'),
   ).toBe('off')
   await vi.advanceTimersByTimeAsync(PROBES)
-  expect(engine.playTone).toHaveBeenCalledTimes(14)
+  expect(engine.playTone).toHaveBeenCalledTimes(6)
   expect(status()).toBe('Which note leans harder — the first, or the second?')
 }
 
@@ -145,7 +145,7 @@ describe('PullDrill', () => {
       PULL_TIMING.replayMs + PULL_TIMING.probeGapMs + 5,
     )
     // Ti, then Do′: two replay tones.
-    expect(engine.playTone).toHaveBeenCalledTimes(16)
+    expect(engine.playTone).toHaveBeenCalledTimes(8)
     // The next round waits for the replay's tail, then the hold.
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 2000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(

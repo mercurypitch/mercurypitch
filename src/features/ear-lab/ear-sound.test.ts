@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EAR_VOLUME, formatEarVolume, persistEarVolume, playToneFor, } from './ear-sound'
+import { midiToFreq } from '@/lib/scale-data'
+import { chordVoicing, EAR_VOLUME, formatEarVolume, persistEarVolume, playChordMidis, playToneFor, } from './ear-sound'
 
 describe('ear-sound', () => {
   it('keeps the stage volume inside 0..1', () => {
@@ -38,5 +39,29 @@ describe('playToneFor', () => {
     expect(done).toBe(false)
     await vi.advanceTimersByTimeAsync(30)
     expect(done).toBe(true)
+  })
+})
+
+describe('playChordMidis', () => {
+  it('voices the chord as one call, the lowest note as root', async () => {
+    const playTone = vi.fn(async (): Promise<void> => {})
+    await playChordMidis({ playTone }, [67, 60, 64], 400)
+    expect(playTone).toHaveBeenCalledTimes(1)
+    const call = playTone.mock.calls[0] as unknown[]
+    expect(call[0]).toBeCloseTo(midiToFreq(60))
+    expect(call[1]).toBe(400)
+    expect(call[10]).toEqual([4, 7])
+  })
+
+  it('names the voicing: a leading-tone V, a doubled octave, a unison', () => {
+    expect(chordVoicing([59, 62, 67])).toEqual({
+      rootMidi: 59,
+      intervals: [3, 8],
+    })
+    expect(chordVoicing([48, 52, 55, 60])).toEqual({
+      rootMidi: 48,
+      intervals: [4, 7, 12],
+    })
+    expect(chordVoicing([60, 60])).toEqual({ rootMidi: 60, intervals: [] })
   })
 })
