@@ -9,7 +9,8 @@
 
 import type { CustomerSnapshot, EntitlementStatus, MobileRuntime, PaywallOutcome, PurchasePlan, } from '@irchiinnuss/mobile-runtime'
 import { PurchasesFailure } from '@irchiinnuss/mobile-runtime'
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
+import { message } from '@/i18n/messages'
 import type { PurchasesSetup } from './revenuecat-config'
 
 export type ProAccessStatus = 'loading' | 'ready' | 'unavailable'
@@ -38,6 +39,9 @@ export interface ProAccess {
   openPaywall(): Promise<PaywallOutcome | undefined>
   purchase(plan: PurchasePlan): Promise<void>
   restore(): Promise<void>
+  redeemCode(): Promise<void>
+  checkPromoAccess(): Promise<void>
+  expectExternalRedemption(): void
   openCustomerCenter(): Promise<void>
   dispose(): Promise<void>
 }
@@ -79,6 +83,10 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
   let listenerHandle: { remove(): Promise<void> } | undefined
   let visibilityListener: (() => void) | undefined
   let disposed = false
+  let storeOperations = 0
+  let promoSyncPending = false
+  let checkingPromo = false
+  let customerRevision = 0
 
   function entitlement(): EntitlementStatus | undefined {
     return customer()?.entitlements[entitlementId]
@@ -90,18 +98,42 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
 
   function applyCustomer(next: CustomerSnapshot): void {
     if (disposed) return
+    customerRevision += 1
     setCustomer(next)
     setStatus('ready')
+    if (promoSyncPending && next.entitlements[entitlementId]?.active === true) {
+      promoSyncPending = false
+      setNotice(message('purchases.accessConfirmed'))
+    } else if (
+      next.entitlements[entitlementId]?.active !== true &&
+      untrack(notice) === message('purchases.accessConfirmed')
+    ) {
+      setNotice(message('purchases.accessNotConfirmed'))
+    }
+  }
+
+  async function readCustomer(
+    runtime: MobileRuntime,
+    refresh = false,
+  ): Promise<void> {
+    const revision = customerRevision
+    const next = await runtime.purchases.getCustomer(
+      refresh ? { refresh: true } : undefined,
+    )
+    // A listener may deliver a grant or revocation while this older read waits.
+    if (customerRevision === revision) applyCustomer(next)
   }
 
   async function withStore<T>(
     operation: (runtime: MobileRuntime) => Promise<T>,
   ): Promise<T | undefined> {
+    if (disposed) return undefined
     if (!storeConfigured) {
       setError(options.setup.problem ?? 'Purchases are not available here.')
       return undefined
     }
 
+    storeOperations += 1
     setBusy(true)
     setError(undefined)
     setNotice(undefined)
@@ -112,14 +144,14 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
       if (!disposed) setError(purchaseErrorMessage(failure))
       return undefined
     } finally {
-      if (!disposed) setBusy(false)
+      storeOperations -= 1
+      if (!disposed) setBusy(storeOperations > 0)
     }
   }
 
   async function refresh(): Promise<void> {
     await withStore(async (runtime) => {
-      const next = await runtime.purchases.getCustomer({ refresh: true })
-      applyCustomer(next)
+      await readCustomer(runtime, true)
     })
   }
 
@@ -139,6 +171,28 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
         setError('No plans are published for this app yet.')
       }
     })
+  }
+
+  async function checkPromoAccess(): Promise<void> {
+    if (checkingPromo || disposed) return
+    checkingPromo = true
+    try {
+      await withStore(async (runtime) => {
+        await runtime.purchases.syncPurchases?.()
+        if (disposed) return
+        await readCustomer(runtime, true)
+        if (disposed) return
+        setNotice(
+          message(
+            untrack(isPro)
+              ? 'purchases.accessConfirmed'
+              : 'purchases.accessNotConfirmed',
+          ),
+        )
+      })
+    } finally {
+      checkingPromo = false
+    }
   }
 
   return {
@@ -169,7 +223,7 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
           return
         }
         listenerHandle = handle
-        applyCustomer(await runtime.purchases.getCustomer())
+        await readCustomer(runtime)
       })
 
       if (disposed || typeof document === 'undefined') return
@@ -177,11 +231,39 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
       // Returning from the store's payment sheet or the Customer Center is a
       // visibility change, and the entitlement may have moved while away.
       visibilityListener = () => {
-        if (document.visibilityState === 'visible') void refresh()
+        if (document.visibilityState === 'visible') {
+          void (promoSyncPending ? checkPromoAccess() : refresh())
+        }
       }
       document.addEventListener('visibilitychange', visibilityListener)
     },
     refresh,
+    checkPromoAccess,
+    expectExternalRedemption() {
+      promoSyncPending = true
+    },
+    async redeemCode() {
+      if (busy()) return
+      promoSyncPending = true
+      await withStore(async (runtime) => {
+        if (runtime.purchases.presentCodeRedemptionSheet === undefined) {
+          throw new PurchasesFailure(
+            'unavailable',
+            message('purchases.redeemUnavailable'),
+          )
+        }
+        await runtime.purchases.presentCodeRedemptionSheet()
+        // Apple reports presentation, not success. Only CustomerInfo unlocks.
+        if (!disposed)
+          setNotice(
+            message(
+              untrack(isPro)
+                ? 'purchases.accessConfirmed'
+                : 'purchases.redemptionPending',
+            ),
+          )
+      })
+    },
     loadPlans,
     async openPaywall() {
       return withStore(async (runtime) => {
@@ -199,7 +281,7 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
         })
 
         if (outcome === 'purchased' || outcome === 'restored') {
-          applyCustomer(await runtime.purchases.getCustomer({ refresh: true }))
+          await readCustomer(runtime, true)
           setNotice(
             outcome === 'purchased'
               ? 'Thank you. Pro is active.'

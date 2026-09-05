@@ -34,8 +34,8 @@ export interface BesideCueAppServices {
    */
   readonly voiceAudio?: VoiceAudioPort
   /**
-   * Set only by a development build running the fake store. The app renders the
-   * mock overlay from it; a shipped build leaves it undefined.
+   * Set only by development or internal-only TestFlight mocks. Store releases
+   * leave it undefined and never import the fake store.
    */
   readonly mockPurchaseRequest?: () => MockPurchaseRequest | undefined
   readonly now: () => Date
@@ -53,7 +53,7 @@ function createLocalId(): string {
 }
 
 /**
- * Swaps the store-free web ports for the fake store, keeping the real web
+ * Swaps the store-free ports for the fake store, keeping the platform's real
  * haptics and notification ports underneath so only purchases are pretend.
  */
 async function createMockedRuntime(
@@ -80,10 +80,10 @@ export function createDefaultAppServices(): BesideCueAppServices {
   const repository = createIndexedDbBesideCueRepository()
   const audioOutput = createWebAudioOutput()
 
-  // The literal DEV test is what lets the bundler delete this whole branch, and
-  // with it the dynamic import of the fake store, from a production build.
+  // Literal build flags let Rollup remove the mock import from store releases.
   if (
-    import.meta.env.DEV &&
+    (import.meta.env.DEV ||
+      import.meta.env.VITE_BESIDE_CUE_DISTRIBUTION === 'testflight-internal') &&
     isMockPurchasesEnabled(import.meta.env, window.location.search)
   ) {
     const [mockPurchaseRequest, setMockPurchaseRequest] =
@@ -102,6 +102,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
       purchases: {
         entitlementId: purchases.entitlementId,
         config: { apiKey: 'mock-store', logLevel: 'debug' },
+        mock: true,
       },
       onboardingPreferences: createCinematicOnboardingPreferenceStore(),
       audioOutput,

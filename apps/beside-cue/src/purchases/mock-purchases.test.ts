@@ -25,13 +25,13 @@ interface Harness {
   readonly updates: readonly CustomerSnapshot[]
 }
 
-function createHarness(): Harness {
+function createHarness(now: () => Date = () => NOW): Harness {
   let pending: MockPurchaseRequest | undefined
   const updates: CustomerSnapshot[] = []
 
   const mock = createMockPurchases({
     entitlementId: ENTITLEMENT,
-    now: () => NOW,
+    now,
     storage,
     onRequest: (request) => {
       pending = request
@@ -57,6 +57,76 @@ async function buy(harness: Harness, planId: string): Promise<void> {
 describe('mock purchases', () => {
   beforeEach(() => {
     storage = createStorage()
+  })
+
+  it('grants a confirmed test offer for 60 days without renewal', async () => {
+    const harness = createHarness()
+    const redeem = harness.mock.purchases.presentCodeRedemptionSheet!()
+    expect(harness.pending()?.kind).toBe('redeem-code')
+    expect(
+      (await harness.mock.purchases.getCustomer()).activeEntitlementIds,
+    ).toEqual([])
+
+    harness.pending()?.choose({ kind: 'redeem-offer' })
+    await redeem
+
+    const entitlement = (await harness.mock.purchases.getCustomer())
+      .entitlements[ENTITLEMENT]
+    expect(entitlement).toMatchObject({
+      active: true,
+      willRenew: false,
+      isSandbox: true,
+      store: 'MOCK_STORE',
+    })
+    expect(entitlement?.expiresAt).toEqual(
+      new Date(NOW.getTime() + 60 * 86400000),
+    )
+  })
+
+  it('leaves premium locked when test redemption is cancelled', async () => {
+    const harness = createHarness()
+    const redeem = harness.mock.purchases.presentCodeRedemptionSheet!()
+
+    harness.pending()?.choose({ kind: 'cancel' })
+    await redeem
+
+    expect(
+      (await harness.mock.purchases.getCustomer()).activeEntitlementIds,
+    ).toEqual([])
+    expect(harness.updates).toHaveLength(0)
+  })
+
+  it('revokes a time-limited test offer at its actual expiry after a reload', async () => {
+    const harness = createHarness()
+    const redeem = harness.mock.purchases.presentCodeRedemptionSheet!()
+    harness.pending()?.choose({ kind: 'redeem-offer' })
+    await redeem
+
+    const reloaded = createHarness(
+      () => new Date(NOW.getTime() + 60 * 86400000),
+    )
+
+    expect(
+      (await reloaded.mock.purchases.getCustomer()).activeEntitlementIds,
+    ).toEqual([])
+    expect(
+      (await reloaded.mock.purchases.getCustomer()).entitlements[ENTITLEMENT]
+        ?.active,
+    ).toBe(false)
+  })
+
+  it('does not replace existing lifetime access with a test offer', async () => {
+    const harness = createHarness()
+    await buy(harness, 'lifetime')
+    const redeem = harness.mock.purchases.presentCodeRedemptionSheet!()
+
+    harness.pending()?.choose({ kind: 'redeem-offer' })
+    await redeem
+
+    expect(
+      (await harness.mock.purchases.getCustomer()).entitlements[ENTITLEMENT]
+        ?.expiresAt,
+    ).toBeNull()
   })
 
   it('starts owning nothing', async () => {

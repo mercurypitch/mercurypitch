@@ -2075,9 +2075,17 @@ export function App(props: AppProps) {
               notice={proAccess().notice()}
               error={proAccess().error()}
               locale={appState().settings.locale}
-              onUpgrade={() => void proAccess().openPaywall()}
-              onManage={() => void proAccess().openCustomerCenter()}
+              onUpgrade={() => proAccess().openPaywall()}
+              onManage={() => proAccess().openCustomerCenter()}
               onRestore={() => void proAccess().restore()}
+              platform={services().platform}
+              mock={services().purchases.mock}
+              supportId={proAccess().customer()?.appUserId}
+              onRedeemCode={() => proAccess().redeemCode()}
+              onCheckAccess={() => void proAccess().checkPromoAccess()}
+              onExternalRedemption={() =>
+                proAccess().expectExternalRedemption()
+              }
             />
           }
           paused={cue()?.status === 'paused'}
@@ -2112,9 +2120,10 @@ export function App(props: AppProps) {
 
       {/* Solid's JSX keeps the component reference past constant folding, so
           this markup does reach a production bundle — inert, because nothing
-          outside a development build ever sets `mockPurchaseRequest`. The fake
+          outside development/internal beta sets `mockPurchaseRequest`. The fake
           store behind it is dropped; only the empty shell remains. */}
-      {import.meta.env.DEV ? (
+      {import.meta.env.DEV ||
+      import.meta.env.VITE_BESIDE_CUE_DISTRIBUTION === 'testflight-internal' ? (
         <Show when={services().mockPurchaseRequest}>
           {(mockRequest) => (
             <MockPurchaseOverlay

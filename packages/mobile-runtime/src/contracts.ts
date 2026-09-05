@@ -259,6 +259,10 @@ export interface PurchasesPort {
   getOfferings(): Promise<PurchaseOfferings>
   purchase(plan: PurchasePlan): Promise<PurchaseOutcome>
   restore(): Promise<CustomerSnapshot>
+  /** Store-owned code UI (iOS). Resolving does not prove a redemption succeeded. */
+  presentCodeRedemptionSheet?(): Promise<void>
+  /** Reconcile purchases made outside the app; never grants local access. */
+  syncPurchases?(): Promise<void>
   /** Fires whenever the store or backend revises entitlements. */
   addCustomerListener(
     listener: CustomerListener,

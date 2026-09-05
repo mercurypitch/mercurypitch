@@ -1,5 +1,5 @@
 // ============================================================
-// Mock purchases — a dev-only stand-in for the store, in the browser
+// Mock purchases — an explicit development / internal-TestFlight fake store
 // ============================================================
 //
 // RevenueCat's Capacitor plugin has no web implementation, so a browser build
@@ -9,9 +9,8 @@
 // renewal note, Customer Center, restore, and a revocation pushed by the store
 // — can be checked without a device.
 //
-// It cannot reach a shipped build: the caller gates on `import.meta.env.DEV`
-// and imports this module lazily, so production never bundles it. It proves the
-// UI and the entitlement state machine, never RevenueCat itself.
+// The caller lazily imports it only for development or internal beta mocks.
+// Store-release bundles exclude it. It tests UI, never RevenueCat itself.
 
 import type { CustomerListener, CustomerSnapshot, PaywallPort, PurchaseOffering, PurchaseOfferings, PurchaseOutcome, PurchasePlan, PurchasePlanKind, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
 
@@ -29,8 +28,8 @@ interface MockPlanSpec {
   readonly days: number | null
 }
 
-// Identifiers match the products the RevenueCat dashboard is set up with, so
-// what shows here is what a device would show.
+// Illustrative test plans, not a source of truth for store prices or products.
+// Real builds load their localized plans directly from the store offering.
 const PLAN_SPECS: readonly MockPlanSpec[] = [
   {
     id: 'monthly',
@@ -76,9 +75,10 @@ export type MockPurchaseChoice =
   | { readonly kind: 'stop-renewal' }
   | { readonly kind: 'billing-issue' }
   | { readonly kind: 'expire' }
+  | { readonly kind: 'redeem-offer' }
 
 export interface MockPurchaseRequest {
-  readonly kind: 'paywall' | 'customer-center'
+  readonly kind: 'paywall' | 'customer-center' | 'redeem-code'
   readonly plans: readonly PurchasePlan[]
   readonly isPro: boolean
   readonly choose: (choice: MockPurchaseChoice) => void
@@ -180,17 +180,21 @@ export function createMockPurchases(
     }
 
     const owned = state
+    const active =
+      owned.expiresAt === null ||
+      new Date(owned.expiresAt).getTime() > now().getTime()
     return {
       appUserId: '$RCAnonymousID:mock',
       anonymous: true,
       entitlements: {
         [options.entitlementId]: {
           id: options.entitlementId,
-          active: true,
+          active,
           willRenew: owned.willRenew,
-          periodKind: 'normal',
+          periodKind:
+            owned.productId === 'besidecue.mock.promo' ? 'trial' : 'normal',
           productId: owned.productId,
-          store: 'PLAY_STORE',
+          store: 'MOCK_STORE',
           isSandbox: true,
           expiresAt:
             owned.expiresAt === null ? null : new Date(owned.expiresAt),
@@ -198,7 +202,7 @@ export function createMockPurchases(
           billingIssueDetectedAt: owned.billingIssue ? now() : null,
         },
       },
-      activeEntitlementIds: [options.entitlementId],
+      activeEntitlementIds: active ? [options.entitlementId] : [],
       managementUrl: null,
     }
   }
@@ -215,7 +219,7 @@ export function createMockPurchases(
       options.onRequest({
         kind,
         plans: PLANS,
-        isPro: state !== undefined,
+        isPro: customer().activeEntitlementIds.includes(options.entitlementId),
         choose(choice) {
           options.onRequest(undefined)
           resolve(choice)
@@ -241,6 +245,18 @@ export function createMockPurchases(
 
   async function apply(choice: MockPurchaseChoice): Promise<void> {
     if (choice.kind === 'buy') return buy(choice.plan)
+    if (choice.kind === 'redeem-offer') {
+      // A test offer must not shorten a paid period or replace lifetime access.
+      if (customer().activeEntitlementIds.includes(options.entitlementId))
+        return
+      return commit({
+        productId: 'besidecue.mock.promo',
+        kind: 'other',
+        expiresAt: new Date(now().getTime() + 60 * DAY_MS).toISOString(),
+        willRenew: false,
+        billingIssue: false,
+      })
+    }
     if (choice.kind === 'expire') return commit(undefined)
     if (state === undefined) return
     if (choice.kind === 'stop-renewal') {
@@ -273,6 +289,13 @@ export function createMockPurchases(
     async restore() {
       await commit(state)
       return customer()
+    },
+    async presentCodeRedemptionSheet() {
+      const choice = await ask('redeem-code')
+      if (choice.kind === 'redeem-offer') await apply(choice)
+    },
+    async syncPurchases() {
+      await commit(state)
     },
     async addCustomerListener(listener) {
       listeners.add(listener)

@@ -36,6 +36,8 @@ export interface PurchasesConfig {
 }
 
 export interface PurchasesSetup {
+  /** App-owned simulation only; never a real RevenueCat entitlement. */
+  readonly mock?: boolean
   /**
    * Entitlement identifier as configured in the RevenueCat dashboard. Always
    * present so the interface can name the upgrade even where it cannot sell it.
