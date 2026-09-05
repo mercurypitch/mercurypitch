@@ -1,5 +1,5 @@
 // ============================================================
-// V2 onboarding audio manifest — approved finite picture companions
+// V2 onboarding audio manifest — dialogue, effects and continuous music
 // ============================================================
 //
 // These ids are the stable content/runtime seam. Delivery paths and revisions
@@ -26,7 +26,7 @@ export const V2_ONBOARDING_AUDIO_ASSET_IDS = Object.freeze({
 export const V2_ONBOARDING_AUDIO_ASSET_MANIFEST: AudioAssetManifest =
   Object.freeze({
     schemaVersion: AUDIO_MANIFEST_SCHEMA_VERSION,
-    revision: 'beside-cue-onboarding-v2.4-audio-v3',
+    revision: 'beside-cue-onboarding-v2.4-audio-v4',
     locale: 'en',
     assets: Object.freeze([
       Object.freeze({
@@ -52,14 +52,20 @@ export const V2_ONBOARDING_AUDIO_ASSET_MANIFEST: AudioAssetManifest =
       Object.freeze({
         id: V2_ONBOARDING_AUDIO_ASSET_IDS.score,
         lane: 'score',
-        playback: Object.freeze({ kind: 'one-shot' }),
+        // The final 1.5 seconds blend into the opening 1.5 seconds. Resume
+        // after that opening on each wrap; the first pass keeps the full song.
+        playback: Object.freeze({
+          kind: 'loop',
+          loopStartMs: 1_500,
+          loopEndMs: 77_880,
+        }),
         sources: frozenSource({
-          src: `${AUDIO_ROOT}/score/besidecue-score-v0_9.m4a`,
+          src: `${AUDIO_ROOT}/score/besidecue-score-full-loop-v0_1.m4a`,
           mimeType: 'audio/mp4; codecs="mp4a.40.2"',
           sha256:
-            '063b9b244d54c75b6742ad3220f22c7cbf34d795d7a3cce23203a80640260b79',
-          byteLength: 811_165,
-          durationMs: 32_833.333,
+            '6548afbd060216d772173ad9d9b9229f36723d3ed82e7fec3ff48535b59fedac',
+          byteLength: 1_638_086,
+          durationMs: 77_880,
           sampleRateHz: 48_000,
           channels: 2,
         }),

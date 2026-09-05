@@ -49,8 +49,13 @@ describe('V2.4 onboarding app media', () => {
         }
       })
 
-    expect(inventory).toHaveLength(18)
-    expect(new Set(inventory.map(({ path }) => path)).size).toBe(18)
+    expect(inventory).toHaveLength(19)
+    expect(new Set(inventory.map(({ path }) => path)).size).toBe(19)
+    expect(inventory).toContainEqual({
+      path: 'audio/score/besidecue-score-full-loop-v0_1.m4a',
+      sha256:
+        '6548afbd060216d772173ad9d9b9229f36723d3ed82e7fec3ff48535b59fedac',
+    })
     expect(inventory).toContainEqual({
       path: 'picture/b01-corky-greeting-v0_4.mp4',
       sha256:

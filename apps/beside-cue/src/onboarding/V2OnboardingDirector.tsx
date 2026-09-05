@@ -195,13 +195,13 @@ function phaseHeading(state: V2OnboardingRuntimeState): string {
     case 'B02_TABLE_REVEAL':
       return 'Let’s make one plan.'
     case 'B03_PULL_CHOICE_HOLD':
-      return 'Which Pull do you want to notice sooner?'
+      return 'Choose your Pull'
     case 'B03_PULL_PRESENTATION':
       return pullLabel
     case 'B04_CUE_CONTEXT_HOLD':
-      return `When does ${pullLabel} usually show up?`
+      return 'When does it show up?'
     case 'B05_SIDE_B_CHOICE_HOLD':
-      return 'What small action would you rather begin?'
+      return 'Choose your Side B'
     case 'B05_PULL_RECEDES':
       return 'A second side comes into view.'
     case 'B06_CORKY_STARTS_RECORD':
@@ -215,7 +215,7 @@ function phaseHeading(state: V2OnboardingRuntimeState): string {
     case 'B07_SAVED_ACK':
       return 'Your plan is saved.'
     case 'B07_REMINDER_HOLD':
-      return 'Bring this plan back later?'
+      return 'A reminder for later?'
     case 'B07_REMINDER_COMMIT':
       return 'Setting your reminder…'
     case 'B08_CLOSE_HOME':
@@ -289,6 +289,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   const phaseGeneration = createMemo(() => state().generation)
 
   let headingElement: HTMLHeadingElement | undefined
+  let stageElement: HTMLElement | undefined
   let presentationDwellClock: PausableDelay | undefined
   let presentationSafetyClock: PausableDelay | undefined
   let presentationMediaSafetyClock: PausableDelay | undefined
@@ -474,7 +475,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       case 'B01_CORKY_GREETING':
         return {
           dialogueAssetId: dialogueAsset,
-          scoreAssetId: V2_ONBOARDING_AUDIO_ASSET_IDS.score,
         }
       case 'B02_TABLE_REVEAL':
         return {
@@ -588,9 +588,12 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       sideAText,
     }
     dispatch({ type: 'SELECT_PULL', choice })
+    playPullPreview(option)
+  }
+
+  function playPullPreview(option: PullOption): void {
     audioScope.stopLane('dialogue', 'lane-stopped')
-    const previewLineId = option.previewLineId
-    const assetId = dialogueAssetId(previewLineId)
+    const assetId = dialogueAssetId(option.previewLineId)
     if (assetId !== undefined) audioScope.play(assetId)
   }
 
@@ -747,7 +750,14 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   createEffect(
     on(phaseGeneration, () => {
       const snapshot = state()
-      queueMicrotask(() => headingElement?.focus({ preventScroll: true }))
+      queueMicrotask(() => {
+        // Choice screens scroll together, within the stage on short screens.
+        // A new phase starts at its question, not at the previous action.
+        const pageScroller = document.scrollingElement
+        if (pageScroller) pageScroller.scrollTop = 0
+        if (stageElement) stageElement.scrollTop = 0
+        headingElement?.focus({ preventScroll: true })
+      })
       const beat = audioBeatForState(snapshot)
       if (DECISION_PHASES.has(snapshot.phase)) {
         audioDirector.enterHold({ holdId: snapshot.phase, ...beat })
@@ -1021,6 +1031,14 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     ['B07_REMINDER_HOLD', 'B07_REMINDER_COMMIT'].includes(state().phase),
   )
 
+  const isChoicePhase = createMemo(() =>
+    [
+      'B03_PULL_CHOICE_HOLD',
+      'B04_CUE_CONTEXT_HOLD',
+      'B05_SIDE_B_CHOICE_HOLD',
+    ].includes(state().phase),
+  )
+
   const isCinematicPhase = createMemo(() =>
     [
       'B01_CORKY_GREETING',
@@ -1088,7 +1106,10 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   return (
     <main
       class={styles.director}
-      classList={{ [styles.directorCinematic]: isCinematicPhase() }}
+      classList={{
+        [styles.directorCinematic]: isCinematicPhase(),
+        [styles.directorInteractive]: isChoicePhase() || isReminderPhase(),
+      }}
       data-phase={state().phase}
       data-layout={isCinematicPhase() ? 'cinematic' : 'paper'}
       data-session-kind={props.sessionKind}
@@ -1154,12 +1175,14 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       </Show>
 
       <section
+        ref={stageElement}
         class={styles.stage}
         classList={{
           [styles.stageBrand]: isBrandPhase(),
           [styles.stageCinematic]: isCinematicPhase(),
           [styles.stageRecord]: isRecordPhase(),
           [styles.stageReminder]: isReminderPhase(),
+          [styles.stageChoices]: isChoicePhase(),
         }}
         data-v2-scene-surface={isCinematicPhase() ? 'full-viewport' : 'paper'}
         data-v2-record-scene={isRecordPhase() ? 'true' : 'false'}
@@ -1240,7 +1263,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 }}
               >
                 <BrandMark />
-                <span class={styles.brandGroove} />
               </div>
             </Match>
 
@@ -1291,6 +1313,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           classList={{
             [styles.copyCinematic]: isCinematicPhase(),
             [styles.copyReminder]: isReminderPhase(),
+            [styles.copyChoices]: isChoicePhase(),
           }}
         >
           <header class={styles.copyHeading}>
@@ -1371,6 +1394,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                             aria-label={option.label}
                             checked={selectedPullKey() === option.id}
                             onChange={() => selectPull(option)}
+                            onClick={() => {
+                              if (selectedPullKey() === option.id) {
+                                playPullPreview(option)
+                              }
+                            }}
                           />
                           <AssetStage
                             slot={character().token}
@@ -1384,7 +1412,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                     }}
                   </For>
                   <label
-                    class={styles.pullChoice}
+                    class={`${styles.pullChoice} ${styles.customPullChoice}`}
                     classList={{
                       [styles.pullChoiceSelected]:
                         selectedPullKey() === 'custom',
@@ -1425,7 +1453,30 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                   </label>
                 </Show>
                 <Show when={selectedPullPreview()}>
-                  {(line) => <p class={styles.previewCaption}>{line().text}</p>}
+                  {(line) => (
+                    <div class={styles.pullPreview}>
+                      <p class={styles.previewCaption} aria-live="polite">
+                        {line().text}
+                      </p>
+                      <Show
+                        when={dialogueAssetId(
+                          selectedPullOption()?.previewLineId,
+                        )}
+                      >
+                        <button
+                          type="button"
+                          class={styles.previewReplay}
+                          disabled={props.muted}
+                          onClick={() => {
+                            const option = selectedPullOption()
+                            if (option !== undefined) playPullPreview(option)
+                          }}
+                        >
+                          Hear again
+                        </button>
+                      </Show>
+                    </div>
+                  )}
                 </Show>
                 <button
                   type="button"

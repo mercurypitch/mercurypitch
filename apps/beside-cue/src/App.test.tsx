@@ -1004,6 +1004,45 @@ describe('Beside Cue character voice integration', () => {
 })
 
 describe('Beside Cue V2 onboarding integration', () => {
+  it('carries music into home quietly, persists its mute and stops it before games', async () => {
+    const repository = createMemoryRepository()
+    const output = createAudioOutputProbe()
+    render(() => (
+      <App
+        services={createTestServices(repository, {
+          audioOutput: output.output,
+        })}
+      />
+    ))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /save suggested v2 plan/iu }),
+    )
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    await waitFor(() => expect(output.playbacks).toHaveLength(1))
+    const music = output.playbacks[0]!
+    expect(music.initialGain).toBe(0.4)
+    fireEvent.click(
+      screen.getByRole('button', { name: /finish v2 introduction/iu }),
+    )
+    await screen.findByRole('heading', {
+      name: /a better choice, kept close/iu,
+    })
+    expect(output.playbacks).toHaveLength(1)
+    expect(music.stopCalls).toBe(0)
+    expect(music.gains.at(-1)).toBe(0.16)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mute audio' }))
+    await waitFor(() =>
+      expect(repository.snapshot()?.settings.voiceEnabled).toBe(false),
+    )
+    expect(music.stopCalls).toBe(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Unmute audio' }))
+    await waitFor(() => expect(output.playbacks).toHaveLength(2))
+    expect(output.playbacks[1]?.initialGain).toBe(0.16)
+    fireEvent.click(screen.getByRole('button', { name: /b-side games/iu }))
+    expect(output.playbacks[1]?.stopCalls).toBe(1)
+  })
+
   it('makes an environment-enabled V2 review session write-free at the App boundary', async () => {
     const repository = createMemoryRepository()
     const probe = createMobileRuntimeProbe({ permission: 'granted' })
@@ -1267,7 +1306,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(output.playbacks).toHaveLength(0)
   })
 
-  it('preserves the pre-automated V2 score gain while dialogue is active', async () => {
+  it('ducks the unautomated full score only while dialogue is active', async () => {
     const repository = createMemoryRepository()
     const output = createAudioOutputProbe()
     render(() => (
@@ -1291,7 +1330,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       source.endsWith('/v2-score.m4a'),
     )
     expect(score?.initialGain).toBe(1)
-    expect(score?.gains).toEqual([1])
+    expect(score?.gains).toEqual([0.35])
   })
 
   it('keeps V2 foreground truth aligned across page and visibility events', async () => {

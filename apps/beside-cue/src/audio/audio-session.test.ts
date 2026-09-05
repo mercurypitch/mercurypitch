@@ -113,6 +113,37 @@ function manifest(assets: readonly AudioAsset[]): AudioAssetManifest {
 }
 
 describe('audio session', () => {
+  it('composes a scope level and dialogue duck while music is still loading', async () => {
+    const output = new FakeOutput()
+    const session = createAudioSession({
+      manifest: manifest([
+        asset('score.loop', 'score'),
+        asset('dialogue.hello', 'dialogue'),
+      ]),
+      output,
+    })
+    const music = session.createScope('ambient')
+    music.setGain(0.4)
+    const score = music.play('score.loop')
+    expect(output.requests[0]?.initialGain).toBe(0.4)
+    music.setGain(0.16)
+    expect(output.playbacks[0]?.gains).toEqual([0.16])
+
+    const voice = session.createScope('onboarding').play('dialogue.hello')
+    output.playbacks[1]?.startedDeferred.resolve('started')
+    await voice.started
+    expect(output.playbacks[0]?.gains.at(-1)).toBe(0.16 * 0.35)
+    output.playbacks[0]?.startedDeferred.resolve('started')
+    await score.started
+    expect(output.playbacks[0]?.gains.at(-1)).toBe(0.16 * 0.35)
+    music.setGain(0.2)
+    expect(output.playbacks[0]?.gains.at(-1)).toBe(0.2 * 0.35)
+    output.playbacks[1]?.finishedDeferred.resolve('ended')
+    await voice.finished
+    expect(output.playbacks[0]?.gains.at(-1)).toBe(0.2)
+    session.dispose()
+  })
+
   it('returns typed silence for missing assets, output, mute and background', async () => {
     const noOutput = createAudioSession({
       manifest: manifest([asset('score.open', 'score')]),

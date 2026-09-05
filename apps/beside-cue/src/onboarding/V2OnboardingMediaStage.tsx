@@ -2,10 +2,10 @@
 // V2OnboardingMediaStage — decoded dual-layer DOM adapter
 // ============================================================
 //
-// Readiness is evidence, not an optimistic load event: video stays effectively
-// hidden until a compositor-frame callback. A nonzero loading probe keeps the
-// incoming surface eligible for composition without retiring the decoded
-// outgoing node before its successor is proven.
+// The incoming video remains an ordinary fully visible surface throughout
+// startup. Browser decode and playback events settle the transition;
+// compositor callbacks are deliberately not lifecycle authority because iOS
+// may withhold them while continuing valid H.264 playback.
 
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationEvidence, V2OnboardingMediaPresentationRequest, V2OnboardingMediaPresenterEvent, V2OnboardingMediaPresenterState, V2OnboardingMediaRecoveryStage, V2OnboardingMediaResource, } from './v2-onboarding-media-presenter'
@@ -16,8 +16,6 @@ const DEFAULT_TRANSITION_DURATION_MS = 180
 const TRANSITION_FALLBACK_SLACK_MS = 34
 /** Bundled local video should reach its first decoded frame well inside this. */
 const VIDEO_LOAD_GRACE_MS = 3000
-/** How long to wait for a composited frame before recovering to authored art. */
-const VIDEO_FRAME_GRACE_MS = 1200
 
 export interface V2OnboardingMediaCorrelation {
   readonly targetId: string
@@ -63,11 +61,6 @@ interface MediaLayerProps {
   readonly onVideoUnmounted: (token: string, element: HTMLVideoElement) => void
 }
 
-interface OptionalVideoFrameCallbacks {
-  requestVideoFrameCallback?: (callback: () => void) => number
-  cancelVideoFrameCallback?: (handle: number) => void
-}
-
 function resourceIdentity(resource: V2OnboardingMediaResource): string {
   return resource.kind === 'brand'
     ? `brand:${resource.alt}`
@@ -90,47 +83,37 @@ function requestIdentity(
 function V2OnboardingMediaLayer(props: MediaLayerProps) {
   let mounted = true
   let videoElement: HTMLVideoElement | undefined
-  let frameRequest: number | undefined
   let loadFallback: ReturnType<typeof setTimeout> | undefined
-  let frameFallback: ReturnType<typeof setTimeout> | undefined
-  let frameGateScheduled = false
-  let frameGateSettled = false
-  let frameCallbackExpected = false
+  let videoDataReady = false
+  let playbackStarted = false
+  let videoPresented = false
   let brandPresented = false
 
-  function cancelWatchdogs(): void {
+  function cancelLoadWatchdog(): void {
     if (loadFallback !== undefined) {
       clearTimeout(loadFallback)
       loadFallback = undefined
     }
-    if (frameFallback !== undefined) {
-      clearTimeout(frameFallback)
-      frameFallback = undefined
-    }
   }
 
-  function cancelFrameGate(): void {
-    cancelWatchdogs()
-    if (frameRequest !== undefined && videoElement !== undefined) {
-      const capable = videoElement as unknown as OptionalVideoFrameCallbacks
-      capable.cancelVideoFrameCallback?.(frameRequest)
-      frameRequest = undefined
+  function presentVideoWhenPlaying(): void {
+    if (
+      !mounted ||
+      !props.foreground ||
+      videoPresented ||
+      !videoDataReady ||
+      !playbackStarted
+    ) {
+      return
     }
-  }
-
-  function presentVideoFrame(): void {
-    if (!mounted || frameGateSettled) return
-    frameGateSettled = true
-    if (frameFallback !== undefined) clearTimeout(frameFallback)
-    frameRequest = undefined
-    frameFallback = undefined
+    videoPresented = true
+    cancelLoadWatchdog()
     props.onPresented(props.token, 'decoded-video-frame')
   }
 
-  function expireVideoFrameGate(): void {
-    if (!mounted || frameGateSettled) return
-    frameGateSettled = true
-    cancelFrameGate()
+  function expireVideoLoadGate(): void {
+    if (!mounted || videoPresented || videoDataReady) return
+    cancelLoadWatchdog()
     props.onFailed(props.token)
   }
 
@@ -138,51 +121,30 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
     if (
       !mounted ||
       !props.foreground ||
-      frameGateSettled ||
-      frameGateScheduled ||
+      videoPresented ||
+      videoDataReady ||
       loadFallback !== undefined
     ) {
       return
     }
-    loadFallback = setTimeout(expireVideoFrameGate, VIDEO_LOAD_GRACE_MS)
+    loadFallback = setTimeout(expireVideoLoadGate, VIDEO_LOAD_GRACE_MS)
   }
 
-  function scheduleVideoFrameWatchdog(): void {
-    if (
-      !mounted ||
-      !props.foreground ||
-      frameGateSettled ||
-      frameFallback !== undefined
-    ) {
-      return
-    }
-    frameFallback = setTimeout(
-      expireVideoFrameGate,
-      frameCallbackExpected ? VIDEO_FRAME_GRACE_MS : 0,
-    )
+  function markVideoDataReady(): void {
+    if (!mounted || videoDataReady) return
+    videoDataReady = true
+    // A decoded first frame proves the bundled asset loaded. From this point,
+    // play rejection/error remain recovery authority; a missing lifecycle
+    // callback must not replace valid picture data with unrelated fallback art.
+    cancelLoadWatchdog()
+    presentVideoWhenPlaying()
   }
 
-  function scheduleVideoFrameGate(element: HTMLVideoElement): void {
-    if (frameGateScheduled) return
-    frameGateScheduled = true
-    if (loadFallback !== undefined) {
-      clearTimeout(loadFallback)
-      loadFallback = undefined
-    }
-    const capable = element as unknown as OptionalVideoFrameCallbacks
-    if (capable.requestVideoFrameCallback !== undefined) {
-      frameCallbackExpected = true
-      frameRequest = capable.requestVideoFrameCallback(presentVideoFrame)
-      // The loading layer's nonzero probe keeps it compositor-eligible while
-      // this callback remains the authority for retiring the outgoing frame.
-    } else {
-      frameCallbackExpected = false
-    }
-
-    // If no compositor evidence arrives, use the deterministic recovery
-    // chain. The watchdog pauses while backgrounded because frame composition
-    // can be suspended there.
-    scheduleVideoFrameWatchdog()
+  function markPlaybackStarted(): void {
+    if (!mounted || !props.foreground) return
+    playbackStarted = true
+    props.onPlaying(props.token)
+    presentVideoWhenPlaying()
   }
 
   createEffect(() => {
@@ -193,20 +155,20 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
 
   createEffect(() => {
     if (!props.foreground) {
-      cancelWatchdogs()
+      // Ignore a playing event that raced with the native background pause;
+      // resumption must earn a fresh playback signal.
+      playbackStarted = false
+      cancelLoadWatchdog()
       return
     }
-    if (videoElement === undefined || frameGateSettled) return
-    if (frameGateScheduled) {
-      scheduleVideoFrameWatchdog()
-    } else {
-      scheduleVideoLoadGate()
-    }
+    if (videoElement === undefined || videoPresented) return
+    presentVideoWhenPlaying()
+    scheduleVideoLoadGate()
   })
 
   onCleanup(() => {
     mounted = false
-    cancelFrameGate()
+    cancelLoadWatchdog()
     if (videoElement !== undefined) {
       props.onVideoUnmounted(props.token, videoElement)
     }
@@ -260,13 +222,11 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
             preload="metadata"
             aria-hidden="true"
             onLoadedMetadata={() => props.onMetadataReady(props.token)}
-            onLoadedData={(event) =>
-              scheduleVideoFrameGate(event.currentTarget)
-            }
-            onPlaying={() => props.onPlaying(props.token)}
+            onLoadedData={markVideoDataReady}
+            onPlaying={markPlaybackStarted}
             onEnded={() => props.onVideoEnded(props.token)}
             onError={() => {
-              cancelFrameGate()
+              cancelLoadWatchdog()
               props.onFailed(props.token)
             }}
           />
@@ -312,6 +272,7 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
   const videoElements = new Map<string, HTMLVideoElement>()
   const metadataReadyTokens = new Set<string>()
   const playAttempts = new Map<string, number>()
+  const releasedVideoElements = new WeakSet<HTMLVideoElement>()
   const foregroundPausedTokens = new Set<string>()
   const reportedEndedTokens = new Set<string>()
   let mounted = true
@@ -382,6 +343,17 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
   function pauseVideo(token: string, element: HTMLVideoElement): void {
     invalidatePlayAttempt(token)
     element.pause()
+  }
+
+  function releaseVideo(token: string, element: HTMLVideoElement): void {
+    if (releasedVideoElements.has(element)) return
+    releasedVideoElements.add(element)
+    pauseVideo(token, element)
+    // WebKit retains hardware decoder resources for a paused element. Removing
+    // the source and reloading explicitly relinquishes those resources when a
+    // layer is permanently retired. Never do this for a background pause.
+    element.removeAttribute('src')
+    element.load()
   }
 
   function playVideo(token: string, element: HTMLVideoElement): void {
@@ -519,7 +491,7 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
   onCleanup(() => {
     mounted = false
     if (transitionFallback !== undefined) clearTimeout(transitionFallback)
-    for (const [token, element] of videoElements) pauseVideo(token, element)
+    for (const [token, element] of videoElements) releaseVideo(token, element)
     videoElements.clear()
     metadataReadyTokens.clear()
     foregroundPausedTokens.clear()
@@ -602,7 +574,7 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
             }}
             onVideoUnmounted={(eventToken, element) => {
               if (videoElements.get(eventToken) !== element) return
-              pauseVideo(eventToken, element)
+              releaseVideo(eventToken, element)
               videoElements.delete(eventToken)
               metadataReadyTokens.delete(eventToken)
               foregroundPausedTokens.delete(eventToken)
