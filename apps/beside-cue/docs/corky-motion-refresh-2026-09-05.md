@@ -16,15 +16,15 @@ separate Character/Prop briefs, and review gates. Use the saved Flow Corky
 Character and record-player Prop, not a new image-first identity setup. This is
 the owner's explicit change from the older plate-only prompt workflow.
 
-| Shot | Deliverable                                               | First use                                                                 |
-| ---- | --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| G01  | Six-second greeting, selected English voice cadence       | Replace the old baked mouth performance after approval.                   |
-| R01  | Eight-second, eye-led gold-control press and record start | Restore Corky's character and clear physical cause/effect.                |
-| R02  | Eight-second living Corky beside a rotating whole record  | Playback hold loop candidate; requires seam and prop review.              |
-| L01  | Eight-second Corky-only living neutral rest               | Replace indefinite frozen normal-motion rest after offline compositing.   |
-| L02  | Six-second Corky-only gaze-left welcome                   | One-shot reaction to an actual pull entrance.                             |
-| L03  | Eight-second Corky-only attentive listening               | Living background during pull speech and choices.                         |
-| L04  | Six-second silent return/acknowledgment                   | Return after a pull exits; saved acknowledgment only after save succeeds. |
+| Shot | Deliverable                                               | First use                                                                  |
+| ---- | --------------------------------------------------------- | -------------------------------------------------------------------------- |
+| G01  | Six-second greeting, selected English voice cadence       | Replace the old baked mouth performance after approval.                    |
+| R01  | Eight-second, eye-led gold-control press and record start | Audition more character-faithful acting against the selected current clip. |
+| R02  | Eight-second living Corky beside a rotating whole record  | Playback hold loop candidate; requires seam and prop review.               |
+| L01  | Eight-second Corky-only living neutral rest               | Replace indefinite frozen normal-motion rest after offline compositing.    |
+| L02  | Six-second Corky-only gaze-left welcome                   | One-shot reaction to an actual pull entrance.                              |
+| L03  | Eight-second Corky-only attentive listening               | Living background during pull speech and choices.                          |
+| L04  | Six-second silent return/acknowledgment                   | Return after a pull exits; saved acknowledgment only after save succeeds.  |
 
 Generate G01, R01, and L01 first. The other shots reuse their approved identity
 and staging. Requested filenames in the master are not evidence that footage
@@ -88,12 +88,28 @@ platter/stopped-state handoff. Thus generating a living donor alone will not
 make these states animate: the prepared derivatives and state mapping must
 change after approval.
 
+Both `b06-corky-starts-record-v0_1.mp4` and `b06-whole-vinyl-spin-v0_1.mp4`
+under `public/onboarding/corky-v2.5/picture/` are active, selected full-scene
+videos, each 4.000 seconds / 96 frames. The spin derivative is not merely an
+unintegrated donor, although its older raw-take review described restricted donor
+use. It is finite and not loop-certified, with an accepted tonearm discontinuity.
+R01/R02 are alternatives to compare, not missing capabilities to recreate blindly.
+The approved mechanics rotate the rigid vinyl only; the platter beneath it and
+the player assembly stay fixed.
+
+No approved V2.5-compatible living idle/listening or stop-reaction clip was found.
+Legacy H07 is a choreography reference from another scene family; C03 still
+needs owner approval, and the proposed matched B07 has not been generated.
+
 ## Integration contract after footage approval
 
 1. **Review picture before changing playback.** Preserve saved Character/Prop
    identity, body proportions, support contacts, player topology, target control,
    scene geography, and whole-disc rotation. Review loops across at least three
    cycles for pose, velocity, breathing, light and record-phase seams.
+   The final G01 edit must land on the exact P02 table-ready authority, as current
+   B01 does, unless the owner approves rebuilding the affected downstream scene
+   family. A saved-entity generation does not guarantee that matched endpoint.
 2. **Compose donors offline.** Existing pull movies may already contain Corky;
    replace that baked subject rather than overlaying a second copy. Preserve
    dark eyes/hollow tips with proper matting. Register body, shadow, room, crop
