@@ -30,7 +30,7 @@ import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
-import { fillPeakEnvelopeWindow } from './stem-peak-envelope'
+import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
@@ -1001,7 +1001,12 @@ export const useStemMixerAudioController = (
       // pitch detector over it would produce confident nonsense. MIDI needs
       // real samples, so on that path it stays unavailable rather than wrong.
       if (needsMidi && deps.vocal().stream != null) {
-        trace('midi skipped: this vocal is streamed, not decoded')
+        // Say so: the vocal loaded, so the "could not be loaded" error never
+        // fired, and the singer got an empty, silent mixer with no reason.
+        const msg =
+          'This device streams the song to stay within memory, and the MIDI practice track needs the vocal decoded. Open this song on a computer to practise with MIDI.'
+        setLoadErrorLocal(msg)
+        deps.showNotification(msg, 'warning')
       } else if (needsMidi && deps.vocal().buffer) {
         setMidiGeneratingLocal(true)
         setMidiPhaseLocal('detecting')
@@ -1179,6 +1184,7 @@ export const useStemMixerAudioController = (
                     samples,
                     sampleRate,
                   )
+                  markEnvelopeWritten(lane)
                 },
           onError: (error) => {
             console.warn(`[StemMixer] ${track.label} stream stalled:`, error)

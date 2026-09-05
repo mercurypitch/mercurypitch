@@ -8,7 +8,7 @@
 // count's, because the transport maps positions through it.
 
 import { describe, expect, it } from 'vitest'
-import { analysableBuffer, createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, fillPeakEnvelopeWindow, silentPeakEnvelope, } from './stem-peak-envelope'
+import { analysableBuffer, createPeakEnvelopeBuilder, DEFAULT_PEAK_ENVELOPE_RATE, envelopeRevision, fillPeakEnvelopeWindow, markEnvelopeWritten, silentPeakEnvelope, } from './stem-peak-envelope'
 
 const RATE = 48_000
 
@@ -227,5 +227,18 @@ describe('what the envelope costs', () => {
     expect(envelopeBytes).toBeLessThan(5 * 1024 * 1024)
     // The ratio is the reason the tab lives: 24× off the display half alone.
     expect(decodedBytes / envelopeBytes).toBeGreaterThan(20)
+  })
+})
+
+describe('a lane written in place', () => {
+  it('counts its windows, so a peak cache keyed on the lane can tell it moved', () => {
+    // The overview's segment tree was built once from the zeros a streamed
+    // lane starts with and kept for good; the lane never filled in.
+    const lane = silentPeakEnvelope(10, 100)
+    expect(envelopeRevision(lane)).toBe(0)
+    markEnvelopeWritten(lane)
+    markEnvelopeWritten(lane)
+    expect(envelopeRevision(lane)).toBe(2)
+    expect(envelopeRevision(silentPeakEnvelope(10, 100))).toBe(0)
   })
 })
