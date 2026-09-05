@@ -767,7 +767,9 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                           </span>
                         </div>
                         <div class={styles.rowActions}>
-                          <Show when={!isLiveNow(row)}>
+                          <Show
+                            when={!isLiveNow(row) && row.status !== 'closed'}
+                          >
                             <button
                               class={styles.setLive}
                               data-testid={`set-live-${row.id}`}

@@ -193,6 +193,25 @@ describe('closing a weekly challenge through the admin PATCH', () => {
     expect(storedRow().resultsJson).toBe(first)
   })
 
+  it('refuses to set a closed challenge active again', async () => {
+    // The record is the podium and the badges it granted. Active again, the
+    // second run's board would carry the first run's scores, and its close
+    // would either overwrite the podium or skip the snapshot.
+    await patchChallenge({ status: 'closed' })
+    const frozen = storedRow().resultsJson
+    expect(frozen).not.toBeNull()
+
+    const response = await patchChallenge({ status: 'active' })
+    expect(response.status).toBe(409)
+    expect(storedRow()).toEqual({ status: 'closed', resultsJson: frozen })
+  })
+
+  it('still lets a challenge that never closed be set active', async () => {
+    const response = await patchChallenge({ status: 'active' })
+    expect(response.status).toBe(200)
+    expect(storedRow().status).toBe('active')
+  })
+
   it('leaves an open challenge alone', async () => {
     const response = await patchChallenge({ title: 'The Longer One' })
     expect(response.status).toBe(200)
