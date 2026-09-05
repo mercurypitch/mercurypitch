@@ -7,7 +7,7 @@
 // those is a line somebody could quietly change.
 
 import { describe, expect, it } from 'vitest'
-import { allowedOrigins, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, rpIdFor, SUDO_WINDOW_MS, transportsOf, } from './passkeys'
+import { allowedOrigins, expectedOrigins, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, rpIdFor, SUDO_WINDOW_MS, transportsOf } from './passkeys'
 import type { PasskeyRow } from './passkeys'
 
 const DB = null as unknown as D1Database
@@ -119,5 +119,36 @@ describe('passkeyName', () => {
     expect(passkeyName(null)).toBe('Passkey')
     expect(passkeyName('')).toBe('Passkey')
     expect(passkeyName('curl/8.0')).toBe('Passkey')
+  })
+})
+
+describe('expectedOrigins', () => {
+  const at = (origin: string | null) =>
+    new Request('https://api.example.test/api/auth/passkey/login/verify', {
+      headers: origin === null ? {} : { Origin: origin },
+    })
+
+  it('trusts the request origin under a rule the verifier cannot read', () => {
+    // `localhost` is a rule originAllowed() understands; simplewebauthn
+    // matches exact strings, so under it no local ceremony ever verified.
+    expect(
+      expectedOrigins(at('https://localhost:5173'), {
+        ALLOWED_ORIGINS: 'localhost,*.workers.dev',
+      }),
+    ).toEqual(['https://localhost:5173'])
+  })
+
+  it('keeps the full origins of the list as fallbacks, without repeating the request', () => {
+    const env = {
+      ALLOWED_ORIGINS: 'https://mercurypitch.com, https://www.mercurypitch.com',
+    }
+    expect(expectedOrigins(at('https://mercurypitch.com'), env)).toEqual([
+      'https://mercurypitch.com',
+      'https://www.mercurypitch.com',
+    ])
+    expect(expectedOrigins(at(null), env)).toEqual([
+      'https://mercurypitch.com',
+      'https://www.mercurypitch.com',
+    ])
   })
 })

@@ -15,6 +15,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Env } from '../src/auth'
+import { signJwt } from '../src/auth'
 import worker from '../src/index'
 import { totpCode } from '../src/totp'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
@@ -326,6 +327,51 @@ describe('enrollment', () => {
     expect(await meStatus(other.token)).toBe(401)
     expect(await meStatus(enrolling.token)).toBe(200)
     expect(sessionRowCount(enrolling.userId)).toBe(1)
+  })
+
+  it('revokes tokens that name no session, and re-issues the enroller', async () => {
+    // A token minted before migration 0038 carries no `sid`, so ending
+    // sessions could not reach it: the docstring said a sid-less enroller
+    // "signs the caller out too", and it signed nobody out.
+    const account = await register('legacy@example.com')
+    const legacyToken = async (): Promise<string> => {
+      const row = sqlite
+        .prepare('SELECT tokenVersion FROM users WHERE id = ?')
+        .get(account.userId) as { tokenVersion: number }
+      const now = Math.floor(Date.now() / 1000)
+      return signJwt(
+        {
+          sub: account.userId,
+          provider: 'password',
+          iat: now,
+          exp: now + 3600,
+          v: row.tokenVersion,
+        },
+        env.JWT_SECRET as string,
+      )
+    }
+    const intruder = await legacyToken()
+    const enroller = await legacyToken()
+    expect(await meStatus(intruder)).toBe(200)
+
+    const setup = await authedPost(enroller, '/api/auth/2fa/setup', {})
+    expect(setup.status).toBe(200)
+    const { secret } = (await setup.json()) as { secret: string }
+    const enable = await authedPost(enroller, '/api/auth/2fa/enable', {
+      code: await freshCode(secret),
+    })
+    expect(enable.status).toBe(200)
+    const body = (await enable.json()) as {
+      recoveryCodes: string[]
+      session?: { token: string }
+    }
+    expect(body.recoveryCodes).toHaveLength(10)
+    expect(body.session?.token).toBeTruthy()
+
+    expect(await meStatus(intruder)).toBe(401)
+    expect(await meStatus(enroller)).toBe(401)
+    expect(await meStatus(account.token)).toBe(401)
+    expect(await meStatus(body.session!.token)).toBe(200)
   })
 
   it('hands back ten recovery codes, exactly once', async () => {
