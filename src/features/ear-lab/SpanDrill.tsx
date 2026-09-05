@@ -146,7 +146,22 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
 
   /** Calibration always taps; a sung practice run needs the mic first
    *  and falls back to tapping when there is none. */
+  /** One Begin at a time: a second press during the permission prompt
+   *  started a second run that ate the sprint's armed length and left
+   *  the first prompt sounding. */
+  let starting = false
+
   async function handleStart(mode: ThresholdRunMode): Promise<void> {
+    if (starting) return
+    starting = true
+    try {
+      await startRun(mode)
+    } finally {
+      starting = false
+    }
+  }
+
+  async function startRun(mode: ThresholdRunMode): Promise<void> {
     setMicError('')
     let sung = mode === 'practice' && answerMode() === 'mic'
     if (sung) {

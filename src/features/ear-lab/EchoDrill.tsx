@@ -192,7 +192,22 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     },
   })
 
+  /** One Begin at a time: a second press during the permission prompt
+   *  started a second run that ate the sprint's armed length and left
+   *  the first prompt sounding. */
+  let starting = false
+
   async function handleStart(): Promise<void> {
+    if (starting) return
+    starting = true
+    try {
+      await startRun()
+    } finally {
+      starting = false
+    }
+  }
+
+  async function startRun(): Promise<void> {
     setMicError('')
     if (answerMode() === 'mic') {
       try {

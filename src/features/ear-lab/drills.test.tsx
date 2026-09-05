@@ -165,6 +165,26 @@ describe('Contour, stopped mid-pair', () => {
     expect(engine.playTone).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('ear-stage-plate')).toBeTruthy()
   })
+
+  it('keeps the old pair quiet when Begin follows Stop within the pair', async () => {
+    render(() => (
+      <Stage>
+        <ContourDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs - 20)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: /Stop/ }))
+    // Straight back in: the new run's first tone is the second call.
+    fireEvent.click(screen.getByRole('button', { name: /again/i }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(engine.playTone).toHaveBeenCalledTimes(2)
+    // The old pair's gap runs out here. A flag the new pair had reset
+    // let it sound its second tone over the new run's first.
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.gapMs + 40)
+    expect(engine.playTone).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('Leap', () => {

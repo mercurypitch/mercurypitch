@@ -200,6 +200,40 @@ describe('sing mode', () => {
     expect(earItemStates()['e-steps-up']).toBeUndefined()
   })
 
+  it('Echo takes one Begin while the mic is being opened', async () => {
+    // Two presses during the permission prompt used to start two runs:
+    // the second ate the sprint's armed length and the first prompt
+    // kept sounding under it.
+    let grant!: (stream: MediaStream) => void
+    mic.acquire.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        grant = resolve
+      }),
+    )
+    const engine = fakeEngine()
+    render(() => (
+      <EngineContext.Provider
+        value={{
+          audioEngine: engine,
+          practiceEngine: {} as PracticeEngine,
+          playbackRuntime: {} as PlaybackRuntime,
+          ready: () => true,
+        }}
+      >
+        <EchoDrill onBack={() => undefined} />
+      </EngineContext.Provider>
+    ))
+    fireEvent.click(screen.getByRole('radio', { name: 'Sing or play' }))
+    const begin = screen.getByRole('button', { name: /Begin/ })
+    fireEvent.click(begin)
+    fireEvent.click(begin)
+    grant({} as MediaStream)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mic.acquire).toHaveBeenCalledTimes(1)
+    // One cadence planted, not two on top of each other.
+    expect(engine.playChord).toHaveBeenCalledTimes(1)
+  })
+
   it('Echo closes an empty window at the ceiling and counts it a miss', async () => {
     mount(() => <EchoDrill onBack={() => undefined} />)
     fireEvent.click(screen.getByRole('radio', { name: 'Sing or play' }))
