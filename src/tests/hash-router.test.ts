@@ -598,11 +598,20 @@ describe('navigateTo', () => {
 describe('replaceHash', () => {
   it('uses replaceState to update URL without new history entry', () => {
     const replaceStateSpy = vi.fn()
-    vi.stubGlobal('history', { replaceState: replaceStateSpy })
+    // The entry stays the same entry: its state (the router's position
+    // stamp) comes along with the new hash.
+    vi.stubGlobal('history', {
+      replaceState: replaceStateSpy,
+      state: { routeIndex: 3 },
+    })
     vi.stubGlobal('location', { hash: '' })
 
     replaceHash({ type: 'tab', tab: 'settings' })
-    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '#/settings')
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      { routeIndex: 3 },
+      '',
+      '#/settings',
+    )
   })
 
   it('skips replace when already at target hash', () => {
