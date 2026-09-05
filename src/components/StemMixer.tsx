@@ -26,6 +26,7 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import { useStemMixerVocalLyricsController } from '@/features/stem-mixer/useStemMixerVocalLyricsController'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
@@ -2207,83 +2208,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  const startWhisperTranscription = () => {
-    if (refuseStreamedAnalysis()) return
-    // If pitch analysis hasn't been run yet, run it first with default
-    // settings so the alignment has notes to work with.
-    const hasPitchData =
-      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
-      pitchAnalysis.offlineMergedNotes().length > 0
-    if (!hasPitchData && !pitchAnalysis.isAnalyzing()) {
-      showNotification('Running pitch denoising first...', 'info')
-      void pitchAnalysis.runAnalysis().then(() => {
-        whisper.startTranscription()
-      })
-      return
-    }
-    whisper.startTranscription()
-  }
-
   // ── "From vocal" lyrics generation ─────────────────────────────
-  // Turn the Whisper transcription into a synced lyric draft (the 'whisper'
-  // version) and drop straight into the text editor for cleanup. Reuses a
-  // cached transcription when one exists; otherwise runs the full
-  // pitch-analysis-then-whisper pipeline and imports once it lands.
-  const [pendingWhisperLyrics, setPendingWhisperLyrics] = createSignal(false)
-
-  const importFromSegmentsIfReady = (): boolean => {
-    const segs = whisper.segments()
-    if (whisper.status() !== 'done' || segs.length === 0) return false
-    const ok = importWhisperLyrics(segs)
-    if (!ok) {
-      showNotification(
-        'No recognizable words in the vocal to build lyrics from.',
-        'warning',
-      )
-    }
-    return true
-  }
-
-  const generateLyricsFromVocal = () => {
-    if (importFromSegmentsIfReady()) return
-    setPendingWhisperLyrics(true)
-    // Ensures pitch analysis first, then whisper (cache-aware).
-    startWhisperTranscription()
-  }
-
-  createEffect(
-    on(whisper.status, (s) => {
-      if (!pendingWhisperLyrics()) return
-      if (s === 'done') {
-        setPendingWhisperLyrics(false)
-        importFromSegmentsIfReady()
-      } else if (s === 'error') {
-        setPendingWhisperLyrics(false)
-        showNotification('Could not transcribe the vocal.', 'error')
-      }
-    }),
-  )
-
-  const generatingFromVocal = () =>
-    pendingWhisperLyrics() &&
-    (whisper.status() === 'processing' ||
-      whisper.status() === 'loading' ||
-      pitchAnalysis.isAnalyzing())
-
-  // Live phase label for the version menu while a From-vocal draft runs.
-  const generatingLabel = () => {
-    if (pitchAnalysis.isAnalyzing()) {
-      return `Reading the vocal… ${Math.round(pitchAnalysis.progress())}%`
-    }
-    if (whisper.status() === 'loading') {
-      const pct = Math.round(whisper.progress())
-      return pct > 0
-        ? `Fetching the listener… ${pct}%`
-        : 'Fetching the listener…'
-    }
-    const secs = whisper.elapsed()
-    return secs >= 0 ? `Transcribing… ${secs}s` : 'Transcribing…'
-  }
+  const {
+    startWhisperTranscription,
+    generateLyricsFromVocal,
+    generatingFromVocal,
+    generatingLabel,
+  } = useStemMixerVocalLyricsController({
+    pitchAnalysis,
+    whisper,
+    importWhisperLyrics,
+    refuseTranscription: refuseStreamedAnalysis,
+  })
 
   onCleanup(() => {
     audio.disconnectSources()

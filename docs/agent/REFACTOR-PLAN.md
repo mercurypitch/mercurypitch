@@ -4,10 +4,11 @@ Working plan for breaking up the files that dominate context cost and change
 risk. Written so an agent picking up any single slice has everything it needs
 without re-deriving the analysis.
 
-**Status: proposed, one slice done.** The lyrics controller was split on
+**Status: proposed, two slices done.** The lyrics controller was split on
 `feat/lrc-mapper-studio` (see
 [docs/plans/lrc-mapper-studio-plan.md](../plans/lrc-mapper-studio-plan.md)
-Phase 0) — the only row in §1 that has moved. Everything else stands.
+Phase 0), and the "From vocal" orchestration left StemMixer for
+`useStemMixerVocalLyricsController.ts` (#683). Everything else stands.
 Sequence and scope are open to change; ordering rationale is in §5.
 
 ---
@@ -62,14 +63,14 @@ numbers are from the section banners at time of writing — re-grep
 Already extracted: mic, audio, lyrics, pitch-analysis, canvas, layout.
 Remaining seams, roughly in dependency order:
 
-| Slice | Sections                                                                            | Target                                                                                  |
-| ----- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| A     | Karaoke playlist integration (344), Zen transport (461)                             | `useStemMixerTransportController.ts`                                                    |
-| B     | Volume/Mute/Solo (1354), Stem controls props bundle (1426)                          | `useStemMixerStemControls.ts`                                                           |
-| C     | Pitch-word alignment memo (917), Auto word-sync (1312), Loop lyric↔audio sync (739) | fold into the existing lyrics controller, or `stem-mixer/word-sync.ts` if it stays pure |
-| D     | Melody audition synth (1123)                                                        | `melody-synth.ts` already exists — move the remainder there                             |
-| E     | Circular Progress (111), Karaoke Focus Mode (160)                                   | plain components in `src/features/stem-mixer/`                                          |
-| F     | "From vocal" lyrics generation (1627)                                               | `lrc-gen-engine.ts` already exists — move the orchestration there                       |
+| Slice | Sections                                                                            | Target                                                                                                                                                           |
+| ----- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A     | Karaoke playlist integration (344), Zen transport (461)                             | `useStemMixerTransportController.ts`                                                                                                                             |
+| B     | Volume/Mute/Solo (1354), Stem controls props bundle (1426)                          | `useStemMixerStemControls.ts`                                                                                                                                    |
+| C     | Pitch-word alignment memo (917), Auto word-sync (1312), Loop lyric↔audio sync (739) | fold into the existing lyrics controller, or `stem-mixer/word-sync.ts` if it stays pure                                                                          |
+| D     | Melody audition synth (1123)                                                        | `melody-synth.ts` already exists — move the remainder there                                                                                                      |
+| E     | Circular Progress (111), Karaoke Focus Mode (160)                                   | plain components in `src/features/stem-mixer/`                                                                                                                   |
+| F     | "From vocal" lyrics generation (1627)                                               | DONE (#683): `useStemMixerVocalLyricsController.ts` — a Solid hook rather than `lrc-gen-engine.ts`, because the code is reactive orchestration, not engine logic |
 
 Slices C, D and F move code into files that **already exist**; those are the
 cheapest and should go first.
