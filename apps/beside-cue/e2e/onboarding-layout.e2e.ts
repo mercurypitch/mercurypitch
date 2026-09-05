@@ -275,6 +275,29 @@ async function verifyScene(
   expect(actionOverflow.horizontal).toBeLessThanOrEqual(1)
   expect(actionOverflow.vertical).toBeLessThanOrEqual(1)
 
+  if (
+    scene.phase === 'B03_PULL_CHOICE_HOLD' &&
+    deviceCase.expectSingleViewport === true
+  ) {
+    const replay = page.getByRole('button', { name: 'Hear again' })
+    await expect(replay).toBeVisible()
+    await expect(replay).toBeDisabled()
+    const replayBox = await replay.boundingBox()
+    expect(replayBox).not.toBeNull()
+    expect(replayBox!.width).toBeGreaterThanOrEqual(48)
+    expect(replayBox!.height).toBeGreaterThanOrEqual(48)
+    expect(actionBox!.height).toBeGreaterThanOrEqual(48)
+    expect(replayBox!.x + replayBox!.width).toBeLessThanOrEqual(actionBox!.x)
+    expect(Math.abs(replayBox!.y - actionBox!.y)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(
+        replayBox!.y + replayBox!.height - (actionBox!.y + actionBox!.height),
+      ),
+    ).toBeLessThanOrEqual(1)
+    expect(await fullyVisibleInScrollports(replay)).toBe(true)
+    expect(await elementOverlap(replay, sound)).toBe(false)
+  }
+
   if (evidenceDirectory !== undefined && evidenceDirectory !== '') {
     await page.screenshot({
       path: `${evidenceDirectory}/${deviceCase.name}-${safeName(scene.phase)}-action.png`,

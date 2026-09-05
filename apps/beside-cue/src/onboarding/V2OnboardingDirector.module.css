@@ -951,19 +951,10 @@
   align-self: start;
 }
 
-@media (min-width: 23rem) {
-  .copyChoices .pullPreview {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding-block: 0.35rem;
-  }
-  .copyChoices .previewCaption {
-    flex: 1;
-  }
-  .copyChoices .previewReplay {
-    flex-shrink: 0;
-  }
+.copyChoices .pullPreview {
+  /* Keep the caption full-width; replay shares the action row so a recorded
+     voice cannot add a caption wrap that pushes Continue into the footer. */
+  padding-block: 0.35rem;
 }
 
 .copyChoices .pullGrid {

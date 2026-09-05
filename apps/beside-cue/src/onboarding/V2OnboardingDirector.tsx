@@ -1539,41 +1539,41 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                       <p class={styles.previewCaption} aria-live="polite">
                         {line().text}
                       </p>
-                      <Show
-                        when={dialogueAssetId(
-                          selectedPullOption()?.previewLineId,
-                        )}
-                      >
-                        <button
-                          type="button"
-                          class={styles.previewReplay}
-                          disabled={props.muted}
-                          onClick={() => {
-                            const option = selectedPullOption()
-                            if (option !== undefined) playPullPreview(option)
-                          }}
-                        >
-                          Hear again
-                        </button>
-                      </Show>
                     </div>
                   )}
                 </Show>
-                <button
-                  type="button"
-                  class={styles.primaryAction}
-                  disabled={
-                    !pullChoiceValid() ||
-                    !canSelectPull(
-                      selectedPullKey(),
-                      props.isPro === true,
-                      props.pullOptions,
-                    )
-                  }
-                  onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
-                >
-                  Continue
-                </button>
+                <div class={styles.actions}>
+                  <Show
+                    when={dialogueAssetId(selectedPullOption()?.previewLineId)}
+                  >
+                    <button
+                      type="button"
+                      class={styles.previewReplay}
+                      disabled={props.muted}
+                      onClick={() => {
+                        const option = selectedPullOption()
+                        if (option !== undefined) playPullPreview(option)
+                      }}
+                    >
+                      Hear again
+                    </button>
+                  </Show>
+                  <button
+                    type="button"
+                    class={styles.primaryAction}
+                    disabled={
+                      !pullChoiceValid() ||
+                      !canSelectPull(
+                        selectedPullKey(),
+                        props.isPro === true,
+                        props.pullOptions,
+                      )
+                    }
+                    onClick={() => dispatch({ type: 'CONFIRM_PULL' })}
+                  >
+                    Continue
+                  </button>
+                </div>
               </Match>
 
               <Match when={state().phase === 'B04_CUE_CONTEXT_HOLD'}>
