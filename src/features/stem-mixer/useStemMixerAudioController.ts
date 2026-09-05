@@ -187,6 +187,9 @@ export interface StemMixerAudioController {
   // Signals (accessors only — controller owns the signals)
   loading: Accessor<boolean>
   loadError: Accessor<string>
+  /** False when loading again cannot change the answer (the device, not
+   *  the network, is what stands in the way): no Retry is offered. */
+  loadErrorRetryable: Accessor<boolean>
   loadProgress: Accessor<number>
   /**
    * What the load is doing right now. `connecting` is the wait for the first
@@ -333,6 +336,7 @@ export const useStemMixerAudioController = (
   // ── Signals (owned by controller) ─────────────────────────────
   const [loading, setLoading] = createSignal(true)
   const [loadError, setLoadErrorLocal] = createSignal('')
+  const [loadErrorRetryable, setLoadErrorRetryable] = createSignal(true)
   const [loadProgress, setLoadProgressLocal] = createSignal(0)
   const [loadPhase, setLoadPhaseLocal] =
     createSignal<StemLoadPhase>('connecting')
@@ -642,6 +646,7 @@ export const useStemMixerAudioController = (
   const loadStems = async () => {
     setLoading(true)
     setLoadErrorLocal('')
+    setLoadErrorRetryable(true)
     setLoadProgressLocal(0)
     setLoadPhaseLocal('connecting')
     setLoadedBytesLocal(0)
@@ -1005,6 +1010,8 @@ export const useStemMixerAudioController = (
         // fired, and the singer got an empty, silent mixer with no reason.
         const msg =
           'This device streams the song to stay within memory, and the MIDI practice track needs the vocal decoded. Open this song on a computer to practise with MIDI.'
+        // Terminal: a Retry would stream both stems again and land here.
+        setLoadErrorRetryable(false)
         setLoadErrorLocal(msg)
         deps.showNotification(msg, 'warning')
       } else if (needsMidi && deps.vocal().buffer) {
@@ -1770,6 +1777,7 @@ export const useStemMixerAudioController = (
     musicLevelRange: MUSIC_LEVEL.spec,
     loading,
     loadError,
+    loadErrorRetryable,
     loadProgress,
     loadPhase,
     loadedBytes,

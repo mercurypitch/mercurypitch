@@ -380,6 +380,8 @@ describe('asking a phone for the MIDI practice track', () => {
       true,
     )
     expect(h.controller.loadError()).toMatch(/MIDI practice track/)
+    // Loading again would stream both stems and land here: no Retry.
+    expect(h.controller.loadErrorRetryable()).toBe(false)
     h.dispose()
   })
 })
