@@ -95,6 +95,11 @@ export function useThresholdRun(
   let activeTrackIndex = 0
   let startedAt = 0
   let cancelled = false
+  /** Bumped by every start(). A round still awaiting its stimulus when
+   *  the run was stopped and started again would otherwise resume once
+   *  that stimulus resolves — `cancelled` is false again by then — and
+   *  arm the new run's question over the old trial. */
+  let run = 0
   const pacer = createRevealPacer(
     () => {
       setLastCorrect(null)
@@ -102,11 +107,6 @@ export function useThresholdRun(
     },
     () => cancelled,
   )
-
-  const api: StimulusApi = {
-    step: setStimulusStep,
-    cancelled: () => cancelled,
-  }
 
   /** Turns each track needs: the sealed protocol's six, or the
    *  drill's own for practice. */
@@ -152,6 +152,7 @@ export function useThresholdRun(
 
   function start(runMode: ThresholdRunMode, track?: { drillId: string }): void {
     cancelled = false
+    run += 1
     runTrackId =
       runMode === 'practice' ? (track?.drillId ?? drill.id) : drill.id
     startedAt = performance.now()
@@ -188,18 +189,20 @@ export function useThresholdRun(
   }
 
   async function playRound(): Promise<void> {
-    if (cancelled) return
+    const mine = run
+    const stale = (): boolean => cancelled || mine !== run
+    if (stale()) return
 
     if (mode() === 'calibration') {
       const index = nextTrackIndex(tracks)
       if (index === null) {
-        finish()
+        finish(true)
         return
       }
       activeTrackIndex = index
       setActiveTrack(index)
     } else if (!single || single.done) {
-      finish()
+      finish(true)
       return
     }
 
@@ -209,10 +212,12 @@ export function useThresholdRun(
       setStimulusStep(0)
       setPhase('stimulus')
     })
+    const api: StimulusApi = { step: setStimulusStep, cancelled: stale }
     await playStimulus(currentLevel, api)
-    // Stop may have landed while the stimulus was sounding; arming
-    // the answer here would resurrect a finished run.
-    if (cancelled) return
+    // Stop may have landed while the stimulus was sounding, or the run
+    // may have been started again; arming the answer here would
+    // resurrect a finished run.
+    if (stale()) return
     setPhase('answer')
   }
 
@@ -249,7 +254,7 @@ export function useThresholdRun(
     pacer.hold()
   }
 
-  function finish(): void {
+  function finish(complete: boolean): void {
     const elapsed = performance.now() - startedAt
 
     if (mode() === 'practice') {
@@ -289,7 +294,9 @@ export function useThresholdRun(
     // A drill played anywhere counts toward today's sprint — the
     // sprint names what to practise, it does not own the only door
     // into it. Idempotent, so a second run cannot double-book.
-    markSprintSegmentDone(drill.id)
+    // A segment counts when the run reached its end, not when it was
+    // abandoned part-way.
+    if (complete) markSprintSegmentDone(drill.id)
     setPhase('done')
   }
 
@@ -302,8 +309,15 @@ export function useThresholdRun(
     pacer.cancel()
     options?.cancelStimulus?.()
 
+    // Nothing answered: nothing to credit, and no sprint segment, session
+    // or streak is booked for a run that never happened.
+    if (trials() === 0) {
+      setResult({ estimate: null, trials: 0, mode: mode() })
+      setPhase('done')
+      return
+    }
     if (mode() === 'practice' || isCalibrationComplete(tracks)) {
-      finish()
+      finish(false)
       return
     }
     setResult({ estimate: null, trials: trials(), mode: 'calibration' })

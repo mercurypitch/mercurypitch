@@ -29,6 +29,7 @@ const param = () => ({
   linearRampToValueAtTime: vi.fn(),
   exponentialRampToValueAtTime: vi.fn(),
   cancelScheduledValues: vi.fn(),
+  setTargetAtTime: vi.fn(),
 })
 const ctx = {
   currentTime: 1,
@@ -167,7 +168,8 @@ describe('BeatHuntDrill', () => {
     const oscillators = ctx.createOscillator.mock.results.map((r) => r.value)
     expect(oscillators).toHaveLength(4)
     for (const osc of oscillators) {
-      expect(osc.stop).toHaveBeenLastCalledWith(ctx.currentTime)
+      // Stopped after the release tail, not on the sample: see dyad-synth.
+      expect(osc.stop).toHaveBeenLastCalledWith(ctx.currentTime + 0.08)
     }
   })
 })

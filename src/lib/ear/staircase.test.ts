@@ -89,6 +89,17 @@ describe('recordTrial — the 2-down-1-up rule', () => {
     expect(frozen).toBe(s)
   })
 
+  it('counts a held level towards the trial cap', () => {
+    // A lone correct answer holds the level and used to skip the cap
+    // check, so a run could overshoot maxTrials by one.
+    let state = createStaircase({ ...DEFAULT_STAIRCASE, maxTrials: 3 })
+    state = recordTrial(state, true)
+    state = recordTrial(state, false)
+    state = recordTrial(state, true)
+    expect(state.trials).toBe(3)
+    expect(state.done).toBe(true)
+  })
+
   it('gives up after maxTrials even if the track never turns', () => {
     const s = feed(
       createStaircase({ ...DEFAULT_STAIRCASE, maxTrials: 10 }),
