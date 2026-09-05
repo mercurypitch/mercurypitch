@@ -204,6 +204,17 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   })
 
   /**
+   * The conditional request the effect below has armed, so that a press on
+   * the passkey button can cancel it first. WebAuthn runs one get() per
+   * document at a time: a modal request on top of a live conditional one is
+   * refused outright, or (Chromium) tears the conditional one down with an
+   * error the effect would then print under the form.
+   */
+  let conditionalRequest: AbortController | null = null
+  /** Bumped once a modal request has settled, so autofill is armed again. */
+  const [conditionalArm, setConditionalArm] = createSignal(0)
+
+  /**
    * Arm the browser's own passkey autofill for as long as the sign-in form is
    * on screen.
    *
@@ -218,10 +229,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
    * the browser's autofill wired to a screen that has gone.
    */
   createEffect(() => {
+    conditionalArm()
     const open = authModalMode() != null
     if (!open || !passkeyReady() || pane() !== 'login') return
     const controller = new AbortController()
-    onCleanup(() => controller.abort())
+    conditionalRequest = controller
+    onCleanup(() => {
+      controller.abort()
+      if (conditionalRequest === controller) conditionalRequest = null
+    })
     void (async () => {
       if (!(await conditionalMediationAvailable())) return
       if (controller.signal.aborted) return
@@ -257,6 +273,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     const request = ++requestGeneration
     setError('')
     setBusy(true)
+    // The autofill request holds the authenticator; see conditionalRequest.
+    conditionalRequest?.abort()
+    conditionalRequest = null
     try {
       await signInWithPasskey()
       if (request !== requestGeneration) return
@@ -267,7 +286,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       if (request !== requestGeneration) return
       setError(describeWebAuthnError(err))
     } finally {
-      if (request === requestGeneration) setBusy(false)
+      if (request === requestGeneration) {
+        setBusy(false)
+        // Cancelled or failed, the form is still up: autofill goes back on.
+        // After a sign-in the dialog is closed and the effect arms nothing.
+        setConditionalArm((n) => n + 1)
+      }
     }
   }
 
