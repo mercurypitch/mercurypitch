@@ -23,7 +23,7 @@ import { createSingDriver } from './drivers/sing'
 import { createTapDriver } from './drivers/tap'
 import type { InteractionDriver } from './drivers/types'
 import { createGameVoice } from './game-voice'
-import { JOURNEY_CONFIG } from './journey-config'
+import { JOURNEY_CONFIG, viewUnitsFor } from './journey-config'
 import { compileLevel } from './levels/compile'
 import type { GameFeel } from './levels/feel'
 import { applyFeel } from './levels/feel'
@@ -1059,7 +1059,11 @@ export const JourneyPrototype: Component<{
       const t = now / 1000
       groundSamples.push({ t, midi })
       groundSamples = groundSamples.filter((s) => t - s.t < 0.9)
-      if (groundSamples.length > 24) {
+      // Held for long enough, not for enough frames: at 30 fps (Low Power
+      // Mode, a budget phone) fewer than 25 samples ever fit the window,
+      // so the lock was unreachable and the first prompt never left.
+      const heldS = t - (groundSamples[0]?.t ?? t)
+      if (groundSamples.length >= 8 && heldS >= 0.45) {
         const ms = groundSamples.map((s) => s.midi).sort((a, b) => a - b)
         if (ms[ms.length - 1] - ms[0] < 1.6) {
           groundMidi = Math.round(ms[Math.floor(ms.length / 2)])
@@ -1474,7 +1478,7 @@ export const JourneyPrototype: Component<{
             const rect = canvas.getBoundingClientRect()
             const vw = rect.width
             const vh = rect.height
-            const vu = vw < vh ? C.art.viewUnitsPortrait : C.view.viewUnits
+            const vu = viewUnitsFor(vw, vh)
             const upx = vw / vu
             for (const a of answers) {
               const cx = (a.x ?? 0) - rect.left
@@ -1858,7 +1862,7 @@ export const JourneyPrototype: Component<{
       // camera follows
       const target = Math.min(
         Math.max(mercWX - 3, 0),
-        worldMax - C.view.viewUnits,
+        worldMax - viewUnitsFor(canvas.clientWidth, canvas.clientHeight),
       )
       camX += (target - camX) * C.view.cameraLerp
 
@@ -1942,7 +1946,7 @@ export const JourneyPrototype: Component<{
     ctx.clearRect(0, 0, w, h)
 
     // portrait sees fewer world units so platforms keep a playable size
-    const viewUnits = w / h < 0.8 ? C.art.viewUnitsPortrait : C.view.viewUnits
+    const viewUnits = viewUnitsFor(w, h)
     const unitPx = w / viewUnits
     const camPx = camX * unitPx
     drawBackdrop(ctx, w, h, camPx)
@@ -2895,8 +2899,7 @@ export const JourneyPrototype: Component<{
         window as unknown as { __listen?: () => Record<string, unknown> }
       ).__listen = () => {
         const rect = canvas.getBoundingClientRect()
-        const vu =
-          rect.width < rect.height ? C.art.viewUnitsPortrait : C.view.viewUnits
+        const vu = viewUnitsFor(rect.width, rect.height)
         const upx = rect.width / vu
         const at = (pl: Platform): Record<string, number> => ({
           cx: rect.left + ((pl.x0 + pl.x1) / 2 - camX) * upx,

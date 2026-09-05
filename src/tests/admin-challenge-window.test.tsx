@@ -12,7 +12,7 @@
 // migration. The arithmetic is pinned in `challenge-window.test.ts`; this is
 // the half that needs the form.
 
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { cleanup } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,11 +23,11 @@ vi.mock('@/features/challenges/weekly-service', () => ({
   getAdminKey: () => 'test-key',
   setAdminKey: () => {},
   listAllWeekly: () => Promise.resolve(rows),
-  createWeekly: () => Promise.resolve(true),
+  createWeekly: () => Promise.resolve({ id: 'new' }),
   deleteWeekly: () => Promise.resolve(true),
   updateWeekly: (id: string, patch: Record<string, unknown>) => {
     updates.push({ id, patch })
-    return Promise.resolve(true)
+    return Promise.resolve({ ok: true })
   },
   melodyItemsToNotes: () => '[]',
   parseTargetNotes: () => ({ items: [], rejected: [] }),
@@ -365,7 +365,43 @@ const NOT_YET_OPEN = row({
   endsAt: '2026-10-12T00:00:00.000Z',
 })
 
+const CLOSED = row({
+  id: 'done',
+  title: 'Already ran and closed',
+  status: 'closed',
+  startsAt: '2026-07-06T00:00:00.000Z',
+  endsAt: '2026-08-03T00:00:00.000Z',
+})
+
 describe('setting a challenge live', () => {
+  it('offers no set-live control on a closed challenge', async () => {
+    // A closed row is a record — its podium is frozen and its badges were
+    // granted. Setting it live again ran it a second time on top of that
+    // record; Encore is how a challenge runs again.
+    rows = [LIVE, CLOSED, FOUR_WEEK]
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('set-live-q4w'))
+    expect(screen.getByText('Already ran and closed')).toBeTruthy()
+    expect(screen.queryByTestId('set-live-done')).toBeNull()
+  })
+
+  it('greys the active option when editing a closed challenge', async () => {
+    rows = [LIVE, CLOSED]
+    render(() => <AdminWeeklyPage />)
+    const closedRow = (
+      await screen.findByText('Already ran and closed')
+    ).closest('li')
+    expect(closedRow).not.toBeNull()
+    fireEvent.click(within(closedRow!).getByRole('button', { name: 'Edit' }))
+    const status = screen.getByLabelText(/^Status/)
+    expect(
+      within(status).getByRole('option', { name: 'active' }),
+    ).toBeDisabled()
+    expect(
+      within(status).getByRole('option', { name: 'queued' }),
+    ).not.toBeDisabled()
+  })
+
   it('keeps the challenge own length instead of cutting it to a week', async () => {
     rows = [LIVE, FOUR_WEEK]
     render(() => <AdminWeeklyPage />)

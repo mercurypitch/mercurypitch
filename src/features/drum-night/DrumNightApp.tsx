@@ -178,6 +178,9 @@ const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
 const INITIAL_KIT_VOLUME = 82
 const FIRST_POCKET_TEMPO_BPM = 84
+/** The recovery loop's playback speed; setAuthoredTiming resets the
+ *  transport to 1, so every path that re-authors timing restores this. */
+const RECOVERY_SPEED_SCALE = 0.7
 const MAX_IMPORTED_SESSION_PREWARM_HITS = 128
 const WORKSPACE_TITLES: Record<Workspace, string> = {
   groove: 'Shape the groove',
@@ -2525,7 +2528,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       showToast('That recovery bar is outside the authored take range.')
       return
     }
-    runtime.setSpeedScale(0.7)
+    runtime.setSpeedScale(RECOVERY_SPEED_SCALE)
     setRecoveryLoopActive(true)
     showToast(
       `Recovery loop set to bar ${loop.barNumber} at 70% of the authored tempo.`,
@@ -3292,11 +3295,48 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       document.sourceFormat === 'prepared' &&
       scheduledDocument?.sourceFormat === 'prepared' &&
       preparedVariation === scheduledPreparedVariation
+    const preparedVariationSwitch =
+      backingSource === null &&
+      scheduledBackingSource === null &&
+      document !== null &&
+      document !== scheduledDocument &&
+      document.sourceFormat === 'prepared' &&
+      scheduledDocument?.sourceFormat === 'prepared' &&
+      preparedVariation !== scheduledPreparedVariation
 
-    if (hotPreparedRevision) {
+    if (hotPreparedRevision || preparedVariationSwitch) {
       scheduledDocument = document
+      scheduledPreparedVariation = preparedVariation
       sessionScheduler.updateSession(document)
       authoredPlayAlong.setSession(document)
+      if (preparedVariationSwitch) {
+        // Another variation is the same song in another feel, not a new
+        // document: the tempo the user set and the loop stay, and playback
+        // carries on. Only the timing's shape follows the new arrangement,
+        // re-applied under the user's tempo. Through the cross-document
+        // reset below, a Classic to Funk click stopped playback, dropped
+        // the loop and put the canonical 84 on the readout while the
+        // project still said what the user had set.
+        //
+        // A take in progress does go: its hits were played against the old
+        // groove, and finishing it would score them against the new one.
+        takeFinishEvidence = null
+        takeHistoryController()?.invalidatePendingTake()
+        takeCapture.dismiss()
+        clearTakeRecording()
+        // No tempo map: the song's carries its canonical 84 at beat zero and
+        // would take the readout back over the user's tempo (the hydration
+        // path applies a saved project the same way).
+        const arrangement = authoredPlayAlong.snapshot().arrangement
+        runtime.transportPort.setAuthoredTiming({
+          tempoBpm: untrack(authoredTempoBpm),
+          durationBeats: arrangement?.durationBeats ?? document.durationBeats,
+        })
+        // Re-timing resets the transport's speed scale; a recovery loop
+        // keeps its 70%.
+        if (untrack(recoveryLoopActive))
+          runtime.setSpeedScale(RECOVERY_SPEED_SCALE)
+      }
       return
     }
 

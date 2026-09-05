@@ -97,9 +97,44 @@ export interface UseHashRouterDeps {
   selectedWalkthrough: Accessor<string | null>
 }
 
+/** A numbering id for the position stamps of one page load. */
+const newEpoch = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
 export function useHashRouter(deps: UseHashRouterDeps): void {
   let hashSyncing = false
   let lastAcceptedHash = ''
+  /**
+   * Every history entry the router accepts carries its position in
+   * history.state, so a vetoed Back or Forward can be undone by travelling
+   * back to the accepted entry. Rewriting the entry the browser had moved
+   * to -- the previous page's -- turned it into a duplicate of the current
+   * screen: the next Back landed on the same page, and the real previous
+   * one was a step further away for every veto.
+   */
+  let acceptedIndex: number | null = null
+  /**
+   * The numbering the stamps belong to. Stamps survive a reload in
+   * history.state, and a few surfaces rewrite entries with a null state;
+   * a position read against another load's numbering would send go()
+   * the wrong way, so only stamps of this numbering count, and the
+   * numbering starts afresh from any entry the router cannot place.
+   */
+  let epoch = newEpoch()
+  /** Set once the first route of this load has been accepted. */
+  let acceptedOnce = false
+  /**
+   * The URL a traversal just landed on. popstate fires only for
+   * traversals, with the URL already updated, and the hashchange that
+   * follows sees the same URL; a push fires hashchange alone. That is how
+   * the router tells an entry the user came back to from one a link has
+   * just created -- history.length cannot, since a push after Back
+   * truncates the forward entries and the length stays put.
+   */
+  let traversedTo: string | null = null
+  /** A traversal the router asked for is under way; the hashchange it
+   *  fires is the accepted route coming back, not a navigation. */
+  let restoring = false
   // The state→hash sync effects must not run until the initial route has been
   // restored from the URL on mount — otherwise the default tab (singing) would
   // overwrite the preserved hash (e.g. #/piano) before it's read, sending every
@@ -251,17 +286,77 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     hashSyncing = false
   }
 
+  const stampedIndex = (): number | null => {
+    const state = window.history.state as {
+      routeIndex?: unknown
+      routeEpoch?: unknown
+    } | null
+    if (state?.routeEpoch !== epoch) return null
+    return typeof state.routeIndex === 'number' ? state.routeIndex : null
+  }
+
+  const stampEntry = (position: number): number => {
+    const state: unknown = window.history.state
+    const carried = typeof state === 'object' && state !== null ? state : {}
+    window.history.replaceState(
+      { ...carried, routeIndex: position, routeEpoch: epoch },
+      '',
+      window.location.href,
+    )
+    return position
+  }
+
+  /** Where the current entry sits, stamping it when it is new. Null for
+   *  an entry the router cannot place (one from before the stamps, or
+   *  one whose stamp was lost); a veto there falls back to rewriting. */
+  /** Number afresh from the current entry: see `epoch`. */
+  const restartNumbering = (): number => {
+    epoch = newEpoch()
+    return stampEntry(0)
+  }
+
+  const positionOfCurrentEntry = (): number | null => {
+    const stamped = stampedIndex()
+    if (stamped !== null) return stamped
+    if (!acceptedOnce) return restartNumbering()
+    // Revisited, and carrying no stamp of this numbering: cannot be placed.
+    return null
+  }
+
+  /**
+   * Place the entry a navigation has just created (a link, a hash
+   * assignment), before the guard sees it, so a veto can travel back from
+   * it instead of rewriting it. Right after the accepted entry -- or the
+   * start of a new numbering when that one could not be placed.
+   */
+  const placeArrivedEntry = (): void => {
+    if (stampedIndex() !== null) return
+    if (acceptedIndex === null) restartNumbering()
+    else stampEntry(acceptedIndex + 1)
+  }
+
   const acceptRoute = (route: HashRoute): void => {
     applyRoute(route)
     lastAcceptedHash = window.location.hash
+    acceptedIndex = positionOfCurrentEntry()
+    acceptedOnce = true
   }
 
   const restoreAcceptedHash = (): void => {
-    if (lastAcceptedHash !== '') {
-      window.history.replaceState(window.history.state, '', lastAcceptedHash)
+    const vetoed = stampedIndex()
+    if (acceptedIndex !== null && vetoed !== null && vetoed !== acceptedIndex) {
+      restoring = true
+      window.history.go(acceptedIndex - vetoed)
       return
     }
-    replaceHash({ type: 'tab', tab: deps.activeTab() })
+    if (lastAcceptedHash !== '') {
+      window.history.replaceState(window.history.state, '', lastAcceptedHash)
+    } else {
+      replaceHash({ type: 'tab', tab: deps.activeTab() })
+    }
+    // The rewrite made this entry the accepted one; the router stands
+    // wherever it is placed, if it is placed at all.
+    acceptedIndex = stampedIndex()
   }
 
   const dispatchRoute = (route: HashRoute) => {
@@ -290,7 +385,30 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   }
 
   const onHashChange = () => {
+    restoring = false
+    const traversed = traversedTo === window.location.href
+    traversedTo = null
+    // Standing on the accepted entry again -- the traversal the router
+    // asked for after a veto, or the user coming back from a forward entry
+    // the router never accepted. Its route is the one already applied, so
+    // there is nothing to dispatch; and a panel may have rewritten this
+    // entry's hash behind the router, so the hash is no guide. Recognised
+    // by the stamp alone: browsers fire hashchange in a task of its own
+    // after popstate, so no flag set around the traversal can be trusted
+    // to still be up when the hashchange arrives.
+    if (acceptedIndex !== null && stampedIndex() === acceptedIndex) return
+    if (!traversed) placeArrivedEntry()
     dispatchRoute(parseHash(window.location.hash))
+  }
+
+  const onPopState = () => {
+    traversedTo = window.location.href
+    if (!restoring) return
+    // The traversal has landed. The hashchange, when the hashes differ,
+    // follows in its own task; the sync effects may run again from here.
+    queueMicrotask(() => {
+      restoring = false
+    })
   }
 
   onMount(() => {
@@ -298,10 +416,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     dispatchRoute(parseHash(window.location.hash))
     setInitialized(true)
     window.addEventListener('hashchange', onHashChange)
+    window.addEventListener('popstate', onPopState)
   })
 
   onCleanup(() => {
     window.removeEventListener('hashchange', onHashChange)
+    window.removeEventListener('popstate', onPopState)
   })
 
   /**
@@ -320,9 +440,15 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const expectedHash = `#${buildHash(route)}`
     if (window.location.hash !== expectedHash) {
       if (lastSyncedTab !== null && lastSyncedTab !== tab) {
+        const current = acceptedIndex
         pushHash(route)
+        // A new entry, right after the one the router was on -- or a fresh
+        // numbering, when that one could not be placed.
+        acceptedIndex =
+          current === null ? restartNumbering() : stampEntry(current + 1)
       } else {
         replaceHash(route)
+        acceptedIndex = stampedIndex() ?? acceptedIndex
       }
     }
     lastAcceptedHash = window.location.hash
@@ -348,7 +474,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showResetPassword() ||
       deps.voiceConstellationOpen() ||
       deps.whatsNewOpen()
-    if (!initialized() || hashSyncing) return
+    if (!initialized() || hashSyncing || restoring) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
       // Settings carries its sub-tab in the URL (#/settings/<slug>) so each
@@ -387,7 +513,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const selectionOpen = deps.showSelection()
     const guideOpen = deps.showGuideSelection()
     const constellationOpen = deps.voiceConstellationOpen()
-    if (!initialized() || hashSyncing || constellationOpen) return
+    if (!initialized() || hashSyncing || restoring || constellationOpen) {
+      return
+    }
     if (modalOpen && walkthroughId !== null) {
       const expectedHash = `#/learn/${walkthroughId}`
       if (window.location.hash !== expectedHash) {

@@ -38,7 +38,11 @@ export function KaraokeNightRuntime(props: KaraokeNightRuntimeProps) {
       )
       if (playlistId === null || playlistId === '') return
       // Consume the param so a reload doesn't restart the playlist.
-      window.history.replaceState(null, '', window.location.pathname)
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname,
+      )
       startPlaylist(playlistId)
       if (isPlaylistActive()) trackKaraoke('karaoke_playlist_deeplink')
       // startPlaylist is a no-op for an unknown id or an empty queue — tell

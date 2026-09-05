@@ -6,6 +6,7 @@
 // surface supplies only native controls, stable art, timing and one scoped
 // audio bridge, so unfinished or missing media can never block completion.
 
+import { hasCueText } from '@irchiinnuss/beside-cue-core'
 import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show, Switch, untrack, } from 'solid-js'
 import type { AudioSession } from '@/audio'
 import { AssetStage } from '@/components/AssetStage'
@@ -144,7 +145,10 @@ function createPausableDelay(
 }
 
 function normalizedText(value: string): string {
-  return value.trim().replace(/\s+/gu, ' ')
+  const text = value.trim().replace(/\s+/gu, ' ')
+  // The save's own emptiness rule: a pasted zero-width space or soft hyphen
+  // used to pass Continue here and then fail the save, with no way back.
+  return hasCueText(text) ? text : ''
 }
 
 function phasePullLineId(state: V2OnboardingRuntimeState): string | undefined {
@@ -1757,6 +1761,17 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                   onClick={() => dispatch({ type: 'STOP_AND_SAVE' })}
                 >
                   Stop the record
+                </button>
+                {/* A save that keeps failing (or a plan the reader thinks
+                    better of) needs a way out other than killing the app;
+                    the runtime has taken BACK from this hold all along. A
+                    save in flight lives in its own phase, so no guard. */}
+                <button
+                  type="button"
+                  class={styles.backAction}
+                  onClick={() => dispatch({ type: 'BACK' })}
+                >
+                  Back
                 </button>
               </Match>
 

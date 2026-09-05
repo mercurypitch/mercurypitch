@@ -151,7 +151,17 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
 
   const activatePlayer = (): Promise<boolean> => {
     if (disposed) return Promise.resolve(false)
-    if (playerActivated) return Promise.resolve(true)
+    if (playerActivated) {
+      // An activation is not for the life of the route: a context the
+      // browser suspended or interrupted afterwards (a call, a lock, a tab
+      // put away) stayed suspended, and Play did nothing. activate() is
+      // idempotent on a running graph and resumes a suspended one.
+      if (player.running?.() ?? true) return Promise.resolve(true)
+      // The gate below holds only while an activation is in flight; a
+      // settled one from before must not stand in for the new attempt.
+      playerActivated = false
+      playerActivation = null
+    }
     if (playerActivation !== null) return playerActivation
     try {
       const activationResult = player.activate()
@@ -183,7 +193,7 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
           return false
         })
         .finally(() => {
-          if (!playerActivated) playerActivation = null
+          playerActivation = null
         })
       return playerActivation
     } catch (error) {
@@ -370,6 +380,11 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
       const visible = documentTarget?.visibilityState !== 'hidden'
       setPageVisible(visible)
       if (!visible) pause()
+      // Coming back to a context the browser suspended while the page was
+      // away: bring it up again before the next Play needs it.
+      else if (playerActivated && player.running?.() === false) {
+        void activatePlayer()
+      }
     }
     documentTarget?.addEventListener('visibilitychange', onVisibilityChange)
     onVisibilityChange()

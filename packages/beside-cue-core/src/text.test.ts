@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countGraphemes, CueTextValidationError, normalizeCueText, } from './text'
+import { countGraphemes, CueTextValidationError, hasCueText, normalizeCueText, } from './text'
 
 describe('normalizeCueText', () => {
   it('normalizes to NFC while collapsing and trimming whitespace', () => {
@@ -37,5 +37,11 @@ describe('normalizeCueText', () => {
     expect(() => normalizeCueText('\u200B \u2060\n\u0007')).toThrowError(
       CueTextValidationError,
     )
+  })
+
+  it('hasCueText agrees with the empty rule the save applies', () => {
+    expect(hasCueText('\u200B')).toBe(false)
+    expect(hasCueText(' \u00AD\t')).toBe(false)
+    expect(hasCueText('a\u200B')).toBe(true)
   })
 })

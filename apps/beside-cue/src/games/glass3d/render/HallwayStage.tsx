@@ -91,6 +91,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
   const noMicApi = micApiBlocker()
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
+  /** The stage itself failed to come up (an asset that would not
+   *  fetch, a renderer that threw). Kept apart from the mic error: the
+   *  mic path cleared that one, and a tap on the gate then put the HUD
+   *  over a black canvas for good. */
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
   const [ringing, setRinging] = createSignal(false)
@@ -368,19 +373,26 @@ export const HallwayStage = (props: HallwayStageProps) => {
       stopLoop = () => cancelAnimationFrame(frame)
     }
 
+    /** Set the moment the stage goes away. `begin` runs from an async
+     * init, so without this a player who leaves during the load starts a
+     * frame loop after teardown that nothing holds a handle to. */
+    let gone = false
+
     void r
       .init()
       .then(() => {
+        if (gone) return
         fit()
         setBackend(r.backend())
         begin()
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
-        setMicError(err instanceof Error ? err.message : String(err))
+        setRenderError(err instanceof Error ? err.message : String(err))
       })
 
     onCleanup(() => {
+      gone = true
       observer.disconnect()
       unbindKeys()
       stopLoop?.()
@@ -391,7 +403,20 @@ export const HallwayStage = (props: HallwayStageProps) => {
     })
   })
 
+  /** One startMic at a time: two taps during the permission prompt
+   *  shared `driver`, and the first one's catch nulled the second's. */
+  let micStarting = false
+  /** The stage has been left. A permission prompt outlives a stage that
+   *  was navigated away from; the driver it would have opened after the
+   *  prompt had nobody to stop it. */
+  let left = false
+  onCleanup(() => {
+    left = true
+  })
+
   const startMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     setMicError(null)
     tone.start()
     try {
@@ -399,26 +424,53 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // audio/input-device.ts. Must happen before acquire(), because the
       // device is chosen by the constraints that open the stream.
       await applyPreferredInput()
+      if (left) return
+      // A previous attempt may have left a live driver: a second tap while
+      // the permission prompt is up, or a switch that came good. Overwriting
+      // it stranded its detector worker, its worklet and its share of the
+      // audio lease for the life of the page.
+      driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
   /** Re-open on a different input, without leaving the game. */
   const switchMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     driver?.stop()
     driver = null
     setMicError(null)
+    // The switch may be the first way in: the game's tone starts with it.
+    if (!started()) tone.start()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
+      // The switch IS the retry. Leaving the gate up after a device that
+      // works is what put two drivers on the same capture.
+      setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
@@ -476,9 +528,16 @@ export const HallwayStage = (props: HallwayStageProps) => {
             A pane stands between Merc and the rest of the hallway. Walk him up
             to it, then hold {targetName} until it rings and let the note waver.
           </p>
-          <button type="button" onClick={() => void startMic()}>
+          <button
+            type="button"
+            disabled={renderError() !== null}
+            onClick={() => void startMic()}
+          >
             Walk with him
           </button>
+          <Show when={renderError() !== null}>
+            <p class="stage3d__error">{renderError()}</p>
+          </Show>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
             {/* A picker is no use when the browser is withholding the

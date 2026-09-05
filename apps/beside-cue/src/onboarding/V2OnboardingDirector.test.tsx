@@ -1428,6 +1428,59 @@ describe('V2OnboardingDirector', () => {
     expect(dialogueStopCount()).toBe(stopsBeforePhaseChange + 1)
   })
 
+  it('keeps Continue off for a custom Pull that is only invisible characters', async () => {
+    // A pasted zero-width space passed the form's own "not empty" check and
+    // then failed the save's, which left the record hold with no way out.
+    const probe = createDirectorProbe()
+    render(() => <V2OnboardingDirector {...probe.props} />)
+
+    await reachPullChoice()
+    fireEvent.click(screen.getByRole('radio', { name: 'Something else' }))
+    fireEvent.input(screen.getByRole('textbox', { name: 'Your Pull' }), {
+      target: { value: '\u200B' },
+    })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    fireEvent.input(screen.getByRole('textbox', { name: 'Your Pull' }), {
+      target: { value: ' \u00AD\u200B ' },
+    })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    fireEvent.input(screen.getByRole('textbox', { name: 'Your Pull' }), {
+      target: { value: 'Opening the feed again' },
+    })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
+  })
+
+  it('offers a way back from a save that keeps failing', async () => {
+    // Retry re-froze the same plan and failed the same way; only killing
+    // the app left the hold. The runtime took BACK from it all along.
+    const probe = createDirectorProbe('first-run', {
+      ok: false,
+      message: 'Choose one clear Side A and Side B, then try again.',
+    })
+    render(() => <V2OnboardingDirector {...probe.props} />)
+
+    await reachStopHold()
+    fireEvent.click(screen.getByRole('button', { name: 'Stop and save plan' }))
+    expect(
+      await screen.findByText(
+        'Choose one clear Side A and Side B, then try again.',
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(
+      screen.queryByRole('button', { name: 'Stop and save plan' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('radio', { name: 'Play one guitar riff.' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Start the record' }),
+    ).toBeInTheDocument()
+    expect(probe.onSavePlan).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps a custom Pull free of the first built-in mapping', async () => {
     const probe = createDirectorProbe()
     render(() => (

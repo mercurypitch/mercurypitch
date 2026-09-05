@@ -267,6 +267,16 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
     edit('endsAt', next.endsAt)
   }
 
+  /** A closed row is a record (the worker refuses to set it active); the
+   *  form says so by greying the option instead of failing on save. */
+  const editingClosedRow = (): boolean => {
+    const id = form()?.id
+    if (id === null || id === undefined) return false
+    return (rows() ?? []).some(
+      (row) => row.id === id && row.status === 'closed',
+    )
+  }
+
   async function save(): Promise<void> {
     const f = form()
     if (!f) return
@@ -306,7 +316,9 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
     setSaving(true)
     let ok = false
     if (f.id !== null) {
-      ok = await updateWeekly(f.id, payload, key())
+      const result = await updateWeekly(f.id, payload, key())
+      ok = result.ok
+      if (!result.ok) showNotification(result.error, 'error')
     } else {
       const res = await createWeekly(payload, key())
       ok = 'id' in res
@@ -364,13 +376,13 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
         status: Date.parse(other.startsAt) <= now ? 'closed' : 'queued',
       }))
 
-    const ok = await updateWeekly(
+    const promoted = await updateWeekly(
       row.id,
       { startsAt: period.startsAt, endsAt: period.endsAt, status: 'active' },
       key(),
     )
-    if (!ok) {
-      showNotification('Could not set it live — try again', 'error')
+    if (!promoted.ok) {
+      showNotification(`Could not set it live — ${promoted.error}`, 'error')
       return
     }
 
@@ -384,7 +396,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
         { status: other.status },
         key(),
       )
-      if (!moved) stuck.push(other.row.title)
+      if (!moved.ok) stuck.push(other.row.title)
     }
     void refetch()
 
@@ -501,12 +513,12 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
     setReflowing(true)
     let written = 0
     for (const change of changes) {
-      const ok = await updateWeekly(
+      const result = await updateWeekly(
         change.id,
         { startsAt: change.startsAt, endsAt: change.endsAt },
         key(),
       )
-      if (ok) written += 1
+      if (result.ok) written += 1
       // Keep going: a partial reflow is recoverable by pressing it again,
       // whereas stopping at the first failure leaves a gap mid-queue.
     }
@@ -767,7 +779,9 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                           </span>
                         </div>
                         <div class={styles.rowActions}>
-                          <Show when={!isLiveNow(row)}>
+                          <Show
+                            when={!isLiveNow(row) && row.status !== 'closed'}
+                          >
                             <button
                               class={styles.setLive}
                               data-testid={`set-live-${row.id}`}
@@ -982,7 +996,14 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                   onChange={(e) => edit('status', e.currentTarget.value)}
                 >
                   <For each={STATUSES}>
-                    {(s) => <option value={s}>{s}</option>}
+                    {(s) => (
+                      <option
+                        value={s}
+                        disabled={s === 'active' && editingClosedRow()}
+                      >
+                        {s}
+                      </option>
+                    )}
                   </For>
                 </select>
               </label>

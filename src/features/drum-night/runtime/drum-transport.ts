@@ -777,7 +777,15 @@ export function createDrumTransport(
     start() {
       if (disposed || phase === 'playing' || phase === 'count-in') return
       const nowMs = clock.nowMs()
-      if (naturalEndReached) {
+      // Play from the end plays nothing, so a start at the end rewinds.
+      // The position is the proof, not only the flag: every stem Play
+      // re-applies its authored timing first, which clears the flag, and
+      // Play after a song's natural end used to do nothing at all.
+      const atEnd =
+        loop === null &&
+        timing.durationBeats !== null &&
+        timelineBeats >= timing.durationBeats - TIMELINE_EPSILON
+      if (naturalEndReached || atEnd) {
         timelineBeats = 0
         anchorTimelineBeats = 0
         countInProgressBeats = 0

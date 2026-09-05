@@ -337,6 +337,59 @@ describe('getting back what iOS took away', () => {
   })
 })
 
+describe('a microphone the user refused', () => {
+  // The browser's `not-allowed` is not the iOS gesture refusal: no touch
+  // can grant it, only the user in the browser's permission UI. Before
+  // this, the listener kept the gesture seam armed and every tap anywhere
+  // in the app respawned the recognizer — and with the controller turning
+  // voice control off on each refusal, toasted on every tap.
+  it('stands down for good and says so once', () => {
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    h.latest().onerror?.({ error: 'not-allowed' })
+
+    vi.advanceTimersByTime(60_000)
+    window.dispatchEvent(new Event('pointerdown'))
+    window.dispatchEvent(new Event('keydown'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true }),
+    )
+    vi.advanceTimersByTime(60_000)
+
+    expect(FakeRecognition.instances).toHaveLength(1)
+    expect(FakeRecognition.instances[0].aborted).toBe(true)
+    expect(
+      h.states.filter((s) => s.state === 'error' && s.detail === 'not-allowed'),
+    ).toHaveLength(1)
+    expect(h.last()).toEqual({ state: 'error', detail: 'not-allowed' })
+  })
+
+  it('does not respawn when the dead session reports its end', () => {
+    const h = harness()
+    h.listener.start()
+    const first = h.latest()
+    first.onerror?.({ error: 'not-allowed' })
+    first.onend?.()
+    vi.advanceTimersByTime(60_000)
+
+    expect(FakeRecognition.instances).toHaveLength(1)
+    expect(h.last()).toEqual({ state: 'error', detail: 'not-allowed' })
+  })
+
+  it('starts again only when asked to', () => {
+    const h = harness()
+    h.listener.start()
+    h.latest().onerror?.({ error: 'service-not-allowed' })
+    expect(FakeRecognition.instances).toHaveLength(1)
+
+    h.listener.start()
+    expect(FakeRecognition.instances).toHaveLength(2)
+    expect(h.last()).toEqual({ state: 'starting', detail: undefined })
+  })
+})
+
 describe('stopping means stopped', () => {
   it('lets go of the page so a later touch does not revive it', () => {
     FakeRecognition.startThrows = { name: 'NotAllowedError' }

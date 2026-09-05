@@ -1,6 +1,7 @@
 import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
 import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
+import { notificationId } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { createEffect, createSignal, untrack } from 'solid-js'
@@ -828,6 +829,78 @@ describe('Beside Cue character voice integration', () => {
       { source: 'scheduled', state: 'presented' },
     ])
     expect(voice.playbacks).toHaveLength(1)
+  })
+
+  it('a reminder moved later the same day opens the Cue moment again', async () => {
+    // The 09:00 reminder was answered, then the time was moved to 09:30 and
+    // that reminder is tapped at 10:00. The occurrence id used to be the rule
+    // and the day alone, so the tap found the resolved occurrence and the
+    // app opened on Home.
+    const answeredAt = '2026-08-06T07:05:00.000Z'
+    const movedAt = '2026-08-06T08:00:00.000Z'
+    const seeded = withDailyRule(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      }),
+    )
+    const rule = seeded.scheduleRules[0]
+    if (rule?.kind !== 'target_time') throw new Error('Expected a daily rule.')
+    const repository = createMemoryRepository({
+      ...seeded,
+      scheduleRules: [{ ...rule, localTime: '09:30', updatedAt: movedAt }],
+      occurrences: [
+        {
+          id: 'daily:seed-daily-rule:2026-08-06',
+          cueId: 'seed-cue',
+          source: 'scheduled',
+          scheduleRuleId: 'seed-daily-rule',
+          plannedFor: '2026-08-06T07:00:00.000Z',
+          state: 'resolved',
+          openedAt: answeredAt,
+          outcome: 'b_side',
+          outcomeAt: answeredAt,
+          outcomeLocalDate: '2026-08-06',
+        },
+      ],
+    })
+    const runtime = createMobileRuntimeProbe({ permission: 'granted' })
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: runtime.runtime,
+        })}
+      />
+    ))
+    // Home is up (its heading depends on the local date the seeded outcome
+    // falls on, which differs between a CI runner on UTC and a desk in
+    // Zagreb; the Settings button does not).
+    await screen.findByRole('button', { name: 'Settings' })
+
+    await runtime.emitNotificationAction({
+      notificationId: notificationId(1),
+      actionId: 'open',
+      extra: {
+        type: 'beside-cue-daily',
+        cueId: 'seed-cue',
+        scheduleRuleId: 'seed-daily-rule',
+        scheduleRevision: movedAt,
+      },
+    })
+
+    expect(
+      await screen.findByText('Your plan is here when you want it.'),
+    ).toBeInTheDocument()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved' },
+      {
+        source: 'scheduled',
+        state: 'presented',
+        scheduleRuleId: 'seed-daily-rule',
+      },
+    ])
   })
 
   it.each([

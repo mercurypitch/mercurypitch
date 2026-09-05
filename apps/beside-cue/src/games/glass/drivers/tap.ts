@@ -15,6 +15,9 @@ import type { DiscreteIntent, InteractionDriver } from './types'
 export const createTapDriver = (): InteractionDriver => {
   const lease = acquireSharedAudioContext('tap-driver')
   let queue: DiscreteIntent[] = []
+  /** stop() has run -- possibly while start() was still waiting on the
+   *  resume, in which case the listeners must not go on at all. */
+  let stopped = false
 
   const onPointer = (e: PointerEvent): void => {
     if (isNativeInteractionTarget(e)) return // native controls are not beats
@@ -35,13 +38,18 @@ export const createTapDriver = (): InteractionDriver => {
   return {
     async start(): Promise<void> {
       // Reached before the await so the resume rides the starting tap.
+      if (stopped) return
       lease.ensure()
+      // unlock() reports failure as false, never by throwing; a resume
+      // that did not happen is the same tap-only game with no clock.
       await lease.unlock()
+      if (stopped) return
       window.addEventListener('pointerdown', onPointer)
       window.addEventListener('keydown', onKey)
     },
 
     stop(): void {
+      stopped = true
       window.removeEventListener('pointerdown', onPointer)
       window.removeEventListener('keydown', onKey)
       queue = []

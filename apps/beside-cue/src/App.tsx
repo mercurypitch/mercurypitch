@@ -616,7 +616,10 @@ export function App(props: AppProps) {
     try {
       const openedAt = appServices.now()
       const plannedAt = plannedDailyInstant(rule.localTime, openedAt)
-      const occurrenceId = `daily:${rule.id}:${localDate(plannedAt)}`
+      // The rule's revision is part of the id: a reminder answered at 09:00
+      // and then moved to 20:00 the same day is a new occurrence, not the
+      // resolved one -- which used to make the 20:00 tap open on Home.
+      const occurrenceId = `daily:${rule.id}:${localDate(plannedAt)}:${rule.updatedAt}`
       const existing = state.occurrences.find(
         (occurrence) => occurrence.id === occurrenceId,
       )

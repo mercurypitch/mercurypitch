@@ -15,7 +15,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { computeVoicePeaks } from '@/lib/voice-capture'
 import type { VoiceAtlasContourPayloadV1 } from '@/lib/voice-contour'
@@ -92,6 +92,9 @@ const IconRemove: Component = () => (
   </svg>
 )
 
+/** How long a Keep may stand at "Saving" before it says why it is slow. */
+const SLOW_SAVE_NOTICE_MS = 4000
+
 export const TakeStrip: Component<{
   takes: GlassTake[]
   playingId: number | null
@@ -102,90 +105,112 @@ export const TakeStrip: Component<{
   onToggle: (id: number) => void
   onKeep: (id: number) => void
   onRemove: (id: number) => void
-}> = (props) => (
-  <Show when={props.takes.length > 0}>
-    <div class="glass-takes" role="list" aria-label="Your recorded takes">
-      <For each={props.takes}>
-        {(take) => {
-          const playing = (): boolean => props.playingId === take.id
-          return (
-            <div
-              class="glass-take-card"
-              classList={{ playing: playing(), shattered: take.shattered }}
-              role="listitem"
-              aria-busy={take.saveState === 'saving'}
-            >
-              <button
-                class="glass-take-main"
-                disabled={props.disabled}
-                onClick={() => props.onToggle(take.id)}
-                aria-label={`${playing() ? 'Pause' : 'Play'} take ${take.rep}`}
+}> = (props) => {
+  // A Keep waits on the local database. The first write after an update
+  // that added an index to the stem store waits behind a re-index of every
+  // kept recording -- minutes on a big library -- and "Saving" alone reads
+  // as a hang.
+  const [slowSave, setSlowSave] = createSignal(false)
+  createEffect(() => {
+    if (!hasSavingGlassTake(props.takes)) {
+      setSlowSave(false)
+      return
+    }
+    const timer = setTimeout(() => setSlowSave(true), SLOW_SAVE_NOTICE_MS)
+    onCleanup(() => clearTimeout(timer))
+  })
+  return (
+    <Show when={props.takes.length > 0}>
+      <div class="glass-takes" role="list" aria-label="Your recorded takes">
+        <For each={props.takes}>
+          {(take) => {
+            const playing = (): boolean => props.playingId === take.id
+            return (
+              <div
+                class="glass-take-card"
+                classList={{ playing: playing(), shattered: take.shattered }}
+                role="listitem"
+                aria-busy={take.saveState === 'saving'}
               >
-                <span class="glass-take-btn">
-                  <Show when={playing()} fallback={<IconPlay />}>
-                    <IconPause />
-                  </Show>
-                </span>
-                <span class="glass-take-body">
-                  <span class="glass-take-head">
-                    <span class="glass-take-label">Take {take.rep}</span>
-                    <Show when={take.shattered}>
-                      <span class="glass-take-badge">
-                        <IconShatter size={11} /> Shattered
-                      </span>
-                    </Show>
-                    <Show when={!take.shattered && take.durationSec > 0}>
-                      <span class="glass-take-time">
-                        {take.durationSec.toFixed(1)}s
-                      </span>
+                <button
+                  class="glass-take-main"
+                  disabled={props.disabled}
+                  onClick={() => props.onToggle(take.id)}
+                  aria-label={`${playing() ? 'Pause' : 'Play'} take ${take.rep}`}
+                >
+                  <span class="glass-take-btn">
+                    <Show when={playing()} fallback={<IconPlay />}>
+                      <IconPause />
                     </Show>
                   </span>
-                  <VoiceTakeWaveform
-                    class="glass-take-wave"
-                    peaks={take.peaks}
-                    progress={playing() ? props.progress : 0}
-                    playing={playing()}
-                  />
-                </span>
-              </button>
-              <button
-                class="glass-take-keep"
-                classList={{ saved: take.saveState === 'saved' }}
-                disabled={
-                  props.disabled ||
-                  take.saveState === 'saving' ||
-                  take.saveState === 'saved'
-                }
-                onClick={() => props.onKeep(take.id)}
-                aria-label={`${
-                  take.saveState === 'saved'
-                    ? 'Kept'
-                    : take.saveState === 'error'
-                      ? 'Retry keeping'
-                      : 'Keep'
-                } take ${take.rep} in voice history`}
-              >
-                {take.saveState === 'saving'
-                  ? 'Saving'
-                  : take.saveState === 'saved'
-                    ? 'Kept'
-                    : take.saveState === 'error'
-                      ? 'Retry keep'
-                      : 'Keep'}
-              </button>
-              <button
-                class="glass-take-remove"
-                disabled={props.disabled || take.saveState === 'saving'}
-                onClick={() => props.onRemove(take.id)}
-                aria-label={`Remove take ${take.rep}`}
-                title="Remove this take (your numbers stay)"
-              >
-                <IconRemove />
-              </button>
-            </div>
-          )
-        }}
-      </For>
-    </div>
-  </Show>
-)
+                  <span class="glass-take-body">
+                    <span class="glass-take-head">
+                      <span class="glass-take-label">Take {take.rep}</span>
+                      <Show when={take.shattered}>
+                        <span class="glass-take-badge">
+                          <IconShatter size={11} /> Shattered
+                        </span>
+                      </Show>
+                      <Show when={!take.shattered && take.durationSec > 0}>
+                        <span class="glass-take-time">
+                          {take.durationSec.toFixed(1)}s
+                        </span>
+                      </Show>
+                    </span>
+                    <VoiceTakeWaveform
+                      class="glass-take-wave"
+                      peaks={take.peaks}
+                      progress={playing() ? props.progress : 0}
+                      playing={playing()}
+                    />
+                  </span>
+                </button>
+                <button
+                  class="glass-take-keep"
+                  classList={{ saved: take.saveState === 'saved' }}
+                  disabled={
+                    props.disabled ||
+                    take.saveState === 'saving' ||
+                    take.saveState === 'saved'
+                  }
+                  onClick={() => props.onKeep(take.id)}
+                  aria-label={`${
+                    take.saveState === 'saved'
+                      ? 'Kept'
+                      : take.saveState === 'error'
+                        ? 'Retry keeping'
+                        : 'Keep'
+                  } take ${take.rep} in voice history`}
+                >
+                  {take.saveState === 'saving'
+                    ? 'Saving'
+                    : take.saveState === 'saved'
+                      ? 'Kept'
+                      : take.saveState === 'error'
+                        ? 'Retry keep'
+                        : 'Keep'}
+                </button>
+                <button
+                  class="glass-take-remove"
+                  disabled={props.disabled || take.saveState === 'saving'}
+                  onClick={() => props.onRemove(take.id)}
+                  aria-label={`Remove take ${take.rep}`}
+                  title="Remove this take (your numbers stay)"
+                >
+                  <IconRemove />
+                </button>
+              </div>
+            )
+          }}
+        </For>
+        <Show when={slowSave()}>
+          <p class="glass-take-notice" role="status">
+            Still saving: the first save after an update re-indexes the
+            recordings kept on this device. It can take a minute; nothing is
+            lost.
+          </p>
+        </Show>
+      </div>
+    </Show>
+  )
+}

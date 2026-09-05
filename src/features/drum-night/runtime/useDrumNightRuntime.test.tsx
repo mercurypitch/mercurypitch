@@ -49,6 +49,7 @@ class FakeClock implements DrumRuntimeClock {
 function playerHarness() {
   return {
     activate: vi.fn<DrumKitPlayerPort['activate']>(() => true),
+    running: vi.fn<() => boolean>(() => true),
     trigger: vi.fn<DrumKitPlayerPort['trigger']>(),
     panic: vi.fn<DrumKitPlayerPort['panic']>(),
     dispose: vi.fn<DrumKitPlayerPort['dispose']>(),
@@ -181,6 +182,53 @@ describe('useDrumNightRuntime', () => {
     expect(player.trigger).toHaveBeenCalledWith(
       expect.objectContaining({ gmKey: 38, velocity: 112 }),
     )
+  })
+
+  it('activates again when the browser suspended the context after the first time', async () => {
+    const player = playerHarness()
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+    })
+    await controller.activateAudio()
+    expect(player.activate).toHaveBeenCalledOnce()
+    await controller.activateAudio()
+    expect(player.activate).toHaveBeenCalledOnce()
+
+    // A phone call, a lock, a tab put away: the context is suspended
+    // behind the app's back, and Play used to trust the first activation.
+    player.running.mockReturnValue(false)
+    await controller.activateAudio()
+    expect(player.activate).toHaveBeenCalledTimes(2)
+
+    player.running.mockReturnValue(true)
+    await controller.activateAudio()
+    expect(player.activate).toHaveBeenCalledTimes(2)
+  })
+
+  it('activates again after a suspension when the port activates asynchronously', async () => {
+    // The real player's activate() is async. Its settled promise used to
+    // stay in the in-flight gate, so the re-activation returned it instead
+    // of resuming the context, and the player stayed marked inactive.
+    const player = playerHarness()
+    player.activate.mockImplementation(() => Promise.resolve(true))
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+    })
+    expect(await controller.activateAudio()).toBe(true)
+    expect(player.activate).toHaveBeenCalledOnce()
+
+    player.running.mockReturnValue(false)
+    expect(await controller.activateAudio()).toBe(true)
+    expect(player.activate).toHaveBeenCalledTimes(2)
+
+    // Back up: no third activation, and a MIDI strike is not dropped.
+    player.running.mockReturnValue(true)
+    expect(await controller.activateAudio()).toBe(true)
+    expect(player.activate).toHaveBeenCalledTimes(2)
   })
 
   it('waits out an in-flight failure before retrying audio once', async () => {

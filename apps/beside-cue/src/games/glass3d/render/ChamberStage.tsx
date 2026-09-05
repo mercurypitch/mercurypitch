@@ -144,6 +144,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const noMicApi = micApiBlocker()
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
+  /** The stage itself failed to come up (an asset that would not
+   *  fetch, a renderer that threw). Kept apart from the mic error: the
+   *  mic path cleared that one, and a tap on the gate then put the HUD
+   *  over a black canvas for good. */
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const [backend, setBackend] = createSignal('…')
   // A finished track opens on the card, not in the last room. The card
   // is the only place the per-room bests and the way back into a cleared
@@ -805,7 +810,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
-        setMicError(err instanceof Error ? err.message : String(err))
+        setRenderError(err instanceof Error ? err.message : String(err))
       })
 
     onCleanup(() => {
@@ -821,11 +826,25 @@ export const ChamberStage = (props: ChamberStageProps) => {
     })
   })
 
+  /** One startMic at a time: two taps during the permission prompt
+   *  shared `driver`, and the first one's catch nulled the second's. */
+  let micStarting = false
+  /** The stage has been left. A permission prompt outlives a stage that
+   *  was navigated away from; the driver it would have opened after the
+   *  prompt had nobody to stop it. */
+  let left = false
+  onCleanup(() => {
+    left = true
+  })
+
   const startMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     setMicError(null)
     tone.start()
     try {
       await applyPreferredInput()
+      if (left) return
       // A previous attempt may have left a live driver: `switchMic`
       // succeeds without lifting the gate, so the next tap on "Walk in"
       // arrives with one already running. Overwriting it stranded its
@@ -834,26 +853,44 @@ export const ChamberStage = (props: ChamberStageProps) => {
       driver?.stop()
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
   const switchMic = async (): Promise<void> => {
+    if (micStarting) return
+    micStarting = true
     driver?.stop()
     driver = null
     setMicError(null)
+    // The switch may be the first way in: the game's tone starts with it.
+    if (!started()) tone.start()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
+      if (left) {
+        driver.stop()
+        driver = null
+        return
+      }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
       driver = null
+    } finally {
+      micStarting = false
     }
   }
 
@@ -1013,9 +1050,16 @@ export const ChamberStage = (props: ChamberStageProps) => {
       <Show when={!started() && !guide() && phase() !== 'done'}>
         <div class="stage3d__gate">
           <p>{room().teaches}</p>
-          <button type="button" onClick={() => void startMic()}>
+          <button
+            type="button"
+            disabled={renderError() !== null}
+            onClick={() => void startMic()}
+          >
             Walk in
           </button>
+          <Show when={renderError() !== null}>
+            <p class="stage3d__error">{renderError()}</p>
+          </Show>
           {/* For anyone who skipped it, or who has met a chamber before
               and wants reminding. The gate no longer explains the
               mechanic itself: the guide does that, and saying it twice

@@ -65,6 +65,9 @@ import styles from './VoiceHistoryPage.module.css'
 import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 import { VoiceRoomPanel } from './VoiceRoomPanel'
 
+/** How long a spinner may stand alone before it says why it is slow. */
+const SLOW_OPEN_NOTICE_MS = 4000
+
 interface VoiceThread {
   key: string
   title: string
@@ -349,6 +352,19 @@ interface VoiceHistoryPageProps {
 export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   const [takes, setTakes] = createSignal<VoiceTakeRecord[]>([])
   const [loading, setLoading] = createSignal(true)
+  /** The open has taken longer than a moment. The first open after an
+   *  update that added an index to the stem store re-indexes every kept
+   *  recording inside one upgrade transaction -- minutes on a big
+   *  library -- and a silent spinner reads as a hang. */
+  const [slowOpen, setSlowOpen] = createSignal(false)
+  createEffect(() => {
+    if (!loading()) {
+      setSlowOpen(false)
+      return
+    }
+    const timer = setTimeout(() => setSlowOpen(true), SLOW_OPEN_NOTICE_MS)
+    onCleanup(() => clearTimeout(timer))
+  })
   const [loadFailed, setLoadFailed] = createSignal(false)
   const [selectedKey, setSelectedKey] = createSignal<string | null>(null)
   const [earlierId, setEarlierId] = createSignal<string | null>(null)
@@ -2015,6 +2031,13 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             fallback={
               <div class={styles.loading} role="status">
                 Opening your local take history…
+                <Show when={slowOpen()}>
+                  <p>
+                    The first open after an update re-indexes the recordings
+                    kept on this device. It can take a minute on a large
+                    library; nothing is lost.
+                  </p>
+                </Show>
               </div>
             }
           >

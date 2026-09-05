@@ -114,7 +114,8 @@ describe('tab hash navigation guard', () => {
     router.setActiveTab.mockClear()
     router.requestActiveTabChange.mockClear()
 
-    history.replaceState(null, '', '#/home')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/home')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() => expect(window.location.hash).toBe('#/voice-history'))
@@ -123,6 +124,210 @@ describe('tab hash navigation guard', () => {
       expect.any(Function),
     )
     expect(router.setActiveTab).not.toHaveBeenCalled()
+  })
+
+  it('travels back to the accepted entry instead of rewriting the one Back reached', async () => {
+    // Rewriting the entry the browser had moved to made it a duplicate of
+    // the current screen: every vetoed Back put the real previous page one
+    // step further away.
+    history.replaceState(null, '', '#/voice-history')
+    let accept = true
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(accept),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    // Two accepted navigations, each its own entry.
+    history.pushState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    history.pushState(null, '', '#/compose')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_COMPOSE),
+    )
+    router.setActiveTab.mockClear()
+    const reached: string[] = []
+    window.addEventListener('hashchange', () =>
+      reached.push(window.location.hash),
+    )
+
+    // Back to Home with unsaved work: vetoed, and undone by travelling
+    // forward again -- Home's entry is left as it was.
+    accept = false
+    history.back()
+    await waitFor(() => expect(reached).toEqual(['#/home', '#/compose']))
+    expect(window.location.hash).toBe('#/compose')
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+
+    // With the veto lifted, one Back lands on Home, not on a copy of Compose.
+    accept = true
+    history.back()
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    expect(window.location.hash).toBe('#/home')
+    expect(reached).toEqual(['#/home', '#/compose', '#/home'])
+  })
+
+  it('recognises the return traversal by its stamp, not its hash or a flag', async () => {
+    // A panel may rewrite the accepted entry's hash behind the router (the
+    // jam panel does); dispatching that hash again on the way back would be
+    // a navigation nobody made. And browsers fire hashchange in a task of
+    // its own after popstate, so a flag set around the traversal is not
+    // enough: standing on the accepted entry is what says "nothing new".
+    history.replaceState(null, '', '#/voice-history')
+    let accept = true
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(accept),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    history.pushState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    history.pushState(null, '', '#/compose')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_COMPOSE),
+    )
+    // The panel's rewrite: same entry, another hash.
+    history.replaceState(history.state, '', '#/jam:room-1')
+    router.requestActiveTabChange.mockClear()
+
+    // Back to Home, vetoed: the router travels forward again and must not
+    // take the rewritten hash it lands on for a navigation.
+    accept = false
+    history.back()
+    await waitFor(() => expect(window.location.hash).toBe('#/jam:room-1'))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(router.requestActiveTabChange).toHaveBeenCalledTimes(1)
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_HOME,
+      expect.any(Function),
+    )
+
+    // A browser's late hashchange, in its own task after the traversal:
+    // still the accepted entry, still nothing to dispatch.
+    router.requestActiveTabChange.mockClear()
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(router.requestActiveTabChange).not.toHaveBeenCalled()
+  })
+
+  it('travels back from a vetoed link push instead of rewriting it', async () => {
+    history.replaceState(null, '', '#/voice-history')
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    const reached: string[] = []
+    window.addEventListener('hashchange', () =>
+      reached.push(window.location.hash),
+    )
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    // Back to the accepted entry by traversal, so the vetoed entry is not
+    // rewritten into a copy of it.
+    await waitFor(() => expect(reached).toContain('#/voice-history'))
+    expect(window.location.hash).toBe('#/voice-history')
+    expect(router.setActiveTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('places a link push that truncated forward entries, so a veto still travels back', async () => {
+    // After a Back there is a forward entry; a push then replaces it and
+    // history.length does not grow, so counting entries cannot tell the new
+    // entry from an old one revisited. popstate can: a traversal fires it,
+    // a push does not.
+    history.replaceState(null, '', '#/voice-history')
+    let accept = true
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(accept),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+    history.pushState(null, '', '#/home')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_HOME),
+    )
+    // Back to voice history, accepted: Home is now a forward entry.
+    history.back()
+    await waitFor(() => expect(window.location.hash).toBe('#/voice-history'))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const reached: string[] = []
+    window.addEventListener('hashchange', () =>
+      reached.push(window.location.hash),
+    )
+
+    // A link to Karaoke replaces the forward entry; the leave guard vetoes.
+    accept = false
+    history.pushState(null, '', '#/karaoke/upload')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() => expect(reached).toContain('#/voice-history'))
+    expect(window.location.hash).toBe('#/voice-history')
+    expect(router.requestActiveTabChange).toHaveBeenLastCalledWith(
+      TAB_KARAOKE,
+      expect.any(Function),
+    )
+  })
+
+  it('ignores position stamps left by another page load', async () => {
+    // The entry behind carries a stamp from before the reload. Read against
+    // this load's numbering it would send go() past the end of the list.
+    history.replaceState(
+      { routeIndex: 3, routeEpoch: 'earlier-load' },
+      '',
+      '#/compose',
+    )
+    history.pushState(null, '', '#/voice-history')
+    // Listening from before the router, so the Back is seen as it arrives
+    // and not after the router's synchronous rewrite.
+    const reached: string[] = []
+    window.addEventListener('hashchange', () =>
+      reached.push(window.location.hash),
+    )
+    const router = mountRouter({
+      activeTab: TAB_VOICE_HISTORY,
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_VOICE_HISTORY),
+    )
+
+    const entries = history.length
+    history.back()
+    await waitFor(() => expect(reached).toEqual(['#/compose']))
+    // The old rewrite, not a traversal: the hash is back at once and stays.
+    expect(window.location.hash).toBe('#/voice-history')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(reached).toEqual(['#/compose'])
+    expect(history.length).toBe(entries)
   })
 
   it('vetoes a shared melody before importing it and restores voice history', async () => {
@@ -141,7 +346,8 @@ describe('tab hash navigation guard', () => {
     router.setActiveTab.mockClear()
     router.requestActiveTabChange.mockClear()
 
-    history.replaceState(null, '', `#/share/${payload}`)
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', `#/share/${payload}`)
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() => expect(window.location.hash).toBe('#/voice-history'))
@@ -172,7 +378,8 @@ describe('tab hash navigation guard', () => {
 
     const releaseNavigationLock =
       acquireLocalSaveNavigationLock('karaoke test save')
-    history.replaceState(null, '', '#/karaoke/upload')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/karaoke/upload')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
     releaseNavigationLock()
 
@@ -205,7 +412,8 @@ describe('Content Studio hash navigation guard', () => {
     router.setActiveTab.mockClear()
     router.closeAdminContent.mockClear()
 
-    history.replaceState(null, '', '#/singing')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/singing')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() => expect(window.location.hash).toBe('#/admin/exercises'))
@@ -224,7 +432,8 @@ describe('Content Studio hash navigation guard', () => {
     )
     router.openAdminContent.mockClear()
 
-    history.replaceState(null, '', '#/admin/ascent')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/admin/ascent')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() => expect(window.location.hash).toBe('#/admin/exercises'))
@@ -266,7 +475,8 @@ describe('Voice constellation hash navigation', () => {
     )
     router.setVoiceConstellationOpen.mockClear()
 
-    history.replaceState(null, '', '#/singing')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/singing')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() =>
@@ -299,7 +509,8 @@ describe('Voice constellation hash navigation', () => {
     )
     router.setVoiceConstellationOpen.mockClear()
 
-    history.replaceState(null, '', '#/voice-constellation')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/voice-constellation')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() => expect(window.location.hash).toBe('#/admin/exercises'))
@@ -318,7 +529,8 @@ describe('Voice constellation hash navigation', () => {
     expect(router.closeResetPassword).not.toHaveBeenCalled()
     router.setVoiceConstellationOpen.mockClear()
 
-    history.replaceState(null, '', '#/voice-constellation')
+    // A link: a new entry, then the hashchange the router sees.
+    history.pushState(null, '', '#/voice-constellation')
     window.dispatchEvent(new HashChangeEvent('hashchange'))
 
     await waitFor(() =>

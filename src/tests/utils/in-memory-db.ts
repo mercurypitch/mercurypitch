@@ -101,6 +101,30 @@ export class InMemoryAdapter implements DatabaseAdapter {
     return fn(this)
   }
 
+  // The key-only deletes DexieAdapter offers, so services that insist on
+  // them (voice takes) can run against this double.
+  async deleteByIdStrict(entityName: string, id: string): Promise<void> {
+    await this.getRepository(entityName).delete(id)
+  }
+
+  async deleteByIndexStrict(
+    entityName: string,
+    indexName: string,
+    value: string | number,
+  ): Promise<void> {
+    const repository = this.getRepository(entityName)
+    const rows = await repository.findAll({
+      where: { [indexName]: value } as Partial<DbEntity>,
+    })
+    for (const row of rows) await repository.delete(row.id)
+  }
+
+  async clearStrict(entityName: string): Promise<void> {
+    const repository = this.getRepository(entityName)
+    for (const row of await repository.findAll())
+      await repository.delete(row.id)
+  }
+
   async destroy(): Promise<void> {
     this.repositories.clear()
   }

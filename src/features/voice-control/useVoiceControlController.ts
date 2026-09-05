@@ -325,10 +325,16 @@ export function useVoiceControlController(
       }
       setErrorDetail(detail ?? null)
       if (detail !== undefined && PERMISSION_ERRORS.has(detail)) {
+        // The listener has already stood down; this lets go of it, so no
+        // page hook of a listener that is "off" can bring it back. One
+        // channel, so a browser that repeats the refusal cannot stack the
+        // same warning.
         setEnabled(false)
+        stopListening()
         showNotification(
           'Microphone access for voice control was denied. Allow it in the browser and try again.',
           'warning',
+          { channel: 'voice-control-permission' },
         )
       } else if (detail === 'local-engine-failed') {
         // Almost always the model download (network hiccup or a

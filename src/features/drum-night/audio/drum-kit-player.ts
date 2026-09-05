@@ -976,7 +976,9 @@ export function createDrumKitPlayer(
     }
     const existingGraph =
       graph?.context === context && graph.output === output ? graph : null
-    if (context.state === 'suspended') await context.resume()
+    // Safari also reports 'interrupted' (a call, Siri) -- not in the lib
+    // typings, and not 'suspended', but just as silent until resumed.
+    if ((context.state as string) !== 'running') await context.resume()
     if (disposed) throw abortError()
     if (existingGraph !== null) return existingGraph
     if (graph !== null) {
@@ -1468,6 +1470,7 @@ export function createDrumKitPlayer(
   }
 
   return {
+    running: () => graph !== null && graph.context.state === 'running',
     async activate(): Promise<boolean> {
       try {
         await acquireGraph()
