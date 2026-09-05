@@ -25,6 +25,7 @@ import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, ro
 import { HOME_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { playChordMidis } from './ear-sound'
 import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
@@ -154,9 +155,7 @@ export function useHomeController(
    *  waited out here: the lamp lit for it stays lit exactly as long as
    *  it sounds, and the next chord waits its turn. */
   async function playChord(midis: number[], ms: number): Promise<void> {
-    await Promise.all(
-      midis.map((midi) => audioEngine.playTone(midiToFreq(midi), ms)),
-    )
+    await playChordMidis(audioEngine, midis, ms)
     await wait(ms)
   }
 

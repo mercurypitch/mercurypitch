@@ -240,11 +240,14 @@ export function instrumentReading(
   instrument: Instrument,
 ): InstrumentReading | null {
   switch (instrument.view) {
+    case 'desk':
+      // The desk reads its Colour track. It used to sit inside the group
+      // below, so Hairline, The Grid and Span all showed the desk's number
+      // -- and nothing at all until the desk had been run.
+      return thresholdReading('desk-colour')
     case 'hairline':
     case 'grid':
     case 'span':
-    case 'desk':
-      return thresholdReading('desk-colour')
     case 'beat-hunt':
     case 'drift':
       return thresholdReading(instrument.drillId ?? '')

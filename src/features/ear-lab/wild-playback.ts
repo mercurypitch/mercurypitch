@@ -12,8 +12,8 @@
 import { useEngines } from '@/contexts/EngineContext'
 import { WILD_TIMING } from '@/lib/ear/timing'
 import type { WildKey } from '@/lib/ear/wild'
-import { midiToFreq } from '@/lib/scale-data'
 import { useEarRoom } from './ear-room-context'
+import { playChordMidis } from './ear-sound'
 import type { ExcerptHandle, ExcerptLayer } from './wild-player'
 import { playExcerpt } from './wild-player'
 
@@ -58,11 +58,7 @@ export function useWildPlayback(): WildPlayback {
       await audioEngine.init()
       await audioEngine.resume()
       if (cancelled) return
-      await Promise.all(
-        plantMidis(key).map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), WILD_TIMING.plantMs),
-        ),
-      )
+      await playChordMidis(audioEngine, plantMidis(key), WILD_TIMING.plantMs)
       await wait(WILD_TIMING.plantMs + WILD_TIMING.plantGapMs)
     },
     excerpt: async (layers, startS, endS) => {
