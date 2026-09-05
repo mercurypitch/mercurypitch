@@ -109,9 +109,9 @@ These are the rules that break things when ignored.
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 750 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 600 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
+| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 550 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 500 | What's New — the v0.9.0 release, in the visitor's terms Content, not code. |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 450 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
-| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 450 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
