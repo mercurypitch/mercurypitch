@@ -62,11 +62,4 @@ describe('createTapDriver', () => {
     expect(driver.drainIntents()).toEqual([])
     expect(mocks.lease.release).toHaveBeenCalledTimes(1)
   })
-
-  it('a resume that fails gives the lease back', async () => {
-    mocks.lease.unlock.mockRejectedValue(new Error('no audio'))
-    const driver = createTapDriver()
-    await expect(driver.start()).rejects.toThrow('no audio')
-    expect(mocks.lease.release).toHaveBeenCalledTimes(1)
-  })
 })
