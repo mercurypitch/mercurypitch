@@ -204,21 +204,34 @@ export async function createWeekly(
   }
 }
 
+export type WeeklyUpdateResult = { ok: true } | { ok: false; error: string }
+
+/** PATCH one challenge. A refusal carries the server's reason, so the
+ *  console can say it instead of failing silently. */
 export async function updateWeekly(
   id: string,
   patch: Record<string, unknown>,
   adminKey: string,
-): Promise<boolean> {
-  if (base() === '') return false
+): Promise<WeeklyUpdateResult> {
+  if (base() === '') return { ok: false, error: 'No API base is configured' }
   try {
     const res = await fetch(`${base()}/api/weekly/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
       body: JSON.stringify(patch),
     })
-    return res.ok
+    if (res.ok) return { ok: true }
+    let error = `The server refused the change (${res.status})`
+    try {
+      const body = (await res.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error !== '')
+        error = body.error
+    } catch {
+      // No JSON body: the status is the message.
+    }
+    return { ok: false, error }
   } catch {
-    return false
+    return { ok: false, error: 'The server could not be reached' }
   }
 }
 
