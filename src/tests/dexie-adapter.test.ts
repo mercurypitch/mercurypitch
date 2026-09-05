@@ -279,6 +279,31 @@ describe('DexieAdapter', () => {
     ).toEqual([])
   })
 
+  it('pins the indexes of the blob-bearing stores', () => {
+    // Adding an index to a store whose rows carry multi-megabyte audio makes
+    // the next open re-index every row inside one upgrade transaction --
+    // minutes on a large library, with every reader blocked behind getDb().
+    // v6 and v10 both did it to uvrStemBlobs. This test is the tripwire: a
+    // new index here must come with its own migration plan, not a schema
+    // line. (fake-indexeddb hides the cost, so nothing else would notice.)
+    const db = (adapter as unknown as { db: DexieDB }).db
+    const indexesOf = (store: string): string[] =>
+      db
+        .table(store)
+        .schema.indexes.map((index) => index.src)
+        .sort()
+    expect(indexesOf('uvrStemBlobs')).toEqual(
+      [
+        'sessionId',
+        'stemType',
+        'createdAt',
+        '[sessionId+stemType]',
+        '[sessionId+stemType+createdAt]',
+      ].sort(),
+    )
+    expect(indexesOf('voiceTakeAudio')).toEqual(['&takeId'])
+  })
+
   it('exposes strict v11 Drum project and compound take-summary indexes', async () => {
     const now = new Date().toISOString()
     const project: DrumProjectRec = {
