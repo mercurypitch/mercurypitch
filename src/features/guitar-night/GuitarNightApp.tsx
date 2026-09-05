@@ -9,6 +9,7 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
+import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
 import { ChevronLeft, GuitarTab, Info, LinkChain, ScoreDocument, Split, X, } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
@@ -1332,12 +1333,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           >
             Room
           </button>
-          <Suspense>
-            <GuitarNightAccount
-              onSignIn={openTopbarSignIn}
-              onGoogleRedirectResult={handleGoogleRedirectResult}
-            />
-          </Suspense>
+          <ChunkErrorBoundary label="Your account">
+            <Suspense>
+              <GuitarNightAccount
+                onSignIn={openTopbarSignIn}
+                onGoogleRedirectResult={handleGoogleRedirectResult}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
         </div>
       </div>
 
@@ -2167,31 +2170,80 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
             <Match when={view() === 'score-room' && authoredReference()}>
               {(authored) => (
-                <Suspense
-                  fallback={
-                    <p
-                      class={styles.songMessage}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      Opening the rehearsal room…
-                    </p>
-                  }
-                >
-                  <Show
-                    when={authored().scoreMode === 'backing-only'}
+                <ChunkErrorBoundary label="The rehearsal room">
+                  <Suspense
                     fallback={
-                      <GuitarNightScoreRoom
+                      <p
+                        class={styles.songMessage}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        Opening the rehearsal room…
+                      </p>
+                    }
+                  >
+                    <Show
+                      when={authored().scoreMode === 'backing-only'}
+                      fallback={
+                        <GuitarNightScoreRoom
+                          reference={authored}
+                          tuning={referenceController.tuning}
+                          onInstrument={referenceController.setInstrument}
+                          onStringCount={referenceController.setStringCount}
+                          onTuning={referenceController.setTuning}
+                          suspended={learnOpen}
+                          onSongs={returnToSongs}
+                          onSelectTrack={(trackId) =>
+                            void referenceController.selectTrack(trackId)
+                          }
+                          sheetLanes={referenceController.sheetLanes}
+                          sheetTimeSignatures={
+                            referenceController.sheetTimeSignatures
+                          }
+                          sheetVisibleTrackIds={
+                            referenceController.sheetVisibleTrackIds
+                          }
+                          onToggleSheetTrack={
+                            referenceController.toggleSheetTrack
+                          }
+                          secondaryLane={referenceController.secondaryLane}
+                          followedStageTrackId={
+                            referenceController.followedStageTrackId
+                          }
+                          onFollowStageTrack={
+                            referenceController.followTrackOnStage
+                          }
+                          backingMelody={
+                            referenceController.rehearsalBackingMelodyNotes
+                          }
+                          backingPercussion={
+                            referenceController.allBackingPercussionHits
+                          }
+                          defaultHearScore={
+                            referenceController.scoredPartDefaultsAudible
+                          }
+                          audibleBackingTrackIds={
+                            referenceController.audibleBackingTrackIds
+                          }
+                          mutedBackingTrackIds={
+                            referenceController.mutedBackingTrackIds
+                          }
+                          onToggleBackingTrack={
+                            referenceController.toggleBackingTrack
+                          }
+                          soloedBackingTrackId={
+                            referenceController.soloedBackingTrackId
+                          }
+                          onToggleSoloBackingTrack={
+                            referenceController.toggleSoloBackingTrack
+                          }
+                        />
+                      }
+                    >
+                      <GuitarNightPercussionRoom
                         reference={authored}
-                        tuning={referenceController.tuning}
-                        onInstrument={referenceController.setInstrument}
-                        onStringCount={referenceController.setStringCount}
-                        onTuning={referenceController.setTuning}
                         suspended={learnOpen}
                         onSongs={returnToSongs}
-                        onSelectTrack={(trackId) =>
-                          void referenceController.selectTrack(trackId)
-                        }
                         sheetLanes={referenceController.sheetLanes}
                         sheetTimeSignatures={
                           referenceController.sheetTimeSignatures
@@ -2202,21 +2254,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         onToggleSheetTrack={
                           referenceController.toggleSheetTrack
                         }
-                        secondaryLane={referenceController.secondaryLane}
-                        followedStageTrackId={
-                          referenceController.followedStageTrackId
-                        }
-                        onFollowStageTrack={
-                          referenceController.followTrackOnStage
-                        }
-                        backingMelody={
-                          referenceController.rehearsalBackingMelodyNotes
-                        }
                         backingPercussion={
                           referenceController.allBackingPercussionHits
-                        }
-                        defaultHearScore={
-                          referenceController.scoredPartDefaultsAudible
                         }
                         audibleBackingTrackIds={
                           referenceController.audibleBackingTrackIds
@@ -2233,49 +2272,17 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         onToggleSoloBackingTrack={
                           referenceController.toggleSoloBackingTrack
                         }
+                        secondaryLane={referenceController.secondaryLane}
+                        followedStageTrackId={
+                          referenceController.followedStageTrackId
+                        }
+                        onFollowStageTrack={
+                          referenceController.followTrackOnStage
+                        }
                       />
-                    }
-                  >
-                    <GuitarNightPercussionRoom
-                      reference={authored}
-                      suspended={learnOpen}
-                      onSongs={returnToSongs}
-                      sheetLanes={referenceController.sheetLanes}
-                      sheetTimeSignatures={
-                        referenceController.sheetTimeSignatures
-                      }
-                      sheetVisibleTrackIds={
-                        referenceController.sheetVisibleTrackIds
-                      }
-                      onToggleSheetTrack={referenceController.toggleSheetTrack}
-                      backingPercussion={
-                        referenceController.allBackingPercussionHits
-                      }
-                      audibleBackingTrackIds={
-                        referenceController.audibleBackingTrackIds
-                      }
-                      mutedBackingTrackIds={
-                        referenceController.mutedBackingTrackIds
-                      }
-                      onToggleBackingTrack={
-                        referenceController.toggleBackingTrack
-                      }
-                      soloedBackingTrackId={
-                        referenceController.soloedBackingTrackId
-                      }
-                      onToggleSoloBackingTrack={
-                        referenceController.toggleSoloBackingTrack
-                      }
-                      secondaryLane={referenceController.secondaryLane}
-                      followedStageTrackId={
-                        referenceController.followedStageTrackId
-                      }
-                      onFollowStageTrack={
-                        referenceController.followTrackOnStage
-                      }
-                    />
-                  </Show>
-                </Suspense>
+                    </Show>
+                  </Suspense>
+                </ChunkErrorBoundary>
               )}
             </Match>
 
@@ -2287,24 +2294,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               }
             >
               {(activity) => (
-                <Suspense
-                  fallback={
-                    <p
-                      class={styles.songMessage}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      Opening Learn…
-                    </p>
-                  }
-                >
-                  <GuitarNightLearnRoom
-                    activity={activity()}
-                    tuning={learnActivityTuning}
-                    active={() => view() === activity() && !learnOpen()}
-                    onBack={returnFromLearnExercise}
-                  />
-                </Suspense>
+                <ChunkErrorBoundary label="Learn">
+                  <Suspense
+                    fallback={
+                      <p
+                        class={styles.songMessage}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        Opening Learn…
+                      </p>
+                    }
+                  >
+                    <GuitarNightLearnRoom
+                      activity={activity()}
+                      tuning={learnActivityTuning}
+                      active={() => view() === activity() && !learnOpen()}
+                      onBack={returnFromLearnExercise}
+                    />
+                  </Suspense>
+                </ChunkErrorBoundary>
               )}
             </Match>
           </Switch>
@@ -2529,13 +2538,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
       <Notifications />
       <Show when={authModalMode() !== null}>
-        <Suspense>
-          <AuthModal
-            tone="guitar-night"
-            onAuthenticated={handleAuthenticated}
-            prepareGoogleRedirect={prepareGoogleRedirect}
-          />
-        </Suspense>
+        <ChunkErrorBoundary label="Sign-in">
+          <Suspense>
+            <AuthModal
+              tone="guitar-night"
+              onAuthenticated={handleAuthenticated}
+              prepareGoogleRedirect={prepareGoogleRedirect}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       </Show>
       <Show when={showVoiceHelp()}>
         <VoiceCommandsOverlay
