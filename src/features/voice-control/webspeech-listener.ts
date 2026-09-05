@@ -220,6 +220,27 @@ export function createWebSpeechListener(
     window.removeEventListener('keydown', onGesture, { capture: true })
   }
 
+  /** Let go of everything that could bring a session back: timers, the
+   *  gesture seam, and the page hooks below. */
+  const letGoOfPage = () => {
+    started = false
+    hasBeenLive = false
+    clearRestartTimer()
+    clearConfirmTimer()
+    stopListeningForGesture()
+    document.removeEventListener('visibilitychange', onVisibility)
+    window.removeEventListener('pageshow', onPageShow)
+  }
+
+  /** Give up until start() is called again, and say why. The exit for
+   *  errors only the user can fix. */
+  const standDown = (detail: string) => {
+    letGoOfPage()
+    discard()
+    callbacks.onInterim('')
+    callbacks.onStateChange('error', detail)
+  }
+
   // ── Coming back to a page that was put away ───────────────────
   //
   // iOS suspends a backgrounded document and does not always tell the
@@ -305,12 +326,13 @@ export function createWebSpeechListener(
     r.onerror = (event) => {
       if (event.error === 'no-speech' || event.error === 'aborted') return
       if (FATAL_ERRORS.has(event.error)) {
-        // The user has to act — but a permission that was refused because the
-        // mic was busy elsewhere comes back, and their next touch is a fair
-        // moment to find out. `started` stays true so that touch is spent.
-        clearRestartTimer()
-        clearConfirmTimer()
-        failToGesture(event.error)
+        // The user has to act, and nothing here can act for them: a refused
+        // permission is refused again by every timed restart and by every
+        // touch spent on it. Spending touches was how a denied mic kept
+        // respawning the recognizer and toasting on every tap anywhere in
+        // the app. Stand down for good and say why once; the controller
+        // turns voice control off and the next toggle is a fresh start().
+        standDown(event.error)
         return
       }
       // Transient errors (network, audio-capture) also land here; onend
@@ -386,12 +408,7 @@ export function createWebSpeechListener(
       spinUp()
     },
     stop: () => {
-      started = false
-      hasBeenLive = false
-      clearRestartTimer()
-      stopListeningForGesture()
-      document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('pageshow', onPageShow)
+      letGoOfPage()
       discard()
       callbacks.onInterim('')
       callbacks.onStateChange('idle')

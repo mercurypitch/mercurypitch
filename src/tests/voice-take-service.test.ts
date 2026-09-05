@@ -330,6 +330,66 @@ describe('voice take persistence', () => {
   })
 })
 
+function breakDexieTableClears(dexie: DexieAdapter, entity: string) {
+  const repository = dexie.getRepository(entity) as unknown as {
+    table: Record<'clear', () => unknown>
+  }
+  const spy = vi.spyOn(repository.table, 'clear').mockImplementation(() => {
+    throw new Error('UnknownError: voice history is not writable')
+  })
+  return { restore: () => spy.mockRestore() }
+}
+
+describe('voice take deletes stay off the audio payloads', () => {
+  let dexie: DexieAdapter
+
+  beforeEach(() => {
+    dexie = new DexieAdapter()
+    getDbMock.mockResolvedValue(dexie)
+  })
+
+  afterEach(async () => {
+    await dexie.destroy()
+  })
+
+  it('deletes a take, a thread and the whole history without reading one audio row', async () => {
+    // An audio row is the whole recording. The old deletes listed the rows
+    // to learn their ids, which copied every take into memory (the entire
+    // library, for a wipe) on the way to the bin.
+    const first = await saveVoiceTake(draft())
+    const second = await saveVoiceTake(draft('2026-08-02T12:00:00.000Z'))
+    const third = await saveVoiceTake({
+      ...draft('2026-08-03T12:00:00.000Z'),
+      comparisonKey: 'glass:target-midi:61:v1',
+    })
+    expect(first.ok && second.ok && third.ok).toBe(true)
+    const repositoryProto = Object.getPrototypeOf(
+      dexie.getRepository('voiceTakeAudio'),
+    ) as Record<'findAll' | 'findById', (...args: unknown[]) => unknown>
+    const reads = [
+      vi.spyOn(repositoryProto, 'findAll'),
+      vi.spyOn(repositoryProto, 'findById'),
+    ]
+
+    expect(await deleteVoiceTake(first.value!.id)).toBe(true)
+    expect(await deleteVoiceThread(second.value!.comparisonKey)).toBe(true)
+    expect(await wipeVoiceTakes()).toBe(true)
+
+    const audioReads = reads
+      .flatMap((spy) => spy.mock.contexts)
+      .filter(
+        (repository) =>
+          (repository as { table?: { name?: string } }).table?.name ===
+          'voiceTakeAudio',
+      )
+    expect(audioReads).toHaveLength(0)
+    reads.forEach((spy) => spy.mockRestore())
+    expect(await listVoiceTakes()).toEqual([])
+    expect(await getVoiceTakeBlob(third.value!.id)).toBeNull()
+    expect(await getVoiceTakeContour(third.value!.id)).toBeNull()
+  })
+})
+
 describe('voice take authoritative IndexedDB reads', () => {
   let dexie: DexieAdapter
 
@@ -407,13 +467,15 @@ describe('voice take authoritative IndexedDB reads', () => {
     await expect(getVoiceTakeContour(second.value!.id)).resolves.not.toBeNull()
   })
 
-  it('does not report a wipe or partially clear history when a store read fails', async () => {
+  it('does not report a wipe or partially clear history when a store clear fails', async () => {
     const first = await saveVoiceTake(draft())
     const second = await saveVoiceTake(draft('2026-08-02T12:00:00.000Z'))
     expect(first.ok).toBe(true)
     expect(second.ok).toBe(true)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    const contourFailure = breakDexieTableReads(dexie, 'voiceTakeContours')
+    // The audio store is cleared before the contours fail, so this also
+    // proves the transaction rolls the first clear back.
+    const contourFailure = breakDexieTableClears(dexie, 'voiceTakeContours')
 
     await expect(wipeVoiceTakes()).resolves.toBe(false)
 
