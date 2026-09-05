@@ -1,7 +1,26 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PunchedTimeDial } from './PunchedTimeDial'
+
+let refreshLayoutReadiness = (): void => undefined
+
+beforeEach(() => {
+  refreshLayoutReadiness = () => undefined
+  // jsdom has no layout observers. Deliver the browser boundary explicitly
+  // after fixture geometry changes, independently of the pointer stream.
+  vi.stubGlobal(
+    'ResizeObserver',
+    class implements ResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        refreshLayoutReadiness = () => callback([], this)
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    },
+  )
+})
 
 class FakePointerEvent extends MouseEvent {
   readonly pointerId: number
@@ -42,6 +61,32 @@ function dispatchPointer(
   return event
 }
 
+function preparePointerDial(): HTMLDivElement {
+  const dial = screen.getByRole('slider') as HTMLDivElement
+  dial.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      top: 0,
+      width: 440,
+      height: 440,
+      right: 440,
+      bottom: 440,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }) as DOMRect
+  let captured: number | undefined
+  dial.setPointerCapture = (pointerId) => {
+    captured = pointerId
+  }
+  dial.hasPointerCapture = (pointerId) => captured === pointerId
+  dial.releasePointerCapture = () => {
+    captured = undefined
+  }
+  refreshLayoutReadiness()
+  return dial
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -64,6 +109,144 @@ function ControlledDial(props: {
 }
 
 describe('PunchedTimeDial', () => {
+  it('waits for the pre-contact touch policy to be published before admitting a new touch', () => {
+    const onValueChange = vi.fn<(value: string) => void>()
+    render(() => (
+      <PunchedTimeDial value="10:00" onValueChange={onValueChange} />
+    ))
+    const dial = screen.getByRole('slider') as HTMLDivElement
+    expect(dial).toHaveAttribute('data-pointer-ready', 'false')
+    dial.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 440,
+        height: 440,
+        right: 440,
+        bottom: 440,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const capture = vi.fn()
+    dial.setPointerCapture = capture
+
+    dispatchPointer(dial, 'pointerdown', 400, 220, 10, 'touch')
+    refreshLayoutReadiness()
+    dispatchPointer(dial, 'pointermove', 220, 400, 30, 'touch')
+    dispatchPointer(dial, 'pointerup', 220, 400, 40, 'touch')
+    expect(capture).not.toHaveBeenCalled()
+    expect(onValueChange).not.toHaveBeenCalled()
+
+    dispatchPointer(dial, 'pointerdown', 400, 220, 60, 'touch')
+    dispatchPointer(dial, 'pointermove', 220, 400, 80, 'touch')
+    expect(capture).toHaveBeenCalledWith(7)
+    expect(onValueChange).toHaveBeenCalledWith('10:15')
+  })
+
+  it('focuses a touched ring without selecting a draft time on a tap or tiny jitter', () => {
+    const onValueChange = vi.fn<(value: string) => void>()
+    render(() => (
+      <PunchedTimeDial
+        value=""
+        defaultValue="10:00"
+        onValueChange={onValueChange}
+      />
+    ))
+    const dial = preparePointerDial()
+
+    dispatchPointer(dial, 'pointerdown', 275, 220, 10, 'touch')
+    dispatchPointer(dial, 'pointermove', 276, 221, 30, 'touch')
+    dispatchPointer(dial, 'pointerup', 276, 221, 50, 'touch')
+
+    expect(dial).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Edit hours' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('')
+    expect(onValueChange).not.toHaveBeenCalled()
+    expect(dial.hasPointerCapture(7)).toBe(false)
+  })
+
+  it.each(['paused release', 'native cancel', 'second touch'] as const)(
+    'does not coast after %s and releases the gesture',
+    (ending) => {
+      render(() => <ControlledDial initialValue="10:00" />)
+      const dial = preparePointerDial()
+      dispatchPointer(dial, 'pointerdown', 400, 220, 10, 'touch')
+      dispatchPointer(dial, 'pointermove', 220, 400, 30, 'touch')
+      expect(screen.getByLabelText('Type exact time')).toHaveValue('10:15')
+
+      if (ending === 'second touch') {
+        document.body.dispatchEvent(
+          new FakePointerEvent('pointerdown', {
+            pointerId: 8,
+            pointerType: 'touch',
+            isPrimary: false,
+          }),
+        )
+      } else {
+        dispatchPointer(
+          dial,
+          ending === 'native cancel' ? 'pointercancel' : 'pointerup',
+          220,
+          400,
+          200,
+          'touch',
+        )
+      }
+      dispatchPointer(dial, 'pointermove', 40, 220, 220, 'touch')
+
+      expect(screen.getByLabelText('Type exact time')).toHaveValue('10:15')
+      expect(dial.hasPointerCapture(7)).toBe(false)
+      expect(dial.closest('section')).toHaveAttribute('data-dragging', 'false')
+    },
+  )
+
+  it('crosses the spindle without a half-revolution jump or switching rings', () => {
+    render(() => <ControlledDial initialValue="10:00" />)
+    const dial = preparePointerDial()
+    dispatchPointer(dial, 'pointerdown', 400, 220, 10, 'touch')
+    dispatchPointer(dial, 'pointermove', 220, 220, 30, 'touch')
+    dispatchPointer(dial, 'pointermove', 40, 220, 50, 'touch')
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('10:00')
+
+    dispatchPointer(dial, 'pointermove', 220, 40, 80, 'touch')
+
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('10:15')
+    expect(dial.closest('section')).toHaveAttribute('data-mode', 'minute')
+  })
+
+  it('rebases a fast inner-ring swipe that crosses the spindle between delivered samples', () => {
+    render(() => <ControlledDial initialValue="10:00" />)
+    const dial = preparePointerDial()
+    dispatchPointer(dial, 'pointerdown', 260, 220, 10, 'touch')
+    dispatchPointer(dial, 'pointermove', 180, 220, 30, 'touch')
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('10:00')
+
+    dispatchPointer(dial, 'pointermove', 220, 180, 60, 'touch')
+
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('13:00')
+    expect(dial.closest('section')).toHaveAttribute('data-mode', 'hour')
+  })
+
+  it('ends a turn without coasting when its nested layout changes under the finger', () => {
+    render(() => <ControlledDial initialValue="10:00" />)
+    const dial = preparePointerDial()
+    dispatchPointer(dial, 'pointerdown', 400, 220, 10, 'touch')
+    dispatchPointer(dial, 'pointermove', 220, 400, 30, 'touch')
+    const before = dial.getBoundingClientRect()
+    dial.getBoundingClientRect = () =>
+      ({ ...before, left: 40, right: 480 }) as DOMRect
+
+    dispatchPointer(dial, 'pointermove', 220, 400, 40, 'touch')
+
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('10:15')
+    expect(dial.hasPointerCapture(7)).toBe(false)
+    expect(dial.closest('section')).toHaveAttribute('data-dragging', 'false')
+  })
+
   it('keeps the visible readout, slider semantics, and exact input in sync', () => {
     render(() => <ControlledDial />)
 
@@ -248,7 +431,7 @@ describe('PunchedTimeDial', () => {
     ])
   })
 
-  it('leaves a vertical touch gesture available to page scrolling', () => {
+  it('owns a vertical tangent on a ready record instead of yielding it to scrolling', () => {
     const onValueChange = vi.fn<(value: string) => void>()
     render(() => (
       <PunchedTimeDial value="18:30" onValueChange={onValueChange} />
@@ -271,14 +454,15 @@ describe('PunchedTimeDial', () => {
       capturedPointer = pointerId
     }
 
+    refreshLayoutReadiness()
     const down = dispatchPointer(dial, 'pointerdown', 390, 220, 10, 'touch')
     const move = dispatchPointer(dial, 'pointermove', 390, 300, 30, 'touch')
 
     expect(down.defaultPrevented).toBe(false)
-    expect(move.defaultPrevented).toBe(false)
-    expect(capturedPointer).toBeUndefined()
-    expect(onValueChange).not.toHaveBeenCalled()
-    expect(dial.closest('section')).not.toHaveAttribute('data-dragging', 'true')
+    expect(move.defaultPrevented).toBe(true)
+    expect(capturedPointer).toBe(7)
+    expect(onValueChange).toHaveBeenCalledWith('18:34')
+    expect(dial.closest('section')).toHaveAttribute('data-dragging', 'true')
   })
 
   it('promotes a settled tangential touch into a deliberate record turn', () => {
@@ -304,6 +488,7 @@ describe('PunchedTimeDial', () => {
       capturedPointer = pointerId
     }
 
+    refreshLayoutReadiness()
     const down = dispatchPointer(dial, 'pointerdown', 220, 40, 10, 'touch')
     const move = dispatchPointer(dial, 'pointermove', 300, 60, 30, 'touch')
 

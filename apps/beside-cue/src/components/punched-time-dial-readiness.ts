@@ -5,6 +5,8 @@
 // A record may sit inside the page scroller or onboarding's nested stage.
 // Pointer turns are eligible only after every clipping boundary exposes most
 // of the record and the active scroller has been quiet for a short beat.
+// Publish that eligibility before contact: changing touch-action from a
+// pointerdown handler cannot take an already-started native scroll away.
 
 export interface TimeDialPointerReadiness {
   readonly isReady: () => boolean
@@ -16,6 +18,7 @@ export interface TimeDialPointerReadinessOptions {
   readonly minimumVisibleRatio?: number
   readonly scrollSettleMs?: number
   readonly now?: () => number
+  readonly onReadyChange?: (ready: boolean) => void
 }
 
 const DEFAULT_MINIMUM_VISIBLE_RATIO = 0.8
@@ -82,33 +85,90 @@ export function createTimeDialPointerReadiness(
     options.minimumVisibleRatio ?? DEFAULT_MINIMUM_VISIBLE_RATIO
   const scrollSettleMs = options.scrollSettleMs ?? DEFAULT_SCROLL_SETTLE_MS
   const now = options.now ?? (() => performance.now())
+  const visualViewport = window.visualViewport
   let lastScrollAt = Number.NEGATIVE_INFINITY
   let scrollRevision = 0
+  let publishedReady: boolean | undefined
+  let settleTimer: number | undefined
+  let disposed = false
+
+  const isReady = (): boolean =>
+    !disposed &&
+    now() - lastScrollAt >= scrollSettleMs &&
+    visibleElementRatio(element) >= minimumVisibleRatio
+
+  const publish = (ready: boolean): void => {
+    if (disposed || publishedReady === ready) return
+    publishedReady = ready
+    options.onReadyChange?.(ready)
+  }
+
+  const refreshVisibility = (): void => {
+    if (disposed) return
+    publish(isReady())
+  }
 
   const noteViewportMovement = (): void => {
+    if (disposed) return
     scrollRevision += 1
     lastScrollAt = now()
+    // Disarm synchronously, without waiting for an observer or reading layout
+    // on every scroll event. Only the latest quiet-period timer may rearm.
+    publish(false)
+    if (settleTimer !== undefined) window.clearTimeout(settleTimer)
+    settleTimer = window.setTimeout(() => {
+      settleTimer = undefined
+      refreshVisibility()
+    }, scrollSettleMs)
   }
   window.addEventListener('scroll', noteViewportMovement, {
     capture: true,
     passive: true,
   })
-  window.visualViewport?.addEventListener('scroll', noteViewportMovement, {
+  window.addEventListener('resize', noteViewportMovement, { passive: true })
+  visualViewport?.addEventListener('scroll', noteViewportMovement, {
     passive: true,
   })
-  window.visualViewport?.addEventListener('resize', noteViewportMovement, {
+  visualViewport?.addEventListener('resize', noteViewportMovement, {
     passive: true,
   })
 
+  const intersectionObserver =
+    typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(refreshVisibility, {
+          threshold: [0, minimumVisibleRatio, 1],
+        })
+      : undefined
+  intersectionObserver?.observe(element)
+
+  const resizeObserver =
+    typeof ResizeObserver === 'function'
+      ? new ResizeObserver(refreshVisibility)
+      : undefined
+  // A nested stage can clip the record without changing the record's size.
+  let observedElement: HTMLElement | null = element
+  while (observedElement !== null) {
+    resizeObserver?.observe(observedElement)
+    observedElement = observedElement.parentElement
+  }
+  refreshVisibility()
+
   return {
-    isReady: () =>
-      now() - lastScrollAt >= scrollSettleMs &&
-      visibleElementRatio(element) >= minimumVisibleRatio,
+    isReady,
     revision: () => scrollRevision,
     dispose: () => {
+      if (disposed) return
+      disposed = true
+      if (settleTimer !== undefined) {
+        window.clearTimeout(settleTimer)
+        settleTimer = undefined
+      }
+      intersectionObserver?.disconnect()
+      resizeObserver?.disconnect()
       window.removeEventListener('scroll', noteViewportMovement, true)
-      window.visualViewport?.removeEventListener('scroll', noteViewportMovement)
-      window.visualViewport?.removeEventListener('resize', noteViewportMovement)
+      window.removeEventListener('resize', noteViewportMovement)
+      visualViewport?.removeEventListener('scroll', noteViewportMovement)
+      visualViewport?.removeEventListener('resize', noteViewportMovement)
     },
   }
 }

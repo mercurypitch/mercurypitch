@@ -71,7 +71,7 @@ const english = {
     'Turn the record to choose a reminder time',
   'Turning hours': 'Turning hours',
   'Turning minutes': 'Turning minutes',
-  'Sweep sideways': 'Sweep sideways',
+  'Turn in a circle': 'Turn in a circle',
   'Sweep to choose': 'Sweep to choose',
   'Choose dial layer': 'Choose dial layer',
   'Edit hours': 'Edit hours',
@@ -81,8 +81,8 @@ const english = {
   Minutes: 'Minutes',
   'Vinyl edge': 'Vinyl edge',
   'Type exact time': 'Type exact time',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.',
   'One Pull. One chosen turn.': 'One Pull. One chosen turn.',
   'Keep your better choice beside the moment.':
     'Keep your better choice beside the moment.',
@@ -390,7 +390,7 @@ const spanish = {
     'Gira el disco para elegir una hora de recordatorio',
   'Turning hours': 'Girando las horas',
   'Turning minutes': 'Girando los minutos',
-  'Sweep sideways': 'Desliza de lado',
+  'Turn in a circle': 'Gira en círculo',
   'Sweep to choose': 'Desliza para elegir',
   'Choose dial layer': 'Elegir la capa del dial',
   'Edit hours': 'Editar horas',
@@ -400,8 +400,8 @@ const spanish = {
   Minutes: 'Minutos',
   'Vinyl edge': 'Borde del vinilo',
   'Type exact time': 'Escribir la hora exacta',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Desliza de lado por arriba o por abajo. El borde exterior ajusta los minutos; el centro dorado, las horas.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Gira el disco en círculo. Borde exterior: minutos. Centro dorado: horas. Desplaza la página junto al disco.',
   'One Pull. One chosen turn.': 'Un impulso. Un cambio elegido.',
   'Keep your better choice beside the moment.':
     'Mantén tu mejor elección junto al momento.',
@@ -710,7 +710,7 @@ const german = {
     'Drehe die Schallplatte, um eine Erinnerungszeit zu wählen',
   'Turning hours': 'Stunden werden gedreht',
   'Turning minutes': 'Minuten werden gedreht',
-  'Sweep sideways': 'Seitwärts wischen',
+  'Turn in a circle': 'Im Kreis drehen',
   'Sweep to choose': 'Zum Auswählen wischen',
   'Choose dial layer': 'Einstellebene wählen',
   'Edit hours': 'Stunden bearbeiten',
@@ -720,8 +720,8 @@ const german = {
   Minutes: 'Minuten',
   'Vinyl edge': 'Schallplattenrand',
   'Type exact time': 'Genaue Uhrzeit eingeben',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Wische oben oder unten seitwärts. Am äußeren Rand stellst du die Minuten ein, in der goldenen Mitte die Stunden.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Drehe die Platte im Kreis. Außenrand: Minuten. Goldene Mitte: Stunden. Scrolle neben der Platte.',
   'One Pull. One chosen turn.': 'Ein Impuls. Eine bewusste Wendung.',
   'Keep your better choice beside the moment.':
     'Halte deine bessere Wahl für den Moment bereit.',

@@ -11,21 +11,12 @@ export const MINUTES_PER_DAY = 24 * 60
 export const PUNCHED_DIAL_GEOMETRY = {
   spindleDeadZoneRadius: 24,
   hourLayerOuterRadius: 92,
-  recordOuterRadius: 204,
+  // Include the narrow paper rim around the 194-unit vinyl, but not the
+  // rectangular corners: a near-edge touch should not miss the whole dial.
+  recordOuterRadius: 220,
 } as const
 
 export type TimeDialLayer = 'hour' | 'minute'
-export type TimeDialTouchIntent = 'pending' | 'spin' | 'yield'
-
-export interface TimeDialTouchIntentSample {
-  readonly startX: number
-  readonly startY: number
-  readonly currentX: number
-  readonly currentY: number
-  readonly centerX: number
-  readonly centerY: number
-}
-
 export interface TimeDialStepOptions {
   readonly large?: boolean
 }
@@ -34,9 +25,6 @@ const CLOCK_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
 const MINUTE_LAYER_DEGREES_PER_MINUTE = 6
 const HOUR_LAYER_DEGREES_PER_HOUR = 30
 const DEFAULT_MINUTE_INTERVAL = 5
-const TOUCH_INTENT_SLOP_PX = 10
-const TOUCH_HORIZONTAL_DOMINANCE = 1.2
-const TOUCH_TANGENTIAL_DOMINANCE = 1.35
 
 function finiteNumber(value: number, name: string): number {
   if (!Number.isFinite(value)) {
@@ -76,46 +64,6 @@ export function normalizeAngularDelta(deltaDegrees: number): number {
   return Object.is(normalized, -0) ? 0 : normalized
 }
 
-/**
- * Separates a deliberate record turn from a page-scroll gesture. Touch only
- * wins after clear horizontal, tangential travel; vertical or radial motion
- * is yielded to the browser so the record never becomes a scroll trap.
- */
-export function classifyTimeDialTouchIntent(
-  sample: TimeDialTouchIntentSample,
-): TimeDialTouchIntent {
-  const values = [
-    sample.startX,
-    sample.startY,
-    sample.currentX,
-    sample.currentY,
-    sample.centerX,
-    sample.centerY,
-  ]
-  if (values.some((value) => !Number.isFinite(value))) return 'yield'
-
-  const deltaX = sample.currentX - sample.startX
-  const deltaY = sample.currentY - sample.startY
-  if (Math.hypot(deltaX, deltaY) < TOUCH_INTENT_SLOP_PX) return 'pending'
-
-  const absoluteX = Math.abs(deltaX)
-  const absoluteY = Math.abs(deltaY)
-  if (absoluteY * TOUCH_HORIZONTAL_DOMINANCE >= absoluteX) return 'yield'
-
-  const radialX = sample.startX - sample.centerX
-  const radialY = sample.startY - sample.centerY
-  const radius = Math.hypot(radialX, radialY)
-  if (radius < 1) return 'yield'
-
-  const radialTravel = Math.abs((deltaX * radialX + deltaY * radialY) / radius)
-  const tangentialTravel = Math.abs(
-    (deltaX * -radialY + deltaY * radialX) / radius,
-  )
-  return tangentialTravel >= radialTravel * TOUCH_TANGENTIAL_DOMINANCE
-    ? 'spin'
-    : 'yield'
-}
-
 /** Resolves a record-space radius to the latched interaction layer. */
 export function classifyTimeDialLayer(radius: number): TimeDialLayer | null {
   if (!Number.isFinite(radius) || radius < 0) return null
@@ -123,6 +71,31 @@ export function classifyTimeDialLayer(radius: number): TimeDialLayer | null {
   if (radius <= PUNCHED_DIAL_GEOMETRY.hourLayerOuterRadius) return 'hour'
   if (radius <= PUNCHED_DIAL_GEOMETRY.recordOuterRadius) return 'minute'
   return null
+}
+
+/** Detects spindle crossings between samples in centre-relative record coordinates. */
+export function segmentCrossesTimeDialSpindle(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): boolean {
+  const deltaX = endX - startX
+  const deltaY = endY - startY
+  const lengthSquared = deltaX * deltaX + deltaY * deltaY
+  const closestFraction =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(1, -(startX * deltaX + startY * deltaY) / lengthSquared),
+        )
+  const closestX = startX + closestFraction * deltaX
+  const closestY = startY + closestFraction * deltaY
+  return (
+    Math.hypot(closestX, closestY) <=
+    PUNCHED_DIAL_GEOMETRY.spindleDeadZoneRadius
+  )
 }
 
 /**
