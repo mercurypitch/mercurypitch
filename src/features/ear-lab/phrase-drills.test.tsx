@@ -43,6 +43,7 @@ const engine = {
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
   playTone: vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
+  playChord: vi.fn().mockResolvedValue(undefined),
   stopTone: vi.fn(),
 }
 
@@ -97,17 +98,19 @@ describe('EchoDrill', () => {
     ))
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
     await vi.advanceTimersByTimeAsync(0)
-    // The first chord of the cadence: three parallel tones.
-    expect(engine.playTone).toHaveBeenCalledTimes(3)
+    // The first chord of the cadence, sounded as one chord.
+    expect(engine.playChord).toHaveBeenCalledTimes(1)
+    expect(engine.playTone).not.toHaveBeenCalled()
     expect(status()).toBe('Listen to the phrase…')
     await vi.advanceTimersByTimeAsync(CADENCE + ECHO_TIMING.restMs + 10)
     // Four chords planted, and the first note of Do Re Mi is sounding.
-    expect(engine.playTone).toHaveBeenCalledTimes(13)
+    expect(engine.playChord).toHaveBeenCalledTimes(4)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
     expect(parts('bead')).toBe(3)
     expect(chain()?.querySelectorAll('[data-lit="true"]').length).toBe(1)
     expect(ladder()[0].hasAttribute('disabled')).toBe(true)
     await vi.advanceTimersByTimeAsync(ECHO_PHRASE(3))
-    expect(engine.playTone).toHaveBeenCalledTimes(15)
+    expect(engine.playTone).toHaveBeenCalledTimes(3)
     expect(status()).toBe('Tap it back on the ladder, note by note.')
     expect(ladder()).toHaveLength(8)
     expect(ladder()[0].hasAttribute('disabled')).toBe(false)
@@ -123,8 +126,8 @@ describe('EchoDrill', () => {
     expect(screen.getByLabelText('Tap the 3 notes back')).toBeTruthy()
     expect(screen.getByText(/1′ is home again/)).toBeTruthy()
     fireEvent.click(ladder()[4])
-    expect(engine.playTone).toHaveBeenCalledTimes(16)
-    const [, tapMs] = engine.playTone.mock.calls[15] ?? []
+    expect(engine.playTone).toHaveBeenCalledTimes(4)
+    const [, tapMs] = engine.playTone.mock.calls[3] ?? []
     expect(tapMs).toBe(LADDER_TIMING.tapMs)
   })
 
@@ -167,7 +170,7 @@ describe('EchoDrill', () => {
     // Three rungs sounded under the taps; then the replay: three
     // notes, slower, no cadence.
     await vi.advanceTimersByTimeAsync(0)
-    expect(engine.playTone).toHaveBeenCalledTimes(19)
+    expect(engine.playTone).toHaveBeenCalledTimes(7)
     // The next round waits for the slow replay to finish, then the hold.
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 4000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
@@ -206,10 +209,12 @@ describe('SpanDrill', () => {
     ))
     fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
     await vi.advanceTimersByTimeAsync(0)
-    expect(engine.playTone).toHaveBeenCalledTimes(3)
+    expect(engine.playChord).toHaveBeenCalledTimes(1)
+    expect(engine.playTone).not.toHaveBeenCalled()
     expect(status()).toBe('Listen to the phrase…')
     await vi.advanceTimersByTimeAsync(SPAN_CADENCE + SPAN_TIMING.restMs + 10)
-    expect(engine.playTone).toHaveBeenCalledTimes(13)
+    expect(engine.playChord).toHaveBeenCalledTimes(4)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
     expect(parts('bead')).toBe(3)
     expect(chain()?.querySelectorAll('[data-lit="true"]').length).toBe(1)
     await vi.advanceTimersByTimeAsync(SPAN_PHRASE(3))

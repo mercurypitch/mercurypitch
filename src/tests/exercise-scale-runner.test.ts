@@ -43,7 +43,10 @@ function createMockBase(
   return mock
 }
 
-const audioEngine = { playTone: async () => {} }
+const audioEngine = {
+  playTone: async () => {},
+  playChord: vi.fn().mockResolvedValue(undefined),
+}
 
 describe('useScaleRunnerController', () => {
   it('computeResult returns zero and real metric keys for empty history', () => {

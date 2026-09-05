@@ -58,10 +58,9 @@ export function useWildPlayback(): WildPlayback {
       await audioEngine.init()
       await audioEngine.resume()
       if (cancelled) return
-      await Promise.all(
-        plantMidis(key).map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), WILD_TIMING.plantMs),
-        ),
+      await audioEngine.playChord(
+        plantMidis(key).map(midiToFreq),
+        WILD_TIMING.plantMs,
       )
       await wait(WILD_TIMING.plantMs + WILD_TIMING.plantGapMs)
     },

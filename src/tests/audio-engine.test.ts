@@ -250,6 +250,67 @@ describe('AudioEngine', () => {
     vi.clearAllMocks()
   })
 
+  describe('playChord', () => {
+    type GainMock = { gain: { events: MockAutomationEvent[] } }
+    const gainsFrom = (ctx: AudioContext, from: number) =>
+      vi
+        .mocked(ctx.createGain)
+        .mock.results.slice(from)
+        .map((result) => result.value as GainMock)
+    const releasesOf = (gain: GainMock) =>
+      gain.gain.events.filter(
+        (event) => event.method === 'setTargetAtTime' && event.args[0] === 0,
+      )
+
+    it('starts a voice per note and releases none before the chord ends', async () => {
+      const ctx = engine.getAudioContext()!
+      const oscillatorsBefore = vi.mocked(ctx.createOscillator).mock.results
+        .length
+      const gainsBefore = vi.mocked(ctx.createGain).mock.results.length
+
+      await engine.playChord([261.63, 329.63, 392], 500)
+
+      const started = vi
+        .mocked(ctx.createOscillator)
+        .mock.results.slice(oscillatorsBefore)
+        .map((result) => result.value as { start: ReturnType<typeof vi.fn> })
+        .filter((osc) => osc.start.mock.calls.length > 0)
+      expect(started.length).toBeGreaterThanOrEqual(3)
+      // Through playTone, each member released the one before it at once
+      // (a decay to zero at the clock's start). A chord releases nothing
+      // until its own end.
+      const early = gainsFrom(ctx, gainsBefore)
+        .flatMap(releasesOf)
+        .filter((event) => event.args[1] < 0.1)
+      expect(early).toHaveLength(0)
+    })
+
+    it('is released by stopTone like a tone', async () => {
+      const ctx = engine.getAudioContext()!
+      const gainsBefore = vi.mocked(ctx.createGain).mock.results.length
+      await engine.playChord([261.63, 329.63, 392], 500)
+
+      engine.stopTone(50)
+
+      const released = gainsFrom(ctx, gainsBefore).filter(
+        (gain) => releasesOf(gain).length > 0,
+      )
+      expect(released.length).toBeGreaterThanOrEqual(3)
+    })
+
+    it('is replaced by the next tone', async () => {
+      const ctx = engine.getAudioContext()!
+      const gainsBefore = vi.mocked(ctx.createGain).mock.results.length
+      await engine.playChord([261.63, 329.63, 392], 500)
+      const chordGains = gainsFrom(ctx, gainsBefore)
+
+      await engine.playTone(440, 200)
+
+      const released = chordGains.filter((gain) => releasesOf(gain).length > 0)
+      expect(released.length).toBeGreaterThanOrEqual(3)
+    })
+  })
+
   describe('initialization', () => {
     it('creates engine and initializes audio context', async () => {
       const ctx = engine.getAudioContext()

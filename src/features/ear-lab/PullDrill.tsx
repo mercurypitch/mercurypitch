@@ -67,11 +67,7 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
   async function plant(): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (cancelled) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), PULL_TIMING.chordMs),
-        ),
-      )
+      await audioEngine.playChord(chord.map(midiToFreq), PULL_TIMING.chordMs)
       await wait(PULL_TIMING.chordMs + PULL_TIMING.chordGapMs)
     }
     await wait(PULL_TIMING.restMs)

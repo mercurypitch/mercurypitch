@@ -17,7 +17,7 @@ import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
-import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
 export type IdentificationPhase =
@@ -103,13 +103,19 @@ export function useIdentificationController(
     () => cancelled,
   )
 
+  /** Rounds in this run: the catalogue's dozen, or the fewer a
+   *  sprint segment promised on its card. */
+  const [totalRounds, setTotalRounds] = createSignal(IDENTIFICATION_ROUNDS)
+
   function start(): void {
     cancelled = false
     startedAt = performance.now()
     outcomes = []
     runTrack = options?.track?.() ?? null
     ratingAtStart = earPlayerRating(trackId()).rating
+    const armed = takeSprintRunLength(drill.id)
     batch(() => {
+      setTotalRounds(armed?.rounds ?? IDENTIFICATION_ROUNDS)
       setRound(0)
       setResult(null)
       setRating(earPlayerRating(trackId()))
@@ -119,7 +125,7 @@ export function useIdentificationController(
 
   async function playRound(): Promise<void> {
     if (cancelled) return
-    if (round() >= IDENTIFICATION_ROUNDS) {
+    if (round() >= totalRounds()) {
       finish()
       return
     }
@@ -227,7 +233,9 @@ export function useIdentificationController(
   return {
     phase,
     round,
-    totalRounds: IDENTIFICATION_ROUNDS,
+    get totalRounds() {
+      return totalRounds()
+    },
     expectedId,
     answeredId,
     rating,

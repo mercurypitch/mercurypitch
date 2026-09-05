@@ -8,6 +8,7 @@
 // produces estimates, stored and displayed as estimates.
 // ============================================================
 
+import { createSignal } from 'solid-js'
 import { addScoredMs } from '@/db/services/practice-minutes'
 import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { trackEvent } from '@/lib/analytics'
@@ -381,6 +382,10 @@ export interface SprintDayState {
   /** Drills finished today, in the order they were played. */
   done: string[]
   completedAt: number | null
+  /** The day's segments, planned once when the day is first opened.
+   *  Absent only on a state written before plans were kept; it is
+   *  planned and stored on the next read. */
+  plan?: SprintSegment[]
 }
 
 const MAX_SPRINT_HISTORY = 400
@@ -440,10 +445,17 @@ export function sprintCandidates(): SprintCandidate[] {
   return out
 }
 
-/** Today's sprint. Recomputed from current standings, so finishing a
- *  drill can change tomorrow's plan but never today's mid-run. */
+/** Today's sprint, planned once per local day and kept with the day's
+ *  progress. Standings shape tomorrow's plan, never today's: a finished
+ *  segment scores its drill, which would drop it out of the need slots
+ *  and hand its place to another drill mid-run, so a new singer could
+ *  never complete a sprint. */
 export function todaysSprint(): SprintSegment[] {
-  return planDailySprint(sprintCandidates(), earToday())
+  const current = sprintProgress()
+  if (current.plan !== undefined) return current.plan
+  const plan = planDailySprint(sprintCandidates(), current.day)
+  setSprintDay({ ...current, plan })
+  return plan
 }
 
 /** Today's progress, or a fresh day once the date rolls over. */
@@ -452,6 +464,38 @@ export function sprintProgress(): SprintDayState {
   const stored = sprintDay()
   if (stored && stored.day === today) return stored
   return { day: today, done: [], completedAt: null }
+}
+
+// ── Sprint run length ───────────────────────────────────────────
+
+/** What the sprint card promised for the run it is about to start:
+ *  the segment's own rounds or turns, instead of the drill's full
+ *  length. Armed by the card, taken by the next run to start. */
+export interface SprintRunLength {
+  drillId: string
+  rounds?: number
+  reversals?: number
+}
+
+const [sprintRunLength, setSprintRunLength] =
+  createSignal<SprintRunLength | null>(null)
+
+export function armSprintSegment(segment: SprintSegment): void {
+  setSprintRunLength(
+    segment.kind === 'identification'
+      ? { drillId: segment.drillId, rounds: segment.rounds }
+      : { drillId: segment.drillId, reversals: segment.reversals },
+  )
+}
+
+/** The armed length for this drill, or null. Whichever run starts
+ *  next consumes the arming, so a drill opened from the bench after a
+ *  sprint tap still runs at its full length. */
+export function takeSprintRunLength(drillId: string): SprintRunLength | null {
+  const armed = sprintRunLength()
+  if (armed === null) return null
+  setSprintRunLength(null)
+  return armed.drillId === drillId ? armed : null
 }
 
 export function isSprintComplete(): boolean {
@@ -537,6 +581,7 @@ export function resetEarLabStore(): void {
   setConfusions({})
   setSprintDay(null)
   setSprintDays([])
+  setSprintRunLength(null)
   setAutoAdvance(true)
   setRevealHold(REVEAL_HOLD.defaultMs)
   setInfoOpen({})

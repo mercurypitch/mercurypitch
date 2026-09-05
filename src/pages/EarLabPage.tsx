@@ -9,12 +9,13 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
 import { ChartDrill } from '@/features/ear-lab/ChartDrill'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
+import { resetDeskStore } from '@/features/ear-lab/desk-store'
 import { DeskView } from '@/features/ear-lab/DeskView'
 import { DriftDrill } from '@/features/ear-lab/DriftDrill'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
@@ -34,10 +35,18 @@ import { PulseDrill } from '@/features/ear-lab/PulseDrill'
 import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
+import { releaseWildStems } from '@/features/ear-lab/wild-store'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
+  // Leaving the lab lets the decoded stems go (tens of megabytes a
+  // song) along with the desk's rendered source. The books they were
+  // read into stay, so coming back does not read the songs again.
+  onCleanup(() => {
+    releaseWildStems()
+    resetDeskStore()
+  })
   const back = () => setView('dashboard')
 
   // A drill asked for from elsewhere (The Ascent's ear week). Cleared

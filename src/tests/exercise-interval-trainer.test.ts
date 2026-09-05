@@ -44,7 +44,10 @@ function createMockBase(
   return mock
 }
 
-const audioEngine = { playTone: async () => {} }
+const audioEngine = {
+  playTone: async () => {},
+  playChord: vi.fn().mockResolvedValue(undefined),
+}
 
 describe('difficultyWeightedRoundScore', () => {
   it('is a span-weighted mean in 0-100, not an inflated sum', () => {

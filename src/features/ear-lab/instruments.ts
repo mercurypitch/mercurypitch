@@ -240,11 +240,14 @@ export function instrumentReading(
   instrument: Instrument,
 ): InstrumentReading | null {
   switch (instrument.view) {
+    // The desk is the one view whose reading is not its own drill's.
+    // Keep it on its own line: it once slipped into the group below and
+    // three catalogue tiles read the desk's Colour threshold instead.
+    case 'desk':
+      return thresholdReading('desk-colour')
     case 'hairline':
     case 'grid':
     case 'span':
-    case 'desk':
-      return thresholdReading('desk-colour')
     case 'beat-hunt':
     case 'drift':
       return thresholdReading(instrument.drillId ?? '')

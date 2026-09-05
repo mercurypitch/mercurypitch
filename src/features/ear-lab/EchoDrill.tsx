@@ -85,11 +85,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   async function plant(): Promise<void> {
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (cancelled) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), ECHO_TIMING.chordMs),
-        ),
-      )
+      await audioEngine.playChord(chord.map(midiToFreq), ECHO_TIMING.chordMs)
       await wait(ECHO_TIMING.chordMs + ECHO_TIMING.chordGapMs)
     }
     await wait(ECHO_TIMING.restMs)

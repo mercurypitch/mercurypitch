@@ -18,7 +18,7 @@ import { createEffect, createMemo, For, Show } from 'solid-js'
 import { findIdentificationDrill, findThresholdDrill } from '@/lib/ear/drills'
 import type { SprintSegment } from '@/lib/ear/sprint'
 import { SPRINT_REASON_LABEL } from '@/lib/ear/sprint'
-import { completeSprint, isSprintComplete, sprintProgress, sprintStreak, todaysSprint, } from '@/stores/ear-lab-store'
+import { armSprintSegment, completeSprint, isSprintComplete, sprintProgress, sprintStreak, todaysSprint, } from '@/stores/ear-lab-store'
 import { VIEW_FOR_DRILL } from './drill-views'
 import { IconCheck, IconSeal } from './ear-icons'
 import type { EarLabView } from './EarLabDashboard'
@@ -104,7 +104,9 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
                   data-drill={segment.drillId}
                   onClick={() => {
                     const view = VIEW_FOR_DRILL[segment.drillId]
-                    if (view) props.onNavigate(view)
+                    if (!view) return
+                    armSprintSegment(segment)
+                    props.onNavigate(view)
                   }}
                 >
                   Start

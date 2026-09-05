@@ -34,6 +34,7 @@ const audio = {
   playTone: vi.fn<(freq: number, ms?: number) => Promise<void>>(
     async () => undefined,
   ),
+  playChord: vi.fn().mockResolvedValue(undefined),
 }
 
 /** The probe is the one tone sounded for probeMs. */

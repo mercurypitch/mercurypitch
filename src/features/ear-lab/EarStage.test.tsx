@@ -18,6 +18,7 @@ import { HomeDrill } from './HomeDrill'
 function fakeEngine() {
   return {
     playTone: vi.fn(async () => undefined),
+    playChord: vi.fn().mockResolvedValue(undefined),
     stopTone: vi.fn(),
     init: vi.fn(async () => undefined),
     resume: vi.fn(async () => undefined),

@@ -190,6 +190,40 @@ describe("today's sprint", () => {
     for (const id of ids) expect(SPRINT_DRILL_IDS).toContain(id)
   })
 
+  it("keeps today's plan once a segment is finished mid-run", () => {
+    const plan = todaysSprint()
+    expect(plan.length).toBeGreaterThan(0)
+    const first = plan[0]
+    // Finishing the segment scores its drill. Before the plan was kept
+    // with the day, that score moved the drill out of the need slots and
+    // another drill took its place, so the day could never be closed.
+    if (first.kind === 'threshold') {
+      recordThresholdReading({
+        drillId: first.drillId,
+        value: 4,
+        spread: 1,
+        tracks: 1,
+        source: 'practice',
+      })
+    } else {
+      for (let i = 0; i < PROVISIONAL_ATTEMPTS + 1; i++) {
+        recordIdentificationAnswer({
+          drillId: first.drillId,
+          itemId: `${first.drillId}:x`,
+          itemDifficulty: { rating: 1200, attempts: 0 },
+          correct: true,
+          guessRate: 1 / 7,
+          expected: 'x',
+          answered: 'x',
+        })
+      }
+    }
+    markSprintSegmentDone(first.drillId)
+    expect(todaysSprint()).toEqual(plan)
+    expect(sprintProgress().plan).toEqual(plan)
+    expect(sprintProgress().done).toEqual([first.drillId])
+  })
+
   it('starts empty and books segments once each', () => {
     expect(sprintProgress().done).toEqual([])
     markSprintSegmentDone('hairline')

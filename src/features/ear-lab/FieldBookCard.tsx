@@ -37,22 +37,25 @@ export function fieldBookRating(): number | null {
   )
 }
 
+function bookWord(book: NonNullable<WildReadingState['book']>): string {
+  const items = book.home.length + book.echo.length + book.bassline.length
+  return `${keyLabel(book.key)} · ${items} items`
+}
+
 function stateWord(state: WildReadingState): string {
   switch (state.status) {
     case 'unread':
-      return 'Unread'
+      // A song read on an earlier visit keeps its book after its stems
+      // are let go, and the card still says what the book found.
+      return state.book ? bookWord(state.book) : 'Unread'
     case 'reading':
       // The number matters more than the word: a bare "Reading…" on a long
       // song is indistinguishable from a hang.
       return `Reading… ${state.progress?.pct ?? 0}%`
     case 'error':
       return 'Could not be read'
-    case 'ready': {
-      const book = state.reading?.book
-      if (!book) return 'Read'
-      const items = book.home.length + book.echo.length + book.bassline.length
-      return `${keyLabel(book.key)} · ${items} items`
-    }
+    case 'ready':
+      return state.reading ? bookWord(state.reading.book) : 'Read'
   }
 }
 

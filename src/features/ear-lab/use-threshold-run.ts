@@ -30,7 +30,7 @@ import type { ThresholdDrill } from '@/lib/ear/drills'
 import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
-import { completeCalibrationRun, creditEarSession, latestThresholdReading, markSprintSegmentDone, recordThresholdReading, } from '@/stores/ear-lab-store'
+import { completeCalibrationRun, creditEarSession, latestThresholdReading, markSprintSegmentDone, recordThresholdReading, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
@@ -78,6 +78,11 @@ export function useThresholdRun(
   const [trials, setTrials] = createSignal(0)
   const [reversalsDone, setReversalsDone] = createSignal(0)
   const [level, setLevel] = createSignal(drill.staircase.start)
+  /** Turns a practice run ends on: the catalogue's, or the fewer a
+   *  sprint segment promised on its card. */
+  const [practiceReversals, setPracticeReversals] = createSignal(
+    drill.staircase.reversalsToStop,
+  )
   const [stimulusStep, setStimulusStep] = createSignal(0)
   const [lastCorrect, setLastCorrect] = createSignal<boolean | null>(null)
   const [result, setResult] = createSignal<ThresholdRunResult | null>(null)
@@ -108,7 +113,7 @@ export function useThresholdRun(
   function trackTarget(): number {
     return mode() === 'calibration'
       ? CALIBRATION_STAIRCASE.reversalsToStop
-      : drill.staircase.reversalsToStop
+      : practiceReversals()
   }
 
   /** Total turns a full run needs (progress display). */
@@ -157,8 +162,15 @@ export function useThresholdRun(
       setResult(null)
       setLastCorrect(null)
     })
+    // The sprint card arms the shorter length its segment promised.
+    // Whichever run starts next takes it, in either mode, so it cannot
+    // leak into a later run of the drill from the bench.
+    const armed = takeSprintRunLength(drill.id)
     if (runMode === 'practice') {
-      single = createStaircase(drill.staircase)
+      const reversalsToStop =
+        armed?.reversals ?? drill.staircase.reversalsToStop
+      setPracticeReversals(reversalsToStop)
+      single = createStaircase({ ...drill.staircase, reversalsToStop })
       tracks = []
     } else {
       single = null
