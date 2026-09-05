@@ -229,6 +229,45 @@ def _is_allowed_s3_key(key: str) -> bool:
     )
 
 
+def _billing_refusal(declared_raw: Any, probed_seconds: float) -> Optional[str]:
+    """Why a job must not run at the price it was submitted for, or None.
+
+    The bridge debits on the CLIENT-declared duration; the probe here is the
+    only check on it.
+      * Probe failed (0.0): None. Fail-open, like the caps -- a probe hiccup
+        must never block a legitimate job.
+      * Declared: refuse when the probed song lands in a higher billing
+        block than was paid for.
+      * Undeclared (missing or unparsable): the client could not read the
+        length and paid the base price. Inside the base window that IS the
+        price, so the job runs; past it, refuse -- until now an undeclared
+        job skipped this check entirely, so an old or hand-rolled client
+        separated a 30-minute song for the price of a short one.
+    """
+    if not probed_seconds or probed_seconds <= 0:
+        return None
+    try:
+        declared = float(declared_raw or 0)
+    except (TypeError, ValueError):
+        declared = 0.0
+    probed_blocks = _billing_blocks(probed_seconds)
+    if declared > 0:
+        if probed_blocks > _billing_blocks(declared):
+            return (
+                f"The song is {probed_seconds / 60:.1f} min but was submitted "
+                f"as {declared / 60:.1f} min. The price depends on length; "
+                "please retry the upload."
+            )
+        return None
+    if probed_blocks > 1:
+        return (
+            f"The song is {probed_seconds / 60:.1f} min and was submitted "
+            f"without its length. Songs past {BILLING_BASE_MINUTES:.0f} minutes "
+            "are priced by length; please update the app and retry the upload."
+        )
+    return None
+
+
 def _billing_blocks(duration_seconds: float) -> int:
     """Billing factor for a song length: 1 in the base window, +1 per
     started surcharge block past it. Mirrors uvrLengthFactor()."""
@@ -886,31 +925,17 @@ def handler(job: dict) -> dict:
                 )
             }
         # Billing verification: the worker debits on the CLIENT-declared
-        # duration. If the probed song lands in a HIGHER billing block than
-        # was declared (= paid for), refuse before the expensive separation
-        # — the error path auto-refunds, so an honest mistake costs nothing
-        # and a dishonest declaration buys nothing. Fail-open on a failed
-        # probe (0.0), same as the caps.
-        declared = float(job_input.get("declared_duration_seconds") or 0)
-        if (
-            declared > 0
-            and in_duration > 0
-            and _billing_blocks(in_duration) > _billing_blocks(declared)
-        ):
-            logger.warning(
-                "Job %s rejected: probed %.1f min exceeds the declared "
-                "%.1f min billing block",
-                job_id,
-                in_duration / 60,
-                declared / 60,
-            )
-            return {
-                "error": (
-                    f"The song is {in_duration / 60:.1f} min but was "
-                    f"submitted as {declared / 60:.1f} min — the price "
-                    f"depends on length. Please retry the upload."
-                )
-            }
+        # duration, so the probed song must not land in a higher billing
+        # block than was paid for. _billing_refusal spells out the cases,
+        # including a job that declared nothing at all. The error path
+        # auto-refunds, so an honest mistake costs nothing and a dishonest
+        # (or missing) declaration buys nothing.
+        refusal = _billing_refusal(
+            job_input.get("declared_duration_seconds"), in_duration
+        )
+        if refusal is not None:
+            logger.warning("Job %s rejected on billing: %s", job_id, refusal)
+            return {"error": refusal}
 
         # Same probe, opposite bound (probe failure = 0.0 stays fail-open).
         if MIN_INPUT_SECONDS > 0 and 0 < in_duration < MIN_INPUT_SECONDS:
