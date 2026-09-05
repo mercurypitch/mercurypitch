@@ -13,7 +13,7 @@ import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
 import { CALIBRATION_STAIRCASE } from '@/lib/ear/calibration'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { latestThresholdReading, recordThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
+import { armSprintSegment, latestThresholdReading, recordThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
 
 const drill = findThresholdDrill('hairline')
 if (!drill) throw new Error('hairline drill missing from catalogue')
@@ -239,5 +239,49 @@ describe('a calibration you can see the end of', () => {
       dispose()
     })
     vi.useRealTimers()
+  })
+})
+
+describe('a sprint segment', () => {
+  it('runs to the turns its card promised, and only that run', async () => {
+    armSprintSegment({
+      kind: 'threshold',
+      drillId: 'hairline',
+      reason: 'unmeasured',
+      reversals: 4,
+    })
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play, {
+        cancelStimulus: stim.cancelStimulus,
+      })
+      run.start('practice')
+      expect(run.trackTarget()).toBe(4)
+      expect(run.reversalTarget()).toBe(4)
+      run.stop()
+      // The arming was taken: a run opened from the bench afterwards is
+      // the catalogue's full length again.
+      run.start('practice')
+      expect(run.trackTarget()).toBe(drill.staircase.reversalsToStop)
+      dispose()
+    })
+  })
+
+  it('is not taken by a different drill', async () => {
+    armSprintSegment({
+      kind: 'threshold',
+      drillId: 'grid',
+      reason: 'unmeasured',
+      reversals: 4,
+    })
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play, {
+        cancelStimulus: stim.cancelStimulus,
+      })
+      run.start('practice')
+      expect(run.trackTarget()).toBe(drill.staircase.reversalsToStop)
+      dispose()
+    })
   })
 })

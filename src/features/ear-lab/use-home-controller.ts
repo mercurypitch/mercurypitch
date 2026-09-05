@@ -24,7 +24,7 @@ import type { DegreeSet } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
 import { HOME_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
-import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
@@ -81,6 +81,7 @@ export interface HomeOptions {
 }
 
 interface AudioLike {
+  playChord: (frequencies: number[], durationMs: number) => Promise<void>
   playTone: (
     freq: number,
     durationMs?: number,
@@ -147,18 +148,20 @@ export function useHomeController(
   }
 
   /** The chord as a chord: every member a full voice of the engine's
-   *  instrument, started together. (The engine's own chord members are
-   *  faint sines meant to colour one note, not to carry a cadence —
-   *  through them a cadence came out as four bare roots.) playTone
-   *  resolves once the tone is scheduled, so the chord's length is
-   *  waited out here: the lamp lit for it stays lit exactly as long as
-   *  it sounds, and the next chord waits its turn. */
+   *  instrument, started on one clock tick. (The engine's own chord
+   *  members are faint sines meant to colour one note, and playTone is
+   *  monophonic — a second call releases the first — so neither route
+   *  carries a cadence.) playChord resolves once the chord is scheduled,
+   *  so its length is waited out here: the lamp lit for it stays lit
+   *  exactly as long as it sounds, and the next chord waits its turn. */
   async function playChord(midis: number[], ms: number): Promise<void> {
-    await Promise.all(
-      midis.map((midi) => audioEngine.playTone(midiToFreq(midi), ms)),
-    )
+    await audioEngine.playChord(midis.map(midiToFreq), ms)
     await wait(ms)
   }
+
+  /** Rounds in this run: the catalogue's dozen, or the fewer a
+   *  sprint segment promised on its card. */
+  const [totalRounds, setTotalRounds] = createSignal(HOME_ROUNDS)
 
   function start(runMode: HomeAnswerMode): void {
     cancelled = false
@@ -166,7 +169,9 @@ export function useHomeController(
     outcomes = []
     skipped = 0
     ratingAtStart = earPlayerRating(drillIdFor(set, runMode)).rating
+    const armed = takeSprintRunLength(set.tapDrillId)
     batch(() => {
+      setTotalRounds(armed?.rounds ?? HOME_ROUNDS)
       setMode(runMode)
       setRound(0)
       setResult(null)
@@ -179,7 +184,7 @@ export function useHomeController(
 
   async function playRound(): Promise<void> {
     if (cancelled) return
-    if (round() >= HOME_ROUNDS) {
+    if (round() >= totalRounds()) {
       finish()
       return
     }
@@ -402,7 +407,9 @@ export function useHomeController(
     mode,
     cadenceStep,
     round,
-    totalRounds: HOME_ROUNDS,
+    get totalRounds() {
+      return totalRounds()
+    },
     currentDegree,
     answeredDegree,
     lastCents,

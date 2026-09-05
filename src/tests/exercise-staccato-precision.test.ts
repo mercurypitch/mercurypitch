@@ -59,7 +59,10 @@ describe('useStaccatoPrecisionController', () => {
 
   it('computeResult returns zero with the expected metric keys for no rounds', () => {
     const base = createMockBase()
-    const audioEngine = { playTone: async () => {} }
+    const audioEngine = {
+      playTone: async () => {},
+      playChord: vi.fn().mockResolvedValue(undefined),
+    }
     const ctrl = useStaccatoPrecisionController(base, audioEngine)
     const result = ctrl.computeResult()
 
@@ -76,7 +79,10 @@ describe('useStaccatoPrecisionController', () => {
     const base = createMockBase({
       _updateMetrics: (m) => metricsCalls.push(m),
     })
-    const audioEngine = { playTone: async () => {} }
+    const audioEngine = {
+      playTone: async () => {},
+      playChord: vi.fn().mockResolvedValue(undefined),
+    }
     const ctrl = useStaccatoPrecisionController(base, audioEngine)
 
     ctrl.setBase(69) // A4 center
@@ -111,6 +117,7 @@ describe('useStaccatoPrecisionController', () => {
         batchClock += 10
         history = [...history, ...perfectSamples(freq, 12, batchClock)]
       },
+      playChord: vi.fn().mockResolvedValue(undefined),
     }
     const ctrl = useStaccatoPrecisionController(base, audioEngine)
 
@@ -132,7 +139,10 @@ describe('useStaccatoPrecisionController', () => {
       _completeWithResult: (r) => committed.push(r),
       _setRunning: (v) => running.push(v),
     })
-    const audioEngine = { playTone: async () => {} }
+    const audioEngine = {
+      playTone: async () => {},
+      playChord: vi.fn().mockResolvedValue(undefined),
+    }
     const ctrl = useStaccatoPrecisionController(base, audioEngine)
 
     ctrl.setBase(69)

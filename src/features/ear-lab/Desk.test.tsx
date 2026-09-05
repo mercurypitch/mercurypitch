@@ -72,6 +72,7 @@ function fakeEngine(): AudioEngine {
     playTone: vi.fn<(...args: unknown[]) => Promise<void>>(
       async () => undefined,
     ),
+    playChord: vi.fn().mockResolvedValue(undefined),
     stopTone: vi.fn(),
   } as unknown as AudioEngine
 }

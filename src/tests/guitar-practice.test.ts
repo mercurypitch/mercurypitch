@@ -18,6 +18,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 function mockAudioEngine(): AudioEngine {
   return {
     playTone: vi.fn().mockResolvedValue(undefined),
+    playChord: vi.fn().mockResolvedValue(undefined),
     init: vi.fn().mockResolvedValue(undefined),
     resume: vi.fn().mockResolvedValue(undefined),
     stopTone: vi.fn(),

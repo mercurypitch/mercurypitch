@@ -69,6 +69,7 @@ const VALID_INTERVALS = new Set([0, 3, 4, 5, 7, 12])
 
 const audioEngineMock = {
   playTone: async () => {},
+  playChord: vi.fn().mockResolvedValue(undefined),
   stopTone: () => {},
 }
 

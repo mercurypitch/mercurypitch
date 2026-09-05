@@ -97,6 +97,14 @@ interface ActiveVoice {
   autoStopTimer?: ReturnType<typeof setTimeout>
 }
 
+/** One member of a chord playing now: its own level stage, its
+ *  sources and its modulators, released together. */
+interface ChordVoice {
+  gain: GainNode
+  oscillators: (OscillatorNode | AudioBufferSourceNode)[]
+  lfos: OscillatorNode[]
+}
+
 export class AudioEngine {
   audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
@@ -123,6 +131,8 @@ export class AudioEngine {
   // Legacy aliases for compatibility
   private micAnalyser: AnalyserNode | null = null
   private toneOscillator: AudioBufferSourceNode | OscillatorNode | null = null
+  /** Voices of the chord playing now; stopTone() releases them too. */
+  private chordVoices = new Set<ChordVoice>()
   private toneGain: GainNode | null = null
   private toneCleanupTimer: ReturnType<typeof setTimeout> | null = null
   /** Invalidates playTone calls that are still awaiting AudioContext startup. */
@@ -1172,6 +1182,7 @@ export class AudioEngine {
     if (this.toneOscillator !== null) {
       this.releaseCurrentTone(80)
     }
+    this.releaseChordVoices(80)
 
     if (this.toneCleanupTimer !== null) {
       clearTimeout(this.toneCleanupTimer)
@@ -1319,11 +1330,147 @@ export class AudioEngine {
     }
   }
 
+  /**
+   * Several notes as one chord: every member a full voice of the current
+   * instrument, started on the same clock tick and ended together.
+   * playTone is monophonic by design — a new note releases the one before
+   * it — so a chord built from parallel playTone calls collapses to its
+   * last member. Chord voices are tracked apart from the tone voice and
+   * released by stopTone() and by the next playTone(). Like playTone,
+   * this resolves once the chord is scheduled, not when it ends.
+   */
+  async playChord(frequencies: number[], durationMs: number): Promise<void> {
+    if (frequencies.length === 0) return
+    const generation = this.playToneGeneration
+    await this.init()
+    if (generation !== this.playToneGeneration) return
+    await this.resume()
+    if (generation !== this.playToneGeneration) return
+    if (!this.audioCtx || !this.mainGain) return
+    const ctx = this.audioCtx
+    const startTime = ctx.currentTime
+    const durationSeconds = Math.max(0.001, durationMs / 1000)
+    const tailSeconds = this._isPluckedInstrument()
+      ? 1.2
+      : AudioEngine.RELEASE_STOP_SLACK_SECONDS
+    const stopTime = startTime + durationSeconds + tailSeconds
+
+    let activeVolumeMultiplier = 1.0
+    if (this.characterSoundsEnabled) {
+      activeVolumeMultiplier =
+        CHARACTER_PROFILES[this.selectedCharacter].volumeMultiplier
+    }
+    // The chord sits at one tone's level: each member at 1/sqrt(n), so
+    // the sum of n uncorrelated voices lands near a single voice.
+    const memberLevel =
+      (this.volume * activeVolumeMultiplier * this.toneTrim) /
+      Math.sqrt(frequencies.length)
+
+    // A chord replaces what was sounding, as a new note does.
+    if (this.toneOscillator !== null) this.releaseCurrentTone(80)
+    this.releaseChordVoices(80)
+
+    for (const frequency of frequencies) {
+      const voice = this._createVoice(frequency, durationMs)
+      const userGain = ctx.createGain()
+      userGain.gain.setValueAtTime(0, startTime)
+      userGain.gain.linearRampToValueAtTime(memberLevel, startTime + 0.003)
+      voice.gain.connect(userGain)
+      this._applyUvrProcessing(userGain).forEach((node) =>
+        node.connect(this.uvrMainGain ?? this.mainGain!),
+      )
+      for (const osc of voice.allOscillators) {
+        try {
+          osc.start(startTime)
+        } catch {
+          /* already started by the instrument factory */
+        }
+      }
+      const member: ChordVoice = {
+        gain: userGain,
+        oscillators: voice.allOscillators,
+        lfos: voice.lfos,
+      }
+      this.chordVoices.add(member)
+      const cleanup = (): void => {
+        this.chordVoices.delete(member)
+        for (const node of [...voice.allOscillators, ...voice.lfos]) {
+          try {
+            node.stop()
+          } catch {
+            /* already stopped */
+          }
+          try {
+            node.disconnect()
+          } catch {
+            /* already disconnected */
+          }
+        }
+        try {
+          voice.gain.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+        try {
+          userGain.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+      }
+      const primary = voice.allOscillators[0] ?? null
+      if (primary !== null) primary.onended = cleanup
+      for (const node of [...voice.allOscillators, ...voice.lfos]) {
+        try {
+          node.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
+      }
+    }
+    this.isPlaying = true
+  }
+
   /** Stop the current tone with release envelope */
   stopTone(releaseMs: number = 50): void {
     // Also cancel playTone calls still awaiting AudioContext init/resume.
     this.playToneGeneration += 1
     this.releaseCurrentTone(releaseMs)
+    this.releaseChordVoices(releaseMs)
+  }
+
+  /** Release every chord voice the way a tone is released: anchor,
+   *  decay, then stop the sources once the tail is inaudible. */
+  private releaseChordVoices(releaseMs: number): void {
+    if (this.chordVoices.size === 0) return
+    const ctx = this.audioCtx
+    const members = [...this.chordVoices]
+    this.chordVoices.clear()
+    if (!ctx) return
+    const now = ctx.currentTime
+    const releaseSeconds = Math.max(0.001, releaseMs / 1000)
+    for (const member of members) {
+      let stopTime =
+        now + releaseSeconds + AudioEngine.RELEASE_STOP_SLACK_SECONDS
+      try {
+        stopTime = this._releaseParam(member.gain.gain, now, releaseSeconds)
+      } catch {
+        /* the param is already torn down */
+      }
+      for (const osc of member.oscillators) {
+        try {
+          osc.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
+      }
+      for (const lfo of member.lfos) {
+        try {
+          lfo.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
+      }
+    }
   }
 
   /**

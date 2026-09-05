@@ -16,7 +16,7 @@ import type { EarBankItem } from '@/lib/ear/banks'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { earPlayerRating, resetEarLabStore } from '@/stores/ear-lab-store'
+import { armSprintSegment, earPlayerRating, resetEarLabStore, } from '@/stores/ear-lab-store'
 
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
 
@@ -276,6 +276,40 @@ describe('stopping', () => {
       run.stop()
       expect(cancelAudio).toHaveBeenCalledTimes(1)
 
+      dispose()
+    })
+  })
+})
+
+describe('a sprint segment', () => {
+  it('runs the rounds its card promised, then ends in the tally', async () => {
+    armSprintSegment({
+      kind: 'identification',
+      drillId: drill.id,
+      reason: 'unmeasured',
+      rounds: 8,
+    })
+    await createRoot(async (dispose) => {
+      const trials = instantTrials()
+      const run = useIdentificationController(
+        drill,
+        CONTOUR_BANK,
+        trials.makeTrial,
+      )
+      run.start()
+      expect(run.totalRounds).toBe(8)
+      for (let i = 0; i < 8; i++) {
+        await flush()
+        expect(run.phase()).toBe('answer')
+        run.answer(run.expectedId() as string)
+        await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
+      }
+      expect(run.phase()).toBe('done')
+      expect(run.result()?.total).toBe(8)
+
+      // The arming was taken with that run.
+      run.start()
+      expect(run.totalRounds).toBe(IDENTIFICATION_ROUNDS)
       dispose()
     })
   })

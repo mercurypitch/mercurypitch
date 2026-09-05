@@ -57,6 +57,7 @@ const engine = {
   getVolume: () => 0.8,
   setToneTrim: vi.fn(),
   playTone: vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
+  playChord: vi.fn().mockResolvedValue(undefined),
   stopTone: vi.fn(),
 }
 

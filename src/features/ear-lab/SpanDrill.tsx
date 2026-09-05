@@ -88,11 +88,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
 
     for (const chord of cadenceChordMidis(rootMidi)) {
       if (api.cancelled()) return
-      await Promise.all(
-        chord.map((midi) =>
-          audioEngine.playTone(midiToFreq(midi), SPAN_TIMING.chordMs),
-        ),
-      )
+      await audioEngine.playChord(chord.map(midiToFreq), SPAN_TIMING.chordMs)
       await wait(SPAN_TIMING.chordMs + SPAN_TIMING.chordGapMs)
     }
     await wait(SPAN_TIMING.restMs)

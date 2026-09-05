@@ -12,10 +12,12 @@
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { STACK_BANK } from '@/lib/ear/banks'
+import { recordThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
 import styles from './EarInstruments.module.css'
 import { EscapementLattice } from './EscapementLattice'
 import { GearTrain } from './GearTrain'
 import { IndexArc } from './IndexArc'
+import { instrumentReading, INSTRUMENTS } from './instruments'
 import { StylusTrace } from './StylusTrace'
 
 afterEach(cleanup)
@@ -343,5 +345,46 @@ describe('IndexArc', () => {
     expect(svg.getAttribute('aria-label')).toBe(
       'Index arc swept 7 semitones from the root: Perfect 5th',
     )
+  })
+})
+
+describe('instrumentReading', () => {
+  afterEach(() => {
+    resetEarLabStore()
+  })
+
+  const byView = (view: string) => {
+    const found = INSTRUMENTS.find((instrument) => instrument.view === view)
+    if (!found) throw new Error(`no instrument for view ${view}`)
+    return found
+  }
+
+  it('reads each threshold tile from its own drill, not the desk', () => {
+    resetEarLabStore()
+    for (const view of ['hairline', 'grid', 'span'] as const) {
+      const instrument = byView(view)
+      expect(instrument.drillId).toBeTruthy()
+      expect(instrumentReading(instrument)).toBeNull()
+      recordThresholdReading({
+        drillId: instrument.drillId ?? '',
+        value: 9,
+        spread: 1,
+        tracks: 1,
+        source: 'practice',
+      })
+      // Instruments differ in decimals; the number is what must match.
+      expect(Number(instrumentReading(instrument)?.value)).toBe(9)
+    }
+    // A desk run must not light the catalogue tiles, and vice versa.
+    resetEarLabStore()
+    recordThresholdReading({
+      drillId: 'desk-colour',
+      value: 3,
+      spread: 1,
+      tracks: 1,
+      source: 'practice',
+    })
+    expect(Number(instrumentReading(byView('desk'))?.value)).toBe(3)
+    expect(instrumentReading(byView('hairline'))).toBeNull()
   })
 })
