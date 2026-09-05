@@ -121,9 +121,17 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
    * numbering starts afresh from any entry the router cannot place.
    */
   let epoch = newEpoch()
-  /** history.length when the router last accepted an entry: growth since
-   *  then means an unstamped entry is a new one, not an old one revisited. */
-  let lengthAtAccept = 0
+  /** Set once the first route of this load has been accepted. */
+  let acceptedOnce = false
+  /**
+   * The URL a traversal just landed on. popstate fires only for
+   * traversals, with the URL already updated, and the hashchange that
+   * follows sees the same URL; a push fires hashchange alone. That is how
+   * the router tells an entry the user came back to from one a link has
+   * just created -- history.length cannot, since a push after Back
+   * truncates the forward entries and the length stays put.
+   */
+  let traversedTo: string | null = null
   /** A traversal the router asked for is under way; the hashchange it
    *  fires is the accepted route coming back, not a navigation. */
   let restoring = false
@@ -310,36 +318,28 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   const positionOfCurrentEntry = (): number | null => {
     const stamped = stampedIndex()
     if (stamped !== null) return stamped
-    if (lengthAtAccept === 0) return restartNumbering()
-    if (window.history.length > lengthAtAccept) {
-      // Grown since the last accept: a new entry, pushed from the accepted
-      // one (a link, a hash assignment) -- or from one the router could not
-      // place, in which case the numbering starts again here.
-      return acceptedIndex === null
-        ? restartNumbering()
-        : stampEntry(acceptedIndex + 1)
-    }
+    if (!acceptedOnce) return restartNumbering()
     // Revisited, and carrying no stamp of this numbering: cannot be placed.
     return null
   }
 
   /**
-   * Place the entry a navigation has just created, before the guard sees
-   * it, so a veto can travel back from it instead of rewriting it.
+   * Place the entry a navigation has just created (a link, a hash
+   * assignment), before the guard sees it, so a veto can travel back from
+   * it instead of rewriting it. Right after the accepted entry -- or the
+   * start of a new numbering when that one could not be placed.
    */
   const placeArrivedEntry = (): void => {
     if (stampedIndex() !== null) return
-    if (acceptedIndex !== null && window.history.length > lengthAtAccept) {
-      stampEntry(acceptedIndex + 1)
-      lengthAtAccept = window.history.length
-    }
+    if (acceptedIndex === null) restartNumbering()
+    else stampEntry(acceptedIndex + 1)
   }
 
   const acceptRoute = (route: HashRoute): void => {
     applyRoute(route)
     lastAcceptedHash = window.location.hash
     acceptedIndex = positionOfCurrentEntry()
-    lengthAtAccept = window.history.length
+    acceptedOnce = true
   }
 
   const restoreAcceptedHash = (): void => {
@@ -357,7 +357,6 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     // The rewrite made this entry the accepted one; the router stands
     // wherever it is placed, if it is placed at all.
     acceptedIndex = stampedIndex()
-    lengthAtAccept = window.history.length
   }
 
   const dispatchRoute = (route: HashRoute) => {
@@ -386,22 +385,27 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   }
 
   const onHashChange = () => {
-    if (restoring) {
-      restoring = false
-      // The traversal the router asked for, recognised by its stamp: a
-      // panel may have rewritten the accepted entry's hash behind the
-      // router, and re-dispatching that would be a navigation nobody made.
-      if (stampedIndex() === acceptedIndex) return
-    }
-    placeArrivedEntry()
+    restoring = false
+    const traversed = traversedTo === window.location.href
+    traversedTo = null
+    // Standing on the accepted entry again -- the traversal the router
+    // asked for after a veto, or the user coming back from a forward entry
+    // the router never accepted. Its route is the one already applied, so
+    // there is nothing to dispatch; and a panel may have rewritten this
+    // entry's hash behind the router, so the hash is no guide. Recognised
+    // by the stamp alone: browsers fire hashchange in a task of its own
+    // after popstate, so no flag set around the traversal can be trusted
+    // to still be up when the hashchange arrives.
+    if (acceptedIndex !== null && stampedIndex() === acceptedIndex) return
+    if (!traversed) placeArrivedEntry()
     dispatchRoute(parseHash(window.location.hash))
   }
 
   const onPopState = () => {
+    traversedTo = window.location.href
     if (!restoring) return
-    // popstate comes first and the hashchange right after it in the same
-    // task -- or not at all, when the two entries share a hash. Either way
-    // the traversal is over once this task is.
+    // The traversal has landed. The hashchange, when the hashes differ,
+    // follows in its own task; the sync effects may run again from here.
     queueMicrotask(() => {
       restoring = false
     })
@@ -446,7 +450,6 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
         replaceHash(route)
         acceptedIndex = stampedIndex() ?? acceptedIndex
       }
-      lengthAtAccept = window.history.length
     }
     lastAcceptedHash = window.location.hash
     lastSyncedTab = tab
