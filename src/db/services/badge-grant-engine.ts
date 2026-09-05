@@ -28,6 +28,13 @@ import { getUserId } from '@/db/services/user-service'
 import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { showNotification } from '@/stores/notifications-store'
 
+/**
+ * Badges the worker grants at close time (the Legend podium). Seeded with
+ * this category in seed-data.json and migration 0042; no client rule ever
+ * grants one.
+ */
+const PODIUM_BADGE_CATEGORY = 'legend'
+
 interface GrantStats {
   totalSessions: number
   bestScore: number
@@ -225,11 +232,8 @@ function isBadgeEarned(
     case 'streak':
       // Bronze "On Fire" = 7-day, gold "Streak Master" = 14-day.
       return stats.currentStreak >= (badge.tier === 'gold' ? 14 : 7)
-    case 'meta': {
-      // "All Star" — every bronze badge earned.
-      const bronze = allBadges.filter((b) => b.tier === 'bronze')
-      return bronze.length > 0 && bronze.every((b) => earnedBadgeIds.has(b.id))
-    }
+    case 'meta':
+      return allStarEarned(allBadges, earnedBadgeIds)
     default:
       // Category badges map 1:1 to a completed challenge of that category
       // (high-notes, low-notes, speed, perfect, scales, intervals, harmony,
@@ -329,6 +333,34 @@ function buildMeasures(stats: GrantStats): Record<string, number> {
  * achievement missing from here can never be granted, so the seed test
  * checks the two lists against each other.
  */
+/**
+ * The badges "All Star" waits on: every bronze badge a singer can earn by
+ * practising.
+ *
+ * The podium badges are bronze/silver/gold too, but the worker grants them
+ * at close time to whoever finishes on a Legend board -- nobody earns Third
+ * Voice by practising, only by placing exactly third. Rolling it into the
+ * bronze set made All Star unreachable for anyone who never landed a podium
+ * (and for anyone who won: a First Voice is not a Third Voice). Server-
+ * granted categories stay out of the roll-up.
+ */
+export function allStarRequirements(
+  allBadges: readonly BadgeDefinition[],
+): BadgeDefinition[] {
+  return allBadges.filter(
+    (b) => b.tier === 'bronze' && b.category !== PODIUM_BADGE_CATEGORY,
+  )
+}
+
+/** The "meta" rule: All Star is earned once every required badge is held. */
+export function allStarEarned(
+  allBadges: readonly BadgeDefinition[],
+  earnedBadgeIds: ReadonlySet<string>,
+): boolean {
+  const required = allStarRequirements(allBadges)
+  return required.length > 0 && required.every((b) => earnedBadgeIds.has(b.id))
+}
+
 export function measurableAchievements(): string[] {
   return Object.keys(buildMeasures(emptyStats()))
 }
