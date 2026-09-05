@@ -52,6 +52,9 @@ const [states, setStates] = createSignal<Record<string, WildReadingState>>({})
 const inFlight = new Map<string, Promise<WildReading>>()
 /** Songs whose stems are decoded, least recently used first. */
 const warm: string[] = []
+/** Bumped when the lab is left, so a reading still running then lands
+ *  as a book without stems instead of warming a song nobody is on. */
+let epoch = 0
 
 export function wildReadingState(sessionId: string): WildReadingState {
   return states()[sessionId] ?? UNREAD_STATE
@@ -68,9 +71,15 @@ function keepWarm(sessionId: string): void {
   const at = warm.indexOf(sessionId)
   if (at >= 0) warm.splice(at, 1)
   warm.push(sessionId)
+  // The open song is never the one let go, whatever finished last: a slow
+  // read of another song landing mid-drill would otherwise unmount the
+  // drill. The other song is cooled on arrival instead.
+  const open = fieldBookSessionId()
   while (warm.length > MAX_WARM_STEMS) {
-    const evicted = warm.shift()
-    if (evicted !== undefined) coolDown(evicted)
+    const victim = warm.find((id) => id !== open)
+    if (victim === undefined) break
+    warm.splice(warm.indexOf(victim), 1)
+    coolDown(victim)
   }
 }
 
@@ -84,6 +93,7 @@ function coolDown(sessionId: string): void {
 /** Cool every song. Called when the Ear Lab is left, so a song's
  *  stems never outlive the visit that decoded them. */
 export function releaseWildStems(): void {
+  epoch += 1
   for (const sessionId of warm.splice(0)) coolDown(sessionId)
 }
 
@@ -102,6 +112,7 @@ export function ensureWildReading(
     return Promise.resolve(current.reading)
   }
   const book = current?.book ?? null
+  const readEpoch = epoch
   patch(id, {
     status: 'reading',
     progress: { phase: 'stems', pct: 0 },
@@ -131,6 +142,17 @@ export function ensureWildReading(
   const promise = read
     .then((reading) => {
       inFlight.delete(id)
+      if (readEpoch !== epoch) {
+        // The lab was left while this ran: keep what was learned, let the
+        // stems go. The next visit reads the stems alone.
+        patch(id, {
+          status: 'unread',
+          book: reading.book,
+          reading: null,
+          progress: null,
+        })
+        return reading
+      }
       patch(id, {
         status: 'ready',
         book: reading.book,
@@ -173,6 +195,7 @@ export function primeWildReading(
 }
 
 export function resetWildStore(): void {
+  epoch += 1
   inFlight.clear()
   warm.length = 0
   setStates({})

@@ -51,10 +51,7 @@ describe('useRoutineRunnerController', () => {
 
   it('computeResult returns zero with the expected metric keys for no notes', () => {
     const base = createMockBase()
-    const audioEngine = {
-      playTone: async () => {},
-      playChord: vi.fn().mockResolvedValue(undefined),
-    }
+    const audioEngine = { playTone: async () => {} }
     const ctrl = useRoutineRunnerController(base, audioEngine)
     const result = ctrl.computeResult()
 
@@ -72,10 +69,7 @@ describe('useRoutineRunnerController', () => {
 
   it('exposes a fixed multi-phase routine plan', () => {
     const base = createMockBase()
-    const audioEngine = {
-      playTone: async () => {},
-      playChord: vi.fn().mockResolvedValue(undefined),
-    }
+    const audioEngine = { playTone: async () => {} }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
     expect(ctrl.PHASES.length).toBe(5)
@@ -91,10 +85,7 @@ describe('useRoutineRunnerController', () => {
         targetCalls.push(v)
       },
     })
-    const audioEngine = {
-      playTone: async () => {},
-      playChord: vi.fn().mockResolvedValue(undefined),
-    }
+    const audioEngine = { playTone: async () => {} }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
     ctrl.setBase(60) // C4
@@ -140,7 +131,6 @@ describe('useRoutineRunnerController', () => {
           ]
         }
       },
-      playChord: vi.fn().mockResolvedValue(undefined),
     }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
@@ -161,10 +151,7 @@ describe('useRoutineRunnerController', () => {
       _completeWithResult: (r) => committed.push(r),
       _setRunning: (v) => running.push(v),
     })
-    const audioEngine = {
-      playTone: async () => {},
-      playChord: vi.fn().mockResolvedValue(undefined),
-    }
+    const audioEngine = { playTone: async () => {} }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
     ctrl.setBase(60)
@@ -192,7 +179,6 @@ describe('useRoutineRunnerController', () => {
         new Promise<void>((resolve) => {
           resolvePlayTone = resolve
         }),
-      playChord: vi.fn().mockResolvedValue(undefined),
     }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
@@ -219,10 +205,7 @@ describe('useRoutineRunnerController', () => {
     const base = createMockBase({
       _updateMetrics: (m) => metricsCalls.push(m),
     })
-    const audioEngine = {
-      playTone: async () => {},
-      playChord: vi.fn().mockResolvedValue(undefined),
-    }
+    const audioEngine = { playTone: async () => {} }
     const ctrl = useRoutineRunnerController(base, audioEngine)
 
     ctrl.setBase(60)

@@ -387,4 +387,17 @@ describe('instrumentReading', () => {
     expect(Number(instrumentReading(byView('desk'))?.value)).toBe(3)
     expect(instrumentReading(byView('hairline'))).toBeNull()
   })
+
+  it('shows a shortened run as still settling', () => {
+    resetEarLabStore()
+    recordThresholdReading({
+      drillId: 'hairline',
+      value: 9,
+      spread: 2,
+      tracks: 1,
+      source: 'practice',
+      provisional: true,
+    })
+    expect(instrumentReading(byView('hairline'))?.settling).toBe(true)
+  })
 })

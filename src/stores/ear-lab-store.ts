@@ -37,6 +37,10 @@ export interface ThresholdReadingEntry {
   /** Staircase tracks pooled into this reading (1 for practice). */
   tracks: number
   source: ReadingSource
+  /** Fewer turns were averaged than the drill asks for — a sprint's
+   *  shortened run. The tile shows it as still settling. Absent on
+   *  entries stored before sprints could shorten a run. */
+  provisional?: boolean
   at: number
 }
 
@@ -486,6 +490,12 @@ export function armSprintSegment(segment: SprintSegment): void {
       ? { drillId: segment.drillId, rounds: segment.rounds }
       : { drillId: segment.drillId, reversals: segment.reversals },
   )
+}
+
+/** Forget an arming nothing took: the singer backed out of the drill, or
+ *  left the lab, before its run started. */
+export function disarmSprintSegment(): void {
+  setSprintRunLength(null)
 }
 
 /** The armed length for this drill, or null. Whichever run starts

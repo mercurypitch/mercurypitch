@@ -17,7 +17,6 @@ const engineMocks = vi.hoisted(() => ({
     playClick: vi.fn(),
     playNote: vi.fn(),
     playTone: vi.fn(),
-    playChord: vi.fn().mockResolvedValue(undefined),
     setInstrument: vi.fn(),
     setOutputDevice: vi.fn(async () => undefined),
     startMic: vi.fn(async () => true),

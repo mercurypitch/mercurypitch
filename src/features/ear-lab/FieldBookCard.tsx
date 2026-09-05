@@ -55,7 +55,7 @@ function stateWord(state: WildReadingState): string {
     case 'error':
       return 'Could not be read'
     case 'ready':
-      return state.reading ? bookWord(state.reading.book) : 'Read'
+      return state.book ? bookWord(state.book) : 'Read'
   }
 }
 

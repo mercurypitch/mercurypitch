@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { calibrationHistory, completeCalibrationRun, completeSprint, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
+import { armSprintSegment, calibrationHistory, completeCalibrationRun, completeSprint, disarmSprintSegment, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, takeSprintRunLength, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -222,6 +222,17 @@ describe("today's sprint", () => {
     expect(todaysSprint()).toEqual(plan)
     expect(sprintProgress().plan).toEqual(plan)
     expect(sprintProgress().done).toEqual([first.drillId])
+  })
+
+  it('forgets an arming nobody took', () => {
+    armSprintSegment({
+      kind: 'threshold',
+      drillId: 'hairline',
+      reason: 'unmeasured',
+      reversals: 4,
+    })
+    disarmSprintSegment()
+    expect(takeSprintRunLength('hairline')).toBeNull()
   })
 
   it('starts empty and books segments once each', () => {

@@ -24,7 +24,6 @@ describe('playToneFor', () => {
       playTone: vi.fn<(...args: unknown[]) => Promise<void>>(
         async () => undefined,
       ),
-      playChord: vi.fn().mockResolvedValue(undefined),
     }
     let done = false
     void playToneFor(engine, 440, 500, [4, 7]).then(() => {

@@ -10,7 +10,7 @@ import type { UvrSession } from '@/stores/uvr-store'
 import type * as WildAnalysis from './wild-analysis'
 import type { WildAnalysisDeps, WildReading, WildStems } from './wild-analysis'
 import { loadWildStems, readWildSession } from './wild-analysis'
-import { ensureWildReading, MAX_WARM_STEMS, releaseWildStems, resetWildStore, wildReadingState, } from './wild-store'
+import { ensureWildReading, MAX_WARM_STEMS, releaseWildStems, resetWildStore, setFieldBookSessionId, wildReadingState, } from './wild-store'
 
 vi.mock('./wild-analysis', async (importOriginal) => ({
   ...(await importOriginal<typeof WildAnalysis>()),
@@ -87,7 +87,47 @@ describe('reading a song', () => {
   })
 })
 
+describe('a slow reading of another song', () => {
+  it('never lets the open song go, and lands cold itself', async () => {
+    let finishA: (reading: WildReading) => void = () => undefined
+    vi.mocked(readWildSession).mockImplementationOnce(
+      () =>
+        new Promise<WildReading>((resolve) => {
+          finishA = resolve
+        }),
+    )
+    const slow = ensureWildReading(session('a'), deps)
+    setFieldBookSessionId('b')
+    await ensureWildReading(session('b'), deps)
+    expect(wildReadingState('b').status).toBe('ready')
+
+    finishA({ book: bookOf('a'), stems })
+    await slow
+    // The drill running on b keeps its stems; a arrives as a book only.
+    expect(wildReadingState('b').status).toBe('ready')
+    expect(wildReadingState('a').status).toBe('unread')
+    expect(wildReadingState('a').book?.key).toBe('a')
+  })
+})
+
 describe('leaving the lab', () => {
+  it('lands a reading still running as a book without stems', async () => {
+    let finish: (reading: WildReading) => void = () => undefined
+    vi.mocked(readWildSession).mockImplementationOnce(
+      () =>
+        new Promise<WildReading>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const pending = ensureWildReading(session('a'), deps)
+    releaseWildStems()
+    finish({ book: bookOf('a'), stems })
+    await pending
+    expect(wildReadingState('a').status).toBe('unread')
+    expect(wildReadingState('a').reading).toBeNull()
+    expect(wildReadingState('a').book?.key).toBe('a')
+  })
+
   it('lets every warm song go and keeps its book', async () => {
     await ensureWildReading(session('a'), deps)
     releaseWildStems()

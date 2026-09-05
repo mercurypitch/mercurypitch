@@ -105,6 +105,9 @@ describe('EchoDrill', () => {
     await vi.advanceTimersByTimeAsync(CADENCE + ECHO_TIMING.restMs + 10)
     // Four chords planted, and the first note of Do Re Mi is sounding.
     expect(engine.playChord).toHaveBeenCalledTimes(4)
+    for (const [notes] of engine.playChord.mock.calls) {
+      expect(notes).toHaveLength(3)
+    }
     expect(engine.playTone).toHaveBeenCalledTimes(1)
     expect(parts('bead')).toBe(3)
     expect(chain()?.querySelectorAll('[data-lit="true"]').length).toBe(1)
@@ -214,6 +217,9 @@ describe('SpanDrill', () => {
     expect(status()).toBe('Listen to the phrase…')
     await vi.advanceTimersByTimeAsync(SPAN_CADENCE + SPAN_TIMING.restMs + 10)
     expect(engine.playChord).toHaveBeenCalledTimes(4)
+    for (const [notes] of engine.playChord.mock.calls) {
+      expect(notes).toHaveLength(3)
+    }
     expect(engine.playTone).toHaveBeenCalledTimes(1)
     expect(parts('bead')).toBe(3)
     expect(chain()?.querySelectorAll('[data-lit="true"]').length).toBe(1)

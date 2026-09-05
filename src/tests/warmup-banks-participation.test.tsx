@@ -109,7 +109,6 @@ describe('WarmupExercise banking', () => {
           {
             playMetronomeClick: vi.fn(),
             playTone: vi.fn(async () => undefined),
-            playChord: vi.fn().mockResolvedValue(undefined),
           } as never
         }
         practiceEngine={{} as never}
