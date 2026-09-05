@@ -1468,6 +1468,7 @@ export function createDrumKitPlayer(
   }
 
   return {
+    running: () => graph !== null && graph.context.state === 'running',
     async activate(): Promise<boolean> {
       try {
         await acquireGraph()
