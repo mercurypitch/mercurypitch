@@ -144,6 +144,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
   const noMicApi = micApiBlocker()
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
+  /** The stage itself failed to come up (an asset that would not
+   *  fetch, a renderer that threw). Kept apart from the mic error: the
+   *  mic path cleared that one, and a tap on the gate then put the HUD
+   *  over a black canvas for good. */
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const [backend, setBackend] = createSignal('…')
   // A finished track opens on the card, not in the last room. The card
   // is the only place the per-room bests and the way back into a cleared
@@ -805,7 +810,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
-        setMicError(err instanceof Error ? err.message : String(err))
+        setRenderError(err instanceof Error ? err.message : String(err))
       })
 
     onCleanup(() => {
@@ -1013,9 +1018,16 @@ export const ChamberStage = (props: ChamberStageProps) => {
       <Show when={!started() && !guide() && phase() !== 'done'}>
         <div class="stage3d__gate">
           <p>{room().teaches}</p>
-          <button type="button" onClick={() => void startMic()}>
+          <button
+            type="button"
+            disabled={renderError() !== null}
+            onClick={() => void startMic()}
+          >
             Walk in
           </button>
+          <Show when={renderError() !== null}>
+            <p class="stage3d__error">{renderError()}</p>
+          </Show>
           {/* For anyone who skipped it, or who has met a chamber before
               and wants reminding. The gate no longer explains the
               mechanic itself: the guide does that, and saying it twice

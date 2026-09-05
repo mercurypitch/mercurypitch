@@ -333,7 +333,10 @@ export const JOURNEY_CONFIG = {
     maxHz: 8.5,
     minDepthCents: 15,
     maxDepthCents: 140,
-    minSamples: 20,
+    /** One sample per frame: 12 leaves a 30 fps device with dropped
+     *  frames able to fill the window (20 never could), and still
+     *  samples the 8.5 Hz ceiling well above twice over. */
+    minSamples: 12,
     resetGapMs: 250,
   },
 

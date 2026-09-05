@@ -61,6 +61,11 @@ export const Stage3D = (props: Stage3DProps) => {
   const noMicApi = micApiBlocker()
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
+  /** The stage itself failed to come up (an asset that would not
+   *  fetch, a renderer that threw). Kept apart from the mic error: the
+   *  mic path cleared that one, and a tap on the gate then put the HUD
+   *  over a black canvas for good. */
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const [backend, setBackend] = createSignal('…')
   const [charge, setCharge] = createSignal(0)
   const [ringing, setRinging] = createSignal(false)
@@ -142,7 +147,7 @@ export const Stage3D = (props: Stage3DProps) => {
         // A renderer that never resolves is a black screen with no
         // explanation, which is the worst way to fail on a device.
         setBackend('no GPU')
-        setMicError(err instanceof Error ? err.message : String(err))
+        setRenderError(err instanceof Error ? err.message : String(err))
       })
 
     onCleanup(() => {
@@ -429,9 +434,16 @@ export const Stage3D = (props: Stage3DProps) => {
             Hold {targetName} until the glass rings, then let it waver — a
             steady note alone will not break it.
           </p>
-          <button type="button" onClick={() => void startMic()}>
+          <button
+            type="button"
+            disabled={renderError() !== null}
+            onClick={() => void startMic()}
+          >
             Sing to it
           </button>
+          <Show when={renderError() !== null}>
+            <p class="stage3d__error">{renderError()}</p>
+          </Show>
           <Show when={micError() !== null}>
             <p class="stage3d__error">{micError()}</p>
             {/* A picker is no use when the browser is withholding the
