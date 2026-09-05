@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { VOICE_PRESETS } from '../voice-range'
-import { bandCentre, bandFor, fitsSlotHeight, fitsSlotWidth, GAP_RELAX_SECONDS, gapWidthFor, inBand, LETTERBOX, MIN_CONFIDENCE, RELAX_SECONDS, relaxToward, REST_MARGIN, restTFor, silhouetteFor, slotHeightFor, slotWidthFor, SPRING_OMEGA, springAt, springStep, supportedBy, tensionStep, TORSO_OF_HEIGHT, torsoHeight, widenRange, workingRange, } from './tension3d'
+import { bandCentre, bandFor, fitsSlotHeight, fitsSlotWidth, GAP_RELAX_SECONDS, gapWidthFor, inBand, LETTERBOX, MIN_CONFIDENCE, RELAX_SECONDS, relaxToward, REST_MARGIN, restTFor, silhouetteFor, slotHeightFor, slotWidthFor, SPRING_OMEGA, springAt, springStep, supportedBy, tensionStep, tForHeight, tForTorso, TORSO_OF_HEIGHT, torsoHeight, widenRange, workingRange, } from './tension3d'
 
 const DT = 1 / 120
 const run = (
@@ -181,6 +181,15 @@ describe('the furniture, drawn by the function that judges it', () => {
   it('sizes the torso as the measured shell', () => {
     expect(TORSO_OF_HEIGHT).toBeCloseTo(0.8676, 4)
     expect(torsoHeight(silhouetteFor(restTFor()))).toBeCloseTo(0.477, 3)
+  })
+
+  it('runs the sweep backwards, and clamps what it cannot reach', () => {
+    for (const t of [0, 0.23, restTFor(), 0.634, 1]) {
+      expect(tForHeight(silhouetteFor(t).height)).toBeCloseTo(t, 9)
+      expect(tForTorso(torsoHeight(silhouetteFor(t)))).toBeCloseTo(t, 9)
+    }
+    expect(tForHeight(0.1)).toBe(0)
+    expect(tForHeight(5)).toBe(1)
   })
 
   it('makes a slot exactly as tall as the tallest body it admits', () => {

@@ -1170,3 +1170,32 @@ Still open, from the phone and the plan: the tube's size on a small
 phone (seen on a tablet only), whether the wedge reads as a wedge with
 the camera where it is, the guide-versus-hint question if a playtest
 says two sentences are not enough, and §7's list.
+
+### 16.6 What the phone said about the wedge, and what changed
+
+Three findings from maff's phone on room 3, after the merge of 4a-4f.
+
+1. **A note released inside the wedge let him walk on out.** Root
+   cause: as the relax brought him up, `wedgeStop` moved BEHIND him,
+   and the stage skipped any wall behind him -- so there was no wall.
+   `wallAt` in `lines.ts` now owns the rule, and a wall is never behind
+   him: a wedge whose ceiling has come down on him, or a plate that
+   shut while he was in its doorway, pins him where he stands until he
+   is the shape again. He stops with his head against it and can back
+   out. Tested: inside the wedge at rest the wall is his own `x`; the
+   far end's shape and a grate are no wall; a plate's doorway pins.
+2. **A low note at the door graded 0%, the same note the next time
+   100%.** The wedge's grade judged the first held note against the
+   EXIT band -- the bottom two semitones of the range -- wherever it
+   was sung. `bandAt` now gives the band that applies where he stands:
+   the entry band before the mouth, the exit band at the far end, and
+   between them a band that closes as he walks, derived from the
+   ceiling at his front by `tForTorso`, the sweep run backwards. The
+   gauge shows that band, so the tube says "keep going down" in the
+   one place it is true, and a stop is graded against it.
+3. **Too short.** At one metre a note released at the mouth still
+   fitted the far end before the relax had brought him up; the glide
+   never had to be sustained. The wedge is two metres now (1.8 to 3.8,
+   room 6.5 m, exit 6.0), and a test walks a released note from the
+   mouth at walking pace and requires the ceiling to meet him with
+   more than 0.4 m to go.
