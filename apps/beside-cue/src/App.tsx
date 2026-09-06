@@ -542,21 +542,15 @@ export function App(props: AppProps) {
     })),
   )
 
-  type StateTransition = (state: BesideCueStateV1) => BesideCueStateV1
-
   // Every save is built on the last snapshot handed to the repository, not on
   // the one in memory: while an atomic save is in flight the two differ, and a
   // change made in that window (a mute toggle during the first-run save) used
   // to be built from the pre-save state, queued second, and so become the
   // device's final snapshot without the plan that had just been saved.
-  function enqueue(next: BesideCueStateV1 | StateTransition): {
-    readonly nextState: BesideCueStateV1
-    readonly sequence: number
-  } {
-    const nextState = typeof next === 'function' ? next(enqueuedState) : next
+  function enqueue(nextState: BesideCueStateV1): number {
     enqueuedState = nextState
     commitSequence += 1
-    return { nextState, sequence: commitSequence }
+    return commitSequence
   }
 
   // Memory only ever moves forward: an atomic save that resolves after a later
@@ -565,15 +559,14 @@ export function App(props: AppProps) {
     if (sequence < shownSequence) return
     shownSequence = sequence
     latestState = nextState
-    enqueuedState = nextState
     setAppState(nextState)
   }
 
   function persistWithRepository(
-    next: BesideCueStateV1 | StateTransition,
+    nextState: BesideCueStateV1,
     repository: BesideCueAppServices['repository'],
   ): void {
-    const { nextState, sequence } = enqueue(next)
+    const sequence = enqueue(nextState)
     show(nextState, sequence)
     setStorageError(undefined)
     void repository.saveState(nextState).catch(() => {
@@ -586,10 +579,10 @@ export function App(props: AppProps) {
   }
 
   async function persistDurablyWithRepository(
-    next: BesideCueStateV1 | StateTransition,
+    nextState: BesideCueStateV1,
     repository: BesideCueAppServices['repository'],
   ): Promise<void> {
-    const { nextState, sequence } = enqueue(next)
+    const sequence = enqueue(nextState)
     show(nextState, sequence)
     setStorageError(undefined)
     try {
@@ -605,10 +598,10 @@ export function App(props: AppProps) {
   }
 
   async function persistAtomicallyWithRepository(
-    next: BesideCueStateV1 | StateTransition,
+    nextState: BesideCueStateV1,
     repository: BesideCueAppServices['repository'],
   ): Promise<void> {
-    const { nextState, sequence } = enqueue(next)
+    const sequence = enqueue(nextState)
     setStorageError(undefined)
     setAtomicSavesPending((count) => count + 1)
     try {
@@ -1556,7 +1549,7 @@ export function App(props: AppProps) {
   function disableDailyCue(): void {
     if (schedulePending()) return
 
-    const currentState = appState()
+    const currentState = enqueuedState
     const selectedCue = currentCue(currentState)
     const rule =
       selectedCue === undefined
@@ -1627,7 +1620,7 @@ export function App(props: AppProps) {
   async function resolveCue(outcome: CueOccurrenceOutcome): Promise<void> {
     if (cueResolutionInFlight) return
 
-    const currentState = appState()
+    const currentState = enqueuedState
     const occurrenceId = activeOccurrenceId()
     if (occurrenceId === undefined) {
       setScreen('home')
@@ -1727,7 +1720,7 @@ export function App(props: AppProps) {
   function togglePause(): void {
     if (schedulePending()) return
 
-    const currentState = appState()
+    const currentState = enqueuedState
     const activeCue = currentCue(currentState)
     if (activeCue === undefined) return
 
@@ -1888,6 +1881,8 @@ export function App(props: AppProps) {
         const nextState = createInitialState()
         latestState = nextState
         enqueuedState = nextState
+        commitSequence += 1
+        shownSequence = commitSequence
         setAppState(nextState)
         setV2Muted(!nextState.settings.voiceEnabled)
         onboardingAudioSession.setMuted(!nextState.settings.voiceEnabled)
@@ -1934,6 +1929,8 @@ export function App(props: AppProps) {
           setV2OnboardingSessionKind(v2EntrySessionKind)
           latestState = nextState
           enqueuedState = nextState
+          commitSequence += 1
+          shownSequence = commitSequence
           stateLoaded = true
           setAppState(nextState)
           setV2Muted(!nextState.settings.voiceEnabled)
@@ -1966,6 +1963,8 @@ export function App(props: AppProps) {
         const nextState = createInitialState()
         latestState = nextState
         enqueuedState = nextState
+        commitSequence += 1
+        shownSequence = commitSequence
         stateLoaded = true
         setAppState(nextState)
         setV2Muted(!nextState.settings.voiceEnabled)
