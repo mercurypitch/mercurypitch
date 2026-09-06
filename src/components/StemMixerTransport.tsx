@@ -223,6 +223,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         <div class="sm-transport-controls">
           <button
             class="sm-transport-btn sm-transport-play"
+            aria-label={props.playing() ? 'Pause' : 'Play'}
             onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
           >
             {props.playing() ? <Pause /> : <Play />}
@@ -231,6 +232,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             class="sm-transport-btn"
             onClick={() => props.onStop()}
             title="Stop"
+            aria-label="Stop"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
               <rect x="4" y="4" width="16" height="16" rx="2" />
@@ -240,6 +242,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             class="sm-transport-btn"
             onClick={() => props.onRestart()}
             title="Restart (play from beginning)"
+            aria-label="Restart (play from beginning)"
           >
             <SkipBack />
           </button>
@@ -252,6 +255,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             classList={{ 'sm-loop-btn--a-set': props.loopStart() > 0 }}
             onClick={() => props.onSetLoopA()}
             title="Set loop start (A)"
+            aria-label="Set loop start (A)"
           >
             <svg class="sm-loop-icon" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="11" />
@@ -272,6 +276,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             classList={{ 'sm-loop-btn--b-set': props.loopEnd() > 0 }}
             onClick={() => props.onSetLoopB()}
             title="Set loop end (B)"
+            aria-label="Set loop end (B)"
           >
             <svg class="sm-loop-icon" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="11" />
@@ -293,6 +298,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               classList={{ 'sm-loop-toggle--active': props.loopEnabled() }}
               onClick={() => props.onToggleLoop()}
               title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
+              aria-label={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
               style={{ 'margin-left': '0.5rem' }}
             >
               <Loop />
@@ -301,6 +307,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               class="sm-icon-btn"
               onClick={() => props.onClearLoop()}
               title="Clear loop points"
+              aria-label="Clear loop points"
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <line
@@ -331,6 +338,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 props.onQueueRedraw()
               }}
               title="Single column"
+              aria-label="Single column"
             >
               <svg viewBox="0 0 24 24" width="12" height="12">
                 <rect
@@ -350,6 +358,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 props.onQueueRedraw()
               }}
               title="Two columns auto"
+              aria-label="Two columns auto"
             >
               <svg viewBox="0 0 24 24" width="12" height="12">
                 <rect
@@ -378,6 +387,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 props.onQueueRedraw()
               }}
               title="Two columns fixed"
+              aria-label="Two columns fixed"
             >
               <svg viewBox="0 0 24 24" width="12" height="12">
                 <rect
@@ -407,6 +417,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 props.onQueueRedraw()
               }}
               title="Performance (karaoke stage — big centered lyrics)"
+              aria-label="Performance (karaoke stage — big centered lyrics)"
             >
               <svg viewBox="0 0 24 24" width="12" height="12">
                 <rect
@@ -441,6 +452,9 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               }}
               onClick={() => props.setShowWaveform((p) => !p)}
               title={props.showWaveform() ? 'Hide waveform' : 'Show waveform'}
+              aria-label={
+                props.showWaveform() ? 'Hide waveform' : 'Show waveform'
+              }
             >
               <svg
                 viewBox="0 0 24 24"
@@ -466,6 +480,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
                 onClick={() => props.setShowPitch((p) => !p)}
                 title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
+                aria-label={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -489,6 +504,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 }}
                 onClick={() => props.setShowLyrics((p) => !p)}
                 title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
+                aria-label={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -545,6 +561,11 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                   ? 'Mute self-monitoring'
                   : 'Hear my voice over the track (use headphones)'
               }
+              aria-label={
+                props.micMonitorEnabled()
+                  ? 'Mute self-monitoring'
+                  : 'Hear my voice over the track (use headphones)'
+              }
             >
               <Headphones />
             </button>
@@ -579,6 +600,11 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                   ? 'Show mixer sidebar'
                   : 'Hide mixer sidebar'
               }
+              aria-label={
+                props.sidebarHidden()
+                  ? 'Show mixer sidebar'
+                  : 'Hide mixer sidebar'
+              }
             >
               <SlidersHorizontal />
             </button>
@@ -591,6 +617,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               class="sm-focus-exit-btn"
               onClick={() => props.setKaraokeFocus(false)}
               title="Exit karaoke mode (Esc)"
+              aria-label="Exit karaoke mode (Esc)"
             >
               <Minimize2 size={14} />
             </button>

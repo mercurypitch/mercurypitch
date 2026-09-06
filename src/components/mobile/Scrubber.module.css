@@ -1,7 +1,8 @@
 /* Scrubber — seek bar (skin via --scrubber-* props). */
 
 .scrubber {
-  padding: 8px 0;
+  /* 44px of touch target around a 4px line: 8px of padding made it 20px. */
+  padding: 20px 0;
   cursor: pointer;
   touch-action: none;
 }

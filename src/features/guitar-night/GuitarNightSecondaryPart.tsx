@@ -638,7 +638,10 @@ export const GuitarNightSecondaryPart: Component<
         : suppliedKey
     activeLayoutKey = nextKey
     pendingPlacement = untrack(storedPlacements)[nextKey] ?? null
-    setCollapsed(untrack(storedCollapse)[nextKey] ?? false)
+    // A phone opens the corner part as a chip: expanded it covered most of
+    // the stage it previews (UX-27). The first tap expands it, and that
+    // choice is remembered per layout like every other placement.
+    setCollapsed(untrack(storedCollapse)[nextKey] ?? untrack(narrowViewport))
     lastBoundary = null
     queueMicrotask(synchronizeLayout)
   })

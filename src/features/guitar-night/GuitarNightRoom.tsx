@@ -140,6 +140,18 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
   let bandSummary!: HTMLElement
   let bandDetails!: HTMLDetailsElement
+  let handSyncHost: HTMLDivElement | undefined
+
+  // The hand-placement tool lives at the bottom of the Band panel. Opening
+  // that panel and scrolling to the tool is one step from the stage note and
+  // from the Align button in the room tools (UX-25, UX-26).
+  function openHandPlacement(): void {
+    bandDetails.open = true
+    queueMicrotask(() => {
+      handSyncHost?.scrollIntoView({ block: 'nearest' })
+      handSyncHost?.querySelector('button')?.focus()
+    })
+  }
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
@@ -436,6 +448,21 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             device
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <Show when={props.handSync?.()}>
+              {(sync) => (
+                <button
+                  type="button"
+                  class={styles.alignTool}
+                  aria-label={`Place ${sync().partName} by hand`}
+                  onClick={openHandPlacement}
+                >
+                  <span aria-hidden="true">
+                    <SlidersHorizontal />
+                  </span>
+                  <strong>Align</strong>
+                </button>
+              )}
+            </Show>
             <button
               ref={tunerTrigger}
               type="button"
@@ -595,17 +622,24 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 </div>
                 <Show when={props.handSync?.()}>
                   {(sync) => (
-                    <GuitarNightHandSync
-                      partName={sync().partName}
-                      firstMarkSeconds={sync().firstMarkSeconds}
-                      lastMarkSeconds={sync().lastMarkSeconds}
-                      placed={sync().placed}
-                      format={formatTime}
-                      onMarkFirst={() => sync().onMark('first', position())}
-                      onMarkLast={() => sync().onMark('last', position())}
-                      onClear={() => sync().onClear()}
-                      onNudge={(delta) => sync().onNudge(delta)}
-                    />
+                    <div
+                      ref={(element) => {
+                        handSyncHost = element
+                      }}
+                      class={styles.handSyncHost}
+                    >
+                      <GuitarNightHandSync
+                        partName={sync().partName}
+                        firstMarkSeconds={sync().firstMarkSeconds}
+                        lastMarkSeconds={sync().lastMarkSeconds}
+                        placed={sync().placed}
+                        format={formatTime}
+                        onMarkFirst={() => sync().onMark('first', position())}
+                        onMarkLast={() => sync().onMark('last', position())}
+                        onClear={() => sync().onClear()}
+                        onNudge={(delta) => sync().onNudge(delta)}
+                      />
+                    </div>
                   )}
                 </Show>
                 <div class={styles.channelStrip} aria-label="Backing tracks">
@@ -677,6 +711,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         }}
         invitationNote={() => {
           const authored = props.authoredReference?.() ?? null
+          const placing = props.handSync?.() ?? null
+          if (placing !== null) {
+            return placing.placed
+              ? `${placing.partName} is placed on this recording. Nudge it in the Band panel if it drifts.`
+              : `Placing ${placing.partName} on this recording: play, then mark its first and last note in the Band panel.`
+          }
           if (authored === null) {
             return 'Attach a tab or turn on Listening whenever you want a target.'
           }
@@ -687,6 +727,19 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         }}
         invitationAction={
           <>
+            <Show when={props.handSync?.()}>
+              {(sync) => (
+                <button
+                  class={styles.stageInvitationAction}
+                  type="button"
+                  onClick={openHandPlacement}
+                >
+                  {sync().placed
+                    ? `Adjust ${sync().partName}`
+                    : `Mark ${sync().partName}`}
+                </button>
+              )}
+            </Show>
             <Show when={props.authoredReference?.() ?? null}>
               <Show when={props.onRehearseTab}>
                 {(rehearse) => (
