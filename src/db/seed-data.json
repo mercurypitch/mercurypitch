@@ -392,11 +392,11 @@
     },
     {
       "name": "All Star",
-      "description": "Complete all bronze badges",
+      "description": "Every bronze practice badge earned",
       "icon": "sparkle",
       "tier": "gold",
       "category": "meta",
-      "unlockCondition": "Complete all bronze-tier badges",
+      "unlockCondition": "Complete all bronze practice badges",
       "sortOrder": 16
     },
     {
