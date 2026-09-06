@@ -162,7 +162,8 @@
   outline-offset: 2px;
 }
 
-.delete svg {
+.delete svg,
+.primary svg {
   width: 0.9rem;
   height: 0.9rem;
 }

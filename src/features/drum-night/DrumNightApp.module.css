@@ -1007,9 +1007,9 @@
   display: block;
   width: 318px;
   min-height: 0;
-  /* The column scrolls; the take strip at its bottom is sticky, so Keep and
-     Not now are never clipped by the column's edge (UX-36). */
-  overflow-y: auto;
+  /* The column scrolls and the take strip, its last child, sticks to the
+     bottom edge (DrumTakeHistory.module.css), so Keep and Not now are never
+     clipped by the column's edge (UX-36). */
   overscroll-behavior: contain;
   padding: 12px;
   overflow: auto;
@@ -2754,21 +2754,6 @@
   right: calc(22px + env(safe-area-inset-right));
   /* Keep transient feedback above both the song timeline and transport. */
   bottom: calc(172px + env(safe-area-inset-bottom));
-}
-
-/* With the take strip showing in the phrase-coach column, the toast anchors
-   above it instead of covering Keep and Not now. */
-.shell[data-take-rail='true'] .toast {
-  bottom: calc(172px + 96px + env(safe-area-inset-bottom));
-}
-
-/* Finish take on the transport, phones only: the coach cue that holds it is
-   collapsed there. Mirrors the stop button on the other side of the cradle. */
-.finishTakeMobile {
-  display: none;
-}
-
-.toast {
   max-width: min(
     420px,
     calc(100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right))
@@ -2791,6 +2776,16 @@
 .toastVisible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Where the phrase-coach column is on screen and a take strip shows in it,
+   the toast steps left of the column instead of covering Keep and Not now,
+   whatever height the strip has in its current state. The column is hidden
+   below 1041px and in the seat view. */
+@media (min-width: 1041px) {
+  .shell[data-take-rail='true']:not([data-view='seat']) .toast {
+    right: calc(318px + 22px + env(safe-area-inset-right));
+  }
 }
 
 @keyframes calibrationStrike {
@@ -3220,10 +3215,15 @@
     display: grid;
     min-height: 0;
     grid-template-columns: repeat(5, 1fr);
+    /* Finish take joins as a sixth item while a take waits (UX-37). */
+    grid-auto-columns: 1fr;
     align-items: center;
     padding: 3px 7px 5px;
     border-top: 1px solid var(--line);
     background: #090b0e;
+  }
+  .mobileNav .mobileFinish {
+    color: var(--amber);
   }
   .mobileNav button {
     display: grid;
@@ -3884,28 +3884,4 @@
 .accountMenu button:hover {
   color: #f6efe3;
   background: rgb(231 173 82 / 14%);
-}
-
-@media (max-width: 768px) {
-  .finishTakeMobile {
-    position: absolute;
-    top: 50%;
-    right: -22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid rgb(231 173 82 / 52%);
-    border-radius: 999px;
-    color: var(--vellum);
-    background: rgb(231 173 82 / 14%);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transform: translate(100%, -50%);
-    cursor: pointer;
-  }
 }

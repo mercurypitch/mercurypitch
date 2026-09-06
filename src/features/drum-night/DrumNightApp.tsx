@@ -9,8 +9,8 @@
 // browser activation gesture.
 
 import type { JSX } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { batch, createEffect, createMemo, createSignal, For, lazy, Match, on, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
+import { AudioWave, CheckSmall, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
@@ -1951,18 +1951,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   // Which card leads the coach workspace: the coach itself, or the takes
   // when "Open take history" asked for them (UX-39).
   const [coachLead, setCoachLead] = createSignal<'coach' | 'takes'>('coach')
+  // The takes lead only while the coach workspace opened for them stays
+  // open; any other workspace, by any path, puts the coach back first.
+  createEffect(
+    on(workspace, (open) => {
+      if (open !== 'coach') setCoachLead('coach')
+    }),
+  )
+  // Only a saved, prepared First Pocket keeps take history.
+  const takeEligible = (): boolean =>
+    activeProject() !== null &&
+    !usingStemBacking() &&
+    activeDocument().sourceFormat === 'prepared'
   // The compact take strip in the phrase-coach column, and whether a take is
-  // waiting to be finished: on narrow viewports the transport offers Finish
-  // take then, where the coach cue that holds it is collapsed. The control is
-  // rendered only there, so wide layouts keep one Finish control (UX-36, UX-37).
+  // waiting to be finished: on phones the nav offers Finish take then, where
+  // the coach cue that holds it is collapsed. The control is rendered only
+  // there, so wide layouts keep one Finish control (UX-36, UX-37).
   const takeRailShown = (): boolean =>
     activeProject() !== null &&
     (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
       (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle')
   const takeReadyToFinish = (): boolean =>
-    activeProject() !== null &&
-    !usingStemBacking() &&
-    activeDocument().sourceFormat === 'prepared' &&
+    takeEligible() &&
     retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
     (takeHistoryController()?.finishState().kind ?? 'idle') === 'idle' &&
     !takeFinishPreparing()
@@ -3853,11 +3863,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
-                      eligible={
-                        activeProject() !== null &&
-                        !usingStemBacking() &&
-                        activeDocument().sourceFormat === 'prepared'
-                      }
+                      eligible={takeEligible()}
                       unavailableReason={
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
@@ -4664,11 +4670,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
-                      eligible={
-                        activeProject() !== null &&
-                        !usingStemBacking() &&
-                        activeDocument().sourceFormat === 'prepared'
-                      }
+                      eligible={takeEligible()}
                       unavailableReason={
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
@@ -4870,16 +4872,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </div>
           </div>
           <div class={styles.playCradle}>
-            <Show when={isNarrow() && takeReadyToFinish()}>
-              <button
-                class={styles.finishTakeMobile}
-                type="button"
-                onClick={finishTake}
-                aria-label="Finish take"
-              >
-                Finish
-              </button>
-            </Show>
             <button
               class={styles.stopButton}
               type="button"
@@ -4994,6 +4986,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <i class={styles.mobileRecordMark} aria-hidden="true" />
             <span>{transport().recording ? 'Armed' : 'Record'}</span>
           </button>
+          <Show when={isNarrow() && takeReadyToFinish()}>
+            <button
+              class={styles.mobileFinish}
+              type="button"
+              onClick={finishTake}
+              aria-label="Finish take"
+            >
+              <CheckSmall />
+              <span>Finish</span>
+            </button>
+          </Show>
           <button type="button" onClick={() => openWorkspace('kit')}>
             <Drum />
             <span>Kit</span>

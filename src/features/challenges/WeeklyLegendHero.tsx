@@ -149,11 +149,10 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
   return (
     <section class={`${styles.card} home-legend-card`}>
       <div class={styles.eyebrowRow}>
-        <span class={styles.eyebrow}>
-          {challenge()?.slug.includes('-encore-') === true
-            ? 'Legend Attempt · Encore'
-            : 'Legend Attempt'}
-        </span>
+        <span class={styles.eyebrow}>Legend Attempt</span>
+        <Show when={challenge()?.slug.includes('-encore-') === true}>
+          <span class={styles.eyebrow}>Encore</span>
+        </Show>
         <Show when={challenge()}>
           <span class={styles.countdown}>
             {countdownLabel(challenge()!.endsAt)}
