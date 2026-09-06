@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
-import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
@@ -372,7 +371,6 @@ export const SettingsPanel: Component = () => {
           <div class={styles.settingsSection} data-tour="settings.account">
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
-            <VerifyEmailBanner placement="inline" />
             <AccountSection />
           </div>
 
