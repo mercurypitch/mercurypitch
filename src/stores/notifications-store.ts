@@ -7,8 +7,8 @@
 // confirmations): showing a channelled toast clears the previous one on that
 // channel, so a category can never stack up the screen.
 
-import { createSignal } from 'solid-js'
-import { BREAKPOINTS } from '@/lib/use-viewport'
+import { createEffect, createRoot, createSignal, on } from 'solid-js'
+import { isNarrow } from '@/lib/use-viewport'
 
 export interface NotificationAction {
   label: string
@@ -96,25 +96,18 @@ const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
 
 /** A phone shows this many toasts at once; the rest wait their turn. */
 const MAX_VISIBLE_NARROW = 2
-const NARROW_VIEWPORT = `(max-width: ${BREAKPOINTS.mobile}px)`
 
-function narrowQuery(): MediaQueryList | null {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function')
-    return null
-  try {
-    return window.matchMedia(NARROW_VIEWPORT)
-  } catch {
-    return null
-  }
-}
-
+/** The app's own phone breakpoint, reactive; false where there is no DOM. */
 function narrowViewport(): boolean {
-  return narrowQuery()?.matches ?? false
+  return isNarrow()
 }
 
 // A window that widens past the phone breakpoint has room for everything
 // that was waiting; without this they waited for a visible toast to go.
-narrowQuery()?.addEventListener?.('change', () => admitWaiting())
+// App-lifetime root: the store outlives every component.
+createRoot(() => {
+  createEffect(on(isNarrow, () => admitWaiting(), { defer: true }))
+})
 
 /**
  * Toasts that arrived while a phone already showed its two. First in, first
