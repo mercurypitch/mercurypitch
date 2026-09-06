@@ -912,30 +912,6 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
             </div>
           </Show>
 
-          <div
-            class={styles.trailCards}
-            classList={{ [styles.singleTrail]: props.later === null }}
-          >
-            <TrailCard
-              label="Earlier"
-              take={props.earlier}
-              trail={props.model.earlier}
-              selected={props.selectedId === props.earlier?.id}
-              selector={props.earlierSelector}
-              onSelect={props.onSelect}
-            />
-            <Show when={props.later !== null}>
-              <TrailCard
-                label="Later"
-                take={props.later}
-                trail={props.model.later}
-                selected={props.selectedId === props.later?.id}
-                selector={props.laterSelector}
-                onSelect={props.onSelect}
-              />
-            </Show>
-          </div>
-
           <div class={styles.plotFrame}>
             <canvas
               ref={canvas}
@@ -1047,6 +1023,32 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
                 <span />
                 <span />
               </div>
+            </Show>
+          </div>
+
+          {/* The comparison is the point of the page; the Earlier/Later
+              choosers sit beneath it so it is never pushed below the fold. */}
+          <div
+            class={styles.trailCards}
+            classList={{ [styles.singleTrail]: props.later === null }}
+          >
+            <TrailCard
+              label="Earlier"
+              take={props.earlier}
+              trail={props.model.earlier}
+              selected={props.selectedId === props.earlier?.id}
+              selector={props.earlierSelector}
+              onSelect={props.onSelect}
+            />
+            <Show when={props.later !== null}>
+              <TrailCard
+                label="Later"
+                take={props.later}
+                trail={props.model.later}
+                selected={props.selectedId === props.later?.id}
+                selector={props.laterSelector}
+                onSelect={props.onSelect}
+              />
             </Show>
           </div>
 

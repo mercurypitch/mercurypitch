@@ -327,7 +327,10 @@
    first-win deck's "Start count-in" button. Docked in the header rail it
    is out of the play area entirely. */
 .docked {
-  position: static;
+  /* The pill is the menu's positioning context. With `static` here the menu
+     measured from whichever ancestor happened to be positioned, and at 390px
+     in the app header that put it off the right edge of the screen. */
+  position: relative;
   z-index: auto;
   margin-left: auto;
   opacity: 1;
@@ -335,12 +338,26 @@
 }
 
 /* The floating pill's menu opens upward, because it lives at the bottom of
-   the screen. From a header rail, that would open off the top. */
+   the screen. From a header rail, that would open off the top. Anchored to
+   the pill's right edge, which is inside the viewport wherever the host puts
+   the pill, and never wider than the screen. */
 .docked .menu {
   top: calc(100% + 0.5rem);
   bottom: auto;
   left: auto;
   right: 0;
+  max-width: min(16rem, calc(100vw - 1rem));
+}
+
+/* Desktop: the floating pill shares the bottom-left corner with the app
+   sidebar, whose footer holds the Strictness control; the pill sat on it.
+   With the sidebar expanded the pill moves past it. */
+@media (min-width: 769px) {
+  /* `:global`: the sidebar's classes are plain app.css classes, and a CSS
+     module would otherwise hash them into names nothing carries. */
+  body:has(:global(.app-sidebar:not(.collapsed))) .pill:not(.docked) {
+    left: calc(300px + var(--safe-left, 0px) + 0.75rem);
+  }
 }
 
 @media (max-width: 768px) {

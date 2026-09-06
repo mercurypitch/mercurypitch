@@ -3311,6 +3311,9 @@ const AppShell: Component<AppProps> = (props) => {
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
+              {/* Phones: the verify-email nudge is a strip here, in the flow,
+                  not a pill over the tab bar and the toasts. */}
+              <VerifyEmailBanner placement="inline" />
               <Show when={activeTab() === TAB_HOME}>
                 <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
                   <HomePage />
@@ -4410,7 +4413,7 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />
-        <VerifyEmailBanner />
+        <VerifyEmailBanner placement="floating" />
 
         <Show when={isLibraryModalOpenSignal()}>
           <LibraryModal

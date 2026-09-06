@@ -90,6 +90,42 @@
   background: color-mix(in srgb, var(--text-primary, #e6edf3) 10%, transparent);
 }
 
+/* The studio app mounts the pill for desktops and a strip for phones; each
+   is shown at the widths it was made for. */
+@media (max-width: 768px) {
+  .floatingOnly {
+    display: none;
+  }
+}
+
+/* The phone strip: in the page flow, so nothing is covered. Same parts as
+   the pill, laid out as one row that wraps. */
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  margin: 8px 10px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #58a6ff) 10%,
+    var(--bg-card, #161b22)
+  );
+  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 35%, transparent);
+  color: var(--text-primary, #e6edf3);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (min-width: 769px) {
+  .inline {
+    display: none;
+  }
+}
+
 @media (max-width: 600px) {
   .banner {
     /* Sit above the mobile tab bar so buttons (Resend / Close) stay
