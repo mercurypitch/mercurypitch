@@ -2810,6 +2810,10 @@
 
   .drawer {
     top: auto;
+    /* Anchored on the nav, not above the keybed: the sheet covers the
+       keyboard nobody plays while it is open, and with the max-height below
+       its top stays at 76px however tall the panel is. */
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     width: 100%;
     /* A bottom sheet over the keyboard and the transport. Reserving their
        height left the sheet about 150px tall above a keyboard nobody plays
@@ -2924,6 +2928,11 @@
   }
 
   .drawer {
+    /* Landscape keeps the keyboard in view: the sheet sits above it. */
+    bottom: calc(
+      var(--mobile-nav-height) + var(--keybed-height) +
+        var(--fallboard-height) + env(safe-area-inset-bottom)
+    );
     max-height: calc(
       100dvh - var(--mobile-nav-height) - var(--keybed-height) -
         var(--fallboard-height) - env(safe-area-inset-bottom)

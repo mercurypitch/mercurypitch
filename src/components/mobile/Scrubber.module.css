@@ -1,8 +1,11 @@
 /* Scrubber — seek bar (skin via --scrubber-* props). */
 
 .scrubber {
-  /* 44px of touch target around a 4px line: 8px of padding made it 20px. */
+  /* 44px of touch target around a 4px line: 8px of padding made it 20px.
+     The negative margin keeps the layout height at 20px, so the bottom bar
+     and the pills anchored above it stay where they were. */
   padding: 20px 0;
+  margin: -12px 0;
   cursor: pointer;
   touch-action: none;
 }
