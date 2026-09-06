@@ -60,6 +60,15 @@ describe('All Star', () => {
     expect(allStarEarned(SEEDED, earned)).toBe(false)
   })
 
+  it('says so in the seed: the copy on the tile is what the rule does', () => {
+    // The tile shows this sentence as "how to earn". It read "Complete all
+    // bronze-tier badges" while the rule counted only the practice bronzes,
+    // which sent a singer looking for a podium finish they do not need.
+    const allStar = byName('All Star')
+    expect(allStar.unlockCondition).toBe('Complete all bronze practice badges')
+    expect(allStar.description).toBe('Every bronze practice badge earned')
+  })
+
   it('is never earned against an empty catalogue', () => {
     expect(allStarEarned([], new Set())).toBe(false)
   })
