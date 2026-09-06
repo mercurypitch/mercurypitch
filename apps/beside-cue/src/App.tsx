@@ -310,6 +310,11 @@ export function App(props: AppProps) {
 
   let dailyCueCoordinator!: DailyCueCoordinator
   let latestState = initialState
+  // The last snapshot handed to the repository; runs ahead of `latestState`
+  // while an atomic save is pending. Every commit is built on it.
+  let enqueuedState = initialState
+  let commitSequence = 0
+  let shownSequence = 0
   let stateLoaded = false
   let disposed = false
   let midnightTimer: ReturnType<typeof setTimeout> | undefined
@@ -537,12 +542,39 @@ export function App(props: AppProps) {
     })),
   )
 
+  type StateTransition = (state: BesideCueStateV1) => BesideCueStateV1
+
+  // Every save is built on the last snapshot handed to the repository, not on
+  // the one in memory: while an atomic save is in flight the two differ, and a
+  // change made in that window (a mute toggle during the first-run save) used
+  // to be built from the pre-save state, queued second, and so become the
+  // device's final snapshot without the plan that had just been saved.
+  function enqueue(next: BesideCueStateV1 | StateTransition): {
+    readonly nextState: BesideCueStateV1
+    readonly sequence: number
+  } {
+    const nextState = typeof next === 'function' ? next(enqueuedState) : next
+    enqueuedState = nextState
+    commitSequence += 1
+    return { nextState, sequence: commitSequence }
+  }
+
+  // Memory only ever moves forward: an atomic save that resolves after a later
+  // commit has already been shown must not roll the screen back to itself.
+  function show(nextState: BesideCueStateV1, sequence: number): void {
+    if (sequence < shownSequence) return
+    shownSequence = sequence
+    latestState = nextState
+    enqueuedState = nextState
+    setAppState(nextState)
+  }
+
   function persistWithRepository(
-    nextState: BesideCueStateV1,
+    next: BesideCueStateV1 | StateTransition,
     repository: BesideCueAppServices['repository'],
   ): void {
-    latestState = nextState
-    setAppState(nextState)
+    const { nextState, sequence } = enqueue(next)
+    show(nextState, sequence)
     setStorageError(undefined)
     void repository.saveState(nextState).catch(() => {
       setStorageError(
@@ -554,11 +586,11 @@ export function App(props: AppProps) {
   }
 
   async function persistDurablyWithRepository(
-    nextState: BesideCueStateV1,
+    next: BesideCueStateV1 | StateTransition,
     repository: BesideCueAppServices['repository'],
   ): Promise<void> {
-    latestState = nextState
-    setAppState(nextState)
+    const { nextState, sequence } = enqueue(next)
+    show(nextState, sequence)
     setStorageError(undefined)
     try {
       await repository.saveState(nextState)
@@ -573,16 +605,20 @@ export function App(props: AppProps) {
   }
 
   async function persistAtomicallyWithRepository(
-    nextState: BesideCueStateV1,
+    next: BesideCueStateV1 | StateTransition,
     repository: BesideCueAppServices['repository'],
   ): Promise<void> {
+    const { nextState, sequence } = enqueue(next)
     setStorageError(undefined)
     setAtomicSavesPending((count) => count + 1)
     try {
       await repository.saveState(nextState)
-      latestState = nextState
-      setAppState(nextState)
+      show(nextState, sequence)
     } catch (error) {
+      // Nothing was built on this snapshot, so the next commit starts again
+      // from what the screen shows. A later commit that was built on it has
+      // already carried its content into the queue and decides for itself.
+      if (enqueuedState === nextState) enqueuedState = latestState
       setStorageError(notice('That change could not be saved on this device.'))
       throw error
     } finally {
@@ -706,7 +742,7 @@ export function App(props: AppProps) {
     }
     if (cueResolutionInFlight) return
 
-    const state = latestState
+    const state = enqueuedState
     const selectedCue = currentCue(state)
     const rule =
       selectedCue === undefined
@@ -899,7 +935,7 @@ export function App(props: AppProps) {
       }
 
       try {
-        const currentState = latestState
+        const currentState = enqueuedState
         const existingCue = currentCue(currentState)
         const at = appServices.now().toISOString()
         const cueInput = {
@@ -1033,7 +1069,7 @@ export function App(props: AppProps) {
       }
 
       try {
-        const currentState = latestState
+        const currentState = enqueuedState
         const existingCue = currentCue(currentState)
         const at = appServices.now().toISOString()
         const cueInput = {
@@ -1257,7 +1293,7 @@ export function App(props: AppProps) {
       return
     }
 
-    const currentState = latestState
+    const currentState = enqueuedState
     const existingCue = currentCue(currentState)
     const appServices = services()
     const appConfig = config()
@@ -1367,7 +1403,7 @@ export function App(props: AppProps) {
       }
     }
 
-    const currentState = latestState
+    const currentState = enqueuedState
     const selectedCue = currentCue(currentState)
     if (selectedCue?.status !== 'active') {
       return {
@@ -1408,7 +1444,7 @@ export function App(props: AppProps) {
     let savedRuleId: string | undefined
     const rollbackSavedRule = async (): Promise<void> => {
       if (savedRuleId === undefined) return
-      const savedRule = latestState.scheduleRules.find(
+      const savedRule = enqueuedState.scheduleRules.find(
         (rule) => rule.id === savedRuleId && rule.cueId === selectedCue.id,
       )
       if (savedRule === undefined) return
@@ -1416,14 +1452,14 @@ export function App(props: AppProps) {
       const rolledBack =
         existingRule === undefined
           ? {
-              ...latestState,
-              scheduleRules: latestState.scheduleRules.filter(
+              ...enqueuedState,
+              scheduleRules: enqueuedState.scheduleRules.filter(
                 (rule) => rule.id !== savedRuleId,
               ),
             }
           : {
-              ...latestState,
-              scheduleRules: latestState.scheduleRules.map((rule) =>
+              ...enqueuedState,
+              scheduleRules: enqueuedState.scheduleRules.map((rule) =>
                 rule.id === existingRule.id ? existingRule : rule,
               ),
             }
@@ -1443,7 +1479,7 @@ export function App(props: AppProps) {
         return { ok: false, message: renderNotice(message) }
       }
 
-      const rebased = applyRule(latestState)
+      const rebased = applyRule(enqueuedState)
       await persistAtomicallyWithRepository(
         rebased.state,
         appServices.repository,
@@ -1533,7 +1569,7 @@ export function App(props: AppProps) {
     }
 
     const appServices = services()
-    const nextState = removeDailyTargetTimeRule(latestState, {
+    const nextState = removeDailyTargetTimeRule(enqueuedState, {
       ruleId: rule.id,
       at: appServices.now().toISOString(),
     }).state
@@ -1561,7 +1597,7 @@ export function App(props: AppProps) {
   }
 
   function showManualCue(): void {
-    const currentState = appState()
+    const currentState = enqueuedState
     const activeCue = currentCue(currentState)
     if (activeCue === undefined || activeCue.status !== 'active') return
 
@@ -1670,7 +1706,7 @@ export function App(props: AppProps) {
       return
     }
 
-    const result = cancelCueOccurrence(appState(), { occurrenceId })
+    const result = cancelCueOccurrence(enqueuedState, { occurrenceId })
     persist(result.state)
     setActiveOccurrenceId(undefined)
     setScreen('home')
@@ -1748,7 +1784,7 @@ export function App(props: AppProps) {
   }
 
   function setCharacterVoiceEnabled(voiceEnabled: boolean): void {
-    const currentState = latestState
+    const currentState = enqueuedState
     if (currentState.settings.voiceEnabled === voiceEnabled) return
     if (!voiceEnabled) {
       stopCharacterVoice('muted')
@@ -1771,14 +1807,14 @@ export function App(props: AppProps) {
     attemptedPullPreviews.clear()
     setPlayedPullPreviewIds([])
     persist({
-      ...latestState,
-      settings: { ...latestState.settings, locale: nextLocale },
+      ...enqueuedState,
+      settings: { ...enqueuedState.settings, locale: nextLocale },
     })
-    void reconcileDailyCue(latestState, config(), true).catch(() => undefined)
+    void reconcileDailyCue(enqueuedState, config(), true).catch(() => undefined)
   }
 
   function toggleCharacterVoice(): void {
-    setCharacterVoiceEnabled(!latestState.settings.voiceEnabled)
+    setCharacterVoiceEnabled(!enqueuedState.settings.voiceEnabled)
     ambientMusic.unlock()
   }
 
@@ -1795,7 +1831,7 @@ export function App(props: AppProps) {
     }
 
     const voiceEnabled = !muted
-    const currentState = latestState
+    const currentState = enqueuedState
     if (currentState.settings.voiceEnabled === voiceEnabled) return
     persist({
       ...currentState,
@@ -1851,6 +1887,7 @@ export function App(props: AppProps) {
       .then(() => {
         const nextState = createInitialState()
         latestState = nextState
+        enqueuedState = nextState
         setAppState(nextState)
         setV2Muted(!nextState.settings.voiceEnabled)
         onboardingAudioSession.setMuted(!nextState.settings.voiceEnabled)
@@ -1896,6 +1933,7 @@ export function App(props: AppProps) {
           setCinematicRehearsal(false)
           setV2OnboardingSessionKind(v2EntrySessionKind)
           latestState = nextState
+          enqueuedState = nextState
           stateLoaded = true
           setAppState(nextState)
           setV2Muted(!nextState.settings.voiceEnabled)
@@ -1927,6 +1965,7 @@ export function App(props: AppProps) {
       .then(() => {
         const nextState = createInitialState()
         latestState = nextState
+        enqueuedState = nextState
         stateLoaded = true
         setAppState(nextState)
         setV2Muted(!nextState.settings.voiceEnabled)
