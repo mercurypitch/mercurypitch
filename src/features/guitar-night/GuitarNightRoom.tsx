@@ -3,7 +3,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
+import { ChevronLeft, Crosshair, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
@@ -147,10 +147,21 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   // from the Align button in the room tools (UX-25, UX-26).
   function openHandPlacement(): void {
     bandDetails.open = true
-    queueMicrotask(() => {
-      handSyncHost?.scrollIntoView({ block: 'nearest' })
-      handSyncHost?.querySelector('button')?.focus()
-    })
+    const host = handSyncHost
+    if (!host) return
+    // Scroll the panel itself: scrollIntoView would also scroll the
+    // overflow-hidden room around it, which no gesture scrolls back.
+    const panel = host.closest<HTMLElement>(
+      '[data-testid="guitar-night-band-panel"]',
+    )
+    if (panel) {
+      const offset =
+        host.getBoundingClientRect().top -
+        panel.getBoundingClientRect().top +
+        panel.scrollTop
+      panel.scrollTo({ top: Math.max(0, offset - 8) })
+    }
+    host.querySelector('button')?.focus()
   }
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
@@ -453,11 +464,11 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 <button
                   type="button"
                   class={styles.alignTool}
-                  aria-label={`Place ${sync().partName} by hand`}
+                  aria-label={`Align ${sync().partName} by hand`}
                   onClick={openHandPlacement}
                 >
                   <span aria-hidden="true">
-                    <SlidersHorizontal />
+                    <Crosshair />
                   </span>
                   <strong>Align</strong>
                 </button>

@@ -2542,7 +2542,27 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
 
   const setup = room.getByLabel('6-string guitar setup', { exact: true })
   await setup.click()
-  await room.getByRole('combobox', { name: 'Strings' }).selectOption('8')
+  // On a phone the tools row can scroll sideways, which would clip an
+  // absolutely positioned popover to the row's own height. The setup popover
+  // has to be hittable inside the viewport, not a slice of it.
+  const strings = room.getByRole('combobox', { name: 'Strings' })
+  await expect(strings).toBeVisible()
+  const stringsHit = await strings.evaluate((field) => {
+    const rect = field.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    return {
+      top: rect.top,
+      bottom: rect.bottom,
+      innerHeight: window.innerHeight,
+      hitsField: hit === field || field.contains(hit),
+    }
+  })
+  expect(stringsHit.top).toBeGreaterThanOrEqual(0)
+  expect(stringsHit.bottom).toBeLessThanOrEqual(stringsHit.innerHeight)
+  expect(stringsHit.hitsField).toBe(true)
+  await strings.selectOption('8')
   await page.keyboard.press('Escape')
   await expect(tabWindow).toHaveAttribute('data-string-count', '8')
   await expectLargeTabContained()

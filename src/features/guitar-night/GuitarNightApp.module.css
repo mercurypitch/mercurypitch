@@ -3355,7 +3355,9 @@
    bottom while the rest of the tool scrolls: they are the whole point. */
 .handSyncHost .handSyncMarks {
   position: sticky;
-  bottom: -0.9rem;
+  /* Flush with the panel's visible edge: sticky offsets are measured from
+     the scrollport, and the panel's padding lies inside it. */
+  bottom: 0;
   z-index: 1;
   padding: 0.35rem 0;
   background: rgba(12, 9, 7, 0.97);
@@ -3653,10 +3655,11 @@
   right: 0;
   display: grid;
   width: min(23rem, calc(100vw - 2rem));
-  /* Below the room heading and above the safe area, whatever the phone; 72vh
-     from a panel that opens 4rem down ran past the bottom of a 844px screen
-     with the hand-placement tool in the part that was cut off. */
-  max-height: min(calc(100dvh - 5.5rem - var(--safe-bottom, 0px)), 34rem);
+  /* Below the shell topbar and the room heading, whatever the window; 72vh
+     from a panel that opens that far down ran past the bottom of a 844px
+     screen with the hand-placement tool in the part that was cut off. Phones
+     subtract their own rows below. */
+  max-height: min(calc(100dvh - 10rem), 34rem);
   gap: 0.8rem;
   padding: 0.9rem;
   overflow: auto;
@@ -9324,22 +9327,32 @@
     min-height: 45vh;
   }
 
+  /* The row itself never scrolls: it stays the containing block of the
+     instrument setup popover, and a scroll container would clip that to
+     the row's 44px. Setup and camera keep their width; the views strip,
+     already a horizontal scroller, takes what is left and scrolls. */
   .stageHeaderTools {
     flex-wrap: nowrap;
     justify-content: flex-start;
     justify-self: stretch;
     max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .stageHeaderTools::-webkit-scrollbar {
-    display: none;
   }
 
   .stageHeaderTools > * {
     flex: 0 0 auto;
+  }
+
+  .stageHeaderTools .stageModes {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+/* Phones: the Band panel measures the rows above it. Topbar 3.75rem, heading
+   row 3.55rem, gap 0.5rem, margin 0.6rem. */
+@media (max-width: 720px) {
+  .scoreSessionPanel {
+    max-height: calc(100dvh - 8.4rem - var(--safe-bottom, 0px));
   }
 }
