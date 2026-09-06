@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -362,6 +362,12 @@ export function PianoNightApp(): JSX.Element {
   const [coachOpen, setCoachOpen] = createSignal(false)
   const [coachFlashing, setCoachFlashing] = createSignal(false)
   const [compactSheets, setCompactSheets] = createSignal(false)
+  // Phone landscape folds Stage, Coach, Room and Settings behind one More
+  // button so the bottom row has room for the transport.
+  const [moreOpen, setMoreOpen] = createSignal(false)
+  // Mirrors the phone-landscape block in PianoNightApp.module.css, so the
+  // More button exists only where the bar folds; portrait keeps its six.
+  const [phoneLandscape, setPhoneLandscape] = createSignal(false)
   const [announcement, setAnnouncement] = createSignal('')
 
   const updateRoomGlass = (value: number): void => {
@@ -710,17 +716,29 @@ export function PianoNightApp(): JSX.Element {
       setCompactSheets(isCompact)
       if (!isCompact) setCoachOpen(false)
     }
+    const landscapeMedia =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 900px) and (max-height: 500px)')
+        : null
+    const syncLandscape = (): void => {
+      const landscape = landscapeMedia?.matches ?? false
+      setPhoneLandscape(landscape)
+      if (!landscape) setMoreOpen(false)
+    }
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
       if (closeTopSurface()) event.preventDefault()
     }
     syncSheets()
+    syncLandscape()
     media?.addEventListener?.('change', syncSheets)
+    landscapeMedia?.addEventListener?.('change', syncLandscape)
     window.addEventListener('keydown', onKeyDown)
 
     onCleanup(() => {
       uninstallSpace()
       media?.removeEventListener?.('change', syncSheets)
+      landscapeMedia?.removeEventListener?.('change', syncLandscape)
       window.removeEventListener('keydown', onKeyDown)
     })
   })
@@ -1152,7 +1170,7 @@ export function PianoNightApp(): JSX.Element {
         inert={blockingModal()}
       >
         <button
-          class={styles.mobileActive}
+          class={`${styles.mobileActive} ${styles.mobileFolded}`}
           type="button"
           onClick={() => stageElement?.focus()}
         >
@@ -1160,6 +1178,7 @@ export function PianoNightApp(): JSX.Element {
           <span>Stage</span>
         </button>
         <button
+          class={styles.mobileMusic}
           type="button"
           onClick={toggleMusic}
           aria-label="Choose music for Piano Night"
@@ -1171,6 +1190,7 @@ export function PianoNightApp(): JSX.Element {
           <span>Music</span>
         </button>
         <button
+          class={styles.mobileFolded}
           type="button"
           onClick={toggleCoach}
           aria-expanded={coachOpen()}
@@ -1180,6 +1200,7 @@ export function PianoNightApp(): JSX.Element {
           <span>Coach</span>
         </button>
         <button
+          class={styles.mobileFolded}
           type="button"
           onClick={toggleRoom}
           aria-label="Choose the Piano Night room"
@@ -1191,6 +1212,7 @@ export function PianoNightApp(): JSX.Element {
           <span>Room</span>
         </button>
         <button
+          class={styles.mobileFolded}
           type="button"
           onClick={toggleSettings}
           aria-label="Open Piano Night settings"
@@ -1201,6 +1223,22 @@ export function PianoNightApp(): JSX.Element {
           <Settings />
           <span>Settings</span>
         </button>
+        {/* Phone landscape only: the four above fold behind this one, and the
+            bar keeps Studio, the transport, Music and More. */}
+        <Show when={phoneLandscape()}>
+          <button
+            class={styles.mobileMore}
+            type="button"
+            onClick={() => setMoreOpen((open) => !open)}
+            aria-label="More Piano Night controls"
+            aria-haspopup="true"
+            aria-expanded={moreOpen()}
+            aria-controls="piano-night-more"
+          >
+            <MoreHorizontal />
+            <span>More</span>
+          </button>
+        </Show>
         {/* The way out. The side rail has carried this since the room shipped;
             on a phone that rail is gone and the bottom row is the only chrome
             there is, so without it Piano Night had no exit. */}
@@ -1212,6 +1250,69 @@ export function PianoNightApp(): JSX.Element {
           <span>Studio</span>
         </a>
       </nav>
+      <Show when={moreOpen()}>
+        <div
+          id="piano-night-more"
+          class={styles.mobileMoreMenu}
+          role="group"
+          aria-label="More Piano Night controls"
+          inert={blockingModal()}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setMoreOpen(false)
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false)
+              stageElement?.focus()
+            }}
+          >
+            <PianoKeys />
+            <span>Stage</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false)
+              toggleCoach()
+            }}
+            aria-expanded={coachOpen()}
+            aria-controls="piano-night-coach"
+          >
+            <WaveformBars />
+            <span>Coach</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false)
+              toggleRoom()
+            }}
+            aria-label="Choose the Piano Night room"
+            aria-haspopup="dialog"
+            aria-expanded={roomShowing()}
+            aria-controls="piano-night-settings"
+          >
+            <StageCurtains />
+            <span>Room</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false)
+              toggleSettings()
+            }}
+            aria-label="Open Piano Night settings"
+            aria-haspopup="dialog"
+            aria-expanded={settingsShowing()}
+            aria-controls="piano-night-settings"
+          >
+            <Settings />
+            <span>Settings</span>
+          </button>
+        </div>
+      </Show>
 
       {/* The scrim goes nearly clear while the room picker is up. Picking a
           room means looking at the room, and a 66% wash plus a 2px blur meant

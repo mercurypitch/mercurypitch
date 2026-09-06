@@ -3897,7 +3897,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   class={styles.coachCue}
                   type="button"
                   inert={drawerInteractionLocked()}
-                  onClick={() => openWorkspace('coach')}
+                  onClick={() =>
+                    openWorkspace(
+                      'coach',
+                      takeReadyToFinish() ? 'takes' : 'coach',
+                    )
+                  }
                   aria-label="Open live take monitor"
                 >
                   <span class={styles.coachOrb}>
@@ -3920,7 +3925,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         ? 'Take events arms automatically on the first Play.'
                         : activeProject() === null
                           ? 'Uses authored attacks and captured event timing.'
-                          : 'Finish saves only a compact local summary.'}
+                          : takeReadyToFinish()
+                            ? 'Tap to finish the take.'
+                            : 'Finish saves only a compact local summary.'}
                     </small>
                   </span>
                   <ChevronDown />

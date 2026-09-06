@@ -1563,6 +1563,11 @@
   display: none;
 }
 
+/* Phone landscape only (see the landscape block). */
+.mobileMoreMenu {
+  display: none;
+}
+
 .scrim {
   position: fixed;
   z-index: 80;
@@ -2622,6 +2627,9 @@
     width: 20px;
     height: 20px;
   }
+  .mobileNav .mobileMore {
+    display: none;
+  }
 
   .mobileNav .mobileActive,
   .mobileNav button[aria-expanded='true'] {
@@ -2877,7 +2885,8 @@
 @media (max-width: 900px) and (max-height: 500px) {
   .shell {
     --keybed-height: 84px;
-    --fallboard-height: 50px;
+    /* No fallboard row: the transport shares the nav row below. */
+    --fallboard-height: 0px;
     --mobile-nav-height: 48px;
   }
 
@@ -2903,8 +2912,88 @@
     top: calc(max(4px, env(safe-area-inset-top)) + 104px);
   }
 
+  /* One bottom row. The nav keeps Studio on the left and Music + More on
+     the right; the fallboard, which carries the transport, becomes a fixed
+     bar over the nav's empty middle. The keys and the falling notes gain
+     the row the fallboard used to take. */
+  .fallboard {
+    position: fixed;
+    z-index: 61;
+    right: 128px;
+    bottom: 0;
+    left: 64px;
+    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
   .transport {
-    height: 50px;
+    width: 100%;
+    height: var(--mobile-nav-height);
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .transport .transportSpeed,
+  .transport .transportVolume {
+    flex: 1 1 60px;
+    min-width: 48px;
+  }
+  .mobileNav {
+    display: flex;
+    align-items: stretch;
+  }
+  .mobileNav > * {
+    flex: 0 0 64px;
+  }
+  .mobileNav > a {
+    order: -1;
+  }
+  .mobileNav .mobileMusic {
+    margin-left: auto;
+  }
+  .mobileNav .mobileFolded {
+    display: none;
+  }
+  .mobileNav .mobileMore {
+    display: flex;
+  }
+  .mobileMoreMenu {
+    position: fixed;
+    z-index: 62;
+    right: 8px;
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 8px);
+    display: grid;
+    min-width: 11rem;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid rgb(181 138 80 / 24%);
+    border-radius: 12px;
+    background: rgb(4 6 8 / 97%);
+    box-shadow: 0 12px 30px rgb(0 0 0 / 34%);
+  }
+  .mobileMoreMenu button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--quiet);
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .mobileMoreMenu button[aria-expanded='true'] {
+    color: var(--brass-soft);
+  }
+  .mobileMoreMenu svg {
+    width: 18px;
+    height: 18px;
   }
 
   .coach {
@@ -2927,15 +3016,12 @@
     margin-top: 16px;
   }
 
+  /* A sheet covers the keys here: there is no room for both, and it
+     closes to the same keyboard. */
   .drawer {
-    /* Landscape keeps the keyboard in view: the sheet sits above it. */
-    bottom: calc(
-      var(--mobile-nav-height) + var(--keybed-height) +
-        var(--fallboard-height) + env(safe-area-inset-bottom)
-    );
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     max-height: calc(
-      100dvh - var(--mobile-nav-height) - var(--keybed-height) -
-        var(--fallboard-height) - env(safe-area-inset-bottom)
+      100dvh - 12px - var(--mobile-nav-height) - env(safe-area-inset-bottom)
     );
   }
 

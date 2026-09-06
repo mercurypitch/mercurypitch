@@ -993,9 +993,16 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
       await expect(
         page.getByTestId('piano-night-keyboard').locator('button[data-midi]'),
       ).toHaveCount(88)
-      await expect(
-        page.getByRole('button', { name: 'Open Piano Night settings' }),
-      ).toHaveCount(1)
+      if (viewport.name === 'phone landscape') {
+        // One bottom row: Settings folds behind More there.
+        await expect(
+          page.getByRole('button', { name: 'More Piano Night controls' }),
+        ).toHaveCount(1)
+      } else {
+        await expect(
+          page.getByRole('button', { name: 'Open Piano Night settings' }),
+        ).toHaveCount(1)
+      }
       await expect(
         page.getByRole('button', { name: 'Choose music for Piano Night' }),
       ).toHaveCount(1)
@@ -1143,6 +1150,11 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
           .boundingBox()
         expect(fallBox?.height).toBeGreaterThanOrEqual(100)
 
+        // Landscape keeps one bottom row: Settings and Coach are behind More.
+        const more = page.getByRole('button', {
+          name: 'More Piano Night controls',
+        })
+        await more.click()
         await page
           .getByRole('button', { name: 'Open Piano Night settings' })
           .filter({ visible: true })
@@ -1170,6 +1182,11 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
       }
 
       if (viewport.width <= 1180) {
+        if (viewport.name === 'phone landscape') {
+          await page
+            .getByRole('button', { name: 'More Piano Night controls' })
+            .click()
+        }
         await page.getByRole('button', { name: 'Coach', exact: true }).click()
         const coach = page.getByRole('region', {
           name: 'Phrase practice prompt',
