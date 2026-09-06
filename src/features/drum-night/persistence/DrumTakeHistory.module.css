@@ -117,14 +117,34 @@
   background: rgb(231 173 82 / 3.5%);
 }
 
-/* In the scrolling phrase-coach column the strip stays at the bottom edge. */
-.history[data-mode='compact'] .finishRail {
+/* In the phrase-coach column the compact host is the column's last child
+   and sticks to its bottom edge while the column scrolls, with the whole
+   column above it to travel over. Opaque, so scrolled content does not show
+   through the strip. */
+.history[data-mode='compact'] {
   position: sticky;
   bottom: 0;
   z-index: 1;
-  background: var(--take-surface, #0d1216);
+  background: rgb(10 12 15);
+}
+
+/* Two rows in the narrow column: the copy keeps its width and the actions
+   sit under it, so the strip is about the same height in every state. */
+.history[data-mode='compact'] .finishRail {
+  grid-template-columns: 34px minmax(0, 1fr);
   padding-inline: 0;
-  border-top: 1px solid var(--take-line-strong);
+}
+
+.history[data-mode='compact'] .finishRail > button,
+.history[data-mode='compact'] .keepActions,
+.history[data-mode='compact'] .failureActions {
+  grid-column: 2;
+  justify-self: end;
+}
+
+.history[data-mode='compact'] .keepActions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .finishRail[data-state='saved'] {

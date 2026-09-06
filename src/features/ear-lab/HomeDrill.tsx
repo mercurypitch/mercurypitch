@@ -134,8 +134,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   async function startRun(): Promise<void> {
     setMicError('')
-    const mode: HomeAnswerMode = homeAnswerMode()
-    if (mode === 'mic' && f0 === null) {
+    if (homeAnswerMode() === 'mic' && f0 === null) {
       // The permission prompt can take a while, and a denial used to start
       // the run in tap mode with "Sing or play" still selected and nothing
       // said. Now the wait is visible, and a denial stops here with the way
@@ -147,7 +146,12 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         const ctx = audioEngine.getAudioContext()
         if (!ctx) throw new Error('Audio engine has no context')
         const stream = await micManager.acquire(copy.micConsumer)
-        f0 = createF0Stream(ctx, stream)
+        try {
+          f0 = createF0Stream(ctx, stream)
+        } catch (error) {
+          micManager.release(copy.micConsumer)
+          throw error
+        }
       } catch {
         setMicError(
           'The microphone is not available, so nothing started. Allow microphone access in the browser and press Begin again, or answer by tapping.',
@@ -156,7 +160,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       } finally {
         setMicPending(false)
       }
-    } else if (mode === 'tap' && f0 !== null) {
+    }
+    // Read the mode after the wait: the player may have switched to tapping
+    // while the prompt was open, and a run listens or it does not.
+    const mode: HomeAnswerMode = homeAnswerMode()
+    if (mode === 'tap' && f0 !== null) {
       // Switched back to tapping: hand the device back rather than
       // holding an open mic for a run that will never listen.
       releaseMic()
