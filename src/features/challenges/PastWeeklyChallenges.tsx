@@ -31,14 +31,23 @@ const PAST_WEEKLY_CHALLENGES_ID = 'past-weekly-challenges'
  */
 const PLACE_ICONS = ['firstvoice', 'secondvoice', 'thirdvoice'] as const
 
-function endedLabel(endsAt: string): string {
-  const ended = new Date(endsAt)
+function endedLabel(challenge: {
+  endsAt: string
+  results?: { closedAt?: string } | null
+}): string {
+  // The board closes when the worker closes it, which can be later than the
+  // scheduled end; the close is the date people remember.
+  const closed = new Date(challenge.results?.closedAt ?? '')
+  const ended = new Date(challenge.endsAt)
+  const day = (date: Date): string =>
+    date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  if (Number.isFinite(closed.getTime())) return `Closed ${day(closed)}`
   if (!Number.isFinite(ended.getTime())) return 'Past challenge'
-  return `Ended ${ended.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })}`
+  return `Ended ${day(ended)}`
 }
 
 function featLabel(featType: string): string {
@@ -98,7 +107,7 @@ export const PastWeeklyChallenges: Component = () => {
                 <article class={styles.item}>
                   <div class={styles.itemBody}>
                     <div class={styles.itemMeta}>
-                      <span>{endedLabel(challenge.endsAt)}</span>
+                      <span>{endedLabel(challenge)}</span>
                       <span class={styles.tag}>
                         {featLabel(challenge.featType)}
                       </span>

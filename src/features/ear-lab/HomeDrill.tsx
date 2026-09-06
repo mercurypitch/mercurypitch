@@ -27,7 +27,7 @@ import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ea
 import { useArmingCue } from './arming-cue'
 import { IconMic, IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
@@ -86,6 +86,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const labelOf = (degree: number): string =>
     degreeLabel(set.degrees.find((d) => d.degree === degree))
   const [micError, setMicError] = createSignal('')
+  const [micPending, setMicPending] = createSignal(false)
 
   let f0: F0Stream | null = null
   const capture: SingCapture = {
@@ -125,10 +126,21 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     }
   }
 
+  async function useTapInstead(): Promise<void> {
+    setHomeAnswerMode('tap')
+    setMicError('')
+    await handleStart()
+  }
+
   async function startRun(): Promise<void> {
     setMicError('')
-    let mode: HomeAnswerMode = homeAnswerMode()
+    const mode: HomeAnswerMode = homeAnswerMode()
     if (mode === 'mic' && f0 === null) {
+      // The permission prompt can take a while, and a denial used to start
+      // the run in tap mode with "Sing or play" still selected and nothing
+      // said. Now the wait is visible, and a denial stops here with the way
+      // to tap one press away; the mode only changes when the player says.
+      setMicPending(true)
       try {
         await audioEngine.init()
         await audioEngine.resume()
@@ -138,9 +150,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         f0 = createF0Stream(ctx, stream)
       } catch {
         setMicError(
-          'Microphone unavailable — starting in tap mode. Allow mic access to sing your answers.',
+          'The microphone is not available, so nothing started. Allow microphone access in the browser and press Begin again, or answer by tapping.',
         )
-        mode = 'tap'
+        return
+      } finally {
+        setMicPending(false)
       }
     } else if (mode === 'tap' && f0 !== null) {
       // Switched back to tapping: hand the device back rather than
@@ -350,8 +364,14 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                     matter; sing or play the degree anywhere comfortable.
                   </ConsoleNote>
                 </Show>
+                <Show when={micPending()}>
+                  <ConsoleNote>Waiting for the microphone…</ConsoleNote>
+                </Show>
                 <Show when={micError() !== ''}>
                   <ConsoleWarning>{micError()}</ConsoleWarning>
+                  <ConsoleLink onClick={() => void useTapInstead()}>
+                    Use Tap instead
+                  </ConsoleLink>
                 </Show>
               </ConsoleStack>
             </>
