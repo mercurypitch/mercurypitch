@@ -1238,6 +1238,32 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(repository.snapshot()?.settings.voiceEnabled).toBe(false)
   })
 
+  it('builds a reminder set after the plan landed on the mute toggled while it saved', async () => {
+    const repository = createMemoryRepository()
+    render(() => <App services={createTestServices(repository)} />)
+    await screen.findByRole('main', { name: 'V2 onboarding test harness' })
+    const saveGate = repository.deferNextSave()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save suggested V2 plan' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle V2 mute' }))
+    expect(repository.saveCalls()).toBe(2)
+
+    saveGate.resolve()
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    // The plan's save has landed and been shown; the mute was queued behind
+    // it. A commit made now must be built on the mute, not on the plan
+    // alone, or the mute is gone from the device.
+    fireEvent.click(screen.getByRole('button', { name: 'Set V2 reminder' }))
+
+    await waitFor(() =>
+      expect(repository.snapshot()?.scheduleRules).toHaveLength(1),
+    )
+    expect(repository.snapshot()?.settings.voiceEnabled).toBe(false)
+    expect(repository.snapshot()?.cues).toHaveLength(1)
+  })
+
   it('carries music into home quietly, persists its mute and stops it before games', async () => {
     const repository = createMemoryRepository()
     const output = createAudioOutputProbe()
