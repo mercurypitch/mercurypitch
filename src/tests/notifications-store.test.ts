@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { notifications, setNotifications, showActionNotification, showDecisionNotification, showNotification, } from '@/stores/notifications-store'
+import { notifications, removeNotification, resetNotifications, setNotifications, showActionNotification, showDecisionNotification, showNotification, } from '@/stores/notifications-store'
 
 describe('notifications store visibility windows', () => {
   beforeEach(() => {
@@ -71,5 +71,83 @@ describe('notifications store visibility windows', () => {
       label: 'Don’t ask again',
       onClick: neverAsk,
     })
+  })
+})
+
+describe('notifications store on a phone', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    resetNotifications()
+    // This file runs without a DOM; the store only asks `window.matchMedia`
+    // one question, and here the phone query is the one that answers yes.
+    vi.stubGlobal('window', {
+      matchMedia: (query: string) => ({
+        matches: query === '(max-width: 768px)',
+      }),
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    resetNotifications()
+    vi.unstubAllGlobals()
+  })
+
+  it('shows two toasts and lets the rest wait their turn', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+    showNotification('Four', 'info')
+    expect(notifications().map((item) => item.message)).toEqual(['One', 'Two'])
+
+    // A waiting toast's clock starts when it is shown: dismissing One at
+    // three seconds gives Three its full six from now, not three left over.
+    vi.advanceTimersByTime(3000)
+    removeNotification(notifications()[0]!.id)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Two',
+      'Three',
+    ])
+
+    vi.advanceTimersByTime(3000)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Three',
+      'Four',
+    ])
+
+    vi.advanceTimersByTime(3000)
+    expect(notifications().map((item) => item.message)).toEqual(['Four'])
+  })
+
+  it('replaces a waiting toast on the same channel instead of queueing both', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Saving', 'info', { channel: 'save' })
+    showNotification('Saved', 'success', { channel: 'save' })
+    expect(notifications()).toHaveLength(2)
+
+    removeNotification(notifications()[0]!.id)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Two',
+      'Saved',
+    ])
+  })
+
+  it('folds a grouped arrival into the toast that is still waiting', () => {
+    const group = {
+      key: 'joined',
+      summarise: (parts: string[]) => `${parts.length} joined`,
+    }
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Cy', 'info', { group })
+    showNotification('Ada', 'info', { group })
+
+    removeNotification(notifications()[0]!.id)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Two',
+      '2 joined',
+    ])
   })
 })

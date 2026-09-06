@@ -38,6 +38,7 @@ import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
+import { showNotification } from '@/stores/notifications-store'
 import { startExercise } from '@/stores/ui-store'
 import type { DecodedVoicePlayback } from './decoded-voice-playback'
 import { attemptDecodedVoicePlayback } from './decoded-voice-playback'
@@ -1673,6 +1674,9 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     if (!(await refresh(comparisonKey))) {
       throw new Error('Voice history refresh failed')
     }
+    // One line, one fact. The storage advice that used to ride on this toast
+    // lives in the rail footer, next to where the takes are counted.
+    showNotification('Take kept', 'success', { channel: 'voice-history-keep' })
     // A newly kept take becomes the new edge of the thread. Re-resolve the
     // default pair so the Atlas keeps showing the full Earlier-to-Later span.
     setEarlierId(null)
@@ -2200,7 +2204,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                     <small>
                       {storage()?.persistent === true
                         ? 'Protected on this device'
-                        : 'Audio stays on this device'}
+                        : 'Audio stays on this device. If the browser asks, allow persistent storage so low disk space cannot reclaim it.'}
                     </small>
                   </div>
                 </div>
