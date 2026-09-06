@@ -11,10 +11,10 @@
 //
 // Placement: the desktop pill floats bottom-centre. On a phone that corner is
 // where the tab bar, the toasts and every bottom sheet already are, and the
-// pill sat on top of all of them; there it is a strip in the page flow
-// instead, at the top of the content and again at the top of Settings >
-// Account. The studio app mounts one of each and CSS shows the one that fits
-// the viewport; the answer and the dismissal are shared between mounts.
+// pill sat on top of all of them; there it is a strip at the top of the page
+// flow instead (Settings is a tab in that same flow, so it is covered too).
+// The studio app mounts one of each and CSS shows the one that fits the
+// viewport; the answer and the dismissal are shared between mounts.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
@@ -35,9 +35,13 @@ function loadDismissed(): boolean {
 const [email, setEmail] = createSignal<string | null>(null)
 const [dismissed, setDismissed] = createSignal(loadDismissed())
 let inFlight: { stamp: unknown; done: Promise<void> } | null = null
+let latestStamp: unknown = Symbol('none')
 
-// Two mounts waking on the same auth change share one /me request.
+// Two mounts waking on the same auth change share one /me request, and an
+// answer that lands after the auth changed again is thrown away: it would
+// re-show the nudge to someone who just signed out.
 function refresh(stamp: unknown): Promise<void> {
+  latestStamp = stamp
   if (inFlight !== null && inFlight.stamp === stamp) return inFlight.done
   const done = (async () => {
     if (!hasValidToken()) {
@@ -45,6 +49,7 @@ function refresh(stamp: unknown): Promise<void> {
       return
     }
     const me = await fetchMe()
+    if (stamp !== latestStamp) return
     const user = me?.user
     setEmail(
       user != null &&
@@ -123,8 +128,11 @@ export const VerifyEmailBanner: Component<VerifyEmailBannerProps> = (props) => {
   return (
     <Show when={email() !== null && !dismissed()}>
       <div
-        class={props.placement === 'inline' ? styles.inline : styles.banner}
-        classList={{ [styles.floatingOnly]: props.placement === 'floating' }}
+        classList={{
+          [styles.inline]: props.placement === 'inline',
+          [styles.banner]: props.placement !== 'inline',
+          [styles.floatingOnly]: props.placement === 'floating',
+        }}
         role="status"
         data-testid="verify-email-banner"
         data-placement={props.placement ?? 'any'}

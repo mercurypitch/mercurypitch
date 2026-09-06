@@ -30,7 +30,8 @@
   opacity: 0.82;
   transition:
     opacity 0.2s ease,
-    bottom 0.2s ease;
+    bottom 0.2s ease,
+    left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pill:hover,
@@ -327,10 +328,10 @@
    first-win deck's "Start count-in" button. Docked in the header rail it
    is out of the play area entirely. */
 .docked {
-  /* The pill is the menu's positioning context. With `static` here the menu
-     measured from whichever ancestor happened to be positioned, and at 390px
-     in the app header that put it off the right edge of the screen. */
-  position: relative;
+  /* Static on purpose: `relative` would turn the floating pill's `left` and
+     `bottom` into offsets and shift the docked pill into the account glyph.
+     The menu's containing block is the tools group, which is positioned. */
+  position: static;
   z-index: auto;
   margin-left: auto;
   opacity: 1;
@@ -339,8 +340,7 @@
 
 /* The floating pill's menu opens upward, because it lives at the bottom of
    the screen. From a header rail, that would open off the top. Anchored to
-   the pill's right edge, which is inside the viewport wherever the host puts
-   the pill, and never wider than the screen. */
+   the right edge of the tools group and never wider than the screen. */
 .docked .menu {
   top: calc(100% + 0.5rem);
   bottom: auto;
