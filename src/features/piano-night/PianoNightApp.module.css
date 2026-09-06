@@ -2811,9 +2811,11 @@
   .drawer {
     top: auto;
     width: 100%;
+    /* A bottom sheet over the keyboard and the transport. Reserving their
+       height left the sheet about 150px tall above a keyboard nobody plays
+       while a settings sheet is open. It closes to the same keyboard. */
     max-height: calc(
-      100dvh - 76px - var(--mobile-nav-height) - var(--keybed-height) -
-        var(--fallboard-height) - env(safe-area-inset-bottom)
+      100dvh - 76px - var(--mobile-nav-height) - env(safe-area-inset-bottom)
     );
     border-top: 1px solid var(--line);
     border-left: 0;

@@ -3351,6 +3351,24 @@
   gap: 0.3rem;
 }
 
+/* Inside the scrolling Band panel the mark buttons stay in view at the
+   bottom while the rest of the tool scrolls: they are the whole point. */
+.handSyncHost .handSyncMarks {
+  position: sticky;
+  bottom: -0.9rem;
+  z-index: 1;
+  padding: 0.35rem 0;
+  background: rgba(12, 9, 7, 0.97);
+}
+
+/* The Align room tool: same shape as Tune, shown only while a part is being
+   placed by hand, and the placing tool is one tap away from it. */
+.roomTools > .alignTool {
+  border-color: rgba(224, 164, 93, 0.55);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.14);
+}
+
 .handSyncMarks button {
   min-height: var(--touch-target);
   padding: 0.35rem 0.6rem;
@@ -3635,7 +3653,10 @@
   right: 0;
   display: grid;
   width: min(23rem, calc(100vw - 2rem));
-  max-height: min(72vh, 34rem);
+  /* Below the room heading and above the safe area, whatever the phone; 72vh
+     from a panel that opens 4rem down ran past the bottom of a 844px screen
+     with the hand-placement tool in the part that was cut off. */
+  max-height: min(calc(100dvh - 5.5rem - var(--safe-bottom, 0px)), 34rem);
   gap: 0.8rem;
   padding: 0.9rem;
   overflow: auto;
@@ -9291,5 +9312,34 @@
   .percussionTransportControls .playControl {
     width: var(--touch-target);
     height: var(--touch-target);
+  }
+}
+
+/* Phone portrait (UX-27): the stage stays dominant. The view tools become
+   one row that scrolls sideways instead of two rows stacked over the stage,
+   the corner part opens as a chip (GuitarNightSecondaryPart), and the stage
+   keeps a floor of 45vh whatever else the room shows. */
+@media (max-width: 480px) and (orientation: portrait) {
+  .performanceStage {
+    min-height: 45vh;
+  }
+
+  .stageHeaderTools {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    justify-self: stretch;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stageHeaderTools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stageHeaderTools > * {
+    flex: 0 0 auto;
   }
 }

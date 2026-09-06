@@ -567,7 +567,7 @@ describe('GuitarNightSecondaryPart', () => {
     expect(panel.style.width).toBe('560px')
   })
 
-  it('lets a small-screen player collapse the dock and remembers the choice', async () => {
+  it('opens the dock as a chip on a small screen and remembers an expand', async () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn(
@@ -585,6 +585,8 @@ describe('GuitarNightSecondaryPart', () => {
       ),
     )
 
+    // A phone opens the dock as a chip: expanded, it covered most of the
+    // stage it previews. The first tap expands it, and that is remembered.
     const first = render(() => (
       <GuitarNightSecondaryPart
         lane={() => lane()}
@@ -593,13 +595,17 @@ describe('GuitarNightSecondaryPart', () => {
       />
     ))
     const panel = screen.getByTestId('guitar-night-secondary-part')
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Collapse Rhythm guitar preview',
-      }),
-    )
     expect(panel).toHaveAttribute('data-collapsed', 'true')
     expect(screen.queryByLabelText('Rhythm guitar, 1 note sounding')).toBeNull()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Expand Rhythm guitar preview',
+      }),
+    )
+    expect(panel).toHaveAttribute('data-collapsed', 'false')
+    expect(
+      screen.getByLabelText('Rhythm guitar, 1 note sounding'),
+    ).toBeInTheDocument()
     first.unmount()
 
     render(() => (
@@ -611,7 +617,7 @@ describe('GuitarNightSecondaryPart', () => {
     ))
     expect(
       await screen.findByRole('button', {
-        name: 'Expand Rhythm guitar preview',
+        name: 'Collapse Rhythm guitar preview',
       }),
     ).toBeInTheDocument()
   })

@@ -4279,7 +4279,9 @@ export const StemMixerStyles: string = `
   flex: 1 1 5rem;
   width: auto;
   min-width: 3rem;
-  height: 4px;
+  /* The input is the touch target; the 4px line is drawn by the track. */
+  height: 44px;
+  margin: 0;
 }
 
 .sm-strips-compact .sm-volume-slider::-webkit-slider-runnable-track {
@@ -4393,7 +4395,8 @@ export const StemMixerStyles: string = `
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  width: 4px;
+  /* 44px wide to hit; the track paints the 4px line down the middle. */
+  width: 44px;
   height: 100px;
   background: transparent;
   border-radius: 2px;
