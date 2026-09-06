@@ -26,6 +26,7 @@ import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import { createPersistedSignal } from '@/lib/storage'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { isNarrow } from '@/lib/use-viewport'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { createDrumKitPlayer, DRUM_KIT_CATALOG, DRUM_KIT_IDS, drumKitManifest, } from './audio'
@@ -1947,7 +1948,30 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setInputOpen(false)
   }
 
-  const openWorkspace = (nextWorkspace: Workspace): void => {
+  // Which card leads the coach workspace: the coach itself, or the takes
+  // when "Open take history" asked for them (UX-39).
+  const [coachLead, setCoachLead] = createSignal<'coach' | 'takes'>('coach')
+  // The compact take strip in the phrase-coach column, and whether a take is
+  // waiting to be finished: on narrow viewports the transport offers Finish
+  // take then, where the coach cue that holds it is collapsed. The control is
+  // rendered only there, so wide layouts keep one Finish control (UX-36, UX-37).
+  const takeRailShown = (): boolean =>
+    activeProject() !== null &&
+    (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
+      (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle')
+  const takeReadyToFinish = (): boolean =>
+    activeProject() !== null &&
+    !usingStemBacking() &&
+    activeDocument().sourceFormat === 'prepared' &&
+    retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
+    (takeHistoryController()?.finishState().kind ?? 'idle') === 'idle' &&
+    !takeFinishPreparing()
+
+  const openWorkspace = (
+    nextWorkspace: Workspace,
+    lead: 'coach' | 'takes' = 'coach',
+  ): void => {
+    setCoachLead(lead)
     closeInput()
     if (drawerOpen() && workspace() === nextWorkspace) {
       closeWorkspace()
@@ -3510,6 +3534,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       class={styles.shell}
       style={background.resolvedStyle()}
       data-testid="drum-night-shell"
+      data-take-rail={takeRailShown() ? 'true' : 'false'}
       data-playing={isPlaying() ? 'true' : 'false'}
       data-click-enabled={clickSnapshot().enabled ? 'true' : 'false'}
       data-click-status={clickSnapshot().status}
@@ -3815,20 +3840,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <button
                       class={styles.takeHistoryLink}
                       type="button"
-                      onClick={() => openWorkspace('coach')}
+                      onClick={() => openWorkspace('coach', 'takes')}
                     >
                       <History aria-hidden="true" />
                       <span>Open take history</span>
                     </button>
                   </Show>
-                  <Show
-                    when={
-                      activeProject() !== null &&
-                      (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
-                        (takeHistoryController()?.finishState().kind ??
-                          'idle') !== 'idle')
-                    }
-                  >
+                  <Show when={takeRailShown()}>
                     <DrumTakeHistoryHost
                       mode="compact"
                       controller={takeHistoryController()}
@@ -4628,7 +4646,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </Match>
               <Match when={workspace() === 'coach'}>
                 <div class={cx('workspaceView', 'sessionCoachWorkspace')}>
-                  <div class={styles.coachWorkspaceStack}>
+                  <div
+                    class={styles.coachWorkspaceStack}
+                    data-lead={coachLead()}
+                  >
                     <DrumSessionCoach
                       session={activeSessionState}
                       playheadBeat={() => transport().positionBeats}
@@ -4849,6 +4870,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </div>
           </div>
           <div class={styles.playCradle}>
+            <Show when={isNarrow() && takeReadyToFinish()}>
+              <button
+                class={styles.finishTakeMobile}
+                type="button"
+                onClick={finishTake}
+                aria-label="Finish take"
+              >
+                Finish
+              </button>
+            </Show>
             <button
               class={styles.stopButton}
               type="button"

@@ -1007,6 +1007,10 @@
   display: block;
   width: 318px;
   min-height: 0;
+  /* The column scrolls; the take strip at its bottom is sticky, so Keep and
+     Not now are never clipped by the column's edge (UX-36). */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   overflow: auto;
   border-left: 1px solid var(--line);
@@ -2141,6 +2145,12 @@
   gap: 18px;
 }
 
+/* Opened from "Open take history", the takes lead and the coach card, which
+   the page already shows, follows below the fold instead of repeating first. */
+.coachWorkspaceStack[data-lead='takes'] > :first-child {
+  order: 2;
+}
+
 .largeRecovery,
 .songActions button {
   min-height: 48px;
@@ -2744,6 +2754,21 @@
   right: calc(22px + env(safe-area-inset-right));
   /* Keep transient feedback above both the song timeline and transport. */
   bottom: calc(172px + env(safe-area-inset-bottom));
+}
+
+/* With the take strip showing in the phrase-coach column, the toast anchors
+   above it instead of covering Keep and Not now. */
+.shell[data-take-rail='true'] .toast {
+  bottom: calc(172px + 96px + env(safe-area-inset-bottom));
+}
+
+/* Finish take on the transport, phones only: the coach cue that holds it is
+   collapsed there. Mirrors the stop button on the other side of the cradle. */
+.finishTakeMobile {
+  display: none;
+}
+
+.toast {
   max-width: min(
     420px,
     calc(100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right))
@@ -3859,4 +3884,28 @@
 .accountMenu button:hover {
   color: #f6efe3;
   background: rgb(231 173 82 / 14%);
+}
+
+@media (max-width: 768px) {
+  .finishTakeMobile {
+    position: absolute;
+    top: 50%;
+    right: -22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid rgb(231 173 82 / 52%);
+    border-radius: 999px;
+    color: var(--vellum);
+    background: rgb(231 173 82 / 14%);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transform: translate(100%, -50%);
+    cursor: pointer;
+  }
 }

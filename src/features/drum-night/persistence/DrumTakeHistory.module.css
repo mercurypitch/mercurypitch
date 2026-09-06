@@ -117,7 +117,12 @@
   background: rgb(231 173 82 / 3.5%);
 }
 
+/* In the scrolling phrase-coach column the strip stays at the bottom edge. */
 .history[data-mode='compact'] .finishRail {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--take-surface, #0d1216);
   padding-inline: 0;
   border-top: 1px solid var(--take-line-strong);
 }

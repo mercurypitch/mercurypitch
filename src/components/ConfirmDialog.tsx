@@ -31,6 +31,15 @@ interface ConfirmDialogProps {
    * Matching ignores case and surrounding whitespace, nothing else.
    */
   confirmPhrase?: string
+  /**
+   * `danger` (default) paints the confirm button in the destructive red;
+   * `primary` is for a consent or a commitment that destroys nothing, where
+   * red would read as a warning against the very thing being offered.
+   */
+  tone?: 'danger' | 'primary'
+  /** A third, labelled way out beside Cancel (e.g. "Sing as practice"). */
+  secondaryLabel?: string
+  onSecondary?: () => void
   onConfirm: () => void
   onCancel: () => void
 }
@@ -60,6 +69,10 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   const confirm = (): void => {
     if (props.busy === true || !phraseSatisfied()) return
     props.onConfirm()
+  }
+
+  const secondary = (): void => {
+    if (props.busy !== true) props.onSecondary?.()
   }
 
   useFocusTrap(() => dialogRef, {
@@ -123,9 +136,23 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                 >
                   Cancel
                 </button>
+                <Show when={props.secondaryLabel != null}>
+                  <button
+                    type="button"
+                    class={styles.secondary}
+                    data-testid="confirm-secondary"
+                    disabled={props.busy}
+                    onClick={secondary}
+                  >
+                    {props.secondaryLabel}
+                  </button>
+                </Show>
                 <button
                   type="button"
-                  class={styles.delete}
+                  classList={{
+                    [styles.delete]: props.tone !== 'primary',
+                    [styles.primary]: props.tone === 'primary',
+                  }}
                   data-testid="confirm-delete"
                   disabled={props.busy === true || !phraseSatisfied()}
                   onClick={confirm}
