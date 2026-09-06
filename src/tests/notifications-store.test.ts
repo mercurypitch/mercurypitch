@@ -1,6 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { notifications, removeNotification, resetNotifications, setNotifications, showActionNotification, showDecisionNotification, showNotification, } from '@/stores/notifications-store'
 
+// The store asks the app's viewport module one question. A real signal
+// stands in for it so a phone can widen mid-test.
+const viewport = vi.hoisted(() => ({
+  setNarrow: (_narrow: boolean): void => undefined,
+}))
+vi.mock('@/lib/use-viewport', async () => {
+  const { createSignal } = await import('solid-js')
+  const [narrow, setNarrow] = createSignal(false)
+  viewport.setNarrow = setNarrow
+  return { isNarrow: narrow }
+})
+
 describe('notifications store visibility windows', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -78,20 +90,28 @@ describe('notifications store on a phone', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     resetNotifications()
-    // This file runs without a DOM; the store only asks `window.matchMedia`
-    // one question, and here the phone query is the one that answers yes.
-    vi.stubGlobal('window', {
-      matchMedia: (query: string) => ({
-        matches: query === '(max-width: 768px)',
-      }),
-    })
+    viewport.setNarrow(true)
   })
 
   afterEach(() => {
     vi.clearAllTimers()
     vi.useRealTimers()
     resetNotifications()
-    vi.unstubAllGlobals()
+    viewport.setNarrow(false)
+  })
+
+  it('admits everything waiting when the window widens past a phone', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+    expect(notifications().map((item) => item.message)).toEqual(['One', 'Two'])
+
+    viewport.setNarrow(false)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ])
   })
 
   it('shows two toasts and lets the rest wait their turn', () => {
