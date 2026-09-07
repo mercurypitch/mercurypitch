@@ -29,6 +29,8 @@ function withParam(
   const url = new URL(currentHref, 'https://mercurypitch.local')
   url.pathname = '/guitar-night'
   url.hash = ''
+  // Choosing a score/backing exits a saved-take review deep link.
+  url.searchParams.delete('recording')
 
   const normalized = identifier?.trim() ?? ''
   if (normalized === '' || normalized.length > MAX_SESSION_ID_LENGTH) {
@@ -55,6 +57,13 @@ export function withGuitarNightSession(
 
 export function readGuitarNightScore(search = currentSearch()): string | null {
   return readParam(search, SCORE_PARAM)
+}
+
+/** A saved-take link opens its review, never an audio device or playback. */
+export function readGuitarNightRecording(
+  search = currentSearch(),
+): string | null {
+  return readParam(search, 'recording')
 }
 
 export function withGuitarNightScore(

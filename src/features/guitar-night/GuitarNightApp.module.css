@@ -7770,7 +7770,7 @@
   }
 
   .stageModes button {
-    min-width: 0;
+    min-width: var(--touch-target);
     padding-inline: 0.4rem;
     font-size: inherit;
   }
@@ -7778,7 +7778,7 @@
   /* A narrow phone cannot hold five readable labels at once, so the row keeps
      its height and gives up width instead. */
   .stageModes {
-    grid-auto-columns: minmax(2.6rem, 1fr);
+    grid-auto-columns: minmax(max-content, 1fr);
   }
 
   .stageSetup summary,

@@ -2,11 +2,19 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { readGuitarNightScore, readGuitarNightSession, withGuitarNightScore, withGuitarNightSession, } from './session-link'
+import { readGuitarNightRecording, readGuitarNightScore, readGuitarNightSession, withGuitarNightScore, withGuitarNightSession, } from './session-link'
 
 const BASE = 'https://mercurypitch.local/guitar-night'
 
 describe('guitar night session links', () => {
+  it('opens a bounded recording ID and exits its review when a source is chosen', () => {
+    expect(readGuitarNightRecording('?recording=idea')).toBe('idea')
+    expect(readGuitarNightRecording('?recording=%20')).toBeNull()
+    expect(readGuitarNightRecording(`?recording=${'x'.repeat(257)}`)).toBeNull()
+    expect(
+      withGuitarNightScore(`${BASE}?recording=idea&session=song`, 'revision'),
+    ).toBe('/guitar-night?session=song&song=revision')
+  })
   it('reads each axis from its own parameter', () => {
     expect(readGuitarNightSession('?session=uvr-1&song=gsong-1')).toBe('uvr-1')
     expect(readGuitarNightScore('?session=uvr-1&song=gsong-1')).toBe('gsong-1')

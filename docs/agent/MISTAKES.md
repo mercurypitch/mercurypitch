@@ -442,6 +442,14 @@ layout. Test row geometry with both two and six tracks, not just overflow.
 verify bounding boxes and screenshots rather than only element visibility.
 **See:** `src/features/guitar-night/GuitarNightRoom.module.css`
 
+### Keep download links inside the modal that owns the action
+
+**Symptom:** exporting from Jam Doctor made bytes but no browser download.
+**Cause:** its capture-phase background-click guard blocked an anchor appended to `body`.
+**Rule:** append programmatic download anchors inside the owning dialog and remove
+them after the click; keep the background guard and verify a real download event.
+**See:** `src/lib/guitar/recording-export.ts`
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

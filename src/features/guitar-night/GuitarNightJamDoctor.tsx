@@ -36,6 +36,8 @@ interface GuitarNightJamDoctorProps {
   liveEventCount?: number
   id?: string
   footer?: JSX.Element
+  /** Recorder actions stay reachable below the scrolling review body. */
+  actions?: JSX.Element
   returnFocus?: Accessor<HTMLElement | null>
   fallbackFocus?: Accessor<HTMLElement | null>
   onClose(): void
@@ -302,43 +304,50 @@ export function GuitarNightJamDoctor(props: GuitarNightJamDoctorProps) {
               </Show>
             </div>
 
-            <Show when={props.view}>
-              {(view) => (
-                <div class={styles.doctorActions}>
-                  <button
-                    ref={recoveryButton}
-                    class={styles.doctorRecovery}
-                    type="button"
-                    aria-labelledby={recoveryLabelId()}
-                    aria-describedby={
-                      view().recoveryDetail === undefined
-                        ? undefined
-                        : recoveryDetailId()
-                    }
-                    onClick={() => props.onRecover()}
-                  >
-                    <span>
-                      <strong id={recoveryLabelId()}>
-                        {view().recoveryLabel}
-                      </strong>
-                      <Show when={view().recoveryDetail}>
-                        {(detail) => (
-                          <small id={recoveryDetailId()}>{detail()}</small>
-                        )}
+            <Show
+              when={props.actions}
+              fallback={
+                <Show when={props.view}>
+                  {(view) => (
+                    <div class={styles.doctorActions}>
+                      <button
+                        ref={recoveryButton}
+                        class={styles.doctorRecovery}
+                        type="button"
+                        aria-labelledby={recoveryLabelId()}
+                        aria-describedby={
+                          view().recoveryDetail === undefined
+                            ? undefined
+                            : recoveryDetailId()
+                        }
+                        onClick={() => props.onRecover()}
+                      >
+                        <span>
+                          <strong id={recoveryLabelId()}>
+                            {view().recoveryLabel}
+                          </strong>
+                          <Show when={view().recoveryDetail}>
+                            {(detail) => (
+                              <small id={recoveryDetailId()}>{detail()}</small>
+                            )}
+                          </Show>
+                        </span>
+                      </button>
+                      <Show when={props.onClear}>
+                        <button
+                          class={styles.doctorClear}
+                          type="button"
+                          onClick={() => props.onClear?.()}
+                        >
+                          Discard review
+                        </button>
                       </Show>
-                    </span>
-                  </button>
-                  <Show when={props.onClear}>
-                    <button
-                      class={styles.doctorClear}
-                      type="button"
-                      onClick={() => props.onClear?.()}
-                    >
-                      Discard review
-                    </button>
-                  </Show>
-                </div>
-              )}
+                    </div>
+                  )}
+                </Show>
+              }
+            >
+              <div class={styles.doctorActions}>{props.actions}</div>
             </Show>
           </aside>
         </div>

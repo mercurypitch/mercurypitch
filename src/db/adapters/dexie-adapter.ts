@@ -111,6 +111,14 @@ class DexieDatabase extends DexieDB {
       drumProjects: 'id, updatedAt, sourceKind, sourceRef',
       drumTakeSummaries: 'id, projectId, completedAt, [projectId+completedAt]',
     })
+    // v12: explicit guitar recording drafts, complete evidence and immutable
+    // accepted practice revisions. Device-only; never cloud entities.
+    this.version(12).stores({
+      guitarRecordings: 'id, updatedAt, state, takeId',
+      guitarRecordingChunks: 'id, recordingId, &[recordingId+sequence]',
+      guitarPracticeScores: 'id, recordingId, updatedAt',
+      guitarScoreAttachments: 'id, scoreId, backingId',
+    })
   }
 }
 

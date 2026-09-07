@@ -124,11 +124,14 @@ function secondsToTicks(sec: number, bpm: number): number {
 export function buildMidiFile(
   notes: MidiNoteEvent[],
   bpm: number,
+  options: {
+    trackName?: string
+    timeSignature?: readonly [number, number]
+    program?: number
+  } = {},
 ): Uint8Array | null {
   if (notes.length === 0) return null
-
-  // Sort by tick
-  notes.sort((a, b) => a.tickOn - b.tickOn)
+  if (!Number.isFinite(bpm) || bpm <= 0) return null
 
   const absEvents: Array<{
     tick: number
@@ -154,17 +157,27 @@ export function buildMidiFile(
     ],
   })
 
-  // Time signature 4/4
+  const signature = options.timeSignature ?? [4, 4]
+  if (
+    !Number.isInteger(signature[0]) ||
+    signature[0] < 1 ||
+    signature[0] > 32 ||
+    ![1, 2, 4, 8, 16, 32].includes(signature[1])
+  )
+    return null
+  // Preserve the legacy caller's common-time default.
   absEvents.push({
     tick: 0,
     delta: 0,
     type: 0xff,
     subtype: 0x58,
-    data: [0x04, 0x02, 0x18, 0x08],
+    data: [signature[0], Math.log2(signature[1]), 0x18, 0x08],
   })
 
   // Track name
-  const nameBytes = [...new TextEncoder().encode('Vocal Melody')]
+  const nameBytes = [
+    ...new TextEncoder().encode(options.trackName ?? 'Vocal Melody'),
+  ]
   absEvents.push({
     tick: 0,
     delta: 0,
@@ -172,6 +185,15 @@ export function buildMidiFile(
     subtype: 0x03,
     data: nameBytes,
   })
+  if (options.program !== undefined) {
+    if (
+      !Number.isInteger(options.program) ||
+      options.program < 0 ||
+      options.program > 127
+    )
+      return null
+    absEvents.push({ tick: 0, delta: 0, type: 0xc0, data: [options.program] })
+  }
 
   // Note on/off events
   for (const n of notes) {
@@ -191,7 +213,10 @@ export function buildMidiFile(
     })
   }
 
-  absEvents.sort((a, b) => a.tick - b.tick)
+  absEvents.sort(
+    (a, b) =>
+      a.tick - b.tick || (a.type === 0x80 ? -1 : b.type === 0x80 ? 1 : 0),
+  )
   let prevTick = 0
   for (const e of absEvents) {
     const d = e.tick - prevTick
@@ -206,11 +231,13 @@ export function buildMidiFile(
     if (e.type === 0xff) {
       trackData.push(e.type, e.subtype!)
       if (e.data) {
-        trackData.push(e.data.length)
+        trackData.push(...writeVarLen(e.data.length))
         trackData.push(...e.data)
       } else {
         trackData.push(0)
       }
+    } else if (e.type === 0xc0) {
+      trackData.push(e.type, e.data![0])
     } else {
       trackData.push(e.type, e.note!, e.velocity!)
     }

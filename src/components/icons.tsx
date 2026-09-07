@@ -1118,6 +1118,12 @@ export const Metronome: Component = () => (
 )
 
 // Stop Icon (end a take)
+export const RecordCircle: Component = () => (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+    <circle cx="12" cy="12" r="7" />
+  </svg>
+)
+
 export const Square: Component = () => (
   <svg
     viewBox="0 0 24 24"
