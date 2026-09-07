@@ -229,9 +229,10 @@ describe('GuitarNightStage views', () => {
       expect(screen.getByText('Guide ready')).toBeTruthy()
     })
 
-    it('keeps the block on a phone when it carries the live score', () => {
-      // The accessory is the host's live score. Hiding the block for the
-      // sake of one resting word took the score off every phone with it.
+    it('keeps the live score on a phone without the line it rode in on', () => {
+      // The accessory is the host's live score, which is why the faceplate
+      // survives. The tab view passes one on every render, so keeping the
+      // whole block for it put the guide line back on every phone.
       narrow(true)
       render(() => (
         <GuitarNightStage
@@ -244,6 +245,7 @@ describe('GuitarNightStage views', () => {
       ))
 
       expect(screen.getByTestId('stage-signal-evidence')).toBeTruthy()
+      expect(screen.queryByText('Guide ready')).toBeNull()
     })
 
     it('keeps the line on a phone while it is listening', () => {

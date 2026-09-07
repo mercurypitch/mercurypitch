@@ -9,10 +9,19 @@
 // file exists to prevent. Command sets may EXTEND a family (the mixer's
 // restart adds "sing that again") but never fork it.
 
+/**
+ * "go" is deliberately absent.
+ *
+ * It is the first word of every navigation phrase — "go to karaoke", "go
+ * home" — and a recognizer that finalises the utterance in pieces delivers
+ * that first word on its own. The bare "go" then started playback before
+ * the rest of the sentence arrived and navigated, so asking to go somewhere
+ * also began the loaded melody. The interim path already waits for a phrase
+ * that could grow; a final cannot, so the word has to stop meaning play.
+ */
 export const PLAY_PHRASES = [
   'play',
   'start',
-  'go',
   'begin',
   'resume',
   'continue',

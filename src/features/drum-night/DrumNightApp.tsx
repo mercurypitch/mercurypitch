@@ -1965,21 +1965,96 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     !usingStemBacking() &&
     activeDocument().sourceFormat === 'prepared'
   // The compact take strip in the phrase-coach column, and whether a take is
-  // waiting to be finished: on phones the nav offers Finish take then, where
-  // the coach cue that holds it is collapsed. The control is rendered only
-  // there, so wide layouts keep one Finish control (UX-36, UX-37).
-  // Captured evidence is enough to show the strip. An unsaved groove renders
-  // the held-take card with its Save project action instead of the Finish
-  // button, so no second Finish control appears — and a musician who just
-  // played a take is never shown an empty coach column.
+  // waiting to be finished. Captured evidence is enough to show the strip. An
+  // unsaved groove renders the held-take card with its Save project action
+  // instead of the Finish button, so no second Finish control appears — and a
+  // musician who just played a take is never shown an empty coach column.
   const takeRailShown = (): boolean =>
     retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
     (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle'
+  const takeFinishStateKind = (): string =>
+    takeHistoryController()?.finishState().kind ?? 'idle'
   const takeReadyToFinish = (): boolean =>
     takeEligible() &&
     retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
-    (takeHistoryController()?.finishState().kind ?? 'idle') === 'idle' &&
+    takeFinishStateKind() === 'idle' &&
     !takeFinishPreparing()
+  // A phone hides the phrase-coach column, so its bottom rail is the only
+  // Finish a musician can see. Pressing Play there while a take waits only
+  // resumes evidence that still has to be finished behind a tap nobody has a
+  // reason to make, so the primary control becomes the thing to do next. The
+  // swap holds only while the clock is idle — a running take keeps its Pause,
+  // which is the rail's only way to stop the transport (UX-37).
+  const phoneFinishLeads = (): boolean =>
+    isNarrow() && takeReadyToFinish() && !isPlaying()
+  // Keeping the live-kit replay is the other decision that lives in the hidden
+  // column, and Play is refused until it is made. The always-visible take strip
+  // carries it on a phone so the refusal is never a dead end.
+  const phoneKeepPending = (): boolean => {
+    if (!isNarrow() || takeFinishStateKind() !== 'saved') return false
+    const replay = takeCapture.state()
+    return replay === 'processing' || replay === 'ready' || replay === 'saving'
+  }
+  const keepTakeReplay = (): void => {
+    void takeCapture.keep().then((kept) => {
+      if (kept) showToast('Live-kit replay kept in Hear Yourself.')
+    })
+  }
+  // The strip is the only take surface a phone shows, so its copy has to name
+  // the state the take is really in and say where a tap leads. Finishing a take
+  // clears the recorded-hit count, which used to drop this back to the pre-take
+  // prompt — telling a musician to press Play at the one moment Play is
+  // refused.
+  const takeCueHeadline = (): string => {
+    const finishKind = takeFinishStateKind()
+    if (takeFinishPreparing() || finishKind === 'saving') {
+      return 'Saving this take.'
+    }
+    if (finishKind === 'error') return 'This take is not saved yet.'
+    if (finishKind === 'saved') {
+      const replay = takeCapture.state()
+      if (replay === 'processing') return 'Take saved. Preparing your replay.'
+      if (replay === 'ready') return 'Take saved. Your replay is ready.'
+      if (replay === 'saving') return 'Take saved. Keeping the replay.'
+      return 'Take saved on this device.'
+    }
+    const retained = retainedTakeHitCount()
+    if (retained === 0) {
+      return recordingChoiceMade() && !transport().recording
+        ? 'Arm Take events, then press Play.'
+        : 'Press Play, then answer the phrase.'
+    }
+    const omitted = omittedTakeHitCount()
+    if (omitted > 0) {
+      return `${retained} strikes ready · ${omitted} older not retained.`
+    }
+    return activeProject() === null
+      ? `${retained} strikes ready to compare.`
+      : `${retained} strikes ready · Review and finish.`
+  }
+  const takeCueDetail = (): string => {
+    const finishKind = takeFinishStateKind()
+    if (takeFinishPreparing() || finishKind === 'saving') {
+      return 'Tap to open take history.'
+    }
+    if (finishKind === 'error') {
+      return 'Tap to open take history and try again.'
+    }
+    if (finishKind === 'saved') {
+      return phoneKeepPending()
+        ? 'Nothing is saved until you keep it.'
+        : 'Tap to open take history.'
+    }
+    if (retainedTakeHitCount() === 0) {
+      return 'Tap to open the phrase coach and take history.'
+    }
+    if (activeProject() === null) {
+      return 'Tap to open take history and save this groove.'
+    }
+    return takeReadyToFinish()
+      ? 'Review the take, then finish it.'
+      : 'Tap to open take history.'
+  }
 
   const openWorkspace = (
     nextWorkspace: Workspace,
@@ -3892,13 +3967,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         state: takeCapture.state(),
                         message: takeCapture.message(),
                       }}
-                      onKeepReplay={() => {
-                        void takeCapture.keep().then((kept) => {
-                          if (kept) {
-                            showToast('Live-kit replay kept in Hear Yourself.')
-                          }
-                        })
-                      }}
+                      onKeepReplay={keepTakeReplay}
                       onDismissReplay={() => {
                         takeCapture.dismiss()
                       }}
@@ -3908,45 +3977,56 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   </Show>
                 </aside>
 
-                <button
-                  class={styles.coachCue}
-                  type="button"
-                  inert={drawerInteractionLocked()}
-                  onClick={() =>
-                    openWorkspace(
-                      'coach',
-                      takeReadyToFinish() ? 'takes' : 'coach',
-                    )
-                  }
-                  aria-label="Open live take monitor"
-                >
-                  <span class={styles.coachOrb}>
-                    <AudioWave />
-                  </span>
-                  <span>
-                    <strong>
-                      {retainedTakeHitCount() === 0
-                        ? recordingChoiceMade() && !transport().recording
-                          ? 'Arm Take events, then press Play.'
-                          : 'Press Play, then answer the phrase.'
-                        : omittedTakeHitCount() === 0
-                          ? activeProject() === null
-                            ? `${retainedTakeHitCount()} strikes ready to compare.`
-                            : `${retainedTakeHitCount()} strikes ready · Review and finish.`
-                          : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
-                    </strong>
-                    <small>
-                      {retainedTakeHitCount() === 0
-                        ? 'Take events arms automatically on the first Play.'
-                        : activeProject() === null
-                          ? 'Uses authored attacks and captured event timing.'
-                          : takeReadyToFinish()
-                            ? 'Review the take, then finish it.'
-                            : 'Finish saves only a compact local summary.'}
-                    </small>
-                  </span>
-                  <ChevronDown />
-                </button>
+                <div class={styles.coachCueDock} data-testid="drum-take-cue">
+                  <button
+                    class={styles.coachCue}
+                    type="button"
+                    inert={drawerInteractionLocked()}
+                    onClick={() =>
+                      openWorkspace(
+                        'coach',
+                        takeReadyToFinish() ? 'takes' : 'coach',
+                      )
+                    }
+                    aria-label="Open take history and phrase coach"
+                  >
+                    <span class={styles.coachOrb}>
+                      <AudioWave />
+                    </span>
+                    <span>
+                      <strong>{takeCueHeadline()}</strong>
+                      <small>{takeCueDetail()}</small>
+                    </span>
+                    <ChevronDown />
+                  </button>
+                  <Show when={phoneKeepPending()}>
+                    <div
+                      class={styles.coachCueKeep}
+                      inert={drawerInteractionLocked()}
+                    >
+                      <button
+                        type="button"
+                        disabled={takeCapture.state() !== 'ready'}
+                        onClick={keepTakeReplay}
+                      >
+                        {takeCapture.state() === 'processing'
+                          ? 'Preparing replay…'
+                          : takeCapture.state() === 'saving'
+                            ? 'Keeping replay…'
+                            : 'Keep in Hear Yourself'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={takeCapture.state() === 'saving'}
+                        onClick={() => {
+                          takeCapture.dismiss()
+                        }}
+                      >
+                        Not now
+                      </button>
+                    </div>
+                  </Show>
+                </div>
               </>
             }
           >
@@ -4709,13 +4789,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         state: takeCapture.state(),
                         message: takeCapture.message(),
                       }}
-                      onKeepReplay={() => {
-                        void takeCapture.keep().then((kept) => {
-                          if (kept) {
-                            showToast('Live-kit replay kept in Hear Yourself.')
-                          }
-                        })
-                      }}
+                      onKeepReplay={keepTakeReplay}
                       onDismissReplay={() => {
                         takeCapture.dismiss()
                       }}
@@ -4982,31 +5056,52 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </button>
           <button
             class={styles.mobilePlay}
-            classList={{ [styles.playButtonLoading]: playLoadingShown() }}
+            classList={{
+              [styles.playButtonLoading]: playLoadingShown(),
+              [styles.mobilePlayFinish]: phoneFinishLeads(),
+            }}
             type="button"
-            onClick={togglePlaying}
+            onClick={() => {
+              if (phoneFinishLeads()) {
+                finishTake()
+                return
+              }
+              togglePlaying()
+            }}
             aria-label={
-              playLoadingShown()
-                ? `Loading ${sessionTitle()} audio`
-                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+              phoneFinishLeads()
+                ? 'Finish take'
+                : playLoadingShown()
+                  ? `Loading ${sessionTitle()} audio`
+                  : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
             }
           >
             <Show
-              when={playLoadingShown()}
+              when={phoneFinishLeads()}
               fallback={
-                <>
-                  {isPlaying() ? <Pause /> : <Play />}
-                  <span class={styles.playSrLabel}>
-                    {isPlaying() ? 'Pause' : 'Play'}
-                  </span>
-                </>
+                <Show
+                  when={playLoadingShown()}
+                  fallback={
+                    <>
+                      {isPlaying() ? <Pause /> : <Play />}
+                      <span class={styles.playSrLabel}>
+                        {isPlaying() ? 'Pause' : 'Play'}
+                      </span>
+                    </>
+                  }
+                >
+                  {/* The same meter as the console button: the phone bar is
+                      the only transport a phone sees while a song loads. A
+                      loading song is stem backing, which can never hold a
+                      finishable take, so the two states cannot collide. */}
+                  <DrumPlayLoadMeter
+                    fraction={stemPlayAlongSnapshot().loadFraction}
+                  />
+                </Show>
               }
             >
-              {/* The same meter as the console button: the phone bar is the
-                  only transport a phone sees while a song loads. */}
-              <DrumPlayLoadMeter
-                fraction={stemPlayAlongSnapshot().loadFraction}
-              />
+              <CheckSmall />
+              <span class={styles.mobilePlayFinishLabel}>Finish</span>
             </Show>
           </button>
           <button
@@ -5017,17 +5112,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <i class={styles.mobileRecordMark} aria-hidden="true" />
             <span>{transport().recording ? 'Armed' : 'Record'}</span>
           </button>
-          <Show when={isNarrow() && takeReadyToFinish()}>
-            <button
-              class={styles.mobileFinish}
-              type="button"
-              onClick={finishTake}
-              aria-label="Finish take"
-            >
-              <CheckSmall />
-              <span>Finish</span>
-            </button>
-          </Show>
           <button type="button" onClick={() => openWorkspace('kit')}>
             <Drum />
             <span>Kit</span>

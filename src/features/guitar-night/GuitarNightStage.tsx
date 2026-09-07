@@ -1052,19 +1052,25 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   /**
    * A phone has no room for a line that only says the guide loaded.
    *
-   * "Guide ready" is the resting state: it repeats what the neck below it
-   * already shows, and on a narrow screen it costs a row that the fretboard
-   * and the transport both want. It stays on a wide screen, and a stage that
-   * is actually listening keeps the line everywhere, because then it is
-   * saying something that changes.
+   * "Guide ready" and the first-note copy under it repeat what the neck
+   * already shows, and on a narrow screen they cost a row the fretboard and
+   * the transport both want. The line stays on a wide screen and whenever
+   * the stage is actually listening, because then it is saying something
+   * that changes.
+   */
+  const showStatusText = createMemo(() => {
+    if (!narrowViewport()) return true
+    return isListening() || !hasGuide()
+  })
+
+  /**
+   * The block itself survives the line, because the live score rides in it
+   * as the signal accessory. Hiding the whole faceplate for the sake of one
+   * resting word took the score off every phone with it.
    */
   const showStatusBlock = createMemo(() => {
     if (!(props.showStatus?.() ?? true)) return false
-    if (!narrowViewport()) return true
-    // The live score rides in this block as the signal accessory, so an
-    // accessory keeps the row whatever the status line would have said.
-    if (signalAccessory() !== undefined) return true
-    return isListening() || !hasGuide()
+    return showStatusText() || signalAccessory() !== undefined
   })
   const heardCopy = createMemo(() => {
     const note = heardNote()
@@ -1184,24 +1190,26 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                   signalAccessory() !== undefined,
               }}
             >
-              <span>
-                {isListening()
-                  ? heardNote() === null
-                    ? 'Listening'
-                    : 'Heard now'
-                  : hasGuide()
-                    ? 'Guide ready'
-                    : idleStatus().label}
-              </span>
-              <strong>
-                {heardCopy() ??
-                  (hasGuide()
-                    ? actualPlayheadBeat() === null
-                      ? readyGuideCopy()
-                      : (props.guideLabel?.() ??
-                        'Follow the next note into the neck')
-                    : idleStatus().detail)}
-              </strong>
+              <Show when={showStatusText()}>
+                <span>
+                  {isListening()
+                    ? heardNote() === null
+                      ? 'Listening'
+                      : 'Heard now'
+                    : hasGuide()
+                      ? 'Guide ready'
+                      : idleStatus().label}
+                </span>
+                <strong>
+                  {heardCopy() ??
+                    (hasGuide()
+                      ? actualPlayheadBeat() === null
+                        ? readyGuideCopy()
+                        : (props.guideLabel?.() ??
+                          'Follow the next note into the neck')
+                      : idleStatus().detail)}
+                </strong>
+              </Show>
               <Show when={signalAccessory()}>
                 {(accessory) => (
                   <div class={styles.stageSignalAccessory}>{accessory()}</div>
