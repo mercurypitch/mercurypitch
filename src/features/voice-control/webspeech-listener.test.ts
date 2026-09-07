@@ -15,6 +15,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceListenerState } from './types'
+import type { WebSpeechListenerOptions } from './webspeech-listener'
 import { createWebSpeechListener } from './webspeech-listener'
 
 /** A recognizer that does exactly what the test tells it to and nothing else. */
@@ -31,6 +32,12 @@ class FakeRecognition {
   onerror: ((event: unknown) => void) | null = null
   onend: (() => void) | null = null
   onstart: (() => void) | null = null
+  onaudiostart: (() => void) | null = null
+  onaudioend: (() => void) | null = null
+  onsoundstart: (() => void) | null = null
+  onsoundend: (() => void) | null = null
+  onspeechstart: (() => void) | null = null
+  onspeechend: (() => void) | null = null
   aborted = false
   startCalls = 0
 
@@ -76,14 +83,17 @@ class FakeRecognition {
  */
 let built: Array<{ stop: () => void }> = []
 
-function harness() {
+function harness(options?: WebSpeechListenerOptions) {
   const states: Array<{ state: VoiceListenerState; detail?: string }> = []
   const utterances: string[] = []
-  const listener = createWebSpeechListener({
-    onUtterance: (text) => utterances.push(text),
-    onInterim: () => {},
-    onStateChange: (state, detail) => states.push({ state, detail }),
-  })
+  const listener = createWebSpeechListener(
+    {
+      onUtterance: (text) => utterances.push(text),
+      onInterim: () => {},
+      onStateChange: (state, detail) => states.push({ state, detail }),
+    },
+    options,
+  )
   built.push(listener)
   return {
     listener,
@@ -131,6 +141,9 @@ describe('what the listener claims about itself', () => {
     const h = harness()
     h.listener.start()
     h.latest().confirm()
+    // Healthy means it heard something: a session that did not waits longer
+    // to respawn (see "a room that stays quiet").
+    h.latest().final('play')
     const settled = h.states.length
 
     h.latest().onend?.()
@@ -178,15 +191,45 @@ describe('what the listener claims about itself', () => {
     expect(h.last()).toEqual({ state: 'error', detail: 'needs-gesture' })
   })
 
-  it('carries on when start() only says a session is already running', () => {
+  it('retries once when start() says a session is already running', () => {
+    // WebKit's abort() is asynchronous, so the session a toggle just tore
+    // down can still hold the recognizer when the next start() arrives.
+    // Trusting the phantom left a session that never fired `start` and
+    // became "tap to resume" four seconds later — the "off and on sometimes
+    // helps" of the device report. A short retry lands inside the same
+    // activation window.
     FakeRecognition.startThrows = { name: 'InvalidStateError' }
     const h = harness()
     h.listener.start()
+    const phantom = h.latest()
 
-    // Not an error: something is running, it just was not us that started it.
-    expect(h.last().state).toBe('starting')
+    expect(phantom.aborted).toBe(true)
+    expect(h.states.map((s) => s.state)).not.toContain('error')
+
+    FakeRecognition.startThrows = null
+    vi.advanceTimersByTime(250)
+
+    expect(FakeRecognition.instances).toHaveLength(2)
     h.latest().confirm()
     expect(h.last().state).toBe('listening')
+  })
+
+  it('waits to be touched when the retry is refused the same way', () => {
+    FakeRecognition.startThrows = { name: 'InvalidStateError' }
+    const h = harness()
+    h.listener.start()
+    vi.advanceTimersByTime(250)
+
+    expect(FakeRecognition.instances).toHaveLength(2)
+    expect(h.last()).toEqual({ state: 'error', detail: 'needs-gesture' })
+    // No timed third attempt: whatever holds the recognizer is not letting go.
+    vi.advanceTimersByTime(60_000)
+    expect(FakeRecognition.instances).toHaveLength(2)
+
+    // A touch is a new attempt, with a retry of its own.
+    FakeRecognition.startThrows = null
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(FakeRecognition.instances).toHaveLength(3)
   })
 
   it('gives up on a session that never announces itself', () => {
@@ -317,7 +360,9 @@ describe('getting back what iOS took away', () => {
 
     h.latest().onend?.()
     expect(FakeRecognition.instances).toHaveLength(1)
-    vi.advanceTimersByTime(400)
+    // One quiet session in, the respawn waits 600 ms rather than 300 — see
+    // "a room that stays quiet".
+    vi.advanceTimersByTime(700)
 
     expect(FakeRecognition.instances).toHaveLength(2)
   })
@@ -334,6 +379,234 @@ describe('getting back what iOS took away', () => {
     // One refused attempt, then silence until a gesture arrives.
     expect(FakeRecognition.instances).toHaveLength(1)
     expect(h.last()).toEqual({ state: 'error', detail: 'needs-gesture' })
+  })
+})
+
+// ============================================================
+// A room that stays quiet
+// ============================================================
+//
+// Every `start()` is a capture request, and on iOS Chrome each one shows the
+// "microphone allowed" bubble. WebKit ends a session a few seconds into any
+// silence, and a flat 300 ms respawn then put the bubble on screen every few
+// seconds for anyone with voice control on who was not talking — typing a
+// song title, say. The respawn now costs more after each session that heard
+// nothing, and after six of them it stops and waits to be touched.
+
+describe('a room that stays quiet', () => {
+  /**
+   * Confirm the newest session, let it end without a word, and run the clock
+   * to the respawn — and no further, so the session it builds can be
+   * confirmed before the start watchdog gives up on it.
+   */
+  const quietSession = (h: ReturnType<typeof harness>) => {
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersToNextTimer()
+  }
+
+  it('waits longer after each session that heard nothing', () => {
+    // The clock is driven by hand here, since the delay is the point.
+    const h = harness()
+    h.listener.start()
+
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersByTime(500)
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(200)
+    expect(FakeRecognition.instances).toHaveLength(2)
+
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersByTime(1100)
+    expect(FakeRecognition.instances).toHaveLength(2)
+    vi.advanceTimersByTime(200)
+    expect(FakeRecognition.instances).toHaveLength(3)
+  })
+
+  it('stops respawning on a timer after six quiet sessions, without calling it an error', () => {
+    const h = harness({ dozeWhenQuiet: true })
+    h.listener.start()
+    for (let i = 0; i < 6; i++) quietSession(h)
+
+    // Six sessions, then nothing: no timer is running.
+    expect(FakeRecognition.instances).toHaveLength(6)
+    vi.advanceTimersByTime(600_000)
+    expect(FakeRecognition.instances).toHaveLength(6)
+
+    // Dozing, not failing. The sessions were healthy, and `error` would
+    // expand the pill over a header the singer is trying to use.
+    expect(h.last()).toEqual({ state: 'dozing', detail: undefined })
+    expect(h.states.map((s) => s.state)).not.toContain('error')
+    // The cold start announced itself once; the five respawns did not.
+    expect(h.states.filter((s) => s.state === 'starting')).toHaveLength(1)
+  })
+
+  it('wakes on the next touch, one session per touch', () => {
+    const h = harness({ dozeWhenQuiet: true })
+    h.listener.start()
+    for (let i = 0; i < 6; i++) quietSession(h)
+    expect(h.last().state).toBe('dozing')
+    const settled = h.states.length
+
+    window.dispatchEvent(new Event('pointerdown'))
+
+    expect(FakeRecognition.instances).toHaveLength(7)
+    // A continuation, not a cold start: nothing announced until it confirms.
+    expect(h.states.slice(settled)).toEqual([])
+    h.latest().confirm()
+    expect(h.last().state).toBe('listening')
+
+    // Still quiet: it ends, and it is back to waiting for a touch at once.
+    h.latest().onend?.()
+    vi.advanceTimersByTime(600_000)
+    expect(FakeRecognition.instances).toHaveLength(7)
+    expect(h.last().state).toBe('dozing')
+  })
+
+  it('never dozes on desktop: the respawn just settles at its slowest', () => {
+    // A pianist with both hands on the keys says "stop" after ten quiet
+    // minutes. Desktop respawns are silent, so there is nothing to save by
+    // dozing, and everything to lose.
+    const h = harness({ dozeWhenQuiet: false })
+    h.listener.start()
+    for (let i = 0; i < 8; i++) quietSession(h)
+
+    // Eight quiet sessions in, a ninth is already running: no doze, no fault.
+    expect(h.states.map((s) => s.state)).not.toContain('dozing')
+    expect(h.states.map((s) => s.state)).not.toContain('error')
+    expect(FakeRecognition.instances).toHaveLength(9)
+
+    // And the ninth quiet end waits the 15 s cap, not forever.
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersByTime(14_999)
+    expect(FakeRecognition.instances).toHaveLength(9)
+    vi.advanceTimersByTime(1)
+    expect(FakeRecognition.instances).toHaveLength(10)
+  })
+
+  it('forgets the quiet stretch the moment it hears something', () => {
+    const h = harness({ dozeWhenQuiet: true })
+    h.listener.start()
+    for (let i = 0; i < 5; i++) quietSession(h)
+    // Five in; a sixth quiet end would doze. Instead, a word.
+    h.latest().confirm()
+    h.latest().final('play')
+    h.latest().onend?.()
+
+    vi.advanceTimersByTime(400)
+    expect(FakeRecognition.instances).toHaveLength(7)
+    expect(h.last().state).not.toBe('dozing')
+  })
+
+  it('does not announce a network hiccup', () => {
+    // WebKit reports `network` often, and each one used to read "Mic
+    // unavailable" and then "Loading voice engine" across the header before
+    // the respawn quietly worked. It is `no-speech`-shaped: the end that
+    // follows restarts the session, and that is all.
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    const settled = h.states.length
+
+    h.latest().onerror?.({ error: 'network' })
+    h.latest().onend?.()
+    vi.advanceTimersByTime(700)
+    h.latest().confirm()
+
+    expect(FakeRecognition.instances).toHaveLength(2)
+    expect(h.states.slice(settled).map((s) => s.state)).toEqual(['listening'])
+  })
+
+  it('still says so when the microphone itself fails', () => {
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+
+    h.latest().onerror?.({ error: 'audio-capture' })
+
+    expect(h.last()).toEqual({ state: 'error', detail: 'audio-capture' })
+  })
+
+  it('does not spend a keystroke in a text field on the recognizer', () => {
+    // The gesture seam is bound to `keydown` as well as `pointerdown`, and
+    // typing a song title into the search box was re-arming the capture on
+    // every letter — once the ear had dozed, each keystroke was a bubble.
+    FakeRecognition.startThrows = { name: 'NotAllowedError' }
+    const h = harness()
+    h.listener.start()
+    FakeRecognition.startThrows = null
+    const input = document.createElement('input')
+    const editable = document.createElement('div')
+    editable.setAttribute('contenteditable', 'true')
+    document.body.append(input, editable)
+
+    input.dispatchEvent(new Event('keydown', { bubbles: true }))
+    editable.dispatchEvent(new Event('keydown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(1)
+
+    // A key pressed anywhere else is still a touch.
+    document.body.dispatchEvent(new Event('keydown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(2)
+
+    input.remove()
+    editable.remove()
+  })
+})
+
+// ============================================================
+// A session that stops talking
+// ============================================================
+//
+// `live` used to clear only on `end` or a discard, and WebKit takes sessions
+// away without either — another app's capture, Siri, a call. The pill kept
+// its pulsing ring over a recognizer that had stopped existing until
+// something happened to fire `end`, and no touch could replace a session
+// that still called itself live.
+
+describe('a session that stops talking', () => {
+  it('replaces a confirmed session that has been silent for 45 s, without a word', () => {
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    const stale = h.latest()
+    const settled = h.states.length
+
+    vi.advanceTimersByTime(44_000)
+    expect(FakeRecognition.instances).toHaveLength(1)
+    // Any event at all is a sign of life and resets the clock.
+    stale.onsoundstart?.()
+    vi.advanceTimersByTime(44_000)
+    expect(FakeRecognition.instances).toHaveLength(1)
+
+    vi.advanceTimersByTime(2000)
+
+    expect(stale.aborted).toBe(true)
+    expect(FakeRecognition.instances).toHaveLength(2)
+    // Silently: no `starting`, no `error`.
+    expect(h.states.slice(settled)).toEqual([])
+    h.latest().confirm()
+    expect(h.last().state).toBe('listening')
+  })
+
+  it('lets a touch replace a session that has been silent for 10 s', () => {
+    const h = harness()
+    h.listener.start()
+    h.latest().confirm()
+    const session = h.latest()
+
+    // Fresh, it is left alone — see "spends only one gesture".
+    vi.advanceTimersByTime(5000)
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(FakeRecognition.instances).toHaveLength(1)
+
+    vi.advanceTimersByTime(6000)
+    window.dispatchEvent(new Event('pointerdown'))
+
+    expect(session.aborted).toBe(true)
+    expect(FakeRecognition.instances).toHaveLength(2)
   })
 })
 

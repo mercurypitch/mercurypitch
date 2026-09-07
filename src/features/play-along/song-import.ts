@@ -14,6 +14,27 @@ export const UNIFIED_SONG_IMPORT_ACCEPT = [
   SONG_REFERENCE_FILE_ACCEPT,
 ].join(',')
 
+/**
+ * The accept list for this device's picker. iOS and iPadOS match `accept`
+ * against known document types and grey out everything else, and Guitar Pro
+ * files have no registered type there, so the picker refused the very tabs
+ * it was opened for. Those devices get no filter; the import path still
+ * checks the file after the pick.
+ */
+export function songImportAcceptForDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): string | undefined {
+  return isAppleTouchDevice(nav) ? undefined : UNIFIED_SONG_IMPORT_ACCEPT
+}
+
+/** iPhone, iPod, iPad, including iPadOS presenting as a Mac with touch. */
+export function isAppleTouchDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'>,
+): boolean {
+  if (/iPad|iPhone|iPod/.test(nav.userAgent)) return true
+  return nav.platform === 'MacIntel' && nav.maxTouchPoints > 1
+}
+
 export function isMidiSongFile(fileName: string): boolean {
   return /\.midi?$/i.test(fileName)
 }

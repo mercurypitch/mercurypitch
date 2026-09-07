@@ -93,6 +93,13 @@
   }
 }
 
+/* Dozing: the ear stopped respawning after a stretch of silence and the
+   next touch anywhere wakes it. The pulse is gone and the glyph dims; the
+   tooltip and the menu carry the sentence. */
+.dozing {
+  opacity: 0.55;
+}
+
 .errorState {
   color: var(--warning, #e5a50a);
 }
@@ -268,6 +275,18 @@
   border-radius: 10px;
   background: var(--bg-card, #1c2128);
   box-shadow: 0 12px 32px rgb(0 0 0 / 40%);
+}
+
+/* The status sentence, for a pill that is collapsed: the menu is the one
+   place the pause lines can be read without the pill expanding. */
+.menuStatus {
+  overflow: hidden;
+  margin: 0.1rem 0 0.35rem;
+  padding: 0 0.45rem;
+  color: var(--text-muted, #6e7681);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menuHeading {

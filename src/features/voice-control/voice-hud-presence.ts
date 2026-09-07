@@ -47,6 +47,12 @@ export interface VoiceHudPresenceSource {
  * header for the length of the song, which is precisely the furniture this
  * whole mechanism exists to remove.
  *
+ * `dozing` is quiet for the same reason: the ear stopped respawning after a
+ * stretch of silence and the next touch anywhere brings it back — there is
+ * nothing to read and no control to reach for. Expanded, it would have
+ * re-laid out a phone's header once per touch, since on iOS a session ends a
+ * few seconds after each one.
+ *
  * Switched off collapses on the same frame rather than after the hold: that
  * is a decision, not a pause.
  */
@@ -68,8 +74,11 @@ export function createHasSomethingToSay(
       setHasSomethingToSay(false)
       return
     }
+    const state = source.listenerState()
     const quietState =
-      source.listenerState() === 'listening' || (source.suspended?.() ?? false)
+      state === 'listening' ||
+      state === 'dozing' ||
+      (source.suspended?.() ?? false)
     if (source.interim() !== '' || source.feedback() !== null || !quietState) {
       setHasSomethingToSay(true)
       return

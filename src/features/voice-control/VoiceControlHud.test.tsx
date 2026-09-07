@@ -213,7 +213,7 @@ describe('VoiceControlHud when there is nothing to say', () => {
     )
   })
 
-  it('stays open while the engine menu is', () => {
+  it('does not expand for the engine menu', () => {
     render(() => (
       <VoiceControlHud
         controller={createController({
@@ -229,12 +229,107 @@ describe('VoiceControlHud when there is nothing to say', () => {
       screen.getByRole('button', { name: 'Voice engine and commands' }),
     )
 
-    // A picker that closed itself three seconds after it was opened would be
-    // unusable, so the menu pins the pill open for as long as it is up.
+    // The menu overlays the page from its absolute position. Expanding the
+    // docked pill instead hands it the header row — the title steps aside,
+    // the account cluster moves — for a menu that needs none of it.
+    expect(screen.getByRole('menu')).toBeInTheDocument()
     expect(screen.getByTestId('voice-control-pill')).toHaveAttribute(
       'data-talking',
-      'true',
+      'false',
+    )
+    expect(screen.queryByTestId('voice-control-status')).toBeNull()
+  })
+})
+
+// ============================================================
+// The engine menu on a touch screen
+// ============================================================
+//
+// `onMouseLeave` closed the menu for a pointer with a hover state. A finger
+// has none, so on a phone the menu stayed up until something inside it was
+// tapped — and the pill's status line, which only the open menu had shown,
+// went with the pinning.
+
+describe('VoiceControlHud engine menu on a touch screen', () => {
+  const openMenu = () => {
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Voice engine and commands' }),
     )
     expect(screen.getByRole('menu')).toBeInTheDocument()
+  }
+
+  it('closes on a tap outside it', () => {
+    render(() => (
+      <VoiceControlHud controller={createController({ enabled: () => true })} />
+    ))
+    openMenu()
+
+    fireEvent.pointerDown(document.body)
+
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('stays open for a tap inside it', () => {
+    render(() => (
+      <VoiceControlHud controller={createController({ enabled: () => true })} />
+    ))
+    openMenu()
+
+    fireEvent.pointerDown(
+      screen.getByRole('menuitemradio', { name: 'Browser' }),
+    )
+
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('carries the status line the collapsed pill does not show', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'idle',
+          suspendedForSinging: () => true,
+          hasSomethingToSay: () => false,
+        })}
+      />
+    ))
+    expect(screen.queryByTestId('voice-control-status')).toBeNull()
+    openMenu()
+
+    expect(screen.getByTestId('voice-control-menu-status')).toHaveTextContent(
+      'Voice paused while you sing',
+    )
+  })
+})
+
+// ============================================================
+// The ear dozing between touches
+// ============================================================
+//
+// After a stretch of silence the Web Speech listener stops respawning and
+// waits for the next touch anywhere. Nothing is wrong, so the pill must not
+// expand — on a phone that re-lays out the header — and must not pulse as if
+// it were hearing; the tooltip says what a tap does.
+
+describe('VoiceControlHud while the ear dozes', () => {
+  it('rests without expanding, and says what a tap will do', () => {
+    render(() => (
+      <VoiceControlHud
+        controller={createController({
+          enabled: () => true,
+          listenerState: () => 'dozing',
+          hasSomethingToSay: () => false,
+        })}
+        placement="docked"
+      />
+    ))
+
+    expect(screen.queryByTestId('voice-control-status')).toBeNull()
+    expect(screen.getByTestId('voice-control-pill')).toHaveAttribute(
+      'data-talking',
+      'false',
+    )
+    const mic = screen.getByRole('button', { name: /tap to resume/i })
+    expect(mic).toHaveAttribute('aria-pressed', 'true')
   })
 })

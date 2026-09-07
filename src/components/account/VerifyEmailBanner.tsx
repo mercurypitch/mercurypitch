@@ -34,6 +34,19 @@ function loadDismissed(): boolean {
 
 const [email, setEmail] = createSignal<string | null>(null)
 const [dismissed, setDismissed] = createSignal(loadDismissed())
+// A dismissal lasts the tab session, which on a phone can be weeks. It ends
+// at the next sign-in, so the nudge and its Resend come back for whoever
+// signs in then; a reload while signed in is not a sign-in.
+let wasSignedIn = hasValidToken()
+
+function clearDismissal(): void {
+  setDismissed(false)
+  try {
+    sessionStorage.removeItem(DISMISS_KEY)
+  } catch {
+    // Storage may be unavailable; the signal already says "show".
+  }
+}
 let inFlight: { stamp: unknown; done: Promise<void> } | null = null
 let latestStamp: unknown = Symbol('none')
 
@@ -42,6 +55,9 @@ let latestStamp: unknown = Symbol('none')
 // re-show the nudge to someone who just signed out.
 function refresh(stamp: unknown): Promise<void> {
   latestStamp = stamp
+  const signedIn = hasValidToken()
+  if (signedIn && !wasSignedIn) clearDismissal()
+  wasSignedIn = signedIn
   if (inFlight !== null && inFlight.stamp === stamp) return inFlight.done
   const done = (async () => {
     if (!hasValidToken()) {
