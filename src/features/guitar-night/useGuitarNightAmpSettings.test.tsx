@@ -3,8 +3,22 @@
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY, GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY, guitarNightAmpSettingsForPreset, } from './guitar-amp-settings'
+import { GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY, GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY, } from './guitar-amp-settings'
 import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
+
+const legacyLead = {
+  version: 1,
+  presetId: 'lead',
+  enabled: false,
+  drive: 0.84,
+  bass: -0.1,
+  mid: 0.38,
+  treble: -0.22,
+  presence: 0.08,
+  output: 0.25,
+  cabinet: 'dark',
+  asymmetry: 0.46,
+}
 
 describe('useGuitarNightAmpSettings', () => {
   beforeEach(() => localStorage.clear())
@@ -103,11 +117,7 @@ describe('useGuitarNightAmpSettings', () => {
   it('does not open audio, fetch assets or rewrite a migrated preference on mount', () => {
     const audio = vi.spyOn(globalThis, 'AudioContext')
     const fetch = vi.spyOn(globalThis, 'fetch')
-    const saved = JSON.stringify({
-      ...guitarNightAmpSettingsForPreset('lead'),
-      version: 1,
-      enabled: false,
-    })
+    const saved = JSON.stringify(legacyLead)
     localStorage.setItem(GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY, saved)
 
     createRoot((dispose) => {
@@ -117,6 +127,7 @@ describe('useGuitarNightAmpSettings', () => {
         enabled: false,
         drive: 0.84,
       })
+      expect(amp.settings().presetId).toBe('custom')
       dispose()
     })
 
@@ -130,5 +141,30 @@ describe('useGuitarNightAmpSettings', () => {
     )
     audio.mockRestore()
     fetch.mockRestore()
+  })
+
+  it('adopts Studio Lead only after an explicit selection and keeps the saved bypass', () => {
+    localStorage.setItem(
+      GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY,
+      JSON.stringify(legacyLead),
+    )
+    createRoot((dispose) => {
+      const amp = useGuitarNightAmpSettings()
+
+      amp.selectPreset('lead')
+
+      expect(amp.settings()).toMatchObject({
+        presetId: 'lead',
+        engine: 'studio',
+        head: 'lead',
+        enabled: false,
+      })
+      expect(
+        JSON.parse(
+          localStorage.getItem(GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY) ?? '{}',
+        ),
+      ).toEqual(amp.settings())
+      dispose()
+    })
   })
 })

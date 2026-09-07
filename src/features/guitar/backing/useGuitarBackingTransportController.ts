@@ -38,6 +38,9 @@ export function useGuitarBackingTransportController(
   const [masterVolume, setMasterVolumeSignal] = createSignal(
     transport.getMasterVolume(),
   )
+  const [backingMuted, setBackingMutedSignal] = createSignal(
+    transport.getBackingMuted(),
+  )
   const [tracks, setTracks] = createSignal<readonly GuitarBackingTrackState[]>(
     transport.getTrackStates(),
   )
@@ -86,6 +89,7 @@ export function useGuitarBackingTransportController(
     setDurationSeconds(transport.getDuration())
     setPlaybackRateSignal(transport.getPlaybackRate())
     setMasterVolumeSignal(transport.getMasterVolume())
+    setBackingMutedSignal(transport.getBackingMuted())
     setTracks(transport.getTrackStates())
     setSoloedTrackId(transport.getSoloedTrackId())
     setError(transport.getError())
@@ -138,6 +142,11 @@ export function useGuitarBackingTransportController(
 
   const setMasterVolume = (position: number): void => {
     transport.setMasterVolume(position)
+    sync()
+  }
+
+  const setBackingMuted = (muted: boolean): void => {
+    transport.setBackingMuted(muted)
     sync()
   }
 
@@ -196,6 +205,7 @@ export function useGuitarBackingTransportController(
     durationSeconds,
     playbackRate,
     masterVolume,
+    backingMuted,
     tracks,
     soloedTrackId,
     error,
@@ -211,6 +221,7 @@ export function useGuitarBackingTransportController(
     setLoopRange,
     setPlaybackRate,
     setMasterVolume,
+    setBackingMuted,
     setElectricAmpParameters,
     setTrackMuted,
     setTrackLevelDb,

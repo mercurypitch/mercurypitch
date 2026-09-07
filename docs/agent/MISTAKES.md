@@ -213,6 +213,14 @@ diagnostics, and require an independent raw signal to stay continuous before
 using processed PCM to judge transitions. Offline endpoint checks are separate.
 **See:** `scripts/guitar-amp-browser-probes.mjs`
 
+### Select the guitar channel before monitoring a multichannel interface
+
+**Symptom:** Direct-input guitar played only on the left while backing was stereo.
+**Cause:** the browser exposed input 1/2 as stereo; amp nodes preserved [guitar, silence].
+**Rule:** isolate a selected browser channel before the amp and center its mono output;
+never downmix every interface input or change the original analysis/recording route.
+**See:** `src/features/guitar-night/guitar-input-monitor.ts`
+
 ## Framework
 
 ### Do not destructure props
@@ -425,6 +433,14 @@ different grid, creating implicit placement and stretching unrelated controls.
 **Rule:** host wrappers own placement; shared controls own only their internal
 layout. Test row geometry with both two and six tracks, not just overflow.
 **See:** `src/features/guitar-night/GuitarNightSongMixer.tsx`
+
+### Keep a CSS grid's named areas in one module
+
+**Symptom:** adding a Listening column made the song controls overlap in implicit columns.
+**Cause:** CSS Modules scoped new template-area names differently from the old child-area names.
+**Rule:** define the template and every named child placement in the same CSS module;
+verify bounding boxes and screenshots rather than only element visibility.
+**See:** `src/features/guitar-night/GuitarNightRoom.module.css`
 
 ## Performance
 

@@ -14,6 +14,7 @@ const { values } = parseArgs({
   options: {
     origin: { type: 'string', default: 'http://127.0.0.1:5217' },
     out: { type: 'string' },
+    'offline-only': { type: 'boolean', default: false },
   },
 })
 assert.ok(
@@ -40,6 +41,7 @@ const report = {
   schemaVersion: 2,
   createdAt: new Date().toISOString(),
   origin,
+  offlineOnly: values['offline-only'],
   sourceHashes: Object.fromEntries(
     [
       'src/lib/guitar/guitar-studio-head.ts',
@@ -47,6 +49,7 @@ const report = {
       'src/lib/guitar/guitar-amp-stage.ts',
       'src/lib/guitar/guitar-amp-cabinet.ts',
       'src/lib/guitar/guitar-electric-amp.ts',
+      'src/features/guitar-night/guitar-amp-settings.ts',
       'src/assets/audio/guitar/cookie-monster.wav',
       'scripts/guitar-audition-head.mjs',
       'scripts/guitar-amp-browser-probes.mjs',
@@ -54,7 +57,7 @@ const report = {
     ].map((path) => [path, hash(path)]),
   ),
   method:
-    'Identical deterministic overlapping picked-chord source; neutral Studio controls (drive0.7/output0.6/EQ0). Full hash-verified IR, normalize=false, -18dB trim. CPU values are single offline render timings, not device audio-thread budgets or performance acceptance claims.',
+    'Identical deterministic overlapping picked-chord source; neutral Studio controls (drive0.7/output0.6/EQ0). Factory Lead also checks persistence, inactive Character, drive response and output-only gain scaling. Full hash-verified IR, normalize=false, -18dB trim. CPU values are single offline render timings, not device audio-thread budgets or performance acceptance claims.',
 }
 let browser
 let timer
@@ -88,7 +91,9 @@ try {
       return helper.verifyOffline()
     })
     report.live = []
-    for (const scenario of ['steady', 'single', 'rapid', 'rapid'])
+    for (const scenario of values['offline-only']
+      ? []
+      : ['steady', 'single', 'rapid', 'rapid'])
       report.live.push(
         await page.evaluate(async (selectedScenario) => {
           const helper = await import('/scripts/guitar-amp-browser-probes.mjs')

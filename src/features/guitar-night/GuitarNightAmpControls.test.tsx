@@ -2,6 +2,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import type { ComponentProps } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadGuitarAmpCabinet, retryGuitarAmpCabinet, } from '@/lib/guitar/guitar-amp-cabinet'
@@ -41,7 +42,143 @@ function renderStudioControls() {
   })
 }
 
+function renderMonitorControls(
+  overrides: Partial<ComponentProps<typeof GuitarNightAmpControls>>,
+) {
+  return render(() => (
+    <GuitarNightAmpControls
+      parameters={() => DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS}
+      presetId={() => 'lead'}
+      inputProfile={() => 'interface'}
+      canMonitor={() => false}
+      monitoringEnabled={() => false}
+      monitoringActive={() => false}
+      onEnabled={() => undefined}
+      onPreset={() => undefined}
+      onParameter={() => undefined}
+      onParameterCommit={() => undefined}
+      onCabinet={() => undefined}
+      onMonitor={() => undefined}
+      onReset={() => undefined}
+      {...overrides}
+    />
+  ))
+}
+
 describe('GuitarNightAmpControls', () => {
+  it('explicitly starts Direct Listening and monitoring without leaving Session', async () => {
+    const [ready, setReady] = createSignal(false)
+    const start = vi.fn(async () => {
+      setReady(true)
+      return true
+    })
+    const monitor = vi.fn()
+    renderMonitorControls({
+      canMonitor: ready,
+      listeningStatus: () => 'off',
+      onStartListening: start,
+      onMonitor: monitor,
+    })
+    expect(start).not.toHaveBeenCalled()
+    const button = screen.getByRole('button', {
+      name: 'Start Listening and monitoring',
+    })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Monitoring off')).toBeInTheDocument()
+
+    fireEvent.click(button)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(start).toHaveBeenCalledOnce()
+    expect(monitor).toHaveBeenCalledWith(true)
+  })
+
+  it.each(['denied', 'changed', 'unmounted'] as const)(
+    'does not enable a %s monitoring request after async Listening',
+    async (outcome) => {
+      let finish!: (result: boolean) => void
+      const start = vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finish = resolve
+          }),
+      )
+      const monitor = vi.fn()
+      const [profile, setProfile] = createSignal<'interface' | 'microphone'>(
+        'interface',
+      )
+      const [ready, setReady] = createSignal(false)
+      const view = renderMonitorControls({
+        inputProfile: profile,
+        canMonitor: ready,
+        listeningStatus: () => 'off',
+        onStartListening: start,
+        onMonitor: monitor,
+      })
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Start Listening and monitoring' }),
+      )
+      if (outcome === 'changed') setProfile('microphone')
+      if (outcome === 'unmounted') view.unmount()
+      setReady(true)
+
+      finish(outcome !== 'denied')
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(monitor).not.toHaveBeenCalled()
+    },
+  )
+
+  it('exposes the selected mono input without changing it on mount', () => {
+    const change = vi.fn()
+    renderMonitorControls({
+      canMonitor: () => true,
+      monitorInputChannel: () => 0,
+      monitorInputChannelCount: () => 2,
+      onMonitorInputChannel: change,
+    })
+    const select = screen.getByRole('combobox', {
+      name: 'Monitor input channel',
+    })
+    expect(select).toHaveValue('0')
+    expect(change).not.toHaveBeenCalled()
+    fireEvent.change(select, { target: { value: '1' } })
+    expect(change).toHaveBeenCalledWith(1)
+  })
+  it('selects the Studio Lead head without starting audio or showing Definition-only controls', () => {
+    const audio = vi.spyOn(globalThis, 'AudioContext')
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    renderStudioControls()
+
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'Guitar amp preset' }),
+      {
+        target: { value: 'lead' },
+      },
+    )
+
+    expect(screen.getByText('Studio · Lead head')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('slider', { name: 'Guitar amp character' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('combobox', { name: 'Guitar cabinet voicing' }),
+    ).not.toBeInTheDocument()
+    expect(
+      JSON.parse(
+        localStorage.getItem(GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY) ?? '{}',
+      ),
+    ).toMatchObject({
+      presetId: 'lead',
+      engine: 'studio',
+      head: 'lead',
+    })
+    expect(audio).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('keeps preset, bypass, and Drive immediate while deferring tone controls', () => {
     const choosePreset = vi.fn()
     const setEnabled = vi.fn()
@@ -124,7 +261,7 @@ describe('GuitarNightAmpControls', () => {
     ))
 
     expect(
-      screen.getByRole('button', { name: /Hear my input/i }),
+      screen.getByRole('button', { name: /Turn monitoring on/i }),
     ).toBeDisabled()
     expect(
       screen.getByText(
@@ -136,7 +273,7 @@ describe('GuitarNightAmpControls', () => {
     setProfile('interface')
 
     const monitorButton = screen.getByRole('button', {
-      name: /Hear my input/i,
+      name: /Turn monitoring on/i,
     })
     expect(monitorButton).toHaveAccessibleDescription(
       'Headphones recommended. Browser latency applies. Saved takes stay dry.',

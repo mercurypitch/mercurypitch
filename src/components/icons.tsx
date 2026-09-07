@@ -459,6 +459,26 @@ export const Headphones: Component = () => (
   </svg>
 )
 
+// Crossed headphones indicate that input monitoring is off.
+export function HeadphonesOff() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      width="24"
+      height="24"
+    >
+      <path d="M3 18v-6a9 9 0 0 1 1.2-4.5M7.1 4.4A9 9 0 0 1 21 12v3" />
+      <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 16v3a2 2 0 0 0 2 2h1" />
+      <path d="m2 2 20 20" />
+    </svg>
+  )
+}
+
 // MIDI Icon (for MIDI files)
 export const Midi: Component = () => (
   <svg

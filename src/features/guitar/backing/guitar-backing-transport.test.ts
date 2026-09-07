@@ -960,6 +960,79 @@ describe('createGuitarBackingTransport', () => {
     await harness.transport.dispose()
   })
 
+  it.each([false, true])(
+    'mutes only backing without erasing track mix or restarting playback (streamed=%s)',
+    async (streamed) => {
+      const h = audioHarness({
+        memoryBudgetBytes: streamed ? 1 : undefined,
+        fadeSeconds: 0.05,
+      })
+      try {
+        h.transport.configure(
+          session('quick-mix', [
+            track('drums'),
+            track('guitar'),
+            track('vocals', { muted: true }),
+          ]),
+        )
+        h.transport.setBackingMuted(true)
+        expect(h.contextFactory).not.toHaveBeenCalled()
+        await h.transport.play()
+        const sources = streamed ? h.context.mediaSources : h.context.sources
+        const gains = sources.map(
+          (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+        )
+        const master = h.transport.getAudioGraph()!.master
+          .gain as unknown as FakeAudioParameter
+        const masterOperations = [...master.operations]
+        expect(gains.map((gain) => gain.gain.value)).toEqual([0, 0, 0])
+        h.transport.setTrackLevelDb('drums', 6)
+        h.transport.toggleTrackSolo('drums')
+        expect(gains.map((gain) => gain.gain.value)).toEqual([0, 0, 0])
+        h.transport.setBackingMuted(false)
+        expect(gains.map((gain) => gain.gain.value)).toEqual([
+          10 ** (6 / 20),
+          0,
+          0,
+        ])
+        h.transport.setBackingMuted(true)
+        h.transport.toggleTrackSolo('drums')
+        expect(gains.map((gain) => gain.gain.value)).toEqual([0, 0, 0])
+        h.transport.setBackingMuted(false)
+        expect(gains.map((gain) => gain.gain.value)).toEqual([
+          10 ** (6 / 20),
+          1,
+          0,
+        ])
+        expect(
+          h.transport.getTrackStates().map((state) => state.muted),
+        ).toEqual([false, false, true])
+        expect(master.operations).toEqual(masterOperations)
+        expect(h.transport.getMasterVolume()).toBe(0.78)
+        expect(h.transport.getStatus()).toBe('playing')
+        expect(sources).toHaveLength(3)
+        if (streamed)
+          expect(
+            h.mediaElements.map((element) => element.play.mock.calls.length),
+          ).toEqual([1, 1, 1])
+        else
+          expect(
+            h.context.sources.every(
+              (source) => source.stop.mock.calls.length === 0,
+            ),
+          ).toBe(true)
+        h.transport.setBackingMuted(true)
+        h.transport.pause()
+        await h.transport.play()
+        expect(h.transport.getBackingMuted()).toBe(true)
+        h.transport.configure(session('next'))
+        expect(h.transport.getBackingMuted()).toBe(false)
+      } finally {
+        await h.transport.dispose()
+      }
+    },
+  )
+
   it('bounds unsafe fader values and preserves zero-gain faders through mute and Solo', async () => {
     const harness = audioHarness()
     harness.transport.configure(

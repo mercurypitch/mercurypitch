@@ -47,6 +47,7 @@ function fakeTransport(): {
     setLoopRange: vi.fn(() => true),
     setPlaybackRate: vi.fn(async () => true),
     setMasterVolume: vi.fn(),
+    setBackingMuted: vi.fn(),
     setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
     setTrackLevelDb: vi.fn(),
@@ -64,6 +65,7 @@ function fakeTransport(): {
     getDuration: () => 60,
     getPlaybackRate: () => 1,
     getMasterVolume: () => 1,
+    getBackingMuted: () => false,
     getTrackStates: () => [],
     getSoloedTrackId: () => null,
     getError: () => null,
@@ -166,6 +168,11 @@ describe('the backing clock feeds the frame-health sampler', () => {
   it('forwards mixer edits and Solo state without starting or seeking playback', () => {
     const fake = fakeTransport()
     let solo: string | null = null
+    let backingMuted = false
+    fake.transport.getBackingMuted = () => backingMuted
+    fake.transport.setBackingMuted = vi.fn((muted) => {
+      backingMuted = muted
+    })
     fake.transport.getSoloedTrackId = () => solo
     fake.transport.toggleTrackSolo = vi.fn((id) => {
       solo = solo === id ? null : id
@@ -175,6 +182,11 @@ describe('the backing clock feeds the frame-health sampler', () => {
         createTransport: () => fake.transport,
       })
       controller.setTrackLevelDb('drums', 4)
+      controller.setBackingMuted(true)
+      expect(controller.backingMuted()).toBe(true)
+      backingMuted = false
+      fake.emit()
+      expect(controller.backingMuted()).toBe(false)
       controller.toggleTrackSolo('drums')
       expect(controller.soloedTrackId()).toBe('drums')
       controller.setTrackMuted('guitar', true)

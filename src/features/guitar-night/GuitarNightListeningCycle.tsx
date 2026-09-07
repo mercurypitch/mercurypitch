@@ -19,6 +19,8 @@ export interface GuitarNightListeningCycleProps {
   status: Accessor<GuitarListeningStatus>
   profile: Accessor<GuitarInputProfileKind>
   disabled?: Accessor<boolean>
+  /** Host-owned actions below the route menu; opening the picker is passive. */
+  quickControls?: () => JSX.Element
   onSelect(next: GuitarNightListeningSelection): Promise<void> | void
 }
 
@@ -217,7 +219,7 @@ export function GuitarNightListeningCycle(
   const openPicker = (): void => {
     // Read once, deliberately untracked: a long press resolves inside a timer,
     // where a tracked read would belong to no owner anyway.
-    if (untrack(blocked)) return
+    if (untrack(() => blocked() && props.quickControls === undefined)) return
     setPickerOpen(true)
   }
   const closePicker = (focusButton: boolean): void => {
@@ -313,7 +315,7 @@ export function GuitarNightListeningCycle(
         aria-label={accessibleLabel()}
         aria-busy={pending()}
         aria-disabled={blocked()}
-        aria-haspopup="menu"
+        aria-haspopup={props.quickControls === undefined ? 'menu' : 'dialog'}
         aria-expanded={pickerOpen()}
         data-route={route()}
         title={`${accessibleLabel()}. Hold or right-click to pick a route.`}
@@ -365,9 +367,12 @@ export function GuitarNightListeningCycle(
             keepPickerOnScreen(element)
           }}
           style={{ '--picker-shift': `${pickerShift()}px` }}
-          role="menu"
+          role={props.quickControls === undefined ? undefined : 'dialog'}
+          tabIndex={-1}
           data-testid="guitar-night-listening-picker"
-          aria-label="Listening route"
+          aria-label={
+            props.quickControls === undefined ? undefined : 'Listening controls'
+          }
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               event.preventDefault()
@@ -389,37 +394,48 @@ export function GuitarNightListeningCycle(
             }
           }}
         >
-          <For each={PROFILE_ORDER}>
-            {(profile, index) => (
-              <button
-                type="button"
-                data-chip={profile}
-                class={styles.pickerChip}
-                data-current={route() === profile}
-                // The fan: outer chips sit lower and lean away from the middle.
-                style={{ '--chip-slot': String(index() - 1) }}
-                role="menuitemradio"
-                aria-checked={route() === profile}
-                aria-label={chipLabel(profile)}
-                title={chipLabel(profile)}
-                ref={(element) => {
-                  if (route() === profile || index() === 0) {
-                    queueMicrotask(() => element.focus())
-                  }
-                }}
-                onClick={() => {
-                  chooseProfile(profile)
-                }}
-              >
-                <span class={styles.pickerIcon} aria-hidden="true">
-                  {profileIcon(profile)}
-                </span>
-                <span class={styles.pickerName} aria-hidden="true">
-                  {guitarInputProfileLabel(profile)}
-                </span>
-              </button>
-            )}
-          </For>
+          <div
+            class={styles.pickerRoutes}
+            role="menu"
+            aria-label="Listening route"
+          >
+            <For each={PROFILE_ORDER}>
+              {(profile, index) => (
+                <button
+                  type="button"
+                  data-chip={profile}
+                  disabled={blocked()}
+                  class={styles.pickerChip}
+                  data-current={route() === profile}
+                  // The fan: outer chips sit lower and lean away from the middle.
+                  style={{ '--chip-slot': String(index() - 1) }}
+                  role="menuitemradio"
+                  aria-checked={route() === profile}
+                  aria-label={chipLabel(profile)}
+                  title={chipLabel(profile)}
+                  ref={(element) => {
+                    if (route() === profile || index() === 0) {
+                      queueMicrotask(() => {
+                        if (element.disabled) pickerRoot?.focus()
+                        else element.focus()
+                      })
+                    }
+                  }}
+                  onClick={() => {
+                    chooseProfile(profile)
+                  }}
+                >
+                  <span class={styles.pickerIcon} aria-hidden="true">
+                    {profileIcon(profile)}
+                  </span>
+                  <span class={styles.pickerName} aria-hidden="true">
+                    {guitarInputProfileLabel(profile)}
+                  </span>
+                </button>
+              )}
+            </For>
+          </div>
+          {props.quickControls?.()}
         </div>
       </Show>
       <span

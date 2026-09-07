@@ -3,7 +3,7 @@
 // Kept together because every assertion exercises the same prepared-song room
 // boundary and its route-owned transport double.
 
-import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { batch, createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportStatus } from '@/features/guitar/backing/guitar-backing-transport'
@@ -52,7 +52,7 @@ const listening = vi.hoisted(() => ({
   cancel: vi.fn(),
   calibrate: vi.fn(async () => false),
   clearTake: vi.fn(),
-  selectInputProfile: vi.fn(async () => undefined),
+  selectInputProfile: vi.fn(async (): Promise<void> => undefined),
   selectAudioInput: vi.fn(async () => undefined),
   selectMidiInput: vi.fn(),
   refreshAudioInputs: vi.fn(async () => undefined),
@@ -184,6 +184,8 @@ function createTransport(): GuitarBackingTransportController {
     durationSeconds: () => 60,
     playbackRate: () => 1,
     masterVolume: () => masterVolume,
+    backingMuted: () => false,
+    setBackingMuted: vi.fn(),
     tracks: () => [],
     soloedTrackId: () => null,
     loopRange: () => null,
@@ -218,6 +220,8 @@ describe('GuitarNightRoom', () => {
     localStorage.clear()
     listening.status.mockReturnValue('off')
     listening.stop.mockReset()
+    listening.start.mockReset().mockResolvedValue(true)
+    listening.selectInputProfile.mockReset().mockResolvedValue(undefined)
     listening.error.mockReturnValue(null)
     listening.notice.mockReturnValue(null)
     listening.take.mockReturnValue(null)
@@ -431,11 +435,127 @@ describe('GuitarNightRoom', () => {
         onSongs={vi.fn()}
       />
     ))
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     const stop = screen.getByRole('button', { name: 'Stop Listening' })
     expect(stop).toBeEnabled()
     fireEvent.click(stop)
     expect(untrack(inputStatus)).toBe('off')
     expect(transport.pause).not.toHaveBeenCalled()
+  })
+
+  it('keeps input configuration passive and offers an explicit Session restart', async () => {
+    const [profile, setProfile] = createSignal('microphone')
+    const [status, setStatus] = createSignal('off')
+    // These accessors are read by rendered components, not at mock setup.
+    // eslint-disable-next-line solid/reactivity
+    listening.inputProfile.mockImplementation(profile)
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(status)
+    listening.selectInputProfile.mockImplementationOnce(async () => {
+      setProfile('interface')
+    })
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    const transport = createTransport()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    const input = screen.getByRole('region', { name: 'Listening input' })
+    expect(input.closest('details')).toBeNull()
+    fireEvent.click(within(input).getByRole('button', { name: 'Direct input' }))
+    await waitFor(() =>
+      expect(listening.selectInputProfile).toHaveBeenCalledWith('interface'),
+    )
+    expect(listening.start).not.toHaveBeenCalled()
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Turn on Listening' }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Stop Listening' }),
+      ).toBeEnabled(),
+    )
+    expect(listening.start).toHaveBeenCalledOnce()
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+    expect(transport.play).not.toHaveBeenCalled()
+  })
+
+  it('routes the reused primary cycle through song input coexistence', async () => {
+    const [profile, setProfile] = createSignal('microphone')
+    const [status, setStatus] = createSignal('off')
+    // Rendered controls own the reactive reads of these mocked accessors.
+    // eslint-disable-next-line solid/reactivity
+    listening.inputProfile.mockImplementation(profile)
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(status)
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    const transport = createTransport()
+    const [transportStatus, setTransportStatus] =
+      createSignal<GuitarBackingTransportStatus>('playing')
+    transport.status = transportStatus
+    transport.pause = vi.fn(() => setTransportStatus('paused'))
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    const cycle = screen.getByTestId('guitar-night-listening-cycle')
+    fireEvent.click(cycle)
+    await waitFor(() =>
+      expect(cycle).toHaveAttribute('data-state', 'microphone'),
+    )
+    await waitFor(() => expect(listening.start).toHaveBeenCalledOnce())
+    expect(transport.pause).toHaveBeenCalledOnce()
+    listening.selectInputProfile.mockImplementationOnce(async () => {
+      setStatus('off')
+      setProfile('interface')
+    })
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    await waitFor(() => expect(cycle).toHaveAttribute('aria-disabled', 'false'))
+    fireEvent.click(cycle)
+    await waitFor(() =>
+      expect(cycle).toHaveAttribute('data-state', 'interface'),
+    )
+    expect(listening.selectInputProfile).toHaveBeenLastCalledWith('interface')
+    await waitFor(() => expect(listening.start).toHaveBeenCalledTimes(2))
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+  })
+
+  it('does not start a selected input after its song room unmounts', async () => {
+    let finishSelection!: () => void
+    listening.selectInputProfile.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSelection = resolve
+        }),
+    )
+    const view = render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(screen.getByTestId('guitar-night-listening-cycle'))
+    expect(listening.start).not.toHaveBeenCalled()
+    view.unmount()
+    finishSelection()
+    await Promise.resolve()
+    expect(listening.start).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -462,7 +582,7 @@ describe('GuitarNightRoom', () => {
           })}
         />
       ))
-      const trigger = screen.getByRole('button', { name: label, exact: true })
+      const trigger = screen.getByRole('button', { name: label })
       trigger.focus()
 
       fireEvent.click(trigger)
@@ -624,10 +744,9 @@ describe('GuitarNightRoom', () => {
       target: { value: '0.25' },
     })
 
-    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      amp.getByRole('button', { name: 'Turn monitoring on' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(transport.setElectricAmpParameters).toHaveBeenLastCalledWith(
       expect.objectContaining({ enabled: false, treble: 0.25 }),
     )

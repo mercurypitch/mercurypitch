@@ -1,0 +1,97 @@
+/* A disclosure inside the existing amp faceplate, not another modal or card. */
+.details {
+  min-width: 0;
+  border-top: 1px solid rgba(244, 234, 215, 0.12);
+}
+
+.details > summary {
+  min-height: 44px;
+  padding-block: 0.6rem;
+  color: var(--ivory);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.details > summary::marker {
+  color: var(--amber-bright);
+}
+.details > summary small {
+  display: block;
+  padding-inline-start: 1rem;
+  color: var(--muted-readable);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.details > summary:focus-visible,
+.download:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 3px;
+}
+
+.body {
+  display: grid;
+  gap: 0.65rem;
+  padding-block: 0.25rem 0.6rem;
+}
+.claim {
+  margin: 0;
+  color: var(--ivory);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.note,
+.warning {
+  margin: 0;
+  color: var(--muted-readable);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+.warning {
+  color: var(--amber-bright);
+}
+.readings {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.readings > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+.readings dt {
+  color: var(--muted-readable);
+}
+.readings dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ivory);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+button.download {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgba(224, 164, 93, 0.4);
+  border-radius: 0.48rem;
+  color: var(--amber-bright);
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+button.download:hover:not(:disabled) {
+  border-color: var(--amber-bright);
+  background: rgba(224, 164, 93, 0.08);
+}
+button.download:disabled {
+  color: var(--muted-readable);
+  border-color: rgba(244, 234, 215, 0.12);
+  cursor: not-allowed;
+}

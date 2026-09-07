@@ -282,6 +282,8 @@ function createTransport(): GuitarBackingTransportController {
     durationSeconds: () => 60,
     playbackRate: () => 1,
     masterVolume: () => 0.78,
+    backingMuted: () => false,
+    setBackingMuted: vi.fn(),
     tracks: () => [],
     soloedTrackId: () => null,
     loopRange: () => null,
@@ -343,12 +345,20 @@ describe('Guitar Night calibration lock', () => {
       />
     ))
 
+    // The song's shared route cycle is on the dock; calibration cancellation
+    // remains the explicit Listening action inside Session.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Session controls', exact: true }),
+    )
     const listeningButton = screen.getByRole('button', {
       name: 'Stop calibration',
     })
     expect(listeningButton.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(listeningButton)
     expect(listening.stop).toHaveBeenCalledOnce()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close Session', exact: true }),
+    )
     expect(
       (screen.getByLabelText('Play backing') as HTMLButtonElement).disabled,
     ).toBe(true)

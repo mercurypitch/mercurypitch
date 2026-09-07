@@ -159,6 +159,58 @@ describe('owned guitar amp facade', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('crossfades a distinct Lead head, reuses its cabinet, and ignores its unused character control', () => {
+    vi.useFakeTimers()
+    const { context, raw, all } = audioContext()
+    const stage = createGuitarAmpStage(context, studio, {
+      cabinetBuffer: kernel,
+    })
+    const ports = [stage.input, stage.output]
+    const originalNodes = [...stage.nodes].slice(3)
+    const initialSize = stage.nodes.length
+    stage.setParameters({ head: 'lead' })
+    expect(stage.getParameters().head).toBe('lead')
+    expect(stage.nodes.length).toBeGreaterThan(initialSize)
+    expect(stage.nodes.length).toBeLessThan(initialSize * 2)
+    const nextGate = (stage.nodes as unknown as Node[]).filter((node) =>
+      node.connections.has(stage.output),
+    )[1]
+    expect(nextGate.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+      1,
+      0.03,
+      0.012,
+    )
+    raw.currentTime = 1
+    vi.advanceTimersByTime(25)
+    expect(stage.getStatus()).toBe('ready')
+    expect(
+      originalNodes.every((node) => (node as unknown as Node).disconnected),
+    ).toBe(true)
+    const leadNodes = [...stage.nodes]
+    expect(leadNodes).toHaveLength(initialSize + 1)
+    expect(
+      (leadNodes as unknown as Node[]).filter((node) => node.buffer === kernel),
+    ).toHaveLength(1)
+    expect(
+      (leadNodes as unknown as Node[]).some(
+        (node) =>
+          node.type === 'peaking' &&
+          node.frequency.value === 1200 &&
+          node.gain.value === 3,
+      ),
+    ).toBe(true)
+    stage.setParameters({ character: 0.2 })
+    expect(stage.nodes).toEqual(leadNodes)
+    expect([stage.input, stage.output]).toEqual(ports)
+    stage.setParameters({ head: 'definition', character: 1 })
+    raw.currentTime = 2
+    vi.advanceTimersByTime(25)
+    expect(stage.nodes).toHaveLength(initialSize)
+    stage.dispose()
+    expect(all.every((node) => node.disconnected)).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('keeps a working wet path when re-enabled during a pending character transition', () => {
     vi.useFakeTimers()
     const { context } = audioContext()

@@ -1,0 +1,90 @@
+/* A small second row on the existing Listening faceplate, not another mixer. */
+.controls {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(224, 164, 93, 0.16);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.toggle {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.22rem;
+  min-width: 44px;
+  min-height: 68px;
+  padding: 0.4rem 0.15rem;
+  border: 1px solid rgba(244, 234, 219, 0.15);
+  border-radius: 0.55rem;
+  background: rgba(244, 234, 219, 0.035);
+  color: var(--ivory, #f4eadb);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.toggle > span:last-child {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.toggle strong {
+  font-size: 0.65rem;
+  font-weight: 650;
+}
+.toggle small {
+  font-size: 0.6rem;
+  color: rgba(244, 234, 219, 0.68);
+}
+.toggle svg {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.toggle[data-on='true'] {
+  border-color: rgba(106, 202, 189, 0.48);
+  background: rgba(106, 202, 189, 0.09);
+}
+
+.toggle[data-on='true'] svg {
+  color: var(--teal, #6acabd);
+}
+.monitor[data-on='false'] {
+  border-color: rgba(225, 139, 128, 0.36);
+  background: rgba(225, 139, 128, 0.055);
+}
+.monitor[data-on='false'] svg {
+  color: #e1a096;
+}
+.toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.toggle:hover:enabled {
+  border-color: var(--amber-bright, #f0bd78);
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--amber-bright, #f0bd78);
+  outline-offset: 2px;
+}
+.hint {
+  margin: 0;
+  max-width: 13rem;
+  color: rgba(244, 234, 219, 0.65);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+@media (forced-colors: active) {
+  .toggle[data-on='true'] {
+    border-color: Highlight;
+  }
+}

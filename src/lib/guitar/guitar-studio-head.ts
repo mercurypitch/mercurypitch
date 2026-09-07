@@ -6,7 +6,7 @@
 // while inaudible; the caller owns live crossfades, source envelopes, cabinet,
 // and output level, and disposes this graph only after its signal is silent.
 
-export type GuitarStudioHeadModel = 'definition' | 'heavy'
+export type GuitarStudioHeadModel = 'definition' | 'heavy' | 'lead'
 
 export interface GuitarStudioHeadOptions {
   head: GuitarStudioHeadModel
@@ -49,6 +49,12 @@ export interface GuitarStudioHeadProfile {
   readonly fizzHz: number
   readonly fizzQ: number
   readonly fizzDb: number
+  /** Optional post-clipping bell; absent on the original auditioned heads. */
+  readonly midVoicing?: Readonly<{
+    frequencyHz: number
+    q: number
+    gainDb: number
+  }>
 }
 
 const HEAVY: GuitarStudioHeadProfile = Object.freeze({
@@ -126,11 +132,44 @@ const TIGHT: GuitarStudioHeadProfile = Object.freeze({
   sagDepth: 0.08,
 })
 
+// First solo-head audition: earlier saturation lifts a decaying note without
+// the Heavy head's harder final clipping. Low-end cleanup happens before
+// drive; a broad mid bell and a softer upper edge follow it. This is not a
+// compressor, noise gate, reference-amp capture, or a delay/reverb preset.
+const LEAD: GuitarStudioHeadProfile = Object.freeze({
+  ...HEAVY,
+  preampGain: 11.5,
+  interstageGain: 2.1,
+  powerDrive: 1.15,
+  preampSlope: 2.65,
+  preampAsymmetry: 0.22,
+  interstageSlope: 1.85,
+  interstageAsymmetry: -0.1,
+  powerSlope: 1.4,
+  powerAsymmetry: 0.04,
+  inputHighpassHz: 75,
+  couplingHz: 100,
+  interstageLowpassHz: 4300,
+  outputLowpassHz: 7000,
+  preBassDb: -5.5,
+  bodyDb: 1.5,
+  fizzHz: 3300,
+  fizzQ: 0.8,
+  fizzDb: -3.5,
+  envelopeHz: 8,
+  sagDepth: 0.16,
+  outputGain: 0.25,
+  midVoicing: Object.freeze({ frequencyHz: 1200, q: 0.7, gainDb: 3 }),
+})
+
 export function normalizeGuitarStudioHeadOptions(
   options: Partial<GuitarStudioHeadOptions> = {},
 ): Readonly<GuitarStudioHeadOptions> {
   return Object.freeze({
-    head: options.head === 'heavy' ? 'heavy' : 'definition',
+    head:
+      options.head === 'heavy' || options.head === 'lead'
+        ? options.head
+        : 'definition',
     character:
       typeof options.character === 'number' &&
       Number.isFinite(options.character)
@@ -144,6 +183,7 @@ export function getGuitarStudioHeadProfile(
 ): GuitarStudioHeadProfile {
   const { head, character } = normalizeGuitarStudioHeadOptions(options)
   if (head === 'heavy') return HEAVY
+  if (head === 'lead') return LEAD
   // Literal endpoints preserve the audition's exact coefficients and PCM.
   if (character === 0) return ARTICULATE
   if (character === 1) return TIGHT
@@ -297,6 +337,17 @@ export function createGuitarStudioHead(
       profile.fizzDb !== 0
         ? [filter('peaking', profile.fizzHz, profile.fizzQ, profile.fizzDb)]
         : []
+    const mid =
+      profile.midVoicing === undefined
+        ? []
+        : [
+            filter(
+              'peaking',
+              profile.midVoicing.frequencyHz,
+              profile.midVoicing.q,
+              profile.midVoicing.gainDb,
+            ),
+          ]
     connect(
       input,
       inputHighpass,
@@ -314,6 +365,7 @@ export function createGuitarStudioHead(
       power,
       outputHighpass,
       ...body,
+      ...mid,
       ...fizz,
       outputLowpass,
       output,

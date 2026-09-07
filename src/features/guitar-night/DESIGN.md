@@ -72,7 +72,7 @@ workspace.
   their identity during playback updates; saved levels and explicit mute are
   restored by song/source ID. Reset restores source defaults, not an assumed
   unity mix. Temporary Solo never overwrites those choices.
-- Song `Session` is a single reading column: input disclosure, input health
+- Song `Session` is a single reading column: visible input choices, input health
   when relevant, then the shared Amp and optional score-placement controls.
   Amp is clearly labeled as live Direct input processing, never recording
   processing. Paid separation stays with the source/mixer action and discloses
@@ -80,14 +80,46 @@ workspace.
 - Both hosts share one compact Amp faceplate. Tight is the fresh default;
   Articulate–Tight is a coordinated Character control on the Definition head,
   and Heavy retains the original stronger audition. These use one fixed
-  cabinet IR, not different cabinets. The original Lite presets and their
-  filter-cabinet choices remain explicit. Existing saved tones migrate to Lite
+  cabinet IR, not different cabinets. Lead selects its own Studio solo head,
+  without the Definition-only Character control or an implied delay/reverb.
+  Studio clean, Edge and Crunch retain explicit Lite filter-cabinet choices.
+  Old saved Lite Lead becomes Custom with its sound intact; other V1 tones migrate to Lite
   without changing bypass, and selecting/resetting a tone never enables a
   bypassed amp. Detail controls disclose tone/output beneath the primary
   preset, drive and character; loading/fallback is stated beside the cabinet.
   Neither settings changes nor mounting the faceplate starts audio or loads
   cabinet bytes. A held Character drag keeps its native slider mounted when
   the preset becomes Custom, and persists only when the gesture ends.
+- A shared Monitoring latency disclosure sits below the monitoring action,
+  collapsed by default. It separates browser estimates from unmeasured physical
+  round trip and saved scoring compensation, with a local redacted report download.
+  Opening it is passive; missing values are unavailable, not zero. Context/input
+  interruption and MIDI's lack of captured audio have explicit copy. Estimates
+  refresh quietly without repeated live-region announcements; the main room and
+  monitoring control remain primary. No diagnostic dashboard or extra modal.
+  Reports use distinct UTC timestamped filenames and include export time separate
+  from capture time. A brief browser/system buffer tip explains the low-latency
+  request and the smaller-buffer/dropout trade-off without promising a round trip.
+- Monitoring off uses crossed headphones, a restrained red tint and explicit
+  action copy. Stopped Direct input offers Start Listening and monitoring in
+  place, with generation-checked completion; selecting a profile never opens
+  capture. Multichannel interfaces expose a compact Input N · Mono selector:
+  one browser channel feeds the amp and reaches both speakers, leaving the dry
+  detector, worklet and recording intact. Changing channels turns monitoring
+  off and retires the previous route through a short fade; re-enable is explicit.
+  Diagnostic copy distinguishes this selection from a browser multichannel mix.
+- Song Listening uses the score room's cycle and upward right-click/long-press
+  picker at the bottom left beside the timeline. Both Session sheets share the
+  explicit Start/Stop/Cancel action; song profile choices remain visible rather
+  than hiding in a second disclosure. The two stage layouts remain distinct.
+- With Direct input selected, the same upward picker has a compact second row:
+  Listening, Backing, Me. Listening reuses Session's Start/Stop/Cancel action;
+  Me is a separate live-monitor opt-in with crossed headphones while muted.
+  Backing affects the accompaniment, not Me or the room master, and never
+  erases individual faders, mutes or Solo. The score host shares its existing
+  backing-parts state; recorded songs use a transient gain mask. Input changes
+  still reset monitoring for safety. The picker is opaque for readability,
+  keyboard reachable, and does not open audio merely by appearing.
 - Song A/B is adjacent to Play and the shared range rail in media seconds,
   with persistent marks, drag/keyboard adjustment and the existing precision
   lens. Both song and score reuse these presentation controls but retain their

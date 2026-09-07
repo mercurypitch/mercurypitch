@@ -195,8 +195,8 @@ export async function installSongAudioProbe(page: Page): Promise<void> {
 }
 
 /** Analyse the actual post-limiter PCM, not requested gain values or callbacks. */
-export async function readSongAudio(page: Page) {
-  return page.evaluate(() => {
+export async function readSongAudio(page: Page, windowBlocks = 1) {
+  return page.evaluate((blocks) => {
     const amplitude = (samples: number[], rate: number, frequency: number) => {
       let real = 0
       let imaginary = 0
@@ -211,8 +211,20 @@ export async function readSongAudio(page: Page) {
       }
       return (2 * Math.hypot(real, imaginary)) / weights
     }
-    const frames = window.__songAudioProbe.frames
-      .filter((frame) => frame.context === 0)
+    const raw = window.__songAudioProbe.frames.filter(
+      (frame) => frame.context === 0,
+    )
+    // The quick mix compares 110 Hz DI against 165 Hz backing. A 1024-sample
+    // Hann window at 48 kHz cannot separate those main lobes, so callers can
+    // join four contiguous probe blocks without changing the audio render.
+    const frames = raw
+      .map((frame, index) => ({
+        ...frame,
+        samples: raw
+          .slice(Math.max(0, index - blocks + 1), index + 1)
+          .flatMap((block) => block.samples),
+      }))
+      .slice(blocks - 1)
       .map((frame) => ({
         time: frame.time,
         rms: Math.sqrt(
@@ -228,5 +240,5 @@ export async function readSongAudio(page: Page) {
           amplitude(frame.samples, frame.rate, 2048),
       }))
     return { frames, micCalls: window.__songAudioProbe.micCalls }
-  })
+  }, windowBlocks)
 }

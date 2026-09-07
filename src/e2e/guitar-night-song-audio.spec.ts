@@ -2,6 +2,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { enterSong, localStemWav, SONG_SECONDS, } from './helpers/guitar-night-song'
 import { installSongAudioProbe, readSongAudio, } from './helpers/guitar-night-audio-probe'
 
@@ -281,7 +282,6 @@ async function openSession(page: Page) {
 
 async function chooseDirectInput(page: Page): Promise<void> {
   const session = await openSession(page)
-  await session.locator('summary').filter({ hasText: 'Input' }).click()
   await session
     .getByRole('button', { name: 'Direct input', exact: true })
     .click()
@@ -291,7 +291,104 @@ async function chooseDirectInput(page: Page): Promise<void> {
   await page.keyboard.press('Escape')
 }
 
-test('keeps backing audible with Direct input and monitors only after opt-in @smoke', async ({
+async function toggleSessionListening(
+  page: Page,
+  active: boolean,
+): Promise<void> {
+  const session = await openSession(page)
+  await session
+    .getByRole('button', {
+      name: active ? 'Stop Listening' : 'Turn on Listening',
+      exact: true,
+    })
+    .click()
+  await expect(
+    session.getByRole('button', {
+      name: active ? 'Turn on Listening' : 'Stop Listening',
+      exact: true,
+    }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
+}
+
+test('restarts monitoring explicitly after Session route and mono channel changes @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await installSongAudioProbe(page)
+  await enterSong(page, 2)
+  const session = await openSession(page)
+  const input = session.getByRole('region', {
+    name: 'Listening input',
+    exact: true,
+  })
+  await input.getByRole('button', { name: 'Direct input', exact: true }).click()
+  expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(0)
+  const startMonitor = session.getByRole('button', {
+    name: 'Start Listening and monitoring',
+    exact: true,
+  })
+  await startMonitor.click()
+  await expect(
+    session.getByRole('button', { name: 'Turn monitoring off', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(1)
+  const channel = session.getByRole('combobox', {
+    name: 'Monitor input channel',
+    exact: true,
+  })
+  await expect(channel.getByRole('option')).toHaveCount(2)
+  await channel.selectOption('1')
+  await expect(channel).toHaveValue('1')
+  const monitor = session.getByRole('button', {
+    name: 'Turn monitoring on',
+    exact: true,
+  })
+  await expect(monitor).toHaveAttribute('aria-pressed', 'false')
+  await monitor.scrollIntoViewIfNeeded()
+  const path =
+    process.env.GUITAR_SONG_LISTENING_ARTIFACTS === undefined
+      ? test.info().outputPath('song-monitor-channel-off-390.png')
+      : join(
+          process.env.GUITAR_SONG_LISTENING_ARTIFACTS,
+          'song-monitor-channel-off-390.png',
+        )
+  await page.screenshot({ path })
+  await test.info().attach('song-monitor-channel-off-390.png', {
+    path,
+    contentType: 'image/png',
+  })
+  await monitor.click()
+  await expect(
+    session.getByRole('button', { name: 'Turn monitoring off', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await input.getByRole('button', { name: 'Room mic', exact: true }).click()
+  await expect(
+    session.getByRole('button', { name: 'Turn on Listening', exact: true }),
+  ).toBeVisible()
+  // MicManager deliberately keeps a released stream warm for two seconds.
+  // Wait for actual release so this checks a fresh restart, not a reused stream.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__songAudioProbe.micTracks.every(
+          (track) => track.readyState === 'ended',
+        ),
+      ),
+    )
+    .toBe(true)
+  await input.getByRole('button', { name: 'Direct input', exact: true }).click()
+  await expect(startMonitor).toBeEnabled()
+  expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(1)
+  await startMonitor.click()
+  await expect(
+    session.getByRole('button', { name: 'Turn monitoring off', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(2)
+  await expect(session).toBeVisible()
+})
+
+test('quick Listening mix independently mutes backing and Me in rendered Direct-input audio @smoke', async ({
   page,
 }) => {
   await installSongAudioProbe(page)
@@ -299,12 +396,18 @@ test('keeps backing audible with Direct input and monitors only after opt-in @sm
   await chooseDirectInput(page)
   await page.getByRole('button', { name: 'Play backing', exact: true }).click()
   expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(0)
-  await page
+  const listening = page.getByTestId('guitar-night-listening-cycle')
+  await listening.click({ button: 'right' })
+  const quick = page.getByRole('group', { name: 'Direct input quick controls' })
+  await quick
     .getByRole('button', { name: 'Turn on Listening', exact: true })
     .click()
   await expect(
-    page.getByRole('button', { name: 'Stop Listening', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true')
+    quick.getByRole('button', { name: 'Stop Listening', exact: true }),
+  ).toBeEnabled()
+  await expect(
+    page.getByTestId('guitar-night-listening-cycle'),
+  ).toHaveAttribute('data-state', 'interface')
   await expect(
     page.getByRole('button', { name: 'Pause backing', exact: true }),
   ).toBeVisible()
@@ -314,14 +417,15 @@ test('keeps backing audible with Direct input and monitors only after opt-in @sm
     0.005,
   )
   const unmonitored = Math.max(...dry.frames.map((frame) => frame.mic))
-  const session = await openSession(page)
-  const monitor = session.getByRole('button', { name: /Hear my input/ })
+  const monitor = quick.getByRole('button', {
+    name: 'Turn on Me monitoring',
+    exact: true,
+  })
   await expect(monitor).toHaveAttribute('aria-pressed', 'false')
   await monitor.click()
   await expect(
-    session.getByRole('button', { name: /Monitoring on/ }),
+    quick.getByRole('button', { name: 'Mute Me monitoring', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
-  await page.keyboard.press('Escape')
   await captureSeconds(page, 0.6)
   const wet = await readSongAudio(page)
   expect(Math.max(...wet.frames.map((frame) => frame.mic))).toBeGreaterThan(
@@ -330,7 +434,29 @@ test('keeps backing audible with Direct input and monitors only after opt-in @sm
   await expect(
     page.getByRole('button', { name: 'Pause backing', exact: true }),
   ).toBeVisible()
-  await page
+  await quick.getByRole('button', { name: 'Mute backing', exact: true }).click()
+  await captureSeconds(page, 0.6)
+  const justMe = (await readSongAudio(page, 4)).frames.slice(8)
+  expect(justMe.length).toBeGreaterThan(0)
+  expect(Math.max(...justMe.map((frame) => frame.backing))).toBeLessThan(0.003)
+  expect(Math.max(...justMe.map((frame) => frame.mic))).toBeGreaterThan(0.005)
+  await quick
+    .getByRole('button', { name: 'Unmute backing', exact: true })
+    .click()
+  await quick
+    .getByRole('button', { name: 'Mute Me monitoring', exact: true })
+    .click()
+  await captureSeconds(page, 0.6)
+  const justBacking = (await readSongAudio(page, 4)).frames.slice(8)
+  expect(justBacking.length).toBeGreaterThan(0)
+  expect(
+    Math.max(...justBacking.map((frame) => frame.backing)),
+  ).toBeGreaterThan(0.005)
+  expect(Math.max(...justBacking.map((frame) => frame.mic))).toBeLessThan(0.003)
+  await expect(
+    quick.getByRole('button', { name: 'Stop Listening', exact: true }),
+  ).toBeEnabled()
+  await quick
     .getByRole('button', { name: 'Stop Listening', exact: true })
     .click()
   await expect
@@ -358,12 +484,10 @@ test('preserves room-microphone exclusion while song backing is playing @smoke',
   await installSongAudioProbe(page)
   await enterSong(page, 2)
   await page.getByRole('button', { name: 'Play backing', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Turn on Listening', exact: true })
-    .click()
+  await toggleSessionListening(page, false)
   await expect(
-    page.getByRole('button', { name: 'Stop Listening', exact: true }),
-  ).toBeVisible()
+    page.getByTestId('guitar-night-listening-cycle'),
+  ).toHaveAttribute('data-state', 'microphone')
   await expect(
     page.getByRole('button', { name: /^(Play|Resume) backing$/ }),
   ).toBeVisible()
@@ -374,8 +498,8 @@ test('preserves room-microphone exclusion while song backing is playing @smoke',
   )
   await page.getByRole('button', { name: /^(Play|Resume) backing$/ }).click()
   await expect(
-    page.getByRole('button', { name: 'Turn on Listening', exact: true }),
-  ).toBeVisible()
+    page.getByTestId('guitar-night-listening-cycle'),
+  ).toHaveAttribute('data-state', 'off')
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -397,16 +521,16 @@ for (const exit of ['tuner', 'songs'] as const) {
     await page
       .getByRole('button', { name: 'Play backing', exact: true })
       .click()
-    await page
-      .getByRole('button', { name: 'Turn on Listening', exact: true })
+    await toggleSessionListening(page, false)
+    await expect(
+      page.getByTestId('guitar-night-listening-cycle'),
+    ).toHaveAttribute('data-state', 'interface')
+    const session = await openSession(page)
+    await session
+      .getByRole('button', { name: 'Turn monitoring on', exact: true })
       .click()
     await expect(
-      page.getByRole('button', { name: 'Stop Listening', exact: true }),
-    ).toBeVisible()
-    const session = await openSession(page)
-    await session.getByRole('button', { name: /Hear my input/ }).click()
-    await expect(
-      session.getByRole('button', { name: /Monitoring on/ }),
+      session.getByRole('button', { name: 'Turn monitoring off', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true')
     await page.keyboard.press('Escape')
     await captureSeconds(page, 0.4)
@@ -449,7 +573,10 @@ for (const exit of ['tuner', 'songs'] as const) {
       ).toBeVisible()
       const settings = await openSession(page)
       await expect(
-        settings.getByRole('button', { name: /Hear my input/ }),
+        settings.getByRole('button', {
+          name: 'Start Listening and monitoring',
+          exact: true,
+        }),
       ).toHaveAttribute('aria-pressed', 'false')
     } else {
       await expect(
@@ -462,11 +589,14 @@ for (const exit of ['tuner', 'songs'] as const) {
         page.getByRole('button', { name: 'Resume backing', exact: true }),
       ).toBeVisible()
       await expect(
-        page.getByRole('button', { name: 'Turn on Listening', exact: true }),
-      ).toBeVisible()
+        page.getByTestId('guitar-night-listening-cycle'),
+      ).toHaveAttribute('data-state', 'off')
       const settings = await openSession(page)
       await expect(
-        settings.getByRole('button', { name: /Hear my input/ }),
+        settings.getByRole('button', {
+          name: 'Start Listening and monitoring',
+          exact: true,
+        }),
       ).toHaveAttribute('aria-pressed', 'false')
     }
   })
