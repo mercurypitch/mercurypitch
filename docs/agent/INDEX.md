@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 32.7k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 32.8k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.3k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.8k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 14.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
@@ -89,7 +89,7 @@ These are the rules that break things when ignored.
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.8k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.6k | Glass — the shattering voice mirror (P2: self-voice loop). |
-| `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 4.5k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
+| `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 4.6k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.3k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.5k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
@@ -197,7 +197,7 @@ These are the rules that break things when ignored.
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
-| [notifications-store.ts](../../src/stores/notifications-store.ts) | 300 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
+| [notifications-store.ts](../../src/stores/notifications-store.ts) | 350 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 250 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |

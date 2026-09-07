@@ -17,7 +17,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { singingCaptureActive } from '@/stores/mic-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
-import { voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
+import { setVoiceControlEngine, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
 import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
 import { createLocalWhisperListener } from './local-whisper-listener'
@@ -337,13 +337,14 @@ export function useVoiceControlController(
           { channel: 'voice-control-permission' },
         )
       } else if (detail === 'local-engine-failed') {
-        // Almost always the model download (network hiccup or a
-        // rate-limited model host) — the service retries on the next
-        // start, so tell the user the retry is one toggle away.
-        showNotification(
-          'The on-device voice model failed to load. Toggle voice control to retry the download, or switch to the Browser engine in Settings.',
-          'warning',
-        )
+        // The model did not load: a network hiccup, a rate-limited model
+        // host, or — on iOS, every time — a device that cannot run it at
+        // all. Leaving voice control off until somebody visits Settings
+        // means the feature is simply broken there, so fall back to the
+        // browser engine and say so. The preference itself changes, so the
+        // next visit starts on the engine that works; picking the on-device
+        // one again in Settings is one tap and retries the download.
+        fallBackToBrowserEngine()
       }
     },
     onLatency: (roundTripMs: number) => {
@@ -407,6 +408,38 @@ export function useVoiceControlController(
       return
     }
     startListening()
+  }
+
+  /**
+   * Move off a local engine that will not load, onto the browser one.
+   *
+   * Only the choice is made here: the engine effect further down already
+   * owns the swap — it stops the old listener, checks support and starts the
+   * new one — so doing any of that here would restart twice and stack two
+   * toasts. The one case it cannot phrase well is this one, where its
+   * "pick Whisper or Moonshine instead" would name the engine that just
+   * failed, so a browser with no speech engine is answered here and the
+   * preference is left alone.
+   */
+  const fallBackToBrowserEngine = (): void => {
+    if (voiceControlEngine() === 'webspeech') return
+    if (!listenerFor('webspeech').isSupported) {
+      stopListening()
+      setEnabled(false)
+      showNotification(
+        'The on-device voice model would not load, and this browser has no speech engine to fall back to. Voice control is off.',
+        'warning',
+        { channel: 'voice-control-engine-fallback' },
+      )
+      return
+    }
+    setErrorDetail(null)
+    showNotification(
+      'The on-device voice model would not load, so voice control switched to the browser engine. Pick the on-device one again in Settings to retry the download.',
+      'warning',
+      { channel: 'voice-control-engine-fallback' },
+    )
+    setVoiceControlEngine('webspeech')
   }
 
   const turnOff = () => {

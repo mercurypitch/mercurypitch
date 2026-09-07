@@ -22,7 +22,7 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { songImportAcceptForDevice } from '@/features/play-along/song-import'
 import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
-import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -225,6 +225,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     openVoiceHelp: () => setShowVoiceHelp(true),
   })
   onCleanup(registerVoiceCommands(() => voiceHelpCommands))
+  // The way out, spoken. This document has no tabs, so the shell's "go
+  // home" / "go to singing" set never loads here and a player with the
+  // phone across the room had no phrase that left the page.
+  const leaveCommands = createLeaveForStudioVoiceCommands()
+  onCleanup(registerVoiceCommands(() => leaveCommands))
   const firstWinConfig = createMemo(() =>
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )

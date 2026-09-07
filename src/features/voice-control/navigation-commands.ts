@@ -7,12 +7,17 @@
 // current practice scope and UI mode answer; a hidden tab's phrase reports
 // "not available" instead of making the tab appear. Registered by App right
 // after the transport set, for the shell's lifetime.
+//
+// The standalone rooms (Karaoke Night, Guitar Night) are a different
+// document with no tabs, so they register the two smaller sets instead:
+// `createVoiceHelpCommands` and `createLeaveForStudioVoiceCommands`, the
+// latter being their only spoken way back into the app.
 
 import type { Accessor } from 'solid-js'
 import { requestKaraokeAutoplay } from '@/features/stem-mixer/karaoke-launch-intent'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
-import { navigateTo } from '@/lib/hash-router'
+import { buildHash, navigateTo } from '@/lib/hash-router'
 import { isNarrow } from '@/lib/use-viewport'
 import { getPlaylistsReactive, isPlaylistActive, jumpTo, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -68,6 +73,25 @@ const TAB_SPOKEN_NAMES: Array<{
 ]
 
 /**
+ * Leaving the current document, with the page injectable for tests.
+ *
+ * A full page load, not a hash change: a standalone room and the app shell
+ * are different documents, and the tab set below uses the same door to
+ * reach Karaoke Night.
+ */
+function resolveLeaveForPage(
+  deps: NavigationVoiceDeps,
+): (path: string) => void {
+  return (path: string): void => {
+    if (deps.leaveForPage !== undefined) {
+      deps.leaveForPage(path)
+      return
+    }
+    window.location.assign(path)
+  }
+}
+
+/**
  * "What can I say" on its own, because not every surface has tabs.
  *
  * The standalone Karaoke Night page registers Mercury Sing and the mixer's
@@ -99,6 +123,78 @@ export function createVoiceHelpCommands(
   ]
 }
 
+/**
+ * Tabs a standalone document offers as the way back into the app shell.
+ *
+ * Deliberately short — this is an exit, not a second tab bar. Home leads
+ * because it answers under every scope and UI mode, so there is always one
+ * phrase that gets a singer out; the rest are the surfaces someone leaving
+ * a room actually asks for next.
+ */
+const LEAVE_FOR_STUDIO_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
+  TAB_HOME,
+  TAB_SINGING,
+  TAB_KARAOKE,
+  TAB_PIANO,
+  TAB_GUITAR,
+  TAB_EXERCISES,
+  TAB_CHALLENGES,
+  TAB_SETTINGS,
+])
+
+/**
+ * Wording that only means something from outside the shell — inside the app
+ * you are already in the studio, so these stay off the tab set.
+ */
+const BACK_TO_STUDIO_PHRASES = ['back to the studio', 'back to the app']
+
+/**
+ * Getting out of a standalone room by voice.
+ *
+ * Karaoke Night, Guitar Night and the other standalone documents are not
+ * the app shell: the tab set below never loads there, so no phrase that
+ * LEAVES a surface existed on them. Voice could carry a singer into a room
+ * and then had nothing to say that got them out again — the room's own
+ * commands and "what can I say" were the entire vocabulary.
+ *
+ * Same visibility rule as the tab set: a tab hidden by the user's practice
+ * scope or simple mode is not somewhere voice may put them. Home and
+ * Settings are visible under every combination, so the exit never closes.
+ */
+export function createLeaveForStudioVoiceCommands(
+  deps: NavigationVoiceDeps = {},
+): VoiceCommand[] {
+  const notSuspended = () => deps.suspended?.() !== true
+  const leaveForPage = resolveLeaveForPage(deps)
+
+  return TAB_SPOKEN_NAMES.filter(({ tab }) =>
+    LEAVE_FOR_STUDIO_TABS.has(tab),
+  ).map(({ tab, names, extra }) => ({
+    // Distinct from the tab set's `nav.<tab>`: a page could in principle
+    // hold both, and two commands must never share an id.
+    id: `nav.leave.${tab}`,
+    label: `Go to ${tabLabel(tab)}`,
+    phrases: [
+      ...names.flatMap((name) => [
+        `go to ${name}`,
+        `open ${name}`,
+        `show ${name}`,
+        `switch to ${name}`,
+      ]),
+      ...(extra ?? []),
+      ...(tab === TAB_HOME ? BACK_TO_STUDIO_PHRASES : []),
+    ],
+    available: () =>
+      notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
+    run: () => {
+      // Built by the router rather than spelled out here, so the tab route
+      // format stays in one place.
+      leaveForPage(`/#${buildHash({ type: 'tab', tab })}`)
+      return `Go to ${tabLabel(tab)}`
+    },
+  }))
+}
+
 export function createNavigationVoiceCommands(
   deps: NavigationVoiceDeps = {},
 ): VoiceCommand[] {
@@ -115,13 +211,7 @@ export function createNavigationVoiceCommands(
     onResolved?.(true)
   }
   const narrow = (): boolean => (deps.isNarrow ?? isNarrow)()
-  const leaveForPage = (path: string): void => {
-    if (deps.leaveForPage !== undefined) {
-      deps.leaveForPage(path)
-      return
-    }
-    window.location.assign(path)
-  }
+  const leaveForPage = resolveLeaveForPage(deps)
 
   const commands: VoiceCommand[] = TAB_SPOKEN_NAMES.map(
     ({ tab, names, extra }) => ({
