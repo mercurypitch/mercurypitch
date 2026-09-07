@@ -195,17 +195,17 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
     if (monitorRequestFailed())
       return 'Input could not open. Check Listening above and try again.'
     if (props.monitoringActive()) {
-      return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
+      return `Your guitar plays through the amp. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
     }
     if (props.inputProfile() !== 'interface') {
       return 'Choose Direct input to hear your guitar through this amp.'
     }
     if (!props.canMonitor()) {
       return canStartMonitor()
-        ? 'This starts Direct-input Listening and monitoring. Headphones recommended; start at a low level.'
-        : 'Start Listening above to enable monitoring. Headphones recommended.'
+        ? 'This starts Direct-input Listening and your live sound through the amp.'
+        : 'Start Listening above to enable your live sound through the amp.'
     }
-    return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
+    return `Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
   }
 
   return (

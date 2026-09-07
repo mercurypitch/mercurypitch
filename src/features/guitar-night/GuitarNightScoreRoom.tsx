@@ -40,6 +40,7 @@ import { GuitarNightListeningCycle } from './GuitarNightListeningCycle'
 import { GuitarNightListeningQuickControls } from './GuitarNightListeningQuickControls'
 import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightMonitorToggle } from './GuitarNightMixToggle'
 import { GuitarNightScoreDebugDock } from './GuitarNightScoreDebug'
 import { GuitarNightScoreSheet } from './GuitarNightScoreSheet'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
@@ -2404,6 +2405,18 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                 </span>
                 <small>Target</small>
               </button>
+              <Show when={listening.inputProfile() === 'interface'}>
+                <GuitarNightMonitorToggle
+                  compact
+                  enabled={listening.ampMonitoringEnabled()}
+                  active={listening.ampMonitoringActive()}
+                  available={listening.canAmpMonitor()}
+                  disabled={
+                    props.suspended?.() === true || toolTransitionPending()
+                  }
+                  onToggle={listening.setAmpMonitoringEnabled}
+                />
+              </Show>
             </div>
             <Show when={roomMicMixWarning()}>
               <p

@@ -186,6 +186,24 @@ for (const width of [1440, 390]) {
     const room = page.getByTestId('guitar-night-score-room')
     await room.getByLabel('Session controls', { exact: true }).click()
     const cycle = room.getByTestId('guitar-night-listening-cycle')
+    const dockMix = room.getByRole('group', {
+      name: 'Listening playback mix',
+      exact: true,
+    })
+    await expect(
+      dockMix.getByRole('button', {
+        name: 'Turn on your monitoring',
+        exact: true,
+      }),
+    ).toBeDisabled()
+    await expect(
+      dockMix.getByRole('button', { name: 'Hear target guide', exact: true }),
+    ).toBeVisible()
+    const dockPath = test.info().outputPath(`score-mix-dock-${width}.png`)
+    await page.screenshot({ path: dockPath })
+    await test
+      .info()
+      .attach('Score mix dock', { path: dockPath, contentType: 'image/png' })
     await cycle.click({ button: 'right' })
     const quick = room.getByRole('group', {
       name: 'Direct input quick controls',
@@ -194,7 +212,10 @@ for (const width of [1440, 390]) {
       quick.getByRole('button', { name: 'Turn on Listening', exact: true }),
     ).toBeEnabled()
     await expect(
-      quick.getByRole('button', { name: 'Turn on Me monitoring', exact: true }),
+      quick.getByRole('button', {
+        name: 'Turn on your monitoring',
+        exact: true,
+      }),
     ).toBeDisabled()
     await quick
       .getByRole('button', { name: 'Mute backing', exact: true })
@@ -202,10 +223,13 @@ for (const width of [1440, 390]) {
     await expect(
       quick.getByRole('button', { name: 'Unmute backing', exact: true }),
     ).toHaveAttribute('aria-pressed', 'false')
-    const box = await quick.boundingBox()
-    if (box === null) throw new Error('Score quick mix has no layout')
-    expect(box.x).toBeGreaterThanOrEqual(7)
-    expect(box.x + box.width).toBeLessThanOrEqual(width - 7)
+    // The shared picker clamps its position on the next animation frame.
+    await expect(async () => {
+      const box = await quick.boundingBox()
+      if (box === null) throw new Error('Score quick mix has no layout')
+      expect(box.x).toBeGreaterThanOrEqual(7)
+      expect(box.x + box.width).toBeLessThanOrEqual(width - 7)
+    }).toPass({ timeout: 1500 })
     const path = test.info().outputPath(`score-quick-mix-${width}.png`)
     await page.screenshot({ path })
     await test

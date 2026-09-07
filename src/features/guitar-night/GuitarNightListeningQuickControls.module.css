@@ -83,6 +83,22 @@
   line-height: 1.4;
 }
 
+/* The pedalboard uses the same actions with a smaller, labelled touch target. */
+.toggle.compact {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.3rem 0.4rem;
+  gap: 0.18rem;
+}
+
+.compact small {
+  display: none;
+}
+
+.compact strong {
+  font-size: 0.62rem;
+}
+
 @media (forced-colors: active) {
   .toggle[data-on='true'] {
     border-color: Highlight;

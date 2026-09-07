@@ -1132,8 +1132,8 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   Song and score shall retain their own layout and playback safety policies.
 - **REQ-GN-SONG-038 — Direct-input quick mix:** WHERE Direct input is selected,
   both hosts' shared upward Listening picker shall expose compact Listening
-  Start/Stop/Cancel, Backing mute, and Me live-monitor controls below its route
-  choices. Opening the picker shall not acquire input or create audio. Me shall
+  Start/Stop/Cancel, Backing mute, and You live-monitor controls below its route
+  choices. Opening the picker shall not acquire input or create audio. You shall
   require active Direct Listening and a separate explicit opt-in; input teardown
   shall reset it. Pending Listening shall remain cancellable from the picker.
   Song Backing mute shall affect only the recorded tracks, not the live monitor
@@ -1151,6 +1151,16 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   dropouts, and the app's low-latency request does not control actual device
   buffering. This advice shall not imply a physical round-trip measurement or
   require Chrome-specific launch flags for every user.
+- **REQ-GN-SONG-040 — One-click personal mix:** The song transport shall expose
+  Backing immediately below its bottom-left Listening control. WHERE Direct
+  input is selected, both song and score transports shall also expose You in
+  that row, using the same live-monitor state and action as the upward picker.
+  Score rehearsal shall retain its distinct Backing and Target controls. You
+  shall remain unavailable until Direct-input Listening is active, without
+  preventing an already-enabled monitor from being muted. All toggles shall
+  retain at least 44px touch targets and name their action accessibly. Direct
+  monitoring copy shall not show a blanket microphone-feedback warning;
+  room-microphone playback warnings shall remain route-specific.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

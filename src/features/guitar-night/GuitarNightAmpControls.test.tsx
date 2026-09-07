@@ -276,15 +276,16 @@ describe('GuitarNightAmpControls', () => {
       name: /Turn monitoring on/i,
     })
     expect(monitorButton).toHaveAccessibleDescription(
-      'Headphones recommended. Browser latency applies. Saved takes stay dry.',
+      'Browser latency applies. Saved takes stay dry.',
     )
     fireEvent.click(monitorButton)
     expect(monitor).toHaveBeenCalledWith(true)
     expect(
       screen.getByText(
-        'Headphones recommended. Browser latency applies. Saved takes stay dry.',
+        'Your guitar plays through the amp. Browser latency applies. Saved takes stay dry.',
       ),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/Headphones recommended/)).not.toBeInTheDocument()
   })
 
   it('uses the shared preset catalogue and discloses the same IR rather than offering a fake cabinet choice', () => {

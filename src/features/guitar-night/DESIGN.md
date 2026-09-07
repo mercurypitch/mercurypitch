@@ -113,13 +113,21 @@ workspace.
   explicit Start/Stop/Cancel action; song profile choices remain visible rather
   than hiding in a second disclosure. The two stage layouts remain distinct.
 - With Direct input selected, the same upward picker has a compact second row:
-  Listening, Backing, Me. Listening reuses Session's Start/Stop/Cancel action;
-  Me is a separate live-monitor opt-in with crossed headphones while muted.
-  Backing affects the accompaniment, not Me or the room master, and never
+  Listening, Backing, You. Listening reuses Session's Start/Stop/Cancel action;
+  You is a separate live-monitor opt-in with crossed headphones while muted.
+  Backing affects the accompaniment, not You or the room master, and never
   erases individual faders, mutes or Solo. The score host shares its existing
   backing-parts state; recorded songs use a transient gain mask. Input changes
   still reset monitoring for safety. The picker is opaque for readability,
   keyboard reachable, and does not open audio merely by appearing.
+- Backing is also one click away directly below the song's bottom-left Listening
+  control; Direct input adds You beside it. Tab rehearsal retains Backing and
+  Target and adds the same You action. Shared toggles mirror the picker without
+  introducing another audio owner or remembered monitor opt-in. Muted monitoring
+  keeps its crossed-headphone/red treatment, and touch targets remain 44px.
+  Direct-input copy explains the actual action and browser latency rather than
+  warning every interface player about microphone feedback. Room-mic playback
+  warnings remain confined to that route.
 - Song A/B is adjacent to Play and the shared range rail in media seconds,
   with persistent marks, drag/keyboard adjustment and the existing precision
   lens. Both song and score reuse these presentation controls but retain their

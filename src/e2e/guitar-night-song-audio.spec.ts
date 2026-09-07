@@ -388,7 +388,7 @@ test('restarts monitoring explicitly after Session route and mono channel change
   await expect(session).toBeVisible()
 })
 
-test('quick Listening mix independently mutes backing and Me in rendered Direct-input audio @smoke', async ({
+test('one-click song mix independently mutes backing and your live input @smoke', async ({
   page,
 }) => {
   await installSongAudioProbe(page)
@@ -408,6 +408,11 @@ test('quick Listening mix independently mutes backing and Me in rendered Direct-
   await expect(
     page.getByTestId('guitar-night-listening-cycle'),
   ).toHaveAttribute('data-state', 'interface')
+  await page.keyboard.press('Escape')
+  const mix = page.getByRole('group', {
+    name: 'Song playback mix',
+    exact: true,
+  })
   await expect(
     page.getByRole('button', { name: 'Pause backing', exact: true }),
   ).toBeVisible()
@@ -417,14 +422,14 @@ test('quick Listening mix independently mutes backing and Me in rendered Direct-
     0.005,
   )
   const unmonitored = Math.max(...dry.frames.map((frame) => frame.mic))
-  const monitor = quick.getByRole('button', {
-    name: 'Turn on Me monitoring',
+  const monitor = mix.getByRole('button', {
+    name: 'Turn on your monitoring',
     exact: true,
   })
   await expect(monitor).toHaveAttribute('aria-pressed', 'false')
   await monitor.click()
   await expect(
-    quick.getByRole('button', { name: 'Mute Me monitoring', exact: true }),
+    mix.getByRole('button', { name: 'Mute your monitoring', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   await captureSeconds(page, 0.6)
   const wet = await readSongAudio(page)
@@ -434,17 +439,15 @@ test('quick Listening mix independently mutes backing and Me in rendered Direct-
   await expect(
     page.getByRole('button', { name: 'Pause backing', exact: true }),
   ).toBeVisible()
-  await quick.getByRole('button', { name: 'Mute backing', exact: true }).click()
+  await mix.getByRole('button', { name: 'Mute backing', exact: true }).click()
   await captureSeconds(page, 0.6)
   const justMe = (await readSongAudio(page, 4)).frames.slice(8)
   expect(justMe.length).toBeGreaterThan(0)
   expect(Math.max(...justMe.map((frame) => frame.backing))).toBeLessThan(0.003)
   expect(Math.max(...justMe.map((frame) => frame.mic))).toBeGreaterThan(0.005)
-  await quick
-    .getByRole('button', { name: 'Unmute backing', exact: true })
-    .click()
-  await quick
-    .getByRole('button', { name: 'Mute Me monitoring', exact: true })
+  await mix.getByRole('button', { name: 'Unmute backing', exact: true }).click()
+  await mix
+    .getByRole('button', { name: 'Mute your monitoring', exact: true })
     .click()
   await captureSeconds(page, 0.6)
   const justBacking = (await readSongAudio(page, 4)).frames.slice(8)
@@ -453,6 +456,7 @@ test('quick Listening mix independently mutes backing and Me in rendered Direct-
     Math.max(...justBacking.map((frame) => frame.backing)),
   ).toBeGreaterThan(0.005)
   expect(Math.max(...justBacking.map((frame) => frame.mic))).toBeLessThan(0.003)
+  await listening.click({ button: 'right' })
   await expect(
     quick.getByRole('button', { name: 'Stop Listening', exact: true }),
   ).toBeEnabled()

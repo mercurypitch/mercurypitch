@@ -347,18 +347,14 @@ describe('Guitar Night calibration lock', () => {
 
     // The song's shared route cycle is on the dock; calibration cancellation
     // remains the explicit Listening action inside Session.
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Session controls', exact: true }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     const listeningButton = screen.getByRole('button', {
       name: 'Stop calibration',
     })
     expect(listeningButton.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(listeningButton)
     expect(listening.stop).toHaveBeenCalledOnce()
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Close Session', exact: true }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session' }))
     expect(
       (screen.getByLabelText('Play backing') as HTMLButtonElement).disabled,
     ).toBe(true)
