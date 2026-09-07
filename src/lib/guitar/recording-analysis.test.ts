@@ -52,6 +52,52 @@ describe('guitar PCM capture', () => {
     capture.command({ type: 'stop', reason: null })
     expect(messages.at(-1)).toMatchObject({ frames: 8, clockAnomalies: 1 })
   })
+  it('ends exactly at the frame limit, retaining only the partial final block', () => {
+    const messages: GuitarCaptureMessage[] = []
+    const capture = createGuitarPcmCapture((message) => messages.push(message))
+    capture.command({ type: 'buffer', buffer: new ArrayBuffer(32) })
+    capture.command({ type: 'start', maxFrames: 5 })
+    capture.process(Float32Array.from([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]), 100)
+    const pcm = messages.find((message) => message.type === 'pcm')!
+    expect(pcm.frames).toBe(5)
+    expect([...new Float32Array(pcm.buffer).slice(0, pcm.frames)]).toEqual([
+      ...Float32Array.from([0.1, 0.2, 0.3, 0.4, 0.5]),
+    ])
+    expect(messages.at(-1)).toEqual({
+      type: 'stopped',
+      frames: 5,
+      clockAnomalies: 0,
+      reason: 'The five-minute recording limit was reached.',
+    })
+    const count = messages.length
+    capture.process(new Float32Array(128), 107)
+    capture.command({ type: 'stop', reason: null })
+    expect(messages).toHaveLength(count)
+  })
+  it('flushes a disconnected input once instead of silently appending silence', () => {
+    const messages: GuitarCaptureMessage[] = []
+    const capture = createGuitarPcmCapture((message) => messages.push(message))
+    capture.command({ type: 'buffer', buffer: new ArrayBuffer(32) })
+    capture.command({ type: 'start', maxFrames: 100 })
+    capture.process(undefined, 0)
+    expect(messages).toEqual([])
+    capture.process(Float32Array.from([0.25, -0.25]), 128)
+    capture.process(undefined, 130)
+    expect(messages.find((message) => message.type === 'pcm')).toMatchObject({
+      firstFrame: 0,
+      frames: 2,
+    })
+    expect(messages.at(-1)).toEqual({
+      type: 'stopped',
+      frames: 2,
+      clockAnomalies: 0,
+      reason: 'Audio input was disconnected.',
+    })
+    capture.process(new Float32Array(128), 256)
+    expect(
+      messages.filter((message) => message.type === 'stopped'),
+    ).toHaveLength(1)
+  })
 })
 
 describe('recorded melody', () => {

@@ -48,6 +48,14 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### A late acknowledgement must not clear a newer phase deadline
+
+**Symptom:** quickly stopping a recorder that never finished could leave it waiting forever.
+**Cause:** a queued start acknowledgement cleared the timeout already guarding Stop.
+**Rule:** retire a deadline only while its own phase is current; a start acknowledgement
+may still provide timing evidence after Stop but must leave the stop watchdog armed.
+**See:** `src/lib/guitar/recording-capture.ts` and its late-start regression test.
+
 ### Never flip the page mic indicator from a non-page consumer
 
 **Symptom:** after using the Karaoke stem mixer, the Singing tab's mic toggle
