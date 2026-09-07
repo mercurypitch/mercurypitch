@@ -369,6 +369,34 @@ test('recording borrows live monitoring without muting, adding an output context
   await expect
     .poll(() => page.evaluate(() => window.__songAudioProbe.frames.length))
     .toBeGreaterThan(30)
+  // The amp runs its Lite tone until the cabinet impulse response has been
+  // fetched, checksummed and decoded, then crossfades to Studio, and that swap
+  // changes the monitored level on its own. On a loaded runner it lands
+  // between the two samples below and reads as the recording changing the mix,
+  // which is the one thing this test is asking about. Reproduced by holding
+  // the cabinet request back a couple of seconds: the ratio goes to 1.36.
+  // Waiting on the "Cabinet IR ready" status is not enough, because the
+  // stage's own crossfade follows the decode. So wait for the level itself to
+  // stop moving.
+  const micLevel = async (): Promise<number> => {
+    const read = await readSongAudio(page, 8)
+    return (
+      read.frames.reduce((sum, frame) => sum + frame.mic, 0) /
+      read.frames.length
+    )
+  }
+  let settling = await micLevel()
+  await expect
+    .poll(
+      async () => {
+        const next = await micLevel()
+        const drift = Math.abs(next / settling - 1)
+        settling = next
+        return drift
+      },
+      { intervals: [250], timeout: 20000 },
+    )
+    .toBeLessThan(0.02)
   const before = await readSongAudio(page, 8)
   const beforeFrames = await page.evaluate(
     () => window.__songAudioProbe.frames.length,
