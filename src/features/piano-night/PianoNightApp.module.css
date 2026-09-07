@@ -1564,7 +1564,8 @@
 }
 
 /* Phone landscape only (see the landscape block). */
-.mobileMoreMenu {
+.mobileMoreMenu,
+.mobileMoreScrim {
   display: none;
 }
 
@@ -2673,7 +2674,7 @@
   }
 }
 
-@media (max-width: 680px), (max-width: 900px) and (max-height: 500px) {
+@media (max-width: 680px), (max-width: 1000px) and (max-height: 500px) {
   .shell {
     --keybed-height: 112px;
     --fallboard-height: 70px;
@@ -2866,7 +2867,7 @@
 }
 
 @media (max-width: 680px),
-  (max-width: 900px) and (max-height: 500px),
+  (max-width: 1000px) and (max-height: 500px),
   (max-width: 1180px) and (hover: none) and (pointer: coarse) {
   .whiteKeys button[data-in-range='false'],
   .blackKeys button[data-in-range='false'] {
@@ -2882,7 +2883,7 @@
   }
 }
 
-@media (max-width: 900px) and (max-height: 500px) {
+@media (max-width: 1000px) and (max-height: 500px) {
   .shell {
     --keybed-height: 84px;
     /* No fallboard row: the transport shares the nav row below. */
@@ -2925,7 +2926,8 @@
     height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     border: 0;
-    background: transparent;
+    border-top: 1px solid rgb(181 138 80 / 24%);
+    background: rgb(4 6 8 / 97%);
     box-shadow: none;
   }
   .transport {
@@ -2942,12 +2944,32 @@
     flex: 1 1 60px;
     min-width: 48px;
   }
+  /* The fallboard is fixed inside the stage, whose stacking context keeps
+     it under this nav. So the nav's own box paints nothing and lets taps
+     through; its three buttons carry the bar's surface themselves, and the
+     transport shows and answers between them. */
   .mobileNav {
     display: flex;
     align-items: stretch;
+    border-top: 0;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
   }
   .mobileNav > * {
     flex: 0 0 64px;
+    pointer-events: auto;
+  }
+  .mobileNav > a,
+  .mobileNav > button {
+    border-top: 1px solid rgb(181 138 80 / 24%);
+    background: rgb(4 6 8 / 97%);
+  }
+  .transport .playButton {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    margin-top: 0;
   }
   .mobileNav > a {
     order: -1;
@@ -2961,9 +2983,20 @@
   .mobileNav .mobileMore {
     display: flex;
   }
+  .mobileMoreScrim {
+    position: fixed;
+    z-index: 94;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: transparent;
+    cursor: default;
+  }
+  /* Above the sheet (90) and the coach (72): the nav stays tappable while
+     they are open, so the menu it opens has to show over them. */
   .mobileMoreMenu {
     position: fixed;
-    z-index: 62;
+    z-index: 95;
     right: 8px;
     bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 8px);
     display: grid;
@@ -3093,5 +3126,14 @@
 
   .fallNote {
     transition: none;
+  }
+}
+
+/* The smallest landscape phones (568px wide): the transport's seven items do
+   not fit the middle of the row, so the volume slider steps out; Settings
+   keeps a volume control. */
+@media (max-width: 640px) and (max-height: 500px) {
+  .transport .transportVolume {
+    display: none;
   }
 }

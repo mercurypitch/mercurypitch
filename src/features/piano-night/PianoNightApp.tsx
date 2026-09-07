@@ -368,6 +368,7 @@ export function PianoNightApp(): JSX.Element {
   // Mirrors the phone-landscape block in PianoNightApp.module.css, so the
   // More button exists only where the bar folds; portrait keeps its six.
   const [phoneLandscape, setPhoneLandscape] = createSignal(false)
+  let moreButton: HTMLButtonElement | undefined
   const [announcement, setAnnouncement] = createSignal('')
 
   const updateRoomGlass = (value: number): void => {
@@ -681,6 +682,11 @@ export function PianoNightApp(): JSX.Element {
   }
 
   const closeTopSurface = (): boolean => {
+    if (moreOpen()) {
+      setMoreOpen(false)
+      moreButton?.focus({ preventScroll: true })
+      return true
+    }
     if (coachOpen()) {
       closeCoach()
       return true
@@ -718,7 +724,7 @@ export function PianoNightApp(): JSX.Element {
     }
     const landscapeMedia =
       typeof window.matchMedia === 'function'
-        ? window.matchMedia('(max-width: 900px) and (max-height: 500px)')
+        ? window.matchMedia('(max-width: 1000px) and (max-height: 500px)')
         : null
     const syncLandscape = (): void => {
       const landscape = landscapeMedia?.matches ?? false
@@ -1227,11 +1233,11 @@ export function PianoNightApp(): JSX.Element {
             bar keeps Studio, the transport, Music and More. */}
         <Show when={phoneLandscape()}>
           <button
+            ref={moreButton}
             class={styles.mobileMore}
             type="button"
             onClick={() => setMoreOpen((open) => !open)}
             aria-label="More Piano Night controls"
-            aria-haspopup="true"
             aria-expanded={moreOpen()}
             aria-controls="piano-night-more"
           >
@@ -1251,15 +1257,19 @@ export function PianoNightApp(): JSX.Element {
         </a>
       </nav>
       <Show when={moreOpen()}>
+        {/* A tap outside puts the menu away; Escape does the same through
+            closeTopSurface, which hands focus back to More. */}
+        <button
+          class={styles.mobileMoreScrim}
+          type="button"
+          aria-label="Close the More menu"
+          onClick={() => setMoreOpen(false)}
+        />
         <div
           id="piano-night-more"
           class={styles.mobileMoreMenu}
           role="group"
           aria-label="More Piano Night controls"
-          inert={blockingModal()}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setMoreOpen(false)
-          }}
         >
           <button
             type="button"
@@ -1271,9 +1281,12 @@ export function PianoNightApp(): JSX.Element {
             <PianoKeys />
             <span>Stage</span>
           </button>
+          {/* Focus moves to More before a surface opens, so the surface
+              remembers a button that still exists when it closes. */}
           <button
             type="button"
             onClick={() => {
+              moreButton?.focus({ preventScroll: true })
               setMoreOpen(false)
               toggleCoach()
             }}
@@ -1286,6 +1299,7 @@ export function PianoNightApp(): JSX.Element {
           <button
             type="button"
             onClick={() => {
+              moreButton?.focus({ preventScroll: true })
               setMoreOpen(false)
               toggleRoom()
             }}
@@ -1300,6 +1314,7 @@ export function PianoNightApp(): JSX.Element {
           <button
             type="button"
             onClick={() => {
+              moreButton?.focus({ preventScroll: true })
               setMoreOpen(false)
               toggleSettings()
             }}
