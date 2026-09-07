@@ -157,7 +157,9 @@ export async function startGuitarRecordingCapture(
     const message = event.data
     if (message.type === 'started') {
       started = true
-      clearTimeout(timer)
+      // A start acknowledgement may already be queued when Stop is pressed.
+      // It must not retire the newer deadline guarding the stop response.
+      if (!stopped) clearTimeout(timer)
       options.onStart(message.audioStartFrame)
     } else if (message.type === 'pcm')
       worker.postMessage(message, [message.buffer])

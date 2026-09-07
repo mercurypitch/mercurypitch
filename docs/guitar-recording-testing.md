@@ -61,8 +61,8 @@ Drum sound work is intentionally separate and deferred.
     touch shortcut. Both views offer confirmed deletion. Switching does not
     autoplay or open Review, and failed/stale loads preserve the selected take.
 
-Publication: this recorder follow-up updates the existing PR 739; it does not
-create another PR or merge the guitar branch.
+Publication: the recorder and final review fixes belong to the existing PR 739.
+Merge and dev deployment follow the repository workflow; drum sound work remains separate.
 
 The authored-tab host, Studio Lead DSP and operating-system/browser audio
 settings are unchanged by the recorder implementation. There is no cloud upload,
@@ -111,6 +111,36 @@ PCM to verify that both sources seek before Play and during playback, Stop rewin
 and the two-row transport stays independent of Listening at 320/390/1440px. It also
 checks quick switching, cancelled/confirmed deletion, and real mobile long press.
 
+### Requirement-to-test coverage
+
+This is behavioral coverage, not a claim of 100% line coverage or every hardware
+combination. Colocated tests exercise actual controllers/services; browser-port
+fakes are complemented by the real worklet/Worker and audio-render browser tests.
+
+| Contract / risk                                                                                             | Automated evidence                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GR-001–003: inert free-form entry, explicit Record, cancellation, MIDI-only refusal                         | `useGuitarRecordingController.test.ts`, `GuitarNightRoom.test.tsx`, `guitar-night-recording.spec.ts`                                                                                               |
+| GR-004–008: selected-channel ownership, bounded buffers, Stop/interruption, frame limit                     | `recording-capture.test.ts`, `recording-analysis.test.ts`, `useGuitarRecordingController.test.ts`, real capture/monitoring in `guitar-night-recording.spec.ts`                                     |
+| GR-009–014: checkpoints, live-draft locks, atomic Keep/retry, exact deletion, local-only migration          | `recording-lock.test.ts`, `guitar-recording-service.test.ts`, `useGuitarRecordingController.test.ts`, reload/Hear Yourself browser flow                                                            |
+| GR-015–018, 021–023: immutable evidence, free timing, corrections/Undo, accepted revisions and real exports | `recording-analysis.test.ts`, `recording-score.test.ts`, `recording-export.test.ts`, `GuitarRecordingReview.test.tsx`, `guitar-recording-service.test.ts`, capture-to-Practice/export browser flow |
+| GR-019–020: existing tab practice and exact-song attachment                                                 | `guitar-score-attachment-service.test.ts`, `useGuitarNightReferenceController.test.tsx`, `guitar-night-recording.spec.ts` and the existing Guitar Night A/B/scoring suites                         |
+| GR-024–029: live/draft highway clock, gallery, compact responsive controls                                  | `useGuitarRecordingStage.test.ts`, `GuitarRecordingGallery.test.tsx`, `GuitarRecordingControls.test.tsx`, `guitar-recorder-layout.spec.ts`, `guitar-recorder-transport.spec.ts`                    |
+| GR-030–034: audio/notes, Current/Clean/Saved amp, stereo, seeking and stale completion                      | `recording-note-player.test.ts`, `recording-playback.test.ts`, `useGuitarRecordingPlayback.test.ts`, `preview-player.test.ts`, real rendered PCM and held-pointer browser tests                    |
+| GR-035: gallery/quick switch, long touch, exact deletion and stale loads                                    | `GuitarRecordingQuickMenu.test.tsx`, `GuitarRecordingGallery.test.tsx`, `useGuitarRecordingController.test.ts`, `guitar-recorder-transport.spec.ts`                                                |
+| Studio Lead / cabinet and preset migration                                                                  | `guitar-studio-head.test.ts`, `guitar-amp-stage.test.ts`, `guitar-amp-cabinet.test.ts`, amp-settings tests, `guitar-night-amp.spec.ts`, `guitar-night-lead-monitor.spec.ts`                        |
+| DI monitoring / diagnostics / shared song controls                                                          | `guitar-input-monitor.test.ts`, `useGuitarListeningController.test.tsx`, `useGuitarMonitorDiagnostics.test.ts`, `GuitarNightMonitorLatency.test.tsx`, song audio/listening/controls browser suites |
+| Shared-component and store regressions                                                                      | `OverflowMenu.test.tsx`, `use-focus-trap.test.tsx`, `uvr-store-startup.test.ts`, `karaoke-rail-song-switch.spec.ts`                                                                                |
+
+The final capture-boundary audit adds explicit checks for ordered durable writes
+before buffer recycling/completion, failed module retry, partial-allocation
+cleanup, worker failure during a checkpoint, and bounded start/stop/analysis
+timeouts. Its regression reproduces Stop before a queued start acknowledgement:
+the late acknowledgement must not remove the newer stop deadline. Frame-limit
+and disconnected-input tests retain the exact delivered prefix without silently
+appending silence. Web Locks tests cover held, unavailable, failed and unsupported
+cases; browsers without Web Locks retain a best-effort fallback, not cross-tab
+exclusivity.
+
 Run against a freshly built local bundle (the Playwright config does not rebuild):
 
 ```bash
@@ -124,7 +154,7 @@ VITE_E2E_PORT=35219 PLAYWRIGHT_HTML_OPEN=never pnpm exec playwright test \
 Use `VITE_E2E_PORT=5217` for an already running development server. Tests use
 isolated browser storage and generated input; do not point them at production.
 
-## Owner audition before merge
+## Owner audition on dev
 
 - [ ] Enter Play free form. Confirm nothing plays or requests input until asked.
 - [ ] Select Direct input / the guitar channel. Enable Listening and You, then
