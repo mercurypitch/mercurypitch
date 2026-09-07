@@ -7,6 +7,7 @@
 // unusable. A host that has chrome of its own can dock it there instead.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceControlController } from './useVoiceControlController'
 import { VoiceControlHud } from './VoiceControlHud'
@@ -35,6 +36,52 @@ function createController(
     ...overrides,
   } as VoiceControlController
 }
+
+describe('the docked menu holds still', () => {
+  it('keeps the pill the shape it had when the menu opened', () => {
+    // Docked, an expanding pill takes the whole header row, which moves the
+    // group the menu hangs off and slides the open menu sideways under the
+    // finger. Reported as a settings popup that walks left as the pill
+    // replaces the app title.
+    const [talking, setTalking] = createSignal(false)
+    render(() => (
+      <VoiceControlHud
+        placement="docked"
+        controller={createController({
+          enabled: () => true,
+          hasSomethingToSay: talking,
+        })}
+      />
+    ))
+    const pill = screen.getByTestId('voice-control-pill')
+    expect(pill).toHaveAttribute('data-talking', 'false')
+
+    fireEvent.click(screen.getByLabelText('Voice engine and commands'))
+    setTalking(true)
+
+    expect(pill).toHaveAttribute('data-talking', 'false')
+
+    // Closed again, the pill catches up with whatever the ear is doing.
+    fireEvent.click(screen.getByLabelText('Voice engine and commands'))
+    expect(pill).toHaveAttribute('data-talking', 'true')
+  })
+
+  it('places the menu against the viewport, not the moving pill', () => {
+    render(() => (
+      <VoiceControlHud
+        placement="docked"
+        controller={createController({ enabled: () => true })}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Voice engine and commands'))
+
+    // The measurement the stylesheet positions against; jsdom reports 0 for
+    // every rect, so the presence of the custom property is the contract.
+    const menu = screen.getByRole('menu')
+    expect(menu.style.getPropertyValue('--voice-menu-top')).toBe('0px')
+  })
+})
 
 describe('VoiceControlHud placement', () => {
   it('floats by default', () => {

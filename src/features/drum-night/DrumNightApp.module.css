@@ -1314,7 +1314,7 @@
   color: var(--vellum-muted);
   font-size: 10px;
 }
-.coachCue {
+.coachCueDock {
   display: none;
 }
 
@@ -2856,13 +2856,26 @@
   .phraseCoach {
     display: none;
   }
-  .coachCue {
+  /* The dock is the anchor so the cue can be followed by the Keep row a phone
+     needs; it never takes a pointer of its own, or its empty half would eat
+     taps meant for the kit behind it. */
+  .coachCueDock {
     position: absolute;
     z-index: 14;
     right: 14px;
     bottom: 12px;
     display: grid;
     width: min(360px, calc(100% - 28px));
+    justify-items: end;
+    gap: 7px;
+    pointer-events: none;
+  }
+  .coachCueDock > * {
+    pointer-events: auto;
+  }
+  .coachCue {
+    display: grid;
+    width: 100%;
     min-height: 56px;
     grid-template-columns: 36px minmax(0, 1fr) 16px;
     align-items: center;
@@ -2875,6 +2888,36 @@
     box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
     cursor: pointer;
     text-align: left;
+  }
+  .coachCueKeep {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    background: rgb(8 9 11 / 92%);
+    box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
+  }
+  .coachCueKeep button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    color: var(--room);
+    background: var(--cyan);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .coachCueKeep button:last-child {
+    color: var(--vellum-muted);
+    background: transparent;
+  }
+  .coachCueKeep button:disabled {
+    cursor: default;
+    opacity: 0.6;
   }
   .shell:not([data-view='pocket']) .coachCue {
     width: 46px;
@@ -3124,10 +3167,12 @@
   .shell[data-view='seat'] .authoredPlaybackNotice {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 7px;
     width: calc(100% - 16px);
+  }
+  .coachCue {
     min-height: 52px;
   }
   .sessionStageView {
@@ -3227,15 +3272,10 @@
     display: grid;
     min-height: 0;
     grid-template-columns: repeat(5, 1fr);
-    /* Finish take joins as a sixth item while a take waits (UX-37). */
-    grid-auto-columns: 1fr;
     align-items: center;
     padding: 3px 7px 5px;
     border-top: 1px solid var(--line);
     background: #090b0e;
-  }
-  .mobileNav .mobileFinish {
-    color: var(--amber);
   }
   .mobileNav button {
     display: grid;
@@ -3287,6 +3327,22 @@
   .mobileNav .mobilePlay > .playLoadPercent {
     font-size: 12px;
   }
+  /* A take waiting to be finished takes the disc over, so the rail keeps five
+     items instead of wrapping a sixth off the bottom of the screen. The green
+     ink separates it from the amber transport at a glance. */
+  .mobileNav .mobilePlay.mobilePlayFinish {
+    background: var(--cyan);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 34%);
+  }
+  .mobileNav .mobilePlay.mobilePlayFinish > svg {
+    width: 20px;
+    height: 20px;
+  }
+  .mobilePlayFinishLabel {
+    font-size: 10px;
+    font-weight: 760;
+    line-height: 1;
+  }
 
   .sheetScrim {
     position: absolute;
@@ -3311,7 +3367,7 @@
     border-right: 1px solid rgb(238 231 219 / 20%);
     border-left: 1px solid rgb(238 231 219 / 20%);
   }
-  .shell[data-drawer-open='true'] .coachCue {
+  .shell[data-drawer-open='true'] .coachCueDock {
     display: none;
   }
   /* Two rows that size themselves: the eyebrow and the title share the
@@ -3562,9 +3618,11 @@
   .guideSteps {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 6px;
+  }
+  .coachCue {
     width: 46px;
     min-height: 46px;
     grid-template-columns: 1fr;
@@ -3679,9 +3737,11 @@
   .guideSteps {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 6px;
+  }
+  .coachCue {
     width: 46px;
     min-height: 46px;
     grid-template-columns: 1fr;

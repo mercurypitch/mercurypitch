@@ -358,13 +358,18 @@
 }
 
 /* The floating pill's menu opens upward, because it lives at the bottom of
-   the screen. From a header rail, that would open off the top. Anchored to
-   the right edge of the tools group and never wider than the screen. */
+   the screen. From a header rail, that would open off the top.
+   Placed against the VIEWPORT, not the tools group: the docked pill takes
+   the header row the moment it has something to say, which moved the group
+   this menu hangs off and slid an open menu sideways — on a phone, past the
+   left edge of the screen. Fixed to the right margin it cannot go anywhere,
+   and `--voice-menu-top` is the group's own bottom, measured as it opens. */
 .docked .menu {
-  top: calc(100% + 0.5rem);
+  position: fixed;
+  top: calc(var(--voice-menu-top, 3.5rem) + 0.5rem);
+  right: 0.5rem;
   bottom: auto;
   left: auto;
-  right: 0;
   max-width: min(16rem, calc(100vw - 1rem));
 }
 

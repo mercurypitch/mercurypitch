@@ -64,6 +64,10 @@ const ENGINES: Array<{
 
 export function VoiceControlHud(props: VoiceControlHudProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
+  /** The pill's shape at the moment the menu opened; see `expanded`. */
+  let expandedAtMenuOpen = false
+  /** Viewport y for the docked menu, measured when it opens. */
+  const [menuTop, setMenuTop] = createSignal(0)
   let statusEl: HTMLSpanElement | undefined
   let toolsEl: HTMLDivElement | undefined
   /**
@@ -79,8 +83,15 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
    * re-laid out the whole header for a menu that needed none of it. The
    * status line the expanded pill would have shown is in the menu instead.
    */
-  const expanded = () =>
-    props.controller.enabled() && props.controller.hasSomethingToSay()
+  const expanded = () => {
+    // Frozen while the menu is open. Docked, an expanding pill takes the
+    // whole header row — the app title steps aside — which moves the tools
+    // group the menu hangs off, so the menu slid sideways under the finger
+    // and, on a phone, off the left edge. The state that would have
+    // expanded it is readable in the menu's own status line meanwhile.
+    if (menuOpen()) return expandedAtMenuOpen
+    return props.controller.enabled() && props.controller.hasSomethingToSay()
+  }
   const listening = () =>
     props.controller.enabled() &&
     props.controller.listenerState() === 'listening'
@@ -220,7 +231,20 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             aria-expanded={menuOpen()}
             aria-label="Voice engine and commands"
             title="Voice engine and commands"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => {
+              const opening = !menuOpen()
+              if (opening) {
+                expandedAtMenuOpen =
+                  props.controller.enabled() &&
+                  props.controller.hasSomethingToSay()
+                // Docked, the menu is placed against the viewport rather
+                // than the tools group, so it cannot be dragged off the
+                // screen by a pill that grows underneath it. This is the
+                // one measurement that placement needs.
+                setMenuTop(toolsEl?.getBoundingClientRect().bottom ?? 0)
+              }
+              setMenuOpen(opening)
+            }}
           >
             <Settings />
           </button>
@@ -228,6 +252,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             <div
               class={styles.menu}
               role="menu"
+              style={{ '--voice-menu-top': `${menuTop()}px` }}
               onMouseLeave={() => setMenuOpen(false)}
             >
               {/* What the ear is doing right now. Collapsed, the pill says
