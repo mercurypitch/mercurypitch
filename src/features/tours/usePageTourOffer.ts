@@ -1,4 +1,4 @@
-import { createEffect, on, untrack } from 'solid-js'
+import { createEffect, on } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
 import { hasPageTour, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
@@ -23,10 +23,10 @@ export function usePageTourOffer(activeTab: () => ActiveTab): void {
   createEffect(
     on(activeTab, (tab) => {
       removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
-      if (!untrack(() => hasPageTour(tab))) return
+      if (!hasPageTour(tab)) return
       const key = `pitchperfect_page_tour_offered_${tab}`
       if (localStorage.getItem(key) === 'true') return
-      if (untrack(walkthroughActive)) return
+      if (walkthroughActive()) return
       localStorage.setItem(key, 'true')
       const id = showActionNotification(
         `New to ${tabLabel(tab)}? Take a quick tour.`,

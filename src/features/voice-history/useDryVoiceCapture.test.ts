@@ -682,6 +682,48 @@ describe('useDryVoiceCapture', () => {
     expect(releaseHoldMock).toHaveBeenCalledOnce()
   })
 
+  it('takes the next hold before the take it replaces lets go, and keeps it when that take lands late', async () => {
+    const releaseFirst = vi.fn()
+    const releaseSecond = vi.fn()
+    holdMock
+      .mockReturnValueOnce(releaseFirst)
+      .mockReturnValueOnce(releaseSecond)
+    let resolveFirst!: (stream: MediaStream) => void
+    acquireMock.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        resolveFirst = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const first = controller.start()
+    const second = controller.start()
+
+    // The restart holds before it discards, so the recognizer never gets the
+    // device back in between.
+    expect(holdMock).toHaveBeenCalledTimes(2)
+    expect(releaseFirst).toHaveBeenCalledOnce()
+    expect(holdMock.mock.invocationCallOrder[1]!).toBeLessThan(
+      releaseFirst.mock.invocationCallOrder[0]!,
+    )
+    expect(releaseSecond).not.toHaveBeenCalled()
+
+    // The first acquire lands after it was superseded: it gives back the
+    // device and leaves the newer take's hold alone.
+    resolveFirst(new CaptureStream(captureTrack) as unknown as MediaStream)
+    await expect(first).resolves.toBe(false)
+    await expect(second).resolves.toBe(true)
+    expect(releaseSecond).not.toHaveBeenCalled()
+    expect(releaseMock).toHaveBeenCalled()
+
+    controller.discard()
+    expect(releaseSecond).toHaveBeenCalledOnce()
+  })
+
   it('lets go of the hold when the device refuses', async () => {
     acquireMock.mockRejectedValueOnce(
       new Error('The microphone is in use by another app or browser tab.'),

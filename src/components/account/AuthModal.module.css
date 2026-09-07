@@ -523,7 +523,7 @@
   .head {
     margin-bottom: 2px;
   }
-  .title {
+  .overlay .dialog .title {
     font-size: 1.05rem;
   }
   .sub {

@@ -407,7 +407,7 @@ describe('a room that stays quiet', () => {
 
   it('waits longer after each session that heard nothing', () => {
     // The clock is driven by hand here, since the delay is the point.
-    const h = harness()
+    const h = harness({ visibleRespawn: true })
     h.listener.start()
 
     h.latest().confirm()
@@ -426,7 +426,7 @@ describe('a room that stays quiet', () => {
   })
 
   it('stops respawning on a timer after six quiet sessions, without calling it an error', () => {
-    const h = harness({ dozeWhenQuiet: true })
+    const h = harness({ visibleRespawn: true })
     h.listener.start()
     for (let i = 0; i < 6; i++) quietSession(h)
 
@@ -444,7 +444,7 @@ describe('a room that stays quiet', () => {
   })
 
   it('wakes on the next touch, one session per touch', () => {
-    const h = harness({ dozeWhenQuiet: true })
+    const h = harness({ visibleRespawn: true })
     h.listener.start()
     for (let i = 0; i < 6; i++) quietSession(h)
     expect(h.last().state).toBe('dozing')
@@ -465,11 +465,12 @@ describe('a room that stays quiet', () => {
     expect(h.last().state).toBe('dozing')
   })
 
-  it('never dozes on desktop: the respawn just settles at its slowest', () => {
+  it('never backs off or dozes where a respawn is silent', () => {
     // A pianist with both hands on the keys says "stop" after ten quiet
     // minutes. Desktop respawns are silent, so there is nothing to save by
-    // dozing, and everything to lose.
-    const h = harness({ dozeWhenQuiet: false })
+    // waiting, and everything to lose: every quiet session comes back in
+    // the same 300 ms as the first.
+    const h = harness({ visibleRespawn: false })
     h.listener.start()
     for (let i = 0; i < 8; i++) quietSession(h)
 
@@ -478,17 +479,17 @@ describe('a room that stays quiet', () => {
     expect(h.states.map((s) => s.state)).not.toContain('error')
     expect(FakeRecognition.instances).toHaveLength(9)
 
-    // And the ninth quiet end waits the 15 s cap, not forever.
+    // And the ninth quiet end still waits only 300 ms.
     h.latest().confirm()
     h.latest().onend?.()
-    vi.advanceTimersByTime(14_999)
+    vi.advanceTimersByTime(299)
     expect(FakeRecognition.instances).toHaveLength(9)
     vi.advanceTimersByTime(1)
     expect(FakeRecognition.instances).toHaveLength(10)
   })
 
   it('forgets the quiet stretch the moment it hears something', () => {
-    const h = harness({ dozeWhenQuiet: true })
+    const h = harness({ visibleRespawn: true })
     h.listener.start()
     for (let i = 0; i < 5; i++) quietSession(h)
     // Five in; a sixth quiet end would doze. Instead, a word.
@@ -592,7 +593,7 @@ describe('a session that stops talking', () => {
   })
 
   it('lets a touch replace a session that has been silent for 10 s', () => {
-    const h = harness()
+    const h = harness({ visibleRespawn: true })
     h.listener.start()
     h.latest().confirm()
     const session = h.latest()
@@ -740,5 +741,93 @@ describe('a browser with no recognizer at all', () => {
       listener.start()
       listener.stop()
     }).not.toThrow()
+  })
+})
+
+describe('what counts as a touch', () => {
+  const quiet = (h: ReturnType<typeof harness>) => {
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersToNextTimer()
+  }
+  const dozeOff = () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 6; i++) quiet(h)
+    expect(h.last().state).toBe('dozing')
+    return h
+  }
+
+  it('does not spend a return to the foreground on a dozing ear', () => {
+    // Locking and unlocking a dozing phone used to `start()` outside any
+    // gesture, which iOS refuses, and the refusal expanded the pill over the
+    // header as "needs a tap". Nothing was running, so nothing needed
+    // replacing; the next touch wakes it as before.
+    const h = dozeOff()
+    const settled = h.states.length
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    const pageShow = new Event('pageshow') as Event & { persisted?: boolean }
+    pageShow.persisted = true
+    window.dispatchEvent(pageShow)
+
+    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(h.states.slice(settled)).toEqual([])
+  })
+
+  it('leaves a tap on the pill to the pill', () => {
+    // The controller answers that tap on `click` — toggle, or open the menu.
+    // Spending its `pointerdown` on a session first made the same tap turn
+    // voice control off whenever the session confirmed before the click.
+    dozeOff()
+    const hud = document.createElement('div')
+    hud.setAttribute('data-voice-control-hud', '')
+    const button = document.createElement('button')
+    hud.append(button)
+    document.body.append(hud)
+
+    button.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(6)
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(7)
+    hud.remove()
+  })
+
+  it('does not spend a tap in a text field either', () => {
+    const h = dozeOff()
+    const input = document.createElement('input')
+    document.body.append(input)
+
+    input.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(h.last().state).toBe('dozing')
+    input.remove()
+  })
+
+  it('replaces a long-silent live session on a touch only where a respawn is visible', () => {
+    // On a phone a session that has said nothing for ten seconds may be a
+    // phantom, and the touch is the one moment iOS will take a fresh start.
+    // On desktop the same click would abort a healthy session for nothing;
+    // the stale timer covers the phantom there.
+    const phone = harness({ visibleRespawn: true })
+    phone.listener.start()
+    phone.latest().confirm()
+    vi.advanceTimersByTime(11_000)
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(2)
+    phone.listener.stop()
+
+    FakeRecognition.instances = []
+    const desktop = harness({ visibleRespawn: false })
+    desktop.listener.start()
+    desktop.latest().confirm()
+    vi.advanceTimersByTime(11_000)
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(FakeRecognition.instances).toHaveLength(1)
   })
 })

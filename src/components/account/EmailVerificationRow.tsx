@@ -1,10 +1,11 @@
 // ============================================================
-// "Confirm your email" inside Account settings: the banner can be dismissed
-// and a phone keeps that dismissal for as long as the tab lives, so the way
-// to resend the link has to live somewhere a person can always find it.
+// EmailVerificationRow — the Resend for an unconfirmed email, inside Account
 // ============================================================
+//
+// The banner can be dismissed, and a phone keeps that dismissal for as long
+// as the tab lives, so the way to resend the link has to live somewhere a
+// person can always find it.
 
-import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { resendVerificationEmail } from '@/db/services/auth-service'
 import styles from './AccountSection.module.css'
@@ -13,9 +14,7 @@ interface EmailVerificationRowProps {
   email: string
 }
 
-export const EmailVerificationRow: Component<EmailVerificationRowProps> = (
-  props,
-) => {
+export function EmailVerificationRow(props: EmailVerificationRowProps) {
   const [state, setState] = createSignal<'idle' | 'sending' | 'sent' | 'error'>(
     'idle',
   )

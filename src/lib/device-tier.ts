@@ -510,3 +510,18 @@ export function __resetDeviceTierForTests(): void {
   detectedTier = 'high'
   sampler.reset()
 }
+
+/**
+ * iPhone, iPod or iPad, including iPadOS presenting as a Mac with touch. For
+ * the places where WebKit's touch platform behaves unlike everything else —
+ * its Files sheet, its picker cancel — rather than for performance tiers.
+ */
+export function isAppleTouchDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): boolean {
+  if (/iPad|iPhone|iPod/.test(nav.userAgent)) return true
+  return (
+    (nav.platform === 'MacIntel' || /Macintosh/.test(nav.userAgent)) &&
+    nav.maxTouchPoints > 1
+  )
+}

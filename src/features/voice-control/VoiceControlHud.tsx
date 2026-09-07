@@ -187,6 +187,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
         [styles.docked]: props.placement === 'docked',
       }}
       data-testid="voice-control-pill"
+      data-voice-control-hud=""
       data-placement={props.placement ?? 'floating'}
       data-talking={expanded() ? 'true' : 'false'}
     >
