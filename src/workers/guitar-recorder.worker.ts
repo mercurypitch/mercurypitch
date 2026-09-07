@@ -24,10 +24,15 @@ self.onmessage = (event: MessageEvent<GuitarRecordingWorkerCommand>): void => {
         command.sequence,
         command.firstFrame,
       )
-      send({ type: 'chunk', chunk, recycled: command.buffer }, [
-        chunk.pcm!,
-        command.buffer,
-      ])
+      send(
+        {
+          type: 'chunk',
+          chunk,
+          recycled: command.buffer,
+          previewNote: analysis.preview(),
+        },
+        [chunk.pcm!, command.buffer],
+      )
     } else {
       send({
         type: 'finished',

@@ -97,6 +97,9 @@ interface GuitarNightMixerDialogProps {
   testId?: string
   scrimTestId?: string
   initialFocus?: () => HTMLElement | undefined
+  panelClass?: string
+  scrimClass?: string
+  headingArt?: JSX.Element
 }
 
 export function GuitarNightMixerDialog(props: GuitarNightMixerDialogProps) {
@@ -112,7 +115,10 @@ export function GuitarNightMixerDialog(props: GuitarNightMixerDialogProps) {
 
   return (
     <Show when={props.isOpen}>
-      <div class={roomStyles.sessionScrim} data-testid={props.testId}>
+      <div
+        class={`${roomStyles.sessionScrim} ${props.scrimClass ?? ''}`}
+        data-testid={props.testId}
+      >
         <button
           type="button"
           class={roomStyles.sessionScrimButton}
@@ -123,13 +129,14 @@ export function GuitarNightMixerDialog(props: GuitarNightMixerDialogProps) {
         />
         <div
           ref={dialog}
-          class={roomStyles.sessionPanel}
+          class={`${roomStyles.sessionPanel} ${props.panelClass ?? ''}`}
           role="dialog"
           aria-modal="true"
           aria-label={props.label}
           tabIndex={-1}
         >
           <div class={roomStyles.sessionHeader}>
+            {props.headingArt}
             <div>
               <p class={roomStyles.eyebrow}>{props.kicker}</p>
               <strong>{props.title}</strong>

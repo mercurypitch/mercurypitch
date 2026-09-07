@@ -1,0 +1,139 @@
+/* A small personal instrument plaque, anchored clear of stage navigation. */
+.recorder {
+  position: absolute;
+  left: 0.65rem;
+  bottom: 1.8rem;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  max-width: min(28rem, calc(100% - 1.3rem));
+  pointer-events: auto;
+  border-radius: 8px;
+  background: rgb(23 21 18 / 0.84);
+  border: 1px solid rgb(237 188 117 / 0.18);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.25);
+  color: #eee2cd;
+}
+.machine {
+  flex: none;
+  width: 128px;
+  height: 128px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.machine img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.machine:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.machine:disabled {
+  cursor: default;
+}
+.label {
+  min-width: 0;
+  padding: 0.65rem 0;
+}
+.label strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.3rem;
+  color: #76c8bb;
+  font-size: 0.62rem;
+}
+.status i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.recorder[data-recording='true'] .status {
+  color: #ffc0ab;
+}
+.metadata {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.3rem;
+  color: #c6b8a1;
+  font-size: 0.68rem;
+}
+.metadata output {
+  color: #eee2cd;
+  font-variant-numeric: tabular-nums;
+}
+.review {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #edbc75;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.review svg {
+  width: 15px;
+  height: 15px;
+}
+.options.options {
+  align-self: start;
+  color: #c6b8a1;
+  margin: 0.2rem;
+}
+.error {
+  display: block;
+  max-width: 20rem;
+  font-size: 0.7rem;
+  color: #ffc0ab;
+}
+.recorder :focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: 2px;
+}
+@media (max-width: 720px) {
+  .recorder {
+    left: 0.4rem;
+    bottom: 1.8rem;
+    max-width: calc(100% - 0.8rem);
+  }
+  .machine {
+    width: 88px;
+    height: 88px;
+  }
+  .label {
+    padding: 0.3rem 0;
+  }
+  .label strong {
+    max-width: 11rem;
+    font-size: 0.75rem;
+  }
+  .metadata {
+    font-size: 0.6rem;
+    gap: 0.3rem;
+  }
+  .status {
+    font-size: 0.58rem;
+    margin-bottom: 0.2rem;
+  }
+  .review {
+    min-height: 44px;
+  }
+}

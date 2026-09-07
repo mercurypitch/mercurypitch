@@ -10,6 +10,7 @@ import { GuitarNightListeningAction } from './GuitarNightListeningAction'
 import { GuitarNightMixerDialog } from './GuitarNightMixControls'
 import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import styles from './GuitarNightSongSession.module.css'
+import { GuitarRecordingLiveNotesToggle } from './GuitarRecordingControls'
 import type { GuitarListeningController } from './useGuitarListeningController'
 import type { GuitarNightAmpSettingsController } from './useGuitarNightAmpSettings'
 import type { useGuitarNightSongPlayback } from './useGuitarNightSongPlayback'
@@ -27,6 +28,12 @@ interface GuitarNightSongSessionProps {
   handSync?: Accessor<GuitarNightRoomHandSync | null>
   focusHandPlacement?: boolean
   routePending?: boolean
+  recordingPreview?:
+    | {
+        enabled: Accessor<boolean>
+        onChange(enabled: boolean): void
+      }
+    | undefined
 }
 
 export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
@@ -115,8 +122,8 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
         </Show>
         <div>
           <GuitarNightAmpControls
-            targetLabel="Direct input only"
-            takeNotice="Record captures dry input. The amp stays on your live monitor."
+            targetLabel="Live input + take playback"
+            takeNotice="Record keeps your dry input. Take playback can reapply the amp without changing that audio."
             parameters={props.amp.parameters}
             presetId={() => props.amp.settings().presetId}
             inputProfile={props.listening.inputProfile}
@@ -140,9 +147,24 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
             onReset={props.amp.reset}
           />
           <p class={styles.note}>
-            The amp shapes your live guitar, not the recorded tracks.
+            The amp shapes your live guitar and Current amp take playback, not
+            the backing song or stems.
           </p>
         </div>
+        <Show when={props.recordingPreview}>
+          {(preview) => (
+            <div>
+              <GuitarRecordingLiveNotesToggle
+                enabled={preview().enabled()}
+                onChange={(enabled) => preview().onChange(enabled)}
+              />
+              <p class={styles.note}>
+                Show detected notes while recording. This changes only the
+                preview, not the saved audio, notes or monitoring.
+              </p>
+            </div>
+          )}
+        </Show>
         <Show when={props.handSync?.()}>
           {(sync) => (
             <div ref={handSyncHost} class={roomStyles.handSyncHost}>

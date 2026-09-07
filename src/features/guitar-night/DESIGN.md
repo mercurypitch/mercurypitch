@@ -510,6 +510,54 @@ core Learn set in
   clock, aggregate health and event counts without audio or an event timeline;
   it labels a real-device run as user-captured and unverified.
 
+## Your melody recorder
+
+- Free form owns a flat two-row transport: a seekable take timeline above
+  centered Play/Pause, Stop and Record keys. Listening and its mix buttons
+  occupy an independent, tightly packed two-row column. Source and generated
+  amp/cabinet selectors flank the keys; on phones the amp menu also carries
+  source choices. A larger tactile brass-reel image, take title, duration and
+  Review action sit at the stage's lower left. Its options menu carries Live
+  notes. The tape remains an explicitly labelled Record/Stop alternative.
+  Generated reel animation is deferred; no video enters the capture path.
+- The recorder's visible clock reads the existing capture AudioContext between
+  worker checkpoints. Notes retain their exact frame-time evidence. Stopping or
+  disabling Live notes retires the visual frame loop, not the recording input.
+  Playback offers Recording (original input) and Notes (current corrected
+  pitches/timing), sharing one owner with review. Both offer Current amp,
+  Clean/bypass and Saved amp; saved means settings at Record, not an exact wet
+  performance. No audio is overwritten or external recording colour removed.
+  Audition borrows the room output context and the existing amp/cabinet stage;
+  a final envelope fades effects as well as input. It never accepts a practice
+  target or turns Listening on. Review remains the bridge to corrections,
+  Keep, exports and accepted tab rehearsal with A/B and scoring.
+- Review puts audition before title metadata, keeping Play above the pinned
+  Keep/Practice footer on a short phone. Only short portrait free-form rooms
+  relax the stage's usual height floor to keep the complete recorder reachable;
+  authored-tab rehearsal retains its existing proportions and touch targets.
+- My melodies opens a personal recording shelf over the room, never a list in
+  the stage's layout. This owner-requested gallery is a deliberate exception to
+  the first-viewport no-card-grid rule: a small room-tool button is its only
+  closed-state chrome. A translucent charcoal faceplate retains the room;
+  each tile's identity is its own captured-note contour, not repeated clip art.
+  Date, duration, captured-note count/range, input and kept/draft status are
+  factual. No grade, fabricated waveform or inferred musical tempo is shown.
+- The shared room dialog owns focus, Escape and restoration. Gallery paging
+  reads at most eight additional ending-evidence rows at a time, never PCM or
+  Hear Yourself audio payloads. Missing evidence, interrupted capture and
+  removed audio remain distinct. The brass-reel emblem belongs to the collection
+  header; artwork provenance is in `docs/guitar-recorder-art.md`.
+- A chevron beside My melodies offers eight recent takes without opening the
+  full gallery; right-click or a held touch on the main button is a shortcut.
+  Choosing one loads it without auto-playing or opening Review. Trash actions
+  in either view confirm the exact take and its linked local data. Failed
+  deletion or loading preserves the current take, and a stale load cannot
+  replace a newer selection. Capture locks remain authoritative.
+- A timeline gesture previews its target and commits on release. Keyboard
+  arrows seek directly. Both original audio and synthesized notes use the
+  shared audition clock and pop-free output envelopes; Stop returns to zero,
+  Pause keeps the position, and seeking alone never requests audio/input.
+
 ## Where bars and beats come from
 
 - There is one Standard MIDI reader in the tree. `parseMidiProject` decodes the

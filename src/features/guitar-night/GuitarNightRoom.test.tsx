@@ -237,6 +237,48 @@ describe('GuitarNightRoom', () => {
 
   afterEach(cleanup)
 
+  it('keeps the gallery opener focusable so Escape returns to My melodies', async () => {
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    const trigger = screen.getByRole('button', {
+      name: 'My melodies, 0 recordings',
+    })
+    trigger.focus()
+    fireEvent.click(trigger)
+    const gallery = screen.getByRole('dialog', { name: 'My melodies' })
+    expect(trigger).toBeEnabled()
+    await waitFor(() =>
+      expect(
+        within(gallery).getByRole('button', { name: 'Close My melodies' }),
+      ).toHaveFocus(),
+    )
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'My melodies' })).toBeNull()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('uses the recorder invitation in free form without covering it with the old note', () => {
+    const onAttachTab = vi.fn()
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        onAttachTab={onAttachTab}
+      />
+    ))
+    expect(screen.queryByTestId('guitar-night-free-play-note')).toBeNull()
+    expect(screen.getByTestId('guitar-recorder-stage')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Recorder options' }))
+    fireEvent.click(screen.getByTestId('overflow-attach-tab'))
+    expect(onAttachTab).toHaveBeenCalledTimes(1)
+  })
+
   it.each(['button', 'Space', 'voice'] as const)(
     'uses the same Direct-input coexistence policy for %s playback',
     async (trigger) => {
@@ -735,7 +777,7 @@ describe('GuitarNightRoom', () => {
     expect(amp.queryByText('Shared electric tone')).toBeNull()
     expect(
       screen.getByText(
-        'The amp shapes your live guitar, not the recorded tracks.',
+        'The amp shapes your live guitar and Current amp take playback, not the backing song or stems.',
       ),
     ).toBeInTheDocument()
     fireEvent.change(amp.getByLabelText('Guitar amp preset'), {

@@ -147,6 +147,8 @@ interface GuitarNightStageProps {
   showHeader?: Accessor<boolean>
   /** Host-owned cues and sheets sit over the instrument without entering layout. */
   overlay?: JSX.Element
+  /** A recorder or activity can own its invitation without a second overlapping card. */
+  showInvitation?: Accessor<boolean>
   /**
    * Free-play note: a host-owned line in place of the generic hint. The room
    * knows things the stage cannot — that a tab is attached, and that it plays
@@ -1414,7 +1416,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               Drag / arrows to orbit · scroll / + − to zoom · R resets
             </p>
             <Show
-              when={!hasGuide() && !isListening() && !freePlayNoteDismissed()}
+              when={
+                props.showInvitation?.() !== false &&
+                !hasGuide() &&
+                !isListening() &&
+                !freePlayNoteDismissed()
+              }
             >
               <div
                 class={styles.stageInvitation}

@@ -1,5 +1,5 @@
 // Explicit recording controls share the song transport and keep recovery one deliberate action away.
-import { For, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import { RecordCircle, Square } from '@/components/icons'
 import styles from './GuitarRecording.module.css'
 import type { GuitarRecordingController } from './useGuitarRecordingController'
@@ -8,9 +8,31 @@ export function recordingTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`
 }
 
+export function GuitarRecordingLiveNotesToggle(props: {
+  enabled: boolean
+  onChange(enabled: boolean): void
+}) {
+  return (
+    <label
+      class={styles.liveNotesToggle}
+      title="Show recently recognized notes. Turning this off reduces visual work; audio recording and monitoring continue."
+    >
+      <input
+        type="checkbox"
+        checked={props.enabled}
+        onChange={(event) => props.onChange(event.currentTarget.checked)}
+      />
+      Live notes
+    </label>
+  )
+}
+
 export function GuitarRecordButton(props: {
   controller: GuitarRecordingController
   disabled?: boolean
+  showDuration?: boolean
+  iconOnly?: boolean
+  disabledReason?: string
 }) {
   return (
     <div class={styles.recordControl}>
@@ -25,6 +47,7 @@ export function GuitarRecordButton(props: {
               : 'Stop recording'
         }
         aria-pressed={props.controller.busy()}
+        title={props.disabled === true ? props.disabledReason : undefined}
         disabled={
           props.disabled === true || props.controller.state() === 'stopping'
         }
@@ -39,17 +62,19 @@ export function GuitarRecordButton(props: {
             <Square />
           </Show>
         </span>
-        <span>
-          {props.controller.state() === 'recording'
-            ? 'Stop'
-            : props.controller.state() === 'preparing'
-              ? 'Cancel'
-              : props.controller.state() === 'stopping'
-                ? 'Saving…'
-                : 'Record'}
-        </span>
+        <Show when={props.iconOnly !== true}>
+          <span>
+            {props.controller.state() === 'recording'
+              ? 'Stop'
+              : props.controller.state() === 'preparing'
+                ? 'Cancel'
+                : props.controller.state() === 'stopping'
+                  ? 'Saving…'
+                  : 'Record'}
+          </span>
+        </Show>
       </button>
-      <Show when={props.controller.busy()}>
+      <Show when={props.controller.busy() && props.showDuration !== false}>
         <output aria-label="Recording duration">
           {recordingTime(props.controller.duration())} / 5:00
         </output>
@@ -65,51 +90,6 @@ export function GuitarRecordingStatus(props: {
     <div class={styles.status}>
       <Show when={props.controller.error()}>
         {(error) => <p role="alert">{error()}</p>}
-      </Show>
-      <Show when={props.controller.state() === 'recording'}>
-        <p>
-          Recording dry input
-          {props.controller.heardNote() !== null
-            ? ` · ${props.controller.heardNote()}`
-            : ''}{' '}
-          · {props.controller.noteCount()} completed notes. Position, loop and
-          speed are locked.
-        </p>
-      </Show>
-      <Show when={!props.controller.busy()}>
-        <Show when={props.controller.catalogue().length > 0}>
-          <details>
-            <summary>
-              My melodies · {props.controller.catalogue().length}
-              <Show
-                when={props.controller
-                  .catalogue()
-                  .some((row) => row.state !== 'kept')}
-              >
-                {' '}
-                · draft to review
-              </Show>
-            </summary>
-            <For each={props.controller.catalogue()}>
-              {(row) => (
-                <button
-                  type="button"
-                  onClick={() => void props.controller.recover(row.id)}
-                >
-                  {row.state === 'capturing' ? 'Recover' : 'Review'} {row.title}
-                  <small>
-                    {recordingTime(row.frames / row.sampleRate)} ·{' '}
-                    {row.state === 'kept'
-                      ? row.takeId === null
-                        ? 'audio removed · notes kept'
-                        : 'kept on this device'
-                      : 'saved draft on this device'}
-                  </small>
-                </button>
-              )}
-            </For>
-          </details>
-        </Show>
       </Show>
     </div>
   )

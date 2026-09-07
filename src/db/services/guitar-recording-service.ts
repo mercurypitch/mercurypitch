@@ -1,5 +1,6 @@
 // Local guitar drafts checkpoint incrementally and publish audio plus evidence in one transaction.
 import { guitarWavHeader, recoverGuitarMelody, } from '@/lib/guitar/recording-evidence'
+import { createRecordingPreview } from '@/lib/guitar/recording-gallery'
 import { recordingScoreProblem } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingChunk, GuitarRecordingSummary, } from '@/lib/guitar/recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS } from '@/lib/guitar/recording-types'
@@ -108,6 +109,17 @@ export function createGuitarRecordingStore(
   }
   return {
     read,
+    async preview(id: string) {
+      const row = await read(id)
+      // Every finalized draft has one note-only ending record. Do not fetch
+      // all PCM chunks or Hear Yourself blobs just to paint the gallery.
+      const ending = await db.readByIdStrict<GuitarRecordingChunk>(
+        'guitarRecordingChunks',
+        `${id}:ending`,
+      )
+      if (ending === undefined) return null
+      return createRecordingPreview(ending.notes, row.frames)
+    },
     async list(): Promise<GuitarRecording[]> {
       const rows = await db.readAllStrict<GuitarRecording>('guitarRecordings')
       for (const row of rows) validateRecording(row)

@@ -3,7 +3,7 @@ import type { GuitarElectricAmpParameters } from './guitar-electric-amp'
 import type { InstrumentTuning } from './instrument-tuning'
 
 export const GUITAR_RECORDING_VERSION = 1
-export const GUITAR_DETECTOR_VERSION = 'guitar-melody-1'
+export const GUITAR_DETECTOR_VERSION = 'guitar-melody-1.1'
 export const GUITAR_RECORDING_LIMIT_SECONDS = 300
 export const GUITAR_RECORDING_CHUNK_FRAMES = 8192
 export const GUITAR_RECORDING_POOL_SIZE = 8
@@ -135,7 +135,12 @@ export type GuitarCaptureCommand =
   | { type: 'stop'; reason: string | null }
 
 export type GuitarRecordingWorkerMessage =
-  | { type: 'chunk'; chunk: GuitarRecordingChunk; recycled: ArrayBuffer }
+  | {
+      type: 'chunk'
+      chunk: GuitarRecordingChunk
+      recycled: ArrayBuffer
+      previewNote?: GuitarRecordedNote | null
+    }
   | { type: 'finished'; summary: GuitarRecordingSummary }
   | { type: 'error'; message: string }
 

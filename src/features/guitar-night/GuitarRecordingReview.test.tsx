@@ -2,15 +2,24 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { GuitarRecordingReview } from './GuitarRecordingReview'
+import { useGuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
-const store = vi.hoisted(() => ({ saveCorrections: vi.fn() }))
+const store = vi.hoisted(() => ({
+  saveCorrections: vi.fn(),
+  accept: vi.fn(),
+  download: vi.fn(),
+}))
 vi.mock('@/db/services/guitar-recording-service', () => ({
   createGuitarRecordingStore: () => store,
 }))
+vi.mock('@/lib/guitar/recording-export', () => ({
+  downloadRecordingScore: store.download,
+}))
 
-function renderReview() {
+function renderReview(outlier = false) {
   const draft: GuitarRecordingDraft = {
     recording: {
       id: 'recording',
@@ -46,19 +55,37 @@ function renderReview() {
       },
     ],
   }
-  return render(() => (
-    <GuitarRecordingReview
-      draft={draft}
-      open={true}
-      tuning={DEFAULT_GUITAR_TUNING}
-      onClose={vi.fn()}
-      onDiscard={vi.fn()}
-      onSaved={vi.fn()}
-      onRemove={vi.fn()}
-      onPractice={vi.fn()}
-      onReplay={vi.fn()}
-    />
-  ))
+  if (outlier)
+    draft.notes.push({
+      ...draft.notes[0],
+      id: 'outlier',
+      midi: 28,
+      startFrame: 30000,
+      endFrame: 40000,
+    })
+  return render(() => {
+    const playback = useGuitarRecordingPlayback({
+      draft: () => draft,
+      score: () => null,
+      currentAmp: () => DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      blocked: () => false,
+      activate: async () => null,
+      beforePlay: vi.fn(),
+    })
+    return (
+      <GuitarRecordingReview
+        draft={draft}
+        open={true}
+        tuning={DEFAULT_GUITAR_TUNING}
+        onClose={vi.fn()}
+        onDiscard={vi.fn()}
+        onSaved={vi.fn()}
+        onRemove={vi.fn()}
+        onPractice={vi.fn()}
+        playback={playback}
+      />
+    )
+  })
 }
 afterEach(() => {
   cleanup()
@@ -66,6 +93,85 @@ afterEach(() => {
 })
 
 describe('recording corrections', () => {
+  it('offers retained notes without audio and explains the selected playback tone', () => {
+    renderReview()
+    fireEvent.click(screen.getByRole('button', { name: 'Playback source' }))
+    expect(screen.getByTestId('overflow-recording-source')).toBeDisabled()
+    expect(screen.getByTestId('overflow-notes-source')).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Play take playback' }),
+    ).toBeDisabled()
+    fireEvent.click(screen.getByTestId('overflow-notes-source'))
+    expect(
+      screen.getByRole('button', { name: 'Play take playback' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Playback source' }),
+    ).toHaveTextContent('Notes')
+    expect(
+      screen.getByRole('button', { name: 'Play take playback' }),
+    ).toBeEnabled()
+    const tone = screen.getByRole('button', { name: 'Playback tone' })
+    expect(tone).toHaveTextContent('Current')
+    fireEvent.click(tone)
+    expect(screen.getByTestId('overflow-saved-amp')).toBeDisabled()
+    fireEvent.click(screen.getByTestId('overflow-clean'))
+    expect(tone).toHaveTextContent('Clean')
+    fireEvent.click(screen.getByText('App amp bypassed · clean playback'))
+    expect(
+      screen.getByText(/Bypass removes the app’s processing/),
+    ).toBeVisible()
+    expect(store.accept).not.toHaveBeenCalled()
+    expect(store.saveCorrections).not.toHaveBeenCalled()
+  })
+  it('saves and exports out-of-neck MIDI without accepting an invalid guitar target', async () => {
+    renderReview(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Export MIDI' }))
+    await waitFor(() => expect(store.download).toHaveBeenCalledOnce())
+    expect(store.accept).not.toHaveBeenCalled()
+    expect(store.saveCorrections).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notes: expect.arrayContaining([
+          expect.objectContaining({ midi: 28, string: null }),
+        ]),
+      }),
+    )
+    expect(store.download.mock.calls[0][0].notes).toHaveLength(2)
+    expect(store.download.mock.calls[0][1]).toBe('mid')
+    expect(
+      screen.getByRole('button', { name: 'Practice these notes' }),
+    ).toBeDisabled()
+  })
+  it('offers MIDI and an undoable path to practice when only one note has impossible fingering', () => {
+    renderReview(true)
+    expect(
+      screen.getByRole('button', { name: 'Practice these notes' }),
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Export MIDI' })).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Export Guitar Pro' }),
+    ).toBeDisabled()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Review 1 problem note' }),
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: 'Pitch (MIDI)' }),
+    ).toHaveValue(28)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Exclude 1 problem note' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Practice these notes' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Export Guitar Pro' }),
+    ).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo correction' }))
+    expect(
+      screen.getByRole('button', { name: 'Practice these notes' }),
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Export MIDI' })).toBeEnabled()
+  })
   it('keeps Undo when corrections are collapsed and reopened', () => {
     renderReview()
     fireEvent.click(

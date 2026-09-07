@@ -77,6 +77,28 @@ describe('local guitar recordings', () => {
     expect(draft.recording.audioStartFrame).toBe(54321)
     expect(await db.readAllStrict('voiceTakes')).toEqual([])
   })
+  it('loads a gallery preview from only the ending record, never PCM or audio blobs', async () => {
+    await capture()
+    const reads = vi.spyOn(db, 'readByIdStrict')
+    const chunkReads = vi.spyOn(db, 'readByIndexStrict')
+    expect(await store.preview('idea')).toEqual({
+      noteCount: 0,
+      lowestMidi: null,
+      highestMidi: null,
+      marks: [],
+    })
+    expect(reads.mock.calls.map((call) => call[0])).toEqual([
+      'guitarRecordings',
+      'guitarRecordingChunks',
+    ])
+    expect(chunkReads).not.toHaveBeenCalled()
+    reads.mockRestore()
+    chunkReads.mockRestore()
+  })
+  it('does not claim zero heard notes for a draft that still needs recovery', async () => {
+    await store.begin(row())
+    expect(await store.preview('idea')).toBeNull()
+  })
   it('atomically keeps once, reuses Hear Yourself and removes only staged PCM', async () => {
     await capture()
     const draft = await store.load('idea')

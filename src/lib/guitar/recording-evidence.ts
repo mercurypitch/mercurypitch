@@ -1,6 +1,6 @@
 // Pure guitar evidence segmentation also closes checkpointed notes during crash recovery.
 import { createNoteStateMachine } from '../pitch-pipeline/note-state-machine'
-import type { CompletedNote } from '../pitch-pipeline/types'
+import type { CompletedNote, OpenNote } from '../pitch-pipeline/types'
 import type { GuitarPitchEvidence, GuitarRecordedNote, GuitarRecordingChunk, } from './recording-types'
 
 export function guitarWavHeader(
@@ -44,6 +44,7 @@ export function createGuitarMelodySegmenter(sampleRate: number) {
   let claritySum = 0
   let clarityCount = 0
   let lastFrame = 0
+  let pending: OpenNote | null = null
   const commit = (note: CompletedNote | null): void => {
     if (note === null) return
     const start = openAttack ?? Math.round(note.startBeat * sampleRate)
@@ -65,12 +66,14 @@ export function createGuitarMelodySegmenter(sampleRate: number) {
     attack(frame: number) {
       commit(state.flush(frame / sampleRate))
       state.reset()
+      pending = null
       attackFrame = frame
     },
     push(evidence: GuitarPitchEvidence) {
       const time = evidence.frame / sampleRate
       const update = state.update(evidence.midi, time, time)
       commit(update.completed)
+      pending = update.open
       if (update.open !== null) {
         if (
           attackFrame !== null &&
@@ -87,9 +90,27 @@ export function createGuitarMelodySegmenter(sampleRate: number) {
     },
     finish(frame: number) {
       commit(state.flush(Math.min(frame, lastFrame + 2048) / sampleRate))
+      pending = null
       return [...notes]
     },
     notes: () => notes,
+    /** Display-only open note; it never enters durable/accepted evidence. */
+    preview(): GuitarRecordedNote | null {
+      if (pending === null) return null
+      const startFrame = Math.max(
+        0,
+        openAttack ?? Math.round(pending.startBeat * sampleRate),
+      )
+      if (lastFrame <= startFrame) return null
+      return {
+        id: `note-${notes.length}`,
+        midi: pending.midi,
+        startFrame,
+        endFrame: lastFrame,
+        clarity: clarityCount ? claritySum / clarityCount : 0,
+        onset: openAttack === null ? 'pitch-change' : 'attack',
+      }
+    },
   }
 }
 

@@ -8,6 +8,7 @@ import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-a
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop } from '@/lib/guitar/loop-span'
+import { closeEnvelope, ENVELOPE_DEFAULTS } from '@/lib/preview-player'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import { createGuitarBackingLoopEnvelope, guitarBackingLoopSeekPosition, normalizeGuitarBackingLoop, } from './guitar-backing-loop'
@@ -161,9 +162,10 @@ const MEMORY_ERROR =
   'This mix is too large to open safely on this device. Prepare a shorter song or fewer parts.'
 const STREAM_ERROR =
   'This browser could not open the large room mix. Try a shorter song or fewer band parts.'
-// Playback owns only this bus gate. The room master also carries tuner guide
-// and monitor audio, so transport fades must never automate the master itself.
+// Ordinary playback owns only this bus gate. The room master also carries
+// tuner/monitor/audition audio; only final room disposal may fade that master.
 const STEMS_BUS_OPEN_GAIN = 1
+const DISPOSE_RELEASE_MS = ENVELOPE_DEFAULTS.releaseMs + 60
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value))
@@ -389,6 +391,7 @@ export function createGuitarBackingTransport(
   let voiceGeneration = 0
   let loadAbort: AbortController | null = null
   let disposed = false
+  let disposal: Promise<void> | null = null
   /**
    * Where a streamed re-prime is heading, and where the next one should head
    * once it lands. Dragging the scrubber emits an `input` per pixel; starting
@@ -1596,26 +1599,53 @@ export function createGuitarBackingTransport(
       return () => listeners.delete(listener)
     },
 
-    async dispose() {
-      if (disposed) return
+    dispose() {
+      if (disposal !== null) return disposal
       disposed = true
       generation += 1
-      resetLoadedAudio()
-      loopEnvelope?.dispose()
-      loopEnvelope = null
-      audioGraph?.dispose()
+      // Cancel intent and publication immediately, but retain audible nodes
+      // until the final room output has released. Other room owners can still
+      // be fading guide/DI audition even when backing status is only idle.
+      clearStreamLoopTimer()
+      invalidateStreamStarts()
+      loadAbort?.abort()
+      loadAbort = null
+      loopEnvelope?.stop()
       const ownedContext = context
+      const ownedGraph = audioGraph
       context = null
       audioGraph = null
       session = null
       listeners.clear()
-      if (
-        closeContextOnDispose &&
-        ownedContext !== null &&
-        ownedContext.state !== 'closed'
-      ) {
-        await ownedContext.close()
+      const releasing = ownedContext?.state === 'running' && ownedGraph !== null
+      if (releasing) {
+        closeEnvelope(
+          ownedGraph.master,
+          ownedContext,
+          ENVELOPE_DEFAULTS.releaseMs / 1000,
+        )
+        // Invalidate streamed re-primes now, keeping media sounding only for
+        // the bounded master fade. Buffered voices remain connected as well.
+        streamEngine?.pause(DISPOSE_RELEASE_MS)
       }
+      disposal = (async () => {
+        if (releasing)
+          await new Promise<void>((resolve) =>
+            setTimeout(resolve, DISPOSE_RELEASE_MS),
+          )
+        resetLoadedAudio()
+        loopEnvelope?.dispose()
+        loopEnvelope = null
+        ownedGraph?.dispose()
+        if (
+          closeContextOnDispose &&
+          ownedContext !== null &&
+          ownedContext.state !== 'closed'
+        ) {
+          await ownedContext.close()
+        }
+      })()
+      return disposal
     },
   }
 }

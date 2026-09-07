@@ -9215,6 +9215,15 @@
     min-height: 45vh;
   }
 
+  @media (max-height: 700px) {
+    /* The free-form recorder has source/tone controls as well as Record.
+       Keep its full touch targets on short phones; tab rehearsal retains
+       the established stage floor above. */
+    .roomPanel[data-free-form='true'] > .performanceStage {
+      min-height: 0;
+    }
+  }
+
   /* The row itself never scrolls: it stays the containing block of the
      instrument setup popover, and a scroll container would clip that to
      the row's 44px. Setup and camera keep their width; the views strip,

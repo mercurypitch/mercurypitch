@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 36.3k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 38.4k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.8k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 14.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
@@ -128,7 +128,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 10.5k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
+| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 11.0k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
@@ -166,6 +166,7 @@ These are the rules that break things when ignored.
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 600 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
@@ -368,11 +369,11 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.8k |
 | [src/features/drum-night/audio/drum-kit-player.ts](../../src/features/drum-night/audio/drum-kit-player.ts) | 1.7k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.7k |
+| [src/features/guitar/backing/guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.7k |
 | [src/features/guitar/backing/guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
-| [src/features/guitar/backing/guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.6k |
 | [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.6k |
 | [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
@@ -391,6 +392,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
+| [src/features/guitar-night/GuitarNightRoom.tsx](../../src/features/guitar-night/GuitarNightRoom.tsx) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
 | [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
