@@ -69,7 +69,7 @@ describe('Direct input quick controls', () => {
       screen.getByRole('menu', { name: 'Listening route' }),
     ).not.toContainElement(group)
     expect(
-      within(group).getByRole('button', { name: 'Turn on Me monitoring' }),
+      within(group).getByRole('button', { name: 'Turn on your monitoring' }),
     ).toBeDisabled()
     expect(h.onListening).not.toHaveBeenCalled()
     expect(h.onMonitor).not.toHaveBeenCalled()
@@ -105,33 +105,39 @@ describe('Direct input quick controls', () => {
     ).toBeDisabled()
   })
 
-  it('requires a separate Me action after input becomes available and keeps Backing independent', () => {
+  it('requires a separate You action after input becomes available and keeps Backing independent', () => {
     const h = setup()
     h.open()
     h.setStatus('listening')
     h.setCanMonitor(true)
-    const me = screen.getByRole('button', { name: 'Turn on Me monitoring' })
+    const me = screen.getByRole('button', { name: 'Turn on your monitoring' })
     expect(me).toHaveAttribute('aria-pressed', 'false')
     expect(h.onMonitor).not.toHaveBeenCalled()
     fireEvent.click(me)
     expect(
-      screen.getByRole('button', { name: 'Mute Me monitoring' }),
+      screen.getByRole('button', { name: 'Mute your monitoring' }),
     ).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Mute backing' }))
     expect(h.onBacking).toHaveBeenCalledExactlyOnceWith(false)
     expect(h.onMonitor).toHaveBeenCalledExactlyOnceWith(true)
     expect(
-      screen.getByRole('button', { name: 'Mute Me monitoring' }),
+      screen.getByRole('button', { name: 'Mute your monitoring' }),
     ).toHaveTextContent('Live')
     h.setDisabled(true)
     expect(
-      screen.getByRole('button', { name: 'Mute Me monitoring' }),
+      screen.getByRole('button', { name: 'Mute your monitoring' }),
     ).toBeEnabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Mute Me monitoring' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mute your monitoring' }),
+    )
     expect(h.onMonitor).toHaveBeenLastCalledWith(false)
     expect(
       screen.getByRole('button', { name: 'Unmute backing' }),
     ).toHaveAttribute('aria-pressed', 'false')
     expect(h.onListening).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText(/Keep speaker volume low/),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('You')).toBeInTheDocument()
   })
 })

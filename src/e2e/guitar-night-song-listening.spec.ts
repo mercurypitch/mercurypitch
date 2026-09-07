@@ -124,6 +124,29 @@ for (const width of [1440, 390, 320]) {
     await session
       .getByRole('button', { name: 'Close Session', exact: true })
       .click()
+    const dockMix = page.getByRole('group', {
+      name: 'Song playback mix',
+      exact: true,
+    })
+    await expect(dockMix).toBeVisible()
+    await expect(
+      dockMix.getByRole('button', { name: 'Mute backing', exact: true }),
+    ).toBeEnabled()
+    await expect(
+      dockMix.getByRole('button', {
+        name: 'Turn on your monitoring',
+        exact: true,
+      }),
+    ).toBeDisabled()
+    const dockBox = await dockMix.boundingBox()
+    if (dockBox === null) throw new Error('Song mix has no layout')
+    expect(dockBox.y).toBeGreaterThanOrEqual(box.y + box.height)
+    expect(dockBox.x).toBeLessThan(40)
+    const dockPath = test.info().outputPath(`song-mix-dock-${width}.png`)
+    await page.screenshot({ path: dockPath })
+    await test
+      .info()
+      .attach('Song mix dock', { path: dockPath, contentType: 'image/png' })
     await listening.click({ button: 'right' })
     const controls = page.getByRole('group', {
       name: 'Direct input quick controls',
@@ -133,7 +156,7 @@ for (const width of [1440, 390, 320]) {
     ).toBeEnabled()
     await expect(
       controls.getByRole('button', {
-        name: 'Turn on Me monitoring',
+        name: 'Turn on your monitoring',
         exact: true,
       }),
     ).toBeDisabled()

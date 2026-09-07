@@ -25,6 +25,7 @@ import type { GuitarNightListeningSelection } from './GuitarNightListeningCycle'
 import { GuitarNightListeningCycle } from './GuitarNightListeningCycle'
 import { GuitarNightListeningQuickControls } from './GuitarNightListeningQuickControls'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightBackingToggle, GuitarNightMonitorToggle, } from './GuitarNightMixToggle'
 import songStyles from './GuitarNightRoom.module.css'
 import { GuitarNightSongMixer } from './GuitarNightSongMixer'
 import { GuitarNightSongSession } from './GuitarNightSongSession'
@@ -782,6 +783,33 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           />
         </div>
 
+        <div
+          class={songStyles.mixDock}
+          role="group"
+          aria-label="Song playback mix"
+        >
+          <GuitarNightBackingToggle
+            compact
+            enabled={!props.transport.backingMuted()}
+            available={props.transport.tracks().length > 0}
+            onToggle={(enabled) => props.transport.setBackingMuted(!enabled)}
+          />
+          <Show when={listening.inputProfile() === 'interface'}>
+            <GuitarNightMonitorToggle
+              compact
+              enabled={listening.ampMonitoringEnabled()}
+              active={listening.ampMonitoringActive()}
+              available={listening.canAmpMonitor()}
+              disabled={
+                listeningRoutePending() ||
+                props.suspended?.() === true ||
+                tunerOpen() ||
+                listening.inputTakeoverPending()
+              }
+              onToggle={listening.setAmpMonitoringEnabled}
+            />
+          </Show>
+        </div>
         <div class={`${styles.transportControls} ${songStyles.playbackDock}`}>
           <button
             class={styles.restartControl}
