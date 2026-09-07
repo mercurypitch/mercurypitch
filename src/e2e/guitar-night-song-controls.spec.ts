@@ -238,12 +238,12 @@ test('keeps expanded Session settings inside phone and desktop dialogs @smoke', 
     name: 'Close Session',
     exact: true,
   })
-  const toneSummary = session.locator('summary').filter({
-    hasText: 'Shape tone & cabinet',
+  const latencySummary = session.locator('summary').filter({
+    hasText: 'Monitoring latency',
   })
   await close.focus()
   await page.keyboard.press('Shift+Tab')
-  await expect(toneSummary).toBeFocused()
+  await expect(latencySummary).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(close).toBeFocused()
   await page.screenshot({ path: test.info().outputPath('session-phone.png') })

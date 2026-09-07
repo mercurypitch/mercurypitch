@@ -2,8 +2,9 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createSignal, createUniqueId, For, onCleanup, Show } from 'solid-js'
-import { Headphones, PowerSymbol, RotateCcw, Zap } from '@/components/icons'
+import { createEffect, createSignal, createUniqueId, For, onCleanup, Show, untrack, } from 'solid-js'
+import { Headphones, HeadphonesOff, PowerSymbol, RotateCcw, Zap, } from '@/components/icons'
+import type { AudioRouteDiagnosticsSnapshot } from '@/lib/audio-route-diagnostics'
 import { getGuitarAmpCabinetStatus, retryGuitarAmpCabinet, subscribeGuitarAmpCabinetStatus, } from '@/lib/guitar/guitar-amp-cabinet'
 import type { GuitarElectricAmpCabinet, GuitarElectricAmpParameters, } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
@@ -11,6 +12,8 @@ import type { GuitarNightAmpPresetId } from './guitar-amp-settings'
 import { GUITAR_NIGHT_AMP_PRESETS } from './guitar-amp-settings'
 import ampStyles from './GuitarNightAmpControls.module.css'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightMonitorLatency } from './GuitarNightMonitorLatency'
+import type { GuitarListeningStatus } from './useGuitarListeningController'
 import type { GuitarNightAmpContinuousParameter } from './useGuitarNightAmpSettings'
 
 interface GuitarNightAmpControlsProps {
@@ -23,6 +26,13 @@ interface GuitarNightAmpControlsProps {
   canMonitor: Accessor<boolean>
   monitoringEnabled: Accessor<boolean>
   monitoringActive: Accessor<boolean>
+  monitorDiagnostics?: Accessor<AudioRouteDiagnosticsSnapshot | null>
+  listeningStatus?: Accessor<GuitarListeningStatus>
+  /** Host-owned startup retains song/score pause and cancellation policy. */
+  onStartListening?(): Promise<boolean>
+  monitorInputChannel?: Accessor<number>
+  monitorInputChannelCount?: Accessor<number>
+  onMonitorInputChannel?(channel: number): void
   onEnabled(enabled: boolean): void
   onPreset(presetId: GuitarNightAmpPresetId): void
   onParameter(
@@ -87,16 +97,33 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
   const [cabinetStatus, setCabinetStatus] = createSignal(
     getGuitarAmpCabinetStatus(),
   )
+  const [monitorPending, setMonitorPending] = createSignal(false)
+  const [monitorRequestFailed, setMonitorRequestFailed] = createSignal(false)
+  let monitorRequest = 0
+  let priorProfile = untrack(() => props.inputProfile())
+  createEffect(() => {
+    const profile = props.inputProfile()
+    if (profile === priorProfile) return
+    priorProfile = profile
+    monitorRequest += 1
+    setMonitorPending(false)
+    setMonitorRequestFailed(false)
+  })
+  onCleanup(() => {
+    monitorRequest += 1
+  })
   const monitorHintId = createUniqueId()
   const characterHintId = createUniqueId()
   const isStudio = (): boolean => props.parameters().engine === 'studio'
   const isDefinition = (): boolean =>
-    isStudio() && props.parameters().head !== 'heavy'
+    isStudio() && (props.parameters().head ?? 'definition') === 'definition'
   const modelLabel = (): string =>
     isStudio()
       ? props.parameters().head === 'heavy'
         ? 'Studio · Heavy head'
-        : 'Studio · Definition head'
+        : props.parameters().head === 'lead'
+          ? 'Studio · Lead head'
+          : 'Studio · Definition head'
       : 'Lite amp · Filtered cabinet'
   const formatOutput = (value: number): string => {
     const decibels = isStudio() ? (value - 0.6) * 20 : -12 + value * 15
@@ -121,7 +148,52 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
   }
   onCleanup(subscribeGuitarAmpCabinetStatus(setCabinetStatus))
 
+  const canStartMonitor = (): boolean =>
+    props.inputProfile() === 'interface' &&
+    props.onStartListening !== undefined &&
+    (props.listeningStatus?.() === 'off' ||
+      props.listeningStatus?.() === 'error')
+  const requestMonitor = async (): Promise<void> => {
+    if (props.monitoringEnabled()) {
+      props.onMonitor(false)
+      return
+    }
+    if (monitorPending()) return
+    if (props.canMonitor()) {
+      props.onMonitor(true)
+      return
+    }
+    if (!canStartMonitor()) return
+    const operation = ++monitorRequest
+    setMonitorPending(true)
+    setMonitorRequestFailed(false)
+    try {
+      const started = await props.onStartListening?.()
+      if (operation !== monitorRequest) return
+      if (
+        started === true &&
+        props.inputProfile() === 'interface' &&
+        props.canMonitor()
+      )
+        props.onMonitor(true)
+    } catch {
+      if (operation === monitorRequest) setMonitorRequestFailed(true)
+    } finally {
+      if (operation === monitorRequest) setMonitorPending(false)
+    }
+  }
+  const monitorAction = (): string =>
+    props.monitoringEnabled()
+      ? 'Turn monitoring off'
+      : monitorPending()
+        ? 'Opening input for monitoring'
+        : canStartMonitor()
+          ? 'Start Listening and monitoring'
+          : 'Turn monitoring on'
+
   const monitorHint = (): string => {
+    if (monitorRequestFailed())
+      return 'Input could not open. Check Listening above and try again.'
     if (props.monitoringActive()) {
       return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
     }
@@ -129,7 +201,9 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
       return 'Choose Direct input to hear your guitar through this amp.'
     }
     if (!props.canMonitor()) {
-      return 'Turn on Listening, then monitor through headphones.'
+      return canStartMonitor()
+        ? 'This starts Direct-input Listening and monitoring. Headphones recommended; start at a low level.'
+        : 'Start Listening above to enable monitoring. Headphones recommended.'
     }
     return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
   }
@@ -295,32 +369,96 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
         </button>
       </details>
 
+      <Show
+        when={
+          props.inputProfile() === 'interface' &&
+          (props.monitorInputChannelCount?.() ?? 0) > 0
+        }
+      >
+        <label class={ampStyles.monitorChannel}>
+          <span>Monitor input</span>
+          <select
+            aria-label="Monitor input channel"
+            value={props.monitorInputChannel?.() ?? 0}
+            disabled={
+              monitorPending() || (props.monitorInputChannelCount?.() ?? 0) <= 1
+            }
+            onChange={(event) =>
+              props.onMonitorInputChannel?.(Number(event.currentTarget.value))
+            }
+          >
+            <For
+              each={Array.from(
+                { length: props.monitorInputChannelCount?.() ?? 0 },
+                (_, channel) => channel,
+              )}
+            >
+              {(channel) => (
+                <option value={channel}>Input {channel + 1} · Mono</option>
+              )}
+            </For>
+          </select>
+          <small>
+            Centered in both speakers. Changing input turns monitoring off; turn
+            it on when ready. Channel numbers follow the browser's input order.
+          </small>
+        </label>
+      </Show>
+
       <div class={styles.ampMonitorRow}>
         <button
           type="button"
           class={styles.ampMonitor}
           classList={{
             [styles.ampMonitorActive]: props.monitoringActive(),
+            [ampStyles.monitorOff]: !props.monitoringActive(),
           }}
           aria-pressed={props.monitoringEnabled()}
+          aria-label={monitorAction()}
+          aria-busy={monitorPending()}
           aria-describedby={monitorHintId}
-          disabled={!props.canMonitor() && !props.monitoringEnabled()}
-          onClick={() => props.onMonitor(!props.monitoringEnabled())}
+          disabled={
+            monitorPending() ||
+            (!props.canMonitor() &&
+              !canStartMonitor() &&
+              !props.monitoringEnabled())
+          }
+          onClick={() => void requestMonitor()}
         >
           <span aria-hidden="true">
-            <Headphones />
+            <Show when={props.monitoringActive()} fallback={<HeadphonesOff />}>
+              <Headphones />
+            </Show>
           </span>
           <span>
             <strong>
-              {props.monitoringActive() ? 'Monitoring on' : 'Hear my input'}
+              {props.monitoringActive()
+                ? 'Monitoring on'
+                : monitorPending()
+                  ? 'Opening input'
+                  : 'Monitoring off'}
             </strong>
-            <small>Direct input only</small>
+            <small>
+              {props.monitoringActive()
+                ? 'Click to turn off'
+                : canStartMonitor()
+                  ? 'Start Listening & monitor'
+                  : props.canMonitor()
+                    ? 'Click to turn on'
+                    : 'Direct Listening required'}
+            </small>
           </span>
         </button>
         <small id={monitorHintId} class={styles.ampMonitorHint}>
           {monitorHint()}
         </small>
       </div>
+      <Show when={props.monitorDiagnostics !== undefined}>
+        <GuitarNightMonitorLatency
+          snapshot={props.monitorDiagnostics?.() ?? null}
+          monitoring={props.monitoringActive()}
+        />
+      </Show>
     </section>
   )
 }

@@ -97,6 +97,7 @@ export interface GuitarBackingTransport {
   setLoopRange(range: LoopSpan | null): boolean
   setPlaybackRate(rate: number): Promise<boolean>
   setMasterVolume(position: number): void
+  setBackingMuted(muted: boolean): void
   setElectricAmpParameters(parameters: GuitarElectricAmpParameters): void
   setTrackMuted(id: string, muted: boolean): void
   setTrackLevelDb(id: string, db: number): void
@@ -114,6 +115,7 @@ export interface GuitarBackingTransport {
   getDuration(): number
   getPlaybackRate(): number
   getMasterVolume(): number
+  getBackingMuted(): boolean
   getSoloedTrackId(): string | null
   getTrackStates(): readonly GuitarBackingTrackState[]
   getError(): string | null
@@ -362,6 +364,9 @@ export function createGuitarBackingTransport(
   let context: AudioContext | null = null
   let audioGraph: GuitarSessionAudioGraph | null = null
   let masterPosition = 0.78
+  // A temporary mix mask, not the room master: live input stays audible and
+  // retained per-track mute, level and Solo choices are never overwritten.
+  let backingMuted = false
   let electricAmpParameters: GuitarElectricAmpParameters = {
     ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
   }
@@ -585,7 +590,10 @@ export function createGuitarBackingTransport(
     const state = trackState(id)
     // Legacy source defaults may be quieter than the interactive fader floor;
     // preserve those exactly until the player intentionally edits the fader.
-    return state === undefined || !state.available || state.effectiveMuted
+    return backingMuted ||
+      state === undefined ||
+      !state.available ||
+      state.effectiveMuted
       ? 0
       : clampGuitarTrackMixGain(10 ** (state.levelDb / 20))
   }
@@ -1325,6 +1333,7 @@ export function createGuitarBackingTransport(
       generation += 1
       resetLoadedAudio()
       session = nextSession
+      backingMuted = false
       loopRange = null
       loopError = null
       loopRevision += 1
@@ -1512,6 +1521,12 @@ export function createGuitarBackingTransport(
       emit()
     },
 
+    setBackingMuted(muted) {
+      if (disposed || backingMuted === muted) return
+      backingMuted = muted
+      applyMix()
+    },
+
     setElectricAmpParameters(parameters) {
       electricAmpParameters = { ...parameters }
       if (disposed) return
@@ -1572,6 +1587,7 @@ export function createGuitarBackingTransport(
     getDuration: () => duration,
     getPlaybackRate: () => playbackRate,
     getMasterVolume: () => masterPosition,
+    getBackingMuted: () => backingMuted,
     getSoloedTrackId: () => soloedTrackId,
     getTrackStates: trackStatesView,
     getError: () => error,

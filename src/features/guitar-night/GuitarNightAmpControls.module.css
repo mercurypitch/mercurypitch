@@ -4,6 +4,46 @@
   min-width: 0;
 }
 
+.controls button.monitorOff {
+  border-color: rgb(228 140 128 / 0.42);
+  color: #f2b3a9;
+  background: rgb(165 68 55 / 0.09);
+}
+
+.controls button.monitorOff:hover:not(:disabled) {
+  border-color: #f2b3a9;
+  background: rgb(165 68 55 / 0.17);
+}
+
+.controls button.monitorOff small {
+  color: inherit;
+}
+
+.monitorChannel {
+  display: grid;
+  gap: 0.4rem;
+}
+.monitorChannel > span {
+  color: var(--ivory);
+  font-size: 0.72rem;
+}
+.monitorChannel > small {
+  color: var(--muted-readable);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+.monitorChannel select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  color: var(--ivory);
+  background: var(--night);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
 .controls select,
 .controls button,
 .controls summary {

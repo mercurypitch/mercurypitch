@@ -1,0 +1,50 @@
+/* Song transport makes room for the same Listening dock used in score rehearsal. */
+section[data-room-kind='backing'] .transportWithListening {
+  grid-template-areas: 'listening rail loop controls';
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.listeningDock {
+  grid-area: listening;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Grid-area names are scoped per CSS module, so all four placements live here. */
+section[data-room-kind='backing'] .timeline {
+  grid-area: rail;
+}
+
+section[data-room-kind='backing'] .loopDock {
+  grid-area: loop;
+}
+
+section[data-room-kind='backing'] .playbackDock {
+  grid-area: controls;
+}
+
+@media (max-width: 1100px) {
+  section[data-room-kind='backing'] .transportWithListening {
+    grid-template-areas: 'listening rail loop' 'controls controls controls';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.25rem 0.3rem;
+  }
+}
+
+@media (max-width: 720px) {
+  section[data-room-kind='backing'] .timeline {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 0.4rem;
+  }
+
+  .timeline > :first-child,
+  .timeline > :last-child {
+    grid-row: 1;
+  }
+
+  .timeline > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

@@ -43,7 +43,7 @@ export const GUITAR_ELECTRIC_AMP_CABINETS = Object.freeze([
 export interface GuitarElectricAmpParameters {
   /** Omitted by legacy callers; the original asset-free path remains Lite. */
   readonly engine?: 'lite' | 'studio'
-  readonly head?: 'definition' | 'heavy'
+  readonly head?: 'definition' | 'heavy' | 'lead'
   readonly character?: number
   readonly enabled: boolean
   readonly drive: number
@@ -167,7 +167,9 @@ export function normalizeGuitarElectricAmpParameters(
         ? candidate.engine
         : (fallback.engine ?? 'lite'),
     head:
-      candidate.head === 'definition' || candidate.head === 'heavy'
+      candidate.head === 'definition' ||
+      candidate.head === 'heavy' ||
+      candidate.head === 'lead'
         ? candidate.head
         : (fallback.head ?? 'definition'),
     character: finiteInRange(

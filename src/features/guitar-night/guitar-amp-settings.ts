@@ -11,17 +11,18 @@ export const GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY =
 export const GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY =
   'guitar-night-amp-settings-v1'
 
-type GuitarNightAmpLitePresetId = 'studio-clean' | 'edge' | 'crunch' | 'lead'
+type GuitarNightAmpLitePresetId = 'studio-clean' | 'edge' | 'crunch'
 export type GuitarNightAmpCuratedPresetId =
   | 'tight'
   | 'articulate'
   | 'heavy'
+  | 'lead'
   | GuitarNightAmpLitePresetId
 export type GuitarNightAmpPresetId = GuitarNightAmpCuratedPresetId | 'custom'
 
 type GuitarNightAmpTone = GuitarElectricAmpParameters & {
   engine: 'lite' | 'studio'
-  head: 'definition' | 'heavy'
+  head: NonNullable<GuitarElectricAmpParameters['head']>
   character: number
 }
 
@@ -130,17 +131,10 @@ export const GUITAR_NIGHT_AMP_PRESETS: readonly GuitarNightAmpPreset[] =
       id: 'lead',
       label: 'Lead',
       description:
-        'Lite: sustaining drive with focused mids and a darker cabinet.',
+        'Studio: sustaining solo drive with forward mids and a smoother edge.',
       settings: ampParameters({
-        enabled: true,
-        drive: 0.84,
-        bass: -0.1,
-        mid: 0.38,
-        treble: -0.22,
-        presence: 0.08,
-        output: 0.25,
-        cabinet: 'dark',
-        asymmetry: 0.46,
+        ...STUDIO_PARAMETERS,
+        head: 'lead',
       }),
     }),
   ])
@@ -210,7 +204,9 @@ export function guitarNightAmpSettingsForPreset(
 /**
  * A V1 preference keeps the exact Lite tone and bypass state. An incomplete or
  * unsupported envelope falls back as one unit; it never blends old and new
- * controls. Reading/migrating does not rewrite either storage key.
+ * controls. The old Lite Lead becomes Custom without changing its sound;
+ * only explicitly choosing the new Lead adopts the Studio head. Reading or
+ * migrating does not rewrite either storage key.
  */
 export function normalizeGuitarNightAmpSettings(
   value: unknown,
@@ -233,7 +229,9 @@ export function normalizeGuitarNightAmpSettings(
     legacy
       ? !LEGACY_PRESET_IDS.includes(value.presetId)
       : (value.engine !== 'lite' && value.engine !== 'studio') ||
-        (value.head !== 'definition' && value.head !== 'heavy') ||
+        (value.head !== 'definition' &&
+          value.head !== 'heavy' &&
+          value.head !== 'lead') ||
         typeof value.character !== 'number' ||
         !Number.isFinite(value.character)
   )
@@ -250,12 +248,16 @@ export function normalizeGuitarNightAmpSettings(
     cabinet: value.cabinet,
     asymmetry: value.asymmetry as number,
     engine: legacy ? 'lite' : (value.engine as 'lite' | 'studio'),
-    head: legacy ? 'definition' : (value.head as 'definition' | 'heavy'),
+    head: legacy ? 'definition' : (value.head as GuitarNightAmpTone['head']),
     character: legacy ? 1 : (value.character as number),
   })
   return {
     version: GUITAR_NIGHT_AMP_SETTINGS_VERSION,
-    presetId: value.presetId,
+    presetId:
+      value.presetId === 'lead' &&
+      (parameters.engine !== 'studio' || parameters.head !== 'lead')
+        ? 'custom'
+        : value.presetId,
     ...ampParameters(parameters),
   }
 }

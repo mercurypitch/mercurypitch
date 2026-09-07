@@ -10,6 +10,7 @@ import { createGuitarStudioHead, createGuitarStudioHeadCurve, getGuitarStudioHea
 const heavy: GuitarStudioHeadOptions = { head: 'heavy', character: 0 }
 const articulate: GuitarStudioHeadOptions = { head: 'definition', character: 0 }
 const tight: GuitarStudioHeadOptions = { head: 'definition', character: 1 }
+const lead: GuitarStudioHeadOptions = { head: 'lead', character: 1 }
 const clippingKinds: GuitarStudioHeadCurve[] = ['preamp', 'interstage', 'power']
 
 class FakeParam {
@@ -88,6 +89,7 @@ describe('studio head profiles', () => {
     )
     expect(normalizeGuitarStudioHeadOptions({ character: 4 })).toEqual(tight)
     expect(normalizeGuitarStudioHeadOptions(heavy)).toEqual(heavy)
+    expect(normalizeGuitarStudioHeadOptions(lead)).toEqual(lead)
     expect(Object.isFrozen(normalizeGuitarStudioHeadOptions(tight))).toBe(true)
   })
 
@@ -204,6 +206,32 @@ describe('studio head profiles', () => {
         .preampGain,
     ).toBe(6.75)
   })
+
+  it('gives Lead more early saturation, gentler final clipping and its own post-drive mid voicing', () => {
+    const profile = getGuitarStudioHeadProfile(lead)
+    const rhythm = getGuitarStudioHeadProfile(tight)
+    const strong = getGuitarStudioHeadProfile(heavy)
+    expect(profile.preampGain).toBeGreaterThan(strong.preampGain)
+    expect(profile.powerSlope).toBeLessThan(strong.powerSlope)
+    expect(profile.outputGain).toBeLessThan(rhythm.outputGain)
+    expect(profile.preBassDb).toBeLessThan(0)
+    expect(profile.fizzDb).toBeLessThan(rhythm.fizzDb)
+    expect(profile.outputLowpassHz).toBeLessThan(rhythm.outputLowpassHz)
+    expect(profile.midVoicing).toEqual({
+      frequencyHz: 1200,
+      q: 0.7,
+      gainDb: 3,
+    })
+    expect(getGuitarStudioHeadProfile({ head: 'lead', character: 0 })).toBe(
+      profile,
+    )
+    expect(Object.isFrozen(profile)).toBe(true)
+    expect(Object.isFrozen(profile.midVoicing)).toBe(true)
+    for (const kind of clippingKinds)
+      expect(createGuitarStudioHeadCurve(kind, profile)).not.toEqual(
+        createGuitarStudioHeadCurve(kind, rhythm),
+      )
+  })
 })
 
 describe('studio head transfer curves', () => {
@@ -252,6 +280,7 @@ describe('studio head transfer curves', () => {
   it('preserves exact silence and monotonic bounded clipping throughout the character range', () => {
     for (const options of [
       heavy,
+      lead,
       ...[0, 0.1, 0.5, 0.9, 1].map((character) => ({
         head: 'definition' as const,
         character,
@@ -281,7 +310,7 @@ describe('studio head transfer curves', () => {
   })
 
   it('keeps envelope modulation nonnegative and within the profile sag bound', () => {
-    for (const options of [heavy, articulate, tight]) {
+    for (const options of [heavy, articulate, tight, lead]) {
       const profile = getGuitarStudioHeadProfile(options)
       const rectifier = createGuitarStudioHeadCurve('rectify', profile)
       const envelope = createGuitarStudioHeadCurve('envelope', profile)
@@ -306,7 +335,7 @@ describe('studio head graph', () => {
   it.each([44100, 48000])(
     'preserves audited graph routing and safe frequencies at %d Hz',
     (rate) => {
-      for (const options of [heavy, articulate, tight]) {
+      for (const options of [heavy, articulate, tight, lead]) {
         const { context, created } = createContext(rate)
         const stage = createGuitarStudioHead(context, options)
         const profile = getGuitarStudioHeadProfile(options)
@@ -317,10 +346,15 @@ describe('studio head graph', () => {
         const shapers = serial.filter((node) => node.kind === 'shaper')
         const filters = serial.filter((node) => node.kind === 'filter')
         const shelves = filters.filter((node) => node.type === 'lowshelf')
-        expect(created).toHaveLength(options.head === 'heavy' ? 20 : 23)
-        expect(serial).toHaveLength(options.head === 'heavy' ? 16 : 19)
+        const extraMid = profile.midVoicing === undefined ? 0 : 1
+        expect(created).toHaveLength(
+          (options.head === 'heavy' ? 20 : 23) + extraMid,
+        )
+        expect(serial).toHaveLength(
+          (options.head === 'heavy' ? 16 : 19) + extraMid,
+        )
         expect(stage.input.gain.value).toBe(1)
-        expect(stage.output.gain.value).toBe(0.3)
+        expect(stage.output.gain.value).toBe(profile.outputGain)
         expect(shapers.map((node) => node.oversample)).toEqual([
           '4x',
           '4x',
@@ -341,7 +375,7 @@ describe('studio head graph', () => {
           profile.interstageGain,
           1,
           profile.powerDrive,
-          0.3,
+          profile.outputGain,
         ])
         expect(
           filters
@@ -385,8 +419,23 @@ describe('studio head graph', () => {
             serial.indexOf(shapers[2]),
           )
           expect(
-            filters.find((node) => node.type === 'peaking')?.gain.value,
+            filters.find(
+              (node) =>
+                node.type === 'peaking' &&
+                node.frequency.value === profile.fizzHz,
+            )?.gain.value,
           ).toBe(profile.fizzDb)
+        }
+        if (profile.midVoicing !== undefined) {
+          const mid = filters.find(
+            (node) => node.frequency.value === profile.midVoicing?.frequencyHz,
+          )!
+          expect(mid.type).toBe('peaking')
+          expect(mid.gain.value).toBe(profile.midVoicing.gainDb)
+          expect(mid.Q.value).toBe(profile.midVoicing.q)
+          expect(serial.indexOf(mid)).toBeGreaterThan(
+            serial.indexOf(shapers[2]),
+          )
         }
         const depth = created.find(
           (node) => node.kind === 'gain' && node.gain.value < 0,
@@ -396,7 +445,9 @@ describe('studio head graph', () => {
           serial[serial.indexOf(shapers[2]) - 2].gain,
         ])
         const envelope = created.find(
-          (node) => node.kind === 'filter' && node.frequency.value === 10,
+          (node) =>
+            node.kind === 'filter' &&
+            node.frequency.value === profile.envelopeHz,
         )
         expect(envelope?.Q.value).toBe(0.5)
         expect(shapers[1].connections).toHaveLength(2)

@@ -173,6 +173,8 @@ function fakeBackingTransport() {
       ),
     getPlaybackRate: () => playbackRate,
     getMasterVolume: () => 0.78,
+    getBackingMuted: () => false,
+    setBackingMuted: vi.fn(),
     getTrackStates: () => trackStates,
     getSoloedTrackId: () => null,
     getError: () => null,

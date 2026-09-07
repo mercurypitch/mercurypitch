@@ -93,7 +93,7 @@ async function assertControls(amp: Locator): Promise<void> {
   expect(overflow.panel).toBeLessThanOrEqual(1)
   expect(overflow.page).toBeLessThanOrEqual(1)
   const monitorLayout = await amp
-    .getByRole('button', { name: /Hear my input/ })
+    .getByRole('button', { name: 'Turn monitoring on', exact: true })
     .evaluate((button) => {
       const hint = document.getElementById(
         button.getAttribute('aria-describedby')!,

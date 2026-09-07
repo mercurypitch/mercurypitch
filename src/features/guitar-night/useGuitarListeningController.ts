@@ -48,6 +48,7 @@ import { buildGuitarTakeEvidenceReport, downloadGuitarInputEvidenceReport, guita
 import type { GuitarInputMonitor } from './guitar-input-monitor'
 import { createGuitarInputMonitor } from './guitar-input-monitor'
 import { guitarPerformanceAnalyserSize } from './guitar-score-tuning'
+import { useGuitarMonitorDiagnostics } from './useGuitarMonitorDiagnostics'
 
 const CONSUMER_ID = 'guitar-night-listening'
 // MicManager holds are idempotent by ID, so overlapping starts need distinct
@@ -359,6 +360,11 @@ export function useGuitarListeningController(
   const [ampMonitoringEnabled, setAmpMonitoringEnabledSignal] =
     createSignal(false)
   const [ampMonitoringActive, setAmpMonitoringActive] = createSignal(false)
+  const [monitorInputChannel, setMonitorInputChannel] = createSignal(0)
+  const [monitorInputChannelCount, setMonitorInputChannelCount] =
+    createSignal(0)
+  let monitorRoute: string | null = null
+  const monitorDiagnostics = useGuitarMonitorDiagnostics()
   const evidenceExportEnabled = createMemo(() =>
     guitarInputEvidenceExportEnabled(),
   )
@@ -520,6 +526,7 @@ export function useGuitarListeningController(
   }
 
   const releaseMicHold = (): void => {
+    monitorDiagnostics.clear()
     setRecordableStream(null)
     if (!ownsMic) return
     ownsMic = false
@@ -531,6 +538,7 @@ export function useGuitarListeningController(
   const resetAmpMonitoring = (): void => {
     inputMonitor?.dispose()
     inputMonitor = null
+    setMonitorInputChannelCount(0)
     setAmpMonitoringEnabledSignal(false)
     setAmpMonitoringActive(false)
   }
@@ -547,8 +555,27 @@ export function useGuitarListeningController(
       inputProfile() === 'interface' &&
       status() === 'listening' &&
       recordableStream() !== null &&
+      monitorInputChannelCount() > 0 &&
       inputMonitor !== null,
   )
+
+  const selectMonitorInputChannel = (channel: number): boolean => {
+    if (
+      !canAmpMonitor() ||
+      inputMonitor === null ||
+      !Number.isInteger(channel) ||
+      channel < 0 ||
+      channel >= monitorInputChannelCount()
+    )
+      return false
+    if (channel === monitorInputChannel()) return true
+    if (!inputMonitor.setInputChannel(channel)) return false
+    setAmpMonitoringEnabledSignal(false)
+    setAmpMonitoringActive(false)
+    setMonitorInputChannel(channel)
+    monitorDiagnostics.refresh()
+    return true
+  }
 
   const setAmpMonitoringEnabled = (enabled: boolean): boolean => {
     if (!enabled) {
@@ -750,6 +777,7 @@ export function useGuitarListeningController(
 
   const stopNodes = (): void => {
     stoppingInput = true
+    monitorDiagnostics.clear()
     const disposePending = disposePendingAudio
     disposePendingAudio = null
     disposePending?.()
@@ -990,6 +1018,8 @@ export function useGuitarListeningController(
     if (status() !== 'off' && status() !== 'error') stop()
     const next = deviceId !== null && deviceId.length > 0 ? deviceId : null
     setActiveAudioInputId(null)
+    monitorRoute = null
+    setMonitorInputChannel(0)
     setSelectedAudioInputIdSignal(next)
     saveGuitarAudioInputId(next)
     setError(null)
@@ -1064,6 +1094,8 @@ export function useGuitarListeningController(
       for (const analyser of pendingAnalysers) analyser.disconnect()
     }
     const requestedProfile = inputProfile()
+    const requestedMonitorRoute = monitorRoute
+    const requestedMonitorChannel = monitorInputChannel()
     stopNodes()
     setActiveAudioInputId(null)
     setError(null)
@@ -1175,6 +1207,15 @@ export function useGuitarListeningController(
         reportedChannelCount,
         sourceChannelCount,
       )
+      const nextMonitorRoute = JSON.stringify([
+        actualDeviceId ?? requestedDeviceId,
+        channelCount,
+      ])
+      const nextMonitorChannel =
+        nextMonitorRoute === requestedMonitorRoute &&
+        requestedMonitorChannel < channelCount
+          ? requestedMonitorChannel
+          : 0
       const nextPitchAnalysers = Array.from({ length: channelCount }, () => {
         const channelAnalyser = context.createAnalyser()
         channelAnalyser.fftSize = analyserSize
@@ -1203,6 +1244,8 @@ export function useGuitarListeningController(
           source: nextSource,
           destination: graph.buses.monitor,
           parameters: latestAmpParameters,
+          inputChannel: nextMonitorChannel,
+          inputChannelCount: channelCount,
         })
       }
 
@@ -1262,6 +1305,19 @@ export function useGuitarListeningController(
       pitchAnalysers = nextPitchAnalysers
       pitchSplitter = pendingSplitter
       inputMonitor = pendingMonitor
+      if (pendingMonitor !== null) {
+        monitorRoute = nextMonitorRoute
+        setMonitorInputChannel(nextMonitorChannel)
+        setMonitorInputChannelCount(channelCount)
+      }
+      if (track !== undefined)
+        monitorDiagnostics.attach({
+          context,
+          track,
+          requestedDeviceId,
+          monitorInputChannel: () =>
+            inputMonitor === null ? null : monitorInputChannel(),
+        })
       tap = nextTap
       const nextTimingSource = tap === null ? 'frame-loop' : 'audio-clock'
       setTimingSource(nextTimingSource)
@@ -1690,7 +1746,11 @@ export function useGuitarListeningController(
     health,
     ampMonitoringEnabled,
     ampMonitoringActive,
+    monitorDiagnostics: monitorDiagnostics.snapshot,
     canAmpMonitor,
+    monitorInputChannel,
+    monitorInputChannelCount,
+    selectMonitorInputChannel,
     setAmpMonitoringEnabled,
     selectInputProfile,
     selectAudioInput,

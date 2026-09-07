@@ -48,6 +48,7 @@ const dependencies = vi.hoisted(() => ({
   createInputMonitor: vi.fn(),
   inputMonitors: [] as Array<{
     setEnabled: ReturnType<typeof vi.fn>
+    setInputChannel: ReturnType<typeof vi.fn>
     setParameters: ReturnType<typeof vi.fn>
     dispose: ReturnType<typeof vi.fn>
   }>,
@@ -320,6 +321,7 @@ describe('useGuitarListeningController', () => {
     dependencies.createInputMonitor.mockImplementation(() => {
       const monitor = {
         setEnabled: vi.fn((enabled: boolean) => enabled),
+        setInputChannel: vi.fn(() => true),
         setParameters: vi.fn(),
         dispose: vi.fn(),
       }
@@ -347,18 +349,38 @@ describe('useGuitarListeningController', () => {
   it('exposes only the already-owned audio route and clears it on stop', async () => {
     const audio = createAudioHarness()
     installFrameHarness(audio.context)
-    const stream = {} as MediaStream
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({
+        sampleRate: 48000,
+        channelCount: 1,
+        latency: 0.012,
+      }),
+      getConstraints: () => ({ echoCancellation: false }),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
     dependencies.acquire.mockResolvedValue(stream)
 
     await withController(audio.context, async (controller) => {
       expect(controller.recordableStream()).toBeNull()
+      expect(controller.monitorDiagnostics()).toBeNull()
+      expect(dependencies.acquire).not.toHaveBeenCalled()
       expect(await controller.start()).toBe(true)
       expect(controller.recordableStream()).toBe(stream)
       expect(controller.recordableAudioContext()).toBe(audio.context)
+      expect(
+        controller.monitorDiagnostics()?.capture.actual.latencySeconds,
+      ).toBe(0.012)
+      expect(
+        controller.monitorDiagnostics()?.capture.requested.echoCancellation,
+      ).toBe(false)
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledOnce()
 
       controller.stop()
       expect(controller.recordableStream()).toBeNull()
       expect(controller.recordableAudioContext()).toBeNull()
+      expect(controller.monitorDiagnostics()).toBeNull()
     })
   })
 
@@ -403,6 +425,8 @@ describe('useGuitarListeningController', () => {
         source: audio.source,
         destination: monitorBus,
         parameters: AMP_PARAMETERS,
+        inputChannel: 0,
+        inputChannelCount: 1,
       })
       expect(controller.canAmpMonitor()).toBe(true)
       expect(controller.ampMonitoringEnabled()).toBe(false)
@@ -436,6 +460,79 @@ describe('useGuitarListeningController', () => {
       dispose()
     }
     expect(dependencies.inputMonitors[1]?.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('selects one mono monitor channel without replacing dry evidence and requires opt-in after changes', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    let deviceId = 'interface-a'
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({ deviceId, sampleRate: 48000, channelCount: 2 }),
+      getConstraints: () => ({}),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({ context: audio.context, buses: { monitor: {} } }) as never,
+        ampParameters: () => AMP_PARAMETERS,
+      })
+    })
+    try {
+      expect(controller.selectMonitorInputChannel(1)).toBe(false)
+      expect(await controller.start()).toBe(true)
+      expect(controller.monitorInputChannelCount()).toBe(2)
+      expect(controller.monitorInputChannel()).toBe(0)
+      controller.setAmpMonitoringEnabled(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+      expect(controller.monitorInputChannel()).toBe(1)
+      expect(controller.monitorDiagnostics()?.capture).toMatchObject({
+        monitorChannelMode: 'selected-mono',
+        monitorInputChannel: 1,
+      })
+      expect(
+        dependencies.inputMonitors[0]?.setInputChannel,
+      ).toHaveBeenCalledExactlyOnceWith(1)
+      expect(controller.recordableStream()).toBe(stream)
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(dependencies.connectWorklet).toHaveBeenCalledOnce()
+      expect(controller.selectMonitorInputChannel(2)).toBe(false)
+      expect(controller.selectMonitorInputChannel(Number.NaN)).toBe(false)
+      expect(controller.monitorInputChannel()).toBe(1)
+      controller.setAmpMonitoringEnabled(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(true)
+
+      controller.stop()
+      expect(controller.monitorInputChannelCount()).toBe(0)
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(await controller.start()).toBe(true)
+      expect(dependencies.createInputMonitor).toHaveBeenLastCalledWith(
+        expect.objectContaining({ inputChannel: 1, inputChannelCount: 2 }),
+      )
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+
+      controller.stop()
+      deviceId = 'interface-b'
+      expect(await controller.start()).toBe(true)
+      expect(controller.monitorInputChannel()).toBe(0)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      controller.selectMonitorInputChannel(1)
+      await controller.selectAudioInput('interface-c')
+      expect(controller.monitorInputChannel()).toBe(0)
+      expect(controller.monitorInputChannelCount()).toBe(0)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+    } finally {
+      dispose()
+    }
   })
 
   it('never creates or enables the wet branch for a room microphone', async () => {
@@ -484,8 +581,16 @@ describe('useGuitarListeningController', () => {
     vi.mocked(firstAudio.context.createAnalyser)
       .mockReturnValueOnce(firstAudio.analyser as unknown as AnalyserNode)
       .mockReturnValueOnce(nextAudio.analyser as unknown as AnalyserNode)
-    const firstStream = {} as MediaStream
-    const nextStream = {} as MediaStream
+    const firstStream = {
+      getAudioTracks: () => [
+        { getSettings: () => ({ sampleRate: 48000, channelCount: 1 }) },
+      ],
+    } as unknown as MediaStream
+    const nextStream = {
+      getAudioTracks: () => [
+        { getSettings: () => ({ sampleRate: 44100, channelCount: 1 }) },
+      ],
+    } as unknown as MediaStream
     dependencies.acquire
       .mockResolvedValueOnce(firstStream)
       .mockResolvedValueOnce(nextStream)
@@ -528,6 +633,8 @@ describe('useGuitarListeningController', () => {
       expect(controller.ampMonitoringEnabled()).toBe(false)
       expect(controller.setAmpMonitoringEnabled(true)).toBe(true)
       expect(controller.recordableStream()).toBe(nextStream)
+      const currentDiagnostics = controller.monitorDiagnostics()
+      expect(currentDiagnostics?.capture.actual.sampleRate).toBe(44100)
 
       delayedTap.resolve(firstTap)
       expect(await firstStart).toBe(false)
@@ -540,6 +647,7 @@ describe('useGuitarListeningController', () => {
       expect(controller.status()).toBe('listening')
       expect(controller.ampMonitoringActive()).toBe(true)
       expect(controller.recordableStream()).toBe(nextStream)
+      expect(controller.monitorDiagnostics()).toBe(currentDiagnostics)
       expect(dependencies.release).toHaveBeenCalledTimes(1)
       expect(dependencies.release).toHaveBeenCalledWith(
         dependencies.acquire.mock.calls[0]?.[0],

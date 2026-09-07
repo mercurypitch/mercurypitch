@@ -7,7 +7,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Ear, Headphones, History, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
+import { ChevronLeft, Ear, Headphones, History, Metronome, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
 import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
 import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
@@ -34,8 +34,10 @@ import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightInputNotice } from './GuitarNightInputNotice'
 import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
+import { GuitarNightListeningAction } from './GuitarNightListeningAction'
 import type { GuitarNightListeningSelection } from './GuitarNightListeningCycle'
 import { GuitarNightListeningCycle } from './GuitarNightListeningCycle'
+import { GuitarNightListeningQuickControls } from './GuitarNightListeningQuickControls'
 import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightScoreDebugDock } from './GuitarNightScoreDebug'
@@ -969,13 +971,13 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
 
   const selectListeningRoute = async (
     next: GuitarNightListeningSelection,
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     const operation = ++listeningCycleGeneration
     setListeningRouteOperation(operation)
     try {
       if (next === null) {
         if (isListening()) toggleListening()
-        return
+        return false
       }
 
       parkForConfiguration()
@@ -987,9 +989,18 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         disposed ||
         props.suspended?.() === true
       ) {
-        return
+        return false
       }
-      if (listening.status() !== 'listening') await listening.start()
+      const started =
+        listening.status() === 'listening' ? true : await listening.start()
+      // Monitoring consent belongs to this request, not a newer Direct-input
+      // session which may have opened while this permission request settled.
+      return (
+        started &&
+        operation === listeningCycleGeneration &&
+        !disposed &&
+        props.suspended?.() !== true
+      )
     } finally {
       if (listeningRouteOperation() === operation) {
         setListeningRouteOperation(null)
@@ -1715,41 +1726,14 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                 />
                 <GuitarNightInputNotice message={listening.notice} />
 
-                <button
-                  type="button"
-                  class={styles.sessionListening}
-                  classList={{ [styles.listeningActive]: isListening() }}
-                  aria-pressed={isListening()}
+                <GuitarNightListeningAction
+                  status={listening.status()}
+                  listening={isListening()}
                   disabled={
                     listeningRouteOperation() !== null && !isListening()
                   }
-                  aria-label={
-                    listening.status() === 'requesting'
-                      ? 'Cancel opening input'
-                      : isCalibrating()
-                        ? 'Stop calibration'
-                        : isListening()
-                          ? 'Stop Listening'
-                          : 'Turn on Listening'
-                  }
-                  onClick={toggleListening}
-                >
-                  <span aria-hidden="true">
-                    <Mic />
-                  </span>
-                  <span>
-                    <strong>
-                      {listening.status() === 'requesting'
-                        ? 'Opening input'
-                        : isCalibrating()
-                          ? 'Calibrating'
-                          : isListening()
-                            ? 'Listening is on'
-                            : 'Turn on Listening'}
-                    </strong>
-                    <small>Hear notes and enable a live score.</small>
-                  </span>
-                </button>
+                  onToggle={toggleListening}
+                />
 
                 <Show
                   when={
@@ -1775,9 +1759,15 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   parameters={amp.parameters}
                   presetId={() => amp.settings().presetId}
                   inputProfile={listening.inputProfile}
+                  listeningStatus={listening.status}
+                  onStartListening={() => selectListeningRoute('interface')}
                   canMonitor={listening.canAmpMonitor}
                   monitoringEnabled={listening.ampMonitoringEnabled}
                   monitoringActive={listening.ampMonitoringActive}
+                  monitorDiagnostics={listening.monitorDiagnostics}
+                  monitorInputChannel={listening.monitorInputChannel}
+                  monitorInputChannelCount={listening.monitorInputChannelCount}
+                  onMonitorInputChannel={listening.selectMonitorInputChannel}
                   onEnabled={amp.setEnabled}
                   onPreset={amp.selectPreset}
                   onParameter={amp.setContinuousParameter}
@@ -2265,7 +2255,28 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             disabled={() =>
               props.suspended?.() === true || toolTransitionPending()
             }
-            onSelect={selectListeningRoute}
+            onSelect={(next) =>
+              selectListeningRoute(next).then(() => undefined)
+            }
+            quickControls={() => (
+              <Show when={listening.inputProfile() === 'interface'}>
+                <GuitarNightListeningQuickControls
+                  status={listening.status()}
+                  listening={isListening()}
+                  disabled={
+                    props.suspended?.() === true || toolTransitionPending()
+                  }
+                  backingEnabled={room.hearBacking()}
+                  hasBacking={hasBackingParts()}
+                  canMonitor={listening.canAmpMonitor()}
+                  monitoringEnabled={listening.ampMonitoringEnabled()}
+                  monitoringActive={listening.ampMonitoringActive()}
+                  onListening={toggleListening}
+                  onBacking={room.setHearBacking}
+                  onMonitor={listening.setAmpMonitoringEnabled}
+                />
+              </Show>
+            )}
           />
         </div>
 

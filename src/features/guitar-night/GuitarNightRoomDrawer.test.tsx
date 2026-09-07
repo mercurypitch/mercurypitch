@@ -63,6 +63,8 @@ function idleTransport(): GuitarBackingTransport {
     getDuration: () => 0,
     getPlaybackRate: () => 1,
     getMasterVolume: () => 1,
+    getBackingMuted: () => false,
+    setBackingMuted: vi.fn(),
     getTrackStates: () => [],
     getSoloedTrackId: () => null,
     getError: () => null,

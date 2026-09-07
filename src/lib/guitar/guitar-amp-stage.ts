@@ -70,8 +70,8 @@ export function createGuitarAmpStage(
     if (!parameters.enabled) return 'bypassed'
     if (parameters.engine !== 'studio' || kernel === undefined || failed)
       return 'lite'
-    return parameters.head === 'heavy'
-      ? 'studio-heavy'
+    return parameters.head === 'heavy' || parameters.head === 'lead'
+      ? `studio-${parameters.head}`
       : `studio-${parameters.character ?? 1}`
   }
   const release = (slot: Slot | undefined): void => {

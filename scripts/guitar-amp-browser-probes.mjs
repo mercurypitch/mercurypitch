@@ -198,6 +198,7 @@ async function render(
     const buffer = await ctx.startRendering()
     return {
       pcm: buffer.getChannelData(0),
+      parameters: stages.map((stage) => stage.getParameters?.()),
       setupMs,
       renderMs: globalThis.performance.now() - start,
       ownedNodeCount,
@@ -205,6 +206,87 @@ async function render(
   } finally {
     for (const stage of stages) stage.dispose()
     for (const node of owned) node.disconnect()
+  }
+}
+
+async function verifyStudioLead(rate, kernel) {
+  const { guitarNightAmpSettingsForPreset, normalizeGuitarNightAmpSettings } =
+    await import('/src/features/guitar-night/guitar-amp-settings.ts')
+  const { version, presetId, ...parameters } =
+    guitarNightAmpSettingsForPreset('lead')
+  assert(
+    version === 2 &&
+      presetId === 'lead' &&
+      parameters.engine === 'studio' &&
+      parameters.head === 'lead',
+    'Factory Lead did not select its Studio head',
+  )
+  const actual = await render(rate, parameters, kernel)
+  const measured = stats(actual.pcm, rate)
+  assert(
+    Object.entries(parameters).every(
+      ([key, value]) => actual.parameters[0]?.[key] === value,
+    ),
+    'Factory Lead parameters changed inside the facade',
+  )
+  assert(
+    measured.rms > 1e-5 &&
+      measured.peak < 1 &&
+      Math.abs(measured.dc) < 0.001 &&
+      measured.tailPeak < 1e-6,
+    'Lead fixture clips, has excessive DC, is silent, or leaves a tail',
+  )
+  const comparisons = {}
+  for (const id of ['tight', 'heavy']) {
+    const other = await render(
+      rate,
+      guitarNightAmpSettingsForPreset(id),
+      kernel,
+    )
+    comparisons[id] = difference(actual.pcm, other.pcm)
+    assert(comparisons[id].relativeRmsError > 0.01, `Lead PCM equals ${id}`)
+  }
+  const restored = normalizeGuitarNightAmpSettings(
+    JSON.parse(JSON.stringify({ version, presetId, ...parameters })),
+  )
+  const repeated = await render(rate, restored, kernel)
+  const unusedCharacter = await render(
+    rate,
+    { ...parameters, character: 0 },
+    kernel,
+  )
+  const roundTripDifference = difference(repeated.pcm, actual.pcm)
+  const characterDifference = difference(unusedCharacter.pcm, actual.pcm)
+  assert(
+    roundTripDifference.maxSampleDifference < 1e-6 &&
+      characterDifference.maxSampleDifference < 1e-6,
+    'Lead changed after persistence or an unused Character update',
+  )
+  const quieter = await render(rate, { ...parameters, output: 0.4 }, kernel)
+  const expectedOutputGain = 10 ** (-4 / 20)
+  const outputGainDifference = difference(
+    quieter.pcm,
+    Float32Array.from(actual.pcm, (value) => value * expectedOutputGain),
+  )
+  assert(
+    outputGainDifference.maxSampleDifference < 1e-6,
+    'Output altered Lead distortion',
+  )
+  const lowerDrive = await render(rate, { ...parameters, drive: 0.35 }, kernel)
+  const driveDifference = difference(lowerDrive.pcm, actual.pcm)
+  assert(
+    driveDifference.relativeRmsError > 0.01,
+    'Lead drive control had no PCM effect',
+  )
+  return {
+    ...measured,
+    parameters: actual.parameters[0],
+    comparisons,
+    roundTripDifference,
+    characterDifference,
+    expectedOutputGain,
+    outputGainDifference,
+    driveDifference,
   }
 }
 
@@ -289,6 +371,7 @@ export async function verifyOffline() {
       endpoints,
       interior,
       scaling,
+      lead: await verifyStudioLead(rate, kernel),
     })
   }
   return results

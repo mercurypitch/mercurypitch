@@ -6,6 +6,7 @@ import roomStyles from './GuitarNightApp.module.css'
 import { GuitarNightHandSync } from './GuitarNightHandSync'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightInputPicker } from './GuitarNightInputPicker'
+import { GuitarNightListeningAction } from './GuitarNightListeningAction'
 import { GuitarNightMixerDialog } from './GuitarNightMixControls'
 import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import styles from './GuitarNightSongSession.module.css'
@@ -25,6 +26,7 @@ interface GuitarNightSongSessionProps {
   formatTime(seconds: number): string
   handSync?: Accessor<GuitarNightRoomHandSync | null>
   focusHandPlacement?: boolean
+  routePending?: boolean
 }
 
 export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
@@ -58,11 +60,7 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
       onClose={() => props.onClose()}
     >
       <div class={styles.sections}>
-        <details class={styles.inputDisclosure}>
-          <summary>
-            <strong>Input</strong>
-            <span>{props.listening.inputProfileLabel()}</span>
-          </summary>
+        <div>
           <GuitarNightInputPicker
             profile={props.listening.inputProfile}
             profileLabel={props.listening.inputProfileLabel}
@@ -74,6 +72,7 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
             evidenceExportEnabled={props.listening.evidenceExportEnabled}
             canExportEvidence={props.listening.canExportEvidence}
             switching={() =>
+              props.routePending === true ||
               props.listening.status() === 'requesting' ||
               props.isCalibrating() ||
               props.listening.inputTakeoverPending() ||
@@ -90,7 +89,14 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
             Direct input can stay on while the song plays. Room mic and MIDI
             pause the backing when Listening starts.
           </p>
-        </details>
+        </div>
+        <GuitarNightListeningAction
+          status={props.listening.status()}
+          listening={props.isListening()}
+          disabled={props.routePending}
+          detail="Hear your notes while you practice."
+          onToggle={props.playback.toggleListening}
+        />
         <Show
           when={
             props.listening.status() !== 'off' &&
@@ -114,9 +120,15 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
             parameters={props.amp.parameters}
             presetId={() => props.amp.settings().presetId}
             inputProfile={props.listening.inputProfile}
+            listeningStatus={props.listening.status}
+            onStartListening={props.playback.startListening}
             canMonitor={props.listening.canAmpMonitor}
             monitoringEnabled={props.listening.ampMonitoringEnabled}
             monitoringActive={props.listening.ampMonitoringActive}
+            monitorDiagnostics={props.listening.monitorDiagnostics}
+            monitorInputChannel={props.listening.monitorInputChannel}
+            monitorInputChannelCount={props.listening.monitorInputChannelCount}
+            onMonitorInputChannel={props.listening.selectMonitorInputChannel}
             onEnabled={props.amp.setEnabled}
             onPreset={props.amp.selectPreset}
             onParameter={props.amp.setContinuousParameter}

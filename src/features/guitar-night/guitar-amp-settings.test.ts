@@ -81,6 +81,20 @@ describe('Guitar Night amp presets', () => {
       head: 'heavy',
     })
   })
+
+  it('selects and restores Lead on its own Studio head with the shared cabinet', () => {
+    const chosen = guitarNightAmpSettingsForPreset('lead')
+    expect(chosen).toEqual({
+      ...guitarNightAmpSettingsForPreset('tight'),
+      presetId: 'lead',
+      head: 'lead',
+    })
+    expect(saveGuitarNightAmpSettings(chosen)).toEqual(chosen)
+    expect(loadGuitarNightAmpSettings()).toEqual(chosen)
+    const custom = customizeGuitarNightAmpSettings(chosen, { drive: 0.51 })
+    expect(saveGuitarNightAmpSettings(custom)).toEqual(custom)
+    expect(loadGuitarNightAmpSettings()).toEqual(custom)
+  })
 })
 
 describe('normalizeGuitarNightAmpSettings', () => {
@@ -181,6 +195,21 @@ const legacyCustom = {
   asymmetry: 0.16,
 }
 
+// Literal pre-Studio Lead: the factory now deliberately returns the new head.
+const legacyLead = {
+  version: 1,
+  presetId: 'lead',
+  enabled: true,
+  drive: 0.84,
+  bass: -0.1,
+  mid: 0.38,
+  treble: -0.22,
+  presence: 0.08,
+  output: 0.25,
+  cabinet: 'dark',
+  asymmetry: 0.46,
+}
+
 describe('Guitar Night V1 migration', () => {
   it('preserves every custom scalar, cabinet and bypass without adopting a Studio head', () => {
     expect(
@@ -199,7 +228,7 @@ describe('Guitar Night V1 migration', () => {
     })
   })
 
-  it.each(['studio-clean', 'edge', 'crunch', 'lead'] as const)(
+  it.each(['studio-clean', 'edge', 'crunch'] as const)(
     'keeps %s on the unchanged Lite recipe',
     (presetId) => {
       const preset = guitarNightAmpSettingsForPreset(presetId)
@@ -213,6 +242,44 @@ describe('Guitar Night V1 migration', () => {
         normalizeGuitarNightAmpSettings({ ...legacy, version: 1 }),
       ).toEqual(preset)
       expect(preset.engine).toBe('lite')
+    },
+  )
+
+  it.each([1, 2])(
+    'keeps stored V%d Lite Lead values as Custom until the user chooses the new head',
+    (version) => {
+      const stored = {
+        ...legacyLead,
+        version,
+        engine: 'lite',
+        head: 'definition',
+        character: 1,
+      }
+      const key =
+        version === 1
+          ? GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY
+          : GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY
+      const serialized = JSON.stringify(stored)
+      localStorage.setItem(key, serialized)
+      expect(loadGuitarNightAmpSettings()).toEqual({
+        ...stored,
+        version: 2,
+        presetId: 'custom',
+      })
+      expect(localStorage.getItem(key)).toBe(serialized)
+      expect(
+        normalizeGuitarNightAmpSettings({
+          ...stored,
+          enabled: false,
+          drive: 0.53,
+        }),
+      ).toEqual({
+        ...stored,
+        version: 2,
+        presetId: 'custom',
+        enabled: false,
+        drive: 0.53,
+      })
     },
   )
 
