@@ -134,6 +134,51 @@ describe('guitar recording exports', () => {
       1 / 480,
     )
   })
+  it('retains a short note rounded past the final bar boundary in GP7', async () => {
+    const boundary = {
+      ...score,
+      notes: [{ ...score.notes[0], startBeat: 2.9999, endBeat: 3 }],
+    }
+    const original = structuredClone(boundary)
+    const bytes = await exportRecordingGuitarPro(boundary)
+    const { importer } = await import('@coderline/alphatab')
+    const imported = scoreToMidiSong(
+      importer.ScoreLoader.loadScoreFromBytes(bytes),
+    )
+    const notes = imported.tracks.flatMap((track) => track.notes)
+    expect(notes).toHaveLength(1)
+    expect(notes[0].midi).toBe(42)
+    expect(notes[0].startBeat).toBe(3)
+    expect(notes[0].duration).toBeCloseTo(1 / 480)
+    expect(boundary).toEqual(original)
+  })
+  it('rejects GP7 tick collisions without silently dropping corrected notes', async () => {
+    const colliding = {
+      ...score,
+      notes: [
+        { ...score.notes[0], startBeat: 0, endBeat: 0.0001 },
+        {
+          ...score.notes[1],
+          midi: 43,
+          fret: 1,
+          startBeat: 0.0001,
+          endBeat: 0.0002,
+        },
+      ],
+    }
+    const original = structuredClone(colliding)
+    await expect(exportRecordingGuitarPro(colliding)).rejects.toThrow(
+      "Some notes overlap at Guitar Pro's 1/480-beat resolution",
+    )
+    expect(colliding).toEqual(original)
+    const midi = parseMidiSong(await exportRecordingMidi(colliding))!
+    expect(
+      midi.tracks
+        .flatMap((track) => track.notes)
+        .map((note) => note.midi)
+        .sort((a, b) => a - b),
+    ).toEqual([42, 43])
+  })
   it('makes safe timestamped filenames', () => {
     expect(
       guitarRecordingFilename(

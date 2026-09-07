@@ -76,9 +76,27 @@ export async function exportRecordingGuitarPro(
   track.addStaff(staff)
   const ticksPerBar =
     ((score.timeSignature[0] * 4) / score.timeSignature[1]) * 480
-  const lastTick = Math.ceil(
-    Math.max(...score.notes.map((note) => note.endBeat)) * 480,
+  const timedNotes = [...score.notes]
+    .sort((a, b) => a.startBeat - b.startBeat)
+    .map((note) => {
+      const start = Math.round(note.startBeat * 480)
+      return {
+        note,
+        start,
+        end: Math.max(start + 1, Math.round(note.endBeat * 480)),
+      }
+    })
+  if (
+    timedNotes.some(
+      (note, index) => index > 0 && note.start < timedNotes[index - 1].end,
+    )
   )
+    throw new Error(
+      "Some notes overlap at Guitar Pro's 1/480-beat resolution. Separate or lengthen the short notes, or export MIDI instead.",
+    )
+  // A short note can round into the next bar. Allocate the exact bounds emitted
+  // below, including the one-tick minimum, rather than its original end time.
+  const lastTick = Math.max(...timedNotes.map((note) => note.end))
   const bars = Math.max(1, Math.ceil(lastTick / ticksPerBar))
   if (bars > 2048) throw new Error('This score is too long to export safely.')
   const voices: InstanceType<typeof model.Voice>[] = []
@@ -134,11 +152,7 @@ export async function exportRecordingGuitarPro(
       cursor += count
     }
   }
-  for (const note of [...score.notes].sort(
-    (a, b) => a.startBeat - b.startBeat,
-  )) {
-    const start = Math.round(note.startBeat * 480)
-    const end = Math.max(start + 1, Math.round(note.endBeat * 480))
+  for (const { note, start, end } of timedNotes) {
     emit(start, null)
     emit(end, note)
   }
