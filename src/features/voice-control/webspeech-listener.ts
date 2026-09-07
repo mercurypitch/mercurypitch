@@ -341,8 +341,13 @@ export function createWebSpeechListener(
     clearRestartTimer()
     // A wait the singer would notice is a pause, and is named one. The next
     // session's own `start` event puts the pill back to listening, and the
-    // gesture seam can cut the wait short in the meantime.
-    if (delay >= QUIET_ANNOUNCE_MS) callbacks.onStateChange('dozing')
+    // gesture seam can cut the wait short in the meantime. Only where a
+    // respawn is visible: desktop's own three-second backoff after a run of
+    // stillborn sessions is not a pause the user has to do anything about,
+    // and this file promises desktop never dozes.
+    if (visibleRespawn && delay >= QUIET_ANNOUNCE_MS) {
+      callbacks.onStateChange('dozing')
+    }
     restartTimer = setTimeout(() => {
       restartTimer = null
       if (started) spinUp()
@@ -572,6 +577,10 @@ export function createWebSpeechListener(
     }
 
     r.onerror = (event) => {
+      // A session we have already replaced may still complain on its way
+      // out, and announcing that would paint an error over the state its
+      // replacement is in.
+      if (recognition !== r) return
       if (QUIET_ERRORS.has(event.error)) return
       if (FATAL_ERRORS.has(event.error)) {
         // The user has to act, and nothing here can act for them: a refused

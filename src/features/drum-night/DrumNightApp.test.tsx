@@ -5051,7 +5051,9 @@ describe('Drum Night phone take rail', () => {
   const phoneNav = (): HTMLElement =>
     screen.getByRole('navigation', { name: 'Drum Night navigation' })
 
-  it('turns the rail transport into Finish once a paused take waits, and keeps the rail one row', async () => {
+  const takeCue = (): HTMLElement => screen.getByTestId('drum-take-cue')
+
+  it('offers Finish on the always-visible take strip while the rail keeps Play and Pause', async () => {
     viewportMocks.narrow = true
     const clock = new TestClock()
     const project = projectHarness()
@@ -5062,16 +5064,16 @@ describe('Drum Night phone take rail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
     fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
 
-    // A running take keeps its Pause: the rail has no other way to stop the
-    // clock, so Finish must not steal it mid-performance.
+    // Finish is offered the moment a take is waiting, running clock included:
+    // the strip is the one take surface a phone always shows.
+    expect(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    ).toBeInTheDocument()
     expect(
       within(phoneNav()).getByRole('button', {
         name: 'Pause First Pocket take clock',
       }),
     ).toBeInTheDocument()
-    expect(
-      within(phoneNav()).queryByRole('button', { name: 'Finish take' }),
-    ).toBeNull()
 
     fireEvent.click(
       within(phoneNav()).getByRole('button', {
@@ -5079,24 +5081,27 @@ describe('Drum Night phone take rail', () => {
       }),
     )
 
-    const finish = within(phoneNav()).getByRole('button', {
-      name: 'Finish take',
-    })
-    expect(finish).toHaveTextContent('Finish')
+    // Pausing a take is just pausing. The rail never trades its transport for
+    // Finish, so a paused take can always be resumed.
     expect(
-      within(phoneNav()).queryByRole('button', {
+      within(phoneNav()).getByRole('button', {
         name: 'Play First Pocket take clock',
       }),
+    ).toBeInTheDocument()
+    expect(
+      within(phoneNav()).queryByRole('button', { name: 'Finish take' }),
     ).toBeNull()
     // Song, Groove, the transport, Record, Kit — a sixth item wraps to a row
     // the phone viewport cuts off.
     expect(within(phoneNav()).getAllByRole('button')).toHaveLength(5)
 
-    fireEvent.click(finish)
+    fireEvent.click(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    )
     await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
   })
 
-  it('keeps the rail on Play while no take waits to be finished', async () => {
+  it('keeps the strip free of Finish while no take waits to be finished', async () => {
     viewportMocks.narrow = true
     const clock = new TestClock()
     renderRoom({ clock, project: projectHarness() })
@@ -5107,6 +5112,9 @@ describe('Drum Night phone take rail', () => {
       }),
     ).toBeInTheDocument()
     expect(within(phoneNav()).getAllByRole('button')).toHaveLength(5)
+    expect(
+      within(takeCue()).queryByRole('button', { name: 'Finish take' }),
+    ).toBeNull()
   })
 
   it('offers Keep and Not now on the always-visible take strip once a finished take has a replay waiting', async () => {
@@ -5120,12 +5128,7 @@ describe('Drum Night phone take rail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
     await recordOnePreparedHit(clock)
     fireEvent.click(
-      within(phoneNav()).getByRole('button', {
-        name: 'Pause First Pocket take clock',
-      }),
-    )
-    fireEvent.click(
-      within(phoneNav()).getByRole('button', { name: 'Finish take' }),
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
     )
     await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
 
@@ -5164,12 +5167,7 @@ describe('Drum Night phone take rail', () => {
     ).toBeInTheDocument()
 
     fireEvent.click(
-      within(phoneNav()).getByRole('button', {
-        name: 'Pause First Pocket take clock',
-      }),
-    )
-    fireEvent.click(
-      within(phoneNav()).getByRole('button', { name: 'Finish take' }),
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
     )
     await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
 

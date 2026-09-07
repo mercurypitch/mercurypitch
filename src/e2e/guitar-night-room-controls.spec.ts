@@ -241,3 +241,40 @@ test('reads another part when asked to during a take @smoke', async ({
     0,
   )
 })
+
+// Reported 2026-09-07, on an iPhone: "when I seek the timeline it pauses
+// instead of forwarding". The room already asked to resume after a scrub, but
+// a touch drag ends with `pointercancel` before the range input's last `input`
+// events, so the resume ran while seeks were still arriving and the final one
+// left the room parked. The resume is deferred now, and only a real pointer
+// drag exercises that ordering — jsdom fires `input` without any of it.
+test('keeps playing when the timeline is dragged @smoke', async ({ page }) => {
+  await openTheRoom(page, `room-scrub-${Date.now()}`)
+
+  const transport = page.getByTestId('guitar-night-score-transport-core')
+  await transport.getByRole('button', { name: 'Start the count-in' }).click()
+  const pause = transport.getByRole('button', { name: 'Pause score' })
+  await expect(pause).toBeVisible()
+
+  const seek = page.getByRole('slider', { name: 'Score position' })
+  const rail = await seek.boundingBox()
+  expect(rail).not.toBeNull()
+  if (rail === null) return
+
+  // A real drag: press on the rail, travel across it, release. Playwright's
+  // mouse sends the same pointer sequence the range input sees from a finger.
+  const y = rail.y + rail.height / 2
+  await page.mouse.move(rail.x + rail.width * 0.2, y)
+  await page.mouse.down()
+  for (const fraction of [0.3, 0.4, 0.5, 0.6]) {
+    await page.mouse.move(rail.x + rail.width * fraction, y)
+  }
+  await page.mouse.up()
+
+  // THE REGRESSION: the drag used to leave the room paused, so the next thing
+  // the musician saw was a transport asking to start again.
+  await expect(pause).toBeVisible()
+  await expect(
+    transport.getByRole('button', { name: /^(Start from here|Resume score)$/ }),
+  ).toHaveCount(0)
+})

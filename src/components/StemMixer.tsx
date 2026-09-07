@@ -3304,19 +3304,6 @@ export const StemMixerStyles: string = `
 /* The app sidebar leaves the full mixer with a tablet-sized content column
    before the <=768px Zen stage takes over. Keep every action reachable in
    that seam instead of letting the right side clip off-screen. */
-/* A phone held sideways is wider than the zen-stage breakpoint, so it gets
-   this full mixer with under 400px of height to draw it in. The panels never
-   fit a clipped 100% column there, so the mixer grows with them and the page
-   scrolls. The zen stage (portrait phones, and the desktop opt-in) is its own
-   fixed layout and is untouched. */
-@media (max-height: 500px) and (pointer: coarse) {
-  .stem-mixer {
-    height: auto;
-    min-height: 100%;
-    overflow: visible;
-  }
-}
-
 @media (max-width: 1100px) {
   .sm-header {
     flex-wrap: wrap;
