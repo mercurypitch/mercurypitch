@@ -241,9 +241,24 @@ test('keeps expanded Session settings inside phone and desktop dialogs @smoke', 
   const latencySummary = session.locator('summary').filter({
     hasText: 'Monitoring latency',
   })
+  const liveNotes = session.getByRole('checkbox', {
+    name: 'Live notes',
+    exact: true,
+  })
   await close.focus()
   await page.keyboard.press('Shift+Tab')
+  // The recorder preview now follows latency. Keep testing the true last
+  // control and the native disclosure immediately before it.
+  await expect(liveNotes).toBeFocused()
+  const previewWasEnabled = await liveNotes.isChecked()
+  await page.keyboard.press('Space')
+  await expect(liveNotes).toBeChecked({ checked: !previewWasEnabled })
+  await page.keyboard.press('Space')
+  await expect(liveNotes).toBeChecked({ checked: previewWasEnabled })
+  await page.keyboard.press('Shift+Tab')
   await expect(latencySummary).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(liveNotes).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(close).toBeFocused()
   await page.screenshot({ path: test.info().outputPath('session-phone.png') })

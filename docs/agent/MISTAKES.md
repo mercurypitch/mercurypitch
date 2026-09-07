@@ -521,6 +521,16 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 
 ## Data and billing
 
+### Share pending startup hydration, not just a ready flag
+
+**Symptom:** the first newly seeded song disappeared while a second remained.
+**Cause:** concurrent session initializers both passed a ready-after-await guard;
+the later whole-cache snapshot erased a song created after the first resolved.
+**Rule:** return one shared initialization promise, and await it before creating
+sessions. Check the durable completion result in fixtures instead of returning
+an ID for a session that was never saved.
+**See:** `src/stores/uvr-store-startup.test.ts`, `src/lib/e2e-song-seed.ts`
+
 ### Hydrate a durable job before trying to resume it
 
 **Symptom:** a standalone route found an already-paid in-flight separation but
@@ -911,6 +921,18 @@ selects the destination by its exact accessible name.
 **See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
 
 ## Process
+
+### Do not pack capture and every responsive screenshot into one browser deadline
+
+**Symptom:** the recorder smoke timed out at different late actions in all CI
+attempts despite passing locally.
+**Cause:** six seconds of real capture, twenty viewport changes, screenshots,
+exports and cross-page persistence shared one 30-second budget. The CI trace
+showed forward progress throughout, not one hanging control.
+**Rule:** keep the real capture/persistence journey intact; test responsive
+layouts separately with a persisted fixture. Do not raise the global timeout
+or remove assertions to mask unrelated accumulated work.
+**See:** `src/e2e/guitar-recorder-layout.spec.ts`, `src/e2e/guitar-night-recording.spec.ts`
 
 ### Animate recording previews from the audio clock, not saved chunk duration
 

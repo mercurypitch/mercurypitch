@@ -32,24 +32,6 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   ).toBeVisible()
   expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(0)
   await expect(page.getByTestId('guitar-night-free-play-note')).toHaveCount(0)
-  for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: 850 })
-    const button = page.getByRole('button', {
-      name: 'Record a melody',
-      exact: true,
-    })
-    await expect(button).toBeInViewport()
-    const recordBounds = (await page
-      .getByTestId('guitar-recorder-actions')
-      .boundingBox())!
-    expect(recordBounds.height).toBeGreaterThanOrEqual(44)
-    expect(
-      Math.abs(recordBounds.x + recordBounds.width / 2 - width / 2),
-    ).toBeLessThanOrEqual(3)
-    await page.screenshot({
-      path: test.info().outputPath(`free-room-${width}.png`),
-    })
-  }
   await page.setViewportSize({ width: 1440, height: 850 })
   await page
     .getByRole('button', { name: 'Record a melody', exact: true })
@@ -105,34 +87,6 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await expect(
     review.getByRole('heading', { name: /notes? captured\./ }),
   ).toBeVisible()
-  for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: width === 320 ? 568 : 850 })
-    const tone = review.getByRole('button', {
-      name: 'Playback tone',
-      exact: true,
-    })
-    await tone.scrollIntoViewIfNeeded()
-    await expect(tone).toBeInViewport()
-    await expect(
-      review.getByRole('button', { name: 'Playback source', exact: true }),
-    ).toBeInViewport()
-    await expect(
-      review.getByRole('button', { name: 'Play take playback', exact: true }),
-    ).toBeInViewport()
-    const reviewPlay = (await review
-      .getByRole('button', { name: 'Play take playback', exact: true })
-      .boundingBox())!
-    const pinnedKeep = (await review
-      .getByRole('button', { name: 'Keep take', exact: true })
-      .boundingBox())!
-    expect(reviewPlay.y + reviewPlay.height).toBeLessThanOrEqual(pinnedKeep.y)
-    expect(
-      await tone.evaluate((element) => element.getBoundingClientRect().height),
-    ).toBeGreaterThanOrEqual(44)
-    await page.screenshot({
-      path: test.info().outputPath(`recording-playback-review-${width}.png`),
-    })
-  }
   await page.setViewportSize({ width: 1440, height: 850 })
   await review
     .getByRole('button', { name: 'Review and correct notes', exact: true })
@@ -154,21 +108,6 @@ test('records and keeps a dry melody without playback, then opens its accepted t
     .getByRole('button', { name: 'Undo correction', exact: true })
     .click()
   await expect(pitch).toHaveValue(originalPitch)
-  for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: 850 })
-    const bounds = (await review.boundingBox())!
-    expect(bounds.x).toBeGreaterThanOrEqual(0)
-    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
-    await expect(
-      review.getByRole('button', { name: 'Keep take', exact: true }),
-    ).toBeInViewport()
-    await expect(
-      review.getByRole('button', { name: 'Practice these notes', exact: true }),
-    ).toBeInViewport()
-    await page.screenshot({
-      path: test.info().outputPath(`recording-review-${width}.png`),
-    })
-  }
   await review
     .getByRole('button', { name: 'Hide note corrections', exact: true })
     .click()
@@ -192,33 +131,6 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await page
     .getByRole('button', { name: 'Pause recording replay', exact: true })
     .click()
-  const deck = page.getByTestId('guitar-recorder-deck')
-  for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: width === 320 ? 568 : 850 })
-    await expect(
-      deck.getByRole('button', { name: 'Play recording', exact: true }),
-    ).toBeInViewport()
-    const playBounds = (await deck
-      .getByRole('button', { name: 'Play recording', exact: true })
-      .boundingBox())!
-    expect(playBounds.y + playBounds.height).toBeLessThanOrEqual(
-      width === 320 ? 568 : 850,
-    )
-    await expect(
-      deck.getByRole('button', { name: 'Record a melody', exact: true }),
-    ).toBeInViewport()
-    await expect(
-      deck.getByRole('button', { name: 'Playback tone', exact: true }),
-    ).toBeInViewport()
-    expect(
-      await deck.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true)
-    await page.screenshot({
-      path: test.info().outputPath(`recording-deck-${width}.png`),
-    })
-  }
   await page.setViewportSize({ width: 1440, height: 850 })
   const stageBefore = (await flow.boundingBox())!
   const libraryButton = page.getByRole('button', {
@@ -230,21 +142,6 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await expect(
     gallery.getByRole('img', { name: /Captured melody/ }),
   ).toBeVisible()
-  for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: 850 })
-    const bounds = (await gallery.boundingBox())!
-    expect(bounds.x).toBeGreaterThanOrEqual(0)
-    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
-    expect(
-      await gallery.evaluate((el) => el.scrollWidth <= el.clientWidth),
-    ).toBe(true)
-    await expect(
-      gallery.getByRole('button', { name: 'Close My melodies', exact: true }),
-    ).toBeInViewport()
-    await page.screenshot({
-      path: test.info().outputPath(`melody-gallery-${width}.png`),
-    })
-  }
   await page.setViewportSize({ width: 1440, height: 850 })
   await page.keyboard.press('Escape')
   await expect(gallery).not.toBeVisible()

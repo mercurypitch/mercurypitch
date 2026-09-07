@@ -1305,9 +1305,11 @@ export function useGuitarListeningController(
       pitchAnalysers = nextPitchAnalysers
       pitchSplitter = pendingSplitter
       inputMonitor = pendingMonitor
+      // Dry recording shares this channel choice even when Room mic has no
+      // monitor branch. Publish the validated channel for every new route.
+      setMonitorInputChannel(nextMonitorChannel)
       if (pendingMonitor !== null) {
         monitorRoute = nextMonitorRoute
-        setMonitorInputChannel(nextMonitorChannel)
         setMonitorInputChannelCount(channelCount)
       }
       if (track !== undefined)

@@ -171,6 +171,7 @@ describe('useGuitarNightReferenceController', () => {
     expect(controller.readingOnRecording()?.alignment).toEqual(alignment)
     expect(controller.handPlacement()?.marks.firstAudioSeconds).toBe(3)
     controller.nudgeScoreOnRecording(0.2)
+    expect(controller.handPlacement()?.marks.firstAudioSeconds).toBe(3.2)
     expect(save).toHaveBeenCalledWith(
       VELVET_RIFF.id,
       'backing',
@@ -1793,6 +1794,10 @@ describe('useGuitarNightReferenceController', () => {
       )
       expect(controller.readingOnRecording()?.placedBy).toBe('hand')
       expect(controller.reference()?.notes[0].startBeat).toBeCloseTo(1.7, 6)
+      expect(controller.handPlacement()?.marks).toEqual({
+        firstAudioSeconds: 1.7,
+        lastAudioSeconds: 45.7,
+      })
     })
 
     it('has nothing to nudge before a part is placed', async () => {

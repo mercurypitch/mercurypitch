@@ -199,6 +199,19 @@ describe('explicit guitar recording lifecycle', () => {
     expect(h.controller.error()).toBe('Missing take')
     expect(mocks.release).toHaveBeenCalledOnce()
   })
+  it('does not clear a different melody when an earlier draft discard finishes', async () => {
+    const h = harness()
+    const pending = deferred<undefined>()
+    h.controller.setDraft(savedDraft('discarded'))
+    mocks.discard.mockReturnValue(pending.promise)
+    mocks.load.mockResolvedValue(savedDraft('selected-later'))
+    const discarding = h.controller.discard('discarded')
+    await h.controller.recover('selected-later')
+    pending.resolve(undefined)
+    await discarding
+    expect(h.controller.draft()?.recording.id).toBe('selected-later')
+    expect(h.controller.reviewOpen()).toBe(true)
+  })
   it('a late quick load cannot replace a new capture and capture blocks deletion', async () => {
     const h = harness(true)
     const pending = deferred<GuitarRecordingDraft>()
@@ -334,6 +347,20 @@ describe('explicit guitar recording lifecycle', () => {
     expect(h.controller.error()).toBe('Analysis failed')
     expect(mocks.discard).not.toHaveBeenCalled()
     expect(h.stopInput).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+  it('does not reopen review if the room closes while the finished draft loads', async () => {
+    const h = harness()
+    const pending = deferred<GuitarRecordingDraft>()
+    mocks.load.mockReturnValue(pending.promise)
+    await h.controller.start()
+    const stopping = h.controller.stop()
+    await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledOnce())
+    h.dispose()
+    pending.resolve(savedDraft('finished-after-exit'))
+    await stopping
+    expect(h.controller.reviewOpen()).toBe(false)
+    expect(h.controller.draft()).toBeNull()
     expect(mocks.release).toHaveBeenCalledOnce()
   })
   it('blocks recovery while another tab owns the recording', async () => {

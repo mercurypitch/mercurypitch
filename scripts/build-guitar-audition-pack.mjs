@@ -165,6 +165,8 @@ export async function buildGuitarAuditionPack(options) {
     cabinet,
     inputs: [],
     method: {
+      controls:
+        'Edge, Lead and Lead IR are historical Lite controls frozen at baselineRef, not the current Studio Lead preset. Current Studio DSP is checked by check-guitar-amp-browser.mjs.',
       inputGainDb: 0,
       inputBoundaryFadeSeconds: [0.09, 0.24],
       inputBoundaryEnvelope:

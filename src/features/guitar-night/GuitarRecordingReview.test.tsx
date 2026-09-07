@@ -19,7 +19,14 @@ vi.mock('@/lib/guitar/recording-export', () => ({
   downloadRecordingScore: store.download,
 }))
 
-function renderReview(outlier = false) {
+function renderReview(
+  outlier = false,
+  options: {
+    draft?: boolean
+    onDiscard?: () => Promise<void>
+    onClose?: () => void
+  } = {},
+) {
   const draft: GuitarRecordingDraft = {
     recording: {
       id: 'recording',
@@ -28,7 +35,7 @@ function renderReview(outlier = false) {
       title: 'Melody',
       createdAt: '',
       updatedAt: '',
-      state: 'kept',
+      state: options.draft === true ? 'draft' : 'kept',
       sampleRate: 48000,
       inputChannel: 0,
       inputKind: 'interface',
@@ -42,7 +49,7 @@ function renderReview(outlier = false) {
       takeId: null,
       scoreId: null,
     },
-    blob: null,
+    blob: options.draft === true ? new Blob(['audio']) : null,
     peaks: [],
     notes: [
       {
@@ -77,8 +84,8 @@ function renderReview(outlier = false) {
         draft={draft}
         open={true}
         tuning={DEFAULT_GUITAR_TUNING}
-        onClose={vi.fn()}
-        onDiscard={vi.fn()}
+        onClose={options.onClose ?? vi.fn()}
+        onDiscard={options.onDiscard ?? vi.fn()}
         onSaved={vi.fn()}
         onRemove={vi.fn()}
         onPractice={vi.fn()}
@@ -93,6 +100,50 @@ afterEach(() => {
 })
 
 describe('recording corrections', () => {
+  it('locks the unsaved review while discarding and restores it if deletion fails', async () => {
+    let rejectDiscard!: (cause: Error) => void
+    const onDiscard = vi.fn(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectDiscard = reject
+        }),
+    )
+    const onClose = vi.fn()
+    renderReview(false, { draft: true, onDiscard, onClose })
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Review and correct notes' }),
+    )
+    const pitch = screen.getByRole('spinbutton', { name: 'Pitch (MIDI)' })
+    fireEvent.change(pitch, { target: { value: '58' } })
+    const discard = screen.getByRole('button', { name: 'Discard recording' })
+    fireEvent.click(discard)
+    expect(discard).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Discarding…' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Practice these notes' }),
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Export MIDI' })).toBeDisabled()
+    expect(pitch).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Hide note corrections' }),
+    ).toBeDisabled()
+    fireEvent.click(discard)
+    fireEvent.click(screen.getByRole('button', { name: 'Close Jam Doctor' }))
+    expect(onDiscard).toHaveBeenCalledOnce()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(store.saveCorrections).not.toHaveBeenCalled()
+    rejectDiscard(new Error('Could not remove local recording'))
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not remove local recording',
+      ),
+    )
+    expect(discard).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Keep take' })).toBeEnabled()
+    expect(pitch).toBeEnabled()
+    expect(pitch).toHaveValue(58)
+  })
+
   it('offers retained notes without audio and explains the selected playback tone', () => {
     renderReview()
     fireEvent.click(screen.getByRole('button', { name: 'Playback source' }))

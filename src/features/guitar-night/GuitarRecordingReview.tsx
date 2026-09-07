@@ -53,6 +53,7 @@ export function GuitarRecordingReview(props: {
   const [title, setTitle] = createSignal(initialDraft.recording.title)
   const [kept, setKept] = createSignal(initialDraft.recording.state === 'kept')
   const [busy, setBusy] = createSignal(false)
+  const [discarding, setDiscarding] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
   const [editing, setEditing] = createSignal(false)
   const [editorMounted, setEditorMounted] = createSignal(false)
@@ -137,6 +138,24 @@ export function GuitarRecordingReview(props: {
       setBusy(false)
     }
   }
+  const discard = async (): Promise<void> => {
+    if (busy()) return
+    setBusy(true)
+    setDiscarding(true)
+    setError(null)
+    try {
+      await props.onDiscard()
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'Could not discard this draft.',
+      )
+    } finally {
+      setDiscarding(false)
+      setBusy(false)
+    }
+  }
   const view = createMemo<GuitarNightDoctorView>(() => ({
     anchorLabel: `Recorded melody · ${recordingTime(props.draft.recording.frames / props.draft.recording.sampleRate)}`,
     headline:
@@ -173,7 +192,9 @@ export function GuitarRecordingReview(props: {
                 onClick={() => void save('keep')}
               >
                 {busy()
-                  ? 'Saving…'
+                  ? discarding()
+                    ? 'Discarding…'
+                    : 'Saving…'
                   : kept()
                     ? 'Take kept'
                     : props.draft.notes.length
@@ -273,17 +294,7 @@ export function GuitarRecordingReview(props: {
                   <button
                     type="button"
                     disabled={busy()}
-                    onClick={() =>
-                      void props
-                        .onDiscard()
-                        .catch((cause: unknown) =>
-                          setError(
-                            cause instanceof Error
-                              ? cause.message
-                              : 'Could not discard this draft.',
-                          ),
-                        )
-                    }
+                    onClick={() => void discard()}
                   >
                     Discard recording
                   </button>

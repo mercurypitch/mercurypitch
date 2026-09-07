@@ -1,6 +1,6 @@
 // Explicit recording controls share the song transport and keep recovery one deliberate action away.
 import { Show } from 'solid-js'
-import { RecordCircle, Square } from '@/components/icons'
+import { CheckSmall, RecordCircle, Square } from '@/components/icons'
 import styles from './GuitarRecording.module.css'
 import type { GuitarRecordingController } from './useGuitarRecordingController'
 
@@ -17,11 +17,16 @@ export function GuitarRecordingLiveNotesToggle(props: {
       class={styles.liveNotesToggle}
       title="Show recently recognized notes. Turning this off reduces visual work; audio recording and monitoring continue."
     >
-      <input
-        type="checkbox"
-        checked={props.enabled}
-        onChange={(event) => props.onChange(event.currentTarget.checked)}
-      />
+      <span class={styles.liveNotesControl}>
+        <input
+          type="checkbox"
+          checked={props.enabled}
+          onChange={(event) => props.onChange(event.currentTarget.checked)}
+        />
+        <span class={styles.liveNotesIndicator} aria-hidden="true">
+          <CheckSmall />
+        </span>
+      </span>
       Live notes
     </label>
   )

@@ -5,7 +5,7 @@ import styles from './GuitarRecordingTimeline.module.css'
 import type { GuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
 export function GuitarRecordingTimeline(props: {
-  playback: GuitarRecordingPlayback
+  playback: Pick<GuitarRecordingPlayback, 'position' | 'duration' | 'seek'>
   disabled?: boolean
 }) {
   const [preview, setPreview] = createSignal<number | null>(null)
