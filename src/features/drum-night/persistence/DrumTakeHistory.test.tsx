@@ -4,6 +4,7 @@
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumTakeHistoryProps, DrumTakeHistoryView, DrumTakeSummaryRow, } from './DrumTakeHistory'
 import { DrumTakeHistory } from './DrumTakeHistory'
@@ -186,6 +187,95 @@ describe('DrumTakeHistory', () => {
 
     expect(onLoadHistory).toHaveBeenCalledOnce()
     expect(screen.getByText('Opening recent takes')).toBeVisible()
+  })
+
+  it('names the missing saved project instead of spinning on a load that never starts', () => {
+    const onLoadHistory = vi.fn()
+    mountHistory(
+      defaultView({
+        history: {
+          kind: 'unavailable',
+          message: 'Take history is kept per saved project.',
+        },
+      }),
+      { onLoadHistory },
+    )
+
+    expect(screen.queryByText('Opening recent takes')).not.toBeInTheDocument()
+    expect(screen.getByText('No take history to open yet')).toBeVisible()
+    expect(
+      screen.getByText('Take history is kept per saved project.'),
+    ).toBeVisible()
+    // Nothing to retry: no load was ever possible.
+    expect(onLoadHistory).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers the save that unblocks a held take instead of a dead end', () => {
+    const onSaveProject = vi.fn()
+    mountHistory(
+      defaultView({
+        canFinish: false,
+        unavailableReason:
+          'Save this First Pocket as a project before finishing a take.',
+      }),
+      { mode: 'compact', onSaveProject },
+    )
+
+    expect(screen.getByText('This take cannot be finished yet.')).toBeVisible()
+    expect(
+      screen.getByText(/captured strikes stay in this take while you save/i),
+    ).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    expect(onSaveProject).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the held-take card actionless when saving is not the blocker', () => {
+    mountHistory(
+      defaultView({
+        canFinish: false,
+        unavailableReason:
+          'Only prepared First Pocket projects keep take history.',
+      }),
+      { mode: 'compact' },
+    )
+
+    expect(screen.getByText('This take cannot be finished yet.')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Save project' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('reloads history when a fresh project returns the surface to idle', () => {
+    const onLoadHistory = vi.fn()
+    const [view, setView] = createSignal<DrumTakeHistoryView>(
+      defaultView({
+        history: {
+          kind: 'unavailable',
+          message: 'Take history is kept per saved project.',
+        },
+      }),
+    )
+    render(() => (
+      <DrumTakeHistory
+        mode="expanded"
+        view={view()}
+        onFinishTake={vi.fn()}
+        onRetryFinish={vi.fn()}
+        onDiscardFailedTake={vi.fn()}
+        onKeepReplay={vi.fn()}
+        onDismissReplay={vi.fn()}
+        onLoadHistory={onLoadHistory}
+        onRetryHistory={vi.fn()}
+      />
+    ))
+    expect(onLoadHistory).not.toHaveBeenCalled()
+
+    // Saving a groove hands the surface a project and resets history to idle.
+    setView(defaultView({ history: { kind: 'idle' } }))
+    expect(onLoadHistory).toHaveBeenCalledOnce()
   })
 
   it('shows the newest six takes with honest scalar labels and privacy', () => {

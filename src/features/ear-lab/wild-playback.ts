@@ -10,6 +10,7 @@
 // ============================================================
 
 import { useEngines } from '@/contexts/EngineContext'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { WILD_TIMING } from '@/lib/ear/timing'
 import type { WildKey } from '@/lib/ear/wild'
 import { midiToFreq } from '@/lib/scale-data'
@@ -48,6 +49,12 @@ export function useWildPlayback(): WildPlayback {
   const wait = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))
   const level = () => room.volume() * audioEngine.getVolume()
+  // The room enters silent, so the context may not exist yet: init creates
+  // it and resume lifts the suspension iOS applies to one born outside a
+  // gesture. A rejected resume is not fatal — the pad tap that follows
+  // retries — but scheduling into a context nobody woke is.
+  const activate = (): Promise<void> =>
+    activateAudioPlayback(audioEngine).catch(() => undefined)
 
   return {
     begin: () => {
@@ -55,8 +62,7 @@ export function useWildPlayback(): WildPlayback {
     },
     cancelled: () => cancelled,
     plant: async (key) => {
-      await audioEngine.init()
-      await audioEngine.resume()
+      await activate()
       if (cancelled) return
       await audioEngine.playChord(
         plantMidis(key).map(midiToFreq),
@@ -65,6 +71,15 @@ export function useWildPlayback(): WildPlayback {
       await wait(WILD_TIMING.plantMs + WILD_TIMING.plantGapMs)
     },
     excerpt: async (layers, startS, endS) => {
+      if (cancelled) return
+      // The excerpt owns its own activation rather than trusting plant():
+      // replayOnWrong reaches here with no plant before it, and the stems
+      // are raw buffer sources rather than engine voices, so nothing else
+      // on this path touches the context. Scheduled against a suspended
+      // context every source waits on a clock that never advances, while
+      // playExcerpt still resolves on the wall clock — a drill that walks
+      // its whole run in silence without raising anything.
+      await activate()
       if (cancelled) return
       const ctx = audioEngine.getAudioContext()
       if (!ctx) return

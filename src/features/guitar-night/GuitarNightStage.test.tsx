@@ -189,6 +189,77 @@ describe('GuitarNightStage views', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('51')
   })
 
+  describe('the resting status line on a phone', () => {
+    const narrow = (matches: boolean) => {
+      const media = (query: string) =>
+        ({
+          matches: query.includes('max-width') ? matches : false,
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          onchange: null,
+          dispatchEvent: () => false,
+        }) as unknown as MediaQueryList
+      vi.stubGlobal('matchMedia', media)
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('drops the line that only says the guide loaded', () => {
+      // "Guide ready" repeats what the neck under it already shows, and on a
+      // phone it costs a row the fretboard and transport both want.
+      narrow(true)
+      render(() => (
+        <GuitarNightStage source={GUIDED_SOURCE} active={() => true} />
+      ))
+
+      expect(screen.queryByText('Guide ready')).toBeNull()
+    })
+
+    it('keeps the line on a wide screen', () => {
+      narrow(false)
+      render(() => (
+        <GuitarNightStage source={GUIDED_SOURCE} active={() => true} />
+      ))
+
+      expect(screen.getByText('Guide ready')).toBeTruthy()
+    })
+
+    it('keeps the block on a phone when it carries the live score', () => {
+      // The accessory is the host's live score. Hiding the block for the
+      // sake of one resting word took the score off every phone with it.
+      narrow(true)
+      render(() => (
+        <GuitarNightStage
+          source={GUIDED_SOURCE}
+          active={() => true}
+          signalAccessory={
+            <span data-testid="stage-signal-evidence">A 86</span>
+          }
+        />
+      ))
+
+      expect(screen.getByTestId('stage-signal-evidence')).toBeTruthy()
+    })
+
+    it('keeps the line on a phone while it is listening', () => {
+      narrow(true)
+      render(() => (
+        <GuitarNightStage
+          source={GUIDED_SOURCE}
+          active={() => true}
+          listening={() => true}
+        />
+      ))
+
+      expect(screen.getByText('Listening')).toBeTruthy()
+    })
+  })
+
   it('keeps host evidence inside the signal faceplate without adding a control', () => {
     render(() => (
       <GuitarNightStage

@@ -1048,6 +1048,24 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   }
   const isListening = createMemo(() => props.listening?.() ?? false)
   const heardNote = createMemo(() => props.heardNote?.() ?? null)
+
+  /**
+   * A phone has no room for a line that only says the guide loaded.
+   *
+   * "Guide ready" is the resting state: it repeats what the neck below it
+   * already shows, and on a narrow screen it costs a row that the fretboard
+   * and the transport both want. It stays on a wide screen, and a stage that
+   * is actually listening keeps the line everywhere, because then it is
+   * saying something that changes.
+   */
+  const showStatusBlock = createMemo(() => {
+    if (!(props.showStatus?.() ?? true)) return false
+    if (!narrowViewport()) return true
+    // The live score rides in this block as the signal accessory, so an
+    // accessory keeps the row whatever the status line would have said.
+    if (signalAccessory() !== undefined) return true
+    return isListening() || !hasGuide()
+  })
   const heardCopy = createMemo(() => {
     const note = heardNote()
     if (!isListening()) return null
@@ -1155,10 +1173,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         <header
           class={styles.stageHeader}
           classList={{
-            [styles.stageHeaderWithoutStatus]: !(props.showStatus?.() ?? true),
+            [styles.stageHeaderWithoutStatus]: !showStatusBlock(),
           }}
         >
-          <Show when={props.showStatus?.() ?? true}>
+          <Show when={showStatusBlock()}>
             <div
               data-guitar-night-secondary-protected
               classList={{

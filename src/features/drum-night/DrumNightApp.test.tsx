@@ -4184,6 +4184,51 @@ describe('DrumNightApp', () => {
     )
   })
 
+  it('answers a held take on an unsaved groove with the save that unblocks it, never an endless spinner', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ clock, project, takeHistory })
+    await recordOnePreparedHit(clock)
+
+    // The coach column carries the held take even before a project exists;
+    // an Android tablet otherwise stopped playback into an empty aside.
+    const persistentCoach = screen.getByLabelText('Session phrase coach')
+    const compactTake =
+      await within(persistentCoach).findByTestId('drum-take-history')
+    expect(
+      within(compactTake).getByText('This take cannot be finished yet.'),
+    ).toBeVisible()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open live take monitor' }),
+    )
+    const coachWorkspace = await screen.findByRole('region', {
+      name: 'Recover the backbeat',
+    })
+    const expandedTake =
+      await within(coachWorkspace).findByTestId('drum-take-history')
+    // No saved project means no history load is ever started, so the surface
+    // must say so instead of holding the "opening…" spinner forever.
+    expect(
+      within(expandedTake).getByText('No take history to open yet'),
+    ).toBeVisible()
+    expect(within(expandedTake).queryByText('Opening recent takes')).toBeNull()
+    expect(takeHistory.controller.loadHistory).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      within(expandedTake).getByRole('button', { name: 'Save project' }),
+    )
+    const library = await screen.findByTestId('drum-project-library')
+    expect(
+      within(library).getByRole('textbox', { name: 'Project name' }),
+    ).toBeVisible()
+    // Saving is the unblock, not a reset: the take is still held.
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    )
+  })
+
   it('keeps a late indexed phrase visible after the bounded score projection', async () => {
     const clock = new TestClock()
     const earlyHits = Array.from({ length: 2_050 }, (_, index) => ({

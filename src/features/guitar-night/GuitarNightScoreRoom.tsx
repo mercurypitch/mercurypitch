@@ -1258,6 +1258,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   }
 
   const beginScrub = (): void => {
+    clearScrubResume()
     if (scrubbing) return
     scrubbing = true
     const reviewing = assessmentCaptureActive() || scoredCaptureActive()
@@ -1374,13 +1375,42 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     queueMicrotask(() => tunerTrigger?.focus())
   }
 
+  /**
+   * Resume a beat after the gesture ends, not on the event that ends it.
+   *
+   * A touch on the rail does not deliver pointerdown, input, pointerup in
+   * that order: iOS takes the gesture over and fires `pointercancel` FIRST,
+   * with the rail's own input events still to come. Resuming right there
+   * restarted the room and the seeks that followed paused it again, so a tap
+   * on the timeline read as "it pauses instead of forwarding" — and the play
+   * button that fixed it ran a count-in, because a manual resume asks for
+   * one. One frame of slack lets the last seek land, and any new gesture
+   * cancels the pending resume.
+   */
+  const SCRUB_RESUME_MS = 80
+  let scrubResumeTimer: number | null = null
+  const clearScrubResume = (): void => {
+    if (scrubResumeTimer === null) return
+    window.clearTimeout(scrubResumeTimer)
+    scrubResumeTimer = null
+  }
+
   const finishScrub = (): void => {
     if (!scrubbing) return
     const shouldResume = resumeAfterScrub
     scrubbing = false
     resumeAfterScrub = false
+    clearScrubResume()
+    if (!shouldResume) return
+    scrubResumeTimer = window.setTimeout(() => {
+      scrubResumeTimer = null
+      resumeAfterSeek()
+    }, SCRUB_RESUME_MS)
+  }
+
+  /** The guards a resume has to clear, checked when it actually happens. */
+  const resumeAfterSeek = (): void => {
     if (
-      shouldResume &&
       room.status() === 'paused' &&
       !disposed &&
       props.suspended?.() !== true &&
@@ -1525,6 +1555,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   })
 
   onCleanup(() => {
+    clearScrubResume()
     disposed = true
     listeningCycleGeneration += 1
     setListeningRouteOperation(null)

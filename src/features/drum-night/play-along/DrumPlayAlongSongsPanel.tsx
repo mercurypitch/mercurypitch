@@ -4,7 +4,7 @@
 import type { JSX } from 'solid-js'
 import { createMemo, createUniqueId, For, Match, Show, Switch } from 'solid-js'
 import { AlertTriangle, Cloud, Drum, FileText, Loader2, MusicLibrary, X, } from '@/components/icons'
-import { isGuitarProSongFile, isMidiSongFile, SONG_REFERENCE_FILE_ACCEPT, } from '@/features/play-along/song-import'
+import { isGuitarProSongFile, isMidiSongFile, referenceAcceptForDevice, } from '@/features/play-along/song-import'
 import type { PlayAlongBackingSource, PlayAlongSongSummary, } from '@/features/play-along/song-port'
 import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
 import { UnifiedSongFileDrop } from '@/features/play-along/UnifiedSongFileDrop'
@@ -193,7 +193,7 @@ export function DrumPlayAlongSongsPanel(props: DrumPlayAlongSongsPanelProps) {
 
       <div class={styles.sourceDeck}>
         <UnifiedSongFileDrop
-          accept={SONG_REFERENCE_FILE_ACCEPT}
+          accept={referenceAcceptForDevice()}
           copy={FILE_DROP_COPY}
           classes={FILE_DROP_CLASSES}
           testId="drum-play-along-file-drop"

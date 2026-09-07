@@ -23,7 +23,17 @@ export interface DrumTakeHistoryHostProps extends Omit<
   readonly unavailableReason?: string
   readonly preparing: boolean
   readonly replay: DrumTakeHistoryView['replay']
+  /**
+   * The saved project whose history can be read, or null when the groove on
+   * stage was never saved. Take summaries are stored per project, so with no
+   * project there is nothing to load and `onLoadHistory` is a no-op — the view
+   * has to say so rather than sit on the "opening…" spinner.
+   */
+  readonly historyProjectId: string | null
 }
+
+const HISTORY_NEEDS_A_SAVED_PROJECT =
+  'Take history is kept per saved project. Save this groove, then every finished take lands here.'
 
 function countedBeat(beat: number): number {
   const bounded = Math.max(0, Number.isFinite(beat) ? beat : 0)
@@ -71,36 +81,41 @@ export function DrumTakeHistoryHost(
       kind: 'idle' as const,
     }
     const historyView: DrumTakeHistoryView['history'] =
-      history.kind === 'ready'
+      props.historyProjectId === null
         ? {
-            kind: 'ready',
-            takes: history.summaries.map(
-              (summary): DrumTakeSummaryRow => ({
-                id: summary.id,
-                finishedAt: Date.parse(summary.completedAt),
-                sourceLabel: 'First Pocket',
-                variationLabel: variantLabel(summary.variationId),
-                rangeLabel: countedRangeLabel(
-                  summary.startBeat,
-                  summary.endBeat,
-                ),
-                matchedHitCount: summary.matchedHitCount,
-                targetHitCount: summary.targetHitCount,
-                meanTimingOffsetMs: summary.meanTimingOffsetMs,
-                timingLabel: timingLabel(summary),
-                centredCount: summary.centredCount,
-                earlyCount: summary.earlyCount,
-                lateCount: summary.lateCount,
-                meanVelocityOffset: summary.meanVelocityOffset,
-                inputLabel: inputLabel(summary),
-              }),
-            ),
-            skippedCount: history.skippedRecords,
-            futureCount: history.futureRecords,
+            kind: 'unavailable',
+            message: HISTORY_NEEDS_A_SAVED_PROJECT,
           }
-        : history.kind === 'error'
-          ? { kind: 'error', message: history.message }
-          : { kind: history.kind }
+        : history.kind === 'ready'
+          ? {
+              kind: 'ready',
+              takes: history.summaries.map(
+                (summary): DrumTakeSummaryRow => ({
+                  id: summary.id,
+                  finishedAt: Date.parse(summary.completedAt),
+                  sourceLabel: 'First Pocket',
+                  variationLabel: variantLabel(summary.variationId),
+                  rangeLabel: countedRangeLabel(
+                    summary.startBeat,
+                    summary.endBeat,
+                  ),
+                  matchedHitCount: summary.matchedHitCount,
+                  targetHitCount: summary.targetHitCount,
+                  meanTimingOffsetMs: summary.meanTimingOffsetMs,
+                  timingLabel: timingLabel(summary),
+                  centredCount: summary.centredCount,
+                  earlyCount: summary.earlyCount,
+                  lateCount: summary.lateCount,
+                  meanVelocityOffset: summary.meanVelocityOffset,
+                  inputLabel: inputLabel(summary),
+                }),
+              ),
+              skippedCount: history.skippedRecords,
+              futureCount: history.futureRecords,
+            }
+          : history.kind === 'error'
+            ? { kind: 'error', message: history.message }
+            : { kind: history.kind }
 
     return {
       capturedHitCount: props.capturedHitCount,
@@ -127,6 +142,7 @@ export function DrumTakeHistoryHost(
       onDismissReplay={props.onDismissReplay}
       onLoadHistory={props.onLoadHistory}
       onRetryHistory={props.onRetryHistory}
+      onSaveProject={props.onSaveProject}
     />
   )
 }

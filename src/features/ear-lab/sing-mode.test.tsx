@@ -36,6 +36,7 @@ const mic = vi.hoisted(() => ({
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
 vi.mock('@/lib/audio-unlock', () => ({
   unlockAudio: vi.fn(async () => undefined),
+  activateAudioPlayback: vi.fn(async () => undefined),
 }))
 vi.mock('@/lib/mic-manager', () => ({
   micManager: {
