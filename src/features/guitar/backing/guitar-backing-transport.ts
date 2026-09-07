@@ -6,12 +6,18 @@ import { decodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
+import type { LoopSpan } from '@/lib/guitar/loop-span'
+import { foldIntoLoop } from '@/lib/guitar/loop-span'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
+import { createGuitarBackingLoopEnvelope, guitarBackingLoopSeekPosition, normalizeGuitarBackingLoop, } from './guitar-backing-loop'
+import type { GuitarBackingMixStorage } from './guitar-backing-mix-storage'
+import { readGuitarBackingMix, writeGuitarBackingMix, } from './guitar-backing-mix-storage'
 import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
 import { createGuitarBackingStreamEngine } from './guitar-backing-stream'
 import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
+import { clampGuitarTrackMixGain, guitarTrackMixDbToGain, normalizeGuitarTrackMixDb, } from './guitar-track-mix'
 
 export type GuitarBackingTransportStatus =
   | 'idle'
@@ -73,6 +79,10 @@ export interface GuitarBackingTrackState {
   id: string
   label: string
   muted: boolean
+  /** Explicit mute and Solo's temporary mask are kept separate. */
+  effectiveMuted: boolean
+  levelDb: number
+  /** Legacy 0–1 slider position; new controls use levelDb to expose boost. */
   level: number
   available: boolean
 }
@@ -84,19 +94,27 @@ export interface GuitarBackingTransport {
   pause(): void
   stop(): void
   seek(seconds: number): void
+  setLoopRange(range: LoopSpan | null): boolean
   setPlaybackRate(rate: number): Promise<boolean>
   setMasterVolume(position: number): void
   setElectricAmpParameters(parameters: GuitarElectricAmpParameters): void
   setTrackMuted(id: string, muted: boolean): void
+  setTrackLevelDb(id: string, db: number): void
+  toggleTrackSolo(id: string): void
+  resetTrackLevels(): void
   getAudioContext(): AudioContext | null
   getAudioGraph(): GuitarSessionAudioGraph | null
   getLoadMode(): GuitarBackingLoadMode | null
+  getLoopRange(): LoopSpan | null
+  getLoopMode(): GuitarBackingLoadMode | null
+  getLoopError(): string | null
   getLoadProgress(): GuitarBackingLoadProgress | null
   getStatus(): GuitarBackingTransportStatus
   getCurrentTime(): number
   getDuration(): number
   getPlaybackRate(): number
   getMasterVolume(): number
+  getSoloedTrackId(): string | null
   getTrackStates(): readonly GuitarBackingTrackState[]
   getError(): string | null
   subscribe(listener: () => void): () => void
@@ -130,6 +148,7 @@ interface GuitarBackingTransportOptions {
   streamSyncIntervalMs?: number
   streamDriftToleranceSeconds?: number
   closeContextOnDispose?: boolean
+  mixStorage?: GuitarBackingMixStorage | null
 }
 
 const DEFAULT_SAMPLE_RATE = 48_000
@@ -306,6 +325,11 @@ export function createGuitarBackingTransport(
   let error: string | null = null
   let session: GuitarBackingSession | null = null
   let trackStates: GuitarBackingTrackState[] = []
+  let soloedTrackId: string | null = null
+  const defaultTrackLevels = new Map<
+    string,
+    { level: number; levelDb: number }
+  >()
   // A copy per call kept the internal array unreachable, but it also handed
   // every consumer new object identities on every transport event. The room's
   // `<For>` over these rebuilt the whole channel strip on each `input` of a
@@ -320,6 +344,8 @@ export function createGuitarBackingTransport(
         previous !== undefined &&
         previous.label === state.label &&
         previous.muted === state.muted &&
+        previous.effectiveMuted === state.effectiveMuted &&
+        previous.levelDb === state.levelDb &&
         previous.level === state.level &&
         previous.available === state.available
       ) {
@@ -340,6 +366,16 @@ export function createGuitarBackingTransport(
     ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
   }
   let playbackRate = 1
+  let loopRange: LoopSpan | null = null
+  let loopError: string | null = null
+  let loopRevision = 0
+  let loopEnvelope: ReturnType<typeof createGuitarBackingLoopEnvelope> | null =
+    null
+  const paddedLoopBuffers = new Map<string, AudioBuffer>()
+  let streamLoopTimer: ReturnType<typeof setTimeout> | null = null
+  // A clear during an automatic re-prime should continue from B, not commit
+  // the now-obsolete jump to A. An explicit seek supersedes this marker.
+  let streamedLoopBoundary: number | null = null
   let duration = 0
   let parkedOffset = 0
   let startedOffset = 0
@@ -357,6 +393,12 @@ export function createGuitarBackingTransport(
    */
   let streamedSeekTarget: number | null = null
   let queuedStreamedSeek: number | null = null
+  let streamStartEpoch = 0
+  let streamSeekEpoch = 0
+  let streamDipWait: {
+    timer: ReturnType<typeof setTimeout>
+    cancel: () => void
+  } | null = null
   /**
    * Bumped whenever the player decides the room should stop. A re-prime takes
    * real time, so a pause pressed during one has to outrank it — otherwise
@@ -375,6 +417,35 @@ export function createGuitarBackingTransport(
   const emit = (): void => {
     for (const listener of listeners) listener()
   }
+
+  const cancelStreamDip = (): void => {
+    streamDipWait?.cancel()
+    streamDipWait = null
+  }
+
+  const invalidateStreamStarts = (): void => {
+    cancelStreamDip()
+    streamStartEpoch += 1
+    streamSeekEpoch += 1
+    streamedSeekTarget = null
+    queuedStreamedSeek = null
+    streamedLoopBoundary = null
+  }
+
+  const waitForStreamDip = (): Promise<boolean> =>
+    new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        streamDipWait = null
+        resolve(true)
+      }, 15)
+      streamDipWait = {
+        timer,
+        cancel: () => {
+          clearTimeout(timer)
+          resolve(false)
+        },
+      }
+    })
 
   /**
    * Download progress, and the last fraction the room was told about.
@@ -405,6 +476,7 @@ export function createGuitarBackingTransport(
     nextError: string | null = null,
   ): void => {
     status = nextStatus
+    refreshStreamLoopTimer()
     error = nextError
     // Progress belongs to one load. Leaving 'loading' by any exit -- ready,
     // error, or a fallback to streaming -- ends it, so a later spinner can
@@ -418,6 +490,8 @@ export function createGuitarBackingTransport(
   }
 
   const disconnectDecodedTracks = (): void => {
+    loopEnvelope?.stop()
+    paddedLoopBuffers.clear()
     for (const decoded of decodedTracks) decoded.gain.disconnect()
     decodedTracks = []
   }
@@ -463,9 +537,14 @@ export function createGuitarBackingTransport(
    * a full-scale waveform cut into a PA (the exact case the pop-free doc
    * names). From any silent state it is the plain, immediate halt.
    */
-  const haltAudible = (): void => {
+  const haltAudible = (audibleStreamDip = false): void => {
+    loopEnvelope?.stop()
     const bus = audioGraph?.buses.stems ?? null
-    if (status === 'playing' && context !== null && bus !== null) {
+    if (
+      (status === 'playing' || audibleStreamDip) &&
+      context !== null &&
+      bus !== null
+    ) {
       const now = context.currentTime
       const stopAt = closeBus(bus.gain, now)
       stopVoices(stopAt)
@@ -477,6 +556,8 @@ export function createGuitarBackingTransport(
   }
 
   const resetLoadedAudio = (): void => {
+    clearStreamLoopTimer()
+    invalidateStreamStarts()
     loadAbort?.abort()
     loadAbort = null
     stopVoices()
@@ -502,7 +583,11 @@ export function createGuitarBackingTransport(
 
   const targetTrackGain = (id: string): number => {
     const state = trackState(id)
-    return state === undefined || state.muted ? 0 : sliderToGain(state.level)
+    // Legacy source defaults may be quieter than the interactive fader floor;
+    // preserve those exactly until the player intentionally edits the fader.
+    return state === undefined || !state.available || state.effectiveMuted
+      ? 0
+      : clampGuitarTrackMixGain(10 ** (state.levelDb / 20))
   }
 
   const applyGain = (id: string, gain: GainNode, immediate = false): void => {
@@ -517,6 +602,139 @@ export function createGuitarBackingTransport(
 
   const applyTrackGain = (decoded: DecodedTrack, immediate = false): void => {
     applyGain(decoded.track.id, decoded.gain, immediate)
+  }
+
+  const applyMix = (initializeDecoded = false): void => {
+    for (const state of trackStates) {
+      state.effectiveMuted =
+        state.muted || (soloedTrackId !== null && soloedTrackId !== state.id)
+      const decoded = decodedTracks.find(
+        (candidate) => candidate.track.id === state.id,
+      )
+      if (decoded !== undefined) applyTrackGain(decoded, initializeDecoded)
+      streamEngine?.setTrackGain(
+        state.id,
+        targetTrackGain(state.id),
+        fadeSeconds,
+      )
+    }
+    emit()
+  }
+
+  const saveMix = (): void => {
+    if (session !== null)
+      writeGuitarBackingMix(session.sessionId, trackStates, options.mixStorage)
+  }
+
+  const refreshAvailableTracks = (
+    ids: readonly string[],
+    initializeDecoded = false,
+  ): void => {
+    for (const state of trackStates) state.available = ids.includes(state.id)
+    if (
+      soloedTrackId !== null &&
+      trackState(soloedTrackId)?.available !== true
+    ) {
+      soloedTrackId = null
+    }
+    // Mix edits can arrive while a later stem is still decoding. Reapply the
+    // current mask and levels after the loaded nodes become the active graph.
+    applyMix(initializeDecoded)
+  }
+
+  /** Pad only short stems, and account for originals and old/new copies at peak. */
+  const prepareBufferedLoop = (): boolean => {
+    if (loopRange === null || context === null || loadMode !== 'buffered')
+      return true
+    loopRange = normalizeGuitarBackingLoop(loopRange, duration)
+    if (loopRange === null) {
+      loopError =
+        'The loop is outside this recording. Set A and B within the song.'
+      return false
+    }
+    const end = loopRange.end
+    const needsPadding = decodedTracks.filter(
+      ({ track, buffer }) =>
+        buffer.duration < end &&
+        (paddedLoopBuffers.get(track.id)?.duration ?? 0) < end,
+    )
+    const allocatedBytes =
+      decodedTracks.reduce(
+        (bytes, { buffer }) => bytes + decodedAudioBufferBytes(buffer),
+        0,
+      ) +
+      [...paddedLoopBuffers.values()].reduce(
+        (bytes, buffer) => bytes + decodedAudioBufferBytes(buffer),
+        0,
+      )
+    const additionalBytes = needsPadding.reduce(
+      (bytes, { buffer }) =>
+        bytes +
+        Math.ceil(end * buffer.sampleRate) * buffer.numberOfChannels * 4,
+      0,
+    )
+    try {
+      if (allocatedBytes + additionalBytes > memoryBudgetBytes)
+        throw new Error('Loop memory budget exceeded')
+      for (const { track, buffer } of needsPadding) {
+        const padded = context.createBuffer(
+          buffer.numberOfChannels,
+          Math.ceil(end * buffer.sampleRate),
+          buffer.sampleRate,
+        )
+        for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+          padded.copyToChannel(buffer.getChannelData(channel), channel)
+        }
+        paddedLoopBuffers.set(track.id, padded)
+      }
+      return true
+    } catch {
+      loopRange = null
+      loopError =
+        'This loop needs more audio memory than this device allows. Move B earlier or use a shorter song.'
+      return false
+    }
+  }
+
+  const clearStreamLoopTimer = (): void => {
+    if (streamLoopTimer !== null) clearTimeout(streamLoopTimer)
+    streamLoopTimer = null
+  }
+
+  const wrapStreamed = (): void => {
+    if (
+      disposed ||
+      status !== 'playing' ||
+      loadMode !== 'streamed' ||
+      loopRange === null
+    )
+      return
+    streamedLoopBoundary = loopRange.end
+    parkedOffset = loopRange.start
+    void seekStreamed(loopRange.start, generation)
+  }
+
+  const refreshStreamLoopTimer = (): void => {
+    clearStreamLoopTimer()
+    if (
+      disposed ||
+      status !== 'playing' ||
+      loadMode !== 'streamed' ||
+      loopRange === null
+    )
+      return
+    const position = streamEngine?.getCurrentTime() ?? parkedOffset
+    const delay = Math.max(
+      10,
+      Math.min(100, ((loopRange.end - position) / playbackRate) * 1000),
+    )
+    streamLoopTimer = setTimeout(() => {
+      streamLoopTimer = null
+      if (loopRange === null || status !== 'playing') return
+      const position = streamEngine?.getCurrentTime() ?? parkedOffset
+      if (position >= loopRange.end) wrapStreamed()
+      else refreshStreamLoopTimer()
+    }, delay)
   }
 
   const loadStreamed = (requestGeneration: number): boolean => {
@@ -539,6 +757,10 @@ export function createGuitarBackingTransport(
       driftToleranceSeconds: streamDriftToleranceSeconds,
       onEnded: () => {
         if (disposed || status !== 'playing') return
+        if (loopRange !== null) {
+          wrapStreamed()
+          return
+        }
         streamEngine?.pause()
         parkedOffset = duration
         setStatus('complete')
@@ -561,6 +783,8 @@ export function createGuitarBackingTransport(
       onTrackError: (trackId, streamState) => {
         const state = trackState(trackId)
         if (state !== undefined) state.available = false
+        if (soloedTrackId === trackId) soloedTrackId = null
+        applyMix()
         if (streamState.fatal && status === 'playing') {
           parkedOffset = clamp(streamState.currentTime, 0, duration)
           streamEngine?.pause()
@@ -581,6 +805,7 @@ export function createGuitarBackingTransport(
     )
     if (loadedIds.length === 0) {
       engine.dispose()
+      refreshAvailableTracks([])
       setStatus('error', STREAM_ERROR)
       return false
     }
@@ -592,10 +817,7 @@ export function createGuitarBackingTransport(
       duration,
       ...currentSession.tracks.map((track) => track.durationSeconds ?? 0),
     )
-    trackStates = trackStates.map((state) => ({
-      ...state,
-      available: loadedIds.includes(state.id),
-    }))
+    refreshAvailableTracks(loadedIds)
     parkedOffset = clamp(parkedOffset, 0, duration)
     setStatus('ready')
     return true
@@ -705,7 +927,11 @@ export function createGuitarBackingTransport(
           return false
         }
         const gain = currentContext.createGain()
-        gain.connect(currentStemsBus)
+        loopEnvelope ??= createGuitarBackingLoopEnvelope(
+          currentContext,
+          currentStemsBus,
+        )
+        gain.connect(loopEnvelope.input)
         const decoded = { track, buffer, gain }
         loaded.push(decoded)
         applyTrackGain(decoded, true)
@@ -721,6 +947,7 @@ export function createGuitarBackingTransport(
     }
     loadAbort = null
     if (loaded.length === 0) {
+      refreshAvailableTracks([])
       setStatus(
         'error',
         'The prepared audio could not be decoded. Choose the source again or try another song.',
@@ -732,10 +959,13 @@ export function createGuitarBackingTransport(
     decodedTracks = loaded
     loadMode = 'buffered'
     duration = Math.max(...loaded.map((decoded) => decoded.buffer.duration))
-    trackStates = trackStates.map((state) => ({
-      ...state,
-      available: loaded.some((decoded) => decoded.track.id === state.id),
-    }))
+    // No sources are running on these newly decoded nodes. Set exact values
+    // before starting them; a live ramp could outlast the source start delay.
+    refreshAvailableTracks(
+      loaded.map((decoded) => decoded.track.id),
+      true,
+    )
+    prepareBufferedLoop()
     parkedOffset = clamp(parkedOffset, 0, duration)
     setStatus('ready')
     return true
@@ -749,6 +979,9 @@ export function createGuitarBackingTransport(
     const currentContext = context
     const currentStemsBus = audioGraph?.buses.stems ?? null
     const currentStreamEngine = streamEngine
+    const wasAudible = status === 'playing'
+    cancelStreamDip()
+    const startEpoch = ++streamStartEpoch
     if (
       currentContext === null ||
       currentStemsBus === null ||
@@ -757,15 +990,38 @@ export function createGuitarBackingTransport(
       return false
     }
 
-    const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
+    const revision = loopRevision
+    const safeOffset = guitarBackingLoopSeekPosition(
+      clamp(offset, 0, Math.max(0, duration - 0.001)),
+      loopRange,
+    )
     setStatus('loading')
     // A 15 ms linear dip, not an instant zero: short LINEAR dips are fine
     // inside continuous material (the program masks them) — an instant
     // step is a click at any point.
     rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.015)
+    // Keep already-playing media running through the dip, instead of cutting
+    // its waveform immediately when the engine pauses to seek. Cold starts
+    // still call play() within the user's gesture, with no timer in between.
+    if (wasAudible) {
+      const finishedDip = await waitForStreamDip()
+      if (
+        !finishedDip ||
+        disposed ||
+        requestGeneration !== generation ||
+        startEpoch !== streamStartEpoch ||
+        !shouldCommit()
+      )
+        return false
+    }
     const started = await currentStreamEngine.play(safeOffset, targetTrackGain)
-    if (disposed || requestGeneration !== generation) {
-      currentStreamEngine.pause()
+    if (
+      disposed ||
+      requestGeneration !== generation ||
+      startEpoch !== streamStartEpoch
+    ) {
+      // The replacement/pause already owns the engine. A stale promise must
+      // not pause media that a newer Play has successfully started.
       return false
     }
     // A newer scrub target can arrive while this target is still buffering.
@@ -780,14 +1036,31 @@ export function createGuitarBackingTransport(
       return false
     }
 
-    const playableIds = new Set(started.playableTrackIds)
-    trackStates = trackStates.map((state) => ({
-      ...state,
-      available: playableIds.has(state.id),
-    }))
-    duration = Math.max(duration, started.durationSeconds)
+    duration = started.durationSeconds > 0 ? started.durationSeconds : duration
+    const previousLoop = loopRange
+    loopRange = normalizeGuitarBackingLoop(loopRange, duration)
+    if (previousLoop !== null && loopRange === null) {
+      loopError =
+        'The loop is outside this recording. Set A and B within the song.'
+    }
+    // Marks and real metadata can change while media is seeking/buffering.
+    // Never open the bus onto an offset the newest duration/loop forbids.
+    const latestOffset = guitarBackingLoopSeekPosition(
+      clamp(safeOffset, 0, Math.max(0, duration - 0.001)),
+      loopRange,
+    )
+    if (
+      latestOffset !== safeOffset ||
+      (revision !== loopRevision && !shouldCommit())
+    ) {
+      currentStreamEngine.pause()
+      return startStreamedAt(latestOffset, requestGeneration, shouldCommit)
+    }
+
+    refreshAvailableTracks(started.playableTrackIds)
     startedOffset = safeOffset
     parkedOffset = safeOffset
+    streamedLoopBoundary = null
     startedAtContextTime = currentContext.currentTime
     // Anchored at now, not chained onto the dip: the elements took real time
     // to re-prime, and a bare ramp would interpolate from where the dip ended
@@ -814,10 +1087,16 @@ export function createGuitarBackingTransport(
       return false
     }
 
-    const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
-    stopVoices()
+    const safeOffset = guitarBackingLoopSeekPosition(
+      clamp(offset, 0, Math.max(0, duration - 0.001)),
+      loopRange,
+    )
+    const when =
+      currentContext.currentTime + Math.max(scheduleLeadSeconds, 0.012)
+    // Keep old sources connected until the dip has reached zero. Native
+    // loop wraps never visit this path; only explicit transport edits do.
+    stopVoices(when)
     const thisVoiceGeneration = voiceGeneration
-    const when = currentContext.currentTime + scheduleLeadSeconds
     const voices: ActiveVoice[] = []
     let endingSource: AudioBufferSourceNode | null = null
     let longestRemaining = -1
@@ -830,9 +1109,18 @@ export function createGuitarBackingTransport(
     )
 
     for (const decoded of decodedTracks) {
-      if (decoded.buffer.duration <= safeOffset) continue
+      const buffer =
+        loopRange === null
+          ? decoded.buffer
+          : (paddedLoopBuffers.get(decoded.track.id) ?? decoded.buffer)
+      if (buffer.duration <= safeOffset) continue
       const source = currentContext.createBufferSource()
-      source.buffer = decoded.buffer
+      source.buffer = buffer
+      source.loop = loopRange !== null
+      if (loopRange !== null) {
+        source.loopStart = loopRange.start
+        source.loopEnd = loopRange.end
+      }
       source.connect(decoded.gain)
       source.start(when, safeOffset)
       voices.push({ source, gain: decoded.gain })
@@ -848,10 +1136,12 @@ export function createGuitarBackingTransport(
     startedOffset = safeOffset
     parkedOffset = safeOffset
     startedAtContextTime = when
+    loopEnvelope?.start(loopRange, when, safeOffset)
     endingSource.onended = () => {
       if (
         disposed ||
         voiceGeneration !== thisVoiceGeneration ||
+        loopRange !== null ||
         status !== 'playing'
       ) {
         return
@@ -883,6 +1173,7 @@ export function createGuitarBackingTransport(
       return
     }
     const epoch = playIntentEpoch
+    const seekEpoch = ++streamSeekEpoch
     let next: number | null = target
     while (next !== null) {
       streamedSeekTarget = next
@@ -892,7 +1183,12 @@ export function createGuitarBackingTransport(
         requestGeneration,
         () => queuedStreamedSeek === null && streamedSeekTarget === next,
       )
-      if (disposed || requestGeneration !== generation) break
+      if (
+        disposed ||
+        requestGeneration !== generation ||
+        seekEpoch !== streamSeekEpoch
+      )
+        break
       if (playIntentEpoch !== epoch) {
         // Pause or stop already parked the room where it wanted; undo only
         // the sound this re-prime just started.
@@ -902,8 +1198,10 @@ export function createGuitarBackingTransport(
       }
       next = queuedStreamedSeek
     }
-    streamedSeekTarget = null
-    queuedStreamedSeek = null
+    if (seekEpoch === streamSeekEpoch) {
+      streamedSeekTarget = null
+      queuedStreamedSeek = null
+    }
   }
 
   const currentTime = (): number => {
@@ -920,10 +1218,43 @@ export function createGuitarBackingTransport(
       }
     }
     return clamp(
-      startedOffset + Math.max(0, context.currentTime - startedAtContextTime),
+      foldIntoLoop(
+        startedOffset + Math.max(0, context.currentTime - startedAtContextTime),
+        loopRange,
+      ),
       0,
       duration,
     )
+  }
+
+  const setLoopRange = (requested: LoopSpan | null): boolean => {
+    if (disposed || session === null) return false
+    const next = normalizeGuitarBackingLoop(requested, duration)
+    const accepted = requested === null || next !== null
+    if (
+      loopRange?.start === next?.start &&
+      loopRange?.end === next?.end &&
+      loopError === null
+    )
+      return accepted
+    const position =
+      streamedLoopBoundary !== null && next === null
+        ? streamedLoopBoundary
+        : currentTime()
+    loopRange = next
+    loopError = null
+    loopRevision += 1
+    const prepared = prepareBufferedLoop()
+    const target = guitarBackingLoopSeekPosition(position, loopRange)
+    parkedOffset = target
+    if (status === 'playing' || streamedSeekTarget !== null) {
+      if (loadMode === 'buffered') startAt(target)
+      else if (streamedSeekTarget !== null || target !== position)
+        void seekStreamed(target, generation)
+    }
+    refreshStreamLoopTimer()
+    emit()
+    return accepted && prepared
   }
 
   const activate = async (): Promise<boolean> => {
@@ -959,6 +1290,7 @@ export function createGuitarBackingTransport(
 
     if (streamEngine !== null) {
       streamEngine.setPlaybackRate(safeRate)
+      refreshStreamLoopTimer()
       emit()
       return true
     }
@@ -993,6 +1325,12 @@ export function createGuitarBackingTransport(
       generation += 1
       resetLoadedAudio()
       session = nextSession
+      loopRange = null
+      loopError = null
+      loopRevision += 1
+      soloedTrackId = null
+      defaultTrackLevels.clear()
+      trackStateCopies.clear()
       error = null
       parkedOffset = 0
       startedOffset = 0
@@ -1001,14 +1339,40 @@ export function createGuitarBackingTransport(
         ...(nextSession?.tracks.map((track) => track.durationSeconds ?? 0) ??
           []),
       )
+      const savedMix =
+        nextSession === null
+          ? new Map()
+          : readGuitarBackingMix(nextSession.sessionId, options.mixStorage)
       trackStates =
-        nextSession?.tracks.map((track) => ({
-          id: track.id,
-          label: track.label,
-          muted: track.muted ?? false,
-          level: clamp(track.level ?? 1, 0, 1),
-          available: true,
-        })) ?? []
+        nextSession?.tracks.map((track) => {
+          const level = Number.isFinite(track.level)
+            ? clamp(track.level!, 0, 1)
+            : 1
+          const levelDb =
+            level > 0
+              ? 20 * Math.log10(sliderToGain(level))
+              : Number.NEGATIVE_INFINITY
+          defaultTrackLevels.set(track.id, { level, levelDb })
+          const saved = savedMix.get(track.id)
+          const muted = saved?.muted ?? track.muted ?? false
+          return {
+            id: track.id,
+            label: track.label,
+            muted,
+            effectiveMuted: muted,
+            level:
+              saved === undefined
+                ? level
+                : Math.min(
+                    1,
+                    Math.sqrt(
+                      clampGuitarTrackMixGain(10 ** (saved.levelDb / 20)),
+                    ),
+                  ),
+            levelDb: saved?.levelDb ?? levelDb,
+            available: true,
+          }
+        }) ?? []
       setStatus(nextSession === null ? 'idle' : 'armed')
     },
 
@@ -1041,14 +1405,15 @@ export function createGuitarBackingTransport(
     },
 
     pause() {
+      const audibleStreamDip = streamDipWait !== null
       playIntentEpoch += 1
+      invalidateStreamStarts()
       playIntentPending = true
       if (status === 'loading') {
         generation += 1
         loadAbort?.abort()
         loadAbort = null
-        stopVoices()
-        streamEngine?.pause()
+        haltAudible(audibleStreamDip)
         setStatus(
           decodedTracks.length > 0 || streamEngine !== null
             ? 'paused'
@@ -1063,7 +1428,9 @@ export function createGuitarBackingTransport(
     },
 
     stop() {
+      const audibleStreamDip = streamDipWait !== null
       playIntentEpoch += 1
+      invalidateStreamStarts()
       playIntentPending = true
       if (status === 'loading') {
         generation += 1
@@ -1071,8 +1438,9 @@ export function createGuitarBackingTransport(
         loadAbort = null
       }
       parkedOffset = 0
-      haltAudible()
-      streamEngine?.seek(0)
+      haltAudible(audibleStreamDip)
+      // Park the transport now; the next Play primes media at zero. Seeking
+      // the elements here would move audible material during the close tail.
       if (session === null) setStatus('idle')
       else
         setStatus(
@@ -1082,23 +1450,35 @@ export function createGuitarBackingTransport(
 
     seek(seconds) {
       if (session === null) return
-      const target = clamp(seconds, 0, duration)
+      streamedLoopBoundary = null
+      const target = guitarBackingLoopSeekPosition(
+        clamp(Number.isFinite(seconds) ? seconds : 0, 0, duration),
+        loopRange,
+      )
       // A streamed seek deliberately reports `loading` while it primes the
       // requested media window. Further scrubber input still belongs to the
       // same playing intent and must replace its queued destination rather
       // than taking the quiet-seek path.
       const wasPlaying = status === 'playing' || streamedSeekTarget !== null
       parkedOffset = target
-      if (!wasPlaying) {
-        void streamEngine?.seek(target)
-        if (target >= duration && duration > 0) setStatus('complete')
-        else if (status === 'complete') setStatus('paused')
-        else emit()
+      if (target >= duration && duration > 0) {
+        const audibleStreamDip = streamDipWait !== null
+        invalidateStreamStarts()
+        // A terminal seek also outranks the initial load/Play, before there
+        // is a streamedSeekTarget. Its late promise must not reopen at zero.
+        if (status === 'loading') {
+          generation += 1
+          loadAbort?.abort()
+          loadAbort = null
+        }
+        haltAudible(audibleStreamDip)
+        setStatus('complete')
         return
       }
-      if (target >= duration) {
-        haltAudible()
-        setStatus('complete')
+      if (!wasPlaying) {
+        void streamEngine?.seek(target)
+        if (status === 'complete') setStatus('paused')
+        else emit()
         return
       }
       if (loadMode === 'streamed') {
@@ -1116,6 +1496,7 @@ export function createGuitarBackingTransport(
     },
 
     setPlaybackRate,
+    setLoopRange,
 
     setMasterVolume(position) {
       masterPosition = clamp(position, 0, 1)
@@ -1139,25 +1520,59 @@ export function createGuitarBackingTransport(
 
     setTrackMuted(id, muted) {
       const state = trackState(id)
-      if (state === undefined || state.muted === muted) return
-      state.muted = muted
-      const decoded = decodedTracks.find(
-        (candidate) => candidate.track.id === id,
+      if (
+        disposed ||
+        state === undefined ||
+        (state.muted === muted && !(muted && soloedTrackId === id))
       )
-      if (decoded !== undefined) applyTrackGain(decoded)
-      streamEngine?.setTrackGain(id, targetTrackGain(id), fadeSeconds)
-      emit()
+        return
+      state.muted = muted
+      if (muted && soloedTrackId === id) soloedTrackId = null
+      applyMix()
+      saveMix()
+    },
+
+    setTrackLevelDb(id, db) {
+      const state = trackState(id)
+      if (disposed || state === undefined) return
+      const nextDb = normalizeGuitarTrackMixDb(db)
+      if (state.levelDb === nextDb) return
+      state.levelDb = nextDb
+      state.level = Math.min(1, Math.sqrt(guitarTrackMixDbToGain(nextDb)))
+      applyMix()
+      saveMix()
+    },
+
+    toggleTrackSolo(id) {
+      const state = trackState(id)
+      if (disposed || state === undefined || !state.available) return
+      soloedTrackId = soloedTrackId === id ? null : id
+      applyMix()
+    },
+
+    resetTrackLevels() {
+      if (disposed) return
+      for (const state of trackStates) {
+        const defaults = defaultTrackLevels.get(state.id)
+        if (defaults !== undefined) Object.assign(state, defaults)
+      }
+      applyMix()
+      saveMix()
     },
 
     getAudioContext: () => context,
     getAudioGraph: () => audioGraph,
     getLoadMode: () => loadMode,
+    getLoopRange: () => (loopRange === null ? null : { ...loopRange }),
+    getLoopMode: () => loadMode,
+    getLoopError: () => loopError,
     getLoadProgress: () => loadProgress,
     getStatus: () => status,
     getCurrentTime: currentTime,
     getDuration: () => duration,
     getPlaybackRate: () => playbackRate,
     getMasterVolume: () => masterPosition,
+    getSoloedTrackId: () => soloedTrackId,
     getTrackStates: trackStatesView,
     getError: () => error,
     subscribe(listener) {
@@ -1170,6 +1585,8 @@ export function createGuitarBackingTransport(
       disposed = true
       generation += 1
       resetLoadedAudio()
+      loopEnvelope?.dispose()
+      loopEnvelope = null
       audioGraph?.dispose()
       const ownedContext = context
       context = null

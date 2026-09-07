@@ -839,8 +839,7 @@
   gap: 0.4rem;
 }
 
-.sessionMasterFader,
-.sessionTrackFader {
+.sessionMasterFader {
   display: grid;
   min-width: 0;
   border: 1px solid rgba(244, 234, 219, 0.11);
@@ -887,8 +886,7 @@
   font-size: 0.66rem;
 }
 
-.sessionMasterFader output,
-.sessionTrackFader output {
+.sessionMasterFader output {
   color: var(--ivory);
   font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
@@ -1021,28 +1019,7 @@
   align-items: stretch;
 }
 
-.sessionTrackFader {
-  grid-column: 1 / -1;
-  grid-template-columns: 2.5rem minmax(0, 1fr) 3.8rem;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: var(--touch-target);
-  padding: 0 0.7rem;
-  transition: opacity 140ms ease;
-}
-
-.sessionTrackFader > span {
-  color: var(--muted-readable);
-  font-size: 0.65rem;
-  font-weight: 700;
-}
-
-.sessionTrackFaderMasked {
-  opacity: 0.62;
-}
-
-.sessionMasterFader input,
-.sessionTrackFader input {
+.sessionMasterFader input {
   -webkit-appearance: none;
   appearance: none;
   min-width: 0;
@@ -1053,8 +1030,7 @@
   cursor: pointer;
 }
 
-.sessionMasterFader input::-webkit-slider-runnable-track,
-.sessionTrackFader input::-webkit-slider-runnable-track {
+.sessionMasterFader input::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
   background: linear-gradient(
@@ -1064,8 +1040,7 @@
   );
 }
 
-.sessionMasterFader input::-webkit-slider-thumb,
-.sessionTrackFader input::-webkit-slider-thumb {
+.sessionMasterFader input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 1rem;
   height: 1rem;
@@ -1076,23 +1051,20 @@
   box-shadow: 0 0 0.8rem rgba(224, 164, 93, 0.3);
 }
 
-.sessionMasterFader input::-moz-range-track,
-.sessionTrackFader input::-moz-range-track {
+.sessionMasterFader input::-moz-range-track {
   height: 4px;
   border: 0;
   border-radius: 999px;
   background: rgba(244, 234, 219, 0.18);
 }
 
-.sessionMasterFader input::-moz-range-progress,
-.sessionTrackFader input::-moz-range-progress {
+.sessionMasterFader input::-moz-range-progress {
   height: 4px;
   border-radius: 999px;
   background: rgba(224, 164, 93, 0.72);
 }
 
-.sessionMasterFader input::-moz-range-thumb,
-.sessionTrackFader input::-moz-range-thumb {
+.sessionMasterFader input::-moz-range-thumb {
   width: 0.75rem;
   height: 0.75rem;
   border: 2px solid #26190e;
@@ -1100,14 +1072,12 @@
   background: var(--amber-bright);
 }
 
-.sessionMasterFader input:focus-visible,
-.sessionTrackFader input:focus-visible {
+.sessionMasterFader input:focus-visible {
   outline: 2px solid var(--amber-bright);
   outline-offset: -8px;
 }
 
-.sessionMasterFader input:disabled,
-.sessionTrackFader input:disabled {
+.sessionMasterFader input:disabled {
   cursor: default;
   opacity: 0.4;
 }
@@ -1150,29 +1120,6 @@
 .sessionTrackVisibility svg {
   width: 18px;
   height: 18px;
-}
-
-.sessionTrackVisibility > span {
-  font-size: 0.62rem;
-  font-weight: 760;
-  letter-spacing: 0.04em;
-}
-
-.sessionTrackVisibility.sessionTrackSolo {
-  color: #dff7f2 !important;
-  border-color: rgba(106, 202, 189, 0.42);
-  background: rgba(106, 202, 189, 0.12);
-}
-
-.sessionTrackVisibility.sessionTrackMute {
-  color: var(--amber) !important;
-  border-color: rgba(224, 164, 93, 0.38);
-  background: rgba(224, 164, 93, 0.1);
-}
-
-.sessionTrackVisibility.sessionTrackMasked {
-  color: var(--muted) !important;
-  border-style: dashed;
 }
 
 .sessionTrackRowMasked > button:first-child {
@@ -1244,12 +1191,6 @@
     gap: 0.25rem;
   }
 
-  .sessionTrackFader {
-    grid-template-columns: 2.1rem minmax(0, 1fr) 3.4rem;
-    gap: 0.35rem;
-    padding-inline: 0.5rem;
-  }
-
   .sessionMixHeading {
     align-items: start;
   }
@@ -1265,23 +1206,18 @@
 
 @media (hover: none) and (pointer: coarse) {
   .sessionMasterFader input::-webkit-slider-runnable-track,
-  .sessionTrackFader input::-webkit-slider-runnable-track,
   .sessionMasterFader input::-moz-range-track,
-  .sessionTrackFader input::-moz-range-track,
-  .sessionMasterFader input::-moz-range-progress,
-  .sessionTrackFader input::-moz-range-progress {
+  .sessionMasterFader input::-moz-range-progress {
     height: 8px;
   }
 
-  .sessionMasterFader input::-webkit-slider-thumb,
-  .sessionTrackFader input::-webkit-slider-thumb {
+  .sessionMasterFader input::-webkit-slider-thumb {
     width: 1.5rem;
     height: 1.5rem;
     margin-top: -0.5rem;
   }
 
-  .sessionMasterFader input::-moz-range-thumb,
-  .sessionTrackFader input::-moz-range-thumb {
+  .sessionMasterFader input::-moz-range-thumb {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -3676,23 +3612,6 @@
   backdrop-filter: blur(18px) saturate(1.08);
 }
 
-.bandSessionPanel {
-  width: min(27rem, calc(100vw - 2rem));
-}
-
-.bandSessionPanel .channelStrip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-tight);
-  margin: 0;
-  padding-top: var(--space-control);
-  overflow: visible;
-}
-
-.bandSessionPanel .channelStrip button {
-  min-width: 0;
-}
-
 .bandUpgrade {
   display: grid;
   gap: 0.16rem;
@@ -3885,16 +3804,8 @@
   background: var(--amber-bright);
 }
 
-.ampPrimaryControls,
-.ampToneGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
 .ampPreset,
-.ampCabinet,
-.ampRange {
+.ampCabinet {
   min-width: 0;
 }
 
@@ -3905,8 +3816,7 @@
 }
 
 .ampPreset > span,
-.ampCabinet > span,
-.ampRange > span {
+.ampCabinet > span {
   color: rgba(244, 234, 219, 0.58);
   font-size: 0.57rem;
   font-weight: 650;
@@ -3932,27 +3842,6 @@
   background: #f4eadb;
 }
 
-.ampRange {
-  display: grid;
-  grid-template-columns: 3.7rem minmax(3.5rem, 1fr) 2.45rem;
-  align-items: center;
-  min-height: var(--touch-target);
-  gap: 0.35rem;
-}
-
-.ampRange input {
-  width: 100%;
-  min-width: 0;
-  accent-color: var(--amber-bright);
-}
-
-.ampRange output {
-  color: rgba(244, 234, 219, 0.5);
-  font-size: 0.55rem;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
 .ampDetails {
   border-top: 1px solid rgba(244, 234, 219, 0.08);
 }
@@ -3973,10 +3862,6 @@
 
 .ampDetails[open] > summary {
   color: var(--amber-bright);
-}
-
-.ampToneGrid {
-  padding-bottom: 0.35rem;
 }
 
 .ampReset {
@@ -4044,11 +3929,6 @@
 }
 
 @media (max-width: 440px) {
-  .ampPrimaryControls,
-  .ampToneGrid {
-    grid-template-columns: 1fr;
-  }
-
   .ampMonitorRow {
     display: grid;
   }
@@ -6585,11 +6465,27 @@
 }
 
 [data-room-kind='backing'] .transportDeck {
-  grid-template-areas: 'rail controls';
-  grid-template-columns: minmax(15rem, 1fr) auto;
+  grid-template-areas: 'rail loop controls';
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0 var(--space-room);
   padding-block: 0.45rem;
+}
+
+.songLoopControls {
+  grid-area: loop;
+  min-width: 0;
+}
+
+/* Marks and their exact values live on the shared rail. Keep the grouped
+   buttons compact even after a range is set; screen readers retain the status. */
+.songLoopControls .loopControls output {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .timeRail {
@@ -7990,10 +7886,10 @@
 
   [data-room-kind='backing'] .transportDeck {
     grid-template-areas:
-      'rail'
-      'controls';
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
+      'rail loop'
+      'controls controls';
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 0.3rem;
     padding: 0.18rem max(0.45rem, var(--safe-right))
       max(0.22rem, var(--safe-bottom)) max(0.45rem, var(--safe-left));
   }
@@ -8035,14 +7931,6 @@
   [data-room-kind='backing'] .masterVolume input {
     min-width: 0;
     width: 100%;
-  }
-
-  .bandSessionPanel {
-    width: min(27rem, calc(100vw - 1.1rem));
-  }
-
-  [data-room-kind='backing'] .bandSessionPanel {
-    right: calc(-1 * (var(--touch-target) + 0.3rem));
   }
 
   .restartControl {
@@ -8455,8 +8343,8 @@
   }
 
   [data-room-kind='backing'] .transportDeck {
-    grid-template-areas: 'rail controls';
-    grid-template-columns: minmax(11rem, 1fr) auto;
+    grid-template-areas: 'rail loop controls';
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 0.55rem;
     padding-block: 0.15rem;
   }

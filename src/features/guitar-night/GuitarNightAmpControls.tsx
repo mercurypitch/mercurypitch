@@ -2,15 +2,21 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createUniqueId, For } from 'solid-js'
+import { createSignal, createUniqueId, For, onCleanup, Show } from 'solid-js'
 import { Headphones, PowerSymbol, RotateCcw, Zap } from '@/components/icons'
+import { getGuitarAmpCabinetStatus, retryGuitarAmpCabinet, subscribeGuitarAmpCabinetStatus, } from '@/lib/guitar/guitar-amp-cabinet'
 import type { GuitarElectricAmpCabinet, GuitarElectricAmpParameters, } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarNightAmpPresetId } from './guitar-amp-settings'
+import { GUITAR_NIGHT_AMP_PRESETS } from './guitar-amp-settings'
+import ampStyles from './GuitarNightAmpControls.module.css'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightAmpContinuousParameter } from './useGuitarNightAmpSettings'
 
 interface GuitarNightAmpControlsProps {
+  /** Name the actual processing target; recorded stems do not use the amp. */
+  targetLabel?: string
+  takeNotice?: string
   parameters: Accessor<GuitarElectricAmpParameters>
   presetId: Accessor<GuitarNightAmpPresetId>
   inputProfile: Accessor<GuitarInputProfileKind>
@@ -30,16 +36,6 @@ interface GuitarNightAmpControlsProps {
   onReset(): void
 }
 
-const PRESETS: readonly {
-  id: Exclude<GuitarNightAmpPresetId, 'custom'>
-  label: string
-}[] = [
-  { id: 'studio-clean', label: 'Studio clean' },
-  { id: 'edge', label: 'Edge' },
-  { id: 'crunch', label: 'Crunch' },
-  { id: 'lead', label: 'Lead' },
-]
-
 const CABINETS: readonly {
   id: GuitarElectricAmpCabinet
   label: string
@@ -50,12 +46,11 @@ const CABINETS: readonly {
 ]
 
 const TONE_CONTROLS: readonly {
-  key: GuitarNightAmpContinuousParameter
+  key: Exclude<GuitarNightAmpContinuousParameter, 'character'>
   label: string
   minimum: number
   maximum: number
   signed: boolean
-  format?: (value: number) => string
 }[] = [
   { key: 'bass', label: 'Bass', minimum: -1, maximum: 1, signed: true },
   { key: 'mid', label: 'Mid', minimum: -1, maximum: 1, signed: true },
@@ -79,7 +74,6 @@ const TONE_CONTROLS: readonly {
     minimum: 0,
     maximum: 1,
     signed: false,
-    format: (value) => `${Math.round((-12 + value * 15) * 10) / 10} dB`,
   },
 ]
 
@@ -90,10 +84,46 @@ function percentage(value: number, signed = false): string {
 
 /** A restrained room control: preset and drive first, voicing on demand. */
 export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
+  const [cabinetStatus, setCabinetStatus] = createSignal(
+    getGuitarAmpCabinetStatus(),
+  )
   const monitorHintId = createUniqueId()
+  const characterHintId = createUniqueId()
+  const isStudio = (): boolean => props.parameters().engine === 'studio'
+  const isDefinition = (): boolean =>
+    isStudio() && props.parameters().head !== 'heavy'
+  const modelLabel = (): string =>
+    isStudio()
+      ? props.parameters().head === 'heavy'
+        ? 'Studio · Heavy head'
+        : 'Studio · Definition head'
+      : 'Lite amp · Filtered cabinet'
+  const formatOutput = (value: number): string => {
+    const decibels = isStudio() ? (value - 0.6) * 20 : -12 + value * 15
+    return `${Math.round(decibels * 10) / 10} dB`
+  }
+  const formatCharacter = (value: number): string => {
+    if (value === 0) return 'Articulate'
+    if (value === 1) return 'Tight'
+    return `${Math.round(value * 100)}% toward Tight`
+  }
+  const cabinetHint = (): string => {
+    switch (cabinetStatus()) {
+      case 'loading':
+        return 'Loading cabinet. Lite tone is used until it is ready.'
+      case 'ready':
+        return 'Cabinet IR ready.'
+      case 'error':
+        return 'Studio tone unavailable. Using Lite tone; try loading it again.'
+      default:
+        return 'Cabinet loads when you play an electric part or monitor Direct input.'
+    }
+  }
+  onCleanup(subscribeGuitarAmpCabinetStatus(setCabinetStatus))
+
   const monitorHint = (): string => {
     if (props.monitoringActive()) {
-      return 'Headphones recommended. Browser latency applies. Saved takes stay dry.'
+      return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
     }
     if (props.inputProfile() !== 'interface') {
       return 'Choose Direct input to hear your guitar through this amp.'
@@ -101,11 +131,14 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
     if (!props.canMonitor()) {
       return 'Turn on Listening, then monitor through headphones.'
     }
-    return 'Headphones recommended. Browser latency applies. Saved takes stay dry.'
+    return `Headphones recommended. Browser latency applies. ${props.takeNotice ?? 'Saved takes stay dry.'}`
   }
 
   return (
-    <section class={styles.ampControls} aria-label="Guitar amp">
+    <section
+      class={`${styles.ampControls} ${ampStyles.controls}`}
+      aria-label="Guitar amp"
+    >
       <div class={styles.ampFaceplate}>
         <div class={styles.ampIdentity}>
           <span aria-hidden="true">
@@ -113,7 +146,7 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
           </span>
           <span>
             <strong>Amp</strong>
-            <small>Shared electric tone</small>
+            <small>{props.targetLabel ?? 'Shared electric tone'}</small>
           </span>
         </div>
         <button
@@ -135,7 +168,9 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
         </button>
       </div>
 
-      <div class={styles.ampPrimaryControls}>
+      <p class={ampStyles.model}>{modelLabel()}</p>
+
+      <div class={ampStyles.primaryControls}>
         <label class={styles.ampPreset}>
           <span>Preset</span>
           <select
@@ -147,7 +182,7 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
               )
             }
           >
-            <For each={PRESETS}>
+            <For each={GUITAR_NIGHT_AMP_PRESETS}>
               {(preset) => <option value={preset.id}>{preset.label}</option>}
             </For>
             <option value="custom" disabled={props.presetId() !== 'custom'}>
@@ -166,9 +201,51 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
         />
       </div>
 
+      <Show when={isDefinition()}>
+        <div class={ampStyles.character}>
+          <AmpRange
+            label="Character"
+            value={() => props.parameters().character ?? 1}
+            minimum={0}
+            maximum={1}
+            format={formatCharacter}
+            displayFormat={(value) => `${Math.round(value * 100)}%`}
+            describedBy={characterHintId}
+            onInput={(value) => props.onParameter('character', value, false)}
+            onChange={props.onParameterCommit}
+          />
+          <div class={ampStyles.characterEndpoints} aria-hidden="true">
+            <span>Articulate</span>
+            <span>Tight</span>
+          </div>
+          <small id={characterHintId}>
+            One head, from open attack to focused drive. The cabinet stays the
+            same.
+          </small>
+        </div>
+      </Show>
+
+      <Show when={isStudio()}>
+        <div class={ampStyles.cabinetStatus}>
+          <span class={ampStyles.cabinetName}>
+            Cabinet IR · Jester Cookie Monster
+          </span>
+          <small role="status">{cabinetHint()}</small>
+          <Show when={cabinetStatus() === 'error'}>
+            <button
+              type="button"
+              class={ampStyles.retry}
+              onClick={() => retryGuitarAmpCabinet()}
+            >
+              Retry Studio tone
+            </button>
+          </Show>
+        </div>
+      </Show>
+
       <details class={styles.ampDetails}>
         <summary>Shape tone &amp; cabinet</summary>
-        <div class={styles.ampToneGrid}>
+        <div class={ampStyles.toneGrid}>
           <For each={TONE_CONTROLS}>
             {(control) => (
               <AmpRange
@@ -177,7 +254,7 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
                 minimum={control.minimum}
                 maximum={control.maximum}
                 signed={control.signed}
-                format={control.format}
+                format={control.key === 'output' ? formatOutput : undefined}
                 onInput={(value) =>
                   props.onParameter(control.key, value, false)
                 }
@@ -185,24 +262,26 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
               />
             )}
           </For>
-          <label class={styles.ampCabinet}>
-            <span>Cabinet</span>
-            <select
-              aria-label="Guitar cabinet voicing"
-              value={props.parameters().cabinet}
-              onChange={(event) =>
-                props.onCabinet(
-                  event.currentTarget.value as GuitarElectricAmpCabinet,
-                )
-              }
-            >
-              <For each={CABINETS}>
-                {(cabinet) => (
-                  <option value={cabinet.id}>{cabinet.label}</option>
-                )}
-              </For>
-            </select>
-          </label>
+          <Show when={!isStudio()}>
+            <label class={styles.ampCabinet}>
+              <span>Cabinet</span>
+              <select
+                aria-label="Guitar cabinet voicing"
+                value={props.parameters().cabinet}
+                onChange={(event) =>
+                  props.onCabinet(
+                    event.currentTarget.value as GuitarElectricAmpCabinet,
+                  )
+                }
+              >
+                <For each={CABINETS}>
+                  {(cabinet) => (
+                    <option value={cabinet.id}>{cabinet.label}</option>
+                  )}
+                </For>
+              </select>
+            </label>
+          </Show>
         </div>
         <button
           type="button"
@@ -253,13 +332,15 @@ interface AmpRangeProps {
   maximum: number
   signed?: boolean
   format?: (value: number) => string
+  displayFormat?: (value: number) => string
+  describedBy?: string
   onInput(value: number): void
   onChange(): void
 }
 
 function AmpRange(props: AmpRangeProps) {
   return (
-    <label class={styles.ampRange}>
+    <label class={ampStyles.range}>
       <span>{props.label}</span>
       <input
         type="range"
@@ -268,6 +349,7 @@ function AmpRange(props: AmpRangeProps) {
         step="0.01"
         value={props.value()}
         aria-label={`Guitar amp ${props.label.toLowerCase()}`}
+        aria-describedby={props.describedBy}
         aria-valuetext={
           props.format?.(props.value()) ??
           percentage(props.value(), props.signed)
@@ -276,7 +358,8 @@ function AmpRange(props: AmpRangeProps) {
         onChange={() => props.onChange()}
       />
       <output aria-hidden="true">
-        {props.format?.(props.value()) ??
+        {props.displayFormat?.(props.value()) ??
+          props.format?.(props.value()) ??
           percentage(props.value(), props.signed)}
       </output>
     </label>

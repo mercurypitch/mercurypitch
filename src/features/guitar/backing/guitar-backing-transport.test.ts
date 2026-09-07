@@ -46,6 +46,9 @@ class FakeGainNode {
 
 class FakeBufferSourceNode {
   buffer: AudioBuffer | null = null
+  loop = false
+  loopStart = 0
+  loopEnd = 0
   onended: (() => void) | null = null
   readonly connect = vi.fn((destination: unknown) => destination)
   readonly disconnect = vi.fn()
@@ -127,6 +130,23 @@ function decodedBuffer(duration = 12): AudioBuffer {
   } as unknown as AudioBuffer
 }
 
+function pcmBuffer(
+  length: number,
+  channels = 1,
+  sampleRate = 100,
+): AudioBuffer {
+  const data = Array.from({ length: channels }, () => new Float32Array(length))
+  return {
+    length,
+    duration: length / sampleRate,
+    numberOfChannels: channels,
+    sampleRate,
+    getChannelData: (channel: number) => data[channel]!,
+    copyToChannel: (source: Float32Array, channel: number) =>
+      data[channel]!.set(source),
+  } as unknown as AudioBuffer
+}
+
 class FakeAudioContext {
   sampleRate = 48_000
   currentTime = 10
@@ -151,6 +171,14 @@ class FakeAudioContext {
     const node = new FakeGainNode()
     this.gains.push(node)
     return node as unknown as GainNode
+  }
+
+  createBuffer(
+    channels: number,
+    length: number,
+    sampleRate: number,
+  ): AudioBuffer {
+    return pcmBuffer(length, channels, sampleRate)
   }
 
   createDynamicsCompressor(): DynamicsCompressorNode {
@@ -255,6 +283,7 @@ function audioHarness(
     return element as unknown as HTMLAudioElement
   })
   const transport = createGuitarBackingTransport({
+    mixStorage: null,
     contextFactory,
     activateContext,
     fetchArrayBuffer,
@@ -273,6 +302,400 @@ function audioHarness(
     transport,
   }
 }
+
+describe('transport-owned song loops', () => {
+  const harnesses: ReturnType<typeof audioHarness>[] = []
+  const setup = (options: Parameters<typeof audioHarness>[0] = {}) => {
+    const harness = audioHarness(options)
+    harnesses.push(harness)
+    return harness
+  }
+
+  afterEach(async () => {
+    for (const harness of harnesses.splice(0)) await harness.transport.dispose()
+    vi.useRealTimers()
+  })
+
+  it('validates pending marks without opening audio and clamps to the song duration', () => {
+    const h = setup()
+    h.transport.configure(session('marks'))
+    for (const range of [
+      { start: 4, end: 2 },
+      { start: 0, end: 0.24 },
+      { start: NaN, end: 4 },
+    ]) {
+      expect(h.transport.setLoopRange(range)).toBe(false)
+      expect(h.transport.getLoopRange()).toBeNull()
+    }
+    expect(h.transport.setLoopRange({ start: -1, end: 100 })).toBe(true)
+    expect(h.transport.getLoopRange()).toEqual({ start: 0, end: 12 })
+    expect(h.contextFactory).not.toHaveBeenCalled()
+    h.transport.configure(session('replacement'))
+    expect(h.transport.getLoopRange()).toBeNull()
+  })
+
+  it('uses one native epoch for many wraps without source restarts or UI frames', async () => {
+    const h = setup()
+    h.transport.configure(session('native', [track('drums'), track('guitar')]))
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    await h.transport.play()
+    for (const source of h.context.sources) {
+      expect(source.loop).toBe(true)
+      expect(source.loopStart).toBe(2)
+      expect(source.loopEnd).toBe(4)
+      expect(source.start).toHaveBeenCalledExactlyOnceWith(10.012, 0)
+    }
+    h.context.currentTime = 10.012 + 101.25
+    expect(h.transport.getCurrentTime()).toBeCloseTo(3.25)
+    expect(h.transport.getStatus()).toBe('playing')
+    expect(h.context.sources).toHaveLength(2)
+    expect(
+      h.context.sources.every((source) => source.stop.mock.calls.length === 0),
+    ).toBe(true)
+  })
+
+  it('queues native seam dips on a separate gate without changing track or master levels', async () => {
+    const h = setup()
+    h.transport.configure(session('seam'))
+    h.transport.setLoopRange({ start: 0, end: 1 })
+    await h.transport.play()
+    const trackGain = h.context.sources[0]!.connect.mock
+      .calls[0]![0] as FakeGainNode
+    const seamGain = trackGain.connect.mock.calls[0]![0] as FakeGainNode
+    expect(seamGain.gain.operations).toContainEqual({
+      kind: 'linear',
+      value: 0,
+      when: 11.012,
+    })
+    expect(trackGain.gain.value).toBe(1)
+    expect(h.transport.getMasterVolume()).toBe(0.78)
+    h.transport.pause()
+    expect(seamGain.gain.operations.at(-1)?.value).toBe(1)
+  })
+
+  it('preserves intro seeks, maps seeks after B to A, and clears from the audible wrapped position', async () => {
+    const h = setup()
+    h.transport.configure(session('seek'))
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    h.transport.seek(1)
+    await h.transport.play()
+    expect(h.context.sources.at(-1)!.start).toHaveBeenLastCalledWith(10.012, 1)
+    h.transport.seek(12)
+    expect(h.context.sources.at(-1)!.start).toHaveBeenLastCalledWith(10.012, 2)
+    expect(h.transport.getStatus()).toBe('playing')
+    h.context.currentTime = 13.512
+    expect(h.transport.getCurrentTime()).toBeCloseTo(3.5)
+    h.transport.setLoopRange(null)
+    expect(h.context.sources.at(-1)!.loop).toBe(false)
+    expect(h.context.sources.at(-1)!.start.mock.calls[0]![1]).toBeCloseTo(3.5)
+    h.context.currentTime += 1.012
+    expect(h.transport.getCurrentTime()).toBeCloseTo(4.5)
+  })
+
+  it('keeps paused edits silent and restart preserves a full-song loop at B=end', async () => {
+    const h = setup()
+    h.transport.configure(session('paused'))
+    await h.transport.play()
+    h.transport.pause()
+    const count = h.context.sources.length
+    h.transport.seek(11)
+    h.transport.setLoopRange({ start: 0, end: 12 })
+    expect(h.context.sources).toHaveLength(count)
+    await h.transport.play()
+    h.context.currentTime = 10.012 + 1.5
+    expect(h.transport.getCurrentTime()).toBeCloseTo(0.5)
+    h.transport.stop()
+    expect(h.transport.getLoopRange()).toEqual({ start: 0, end: 12 })
+    expect(h.transport.getCurrentTime()).toBe(0)
+    await h.transport.play()
+    expect(h.context.sources.at(-1)!.start.mock.calls[0]![1]).toBe(0)
+  })
+
+  it('applies the latest marks after an asynchronous decode', async () => {
+    const h = setup()
+    const pending = deferred<AudioBuffer>()
+    h.context.decodeImpl = () => pending.promise
+    h.transport.configure(session('loading'))
+    h.transport.setLoopRange({ start: 1, end: 5 })
+    const playing = h.transport.play()
+    await vi.waitFor(() => expect(h.context.decodeAudioData).toHaveBeenCalled())
+    h.transport.setLoopRange({ start: 2, end: 3 })
+    pending.resolve(decodedBuffer())
+    await playing
+    expect(h.context.sources[0]!.loopStart).toBe(2)
+    expect(h.context.sources[0]!.loopEnd).toBe(3)
+  })
+
+  it('pads short stems with silence through B instead of wrapping them at their own end', async () => {
+    const h = setup({ memoryBudgetBytes: 20_000 })
+    h.context.sampleRate = 100
+    const short = pcmBuffer(200)
+    short.getChannelData(0).fill(0.5)
+    h.context.decodeImpl = async () =>
+      h.context.decodeAudioData.mock.calls.length === 1 ? short : pcmBuffer(600)
+    h.transport.configure(
+      session('short', [
+        track('drums', { durationSeconds: 2, channelCount: 1 }),
+        track('guitar', { durationSeconds: 6, channelCount: 1 }),
+      ]),
+    )
+    h.transport.setLoopRange({ start: 1, end: 5 })
+    await h.transport.play()
+    const padded = h.context.sources[0]!.buffer!
+    expect(padded.length).toBe(500)
+    expect([...padded.getChannelData(0).slice(0, 200)]).toEqual(
+      Array(200).fill(0.5),
+    )
+    expect([...padded.getChannelData(0).slice(200)]).toEqual(Array(300).fill(0))
+    expect(h.context.sources[0]!.loopEnd).toBe(5)
+  })
+
+  it('refuses loop-only padding above the existing memory budget without claiming an active loop', async () => {
+    const h = setup({ memoryBudgetBytes: 3_500 })
+    h.context.sampleRate = 100
+    h.context.decodeImpl = async () =>
+      pcmBuffer(h.context.decodeAudioData.mock.calls.length === 1 ? 200 : 600)
+    h.transport.configure(
+      session('budget', [
+        track('drums', { durationSeconds: 2, channelCount: 1 }),
+        track('guitar', { durationSeconds: 6, channelCount: 1 }),
+      ]),
+    )
+    await h.transport.play()
+    expect(h.transport.getLoadMode()).toBe('buffered')
+    expect(h.transport.setLoopRange({ start: 1, end: 5 })).toBe(false)
+    expect(h.transport.getLoopRange()).toBeNull()
+    expect(h.transport.getLoopError()).toMatch(/memory/)
+    expect(h.context.sources.every((source) => !source.loop)).toBe(true)
+    expect(h.transport.getStatus()).toBe('playing')
+  })
+
+  it('hands loops to streamed playback on rate changes and waits for every seek before reopening', async () => {
+    vi.useFakeTimers()
+    const h = setup()
+    h.transport.configure(session('stream', [track('drums'), track('guitar')]))
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    await h.transport.play()
+    await h.transport.setPlaybackRate(0.75)
+    expect(h.transport.getLoopMode()).toBe('streamed')
+    for (const element of h.mediaElements) {
+      element.currentTime = 4
+      element.seekLatencyMs = 120
+    }
+    await vi.advanceTimersByTimeAsync(100)
+    expect(h.transport.getStatus()).toBe('loading')
+    await vi.advanceTimersByTimeAsync(350)
+    expect(h.transport.getStatus()).toBe('playing')
+    for (const element of h.mediaElements) {
+      expect(element.currentTime).toBe(2)
+      expect(element.playbackRate).toBe(0.75)
+      expect(element.seeking).toBe(false)
+    }
+    expect(h.transport.getCurrentTime()).toBe(2)
+    expect(h.context.decodeAudioData).toHaveBeenCalledTimes(2)
+  })
+
+  it('clearing during a streamed wrap continues from B and a later pause wins over readiness', async () => {
+    vi.useFakeTimers()
+    const h = setup()
+    h.transport.configure(session('clear-stream'))
+    await h.transport.setPlaybackRate(0.75)
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    await h.transport.play()
+    const media = h.mediaElements[0]!
+    media.currentTime = 4
+    media.seekLatencyMs = 100
+    await vi.advanceTimersByTimeAsync(100)
+    expect(h.transport.getStatus()).toBe('loading')
+    h.transport.setLoopRange(null)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(media.currentTime).toBe(4)
+    expect(h.transport.getStatus()).toBe('playing')
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    h.transport.pause()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(h.transport.getStatus()).toBe('paused')
+    expect(media.paused).toBe(true)
+  })
+
+  it('an old streamed wrap cannot pause or erase a newer Play and seek after Pause', async () => {
+    vi.useFakeTimers()
+    const h = setup()
+    h.transport.configure(session('stale-stream'))
+    await h.transport.setPlaybackRate(0.75)
+    h.transport.setLoopRange({ start: 2, end: 4 })
+    await h.transport.play()
+    const media = h.mediaElements[0]!
+    const oldPlay = deferred<undefined>()
+    media.play.mockImplementationOnce(() => oldPlay.promise)
+    media.currentTime = 4
+    await vi.advanceTimersByTimeAsync(115)
+    expect(h.transport.getStatus()).toBe('loading')
+    h.transport.pause()
+    await h.transport.play()
+    expect(h.transport.getStatus()).toBe('playing')
+    media.seekLatencyMs = 100
+    h.transport.seek(3)
+    oldPlay.resolve(undefined)
+    await vi.advanceTimersByTimeAsync(300)
+    expect(h.transport.getStatus()).toBe('playing')
+    expect(h.transport.getCurrentTime()).toBe(3)
+    expect(media.paused).toBe(false)
+    expect(h.transport.getLoopRange()).toEqual({ start: 2, end: 4 })
+  })
+
+  it('uses the real shorter streamed duration and newest loop while a cold start settles', async () => {
+    const h = setup()
+    h.transport.configure(session('metadata'))
+    await h.transport.setPlaybackRate(0.75)
+    h.transport.seek(10)
+    h.transport.setLoopRange({ start: 8, end: 12 })
+    const initialPlay = deferred<undefined>()
+    const factory = h.mediaElementFactory.getMockImplementation()!
+    h.mediaElementFactory.mockImplementation(() => {
+      const element = factory() as unknown as FakeMediaElement
+      element.duration = 6
+      element.play.mockImplementationOnce(() => initialPlay.promise)
+      return element as unknown as HTMLAudioElement
+    })
+    const playing = h.transport.play()
+    await vi.waitFor(() => expect(h.mediaElements).toHaveLength(1))
+    h.transport.setLoopRange({ start: 1, end: 5 })
+    initialPlay.resolve(undefined)
+    expect(await playing).toBe(true)
+    expect(h.transport.getDuration()).toBe(6)
+    expect(h.transport.getLoopRange()).toEqual({ start: 1, end: 5 })
+    expect(h.transport.getCurrentTime()).toBe(1)
+    expect(h.mediaElements[0]!.currentTime).toBe(1)
+  })
+
+  it('surfaces an invalid native loop when the decoded recording is shorter than declared', async () => {
+    const h = setup()
+    h.context.decodeImpl = async () => decodedBuffer(6)
+    h.transport.configure(session('short-metadata'))
+    h.transport.setLoopRange({ start: 8, end: 12 })
+    await h.transport.play()
+    expect(h.transport.getLoopRange()).toBeNull()
+    expect(h.transport.getLoopError()).toMatch(/outside this recording/)
+    expect(h.context.sources[0]!.loop).toBe(false)
+  })
+
+  it('finishes the streamed dip before pausing media and cancels the dip for a newer Stop', async () => {
+    vi.useFakeTimers()
+    const h = setup({ memoryBudgetBytes: 1 })
+    h.transport.configure(session('dip'))
+    await h.transport.play()
+    const media = h.mediaElements[0]!
+    media.pause.mockClear()
+    media.play.mockClear()
+    h.transport.seek(2)
+    await vi.advanceTimersByTimeAsync(14)
+    expect(media.pause).not.toHaveBeenCalled()
+    expect(media.play).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(media.pause).toHaveBeenCalledOnce()
+    expect(media.play).toHaveBeenCalledOnce()
+    h.transport.seek(4)
+    h.transport.stop()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(media.play).toHaveBeenCalledOnce()
+    expect(h.transport.getStatus()).toBe('ready')
+    expect(h.transport.getCurrentTime()).toBe(0)
+  })
+
+  it('a terminal seek cancels an older streamed re-prime without changing complete to error', async () => {
+    vi.useFakeTimers()
+    const h = setup({ memoryBudgetBytes: 1 })
+    h.transport.configure(session('terminal'))
+    await h.transport.play()
+    const pending = deferred<undefined>()
+    const media = h.mediaElements[0]!
+    media.play.mockImplementationOnce(() => pending.promise)
+    h.transport.seek(2)
+    await vi.advanceTimersByTimeAsync(15)
+    h.transport.seek(12)
+    pending.resolve(undefined)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(h.transport.getStatus()).toBe('complete')
+    expect(h.transport.getCurrentTime()).toBe(12)
+    expect(h.transport.getError()).toBeNull()
+    expect(media.paused).toBe(true)
+  })
+
+  it('a terminal seek during the audible dip releases before pausing media', async () => {
+    vi.useFakeTimers()
+    const h = setup({ memoryBudgetBytes: 1 })
+    h.transport.configure(session('terminal-dip'))
+    await h.transport.play()
+    const media = h.mediaElements[0]!
+    media.currentTime = 1
+    media.pause.mockClear()
+    media.play.mockClear()
+    h.transport.seek(2)
+    await vi.advanceTimersByTimeAsync(5)
+    h.transport.seek(12)
+    expect(media.pause).not.toHaveBeenCalled()
+    expect(media.currentTime).toBe(1)
+    expect(h.transport.getStatus()).toBe('complete')
+    expect(h.transport.getCurrentTime()).toBe(12)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(media.paused).toBe(true)
+    expect(media.play).not.toHaveBeenCalled()
+    expect(h.transport.getStatus()).toBe('complete')
+    expect(h.transport.getError()).toBeNull()
+  })
+
+  it('a terminal seek cancels a cold streamed Play before it can reopen at its old offset', async () => {
+    const h = setup({ memoryBudgetBytes: 1 })
+    const pending = deferred<undefined>()
+    const factory = h.mediaElementFactory.getMockImplementation()!
+    h.mediaElementFactory.mockImplementation(() => {
+      const media = factory() as unknown as FakeMediaElement
+      media.play.mockImplementationOnce(() => pending.promise)
+      return media as unknown as HTMLAudioElement
+    })
+    h.transport.configure(session('terminal-cold'))
+    const playing = h.transport.play()
+    await vi.waitFor(() =>
+      expect(h.mediaElements[0]?.play).toHaveBeenCalledOnce(),
+    )
+    h.transport.seek(12)
+    pending.resolve(undefined)
+    expect(await playing).toBe(false)
+    expect(h.transport.getStatus()).toBe('complete')
+    expect(h.transport.getCurrentTime()).toBe(12)
+    expect(h.mediaElements[0]!.paused).toBe(true)
+    expect(h.transport.getError()).toBeNull()
+  })
+
+  it.each(['pause', 'stop'] as const)(
+    '%s during an audible dip releases before halting and never seeks live media',
+    async (action) => {
+      vi.useFakeTimers()
+      const h = setup({ memoryBudgetBytes: 1 })
+      h.transport.configure(session(`dip-${action}`))
+      await h.transport.play()
+      const media = h.mediaElements[0]!
+      media.currentTime = 1
+      media.pause.mockClear()
+      media.play.mockClear()
+      h.transport.seek(4)
+      await vi.advanceTimersByTimeAsync(5)
+      h.transport[action]()
+      expect(media.pause).not.toHaveBeenCalled()
+      expect(media.currentTime).toBe(1)
+      expect(h.transport.getCurrentTime()).toBe(action === 'stop' ? 0 : 4)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(media.paused).toBe(true)
+      expect(media.play).not.toHaveBeenCalled()
+      expect(h.transport.getStatus()).toBe(
+        action === 'stop' ? 'ready' : 'paused',
+      )
+      await h.transport.play()
+      expect(media.currentTime).toBe(action === 'stop' ? 0 : 4)
+    },
+  )
+})
 
 describe('createGuitarBackingTransport', () => {
   it('arms and exposes a mix without creating or activating audio', () => {
@@ -297,6 +720,8 @@ describe('createGuitarBackingTransport', () => {
         id: 'drums',
         label: 'Drums',
         muted: false,
+        effectiveMuted: false,
+        levelDb: 0,
         level: 1,
         available: true,
       },
@@ -304,6 +729,8 @@ describe('createGuitarBackingTransport', () => {
         id: 'guitar',
         label: 'Guitar',
         muted: true,
+        effectiveMuted: true,
+        levelDb: 20 * Math.log10(0.4 ** 2),
         level: 0.4,
         available: true,
       },
@@ -478,6 +905,220 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.context.decodeAudioData).toHaveBeenCalledTimes(2)
   })
 
+  it('edits faders and temporary Solo in place without changing retained mutes or transport', async () => {
+    const harness = audioHarness({ fadeSeconds: 0.05 })
+    harness.transport.configure(
+      session('live-mix', [
+        track('drums'),
+        track('guitar', { level: 0.4 }),
+        track('vocals', { muted: true }),
+      ]),
+    )
+    harness.transport.setTrackLevelDb('drums', 6)
+    harness.transport.toggleTrackSolo('drums')
+    expect(harness.contextFactory).not.toHaveBeenCalled()
+    await harness.transport.play()
+    const gains = harness.context.sources.map(
+      (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+    )
+    expect(gains.map((gain) => gain.gain.value)).toEqual([10 ** (6 / 20), 0, 0])
+    expect(
+      harness.transport.getTrackStates().map((state) => state.muted),
+    ).toEqual([false, false, true])
+
+    const time = harness.transport.getCurrentTime()
+    harness.transport.setTrackLevelDb('guitar', -6)
+    expect(gains[1].gain.value).toBe(0)
+    harness.transport.toggleTrackSolo('drums')
+    expect(gains[1].gain.value).toBeCloseTo(10 ** (-6 / 20), 8)
+    expect(gains[2].gain.value).toBe(0)
+    harness.transport.toggleTrackSolo('guitar')
+    harness.transport.setTrackMuted('guitar', true)
+    expect(harness.transport.getSoloedTrackId()).toBeNull()
+    expect(gains[0].gain.value).toBeCloseTo(10 ** (6 / 20), 8)
+    expect(gains[1].gain.value).toBe(0)
+    expect(harness.transport.getCurrentTime()).toBe(time)
+    expect(harness.transport.getStatus()).toBe('playing')
+    expect(harness.context.sources).toHaveLength(3)
+    expect(
+      harness.context.sources.every(
+        (source) => source.stop.mock.calls.length === 0,
+      ),
+    ).toBe(true)
+    expect(harness.fetchArrayBuffer).toHaveBeenCalledTimes(3)
+
+    harness.transport.toggleTrackSolo('drums')
+    harness.transport.resetTrackLevels()
+    expect(harness.transport.getSoloedTrackId()).toBe('drums')
+    expect(
+      harness.transport.getTrackStates().map((state) => state.level),
+    ).toEqual([1, 0.4, 1])
+    expect(
+      harness.transport.getTrackStates().map((state) => state.muted),
+    ).toEqual([false, true, true])
+    expect(gains.map((gain) => gain.gain.value)).toEqual([1, 0, 0])
+    await harness.transport.dispose()
+  })
+
+  it('bounds unsafe fader values and preserves zero-gain faders through mute and Solo', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(
+      session('safe-gains', [track('drums'), track('guitar', { level: 0.1 })]),
+    )
+    await harness.transport.play()
+    const gain = harness.context.sources[0].connect.mock
+      .calls[0][0] as FakeGainNode
+    const quietDefault = harness.context.sources[1].connect.mock
+      .calls[0][0] as FakeGainNode
+    expect(quietDefault.gain.value).toBeCloseTo(0.01, 8)
+    for (const db of [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      -100,
+      1e9,
+      Number.NEGATIVE_INFINITY,
+    ]) {
+      harness.transport.setTrackLevelDb('drums', db)
+      expect(Number.isFinite(gain.gain.value)).toBe(true)
+      expect(gain.gain.value).toBeGreaterThanOrEqual(0)
+      expect(gain.gain.value).toBeLessThanOrEqual(2)
+    }
+    harness.transport.toggleTrackSolo('drums')
+    harness.transport.setTrackMuted('drums', true)
+    harness.transport.setTrackMuted('drums', false)
+    expect(gain.gain.value).toBe(0)
+    expect(harness.transport.getTrackStates()[0].levelDb).toBe(
+      Number.NEGATIVE_INFINITY,
+    )
+    harness.transport.resetTrackLevels()
+    expect(quietDefault.gain.value).toBeCloseTo(0.01, 8)
+    expect(gain.gain.value).toBe(1)
+    await harness.transport.dispose()
+  })
+
+  it('uses the latest mix after edits while a later stem is still decoding', async () => {
+    const harness = audioHarness()
+    const pending = deferred<AudioBuffer>()
+    let decodes = 0
+    harness.context.decodeImpl = async () =>
+      ++decodes === 1 ? decodedBuffer() : pending.promise
+    harness.transport.configure(
+      session('loading-mix', [track('drums'), track('guitar')]),
+    )
+    const starting = harness.transport.play()
+    await vi.waitFor(() =>
+      expect(harness.context.decodeAudioData).toHaveBeenCalledTimes(2),
+    )
+    harness.transport.setTrackLevelDb('drums', 6)
+    harness.transport.setTrackLevelDb('guitar', -6)
+    harness.transport.toggleTrackSolo('guitar')
+    pending.resolve(decodedBuffer())
+    await expect(starting).resolves.toBe(true)
+    const gains = harness.context.sources.map(
+      (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+    )
+    expect(gains[0].gain.value).toBe(0)
+    expect(gains[1].gain.value).toBeCloseTo(10 ** (-6 / 20), 8)
+    // Newly loaded gains must already be exact when sources start, not reach
+    // their mute/level only after the live 18ms ramp finishes.
+    expect(gains.map((gain) => gain.gain.operations)).toEqual([[], []])
+    harness.transport.toggleTrackSolo('guitar')
+    expect(gains[0].gain.value).toBeCloseTo(10 ** (6 / 20), 8)
+    expect(harness.context.sources).toHaveLength(2)
+    await harness.transport.dispose()
+  })
+
+  it('clears Solo when its stem fails decoding and restores surviving levels and explicit mutes', async () => {
+    const harness = audioHarness()
+    let decodes = 0
+    harness.context.decodeImpl = async () => {
+      if (++decodes === 1) throw new Error('damaged drums')
+      return decodedBuffer()
+    }
+    harness.transport.configure(
+      session('failed-solo', [
+        track('drums'),
+        track('guitar'),
+        track('vocal', { muted: true }),
+      ]),
+    )
+    harness.transport.setTrackLevelDb('guitar', -6)
+    harness.transport.toggleTrackSolo('drums')
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.transport.getSoloedTrackId()).toBeNull()
+    expect(harness.transport.getTrackStates()[0].available).toBe(false)
+    const gains = harness.context.sources.map(
+      (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+    )
+    expect(gains[0].gain.value).toBeCloseTo(10 ** (-6 / 20), 8)
+    expect(gains[1].gain.value).toBe(0)
+    expect(
+      harness.transport.getTrackStates().map((state) => state.muted),
+    ).toEqual([false, false, true])
+    await harness.transport.dispose()
+  })
+
+  it('clears Solo after a streamed stem error without restarting the surviving track', async () => {
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(
+      session('stream-failed-solo', [track('drums'), track('guitar')]),
+    )
+    harness.transport.setTrackLevelDb('guitar', -6)
+    harness.transport.toggleTrackSolo('drums')
+    await harness.transport.play()
+    const gains = harness.context.mediaSources.map(
+      (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+    )
+    expect(gains[1].gain.value).toBe(0)
+    const starts = harness.mediaElements[1].play.mock.calls.length
+    harness.mediaElements[0].dispatchEvent(new Event('error'))
+    expect(harness.transport.getSoloedTrackId()).toBeNull()
+    expect(harness.transport.getTrackStates()[0].available).toBe(false)
+    expect(gains[0].gain.value).toBe(0)
+    expect(gains[1].gain.value).toBeCloseTo(10 ** (-6 / 20), 8)
+    expect(harness.mediaElements[1].play).toHaveBeenCalledTimes(starts)
+    expect(harness.transport.getStatus()).toBe('playing')
+    await harness.transport.dispose()
+  })
+
+  it('keeps faders and mute masks through buffered-to-streamed rate handoff and paused edits', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(
+      session('rate-mix', [track('drums'), track('guitar')]),
+    )
+    await harness.transport.play()
+    harness.transport.setTrackLevelDb('drums', 6)
+    harness.transport.setTrackLevelDb('guitar', -6)
+    harness.transport.toggleTrackSolo('drums')
+    await harness.transport.setPlaybackRate(0.75)
+    const gains = harness.context.mediaSources.map(
+      (source) => source.connect.mock.calls[0][0] as FakeGainNode,
+    )
+    expect(gains[0].gain.value).toBeCloseTo(10 ** (6 / 20), 8)
+    expect(gains[1].gain.value).toBe(0)
+    const starts = harness.mediaElements.map(
+      (element) => element.play.mock.calls.length,
+    )
+    harness.transport.setTrackLevelDb('drums', -3)
+    harness.transport.toggleTrackSolo('drums')
+    expect(gains[0].gain.value).toBeCloseTo(10 ** (-3 / 20), 8)
+    expect(gains[1].gain.value).toBeCloseTo(10 ** (-6 / 20), 8)
+    expect(
+      harness.mediaElements.map((element) => element.play.mock.calls.length),
+    ).toEqual(starts)
+    expect(
+      harness.mediaElements.map((element) => element.playbackRate),
+    ).toEqual([0.75, 0.75])
+    harness.transport.pause()
+    harness.transport.setTrackLevelDb('drums', 0)
+    harness.transport.setTrackMuted('guitar', true)
+    expect(harness.transport.getStatus()).toBe('paused')
+    expect(gains.map((gain) => gain.gain.value)).toEqual([1, 0])
+    await harness.transport.play()
+    expect(gains.map((gain) => gain.gain.value)).toEqual([1, 0])
+    await harness.transport.dispose()
+  })
+
   it('gates only backing stems on pause and restores them on resume', async () => {
     const harness = audioHarness({ fadeSeconds: 0.05 })
     harness.transport.setMasterVolume(0.31)
@@ -581,7 +1222,9 @@ describe('createGuitarBackingTransport', () => {
 
     harness.transport.seek(7.25)
     expect(harness.transport.getStatus()).toBe('loading')
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() =>
+      expect(harness.transport.getStatus()).toBe('playing'),
+    )
 
     expect(stems.gain.operations).toEqual([
       // Down, and it stays down across the re-prime...
@@ -614,15 +1257,16 @@ describe('createGuitarBackingTransport', () => {
     element.bufferedEnd = 7.5
 
     harness.transport.seek(7)
-    await Promise.resolve()
-    await Promise.resolve()
+    await vi.waitFor(() => expect(element.currentTime).toBe(7))
 
     expect(harness.transport.getStatus()).toBe('loading')
     expect(harness.transport.getCurrentTime()).toBeCloseTo(7)
 
     element.bufferedEnd = 14
     element.dispatchEvent(new Event('progress'))
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() =>
+      expect(harness.transport.getStatus()).toBe('playing'),
+    )
 
     expect(harness.transport.getStatus()).toBe('playing')
     expect(harness.transport.getCurrentTime()).toBeCloseTo(7)
@@ -665,16 +1309,26 @@ describe('createGuitarBackingTransport', () => {
       session('drag', [track('drums'), track('guitar')]),
     )
     await expect(harness.transport.play()).resolves.toBe(true)
-    for (const element of harness.mediaElements) element.play.mockClear()
+    const firstPrime = deferred<undefined>()
+    for (const element of harness.mediaElements) {
+      element.play.mockClear()
+      element.play.mockImplementationOnce(() => firstPrime.promise)
+    }
 
     harness.transport.seek(2)
+    await vi.waitFor(() =>
+      expect(harness.mediaElements[0]!.play).toHaveBeenCalledOnce(),
+    )
     harness.transport.seek(4)
     harness.transport.seek(6.5)
     // The playhead reports where the finger is, not where the in-flight
     // re-prime is heading and not where the stalled element still reads.
     expect(harness.transport.getStatus()).toBe('loading')
     expect(harness.transport.getCurrentTime()).toBeCloseTo(6.5)
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    firstPrime.resolve(undefined)
+    await vi.waitFor(() =>
+      expect(harness.transport.getStatus()).toBe('playing'),
+    )
 
     for (const element of harness.mediaElements) {
       // Two re-primes, not three: the first, and the last position asked for.
@@ -699,6 +1353,7 @@ describe('createGuitarBackingTransport', () => {
     element.bufferedEnd = 2.5
 
     harness.transport.seek(2)
+    await vi.waitFor(() => expect(element.currentTime).toBe(2))
     harness.transport.seek(6)
     expect(harness.transport.getStatus()).toBe('loading')
 
@@ -706,7 +1361,7 @@ describe('createGuitarBackingTransport', () => {
     // warming internally; it must never become audible or report playing.
     element.bufferedEnd = 7.5
     element.dispatchEvent(new Event('progress'))
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(element.currentTime).toBe(6))
 
     expect(harness.transport.getStatus()).toBe('loading')
     expect(reportedStatuses).not.toContain('playing')
@@ -738,7 +1393,7 @@ describe('createGuitarBackingTransport', () => {
     harness.transport.seek(5)
     expect(harness.transport.getStatus()).toBe('loading')
     harness.transport.pause()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(harness.mediaElements[0]!.paused).toBe(true))
 
     // The re-prime finishes after the pause; the room must not come back up,
     // and it stays parked where the player left it — at the seek they had
@@ -758,7 +1413,7 @@ describe('createGuitarBackingTransport', () => {
 
     harness.transport.seek(5)
     harness.transport.stop()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(harness.mediaElements[0]!.paused).toBe(true))
 
     expect(harness.transport.getStatus()).toBe('ready')
     expect(harness.transport.getCurrentTime()).toBe(0)

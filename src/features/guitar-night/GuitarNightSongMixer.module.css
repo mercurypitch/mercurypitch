@@ -1,0 +1,106 @@
+/* Song stems retain the same compact channel rhythm as the score mixer. */
+.mixHeading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mixHeading p,
+.sourceAction p,
+.empty {
+  margin: 0;
+  color: var(--muted-readable);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.mixHeading button,
+.sourceAction button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(244, 234, 219, 0.2);
+  border-radius: 0.55rem;
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.03);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.mixHeading button:hover:not(:disabled),
+.sourceAction button:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.5);
+  background: rgba(224, 164, 93, 0.08);
+}
+
+.mixHeading button:focus-visible,
+.sourceAction button:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+.mixHeading button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tracks {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 44px;
+  gap: 0.25rem 0.35rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.25rem 0;
+}
+
+.identity {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  padding-inline: 0.2rem;
+}
+
+.identity strong,
+.identity small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity strong {
+  color: var(--ivory);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.identity small {
+  color: var(--muted-readable);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.sourceAction {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.12);
+}
+
+.sourceAction button {
+  justify-self: start;
+}
+
+@media (prefers-contrast: more) {
+  .mixHeading button,
+  .sourceAction button {
+    border-color: currentColor;
+  }
+}

@@ -193,6 +193,26 @@ route becomes the speaker must be a no-op. Native audio policy requires
 physical-device verification before release.
 **See:** `apps/beside-cue/ios/App/App/AudioSession.swift`
 
+### Give overlapping input starts their own microphone leases and pending nodes
+
+**Symptom:** Stop followed by a quick Listening restart lost the new input when
+the old worklet finished loading.
+**Cause:** stale completion ran shared cleanup; the manager's idempotent consumer
+ID also let an obsolete request release the newer request's hold.
+**Rule:** use attempt-local leases and pending-node disposers, check generation
+after every await, and let stale continuations release only their own resources.
+**See:** `src/features/guitar-night/useGuitarListeningController.ts`
+
+### Validate live capture timing before diagnosing an amp click
+
+**Symptom:** rapid tone changes appeared to introduce large PCM jumps.
+**Cause:** Chromium's worklet `currentFrame` repeated/skipped during graph edits;
+indexing recorded samples by it overwrote blocks and left zero-filled holes.
+**Rule:** record delivered blocks sequentially, retain clock anomalies as
+diagnostics, and require an independent raw signal to stay continuous before
+using processed PCM to judge transitions. Offline endpoint checks are separate.
+**See:** `scripts/guitar-amp-browser-probes.mjs`
+
 ## Framework
 
 ### Do not destructure props
@@ -396,6 +416,15 @@ its top extended beneath the higher-z-index header outside that container.
 **Rule:** cap viewport-derived overlay height to `100%` of its containing block,
 then regression-test settled geometry and `elementFromPoint` hit ownership.
 **See:** `src/features/drum-night/DrumNightApp.module.css`
+
+### Keep grid placement on the host, not reusable content
+
+**Symptom:** recorded-stem buttons became 263px columns beside the Amp.
+**Cause:** reused channel content retained `grid-area: channels` inside a
+different grid, creating implicit placement and stretching unrelated controls.
+**Rule:** host wrappers own placement; shared controls own only their internal
+layout. Test row geometry with both two and six tracks, not just overflow.
+**See:** `src/features/guitar-night/GuitarNightSongMixer.tsx`
 
 ## Performance
 
@@ -833,6 +862,20 @@ not necessarily keep their desktop tab id.
 **Rule:** mobile automation opens More when the stable tab id is absent, then
 selects the destination by its exact accessible name.
 **See:** `scripts/audit-exercises-mobile.mjs`
+
+### Isolate dependency scanning in offline Vite audio harnesses
+
+**Symptom:** a tiny audio harness scanned every app HTML entry and flooded errors; its intercepted baseline module could not import.
+**Cause:** Vite scans HTML entries by default and resolves literal imports before browser route interception.
+**Rule:** use `optimizeDeps.entries: []` with explicit dependencies; load route-only modules through a variable with `@vite-ignore`.
+**See:** `scripts/build-guitar-audition-pack.mjs`, `scripts/guitar-audition-browser.mjs`
+
+### Seeded synthesis is not a cross-run bit-exact listening fixture
+
+**Symptom:** an unchanged seeded score produced a different PCM hash, with maximum sample error only 2.98e-8, breaking a historical amp comparison before the amp ran.
+**Cause:** seeding note excitation did not establish cross-run floating-point PCM identity; the precise engine-level source of the tiny difference was not established.
+**Rule:** freeze and hash-verify the original pre-amp PCM for head-only comparisons. Re-parse score metadata and bound regenerated-source error separately so frozen audio cannot hide a changed or silent synth. Keep exact output-hash assertions for unchanged heads.
+**See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
 
 ## Process
 

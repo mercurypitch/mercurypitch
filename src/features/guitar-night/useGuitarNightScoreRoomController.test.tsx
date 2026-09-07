@@ -1,7 +1,7 @@
 // Score-room tests keep musical time on the audio clock, never on a frame loop.
 // ============================================================
 
-import { createRoot, createSignal } from 'solid-js'
+import { createRoot, createSignal, untrack } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
@@ -162,6 +162,19 @@ describe('useGuitarNightScoreRoomController', () => {
       await Promise.resolve()
       expect(band.setElectricAmpParameters).toHaveBeenCalledTimes(2)
       expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(edited)
+      for (const patch of [
+        { engine: 'studio' as const },
+        { head: 'heavy' as const },
+        { character: 0.25 },
+      ]) {
+        const changed = { ...untrack(ampParameters), ...patch }
+        setAmpParameters(changed)
+        await Promise.resolve()
+        expect(band.setElectricAmpParameters).toHaveBeenLastCalledWith(changed)
+      }
+      expect(band.setElectricAmpParameters).toHaveBeenCalledTimes(5)
+      expect(band.activate).not.toHaveBeenCalled()
+      expect(band.start).not.toHaveBeenCalled()
       dispose()
     })
   })

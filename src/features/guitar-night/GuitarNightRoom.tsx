@@ -2,8 +2,9 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Crosshair, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { ChevronLeft, Crosshair, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, Volume2, } from '@/components/icons'
+import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
@@ -11,19 +12,18 @@ import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/v
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
+import { MIN_LOOP_LENGTH } from '@/lib/guitar/loop-span'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
-import { GuitarNightAmpControls } from './GuitarNightAmpControls'
 import styles from './GuitarNightApp.module.css'
-import { GuitarNightHandSync } from './GuitarNightHandSync'
 import { GuitarNightInputError } from './GuitarNightInputError'
-import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightInputNotice } from './GuitarNightInputNotice'
-import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightSongMixer } from './GuitarNightSongMixer'
+import { GuitarNightSongSession } from './GuitarNightSongSession'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
@@ -31,6 +31,7 @@ import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
+import { useGuitarNightSongPlayback } from './useGuitarNightSongPlayback'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
 interface GuitarNightRoomProps {
@@ -138,35 +139,19 @@ function statusCopy(status: GuitarBackingTransportStatus): string {
 
 export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
-  let bandSummary!: HTMLElement
-  let bandDetails!: HTMLDetailsElement
-  let handSyncHost: HTMLDivElement | undefined
-
-  // The hand-placement tool lives at the bottom of the Band panel. Opening
-  // that panel and scrolling to the tool is one step from the stage note and
-  // from the Align button in the room tools (UX-25, UX-26).
-  function openHandPlacement(): void {
-    bandDetails.open = true
-    const host = handSyncHost
-    if (!host) return
-    // Scroll the panel itself: scrollIntoView would also scroll the
-    // overflow-hidden room around it, which no gesture scrolls back.
-    const panel = host.closest<HTMLElement>(
-      '[data-testid="guitar-night-band-panel"]',
-    )
-    if (panel) {
-      const offset =
-        host.getBoundingClientRect().top -
-        panel.getBoundingClientRect().top +
-        panel.scrollTop
-      panel.scrollTo({ top: Math.max(0, offset - 8) })
-    }
-    host.querySelector('button')?.focus()
-  }
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const [tunerOpen, setTunerOpen] = createSignal(false)
+  const [mixerOpen, setMixerOpen] = createSignal(false)
+  const [sessionOpen, setSessionOpen] = createSignal(false)
+  const [sessionHandPlacement, setSessionHandPlacement] = createSignal(false)
+
+  function openHandPlacement(): void {
+    setSessionHandPlacement(true)
+    setSessionOpen(true)
+  }
+
   const amp = useGuitarNightAmpSettings()
   createEffect(() => props.transport.setElectricAmpParameters(amp.parameters()))
   const listening = useGuitarListeningController({
@@ -195,6 +180,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isCalibrating = createMemo(() => listening.status() === 'calibrating')
   const isLoading = createMemo(() => props.transport.status() === 'loading')
+  const songPlayback = useGuitarNightSongPlayback({
+    transport: () => props.transport,
+    listening,
+    blocked: () => props.suspended?.() === true || tunerOpen(),
+    sourceIdentity: () => props.backing,
+  })
 
   /** 0..1 across the whole song, 0 before the first byte lands. */
   const loadFraction = createMemo(() => {
@@ -238,7 +229,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     positionSeconds: () => props.transport.positionSeconds(),
     durationSeconds: () => props.transport.durationSeconds(),
     play: () => {
-      void props.transport.play()
+      void songPlayback.play()
     },
     pause: () => props.transport.pause(),
     stop: () => props.transport.stop(),
@@ -260,7 +251,14 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   onCleanup(
     // eslint-disable-next-line solid/reactivity
     registerVoiceCommands(() =>
-      props.suspended?.() === true ? [] : voiceCommands,
+      props.suspended?.() === true ||
+      mixerOpen() ||
+      sessionOpen() ||
+      doctorOpen() ||
+      tunerOpen() ||
+      isCalibrating()
+        ? []
+        : voiceCommands,
     ),
   )
   // Wake-word mode must hear this stage's playback as "music rolling".
@@ -288,7 +286,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       return 'Backing ready. Guitar remains inside this mix, so it cannot be muted independently.'
     }
     if (props.backing.defaultMix.muted.length > 0) {
-      return 'Guitar is muted. The available band parts are ready.'
+      return 'Independent band parts. Adjust each track without changing the others.'
     }
     return 'Band parts are ready. No separate guitar track was found.'
   })
@@ -319,7 +317,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         'Sustain and pitch stability need continuous note evidence.',
       ],
       recoveryLabel: 'Listen to another take',
-      recoveryDetail: 'The room stays quiet while this device listens.',
+      recoveryDetail:
+        listening.inputProfile() === 'interface'
+          ? 'Direct input can stay on alongside the song. Monitoring is your choice in Session.'
+          : 'The backing pauses while this device listens.',
       privacyCopy:
         'Measured from this take on this device. Audio is not saved.',
     }
@@ -329,13 +330,33 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   // the same bars come round again whatever rate they are played at.
   const loop = useGuitarNightLoopController({
     limit: duration,
-    onWrap: (start) => performance.transport.seekSeconds(start),
   })
-  // Position is polled by the transport already; following it here costs one
-  // comparison per update and keeps the wrap on the audio clock, not a frame.
+  let loopSource = untrack(() => props.backing)
   createEffect(() => {
-    if (!isPlaying()) return
-    loop.follow(position())
+    const next = props.backing
+    if (next === loopSource) return
+    loopSource = next
+    loop.clear()
+  })
+  // Only committed marks reach the engine; the range rail owns drag preview.
+  // Audio-clock wraps do not wait for a visual frame or call ordinary seek.
+  createEffect(() => {
+    const start = loop.markA()
+    const end = loop.markB()
+    // Let the engine validate against decoded duration. A duration update must
+    // not turn invalid marks into an explicit Clear and erase its loop error.
+    const range = start !== null && end !== null ? { start, end } : null
+    const transport = props.transport
+    untrack(() => transport.setLoopRange(range))
+  })
+  const loopPendingReason = createMemo(() => {
+    if (props.transport.loopError() !== null) return 'Loop unavailable'
+    const start = loop.markA()
+    const end = loop.markB()
+    if (start === null || end === null || loop.isLooping()) return undefined
+    return start >= duration()
+      ? 'Move A/B inside the song'
+      : `Set A and B at least ${MIN_LOOP_LENGTH} s apart`
   })
 
   const nudgeRate = (delta: number): void => {
@@ -345,34 +366,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     void performance.transport.setPlaybackRate(next)
   }
 
-  const togglePlayback = (): void => {
-    if (isPlaying() || isLoading()) {
-      props.transport.pause()
-      return
-    }
-    if (isCalibrating()) return
-    if (isListening()) listening.stop()
-    void performance.transport.play()
-  }
-
-  const toggleListening = (): void => {
-    if (isListening()) {
-      listening.stop()
-      return
-    }
-    if (isPlaying()) props.transport.pause()
-    void listening.start()
-  }
-
   const recoverFromDoctor = (): void => {
     setDoctorOpen(false)
     listening.clearTake()
-    if (isPlaying()) props.transport.pause()
-    void listening.start()
+    void songPlayback.startListening()
   }
 
   const openTuner = (): void => {
     setDoctorOpen(false)
+    setMixerOpen(false)
+    setSessionOpen(false)
     setTunerOpen(true)
   }
 
@@ -383,7 +386,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
   const leaveRoom = (): void => {
     tuner.close()
-    listening.stop()
+    songPlayback.stopAll()
     props.onSongs()
   }
 
@@ -391,15 +394,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     if (props.suspended?.() !== true) return
     setDoctorOpen(false)
     setTunerOpen(false)
+    setMixerOpen(false)
+    setSessionOpen(false)
     tuner.close()
     listening.stop()
     props.transport.pause()
   })
-
-  const seek = (event: InputEvent): void => {
-    const input = event.currentTarget as HTMLInputElement
-    performance.transport.seekSeconds(Number(input.value))
-  }
 
   const changeVolume = (event: InputEvent): void => {
     const input = event.currentTarget as HTMLInputElement
@@ -412,9 +412,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     // or slider must not steal it. Typing surfaces keep the key (see helper).
     onCleanup(
       installSpacePlaybackToggle({
-        toggle: togglePlayback,
+        toggle: songPlayback.togglePlayback,
         ownsSpace: () =>
-          props.suspended?.() !== true && !doctorOpen() && !tunerOpen(),
+          props.suspended?.() !== true &&
+          !doctorOpen() &&
+          !tunerOpen() &&
+          !mixerOpen() &&
+          !sessionOpen(),
         enabled: () =>
           props.transport.status() !== 'loading' && !isCalibrating(),
       }),
@@ -464,6 +468,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 <button
                   type="button"
                   class={styles.alignTool}
+                  aria-haspopup="dialog"
                   aria-label={`Align ${sync().partName} by hand`}
                   onClick={openHandPlacement}
                 >
@@ -487,196 +492,29 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               </span>
               <strong>Tune</strong>
             </button>
-            <details
-              ref={bandDetails}
-              class={styles.scoreSession}
-              onKeyDown={(event) => {
-                if (event.key !== 'Escape') return
-                event.preventDefault()
-                event.stopPropagation()
-                event.currentTarget.open = false
-                queueMicrotask(() => bandSummary.focus())
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`Open track mixer for ${props.backing.title}`}
+              onClick={() => setMixerOpen(true)}
+            >
+              <span aria-hidden="true">
+                <SlidersHorizontal />
+              </span>
+              <strong>Mix</strong>
+              <small>{props.backing.stems.length}</small>
+            </button>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label="Session controls"
+              onClick={() => {
+                setSessionHandPlacement(false)
+                setSessionOpen(true)
               }}
             >
-              <summary
-                ref={bandSummary}
-                aria-label={`Band, loop, and input controls, ${props.backing.stems.length} ${props.backing.stems.length === 1 ? 'track' : 'tracks'}`}
-              >
-                <span aria-hidden="true">
-                  <SlidersHorizontal />
-                </span>
-                <strong>Band</strong>
-                <small>{props.backing.stems.length}</small>
-              </summary>
-              <div
-                class={`${styles.scoreSessionPanel} ${styles.bandSessionPanel}`}
-                data-testid="guitar-night-band-panel"
-              >
-                <header>
-                  <div>
-                    <strong>Band mix</strong>
-                    <small>{mixCopy()}</small>
-                  </div>
-                </header>
-                <GuitarNightInputPicker
-                  profile={listening.inputProfile}
-                  profileLabel={listening.inputProfileLabel}
-                  audioInputs={listening.audioInputs}
-                  selectedAudioInputId={listening.selectedAudioInputId}
-                  midiInputs={listening.midiInputs}
-                  selectedMidiInputId={listening.selectedMidiInputId}
-                  midiStatus={listening.midiConnectionStatus}
-                  evidenceExportEnabled={listening.evidenceExportEnabled}
-                  canExportEvidence={listening.canExportEvidence}
-                  switching={() =>
-                    listening.status() === 'requesting' ||
-                    listening.status() === 'calibrating' ||
-                    listening.inputTakeoverPending() ||
-                    listening.midiConnectionStatus() === 'requesting'
-                  }
-                  onProfile={(kind) => void listening.selectInputProfile(kind)}
-                  onAudioInput={(deviceId) =>
-                    void listening.selectAudioInput(deviceId)
-                  }
-                  onMidiInput={(deviceId) =>
-                    void listening.selectMidiInput(deviceId)
-                  }
-                  onRefreshAudio={() => void listening.refreshAudioInputs()}
-                  onRefreshMidi={() => void listening.refreshMidiInputs()}
-                  onExportEvidence={listening.exportEvidenceReport}
-                />
-                <Show
-                  when={
-                    listening.status() !== 'off' && listening.error() === null
-                  }
-                >
-                  <GuitarNightInputHealth
-                    profile={listening.inputProfile}
-                    listening={isListening}
-                    calibrating={isCalibrating}
-                    health={listening.health}
-                    timingSource={listening.timingSource}
-                    latencyMs={listening.latencyMs}
-                    onCalibrate={() => void listening.calibrate()}
-                  />
-                </Show>
-                <GuitarNightAmpControls
-                  parameters={amp.parameters}
-                  presetId={() => amp.settings().presetId}
-                  inputProfile={listening.inputProfile}
-                  canMonitor={listening.canAmpMonitor}
-                  monitoringEnabled={listening.ampMonitoringEnabled}
-                  monitoringActive={listening.ampMonitoringActive}
-                  onEnabled={amp.setEnabled}
-                  onPreset={amp.selectPreset}
-                  onParameter={amp.setContinuousParameter}
-                  onParameterCommit={amp.persist}
-                  onCabinet={amp.setCabinet}
-                  onMonitor={(enabled) =>
-                    void listening.setAmpMonitoringEnabled(enabled)
-                  }
-                  onReset={amp.reset}
-                />
-                <button
-                  class={styles.bandUpgrade}
-                  type="button"
-                  aria-label="Open the Jam Doctor for the last take"
-                  disabled={doctorView() === null}
-                  onClick={() => {
-                    bandDetails.open = false
-                    setDoctorOpen(true)
-                  }}
-                >
-                  <strong>Jam Doctor</strong>
-                  <small>
-                    {doctorView() === null
-                      ? 'Finish a listening take and its review opens from here.'
-                      : 'What this device heard in your last take.'}
-                  </small>
-                </button>
-                <Show
-                  when={
-                    props.backing.defaultMix.kind === 'mixed-instrumental' &&
-                    props.onSeparateGuitar !== undefined
-                  }
-                >
-                  <button
-                    class={styles.bandUpgrade}
-                    type="button"
-                    onClick={() => props.onSeparateGuitar?.()}
-                  >
-                    <strong>Separate guitar</strong>
-                    {/* Says what it costs before it is pressed: this is a
-                        cloud GPU job billed in credits, which nothing about
-                        a button in a rehearsal room would suggest. */}
-                    <small>
-                      Independent band controls. Runs on a cloud GPU and uses
-                      credits.
-                    </small>
-                  </button>
-                </Show>
-                <div class={styles.scoreSessionLoop}>
-                  <div>
-                    <strong>Loop this passage</strong>
-                    <small>Set A and B at the current song position.</small>
-                  </div>
-                  <GuitarNightLoopControls
-                    span={loop.span()}
-                    pending={loop.isPending()}
-                    hasStart={loop.markA() !== null}
-                    hasEnd={loop.markB() !== null}
-                    format={formatTime}
-                    onMarkStart={() => loop.markStart(position())}
-                    onMarkEnd={() => loop.markEnd(position())}
-                    onClear={loop.clear}
-                  />
-                </div>
-                <Show when={props.handSync?.()}>
-                  {(sync) => (
-                    <div
-                      ref={(element) => {
-                        handSyncHost = element
-                      }}
-                      class={styles.handSyncHost}
-                    >
-                      <GuitarNightHandSync
-                        partName={sync().partName}
-                        firstMarkSeconds={sync().firstMarkSeconds}
-                        lastMarkSeconds={sync().lastMarkSeconds}
-                        placed={sync().placed}
-                        format={formatTime}
-                        onMarkFirst={() => sync().onMark('first', position())}
-                        onMarkLast={() => sync().onMark('last', position())}
-                        onClear={() => sync().onClear()}
-                        onNudge={(delta) => sync().onNudge(delta)}
-                      />
-                    </div>
-                  )}
-                </Show>
-                <div class={styles.channelStrip} aria-label="Backing tracks">
-                  <For each={props.transport.tracks()}>
-                    {(track) => (
-                      <button
-                        type="button"
-                        classList={{ [styles.channelMuted]: track.muted }}
-                        aria-pressed={!track.muted}
-                        aria-label={`${track.label} ${track.muted ? 'muted' : 'on'}`}
-                        disabled={!track.available}
-                        onClick={() =>
-                          props.transport.setTrackMuted(track.id, !track.muted)
-                        }
-                      >
-                        <strong>{track.label}</strong>
-                        <span aria-hidden="true">
-                          {track.muted ? <VolumeX /> : <Volume2 />}
-                        </span>
-                        <small>{track.muted ? 'Muted' : 'In mix'}</small>
-                      </button>
-                    )}
-                  </For>
-                </div>
-              </div>
-            </details>
+              <strong>Session</strong>
+            </button>
             <button
               type="button"
               classList={{ [styles.listeningActive]: isListening() }}
@@ -690,8 +528,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                       ? 'Stop Listening'
                       : 'Turn on Listening'
               }
-              disabled={props.transport.status() === 'loading'}
-              onClick={toggleListening}
+              onClick={songPlayback.toggleListening}
             >
               <span aria-hidden="true">
                 <Mic />
@@ -725,8 +562,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           const placing = props.handSync?.() ?? null
           if (placing !== null) {
             return placing.placed
-              ? `${placing.partName} is placed on this recording. Nudge it in the Band panel if it drifts.`
-              : `Placing ${placing.partName} on this recording: play, then mark its first and last note in the Band panel.`
+              ? `${placing.partName} is placed on this recording. Use Align to nudge it if it drifts.`
+              : `Placing ${placing.partName} on this recording: play, then use Align to mark its first and last note.`
           }
           if (authored === null) {
             return 'Attach a tab or turn on Listening whenever you want a target.'
@@ -743,6 +580,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 <button
                   class={styles.stageInvitationAction}
                   type="button"
+                  aria-haspopup="dialog"
                   onClick={openHandPlacement}
                 >
                   {sync().placed
@@ -824,24 +662,63 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         message={listening.error}
         canTakeOver={listening.canTakeOverInput}
         takeoverPending={listening.inputTakeoverPending}
-        onTakeOver={() => void listening.useInputHere()}
+        onTakeOver={() => void songPlayback.useInputHere()}
       />
       <GuitarNightInputNotice message={listening.notice} floating />
 
       <div class={styles.transportDeck} data-testid="guitar-night-deck">
         <div class={styles.timeRail}>
           <span>{formatTime(position())}</span>
-          <input
-            type="range"
-            min="0"
-            max={Math.max(1, duration())}
-            step="0.05"
-            value={position()}
-            aria-label="Song position"
-            aria-valuetext={`${formatTime(position())} of ${formatTime(duration())}`}
-            onInput={seek}
+          <LoopRangeRail
+            axisDomain={() => ({ start: 0, end: duration() })}
+            axisValue={position}
+            markDomain={() => ({ start: 0, end: duration() })}
+            markA={loop.markA}
+            markB={loop.markB}
+            toAxis={(seconds) => seconds}
+            fromAxis={(seconds) => seconds}
+            active={() => props.transport.loopRange() !== null}
+            disabled={() => duration() <= 0 || isLoading() || isCalibrating()}
+            marksDisabled={() =>
+              duration() <= 0 || isLoading() || isCalibrating()
+            }
+            axisStep={() => 0.05}
+            markStep={() => 0.05}
+            minimumMarkGap={() => MIN_LOOP_LENGTH}
+            formatAxisValue={(seconds) =>
+              `${formatTime(seconds)} of ${formatTime(duration())}`
+            }
+            formatMarkValue={(seconds) => `${seconds.toFixed(2)} seconds`}
+            seekLabel="Song position"
+            onSeek={(seconds) => performance.transport.seekSeconds(seconds)}
+            onMoveMarkA={(seconds) => loop.moveMark('A', seconds)}
+            onMoveMarkB={(seconds) => loop.moveMark('B', seconds)}
+            testIdPrefix="guitar-night-song"
           />
           <span>{formatTime(duration())}</span>
+        </div>
+
+        <div class={styles.songLoopControls}>
+          <GuitarNightLoopControls
+            span={props.transport.loopRange()}
+            pending={
+              loop.isPending() ||
+              (loop.isLooping() && props.transport.loopRange() === null)
+            }
+            pendingReason={loopPendingReason()}
+            hasStart={loop.markA() !== null}
+            hasEnd={loop.markB() !== null}
+            disabled={duration() <= 0 || isLoading() || isCalibrating()}
+            blockedReason={
+              isCalibrating()
+                ? 'Finish calibration first'
+                : 'Wait for the song to be ready'
+            }
+            format={formatTime}
+            onMarkStart={() => loop.markStart(position())}
+            onMarkEnd={() => loop.markEnd(position())}
+            onClear={loop.clear}
+          />
         </div>
 
         <div class={styles.transportControls}>
@@ -861,7 +738,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             title={playLabel(props.transport.status())}
             disabled={isCalibrating()}
             data-loading-percent={loadPercent() ?? ''}
-            onClick={togglePlayback}
+            onClick={songPlayback.togglePlayback}
           >
             <Show
               when={isLoading()}
@@ -944,6 +821,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           </p>
         )}
       </Show>
+      <Show when={props.transport.loopError()}>
+        {(message) => (
+          <p class={styles.playbackError} role="alert">
+            {message()}
+          </p>
+        )}
+      </Show>
 
       <div class={styles.roomFooter}>
         <p>
@@ -958,9 +842,46 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 ? loadingDetail()
                 : `${formatTime(position())} of ${formatTime(duration())}`}
           </small>
+          <Show
+            when={
+              props.transport.loopMode() === 'streamed' &&
+              props.transport.loopRange() !== null
+            }
+          >
+            <small>Streaming loop · a brief pause may occur at A</small>
+          </Show>
         </p>
       </div>
 
+      <GuitarNightSongMixer
+        title={props.backing.title}
+        transport={props.transport}
+        isOpen={mixerOpen()}
+        onClose={() => setMixerOpen(false)}
+        detail={mixCopy()}
+        onSeparateGuitar={
+          props.backing.defaultMix.kind === 'mixed-instrumental' &&
+          props.onSeparateGuitar
+            ? () => {
+                setMixerOpen(false)
+                props.onSeparateGuitar?.()
+              }
+            : undefined
+        }
+      />
+      <GuitarNightSongSession
+        isOpen={sessionOpen()}
+        focusHandPlacement={sessionHandPlacement()}
+        onClose={() => setSessionOpen(false)}
+        listening={listening}
+        playback={songPlayback}
+        amp={amp}
+        isListening={isListening}
+        isCalibrating={isCalibrating}
+        position={position}
+        formatTime={formatTime}
+        handSync={props.handSync}
+      />
       <Show when={tunerOpen()}>
         <GuitarNightTunerExperience
           controller={tuner}

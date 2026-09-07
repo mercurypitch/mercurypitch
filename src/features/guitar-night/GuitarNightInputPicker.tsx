@@ -117,6 +117,20 @@ export function GuitarNightInputPicker(props: GuitarNightInputPickerProps) {
               onFocus={() => props.onRefreshAudio()}
             >
               <option value="">System default</option>
+              <Show
+                when={
+                  props.selectedAudioInputId() !== null &&
+                  !props
+                    .audioInputs()
+                    .some(
+                      (device) => device.id === props.selectedAudioInputId(),
+                    )
+                }
+              >
+                <option value={props.selectedAudioInputId() ?? ''}>
+                  Saved input (not listed)
+                </option>
+              </Show>
               <For each={props.audioInputs()}>
                 {(device) => <option value={device.id}>{device.label}</option>}
               </For>

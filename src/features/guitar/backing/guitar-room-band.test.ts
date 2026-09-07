@@ -762,6 +762,7 @@ describe('createGuitarRoomBand', () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const context = fakeAudioContext()
+    const createWaveShaper = vi.spyOn(context, 'createWaveShaper')
     const voice = () => ({
       gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
       oscillators: [],
@@ -783,6 +784,11 @@ describe('createGuitarRoomBand', () => {
       activateContext: async () => undefined,
       createElectricAmpStage,
       scheduleAheadSeconds: 2,
+    })
+    band.setElectricAmpParameters({
+      ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+      engine: 'studio',
+      character: 0.25,
     })
 
     await band.start({
@@ -834,6 +840,16 @@ describe('createGuitarRoomBand', () => {
     })
 
     expect(createElectricAmpStage).toHaveBeenCalledTimes(2)
+    expect(createElectricAmpStage).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({
+        engine: 'studio',
+        character: 0.25,
+      }),
+    )
+    // Both track amps use the injected factory. Any real shaper here would
+    // reveal a third, unused global amp woken by the run's output wiring.
+    expect(createWaveShaper).not.toHaveBeenCalled()
     const guitarDestinations = guitarVoices.createGuitarVoice.mock.results.map(
       (result) => result.value.gain.connect.mock.calls[0]?.[0],
     )
@@ -884,6 +900,7 @@ describe('createGuitarRoomBand', () => {
     for (const stage of stages) {
       expect(stage.setParameters).toHaveBeenCalledWith(edited, 5)
     }
+    expect(createWaveShaper).not.toHaveBeenCalled()
 
     const firstVoiceGain =
       guitarVoices.createGuitarVoice.mock.results[0]?.value.gain.gain

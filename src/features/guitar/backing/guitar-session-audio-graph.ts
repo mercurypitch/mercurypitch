@@ -1,9 +1,10 @@
 // Guitar session audio graph gives every room source one reusable, route-owned output path.
-// Electric guide voices meet at one amp stage; clean guide audio bypasses it.
+// Electric guide voices lazily share one amp stage; clean guide audio bypasses it.
 // ============================================================
 
-import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
-import { createGuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
+import { createGuitarAmpStage } from '@/lib/guitar/guitar-amp-stage'
+import type { GuitarElectricAmpParameters, GuitarElectricAmpStage, } from '@/lib/guitar/guitar-electric-amp'
+import { normalizeGuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import { sliderToGain } from '@/lib/volume-curve'
 
 export type GuitarSessionAudioBus =
@@ -23,7 +24,7 @@ export interface GuitarSessionAudioGraph {
   readonly limiter: DynamicsCompressorNode
   setBusLevel(bus: GuitarSessionAudioBus, position: number): void
   setMasterLevel(position: number): void
-  /** Update the one post-sum electric stage without rebuilding its graph. */
+  /** Seed a dormant amp or update it without replacing its public ports. */
   setElectricAmpParameters(
     parameters: Partial<GuitarElectricAmpParameters>,
   ): void
@@ -93,15 +94,22 @@ export function createGuitarSessionAudioGraph(
   // A normal guitar pickup combines its strings before the amplifier. Keep
   // that non-linearity on a dedicated electric input: the clean guide path is
   // also used by tuner/reference tones and must not inherit amp colour.
-  const electricAmp = createGuitarElectricAmpStage(
-    context,
+  let electricAmpParameters = normalizeGuitarElectricAmpParameters(
     options.electricAmpParameters,
   )
-  electricAmp.output.connect(buses.guide)
+  let electricAmp: GuitarElectricAmpStage | undefined
+  let disposed = false
 
   const guideInputs = {
     clean: buses.guide,
-    electric: electricAmp.input,
+    get electric(): AudioNode {
+      if (electricAmp === undefined) {
+        if (disposed) throw new Error('Guitar session audio graph is disposed')
+        electricAmp = createGuitarAmpStage(context, electricAmpParameters)
+        electricAmp.output.connect(buses.guide)
+      }
+      return electricAmp.input
+    },
   } satisfies Record<GuitarGuideInput, AudioNode>
 
   for (const bus of Object.keys(buses) as GuitarSessionAudioBus[]) {
@@ -119,8 +127,6 @@ export function createGuitarSessionAudioGraph(
   limiter.release.value = 0.18
   master.connect(limiter)
   limiter.connect(options.destination ?? context.destination)
-
-  let disposed = false
 
   return {
     context,
@@ -143,14 +149,18 @@ export function createGuitarSessionAudioGraph(
     },
     setElectricAmpParameters(parameters) {
       if (disposed) return
-      electricAmp.setParameters(parameters, context.currentTime)
+      electricAmpParameters = normalizeGuitarElectricAmpParameters(
+        parameters,
+        electricAmpParameters,
+      )
+      electricAmp?.setParameters(electricAmpParameters, context.currentTime)
     },
-    getElectricAmpParameters: () => electricAmp.getParameters(),
+    getElectricAmpParameters: () => ({ ...electricAmpParameters }),
     dispose() {
       if (disposed) return
       disposed = true
       for (const bus of Object.values(buses)) bus.disconnect()
-      electricAmp.dispose()
+      electricAmp?.dispose()
       master.disconnect()
       limiter.disconnect()
     },

@@ -86,46 +86,57 @@ test('offers to hang an attached tab on the staged recording @smoke', async ({
   await expect(page.getByText(/mark the part.s first note/)).toBeVisible()
 })
 
-test('marks the part against the recording and nudges it', async ({ page }) => {
-  await stageTabOverDemo(page, `hand-mark-${Date.now()}`)
-  await page.getByRole('button', { name: 'Align to recording' }).click()
-  // "Play along" is the room door when a tab is already attached.
-  await page.getByRole('button', { name: 'Play along', exact: true }).click()
+for (const viewport of [DESKTOP, { width: 390, height: 844 }]) {
+  test(`opens Align at reachable hand marks and nudges the part at ${viewport.width}px @smoke`, async ({
+    page,
+  }) => {
+    await stageTabOverDemo(page, `hand-mark-${Date.now()}`)
+    await page.setViewportSize(viewport)
+    await page.getByRole('button', { name: 'Align to recording' }).click()
+    // "Play along" is the room door when a tab is already attached.
+    await page.getByRole('button', { name: 'Play along', exact: true }).click()
 
-  const room = page.getByTestId('guitar-night-room')
-  await room
-    .getByLabel(/^Band, loop, and input controls/)
-    .first()
-    .click()
+    const room = page.getByTestId('guitar-night-room')
+    await room
+      .getByRole('button', { name: 'Align Lead guitar by hand', exact: true })
+      .click()
 
-  const sync = room.getByRole('group', {
-    name: 'Place Lead guitar on this recording',
+    const session = room.getByRole('dialog', { name: 'Session', exact: true })
+    const sync = session.getByRole('group', {
+      name: 'Place Lead guitar on this recording',
+    })
+    await expect(sync).toBeVisible()
+    const firstMark = sync.getByRole('button', { name: 'First note here' })
+    await expect(firstMark).toBeFocused()
+    await expect(firstMark).toBeInViewport()
+    await expect(
+      sync.getByRole('button', { name: 'Last note here' }),
+    ).toBeInViewport()
+    await expect(sync.getByText('Nothing marked yet.')).toBeVisible()
+
+    // No nudge until the part is actually somewhere.
+    await expect(
+      sync.getByRole('group', { name: 'Nudge the tab' }),
+    ).toHaveCount(0)
+
+    await sync.getByRole('button', { name: 'First note here' }).click()
+    await expect(
+      sync.getByRole('button', { name: 'First note here' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(sync.getByText(/First note at/)).toBeVisible()
+
+    // Placed, so it can be slid.
+    const nudge = sync.getByRole('group', { name: 'Nudge the tab' })
+    await expect(nudge).toBeVisible()
+    await nudge
+      .getByRole('button', { name: 'Move the tab 0.5 seconds later' })
+      .click()
+
+    // And taken back.
+    await sync.getByRole('button', { name: 'Clear' }).click()
+    await expect(sync.getByText('Nothing marked yet.')).toBeVisible()
+    await expect(
+      sync.getByRole('group', { name: 'Nudge the tab' }),
+    ).toHaveCount(0)
   })
-  await expect(sync).toBeVisible()
-  await expect(sync.getByText('Nothing marked yet.')).toBeVisible()
-
-  // No nudge until the part is actually somewhere.
-  await expect(sync.getByRole('group', { name: 'Nudge the tab' })).toHaveCount(
-    0,
-  )
-
-  await sync.getByRole('button', { name: 'First note here' }).click()
-  await expect(
-    sync.getByRole('button', { name: 'First note here' }),
-  ).toHaveAttribute('aria-pressed', 'true')
-  await expect(sync.getByText(/First note at/)).toBeVisible()
-
-  // Placed, so it can be slid.
-  const nudge = sync.getByRole('group', { name: 'Nudge the tab' })
-  await expect(nudge).toBeVisible()
-  await nudge
-    .getByRole('button', { name: 'Move the tab 0.5 seconds later' })
-    .click()
-
-  // And taken back.
-  await sync.getByRole('button', { name: 'Clear' }).click()
-  await expect(sync.getByText('Nothing marked yet.')).toBeVisible()
-  await expect(sync.getByRole('group', { name: 'Nudge the tab' })).toHaveCount(
-    0,
-  )
-})
+}

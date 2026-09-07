@@ -59,12 +59,53 @@ workspace.
 - Inside the room, Space always toggles the backing transport — a focused
   mute chip, slider or panel button never steals the key; typing surfaces and
   modifier chords do (shared rule: `src/lib/space-playback.ts`).
+  Focused Mix, Session, Tune and review overlays own their keyboard input and
+  suspend background transport shortcuts, including spoken song commands.
 - The loaded song title visibly names its `Mix` action and opens the shared
   Track mixer rather than adding a permanent console beside the stage. The
   mixer keeps source track names, room level, Mute, Solo, Sheet visibility and
   a live fader together; unity is explicit and each authored lane has modest
   positive headroom behind the room limiter. A Drum row follows native Drum
   notation on moving views without ever becoming Guitar scoring authority.
+- Recorded-song practice uses the same fader, Mute/Solo and focus-managed
+  mixer controls, opened by an explicit `Mix` action. Stable stem rows retain
+  their identity during playback updates; saved levels and explicit mute are
+  restored by song/source ID. Reset restores source defaults, not an assumed
+  unity mix. Temporary Solo never overwrites those choices.
+- Song `Session` is a single reading column: input disclosure, input health
+  when relevant, then the shared Amp and optional score-placement controls.
+  Amp is clearly labeled as live Direct input processing, never recording
+  processing. Paid separation stays with the source/mixer action and discloses
+  credits. Signal-only review stays at the stage cue, not a large disabled card.
+- Both hosts share one compact Amp faceplate. Tight is the fresh default;
+  Articulate–Tight is a coordinated Character control on the Definition head,
+  and Heavy retains the original stronger audition. These use one fixed
+  cabinet IR, not different cabinets. The original Lite presets and their
+  filter-cabinet choices remain explicit. Existing saved tones migrate to Lite
+  without changing bypass, and selecting/resetting a tone never enables a
+  bypassed amp. Detail controls disclose tone/output beneath the primary
+  preset, drive and character; loading/fallback is stated beside the cabinet.
+  Neither settings changes nor mounting the faceplate starts audio or loads
+  cabinet bytes. A held Character drag keeps its native slider mounted when
+  the preset becomes Custom, and persists only when the gesture ends.
+- Song A/B is adjacent to Play and the shared range rail in media seconds,
+  with persistent marks, drag/keyboard adjustment and the existing precision
+  lens. Both song and score reuse these presentation controls but retain their
+  own playback clocks and dedicated layouts. Rehearse the tab retains its
+  complete score-focused experience; the song host is not a replacement for it.
+  Buffered song loops repeat on the audio engine's shared epoch without
+  UI-driven seeks. Pitch-preserving/oversized streaming uses synchronized
+  readiness-gated seeks and explicitly warns of a possible boundary pause.
+  A loop that cannot fit its required silence padding in the decoded budget
+  stays visibly unavailable, while its chosen marks remain editable.
+- Song Direct-input Listening can remain on alongside the backing. Play never
+  opens input or enables the separate headphone-aware monitor. Room mic and
+  MIDI keep exclusive playback/listening behavior. Buttons, Space and spoken
+  Play use one song-specific safety policy. Tuner/calibration, fallback input,
+  source replacement, input changes/loss and room exit park the appropriate
+  lifetimes without hidden restart. Pausing only the song leaves deliberate DI
+  Listening/monitoring on for jamming; Stop Listening or leaving releases it.
+  Song evidence stays signal-only, not an authored score or saved audio take.
 - Drum Kit is a live timbre choice after the room owns audio, including while
   Paused; generated Feel remains a next-Play scheduling choice. Before the
   first Play both selectors remain data-only, and sampled kits may use Mercury

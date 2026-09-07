@@ -283,6 +283,11 @@ function createTransport(): GuitarBackingTransportController {
     playbackRate: () => 1,
     masterVolume: () => 0.78,
     tracks: () => [],
+    soloedTrackId: () => null,
+    loopRange: () => null,
+    loopMode: () => null,
+    loopError: () => null,
+    setLoopRange: vi.fn(() => true),
     error: () => null,
     configure: vi.fn(),
     activate: vi.fn(async () => true),
@@ -294,6 +299,9 @@ function createTransport(): GuitarBackingTransportController {
     setMasterVolume: vi.fn(),
     setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
+    setTrackLevelDb: vi.fn(),
+    toggleTrackSolo: vi.fn(),
+    resetTrackLevels: vi.fn(),
     getAudioGraph: vi.fn(() => null),
   }
 }

@@ -280,7 +280,7 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   owned A/B marks and active scheduler loop together.
 - **REQ-GN-RUNTIME-026 — Track-scoped summed electric amp path:** WHEN notes
   from one actual electric-guitar score track sound together, every string
-  voice in that track shall sum into exactly one shared, asset-free nonlinear
+  voice in that track shall sum into exactly one shared nonlinear
   amp. Separate electric-guitar tracks shall keep separate amp stages so their
   signals do not intermodulate across track boundaries. Each track's mixer
   fader and mute gate shall sit after its amp, so changing the mix level shall
@@ -292,10 +292,11 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   tones, backing stems, drums, and monitor audio shall bypass every authored
   electric-track amp. Creating more voices within one electric track shall not
   create more amp stages, and disposing the run shall disconnect every
-  track-owned stage without fetching an external asset.
+  track-owned stage without fetching an external asset. The route-global
+  guide stage shall stay unallocated when only track-owned stages are used.
 - **REQ-GN-RUNTIME-027 — Persistent room tone:** Guitar Night shall expose one
-  compact Amp surface in the score-room Session sheet and prepared-song Band
-  sheet. Preset, bypass, Drive, Bass, Mid, Treble, Presence, Output, and
+  compact Amp surface in the score-room and prepared-song Session sheets.
+  Preset, bypass, Drive, Bass, Mid, Treble, Presence, Output, and
   cabinet voicing shall share one versioned, bounded setting on this device.
   Corrupt, incomplete, or unknown-future settings shall fall back to the safe
   default. Changing or resetting tone before Play shall not activate an audio
@@ -318,6 +319,31 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   loss, stop, permission failure, suspension, or unmount. Room microphone and
   MIDI shall not enable this route. Copy shall recommend headphones, state that
   browser latency applies, and state that saved takes remain dry.
+- **REQ-GN-RUNTIME-029 — Auditioned Studio heads with an honest fallback:**
+  WHEN a player selects Tight, Articulate, or Heavy, the amp shall use the
+  approved staged head recipe and the same full-length Cookie Monster cabinet
+  IR. Heavy shall retain the original stronger audition; Definition Character
+  shall move continuously from the Articulate endpoint to the Tight endpoint.
+  This shall not imply different cabinets or exact commercial hardware models.
+  The original Lite presets shall remain available without assets. Cabinet
+  bytes shall load only for an owned, enabled electric playback or explicit DI
+  monitor stage, be verified against the bundled source hash, and decode once
+  per output sample rate. The full mono kernel shall use normalization disabled
+  and the measured -18 dB trim. Loading/failure shall retain working Lite tone
+  and visible loading/retry copy without restarting playback. Changing settings
+  or entering a room alone shall not start playback, input, or cabinet loading.
+- **REQ-GN-RUNTIME-030 — Stable tone transitions and migration:**
+  WHEN changing Character or head during playback, the facade shall retain
+  stable input/output ports and crossfade at most two prepared processors;
+  it shall never replace a live WaveShaper curve or allocate an unbounded queue
+  during a held drag. Gain/EQ and bypass shall use held-value automation, and
+  an unfinished fade shall park without polling while its context is suspended.
+  Disposing an owner shall prevent late asset completion from reviving it.
+  New V2 preferences shall default to Tight; valid V1 settings shall migrate
+  to Lite with existing controls and bypass intact, without writing on mount.
+  Preset selection/reset shall preserve bypass. The old storage entry shall
+  remain recoverable. Amp controls shall not change dry scoring/recording or
+  automatically enable Direct input monitoring.
 
 ## Tuner — `GN-TUNER-*`
 
@@ -1019,6 +1045,47 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   `−∞..+6 dB` faders, mute/solo gates, and the final limiter shall remain the
   only level controls, and changing any of them or a live kit shall not restart
   or retime transport.
+
+- **REQ-GN-SONG-033 — Recorded-stem mixer:** WHEN a prepared song is loaded,
+  an explicit Mix action shall open a bounded Track mixer with stable source-ID
+  rows, independent Mute/Solo and live `−∞..+6 dB` faders. Level edits shall not
+  restart buffered or streamed playback. Source-default levels shall remain
+  unchanged until edited; Reset levels shall restore those defaults without
+  rewriting Mute/Solo. Only explicit mute and levels shall persist locally by
+  session and source ID; Solo is temporary. Unavailable stems shall remain
+  identified and shall not silence other stems through an unreachable Solo.
+- **REQ-GN-SONG-034 — Song practice controls:** WHEN the recording room is
+  visible, Play, the shared media-seconds range rail and A/B actions shall be
+  usable without opening settings. Session shall contain a single-column input
+  and Amp layout, separate from track rows; the Amp shall explicitly target
+  live Direct input, not the recording. Modal controls shall contain focus,
+  own keyboard/voice priority and return focus on closing without starting
+  playback or input. Song and score shall retain dedicated layouts and their
+  own playback lifecycles; shared controls shall not reduce score-room features.
+- **REQ-GN-SONG-035 — Engine-owned song loops:** WHEN a valid recording-seconds
+  A/B range is committed, decoded stems shall repeat on one audio epoch without
+  frame-driven seeks or source restarts at each wrap. The displayed position
+  shall follow that wrapped clock. A shorter stem shall retain silence through
+  B on every pass; IF padding would exceed the decoded-audio budget, THEN the
+  room shall explain the refusal and shall not label the loop active. Pending
+  marks shall remain editable. Pausing, clearing, seeking, rate handoff and
+  replacing a source shall invalidate stale loop work. Pitch-preserving or
+  oversized streamed playback shall use cancellable synchronized seeks with
+  readiness gating, and shall disclose that a brief boundary pause may occur
+  rather than claim sample-gapless playback or decode beyond the budget.
+- **REQ-GN-SONG-036 — Explicit Direct-input jamming:** WHEN a player separately
+  enables Direct-input Listening and song playback, both may remain active.
+  Play, Space and spoken Play shall follow the same policy; playback alone
+  shall never acquire an input or enable monitoring. Room mic and MIDI shall
+  retain exclusive Listening/backing behavior, including pending starts and
+  input handoff. Calibration, tuner, source replacement and deactivation shall
+  retain their exclusive cleanup rules. Changing an active input or losing the
+  device shall park the backing; an unavailable saved interface falling back
+  to another input shall not continue simultaneous playback. Monitoring shall
+  remain a separate headphone-aware opt-in and shall reset on input teardown.
+  Stale input requests shall release only their own resources, never those of
+  a newer request. Song Listening remains signal-only, with no song grade or
+  retained audio take implied by coexistence.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

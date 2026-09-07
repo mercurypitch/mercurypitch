@@ -1,22 +1,31 @@
-// Guitar Night amp settings — versioned, local-only amplifier preferences.
+// ============================================================
+// Guitar Night amp settings — local tone presets with lossless Lite migration.
 // ============================================================
 
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, GUITAR_ELECTRIC_AMP_CABINETS, GUITAR_ELECTRIC_AMP_PARAMETER_LIMITS, normalizeGuitarElectricAmpParameters, } from '@/lib/guitar/guitar-electric-amp'
 
-export const GUITAR_NIGHT_AMP_SETTINGS_VERSION = 1 as const
+export const GUITAR_NIGHT_AMP_SETTINGS_VERSION = 2 as const
 export const GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY =
+  'guitar-night-amp-settings-v2'
+export const GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY =
   'guitar-night-amp-settings-v1'
 
+type GuitarNightAmpLitePresetId = 'studio-clean' | 'edge' | 'crunch' | 'lead'
 export type GuitarNightAmpCuratedPresetId =
-  | 'studio-clean'
-  | 'edge'
-  | 'crunch'
-  | 'lead'
-
+  | 'tight'
+  | 'articulate'
+  | 'heavy'
+  | GuitarNightAmpLitePresetId
 export type GuitarNightAmpPresetId = GuitarNightAmpCuratedPresetId | 'custom'
 
-export interface GuitarNightAmpSettingsV1 extends GuitarElectricAmpParameters {
+type GuitarNightAmpTone = GuitarElectricAmpParameters & {
+  engine: 'lite' | 'studio'
+  head: 'definition' | 'heavy'
+  character: number
+}
+
+export interface GuitarNightAmpSettingsV2 extends GuitarNightAmpTone {
   readonly version: typeof GUITAR_NIGHT_AMP_SETTINGS_VERSION
   readonly presetId: GuitarNightAmpPresetId
 }
@@ -25,21 +34,60 @@ export interface GuitarNightAmpPreset {
   readonly id: GuitarNightAmpCuratedPresetId
   readonly label: string
   readonly description: string
-  readonly settings: GuitarElectricAmpParameters
+  readonly settings: GuitarNightAmpTone
 }
 
 function ampParameters(
   parameters: GuitarElectricAmpParameters,
-): GuitarElectricAmpParameters {
-  return Object.freeze({ ...parameters })
+): GuitarNightAmpTone {
+  return Object.freeze({
+    engine: 'lite',
+    head: 'definition',
+    character: 1,
+    ...parameters,
+  })
 }
+
+const STUDIO_PARAMETERS = ampParameters({
+  enabled: true,
+  engine: 'studio',
+  head: 'definition',
+  character: 1,
+  drive: 0.7,
+  bass: 0,
+  mid: 0,
+  treble: 0,
+  presence: 0,
+  output: 0.6,
+  cabinet: 'balanced',
+  asymmetry: 0,
+})
 
 export const GUITAR_NIGHT_AMP_PRESETS: readonly GuitarNightAmpPreset[] =
   Object.freeze([
     Object.freeze({
+      id: 'tight',
+      label: 'Tight',
+      description: 'Focused distortion with a controlled low end.',
+      settings: STUDIO_PARAMETERS,
+    }),
+    Object.freeze({
+      id: 'articulate',
+      label: 'Articulate',
+      description:
+        'A more open attack from the same Definition head and cabinet.',
+      settings: ampParameters({ ...STUDIO_PARAMETERS, character: 0 }),
+    }),
+    Object.freeze({
+      id: 'heavy',
+      label: 'Heavy',
+      description: 'The original stronger head, with the same cabinet IR.',
+      settings: ampParameters({ ...STUDIO_PARAMETERS, head: 'heavy' }),
+    }),
+    Object.freeze({
       id: 'studio-clean',
       label: 'Studio clean',
-      description: 'Clear attack with gentle cabinet warmth.',
+      description: 'Lite: clear attack with gentle cabinet warmth.',
       settings: ampParameters({
         enabled: true,
         drive: 0.22,
@@ -55,13 +103,17 @@ export const GUITAR_NIGHT_AMP_PRESETS: readonly GuitarNightAmpPreset[] =
     Object.freeze({
       id: 'edge',
       label: 'Edge',
-      description: 'The familiar Guitar Night colour with a responsive edge.',
-      settings: ampParameters(DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS),
+      description:
+        'Lite: the familiar Guitar Night colour with a responsive edge.',
+      settings: ampParameters({
+        ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+        engine: 'lite',
+      }),
     }),
     Object.freeze({
       id: 'crunch',
       label: 'Crunch',
-      description: 'Denser rhythm drive with a forward middle.',
+      description: 'Lite: denser rhythm drive with a forward middle.',
       settings: ampParameters({
         enabled: true,
         drive: 0.68,
@@ -77,7 +129,8 @@ export const GUITAR_NIGHT_AMP_PRESETS: readonly GuitarNightAmpPreset[] =
     Object.freeze({
       id: 'lead',
       label: 'Lead',
-      description: 'Sustaining drive with focused mids and a darker cabinet.',
+      description:
+        'Lite: sustaining drive with focused mids and a darker cabinet.',
       settings: ampParameters({
         enabled: true,
         drive: 0.84,
@@ -97,6 +150,7 @@ const PRESET_IDS: readonly GuitarNightAmpPresetId[] = [
   ...CURATED_PRESET_IDS,
   'custom',
 ]
+const LEGACY_PRESET_IDS = ['studio-clean', 'edge', 'crunch', 'lead', 'custom']
 const NUMERIC_PARAMETER_KEYS = [
   'drive',
   'bass',
@@ -107,18 +161,12 @@ const NUMERIC_PARAMETER_KEYS = [
   'asymmetry',
 ] as const
 
-export const DEFAULT_GUITAR_NIGHT_AMP_SETTINGS: GuitarNightAmpSettingsV1 =
+export const DEFAULT_GUITAR_NIGHT_AMP_SETTINGS: GuitarNightAmpSettingsV2 =
   Object.freeze({
     version: GUITAR_NIGHT_AMP_SETTINGS_VERSION,
-    presetId: 'edge',
-    ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+    presetId: 'tight',
+    ...STUDIO_PARAMETERS,
   })
-
-function cloneSettings(
-  settings: GuitarNightAmpSettingsV1,
-): GuitarNightAmpSettingsV1 {
-  return { ...settings }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -140,20 +188,14 @@ function isCabinet(
   return GUITAR_ELECTRIC_AMP_CABINETS.some((cabinet) => cabinet === value)
 }
 
-function hasFiniteNumericParameters(value: Record<string, unknown>): boolean {
-  return NUMERIC_PARAMETER_KEYS.every(
-    (key) => typeof value[key] === 'number' && Number.isFinite(value[key]),
-  )
-}
-
-function fallbackSettings(): GuitarNightAmpSettingsV1 {
-  return cloneSettings(DEFAULT_GUITAR_NIGHT_AMP_SETTINGS)
+function fallbackSettings(): GuitarNightAmpSettingsV2 {
+  return { ...DEFAULT_GUITAR_NIGHT_AMP_SETTINGS }
 }
 
 /** Return a fresh, canonical copy of one curated amp preset. */
 export function guitarNightAmpSettingsForPreset(
   presetId: GuitarNightAmpCuratedPresetId,
-): GuitarNightAmpSettingsV1 {
+): GuitarNightAmpSettingsV2 {
   const preset = GUITAR_NIGHT_AMP_PRESETS.find(
     (candidate) => candidate.id === presetId,
   )
@@ -166,23 +208,36 @@ export function guitarNightAmpSettingsForPreset(
 }
 
 /**
- * Validate the persisted envelope strictly, then clamp finite out-of-range
- * controls. Missing, non-finite, corrupt, and future-version states fall back
- * as one unit so a half-valid amp cannot surprise the listener.
+ * A V1 preference keeps the exact Lite tone and bypass state. An incomplete or
+ * unsupported envelope falls back as one unit; it never blends old and new
+ * controls. Reading/migrating does not rewrite either storage key.
  */
 export function normalizeGuitarNightAmpSettings(
   value: unknown,
-): GuitarNightAmpSettingsV1 {
+): GuitarNightAmpSettingsV2 {
   if (
     !isRecord(value) ||
-    value.version !== GUITAR_NIGHT_AMP_SETTINGS_VERSION ||
+    (value.version !== 1 &&
+      value.version !== GUITAR_NIGHT_AMP_SETTINGS_VERSION) ||
     !isPresetId(value.presetId) ||
     typeof value.enabled !== 'boolean' ||
     !isCabinet(value.cabinet) ||
-    !hasFiniteNumericParameters(value)
-  ) {
+    !NUMERIC_PARAMETER_KEYS.every(
+      (key) => typeof value[key] === 'number' && Number.isFinite(value[key]),
+    )
+  )
     return fallbackSettings()
-  }
+
+  const legacy = value.version === 1
+  if (
+    legacy
+      ? !LEGACY_PRESET_IDS.includes(value.presetId)
+      : (value.engine !== 'lite' && value.engine !== 'studio') ||
+        (value.head !== 'definition' && value.head !== 'heavy') ||
+        typeof value.character !== 'number' ||
+        !Number.isFinite(value.character)
+  )
+    return fallbackSettings()
 
   const parameters = normalizeGuitarElectricAmpParameters({
     enabled: value.enabled,
@@ -194,45 +249,47 @@ export function normalizeGuitarNightAmpSettings(
     output: value.output as number,
     cabinet: value.cabinet,
     asymmetry: value.asymmetry as number,
+    engine: legacy ? 'lite' : (value.engine as 'lite' | 'studio'),
+    head: legacy ? 'definition' : (value.head as 'definition' | 'heavy'),
+    character: legacy ? 1 : (value.character as number),
   })
   return {
     version: GUITAR_NIGHT_AMP_SETTINGS_VERSION,
     presetId: value.presetId,
-    ...parameters,
+    ...ampParameters(parameters),
   }
 }
 
 /** Make a bounded custom state while retaining every untouched control. */
 export function customizeGuitarNightAmpSettings(
-  current: GuitarNightAmpSettingsV1,
+  current: GuitarNightAmpSettingsV2,
   changes: Partial<GuitarElectricAmpParameters>,
-): GuitarNightAmpSettingsV1 {
+): GuitarNightAmpSettingsV2 {
   return {
     version: GUITAR_NIGHT_AMP_SETTINGS_VERSION,
     presetId: 'custom',
-    ...normalizeGuitarElectricAmpParameters(changes, current),
+    ...ampParameters(normalizeGuitarElectricAmpParameters(changes, current)),
   }
 }
 
-/** Read Guitar Night's local preference; no remote or IndexedDB fallback. */
-export function loadGuitarNightAmpSettings(): GuitarNightAmpSettingsV1 {
+/** Read V2 first; use V1 only when the newer preference is absent. */
+export function loadGuitarNightAmpSettings(): GuitarNightAmpSettingsV2 {
   try {
-    const serialized = globalThis.localStorage?.getItem(
-      GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY,
-    )
-    if (serialized === null || serialized === undefined) {
+    const serialized =
+      globalThis.localStorage?.getItem(GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY) ??
+      globalThis.localStorage?.getItem(GUITAR_NIGHT_AMP_LEGACY_STORAGE_KEY)
+    if (serialized === null || serialized === undefined)
       return fallbackSettings()
-    }
     return normalizeGuitarNightAmpSettings(JSON.parse(serialized) as unknown)
   } catch {
     return fallbackSettings()
   }
 }
 
-/** Save only a validated V1 envelope and return the exact bounded state. */
+/** Save a validated V2 preference without destroying the previous app's V1 copy. */
 export function saveGuitarNightAmpSettings(
-  settings: GuitarNightAmpSettingsV1,
-): GuitarNightAmpSettingsV1 {
+  settings: GuitarNightAmpSettingsV2,
+): GuitarNightAmpSettingsV2 {
   const normalized = normalizeGuitarNightAmpSettings(settings)
   try {
     globalThis.localStorage?.setItem(
@@ -240,11 +297,12 @@ export function saveGuitarNightAmpSettings(
       JSON.stringify(normalized),
     )
   } catch {
-    // Preferences are non-essential; audio must remain usable in private mode.
+    // Preferences are non-essential; audio remains usable in private mode.
   }
   return normalized
 }
 
+/** Clear this version only; an older preference remains available for migration. */
 export function clearGuitarNightAmpSettings(): void {
   try {
     globalThis.localStorage?.removeItem(GUITAR_NIGHT_AMP_SETTINGS_STORAGE_KEY)
@@ -253,6 +311,5 @@ export function clearGuitarNightAmpSettings(): void {
   }
 }
 
-/** Expose numeric bounds to UI controls without duplicating DSP authority. */
 export const GUITAR_NIGHT_AMP_CONTROL_LIMITS =
   GUITAR_ELECTRIC_AMP_PARAMETER_LIMITS
