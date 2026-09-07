@@ -3926,7 +3926,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         : activeProject() === null
                           ? 'Uses authored attacks and captured event timing.'
                           : takeReadyToFinish()
-                            ? 'Tap to finish the take.'
+                            ? 'Review the take, then finish it.'
                             : 'Finish saves only a compact local summary.'}
                     </small>
                   </span>

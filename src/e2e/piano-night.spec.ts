@@ -1150,6 +1150,29 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
           .boundingBox()
         expect(fallBox?.height).toBeGreaterThanOrEqual(100)
 
+        // The transport shares the bottom row with the nav. It has to be the
+        // thing under the finger, not the nav's box painted over it: a click
+        // is actionable only when the control receives the pointer, and the
+        // probe says the same for Play.
+        await page
+          .getByRole('button', { name: 'Stop and reset practice' })
+          .click()
+        const transportHit = await page
+          .locator('[aria-label="Piano Night transport"]')
+          .evaluate((transport) => {
+            const play = transport.querySelector('button:nth-of-type(3)')
+            if (!(play instanceof HTMLElement)) return 'no play button'
+            const rect = play.getBoundingClientRect()
+            const hit = document.elementFromPoint(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+            )
+            return transport.contains(hit)
+              ? 'transport'
+              : (hit?.className ?? 'nothing')
+          })
+        expect(transportHit).toBe('transport')
+
         // Landscape keeps one bottom row: Settings and Coach are behind More.
         const more = page.getByRole('button', {
           name: 'More Piano Night controls',
