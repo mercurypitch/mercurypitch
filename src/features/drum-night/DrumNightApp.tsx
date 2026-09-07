@@ -50,6 +50,7 @@ import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangemen
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
+import { DrumPlayLoadMeter } from './play-along/DrumPlayLoadMeter'
 import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
@@ -2572,12 +2573,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const stemAudioLoading = createMemo(
     () => playRequestPending() || stemPlayAlongSnapshot().status === 'loading',
   )
-  const stemLoadPercent = createMemo((): number | null => {
-    if (!stemAudioLoading()) return null
-    const fraction = stemPlayAlongSnapshot().loadFraction
-    if (fraction === null || fraction <= 0) return null
-    return Math.min(99, Math.round(fraction * 100))
-  })
   // The console Loop module wraps the whole source without touching A or B:
   // it sets (or clears) a full-span practice loop over the authored duration.
   const fullLoopSpan = createMemo(
@@ -4913,21 +4908,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 }
               >
                 {/* The button is the progress meter while the song loads. */}
-                <span
-                  aria-hidden="true"
-                  class={styles.playLoadRing}
-                  classList={{
-                    [styles.playLoadRingSpinning]: stemLoadPercent() === null,
-                  }}
-                  style={{
-                    '--load-fraction': String(
-                      stemPlayAlongSnapshot().loadFraction ?? 0,
-                    ),
-                  }}
+                <DrumPlayLoadMeter
+                  fraction={stemPlayAlongSnapshot().loadFraction}
                 />
-                <span aria-hidden="true" class={styles.playLoadPercent}>
-                  {stemLoadPercent() === null ? '' : `${stemLoadPercent()}%`}
-                </span>
               </Show>
             </button>
           </div>
@@ -4978,14 +4961,32 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </button>
           <button
             class={styles.mobilePlay}
+            classList={{ [styles.playButtonLoading]: playLoadingShown() }}
             type="button"
             onClick={togglePlaying}
-            aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
+            aria-label={
+              playLoadingShown()
+                ? `Loading ${sessionTitle()} audio`
+                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+            }
           >
-            {isPlaying() ? <Pause /> : <Play />}
-            <span class={styles.playSrLabel}>
-              {isPlaying() ? 'Pause' : 'Play'}
-            </span>
+            <Show
+              when={playLoadingShown()}
+              fallback={
+                <>
+                  {isPlaying() ? <Pause /> : <Play />}
+                  <span class={styles.playSrLabel}>
+                    {isPlaying() ? 'Pause' : 'Play'}
+                  </span>
+                </>
+              }
+            >
+              {/* The same meter as the console button: the phone bar is the
+                  only transport a phone sees while a song loads. */}
+              <DrumPlayLoadMeter
+                fraction={stemPlayAlongSnapshot().loadFraction}
+              />
+            </Show>
           </button>
           <button
             type="button"

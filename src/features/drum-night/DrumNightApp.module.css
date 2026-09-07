@@ -2377,6 +2377,16 @@
   transform: translateY(1px) scale(0.98);
 }
 
+/* Light ink on the dark loading disc. It has to carry the same weight as
+   `.shell .playButton` above, which paints every transport button in the
+   near-black room colour: a bare `.playButtonLoading` loses to it, and the
+   percent was drawn in #08090b on a #1d232b disc — a meter with an invisible
+   number. */
+.shell .playButton.playButtonLoading,
+.shell .mobilePlay.playButtonLoading {
+  color: var(--vellum);
+}
+
 /* While stem audio loads the button IS the progress meter, same as Guitar
    Night: an amber arc around a dimmed disc, percent in the middle once the
    engine knows how much there is. */
@@ -3264,6 +3274,18 @@
   .mobileNav .mobilePlay > svg {
     width: 25px;
     height: 25px;
+  }
+  /* While a song loads the amber disc goes dark, like the console button, so
+     the amber ring and its percent read against it. */
+  .mobileNav .mobilePlay {
+    position: relative;
+  }
+  .mobileNav .mobilePlay.playButtonLoading {
+    background: #1d232b;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  }
+  .mobileNav .mobilePlay > .playLoadPercent {
+    font-size: 12px;
   }
 
   .sheetScrim {

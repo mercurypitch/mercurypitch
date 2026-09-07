@@ -3192,6 +3192,69 @@ describe('DrumNightApp', () => {
     )
   })
 
+  it('turns both play buttons into the load meter while a song loads, on a phone too', async () => {
+    // A UVR session can take a while to open on a phone, and the phone bar's
+    // play button used to sit there as a plain Play: nothing said a load was
+    // running, and the taps it swallowed read as "stuck".
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    })
+    const backing = preparedBackingHarness({
+      sessionId: 'two-stem-slow-open',
+      title: 'Slow Open',
+      kind: 'two-stem',
+    })
+    let finishLoad!: (result: {
+      ok: false
+      code: 'missing-local-audio'
+    }) => void
+    backing.load.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLoad = resolve
+        }),
+    )
+    const catalog = songPortHarness([backing])
+    renderRoom({ loadSongPort: catalog.loadSongPort })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Bring a song' })
+    const song = await within(drawer).findByRole('button', {
+      name: /Slow Open.*Two stems.*Load backing/i,
+    })
+    fireEvent.click(song)
+    await waitFor(() => expect(catalog.openSession).toHaveBeenCalledOnce())
+
+    const playButtons = await screen.findAllByRole('button', {
+      name: 'Play Slow Open song clock',
+    })
+    expect(playButtons).toHaveLength(2)
+    fireEvent.click(playButtons[0])
+    await waitFor(() => expect(backing.load).toHaveBeenCalledOnce())
+
+    // Console button and phone bar alike, after the 250 ms grace.
+    const loading = await screen.findAllByRole('button', {
+      name: 'Loading Slow Open audio',
+    })
+    expect(loading).toHaveLength(2)
+    for (const button of loading) {
+      expect(
+        within(button).getByTestId('drum-play-load-ring'),
+      ).toBeInTheDocument()
+    }
+
+    finishLoad({ ok: false, code: 'missing-local-audio' })
+    await waitFor(() =>
+      expect(
+        screen.queryAllByRole('button', { name: 'Loading Slow Open audio' }),
+      ).toHaveLength(0),
+    )
+    expect(
+      screen.getAllByRole('button', { name: 'Play Slow Open song clock' }),
+    ).toHaveLength(2)
+  })
+
   it('exposes independently mixable Source Drums, Backing, and You for full separated parts', async () => {
     const backing = preparedBackingHarness({
       sessionId: 'full-band-parts',
