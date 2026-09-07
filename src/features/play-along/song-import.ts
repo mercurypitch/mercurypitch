@@ -1,7 +1,7 @@
 // Unified song import classification keeps play-along hosts on one lightweight file contract.
 // ============================================================
-
 import { acceptsAudioUpload, AUDIO_UPLOAD_ACCEPT, } from '@/lib/audio-upload-contract'
+import { isAppleTouchDevice } from '@/lib/device-tier'
 
 export type UnifiedSongImportKind = 'audio' | 'midi' | 'guitar-pro'
 
@@ -25,14 +25,6 @@ export function songImportAcceptForDevice(
   nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
 ): string | undefined {
   return isAppleTouchDevice(nav) ? undefined : UNIFIED_SONG_IMPORT_ACCEPT
-}
-
-/** iPhone, iPod, iPad, including iPadOS presenting as a Mac with touch. */
-export function isAppleTouchDevice(
-  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'>,
-): boolean {
-  if (/iPad|iPhone|iPod/.test(nav.userAgent)) return true
-  return nav.platform === 'MacIntel' && nav.maxTouchPoints > 1
 }
 
 export function isMidiSongFile(fileName: string): boolean {

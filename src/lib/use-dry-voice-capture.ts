@@ -443,7 +443,14 @@ export function useDryVoiceCapture(
   })
 
   async function start(startOptions?: { paused?: boolean }): Promise<boolean> {
+    // Voice control's recognizer and this take cannot share the device on
+    // iOS (see holdExclusiveCapture). The hold is taken before the take it
+    // replaces lets go of its own, so a restart never lets the recognizer
+    // back in between the two; every exit from here runs through
+    // releaseMic(), which drops it.
+    const hold = holdExclusiveCapture()
     discard()
+    releaseExclusiveHold = hold
     setState('starting')
     const run = ++activeRun
     const context = createCaptureAudioContext()
@@ -455,11 +462,6 @@ export function useDryVoiceCapture(
       // await: on iOS this promise may remain pending through the permission
       // sheet even though microphone recording itself is ready to begin.
       requestCaptureContextResume(context)
-      // Voice control's recognizer and this take cannot share the device on
-      // iOS (see holdExclusiveCapture). Taken before the device is asked for,
-      // so the recognizer is told to stand down first; every exit from here
-      // runs through releaseMic(), which lets go of it.
-      releaseExclusiveHold = holdExclusiveCapture()
       const stream = await micManager.acquire(options.consumerId)
       if (run !== activeRun) {
         // Whatever superseded this run — a discard, a newer start, cleanup —

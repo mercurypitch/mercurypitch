@@ -527,7 +527,11 @@ export const AccountSection: Component = () => {
         {/* Unconfirmed email: the banner's Resend, kept where it can always
             be found once the banner has been dismissed. */}
         <Show
-          when={me()?.user.emailVerified === false && me()?.user.email != null}
+          when={
+            me()?.user.authProvider === 'password' &&
+            me()?.user.emailVerified === false &&
+            me()?.user.email != null
+          }
         >
           <div class={styles.accountField}>
             <EmailVerificationRow email={me()!.user.email!} />

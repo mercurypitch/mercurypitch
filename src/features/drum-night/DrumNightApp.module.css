@@ -3277,6 +3277,8 @@
   }
   .workbench {
     position: absolute;
+    display: flex;
+    flex-direction: column;
     z-index: 75;
     right: 7px;
     bottom: 0;
@@ -3295,6 +3297,7 @@
      their own. A fixed 86px squeezed the tabs against the rule and pushed
      Rack controls through it. */
   .workbenchBar {
+    flex: none;
     height: auto;
     min-height: 58px;
     grid-template-columns: minmax(0, 1fr) auto 44px;
@@ -3303,10 +3306,13 @@
     padding: 8px 10px 8px 14px;
   }
   .workbenchBar > div:first-child {
+    display: flex;
     min-width: 0;
-    flex-direction: row;
     align-items: baseline;
     gap: 8px;
+  }
+  .workbenchBar > div:first-child span {
+    flex: none;
   }
   .workbenchBar > div:first-child strong {
     overflow: hidden;
@@ -3339,7 +3345,9 @@
   }
   .workspaceView {
     display: grid;
-    height: calc(100% - 86px);
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
     grid-template-columns: 1fr;
     align-content: start;
     gap: 18px;

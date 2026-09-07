@@ -52,12 +52,14 @@
 //     300 ms respawn therefore showed the bubble every few seconds to anyone
 //     who had voice control on and was not talking. So a session that heard
 //     nothing costs more to respawn each time — the delay doubles per quiet
-//     session — and, on a phone or tablet, after `QUIET_ROLLOVER_LIMIT` of
-//     them the timer stops and the ear dozes: the next touch anywhere brings
-//     it back, one session per touch, until it hears a word. Typing is not a
-//     touch — a keystroke in a text field never starts a session. Desktop
-//     never dozes: its respawns are silent, and hands-free is the point of
-//     voice control at a piano.
+//     session — and after `QUIET_ROLLOVER_LIMIT` of them the timer stops and
+//     the ear dozes: the next touch anywhere brings it back, one session per
+//     touch, until it hears a word. All of that is for devices where a
+//     respawn is visible (`visibleRespawn`). Desktop respawns are silent, so
+//     desktop keeps the flat 300 ms and never dozes: hands-free is the point
+//     of voice control at a piano. Typing is not a touch — a keystroke or a
+//     tap in a text field never starts a session — and neither is a tap on
+//     the pill itself, which has its own meaning.
 
 import { deviceClass } from '@/lib/device-tier'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
@@ -119,8 +121,8 @@ const CONFIRM_START_MS = 4000
 const QUIET_RESPAWN_MAX_MS = 15_000
 /**
  * Consecutive quiet sessions before the timed respawn stops altogether and
- * the ear dozes until the next touch — where it dozes at all (see
- * `WebSpeechListenerOptions.dozeWhenQuiet`). Six is well under a minute of
+ * the ear dozes until the next touch — where a respawn is visible (see
+ * `WebSpeechListenerOptions.visibleRespawn`). Six is well under a minute of
  * silence on iOS.
  */
 const QUIET_ROLLOVER_LIMIT = 6
@@ -161,9 +163,16 @@ const QUIET_ERRORS = new Set(['no-speech', 'aborted', 'network'])
 /** `start()` throws this when a session is already running. */
 const ALREADY_RUNNING = 'InvalidStateError'
 
-/** Where a keystroke is typing, not a touch to spend on the recognizer. */
+/** Where a keystroke or a tap is typing, not a touch to spend on the recognizer. */
 const EDITABLE_SELECTOR =
   "input, textarea, select, [contenteditable]:not([contenteditable='false'])"
+/**
+ * The pill and its menu. A tap there is the singer operating voice control
+ * — toggling it, opening the menu — and the controller answers it on
+ * `click`; spending the `pointerdown` on a session first made the same tap
+ * mean two different things depending on which landed sooner.
+ */
+const VOICE_HUD_SELECTOR = '[data-voice-control-hud]'
 
 /**
  * Finals with a REAL low confidence estimate are dropped before they reach
@@ -175,22 +184,27 @@ const MIN_FINAL_CONFIDENCE = 0.3
 const isEditableTarget = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
 
+const isVoiceHudTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest(VOICE_HUD_SELECTOR) !== null
+
 export interface WebSpeechListenerOptions {
   /**
-   * Stop the timed respawn after `QUIET_ROLLOVER_LIMIT` quiet sessions and
-   * wait for a touch. Defaults to phones, tablets and TVs — where each
-   * `start()` is a permission bubble (iOS) or a start chime (Android) — and
-   * never to desktop, whose respawns cost nothing and whose user may have
-   * both hands on an instrument.
+   * Every `start()` is something the user notices — the permission bubble on
+   * iOS, the start chime on Android. Quiet sessions then respawn with a
+   * growing delay and, after `QUIET_ROLLOVER_LIMIT` of them, not at all
+   * until the next touch; a touch may also replace a session that calls
+   * itself live but has been silent for `GESTURE_STALE_MS`. Defaults to
+   * phones, tablets and TVs, never to desktop, whose respawns are silent and
+   * whose user may have both hands on an instrument.
    */
-  dozeWhenQuiet?: boolean
+  visibleRespawn?: boolean
 }
 
 export function createWebSpeechListener(
   callbacks: VoiceListenerCallbacks,
   options: WebSpeechListenerOptions = {},
 ): VoiceListener {
-  const dozeWhenQuiet = options.dozeWhenQuiet ?? deviceClass() !== 'desktop'
+  const visibleRespawn = options.visibleRespawn ?? deviceClass() !== 'desktop'
   const w = window as unknown as Record<string, unknown>
   const RecognitionCtor = (w.SpeechRecognition ?? w.webkitSpeechRecognition) as
     | (new () => SpeechRecognitionLike)
@@ -281,9 +295,14 @@ export function createWebSpeechListener(
     }
   }
 
-  /** 300 ms after a session that heard something; doubling after each that did not. */
+  /**
+   * 300 ms after a session that heard something; doubling after each that
+   * did not, where a respawn is visible. Silent respawns stay at 300 ms.
+   */
   const quietRespawnDelay = (): number =>
-    Math.min(RESTART_DELAY_MS * 2 ** quietRollovers, QUIET_RESPAWN_MAX_MS)
+    visibleRespawn
+      ? Math.min(RESTART_DELAY_MS * 2 ** quietRollovers, QUIET_RESPAWN_MAX_MS)
+      : RESTART_DELAY_MS
 
   const scheduleRestart = (delay: number) => {
     clearRestartTimer()
@@ -306,7 +325,7 @@ export function createWebSpeechListener(
 
   const onGesture = (event: Event) => {
     if (!started) return
-    if (event.type === 'keydown' && isEditableTarget(event.target)) return
+    if (isEditableTarget(event.target) || isVoiceHudTarget(event.target)) return
     if (recognition === null) {
       // The touch is the restart; a timer waiting to do the same is moot,
       // and a start that failed on `InvalidStateError` before gets its retry
@@ -316,6 +335,9 @@ export function createWebSpeechListener(
       spinUp()
       return
     }
+    // A silent desktop session is not a phantom worth an abort-and-start on
+    // every click; the stale timer covers it there.
+    if (!visibleRespawn) return
     if (live && Date.now() - lastEventAt > GESTURE_STALE_MS) spinUp()
   }
 
@@ -397,6 +419,10 @@ export function createWebSpeechListener(
     // `visibilitychange` only fires on a transition, so arriving here at
     // `visible` means the document was hidden until a moment ago.
     if (!started || document.visibilityState !== 'visible') return
+    // Dozing — nothing running and nothing scheduled — stays dozing: a
+    // gesture-less `start()` here is one iOS refuses, and the refusal would
+    // expand the pill over the header. The next touch wakes it.
+    if (recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
   }
@@ -408,6 +434,7 @@ export function createWebSpeechListener(
     // `visibilitychange` for it, so it is listened for separately.
     if (!started) return
     if ((event as { persisted?: boolean }).persisted !== true) return
+    if (recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
   }
@@ -428,7 +455,7 @@ export function createWebSpeechListener(
       quietRollovers += 1
       discard()
       callbacks.onInterim('')
-      if (dozeWhenQuiet && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+      if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
         doze()
         return
       }
@@ -482,6 +509,7 @@ export function createWebSpeechListener(
         // A word, even a half-formed interim one, ends the quiet stretch.
         heardResult = true
         quietRollovers = 0
+        invalidStateRetried = false
         ping()
       }
       let interim = ''
@@ -544,7 +572,7 @@ export function createWebSpeechListener(
       }
       if (wasQuiet) {
         quietRollovers += 1
-        if (dozeWhenQuiet && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+        if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
           doze()
           return
         }
