@@ -35,6 +35,9 @@ vi.mock('@/lib/mic-manager', () => ({
   micManager: {
     acquire: acquireMock,
     release: releaseMock,
+    // The recorder's dry-capture hook loads mic-store, which subscribes to
+    // the manager at module scope; without this the mock throws on import.
+    subscribe: vi.fn(),
   },
 }))
 vi.mock('@/lib/mic-sentinel', () => ({

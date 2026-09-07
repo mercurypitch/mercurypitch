@@ -445,10 +445,17 @@ export function useVoiceControlController(
     // it was a no-op, so the press fell through to nothing at all; falling
     // through to `turnOff` instead makes the mic button mean what its label
     // has said the whole time.
+    //
+    // `dozing` belongs with `idle` and `error`: the ear stopped respawning
+    // after a stretch of silence and is waiting for a touch, and this is one.
+    // The gesture seam has usually spent it already, on `pointerdown`; the
+    // restart then only makes the label true.
     if (
       enabled() &&
       !suspendedForSinging() &&
-      (listenerState() === 'idle' || listenerState() === 'error')
+      (listenerState() === 'idle' ||
+        listenerState() === 'error' ||
+        listenerState() === 'dozing')
     ) {
       setLastLatencyMs(null)
       stopListening()

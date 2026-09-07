@@ -27,7 +27,8 @@ export interface UnifiedSongFileDropClasses {
 
 export interface UnifiedSongFileDropProps {
   children: JSX.Element
-  accept: string
+  /** Omitted on Apple touch devices, where the Files sheet greys out anything not in the list. */
+  accept?: string
   copy: UnifiedSongFileDropCopy
   classes: UnifiedSongFileDropClasses
   testId: string

@@ -3,9 +3,10 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
+import { songImportAcceptForDevice } from '@/features/play-along/song-import'
 import type { UnifiedSongFileDropClasses, UnifiedSongFileDropCopy, } from '@/features/play-along/UnifiedSongFileDrop'
 import { UnifiedSongFileDrop } from '@/features/play-along/UnifiedSongFileDrop'
-import { GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_DROP_COPY, GUITAR_NIGHT_IMPORT_FORMATS, } from './guitar-night-import'
+import { GUITAR_NIGHT_IMPORT_DROP_COPY, GUITAR_NIGHT_IMPORT_FORMATS, } from './guitar-night-import'
 import styles from './GuitarNightApp.module.css'
 
 export interface GuitarNightFileDropProps {
@@ -42,7 +43,7 @@ const GUITAR_NIGHT_FILE_DROP_CLASSES: UnifiedSongFileDropClasses = {
 export function GuitarNightFileDrop(props: GuitarNightFileDropProps) {
   return (
     <UnifiedSongFileDrop
-      accept={GUITAR_NIGHT_IMPORT_ACCEPT}
+      accept={songImportAcceptForDevice()}
       copy={GUITAR_NIGHT_FILE_DROP_COPY}
       classes={GUITAR_NIGHT_FILE_DROP_CLASSES}
       testId="guitar-night-file-drop"

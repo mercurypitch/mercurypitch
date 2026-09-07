@@ -71,7 +71,10 @@ export function openFilePicker(
   if (!input) return
 
   const onUnavailable = options.onUnavailable
-  if (!onUnavailable) {
+  // iPhone and iPad always have a picker, and their Files sheet fires none
+  // of the signals below on a cancel, which read as "no picker" and told a
+  // phone it was a TV. No probe there.
+  if (!onUnavailable || isApplePlatform()) {
     input.click()
     return
   }
@@ -120,3 +123,11 @@ export const FILE_PICKER_UNAVAILABLE_MESSAGE =
   'This TV browser has no file manager, so it cannot open a file picker. ' +
   'Add the song on your phone or computer while signed in, then open it here ' +
   'from your library.'
+
+/** iPhone, iPod, iPad, including iPadOS presenting as a Mac with touch. */
+export function isApplePlatform(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): boolean {
+  if (/iPad|iPhone|iPod/.test(nav.userAgent)) return true
+  return nav.platform === 'MacIntel' && nav.maxTouchPoints > 1
+}

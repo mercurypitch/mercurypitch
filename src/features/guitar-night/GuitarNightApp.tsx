@@ -20,6 +20,7 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { songImportAcceptForDevice } from '@/features/play-along/song-import'
 import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
 import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
@@ -43,7 +44,7 @@ import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from './first-win-config'
 import type { GuitarNightGoogleSeparationIntent } from './guitar-night-google-separation-intent'
 import { clearGuitarNightGoogleSeparationIntent, guitarNightBackingFingerprint, prepareGuitarNightGoogleSeparationIntent, takeGuitarNightGoogleSeparationIntent, } from './guitar-night-google-separation-intent'
-import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
+import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
 import { guitarRoomLabel } from './guitar-rooms'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightFileDrop } from './GuitarNightFileDrop'
@@ -2688,7 +2689,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         class={styles.fileInput}
         data-testid="guitar-night-file-input"
         type="file"
-        accept={GUITAR_NIGHT_IMPORT_ACCEPT}
+        accept={songImportAcceptForDevice()}
         disabled={referenceController.importPendingFileName() !== null}
         onChange={handleImportChange}
         tabindex="-1"

@@ -101,3 +101,37 @@ describe('openFilePicker', () => {
     }
   })
 })
+
+describe('isApplePlatform', () => {
+  it('recognises iPhone, iPad and iPadOS presenting as a Mac with touch', async () => {
+    const { isApplePlatform } = await import('./file-picker')
+    expect(
+      isApplePlatform({
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+        maxTouchPoints: 5,
+        platform: 'iPhone',
+      }),
+    ).toBe(true)
+    expect(
+      isApplePlatform({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        maxTouchPoints: 5,
+        platform: 'MacIntel',
+      }),
+    ).toBe(true)
+    expect(
+      isApplePlatform({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        maxTouchPoints: 0,
+        platform: 'MacIntel',
+      }),
+    ).toBe(false)
+    expect(
+      isApplePlatform({
+        userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)',
+        maxTouchPoints: 5,
+        platform: 'Linux armv8l',
+      }),
+    ).toBe(false)
+  })
+})

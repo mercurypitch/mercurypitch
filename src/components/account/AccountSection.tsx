@@ -27,6 +27,7 @@ import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
+import { EmailVerificationRow } from './EmailVerificationRow'
 import { PasskeySettings } from './PasskeySettings'
 import { SessionList } from './SessionList'
 import { TwoFactorSettings } from './TwoFactorSettings'
@@ -523,6 +524,16 @@ export const AccountSection: Component = () => {
         {/* A second factor needs a password (or Google) to be a second OF —
             a device identity has no first factor to add one to. Same gate as
             the device list above, for the same reason. */}
+        {/* Unconfirmed email: the banner's Resend, kept where it can always
+            be found once the banner has been dismissed. */}
+        <Show
+          when={me()?.user.emailVerified === false && me()?.user.email != null}
+        >
+          <div class={styles.accountField}>
+            <EmailVerificationRow email={me()!.user.email!} />
+          </div>
+        </Show>
+
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <TwoFactorSettings />

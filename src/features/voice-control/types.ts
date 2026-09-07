@@ -7,7 +7,18 @@
 // utterance engine without touching the grammar or the dispatcher. See
 // docs/plans/voice-control.md for the whole architecture.
 
-export type VoiceListenerState = 'idle' | 'starting' | 'listening' | 'error'
+/**
+ * `dozing` is the Web Speech ear having stopped respawning after a stretch of
+ * silence: nothing is wrong and nothing needs granting, the next touch
+ * anywhere in the app brings it back. A quiet state, like `listening` — the
+ * HUD does not expand over it.
+ */
+export type VoiceListenerState =
+  | 'idle'
+  | 'starting'
+  | 'listening'
+  | 'dozing'
+  | 'error'
 
 export interface VoiceListenerCallbacks {
   /** One discrete final utterance — a phrase the recognizer closed. */

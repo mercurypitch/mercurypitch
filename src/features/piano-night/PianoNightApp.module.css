@@ -3069,6 +3069,9 @@
   }
 
   .drawerTabs {
+    /* Sticks under the 56px topline of this layout, not portrait's 88px:
+       the gap between them let content scroll through above the tabs. */
+    top: 56px;
     padding: 0 12px;
   }
 

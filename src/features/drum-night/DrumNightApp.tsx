@@ -3648,10 +3648,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
       <main class={styles.roomShell}>
         <header class={styles.sessionBar} inert={modalLayerOpen()}>
-          <div class={styles.mobileBrand} aria-label="MercuryPitch Drum Night">
+          {/* The only way back to the studio a phone has: the rail with
+              the brand mark is hidden there. */}
+          <a class={styles.mobileBrand} href="/" aria-label="MercuryPitch home">
             <img src="/favicon.svg" alt="" />
             <span>Drums</span>
-          </div>
+          </a>
           <button
             class={styles.sessionIdentity}
             type="button"

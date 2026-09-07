@@ -31,10 +31,12 @@
 //     shapes of it and they need different answers. One never got going —
 //     another audio consumer holding the mic — and `CONFIRM_START_MS` is the
 //     watchdog for it: a session that does not announce itself is dead. The
-//     other confirmed, worked, and then died inside a freeze the document
-//     came back from, leaving `live` true over nothing; no watchdog can see
-//     that, so a page returning from hidden or from the back/forward cache
-//     replaces its session rather than trusting it.
+//     other confirmed, worked, and then died — inside a freeze the document
+//     came back from, or under Siri, a call, another app's capture — leaving
+//     `live` true over nothing. A page returning from hidden or from the
+//     back/forward cache replaces its session rather than trusting it, and a
+//     confirmed session that fires no event at all for `STALE_SESSION_MS` is
+//     presumed dead and replaced too.
 //
 //  3. Karaoke Night is a separate document, so walking into it and back out
 //     is two full page loads, each with its own gesture-less mount. Recovery
@@ -43,7 +45,21 @@
 //     touch ANYWHERE in the app respawns. That is the seam iOS leaves open,
 //     and it is the same one `local-whisper-listener.ts` uses to resume its
 //     AudioContext.
+//
+//  4. Every `start()` is a fresh capture request. On desktop that is free; on
+//     iOS Chrome it is the "microphone allowed" bubble, and WebKit ends a
+//     session after a few seconds of silence rather than a minute. A flat
+//     300 ms respawn therefore showed the bubble every few seconds to anyone
+//     who had voice control on and was not talking. So a session that heard
+//     nothing costs more to respawn each time — the delay doubles per quiet
+//     session — and, on a phone or tablet, after `QUIET_ROLLOVER_LIMIT` of
+//     them the timer stops and the ear dozes: the next touch anywhere brings
+//     it back, one session per touch, until it hears a word. Typing is not a
+//     touch — a keystroke in a text field never starts a session. Desktop
+//     never dozes: its respawns are silent, and hands-free is the point of
+//     voice control at a piano.
 
+import { deviceClass } from '@/lib/device-tier'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
 
 interface SpeechRecognitionResultLike {
@@ -67,6 +83,17 @@ interface SpeechRecognitionLike {
   onend: (() => void) | null
   /** Fires when the service has actually begun listening. */
   onstart: (() => void) | null
+  /**
+   * The session's other lifecycle events. None of them carries words; they
+   * are the recognizer saying it is still there, which is all the liveness
+   * check below wants from them.
+   */
+  onaudiostart: (() => void) | null
+  onaudioend: (() => void) | null
+  onsoundstart: (() => void) | null
+  onsoundend: (() => void) | null
+  onspeechstart: (() => void) | null
+  onspeechend: (() => void) | null
   start: () => void
   stop: () => void
   abort?: () => void
@@ -84,15 +111,59 @@ const FAST_END_LIMIT = 5
  * also decoding a song, not for the happy path.
  */
 const CONFIRM_START_MS = 4000
+/**
+ * The respawn delay after a session that was live and heard nothing doubles
+ * with every consecutive quiet session, and stops growing here. On iOS each
+ * respawn is a permission bubble; on desktop the wait is invisible.
+ */
+const QUIET_RESPAWN_MAX_MS = 15_000
+/**
+ * Consecutive quiet sessions before the timed respawn stops altogether and
+ * the ear dozes until the next touch — where it dozes at all (see
+ * `WebSpeechListenerOptions.dozeWhenQuiet`). Six is well under a minute of
+ * silence on iOS.
+ */
+const QUIET_ROLLOVER_LIMIT = 6
+/**
+ * A confirmed session that has not fired any event for this long is presumed
+ * dead — WebKit drops sessions without an `end` when another capture, Siri
+ * or a call takes the audio — and is replaced. Just under Chrome's own ~60 s
+ * silence end, so on desktop the replacement is one quiet session traded for
+ * another, not a visible restart.
+ */
+const STALE_SESSION_MS = 45_000
+/**
+ * A user gesture may replace a session that still calls itself live but has
+ * been event-free this long: a phantom is indistinguishable from a quiet
+ * room, and the gesture is the one moment iOS will surely accept a fresh
+ * `start()`.
+ */
+const GESTURE_STALE_MS = 10_000
+/**
+ * `start()` throwing `InvalidStateError` usually means the session this one
+ * replaced has not finished tearing down — WebKit's `abort()` is
+ * asynchronous. One retry after a short wait lands inside the same
+ * activation window; trusting the phantom instead left a session that never
+ * fired `start` and became `needs-gesture` four seconds later.
+ */
+const INVALID_STATE_RETRY_MS = 250
 
 /** Permission-shaped errors: do not restart, the user has to act first. */
 const FATAL_ERRORS = new Set(['not-allowed', 'service-not-allowed'])
 
 /**
- * `start()` throws this when a session is already running. It is the one
- * throw that means "carry on" rather than "that did not work".
+ * Errors the session recovers from on its own: `end` follows and the respawn
+ * handles it. Announcing them flipped the HUD to "Mic unavailable" and back
+ * again on every WebKit network hiccup.
  */
+const QUIET_ERRORS = new Set(['no-speech', 'aborted', 'network'])
+
+/** `start()` throws this when a session is already running. */
 const ALREADY_RUNNING = 'InvalidStateError'
+
+/** Where a keystroke is typing, not a touch to spend on the recognizer. */
+const EDITABLE_SELECTOR =
+  "input, textarea, select, [contenteditable]:not([contenteditable='false'])"
 
 /**
  * Finals with a REAL low confidence estimate are dropped before they reach
@@ -101,9 +172,25 @@ const ALREADY_RUNNING = 'InvalidStateError'
  */
 const MIN_FINAL_CONFIDENCE = 0.3
 
+const isEditableTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
+
+export interface WebSpeechListenerOptions {
+  /**
+   * Stop the timed respawn after `QUIET_ROLLOVER_LIMIT` quiet sessions and
+   * wait for a touch. Defaults to phones, tablets and TVs — where each
+   * `start()` is a permission bubble (iOS) or a start chime (Android) — and
+   * never to desktop, whose respawns cost nothing and whose user may have
+   * both hands on an instrument.
+   */
+  dozeWhenQuiet?: boolean
+}
+
 export function createWebSpeechListener(
   callbacks: VoiceListenerCallbacks,
+  options: WebSpeechListenerOptions = {},
 ): VoiceListener {
+  const dozeWhenQuiet = options.dozeWhenQuiet ?? deviceClass() !== 'desktop'
   const w = window as unknown as Record<string, unknown>
   const RecognitionCtor = (w.SpeechRecognition ?? w.webkitSpeechRecognition) as
     | (new () => SpeechRecognitionLike)
@@ -131,9 +218,18 @@ export function createWebSpeechListener(
   let recognition: SpeechRecognitionLike | null = null
   let restartTimer: ReturnType<typeof setTimeout> | null = null
   let confirmTimer: ReturnType<typeof setTimeout> | null = null
+  let staleTimer: ReturnType<typeof setTimeout> | null = null
   let listeningForGesture = false
   let spinUpAt = 0
   let fastEnds = 0
+  /** Consecutive sessions that were live and ended without a result. */
+  let quietRollovers = 0
+  /** The current session has produced a result since it started. */
+  let heardResult = false
+  /** When the current session last said anything at all. */
+  let lastEventAt = 0
+  /** The one `InvalidStateError` retry this start attempt gets has been spent. */
+  let invalidStateRetried = false
 
   const clearRestartTimer = () => {
     if (restartTimer !== null) {
@@ -149,17 +245,32 @@ export function createWebSpeechListener(
     }
   }
 
+  const clearStaleTimer = () => {
+    if (staleTimer !== null) {
+      clearTimeout(staleTimer)
+      staleTimer = null
+    }
+  }
+
   /** Drop a session we no longer believe in, without hearing from it again. */
   const discard = () => {
     const r = recognition
     recognition = null
     live = false
+    heardResult = false
     clearConfirmTimer()
+    clearStaleTimer()
     if (r === null) return
     r.onresult = null
     r.onerror = null
     r.onend = null
     r.onstart = null
+    r.onaudiostart = null
+    r.onaudioend = null
+    r.onsoundstart = null
+    r.onsoundend = null
+    r.onspeechstart = null
+    r.onspeechend = null
     try {
       // `abort` drops the session without waiting for a final result; `stop`
       // is the graceful form and is all some engines implement.
@@ -170,8 +281,9 @@ export function createWebSpeechListener(
     }
   }
 
-  /** Nothing is running and nothing is scheduled to run. */
-  const isSilent = (): boolean => recognition === null && restartTimer === null
+  /** 300 ms after a session that heard something; doubling after each that did not. */
+  const quietRespawnDelay = (): number =>
+    Math.min(RESTART_DELAY_MS * 2 ** quietRollovers, QUIET_RESPAWN_MAX_MS)
 
   const scheduleRestart = (delay: number) => {
     clearRestartTimer()
@@ -184,13 +296,27 @@ export function createWebSpeechListener(
   // ── The gesture seam ──────────────────────────────────────────
   //
   // iOS grants `start()` inside a user gesture and, often enough, nowhere
-  // else. So while we are meant to be listening and are not, the next touch
-  // or key anywhere in the app is spent restarting. Capture phase and
-  // passive, so it never interferes with what the user was actually doing.
+  // else. So while we are meant to be listening, a touch anywhere in the app
+  // is spent on the recognizer whenever the recognizer could use it: nothing
+  // running (dozing, refused, or waiting out a backoff), or a session that
+  // calls itself live but has said nothing for a while and may be a phantom.
+  // Armed for the whole run. Capture phase and passive, so it never
+  // interferes with what the user was actually doing — and a keystroke that
+  // is typing, inside a text field, is left to the text field.
 
-  const onGesture = () => {
-    if (!started || !isSilent()) return
-    spinUp()
+  const onGesture = (event: Event) => {
+    if (!started) return
+    if (event.type === 'keydown' && isEditableTarget(event.target)) return
+    if (recognition === null) {
+      // The touch is the restart; a timer waiting to do the same is moot,
+      // and a start that failed on `InvalidStateError` before gets its retry
+      // back, because this attempt is a new one.
+      clearRestartTimer()
+      invalidStateRetried = false
+      spinUp()
+      return
+    }
+    if (live && Date.now() - lastEventAt > GESTURE_STALE_MS) spinUp()
   }
 
   const listenForGesture = () => {
@@ -203,21 +329,31 @@ export function createWebSpeechListener(
     window.addEventListener('keydown', onGesture, { capture: true })
   }
 
-  /**
-   * Admit that nothing is listening and wait to be touched. The one exit from
-   * every way iOS takes the recognizer away silently.
-   */
-  const failToGesture = (detail: string) => {
-    hasBeenLive = false
-    callbacks.onStateChange('error', detail)
-    listenForGesture()
-  }
-
   const stopListeningForGesture = () => {
     if (!listeningForGesture) return
     listeningForGesture = false
     window.removeEventListener('pointerdown', onGesture, { capture: true })
     window.removeEventListener('keydown', onGesture, { capture: true })
+  }
+
+  /**
+   * Admit that nothing is listening and wait to be touched. The one exit from
+   * every way iOS takes the recognizer away silently. The seam is already
+   * armed; this only says so.
+   */
+  const failToGesture = (detail: string) => {
+    hasBeenLive = false
+    callbacks.onStateChange('error', detail)
+  }
+
+  /**
+   * Stop respawning on a timer and wait to be touched, without admitting
+   * anything: the sessions were healthy, they just heard nothing. `hasBeenLive`
+   * stays, so the session the next touch starts is a continuation and says
+   * nothing either — the HUD shows a mic at rest, not a fault.
+   */
+  const doze = () => {
+    callbacks.onStateChange('dozing')
   }
 
   /** Let go of everything that could bring a session back: timers, the
@@ -227,6 +363,7 @@ export function createWebSpeechListener(
     hasBeenLive = false
     clearRestartTimer()
     clearConfirmTimer()
+    clearStaleTimer()
     stopListeningForGesture()
     document.removeEventListener('visibilitychange', onVisibility)
     window.removeEventListener('pageshow', onPageShow)
@@ -275,6 +412,30 @@ export function createWebSpeechListener(
     spinUp()
   }
 
+  /**
+   * The liveness check for a confirmed session. Every event the recognizer
+   * fires re-arms it; expiry means it has said nothing at all — no sound, no
+   * speech, no result — for the whole window. Dead or merely quiet, it is
+   * replaced the same way, and it counts as a quiet rollover: a recognizer
+   * that keeps dying silently dozes like one that keeps ending silently,
+   * instead of being rebuilt forever.
+   */
+  const armStaleTimer = (r: SpeechRecognitionLike) => {
+    clearStaleTimer()
+    staleTimer = setTimeout(() => {
+      staleTimer = null
+      if (!started || recognition !== r || !live) return
+      quietRollovers += 1
+      discard()
+      callbacks.onInterim('')
+      if (dozeWhenQuiet && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+        doze()
+        return
+      }
+      spinUp()
+    }, STALE_SESSION_MS)
+  }
+
   const spinUp = () => {
     discard()
 
@@ -284,25 +445,44 @@ export function createWebSpeechListener(
     r.lang = 'en-US'
     r.maxAlternatives = 1
 
+    /** The session is still there. Only a live one runs the liveness clock. */
+    const ping = () => {
+      if (recognition !== r) return
+      lastEventAt = Date.now()
+      if (live) armStaleTimer(r)
+    }
+    r.onaudiostart = ping
+    r.onaudioend = ping
+    r.onsoundstart = ping
+    r.onsoundend = ping
+    r.onspeechstart = ping
+    r.onspeechend = ping
+
     r.onstart = () => {
       if (recognition !== r) return
       live = true
       hasBeenLive = true
       fastEnds = 0
+      invalidStateRetried = false
       clearConfirmTimer()
-      stopListeningForGesture()
+      ping()
       callbacks.onStateChange('listening')
     }
 
     r.onresult = (event) => {
-      // Some engines deliver results without ever firing `start`. Hearing
-      // one is proof enough that the session is alive.
-      if (recognition === r && !live) {
-        live = true
-        hasBeenLive = true
-        clearConfirmTimer()
-        stopListeningForGesture()
-        callbacks.onStateChange('listening')
+      if (recognition === r) {
+        // Some engines deliver results without ever firing `start`. Hearing
+        // one is proof enough that the session is alive.
+        if (!live) {
+          live = true
+          hasBeenLive = true
+          clearConfirmTimer()
+          callbacks.onStateChange('listening')
+        }
+        // A word, even a half-formed interim one, ends the quiet stretch.
+        heardResult = true
+        quietRollovers = 0
+        ping()
       }
       let interim = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -324,7 +504,7 @@ export function createWebSpeechListener(
     }
 
     r.onerror = (event) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return
+      if (QUIET_ERRORS.has(event.error)) return
       if (FATAL_ERRORS.has(event.error)) {
         // The user has to act, and nothing here can act for them: a refused
         // permission is refused again by every timed restart and by every
@@ -335,8 +515,9 @@ export function createWebSpeechListener(
         standDown(event.error)
         return
       }
-      // Transient errors (network, audio-capture) also land here; onend
-      // follows and restarts because `started` is still true.
+      // What is left is the mic itself (`audio-capture`) and the odd engine
+      // complaint, which the user should see. `end` follows and restarts
+      // because `started` is still true.
       hasBeenLive = false
       callbacks.onStateChange('error', event.error)
     }
@@ -345,8 +526,11 @@ export function createWebSpeechListener(
       if (recognition !== r) return
       recognition = null
       const wasLive = live
+      const wasQuiet = wasLive && !heardResult
       live = false
+      heardResult = false
       clearConfirmTimer()
+      clearStaleTimer()
       callbacks.onInterim('')
       if (!started) return
       const lifetime = Date.now() - spinUpAt
@@ -358,30 +542,47 @@ export function createWebSpeechListener(
         failToGesture('needs-gesture')
         return
       }
+      if (wasQuiet) {
+        quietRollovers += 1
+        if (dozeWhenQuiet && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+          doze()
+          return
+        }
+      }
       scheduleRestart(
-        fastEnds >= FAST_END_LIMIT ? FAST_END_BACKOFF_MS : RESTART_DELAY_MS,
+        Math.max(
+          fastEnds >= FAST_END_LIMIT ? FAST_END_BACKOFF_MS : 0,
+          quietRespawnDelay(),
+        ),
       )
     }
 
     recognition = r
     live = false
+    heardResult = false
     spinUpAt = Date.now()
+    lastEventAt = spinUpAt
     if (!hasBeenLive) callbacks.onStateChange('starting')
 
     try {
       r.start()
     } catch (err) {
       const name = (err as { name?: string } | null)?.name
-      if (name === ALREADY_RUNNING) {
-        // A session is already running somewhere in this document. Leave it
-        // be and let the watchdog below decide whether it ever speaks.
-      } else {
-        // The iOS refusal, and any other hard failure. Saying `listening`
-        // here is what made this bug invisible for so long.
-        recognition = null
-        failToGesture('needs-gesture')
+      discard()
+      if (name === ALREADY_RUNNING && !invalidStateRetried) {
+        // Something still holds the recognizer — as a rule the session this
+        // one replaced, mid-teardown. Not ours to trust: retry once after it
+        // has had a moment to let go.
+        invalidStateRetried = true
+        scheduleRestart(INVALID_STATE_RETRY_MS)
         return
       }
+      invalidStateRetried = false
+      // The iOS refusal, a second `InvalidStateError` in a row, and any other
+      // hard failure. Saying `listening` here is what made this bug invisible
+      // for so long.
+      failToGesture('needs-gesture')
+      return
     }
 
     // Nothing above proves a session exists — only `onstart` does.
@@ -403,8 +604,11 @@ export function createWebSpeechListener(
       if (started) return
       started = true
       fastEnds = 0
+      quietRollovers = 0
+      invalidStateRetried = false
       document.addEventListener('visibilitychange', onVisibility)
       window.addEventListener('pageshow', onPageShow)
+      listenForGesture()
       spinUp()
     },
     stop: () => {
