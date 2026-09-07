@@ -49,6 +49,9 @@ async function seedSong(input: SeedSongInput): Promise<string> {
     import('@/db/services/uvr-service'),
     import('@/stores/app-store'),
   ])
+  // The bridge can be available while IndexedDB hydration is still pending.
+  // Match real song preparation: do not let startup overwrite a new fixture.
+  await appStore.initSessionStore()
 
   const vocal = wavFile(input.vocalWavBase64, `${input.name} vocal.wav`)
   const instrumental = wavFile(
@@ -69,10 +72,12 @@ async function seedSong(input: SeedSongInput): Promise<string> {
   await saveStemBlob(sessionId, 'instrumental', instrumental, instrumental.name)
 
   const urls = await hydrateStemUrls(sessionId)
-  await appStore.completeUvrSession(sessionId, urls ?? {}, {
+  const completed = await appStore.completeUvrSession(sessionId, urls ?? {}, {
     vocal: { size: vocal.size },
     instrumental: { size: instrumental.size },
   })
+  if (!completed)
+    throw new Error(`Could not persist seeded song: ${input.name}`)
   return sessionId
 }
 

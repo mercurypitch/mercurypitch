@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuitarRecordingTimeline } from './GuitarRecordingTimeline'
-import type { GuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
 afterEach(cleanup)
 
@@ -15,7 +14,7 @@ function mount() {
     position,
     duration: () => 10,
     seek,
-  } as GuitarRecordingPlayback
+  }
   render(() => (
     <GuitarRecordingTimeline playback={playback} disabled={disabled()} />
   ))

@@ -298,7 +298,9 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           await startWrite
           await store().finish(id, summary, startFrame)
           if (!disposed) {
-            setDraft(await store().load(id))
+            const loaded = await store().load(id)
+            if (disposed) return
+            setDraft(loaded)
             setReviewOpen(true)
           }
         })
@@ -428,8 +430,14 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     activeId: () => activeId,
     async discard(id: string) {
       await store().discard(id)
-      setDraft(null)
-      setReviewOpen(false)
+      if (!disposed && draft()?.recording.id === id) {
+        selectionGeneration++
+        batch(() => {
+          setDraft(null)
+          setPreviewScore(null)
+          setReviewOpen(false)
+        })
+      }
       await refresh()
     },
     async remove(id: string) {

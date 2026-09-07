@@ -535,6 +535,54 @@ describe('useGuitarListeningController', () => {
     }
   })
 
+  it('resets a stale interface channel when room-mic capture negotiates a mono route', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    let channelCount = 2
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({
+        deviceId: 'default-input',
+        sampleRate: 48000,
+        channelCount,
+      }),
+      getConstraints: () => ({}),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({ context: audio.context, buses: { monitor: {} } }) as never,
+        ampParameters: () => AMP_PARAMETERS,
+      })
+    })
+    try {
+      expect(await controller.start()).toBe(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.recordingInput()).toMatchObject({
+        channel: 1,
+        channelCount: 2,
+      })
+
+      await controller.selectInputProfile('microphone')
+      channelCount = 1
+      expect(await controller.start()).toBe(true)
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(dependencies.createInputMonitor).toHaveBeenCalledOnce()
+      expect(controller.recordingInput()).toMatchObject({
+        channel: 0,
+        channelCount: 1,
+      })
+    } finally {
+      dispose()
+    }
+  })
+
   it('never creates or enables the wet branch for a room microphone', async () => {
     const audio = createAudioHarness()
     installFrameHarness(audio.context)

@@ -7,6 +7,40 @@ const IR_TRIM_DB = -18
 let fixture
 let kernel
 
+// These are listening controls from dd3bb629, not today's app presets. Lead
+// now selects a different Studio head; feeding its current controls into the
+// Lite factory would silently change the reference and mislabel its DSP.
+const HISTORICAL_LITE_CONTROLS = Object.freeze({
+  edge: Object.freeze({
+    enabled: true,
+    drive: 0.42,
+    bass: 0.08,
+    mid: 0.1,
+    treble: -0.08,
+    presence: 0.1,
+    output: 0.6,
+    cabinet: 'balanced',
+    asymmetry: 0.18,
+  }),
+  lead: Object.freeze({
+    enabled: true,
+    drive: 0.84,
+    bass: -0.1,
+    mid: 0.38,
+    treble: -0.22,
+    presence: 0.08,
+    output: 0.25,
+    cabinet: 'dark',
+    asymmetry: 0.46,
+  }),
+})
+
+export function historicalLiteAuditionParameters(id) {
+  if (!Object.hasOwn(HISTORICAL_LITE_CONTROLS, id))
+    throw new Error(`Unknown historical Lite control: ${id}`)
+  return { engine: 'lite', ...HISTORICAL_LITE_CONTROLS[id] }
+}
+
 function context(seconds) {
   return new OfflineAudioContext(1, Math.ceil(seconds * RATE), RATE)
 }
@@ -211,8 +245,6 @@ export async function renderVariant(id) {
   if (fixture === undefined) throw new Error('Prepare fixture before rendering')
   const { createGuitarElectricAmpStage } =
     await import('/src/lib/guitar/guitar-electric-amp.ts')
-  const { guitarNightAmpSettingsForPreset } =
-    await import('/src/features/guitar-night/guitar-amp-settings.ts')
   const ctx = context(fixture.duration + 1.5)
   const source = ctx.createBufferSource()
   source.buffer = fixture
@@ -243,18 +275,18 @@ export async function renderVariant(id) {
     attach(
       baseline.createGuitarElectricAmpStage(
         ctx,
-        guitarNightAmpSettingsForPreset('edge'),
+        historicalLiteAuditionParameters('edge'),
       ),
     )
   } else if (id === 'edge' || id === 'lead') {
     attach(
-      createGuitarElectricAmpStage(ctx, guitarNightAmpSettingsForPreset(id)),
+      createGuitarElectricAmpStage(ctx, historicalLiteAuditionParameters(id)),
     )
   } else if (id === 'lead-ir') {
     attach(
       createGuitarElectricAmpStage(
         ctx,
-        guitarNightAmpSettingsForPreset('lead'),
+        historicalLiteAuditionParameters('lead'),
         { cabinet },
       ),
     )
@@ -288,7 +320,7 @@ export async function renderVariant(id) {
         ? headSettings
         : id === 'dry'
           ? null
-          : guitarNightAmpSettingsForPreset(
+          : historicalLiteAuditionParameters(
               id === 'edge' || id === 'baseline-old' ? 'edge' : 'lead',
             ),
   }

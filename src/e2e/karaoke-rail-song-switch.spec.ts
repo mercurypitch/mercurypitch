@@ -27,6 +27,11 @@ interface SongSeed {
     fileHash: string
     vocalWavBase64: string
   }) => Promise<string>
+  readSong: (fileHash: string) => Promise<{
+    sessionId: string
+    status: string
+    stemBytes: Record<string, number>
+  } | null>
 }
 
 function toneWavBase64(seconds: number, hz: number): string {
@@ -66,11 +71,12 @@ test.beforeEach(async ({ page }) => {
       (window as unknown as { __ppSongSeed?: unknown }).__ppSongSeed !==
       undefined,
   )
-  await page.evaluate(
+  const songs = await page.evaluate(
     async (songs) => {
       const seeder = (window as unknown as { __ppSongSeed: SongSeed })
         .__ppSongSeed
       for (const song of songs) await seeder.seedSong(song)
+      return Promise.all(songs.map((song) => seeder.readSong(song.fileHash)))
     },
     [
       {
@@ -85,6 +91,14 @@ test.beforeEach(async ({ page }) => {
       },
     ],
   )
+  // Fail at the durable fixture boundary if either song was lost during
+  // startup, rather than timing out later on a rail row that never existed.
+  expect(songs).toHaveLength(2)
+  for (const song of songs) {
+    expect(song?.status).toBe('completed')
+    expect(song?.stemBytes.vocal).toBeGreaterThan(44)
+    expect(song?.stemBytes.instrumental).toBeGreaterThan(44)
+  }
   await page.goto('/#/karaoke')
   await dismissOverlays(page)
 })

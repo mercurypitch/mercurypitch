@@ -961,13 +961,28 @@ export function useGuitarNightReferenceController(
     const alignment = nudgeAlignment(written.alignment, deltaSeconds)
     // Built rather than spread: a nudged reading is hand-placed, and spreading
     // would carry the measured share along as if it still described this.
-    showWrittenOnRecording({
+    const placed = showWrittenOnRecording({
       songId: written.songId,
       trackId: written.trackId,
       alignment,
       driftSeconds: alignmentDriftSeconds(alignment),
       placedBy: 'hand',
     })
+    const placing = handPlacement()
+    if (placed && placing?.songId === written.songId) {
+      // The mark labels and the next first/last edit must use the same clock
+      // as the moved notes and durable alignment, without requiring a reload.
+      setHandPlacement({
+        ...placing,
+        marks: {
+          firstAudioSeconds: alignment.anchors[0]?.audioSeconds,
+          lastAudioSeconds:
+            alignment.anchors.length > 1
+              ? alignment.anchors.at(-1)?.audioSeconds
+              : undefined,
+        },
+      })
+    }
   }
 
   /**

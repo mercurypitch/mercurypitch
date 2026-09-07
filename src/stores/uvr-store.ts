@@ -847,6 +847,7 @@ export const isSessionStoreReady = sessionStoreReady
 // ── Initialization (must be called at app boot) ─────────────────────
 
 let _sessionStoreReady = false
+let sessionStoreInitialization: Promise<void> | null = null
 
 let resolveSessionStoreReady: (() => void) | null = null
 const sessionStoreReadyPromise = new Promise<void>((resolve) => {
@@ -871,9 +872,14 @@ export function whenSessionStoreReady(): Promise<void> {
  * Must be called once at app startup (e.g. in the root component or
  * before any UVR panel renders).
  */
-export async function initSessionStore(): Promise<void> {
-  if (_sessionStoreReady) return
+export function initSessionStore(): Promise<void> {
+  // App boot and song preparation can ask together. Sharing the pending read
+  // prevents a late empty snapshot from erasing songs added by a ready caller.
+  sessionStoreInitialization ??= loadSessionStore()
+  return sessionStoreInitialization
+}
 
+async function loadSessionStore(): Promise<void> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')

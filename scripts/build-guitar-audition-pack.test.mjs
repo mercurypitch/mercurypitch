@@ -7,9 +7,44 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { buildGuitarAuditionPack } from './build-guitar-audition-pack.mjs'
-import { verifyReferencePcm } from './guitar-audition-browser.mjs'
+import { historicalLiteAuditionParameters, verifyReferencePcm, } from './guitar-audition-browser.mjs'
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
+
+test('historical Lead controls stay Lite and retain the approved reference voicing', () => {
+  const expected = {
+    engine: 'lite',
+    enabled: true,
+    drive: 0.84,
+    bass: -0.1,
+    mid: 0.38,
+    treble: -0.22,
+    presence: 0.08,
+    output: 0.25,
+    cabinet: 'dark',
+    asymmetry: 0.46,
+  }
+  assert.deepEqual(historicalLiteAuditionParameters('lead'), expected)
+  const edited = historicalLiteAuditionParameters('lead')
+  edited.drive = 0
+  assert.deepEqual(historicalLiteAuditionParameters('lead'), expected)
+  assert.throws(() => historicalLiteAuditionParameters('tight'), /Unknown/)
+})
+
+test('historical Edge controls retain the baseline parity voicing', () => {
+  assert.deepEqual(historicalLiteAuditionParameters('edge'), {
+    engine: 'lite',
+    enabled: true,
+    drive: 0.42,
+    bass: 0.08,
+    mid: 0.1,
+    treble: -0.08,
+    presence: 0.1,
+    output: 0.6,
+    cabinet: 'balanced',
+    asymmetry: 0.18,
+  })
+})
 
 function fixture(context) {
   const directory = mkdtempSync(join(tmpdir(), 'guitar-audition-guards-'))

@@ -1,7 +1,7 @@
 # Guitar Night melody recorder — EARS requirements
 
-Status: core recorder published for PR preview; GR-023–033 follow-up implemented
-locally, awaiting publication and owner audition. Extends
+Status: core recorder and GR-023–035 follow-ups published on PR 739;
+CI review fixes are in progress, with owner audition still required. Extends
 [Guitar Night](guitar-night.ears.md), without changing its authored-tab rehearsal
 or existing signal-only Jam Doctor.
 

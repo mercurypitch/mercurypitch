@@ -85,15 +85,20 @@ IndexedDB and exported download path with generated audio:
 - Record with backing, stop at its boundary, attach, nudge and reload placement.
 - Record while monitoring remains active: one output context, unchanged level
   within the test tolerance, continuous rendered frames and no input release.
-- Desktop, 390px and 320px review/transport screenshots and reachable actions.
 - Live preview on/off without ending capture, frozen draft after Stop, centered
-  transport at every checked width, and unchanged song speed/volume proportions.
+  transport and unchanged song speed/volume proportions.
 - Intermediate canvas paints between checkpoints; dry playback and gallery
   reopening without another input request; gallery Escape/focus restoration,
-  unchanged stage bounds and no horizontal overflow at 1440/390/320px.
+  unchanged stage bounds.
 - Unit coverage for lazy/bounded gallery reads, real note counts, unavailable
   versus empty evidence, retry, interrupted/removed-audio states, and replay
   pause/disposal/late-start races.
+
+`src/e2e/guitar-recorder-layout.spec.ts` separately checks review, transport and
+gallery screenshots, reachable actions and overflow at 1440/390/320px. It shares
+a deterministic IndexedDB fixture with the pointer transport suite. Keeping
+responsive checks separate leaves the real capture-to-practice flow within its
+30-second CI budget without extending the timeout or removing assertions.
 
 `src/e2e/guitar-recording-playback.spec.ts` checks actual rendered stereo PCM
 with deterministic local audio and different note evidence. It compares original
@@ -112,7 +117,7 @@ Run against a freshly built local bundle (the Playwright config does not rebuild
 pnpm build:e2e
 VITE_E2E_PORT=35219 PLAYWRIGHT_HTML_OPEN=never pnpm exec playwright test \
   src/e2e/guitar-night-recording.spec.ts src/e2e/guitar-recording-playback.spec.ts \
-  src/e2e/guitar-recorder-transport.spec.ts \
+  src/e2e/guitar-recorder-transport.spec.ts src/e2e/guitar-recorder-layout.spec.ts \
   --workers=1 --reporter=line
 ```
 
