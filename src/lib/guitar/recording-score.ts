@@ -123,7 +123,8 @@ export function changeRecordingNote(
   }
 }
 
-export function recordingScoreProblem(
+/** Musical validity is independent of whether a pitch fits the recorded neck. */
+export function recordingMidiProblem(
   score: GuitarPracticeScore,
 ): string | null {
   if (
@@ -188,21 +189,36 @@ export function recordingScoreProblem(
       return 'Some notes overlap. Adjust their start/end or merge them before practicing.'
     if ((note.endBeat * 60) / score.bpm > 301)
       return 'This melody exceeds the five-minute recording limit.'
-    if (
-      note.string === null ||
-      note.fret === null ||
-      !Number.isInteger(note.string) ||
-      note.string < 1 ||
-      note.string > score.tuning.length ||
-      !Number.isInteger(note.fret) ||
-      note.fret < 0 ||
-      note.fret > 24 ||
-      score.tuning[note.string - 1] + score.capo + note.fret !== note.midi
-    )
-      return 'Some notes do not fit this tuning. Correct their pitch or fingering before practicing.'
     end = note.endBeat
   }
   return null
+}
+
+export function recordingNoteNeedsFingering(
+  score: GuitarPracticeScore,
+  note: GuitarPracticeNote,
+): boolean {
+  return (
+    note.string === null ||
+    note.fret === null ||
+    !Number.isInteger(note.string) ||
+    note.string < 1 ||
+    note.string > score.tuning.length ||
+    !Number.isInteger(note.fret) ||
+    note.fret < 0 ||
+    note.fret > 24 ||
+    score.tuning[note.string - 1] + score.capo + note.fret !== note.midi
+  )
+}
+
+export function recordingScoreProblem(
+  score: GuitarPracticeScore,
+): string | null {
+  const problem = recordingMidiProblem(score)
+  if (problem !== null) return problem
+  return score.notes.some((note) => recordingNoteNeedsFingering(score, note))
+    ? 'Some notes do not fit this tuning. Correct their pitch or fingering, or exclude them from the practice notes.'
+    : null
 }
 
 /** Explicit, undoable quantisation affects notation only; capture frames stay intact. */

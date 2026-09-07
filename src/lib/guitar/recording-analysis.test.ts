@@ -55,6 +55,28 @@ describe('guitar PCM capture', () => {
 })
 
 describe('recorded melody', () => {
+  it('previews an open recognized note without committing it or losing its final boundary', () => {
+    const segmenter = createGuitarMelodySegmenter(1000)
+    segmenter.attack(0)
+    for (let frame = 20; frame <= 260; frame += 20)
+      segmenter.push({ frame, midi: 59, clarity: 0.9 })
+    expect(segmenter.notes()).toEqual([])
+    expect(segmenter.preview()).toMatchObject({
+      id: 'note-0',
+      midi: 59,
+      startFrame: 0,
+      endFrame: 260,
+    })
+    expect(segmenter.finish(300)).toEqual([
+      expect.objectContaining({
+        id: 'note-0',
+        midi: 59,
+        startFrame: 0,
+        endFrame: 300,
+      }),
+    ])
+    expect(segmenter.preview()).toBeNull()
+  })
   it('retains repeated picks, legato and the final sustain independently of a song', () => {
     const segmenter = createGuitarMelodySegmenter(1000)
     segmenter.attack(0)

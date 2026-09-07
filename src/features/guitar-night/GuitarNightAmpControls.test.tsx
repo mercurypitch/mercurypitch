@@ -307,7 +307,7 @@ describe('GuitarNightAmpControls', () => {
       screen.getByText('Cabinet IR · Jester Cookie Monster'),
     ).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Cabinet loads when you play an electric part or monitor Direct input.',
+      'Cabinet loads when amp playback or Direct input monitoring starts.',
     )
     expect(
       screen.queryByRole('combobox', { name: 'Guitar cabinet voicing' }),
@@ -429,7 +429,7 @@ describe('GuitarNightAmpControls', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Retry Studio tone' }))
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Cabinet loads when you play an electric part or monitor Direct input.',
+      'Cabinet loads when amp playback or Direct input monitoring starts.',
     )
     expect(fetch).toHaveBeenCalledOnce()
     expect(audio).not.toHaveBeenCalled()

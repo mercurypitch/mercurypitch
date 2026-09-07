@@ -32,7 +32,10 @@ import { GuitarNightSongMixer } from './GuitarNightSongMixer'
 import { GuitarNightSongSession } from './GuitarNightSongSession'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
+import { GuitarRecorderDeck } from './GuitarRecorderDeck'
+import { GuitarRecorderStage } from './GuitarRecorderStage'
 import { GuitarRecordButton, GuitarRecordingStatus, } from './GuitarRecordingControls'
+import { GuitarRecordingGallery, GuitarRecordingGalleryButton, } from './GuitarRecordingGallery'
 import { GuitarRecordingReview } from './GuitarRecordingReview'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
@@ -42,6 +45,8 @@ import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import { useGuitarNightSongPlayback } from './useGuitarNightSongPlayback'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 import { useGuitarRecordingController } from './useGuitarRecordingController'
+import { useGuitarRecordingPlayback } from './useGuitarRecordingPlayback'
+import { useGuitarRecordingStage } from './useGuitarRecordingStage'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease | null
@@ -158,6 +163,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const [tunerOpen, setTunerOpen] = createSignal(false)
   const [mixerOpen, setMixerOpen] = createSignal(false)
   const [sessionOpen, setSessionOpen] = createSignal(false)
+  const [melodiesOpen, setMelodiesOpen] = createSignal(false)
+  const [quickMelodiesOpen, setQuickMelodiesOpen] = createSignal(false)
   const [sessionHandPlacement, setSessionHandPlacement] = createSignal(false)
   const [listeningRoutePending, setListeningRoutePending] = createSignal(false)
   let disposed = false
@@ -233,8 +240,59 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       props.onRecordingOpened?.()
     }
   })
+  const recordingPlayback = useGuitarRecordingPlayback({
+    draft: recorder.draft,
+    score: recorder.previewScore,
+    currentAmp: amp.parameters,
+    blocked: () =>
+      recorder.busy() ||
+      melodiesOpen() ||
+      quickMelodiesOpen() ||
+      doctorOpen() ||
+      mixerOpen() ||
+      tunerOpen() ||
+      isCalibrating() ||
+      listeningRoutePending() ||
+      props.suspended?.() === true,
+    activate: async () => {
+      const transport = props.transport
+      if (!(await transport.activate())) return null
+      const graph = transport.getAudioGraph()
+      return graph === null
+        ? null
+        : { context: graph.context, destination: graph.buses.guide }
+    },
+    beforePlay: () => {
+      props.transport.pause()
+      if (listening.inputProfile() === 'microphone') listening.stop()
+    },
+  })
+  createEffect(() => {
+    recorder.reviewOpen()
+    untrack(() => recordingPlayback.pause())
+  })
+  createEffect(() => {
+    if (isPlaying()) untrack(() => recordingPlayback.pause())
+  })
+  createEffect(() => {
+    if (
+      listening.inputProfile() === 'microphone' &&
+      listening.status() === 'listening'
+    )
+      untrack(() => recordingPlayback.pause())
+  })
+  const recordingStage = useGuitarRecordingStage(
+    recorder,
+    () => roomTuning(),
+    recordingPlayback,
+  )
+  const showRecordingStage = () =>
+    reference() === null && recordingStage.available()
   const togglePlayback = (): void => {
-    if (props.backing === null) return
+    if (props.backing === null) {
+      if (!recorder.busy()) void recordingPlayback.toggle()
+      return
+    }
     if (recorder.busy()) {
       if (isPlaying())
         void recorder
@@ -345,6 +403,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       props.suspended?.() === true ||
       mixerOpen() ||
       sessionOpen() ||
+      melodiesOpen() ||
+      quickMelodiesOpen() ||
       doctorOpen() ||
       recorder.busy() ||
       recorder.reviewOpen() ||
@@ -474,6 +534,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     setDoctorOpen(false)
     setMixerOpen(false)
     setSessionOpen(false)
+    setMelodiesOpen(false)
     setTunerOpen(true)
   }
 
@@ -505,6 +566,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     setTunerOpen(false)
     setMixerOpen(false)
     setSessionOpen(false)
+    setMelodiesOpen(false)
     tuner.close()
     listening.stop()
     props.transport.pause()
@@ -528,7 +590,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           !recorder.reviewOpen() &&
           !tunerOpen() &&
           !mixerOpen() &&
-          !sessionOpen(),
+          !sessionOpen() &&
+          !melodiesOpen() &&
+          !quickMelodiesOpen() &&
+          document.querySelector('[role="menu"]') === null,
         enabled: () =>
           props.transport.status() !== 'loading' && !isCalibrating(),
       }),
@@ -545,7 +610,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       data-playback-mode={props.transport.loadMode() ?? 'unloaded'}
     >
       <div class={styles.panelEdge} aria-hidden="true" />
-      <div class={styles.roomHeadingRow}>
+      <div class={`${styles.roomHeadingRow} ${songStyles.heading}`}>
         <div class={styles.roomIdentity}>
           <button
             class={styles.roomBack}
@@ -575,13 +640,31 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             </h1>
           </div>
         </div>
-        <div class={styles.roomHeadingMeta}>
+        <div class={`${styles.roomHeadingMeta} ${songStyles.headingMeta}`}>
           <span class={styles.trackCount}>
             {props.backing === null
               ? 'No song needed · saved on this device'
               : `${props.backing.stems.length} tracks · on this device`}
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <GuitarRecordingGalleryButton
+              count={recorder.catalogue().length}
+              disabled={
+                recorder.busy() ||
+                recorder.reviewOpen() ||
+                sessionOpen() ||
+                tunerOpen() ||
+                doctorOpen() ||
+                mixerOpen() ||
+                props.suspended?.() === true
+              }
+              rows={recorder.catalogue()}
+              currentId={recorder.draft()?.recording.id}
+              onSelect={(id) => recorder.recover(id, { review: false })}
+              onRemove={recorder.remove}
+              onQuickOpenChange={setQuickMelodiesOpen}
+              onOpen={() => setMelodiesOpen(true)}
+            />
             <Show when={props.handSync?.()}>
               {(sync) => (
                 <button
@@ -644,17 +727,25 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </div>
 
       <GuitarNightStage
-        source={performance.stage}
-        tuning={props.tuning}
+        source={
+          showRecordingStage() ? recordingStage.source : performance.stage
+        }
+        tuning={() =>
+          showRecordingStage() ? recordingStage.tuning() : roomTuning()
+        }
+        instrumentSetupDisabled={recorder.busy}
         onInstrument={props.onInstrument}
         onStringCount={props.onStringCount}
         guideLabel={() => {
+          if (showRecordingStage())
+            return 'Detected melody · draft · suggested fingering'
           const attached = reference()
           if (attached === null) return null
           return attached.tracks.length > 1
             ? `${attached.title} · ${attached.trackName}`
             : attached.title
         }}
+        showInvitation={() => props.backing !== null}
         invitationNote={() => {
           if (props.backing === null)
             return 'Choose Direct input and turn on You to hear the amp. Record saves dry audio and draft melody notes, with or without a song.'
@@ -726,8 +817,19 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         heardClarity={listening.clarity}
         overlay={
           <>
+            <Show when={props.backing === null}>
+              <GuitarRecorderStage
+                recorder={recorder}
+                playback={recordingPlayback}
+                liveNotes={recordingStage.showLiveNotes()}
+                onLiveNotes={recordingStage.setShowLiveNotes}
+                onAttachTab={props.onAttachTab}
+                disabled={isCalibrating() || isLoading()}
+              />
+            </Show>
             <Show
               when={
+                props.backing !== null &&
                 !recorder.busy() &&
                 !recorder.reviewOpen() &&
                 !doctorOpen() &&
@@ -779,48 +881,84 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         data-testid="guitar-night-deck"
       >
         <div
-          class={songStyles.listeningDock}
-          data-testid="guitar-night-song-listening-dock"
+          class={songStyles.listeningColumn}
+          data-testid="guitar-night-listening-column"
         >
-          <GuitarNightListeningCycle
-            status={listening.status}
-            profile={listening.inputProfile}
-            disabled={() =>
-              listeningRoutePending() ||
-              props.suspended?.() === true ||
-              tunerOpen() ||
-              listening.inputTakeoverPending()
-            }
-            onSelect={selectListeningRoute}
-            quickControls={() => (
-              <Show when={listening.inputProfile() === 'interface'}>
-                <GuitarNightListeningQuickControls
-                  status={listening.status()}
-                  listening={isListening()}
-                  disabled={
-                    listeningRoutePending() ||
-                    props.suspended?.() === true ||
-                    tunerOpen() ||
-                    listening.inputTakeoverPending()
-                  }
-                  backingEnabled={!props.transport.backingMuted()}
-                  hasBacking={props.transport.tracks().length > 0}
-                  canMonitor={listening.canAmpMonitor()}
-                  monitoringEnabled={listening.ampMonitoringEnabled()}
-                  monitoringActive={listening.ampMonitoringActive()}
-                  onListening={() =>
-                    void recorder
-                      .stop('Listening was stopped.')
-                      .then(() => songPlayback.toggleListening())
-                  }
-                  onBacking={(enabled) =>
-                    props.transport.setBackingMuted(!enabled)
-                  }
-                  onMonitor={listening.setAmpMonitoringEnabled}
-                />
-              </Show>
-            )}
-          />
+          <div
+            class={songStyles.listeningDock}
+            data-testid="guitar-night-song-listening-dock"
+          >
+            <GuitarNightListeningCycle
+              status={listening.status}
+              profile={listening.inputProfile}
+              disabled={() =>
+                listeningRoutePending() ||
+                props.suspended?.() === true ||
+                tunerOpen() ||
+                listening.inputTakeoverPending()
+              }
+              onSelect={selectListeningRoute}
+              quickControls={() => (
+                <Show when={listening.inputProfile() === 'interface'}>
+                  <GuitarNightListeningQuickControls
+                    status={listening.status()}
+                    listening={isListening()}
+                    disabled={
+                      listeningRoutePending() ||
+                      props.suspended?.() === true ||
+                      tunerOpen() ||
+                      listening.inputTakeoverPending()
+                    }
+                    backingEnabled={!props.transport.backingMuted()}
+                    hasBacking={props.transport.tracks().length > 0}
+                    canMonitor={listening.canAmpMonitor()}
+                    monitoringEnabled={listening.ampMonitoringEnabled()}
+                    monitoringActive={listening.ampMonitoringActive()}
+                    onListening={() =>
+                      void recorder
+                        .stop('Listening was stopped.')
+                        .then(() => songPlayback.toggleListening())
+                    }
+                    onBacking={(enabled) =>
+                      props.transport.setBackingMuted(!enabled)
+                    }
+                    onMonitor={listening.setAmpMonitoringEnabled}
+                  />
+                </Show>
+              )}
+            />
+          </div>
+          <div
+            class={songStyles.mixDock}
+            role="group"
+            aria-label="Song playback mix"
+          >
+            <Show when={props.backing !== null}>
+              <GuitarNightBackingToggle
+                compact
+                enabled={!props.transport.backingMuted()}
+                available={props.transport.tracks().length > 0}
+                onToggle={(enabled) =>
+                  props.transport.setBackingMuted(!enabled)
+                }
+              />
+            </Show>
+            <Show when={listening.inputProfile() === 'interface'}>
+              <GuitarNightMonitorToggle
+                compact
+                enabled={listening.ampMonitoringEnabled()}
+                active={listening.ampMonitoringActive()}
+                available={listening.canAmpMonitor()}
+                disabled={
+                  listeningRoutePending() ||
+                  props.suspended?.() === true ||
+                  tunerOpen() ||
+                  listening.inputTakeoverPending()
+                }
+                onToggle={listening.setAmpMonitoringEnabled}
+              />
+            </Show>
+          </div>
         </div>
         <Show when={props.backing !== null}>
           <div class={`${styles.timeRail} ${songStyles.timeline}`}>
@@ -892,37 +1030,36 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             />
           </div>
         </Show>
-        <div
-          class={songStyles.mixDock}
-          role="group"
-          aria-label="Song playback mix"
-        >
-          <Show when={props.backing !== null}>
-            <GuitarNightBackingToggle
-              compact
-              enabled={!props.transport.backingMuted()}
-              available={props.transport.tracks().length > 0}
-              onToggle={(enabled) => props.transport.setBackingMuted(!enabled)}
-            />
-          </Show>
-          <Show when={listening.inputProfile() === 'interface'}>
-            <GuitarNightMonitorToggle
-              compact
-              enabled={listening.ampMonitoringEnabled()}
-              active={listening.ampMonitoringActive()}
-              available={listening.canAmpMonitor()}
-              disabled={
-                listeningRoutePending() ||
-                props.suspended?.() === true ||
-                tunerOpen() ||
-                listening.inputTakeoverPending()
-              }
-              onToggle={listening.setAmpMonitoringEnabled}
+        <div class={songStyles.recordDock}>
+          <Show
+            when={props.backing === null}
+            fallback={
+              <>
+                <GuitarRecordButton
+                  controller={recorder}
+                  disabled={isCalibrating() || isLoading()}
+                />
+                <Show when={!recorder.busy() && recorder.draft() !== null}>
+                  <button
+                    type="button"
+                    class={songStyles.reviewTake}
+                    onClick={() => recorder.setReviewOpen(true)}
+                  >
+                    Review take
+                  </button>
+                </Show>
+              </>
+            }
+          >
+            <GuitarRecorderDeck
+              recorder={recorder}
+              playback={recordingPlayback}
+              disabled={isCalibrating() || isLoading()}
             />
           </Show>
         </div>
-        <div class={`${styles.transportControls} ${songStyles.playbackDock}`}>
-          <Show when={props.backing !== null}>
+        <Show when={props.backing !== null}>
+          <div class={`${styles.transportControls} ${songStyles.playbackDock}`}>
             <button
               class={styles.restartControl}
               type="button"
@@ -1015,12 +1152,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                 onInput={changeVolume}
               />
             </label>
-          </Show>
-          <GuitarRecordButton
-            controller={recorder}
-            disabled={isCalibrating() || isLoading()}
-          />
-        </div>
+          </div>
+        </Show>
       </div>
 
       <Show when={props.transport.error()}>
@@ -1038,7 +1171,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         )}
       </Show>
 
-      <div class={styles.roomFooter}>
+      <div class={`${styles.roomFooter} ${songStyles.footer}`}>
         <p>
           <span aria-hidden="true" />
           <strong role="status" aria-live="polite" aria-atomic="true">
@@ -1082,6 +1215,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             : undefined
         }
       />
+      <GuitarRecordingGallery
+        isOpen={melodiesOpen()}
+        rows={recorder.catalogue()}
+        onRemove={recorder.remove}
+        onClose={() => setMelodiesOpen(false)}
+        onReview={(id) => {
+          setMelodiesOpen(false)
+          void recorder.recover(id)
+        }}
+      />
       <GuitarNightSongSession
         routePending={listeningRoutePending() || recorder.busy()}
         isOpen={sessionOpen()}
@@ -1095,6 +1238,14 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         position={position}
         formatTime={formatTime}
         handSync={props.handSync}
+        recordingPreview={
+          props.backing !== null && reference() === null
+            ? {
+                enabled: recordingStage.showLiveNotes,
+                onChange: recordingStage.setShowLiveNotes,
+              }
+            : undefined
+        }
       />
       <Show when={recorder.draft()} keyed>
         {(draft) => (
@@ -1106,7 +1257,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             onDiscard={() => recorder.discard(draft.recording.id)}
             onRemove={() => recorder.remove(draft.recording.id)}
             onSaved={() => void recorder.refresh()}
-            onReplay={() => props.transport.pause()}
+            onPreviewScore={recorder.setPreviewScore}
+            playback={recordingPlayback}
             onPractice={practiceRecording}
             onAttach={
               props.onAttachRecording === undefined

@@ -40,45 +40,28 @@
   opacity: 0.55;
   cursor: default;
 }
-.status {
-  color: #d1c4ad;
-  font-size: 0.8rem;
-  max-height: 5.5rem;
-  overflow-y: auto;
-}
-.status p {
-  margin: 0.25rem 0;
-}
-.status button {
-  text-align: left;
-  display: block;
-  max-width: 100%;
-  min-height: 44px;
-  background: none;
-  color: #f4cb8e;
-  border: 0;
-  padding: 0.4rem 0.2rem;
-  font: inherit;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-.status small {
-  display: block;
-  color: #c6b8a1;
-}
-.status summary {
-  cursor: pointer;
-  min-height: 44px;
+.liveNotesToggle {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 44px;
+  color: #d1c4ad;
+  font-size: 0.75rem;
+  cursor: pointer;
 }
-.status summary::before {
-  content: '+';
-  color: #f4cb8e;
+.liveNotesToggle input {
+  accent-color: #e8b973;
 }
-.status details[open] summary::before {
-  content: '−';
+.liveNotesToggle input:focus-visible {
+  outline: 2px solid #f4cb8e;
+  outline-offset: 3px;
+}
+.status {
+  color: #d1c4ad;
+  font-size: 0.8rem;
+}
+.status p {
+  margin: 0.25rem 0;
 }
 .review {
   display: grid;

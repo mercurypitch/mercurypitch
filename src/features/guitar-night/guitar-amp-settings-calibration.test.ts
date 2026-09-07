@@ -7,9 +7,32 @@ import { GUITAR_NIGHT_AMP_PRESETS } from './guitar-amp-settings'
 
 // This reference models the original Lite functions, not the Studio head or
 // cabinet convolution. Studio needs the real rendered-audio regression gate.
-const LITE_PRESETS = GUITAR_NIGHT_AMP_PRESETS.filter(
-  (preset) => preset.settings.engine === 'lite',
-)
+const LITE_PRESETS = [
+  ...GUITAR_NIGHT_AMP_PRESETS.filter(
+    (preset) => preset.settings.engine === 'lite',
+  ),
+  // Existing saved Lite Lead settings are retained as Custom during migration.
+  // Keep testing their original DSP, not the new Studio Lead through a Lite model.
+  {
+    id: 'lead' as const,
+    label: 'Legacy Lite Lead',
+    description: 'Retained legacy calibration fixture',
+    settings: {
+      enabled: true,
+      engine: 'lite' as const,
+      head: 'definition' as const,
+      character: 1,
+      drive: 0.84,
+      bass: -0.1,
+      mid: 0.38,
+      treble: -0.22,
+      presence: 0.08,
+      output: 0.25,
+      cabinet: 'dark' as const,
+      asymmetry: 0.46,
+    },
+  },
+]
 
 const REFERENCE_SAMPLE_RATE = 8192
 const REFERENCE_SAMPLE_COUNT = 8192

@@ -50,6 +50,20 @@ const score: GuitarPracticeScore = {
 }
 
 describe('guitar recording exports', () => {
+  it('exports valid MIDI pitches outside the neck without inventing guitar fingering', async () => {
+    const mixed = {
+      ...score,
+      notes: score.notes.map((note, index) =>
+        index === 1 ? { ...note, midi: 28, string: null, fret: null } : note,
+      ),
+    }
+    const imported = parseMidiSong(await exportRecordingMidi(mixed))!
+    expect(
+      imported.tracks.flatMap((track) => track.notes).map((note) => note.midi),
+    ).toEqual([42, 28, 57])
+    await expect(exportRecordingGuitarPro(mixed)).rejects.toThrow('tuning')
+    expect(mixed.notes[1]).toMatchObject({ midi: 28, string: null, fret: null })
+  })
   it('round-trips MIDI notes, rests, repeated pitch, tempo and metre', async () => {
     const bytes = await exportRecordingMidi(score)
     const imported = parseMidiSong(bytes)!

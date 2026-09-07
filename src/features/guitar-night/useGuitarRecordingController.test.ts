@@ -126,6 +126,7 @@ beforeEach(() => {
   mocks.started.mockResolvedValue(undefined)
   mocks.checkpoint.mockResolvedValue(undefined)
   mocks.discard.mockResolvedValue(undefined)
+  mocks.remove.mockResolvedValue(undefined)
   mocks.lock.mockResolvedValue(mocks.release)
   mocks.begin.mockImplementation(async (value: GuitarRecording) => {
     row = value
@@ -159,6 +160,101 @@ afterEach(async () => {
 })
 
 describe('explicit guitar recording lifecycle', () => {
+  const savedDraft = (id: string): GuitarRecordingDraft => ({
+    recording: {
+      id,
+      state: 'draft',
+      title: id,
+      updatedAt: '2026-09-07T10:00:00Z',
+    } as GuitarRecording,
+    notes: [],
+    blob: new Blob(['audio']),
+    peaks: [],
+  })
+  it('quick-switches without review or discarding the previous durable draft, and newest selection wins', async () => {
+    const h = harness()
+    const first = deferred<GuitarRecordingDraft>()
+    mocks.load.mockImplementation((id: string) =>
+      id === 'first' ? first.promise : Promise.resolve(savedDraft(id)),
+    )
+    const old = h.controller.recover('first', { review: false })
+    await Promise.resolve()
+    await h.controller.recover('second', { review: false })
+    first.resolve(savedDraft('first'))
+    await old
+    expect(h.controller.draft()?.recording.id).toBe('second')
+    expect(h.controller.reviewOpen()).toBe(false)
+    expect(mocks.discard).not.toHaveBeenCalled()
+    expect(mocks.remove).not.toHaveBeenCalled()
+    expect(h.startInput).not.toHaveBeenCalled()
+  })
+  it('quick-switch failure rejects for popup recovery without replacing the current draft', async () => {
+    const h = harness()
+    h.controller.setDraft(savedDraft('current'))
+    mocks.load.mockRejectedValue(new Error('Missing take'))
+    await expect(
+      h.controller.recover('missing', { review: false }),
+    ).rejects.toThrow('Missing take')
+    expect(h.controller.draft()?.recording.id).toBe('current')
+    expect(h.controller.error()).toBe('Missing take')
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+  it('a late quick load cannot replace a new capture and capture blocks deletion', async () => {
+    const h = harness(true)
+    const pending = deferred<GuitarRecordingDraft>()
+    mocks.load.mockImplementation((id: string) =>
+      id === 'old' ? pending.promise : Promise.resolve(savedDraft(id)),
+    )
+    const loading = h.controller.recover('old', { review: false })
+    await Promise.resolve()
+    await h.controller.start()
+    pending.resolve(savedDraft('old'))
+    await loading
+    expect(h.controller.state()).toBe('recording')
+    expect(h.controller.draft()).toBeNull()
+    await expect(h.controller.remove('old')).rejects.toThrow('Finish recording')
+    expect(mocks.remove).not.toHaveBeenCalled()
+    await h.controller.stop()
+  })
+  it('removes an exact locked row without clearing a different selected melody', async () => {
+    const h = harness()
+    h.controller.setDraft(savedDraft('current'))
+    await h.controller.remove('other')
+    expect(mocks.lock).toHaveBeenCalledWith('other')
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith('other')
+    expect(h.controller.draft()?.recording.id).toBe('current')
+    await h.controller.remove('current')
+    expect(h.controller.draft()).toBeNull()
+    expect(h.controller.reviewOpen()).toBe(false)
+    expect(mocks.release).toHaveBeenCalledTimes(2)
+  })
+  it('retains selection when deletion fails or another tab owns its lock', async () => {
+    const h = harness()
+    h.controller.setDraft(savedDraft('current'))
+    mocks.remove.mockRejectedValueOnce(new Error('Storage failed'))
+    await expect(h.controller.remove('current')).rejects.toThrow(
+      'Storage failed',
+    )
+    expect(h.controller.draft()?.recording.id).toBe('current')
+    expect(mocks.release).toHaveBeenCalledOnce()
+    mocks.lock.mockResolvedValue(null)
+    await expect(h.controller.remove('current')).rejects.toThrow('another tab')
+    expect(mocks.remove).toHaveBeenCalledOnce()
+  })
+  it('removes a confirmed deletion from the visible catalogue even if its refresh fails', async () => {
+    mocks.list.mockResolvedValue([
+      savedDraft('current').recording,
+      savedDraft('other').recording,
+    ])
+    const h = harness()
+    await Promise.resolve()
+    expect(h.controller.catalogue()).toHaveLength(2)
+    mocks.list.mockRejectedValueOnce(new Error('Catalogue unavailable'))
+    await h.controller.remove('other')
+    expect(h.controller.catalogue().map((entry) => entry.id)).toEqual([
+      'current',
+    ])
+  })
   it('owns input only if Record opened it, and pins the chosen neck', async () => {
     const h = harness()
     await h.controller.start()
@@ -267,13 +363,25 @@ describe('explicit guitar recording lifecycle', () => {
       pitches: [{ frame: 4096, midi: 57, clarity: 0.9 }],
       peak: 0.5,
     }
-    const writing = captured.onChunk(chunk)
+    const open = {
+      id: 'note-0',
+      midi: 57,
+      startFrame: 0,
+      endFrame: 4096,
+      clarity: 0.9,
+      onset: 'attack' as const,
+    }
+    const writing = captured.onChunk(chunk, open)
     expect(mocks.checkpoint).not.toHaveBeenCalled()
     pending.resolve(undefined)
     await writing
     expect(mocks.checkpoint).toHaveBeenCalledWith(chunk)
     expect(h.controller.heardNote()).toBe('A3')
     expect(h.controller.duration()).toBeCloseTo(8192 / 48000)
+    expect(h.controller.previewNotes()).toEqual([open])
+    expect(h.controller.previewRecording()?.tuning).toEqual(
+      DEFAULT_GUITAR_TUNING,
+    )
     await h.controller.stop()
   })
 })

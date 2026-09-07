@@ -111,5 +111,6 @@ export function createGuitarRecordingAnalysis(
       return chunk
     },
     finish: () => ({ frames, notes: segmenter.finish(frames) }),
+    preview: segmenter.preview,
   }
 }

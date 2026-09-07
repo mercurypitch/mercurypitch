@@ -2,23 +2,25 @@
 /*
 THESIS: Keep a played idea, then practise an explicitly accepted melody.
 OWN-WORLD: Inherit Velvet Rehearsal's dark faceplates, amber actions and warm type.
-STORY: Replay dry input, correct uncertain notes, Keep or Practice without grading the improvisation.
-FIRST VIEWPORT: Dry replay and title lead; Keep and Practice stay pinned below the scrolling corrections.
+STORY: Replay input or transcribed notes with a reversible tone, then Keep or Practice explicitly.
+FIRST VIEWPORT: Source, tone and title lead; Keep and Practice stay pinned below the scrolling corrections.
 FORM: Extend the existing Jam Doctor sheet, not a new editor page or visual identity.
 */
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
 import { createGuitarRecordingStore } from '@/db/services/guitar-recording-service'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
-import { acceptRecordingScoreRevision, createRecordingScore, recordingScoreProblem, } from '@/lib/guitar/recording-score'
+import { acceptRecordingScoreRevision, createRecordingScore, recordingMidiProblem, recordingNoteNeedsFingering, recordingScoreProblem, } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightJamDoctor } from './GuitarNightJamDoctor'
 import styles from './GuitarRecording.module.css'
 import { recordingTime } from './GuitarRecordingControls'
 import { GuitarRecordingEditor } from './GuitarRecordingEditor'
+import { GuitarRecordingPlaybackControls } from './GuitarRecordingPlaybackControls'
+import type { GuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
 export function GuitarRecordingReview(props: {
   draft: GuitarRecordingDraft
@@ -27,9 +29,10 @@ export function GuitarRecordingReview(props: {
   onClose(): void
   onDiscard(): Promise<void>
   onSaved(): void
+  onPreviewScore?(score: GuitarPracticeScore): void
   onRemove(): Promise<void>
   onPractice(score: GuitarPracticeScore): Promise<void>
-  onReplay(): void
+  playback: GuitarRecordingPlayback
   onAttach?(score: GuitarPracticeScore): Promise<void>
   fallbackFocus?: Accessor<HTMLElement | null>
 }) {
@@ -51,26 +54,22 @@ export function GuitarRecordingReview(props: {
   const [kept, setKept] = createSignal(initialDraft.recording.state === 'kept')
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
-  const [url, setUrl] = createSignal<string | null>(null)
   const [editing, setEditing] = createSignal(false)
   const [editorMounted, setEditorMounted] = createSignal(false)
   const [notice, setNotice] = createSignal<string | null>(null)
   const [deleting, setDeleting] = createSignal(false)
   const problem = createMemo(() => recordingScoreProblem(score()))
-  let audio: HTMLAudioElement | undefined
+  const midiProblem = createMemo(() => recordingMidiProblem(score()))
+  const fingeringCount = createMemo(
+    () =>
+      score().notes.filter((note) => recordingNoteNeedsFingering(score(), note))
+        .length,
+  )
+  createEffect(() => props.onPreviewScore?.(score()))
   let reviewHost: HTMLDivElement | undefined
   createEffect(() => {
-    const blob = props.draft.blob
-    if (blob === null) return
-    const objectUrl = URL.createObjectURL(blob)
-    setUrl(objectUrl)
-    onCleanup(() => {
-      audio?.pause()
-      URL.revokeObjectURL(objectUrl)
-    })
-  })
-  createEffect(() => {
-    if (!props.open) audio?.pause()
+    if (!props.open || busy() || deleting())
+      untrack(() => props.playback.pause())
   })
   const save = async (
     action: 'keep' | 'practice' | 'attach' | 'midi' | 'gp',
@@ -82,7 +81,7 @@ export function GuitarRecordingReview(props: {
     try {
       const corrections = { ...score(), title: title() }
       const accepted =
-        action === 'keep'
+        action === 'keep' || action === 'midi'
           ? undefined
           : acceptRecordingScoreRevision(corrections, revision() + 1)
       if (!kept()) {
@@ -101,10 +100,18 @@ export function GuitarRecordingReview(props: {
         setNotice('Note corrections saved on this device.')
       }
       props.onSaved()
+      if (action === 'midi') {
+        const { downloadRecordingScore } =
+          await import('@/lib/guitar/recording-export')
+        await downloadRecordingScore(corrections, 'mid', reviewHost)
+        setNotice(
+          'MIDI exported with these note corrections. Original audio and any accepted practice revision are unchanged.',
+        )
+      }
       if (accepted !== undefined) {
         setRevision(accepted.revision)
         setScore(accepted)
-        audio?.pause()
+        props.playback.pause()
         if (action === 'practice') await props.onPractice(accepted)
         else if (action === 'attach') await props.onAttach?.(accepted)
         else {
@@ -191,6 +198,12 @@ export function GuitarRecordingReview(props: {
               <Show when={props.draft.recording.interruption}>
                 {(reason) => <p role="status">{reason()}</p>}
               </Show>
+              <GuitarRecordingPlaybackControls
+                playback={props.playback}
+                transport
+                details
+                disabled={busy()}
+              />
               <label>
                 Take title
                 <input
@@ -200,29 +213,15 @@ export function GuitarRecordingReview(props: {
                   disabled={kept() || busy()}
                 />
               </label>
-              <Show
-                when={url()}
-                fallback={
-                  <p>
-                    Audio is unavailable. Any accepted practice notes remain on
-                    this device.
-                  </p>
-                }
-              >
-                {(source) => (
-                  <label>
-                    Dry input replay
-                    <audio
-                      ref={audio}
-                      controls
-                      preload="none"
-                      src={source()}
-                      onPlay={() => props.onReplay()}
-                    />
-                  </label>
-                )}
-              </Show>
               <Show when={props.draft.notes.length > 0}>
+                <Show when={fingeringCount() > 0}>
+                  <p>
+                    {fingeringCount()}{' '}
+                    {fingeringCount() === 1 ? 'note needs' : 'notes need'}{' '}
+                    fingering before guitar practice, attachment or Guitar Pro
+                    export. MIDI can keep pitches outside this tuning.
+                  </p>
+                </Show>
                 <button
                   type="button"
                   disabled={busy()}
@@ -234,7 +233,9 @@ export function GuitarRecordingReview(props: {
                 >
                   {editing()
                     ? 'Hide note corrections'
-                    : 'Review and correct notes'}
+                    : fingeringCount() > 0
+                      ? `Review ${fingeringCount()} problem ${fingeringCount() === 1 ? 'note' : 'notes'}`
+                      : 'Review and correct notes'}
                 </button>
                 <Show when={editorMounted()}>
                   <div hidden={!editing()}>
@@ -289,7 +290,11 @@ export function GuitarRecordingReview(props: {
                 </Show>
               </div>
               <Show when={score().notes.length > 0}>
-                <p>Attach and export also keep a practice revision.</p>
+                <p>
+                  Attach opens the song chooser. Attach and Guitar Pro export
+                  keep a playable practice revision; MIDI saves the current note
+                  corrections.
+                </p>
                 <div class={styles.actions}>
                   <Show when={props.onAttach}>
                     <button
@@ -302,7 +307,7 @@ export function GuitarRecordingReview(props: {
                   </Show>
                   <button
                     type="button"
-                    disabled={busy() || problem() !== null}
+                    disabled={busy() || midiProblem() !== null}
                     onClick={() => void save('midi')}
                   >
                     Export MIDI

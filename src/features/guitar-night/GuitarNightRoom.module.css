@@ -1,19 +1,26 @@
 /* Song transport makes room for the same Listening dock used in score rehearsal. */
 section[data-room-kind='backing'] .transportWithListening {
-  grid-template-areas: 'listening rail loop' 'mix controls controls';
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'listening rail rail loop' 'listening record controls controls';
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 0.3rem 0.5rem;
 }
 
-.listeningDock {
+.listeningColumn {
   grid-area: listening;
+  display: grid;
+  align-self: end;
+  align-content: end;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.listeningDock {
   display: flex;
   align-items: center;
   min-width: 0;
 }
 
 .mixDock {
-  grid-area: mix;
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -31,36 +38,120 @@ section[data-room-kind='backing'] .loopDock {
 
 section[data-room-kind='backing'] .playbackDock {
   grid-area: controls;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   align-items: center;
   justify-content: flex-end;
 }
 
 section[data-room-kind='backing'] .playbackDock > label {
-  width: 7rem;
+  width: 100%;
 }
 
 section[data-room-kind='backing'] .playbackDock > [role='group'] {
   width: auto;
-  min-width: 7.8rem;
+  min-width: 0;
+}
+
+.recordDock {
+  grid-area: record;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  min-width: 0;
+}
+
+.reviewTake {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: #f4cb8e;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.recordDock :focus-visible {
+  outline: 2px solid #f4cb8e;
+  outline-offset: 3px;
+}
+
+/* Short desktops still owe most of their height to the instrument. The track
+   count shares the tool row; no extra chrome row or undersized touch controls. */
+@media (min-width: 1101px) and (max-height: 800px) {
+  .heading {
+    min-height: 0;
+  }
+  .headingMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .footer {
+    min-height: 0;
+  }
+  section[data-room-kind='backing'] .playbackDock > button {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 section[data-room-kind='backing'][data-free-form='true']
   .transportWithListening {
-  grid-template-areas: 'listening controls' 'mix controls';
-  grid-template-columns: minmax(0, 1fr) auto;
+  position: relative;
+  display: block;
+}
+
+section[data-free-form='true'] .listeningColumn {
+  position: absolute;
+  left: 0.85rem;
+  bottom: 0.5rem;
+  z-index: 3;
+}
+
+section[data-free-form='true'] .recordDock {
+  display: block;
+  width: 100%;
 }
 
 @media (max-width: 1100px) {
   section[data-room-kind='backing'] .transportWithListening {
-    grid-template-areas: 'listening rail loop' 'mix controls controls';
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'listening rail rail loop' 'listening record controls controls';
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     gap: 0.25rem 0.3rem;
   }
 }
 
 @media (max-width: 720px) {
+  section[data-room-kind='backing'][data-free-form='true']
+    .transportWithListening {
+    display: block;
+  }
+  section[data-free-form='true'] .recordDock {
+    width: 100%;
+  }
+  section[data-free-form='true'] .listeningColumn {
+    left: 0.5rem;
+  }
+  section[data-free-form='true'] .listeningDock > div > button {
+    width: 44px;
+    min-width: 44px;
+    padding-inline: 0;
+    justify-content: center;
+  }
+  section[data-free-form='true']
+    .listeningDock
+    > div
+    > button
+    > span:nth-child(2) {
+    display: none;
+  }
+  section[data-room-kind='backing']:not([data-free-form='true'])
+    .transportWithListening {
+    grid-template-areas: 'listening record loop' 'listening rail rail' 'controls controls controls';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
   section[data-room-kind='backing'] .timeline {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0 0.4rem;

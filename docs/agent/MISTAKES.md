@@ -510,6 +510,15 @@ Guard zero per-note style mutations in a browser test, not with an FPS gate.
 **See:** `src/features/piano-night/PianoNightStageViews.tsx`,
 `src/e2e/piano-night.spec.ts`
 
+### Measure detector throughput before enlarging a recording queue
+
+**Symptom:** recorder browser tests stopped after two seconds with processing behind.
+**Cause:** YIN wrote a Float32 sum inside its innermost loop; 2.048 seconds of
+audio needed about 1.6 seconds of analysis locally, leaving little CI headroom.
+**Rule:** benchmark the real analysis first. A local sum with one store per lag
+took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queues.
+**See:** `src/lib/pitch-detector.ts`, `docs/guitar-recording-testing.md`
+
 ## Data and billing
 
 ### Hydrate a durable job before trying to resume it
@@ -902,6 +911,15 @@ selects the destination by its exact accessible name.
 **See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
 
 ## Process
+
+### Animate recording previews from the audio clock, not saved chunk duration
+
+**Symptom:** live recording looked like a stuttering six-frame-per-second highway.
+**Cause:** the adapter used 8192-frame worker/IndexedDB checkpoints as its display
+clock: ~169 ms jumps despite sub-millisecond canvas drawing.
+**Rule:** sample the already-owned capture clock for visible frames; keep durable
+evidence on its frame timeline. Cancel visual work when preview is off/stopped.
+**See:** `src/features/guitar-night/useGuitarRecordingStage.ts` and its cadence regression.
 
 ### Do not commit, push, or open a PR unless asked
 

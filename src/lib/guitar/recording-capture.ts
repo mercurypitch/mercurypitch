@@ -1,7 +1,7 @@
 // Guitar capture borrows an existing input and context, keeping a bounded dry side branch off the monitor path.
 import RecordingWorker from '@/workers/guitar-recorder.worker.ts?worker'
 import workletUrl from '@/workers/guitar-recorder.worklet.ts?worker&url'
-import type { GuitarCaptureMessage, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
+import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
 import { GUITAR_RECORDING_CHUNK_FRAMES, GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 
 export interface GuitarRecordingInput {
@@ -17,7 +17,10 @@ interface GuitarCaptureOptions {
   input: GuitarRecordingInput
   signal: AbortSignal
   onStart(audioFrame: number): void
-  onChunk(chunk: GuitarRecordingChunk): Promise<void>
+  onChunk(
+    chunk: GuitarRecordingChunk,
+    previewNote: GuitarRecordedNote | null,
+  ): Promise<void>
 }
 
 const registered = new WeakMap<AudioContext, Promise<void>>()
@@ -182,7 +185,7 @@ export async function startGuitarRecordingCapture(
       writes = writes
         .then(async () => {
           if (failure !== null) return
-          await options.onChunk(message.chunk)
+          await options.onChunk(message.chunk, message.previewNote ?? null)
           // A buffer is reusable only after its encoded audio/evidence are durable.
           if (!disposed)
             node.port.postMessage(

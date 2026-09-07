@@ -143,7 +143,7 @@ export function GuitarNightAmpControls(props: GuitarNightAmpControlsProps) {
       case 'error':
         return 'Studio tone unavailable. Using Lite tone; try loading it again.'
       default:
-        return 'Cabinet loads when you play an electric part or monitor Direct input.'
+        return 'Cabinet loads when amp playback or Direct input monitoring starts.'
     }
   }
   onCleanup(subscribeGuitarAmpCabinetStatus(setCabinetStatus))

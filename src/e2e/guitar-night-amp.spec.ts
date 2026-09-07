@@ -357,7 +357,7 @@ for (const retryWhile of ['playing', 'paused'] as const) {
       .click()
     if (retryWhile === 'paused') {
       await expect(amp.getByRole('status')).toHaveText(
-        'Cabinet loads when you play an electric part or monitor Direct input.',
+        'Cabinet loads when amp playback or Direct input monitoring starts.',
       )
       expect(cabinetRequests).toBe(1)
       await expect(position).toHaveValue(String(beforeRetry))

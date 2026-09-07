@@ -1,5 +1,5 @@
-// Portable guitar exports are derived from an accepted revision, never renamed audio or MIDI bytes.
-import { recordingScoreProblem, recordingScoreTuning } from './recording-score'
+// Portable exports use corrected MIDI notes or accepted guitar revisions, never renamed audio bytes.
+import { recordingMidiProblem, recordingScoreProblem, recordingScoreTuning, } from './recording-score'
 import type { GuitarPracticeNote, GuitarPracticeScore } from './recording-types'
 
 export function guitarRecordingFilename(
@@ -20,7 +20,7 @@ export function guitarRecordingFilename(
 export async function exportRecordingMidi(
   score: GuitarPracticeScore,
 ): Promise<Uint8Array> {
-  const problem = recordingScoreProblem(score)
+  const problem = recordingMidiProblem(score)
   if (problem !== null) throw new Error(problem)
   const { buildMidiFile, TICKS_PER_BEAT } = await import('../midi-generator')
   const result = buildMidiFile(

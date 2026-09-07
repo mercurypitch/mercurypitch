@@ -1,6 +1,6 @@
 // Bounded melody corrections edit a score revision while preserving the immutable recording evidence.
-import { createMemo, createSignal, For, Show } from 'solid-js'
-import { changeRecordingNote, changeRecordingScoreTempo, quantizeRecordingScore, } from '@/lib/guitar/recording-score'
+import { createMemo, createSignal, For, Show, untrack } from 'solid-js'
+import { changeRecordingNote, changeRecordingScoreTempo, quantizeRecordingScore, recordingNoteNeedsFingering, } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { midiToNote } from '@/lib/scale-data'
 import styles from './GuitarRecording.module.css'
@@ -10,8 +10,22 @@ export function GuitarRecordingEditor(props: {
   disabled?: boolean
   onChange(score: GuitarPracticeScore): void
 }) {
-  const [selected, setSelected] = createSignal(0)
+  const [selected, setSelected] = createSignal(
+    untrack(() =>
+      Math.max(
+        0,
+        props.score.notes.findIndex((note) =>
+          recordingNoteNeedsFingering(props.score, note),
+        ),
+      ),
+    ),
+  )
   const [history, setHistory] = createSignal<GuitarPracticeScore[]>([])
+  const problems = createMemo(() =>
+    props.score.notes.filter((note) =>
+      recordingNoteNeedsFingering(props.score, note),
+    ),
+  )
   const note = createMemo(
     () => props.score.notes[Math.min(selected(), props.score.notes.length - 1)],
   )
@@ -39,6 +53,47 @@ export function GuitarRecordingEditor(props: {
         Single notes, not chords. Fingering is a suggestion. Original audio and
         measured timing are never rewritten.
       </p>
+      <Show when={problems().length > 0}>
+        <p>
+          {problems().length}{' '}
+          {problems().length === 1 ? 'note needs' : 'notes need'} playable
+          fingering. Correct the pitch/string below, or exclude these notes from
+          this editable melody. The original recording and detection stay
+          intact.
+        </p>
+        <div class={styles.actions}>
+          <button
+            type="button"
+            onClick={() => {
+              const next = props.score.notes.findIndex(
+                (item, index) =>
+                  index > selected() &&
+                  recordingNoteNeedsFingering(props.score, item),
+              )
+              setSelected(
+                next >= 0 ? next : props.score.notes.indexOf(problems()[0]),
+              )
+            }}
+          >
+            Find problem note
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              change({
+                ...props.score,
+                attachment: null,
+                notes: props.score.notes.filter(
+                  (item) => !recordingNoteNeedsFingering(props.score, item),
+                ),
+              })
+            }
+          >
+            Exclude {problems().length} problem{' '}
+            {problems().length === 1 ? 'note' : 'notes'}
+          </button>
+        </div>
+      </Show>
       <div class={styles.fields}>
         <label>
           Display tempo (BPM)
@@ -116,7 +171,9 @@ export function GuitarRecordingEditor(props: {
                       {index() + 1}. {midiToNote(item.midi).name}
                       {midiToNote(item.midi).octave} · beat{' '}
                       {item.startBeat.toFixed(2)}
-                      {item.string === null ? ' · outside tuning' : ''}
+                      {recordingNoteNeedsFingering(props.score, item)
+                        ? ' · check fingering'
+                        : ''}
                     </option>
                   )}
                 </For>

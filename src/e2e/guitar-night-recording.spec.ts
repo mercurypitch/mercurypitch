@@ -9,6 +9,14 @@ test('records and keeps a dry melody without playback, then opens its accepted t
 }) => {
   await page.addInitScript(() => {
     ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+    const paints: number[] = []
+    ;(window as unknown as { recorderPaints: number[] }).recorderPaints = paints
+    const clear = CanvasRenderingContext2D.prototype.clearRect
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.hasAttribute('data-tab-presentation'))
+        paints.push(performance.now())
+      return clear.apply(this, args)
+    }
   })
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -23,6 +31,7 @@ test('records and keeps a dry melody without playback, then opens its accepted t
     page.getByRole('heading', { name: 'Free form', exact: true }),
   ).toBeVisible()
   expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(0)
+  await expect(page.getByTestId('guitar-night-free-play-note')).toHaveCount(0)
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 850 })
     const button = page.getByRole('button', {
@@ -30,11 +39,18 @@ test('records and keeps a dry melody without playback, then opens its accepted t
       exact: true,
     })
     await expect(button).toBeInViewport()
-    expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    const recordBounds = (await page
+      .getByTestId('guitar-recorder-actions')
+      .boundingBox())!
+    expect(recordBounds.height).toBeGreaterThanOrEqual(44)
+    expect(
+      Math.abs(recordBounds.x + recordBounds.width / 2 - width / 2),
+    ).toBeLessThanOrEqual(3)
     await page.screenshot({
       path: test.info().outputPath(`free-room-${width}.png`),
     })
   }
+  await page.setViewportSize({ width: 1440, height: 850 })
   await page
     .getByRole('button', { name: 'Record a melody', exact: true })
     .click()
@@ -43,15 +59,81 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   ).toBeVisible()
   await expect(
     page.getByRole('status', { name: 'Recording duration', exact: true }),
-  ).toContainText('0:02', { timeout: 12000 })
+  ).toContainText('0:06', { timeout: 16000 })
+  // Durable PCM chunks arrive ~170 ms apart. Painting must follow the capture
+  // clock between those chunks, not freeze until another worker/DB result.
+  const gaps = await page.evaluate(() => {
+    const paints = (window as unknown as { recorderPaints: number[] })
+      .recorderPaints
+    const recent = paints.filter((time) => time > performance.now() - 2500)
+    return recent
+      .slice(1)
+      .map((time, index) => time - recent[index])
+      .sort((a, b) => a - b)
+  })
+  expect(gaps.length).toBeGreaterThan(25)
+  expect(gaps[Math.floor(gaps.length / 2)]).toBeLessThan(80)
+  const flow = page.locator('canvas[data-tab-presentation]')
+  await expect(flow).toHaveAttribute(
+    'aria-label',
+    /Detected melody.*[1-9]\d* guided notes/,
+  )
+  await page.screenshot({ path: test.info().outputPath('live-notes.png') })
+  await page
+    .getByRole('button', { name: 'Recorder options', exact: true })
+    .click()
+  await page.getByTestId('overflow-live-notes').click()
+  await expect(flow).not.toHaveAttribute('aria-label', /guided notes/)
+  await expect(
+    page.getByRole('button', { name: 'Stop recording', exact: true }),
+  ).toBeVisible()
   await page
     .getByRole('button', { name: 'Stop recording', exact: true })
     .click()
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
   await expect(review).toBeVisible()
+  await review
+    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .click()
+  await expect(flow).toHaveAttribute(
+    'aria-label',
+    /Detected melody.*[1-9]\d* guided notes/,
+  )
+  await page.screenshot({ path: test.info().outputPath('stopped-notes.png') })
+  await page.getByRole('button', { name: 'Review take', exact: true }).click()
+  await expect(review).toBeVisible()
   await expect(
     review.getByRole('heading', { name: /notes? captured\./ }),
   ).toBeVisible()
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 850 })
+    const tone = review.getByRole('button', {
+      name: 'Playback tone',
+      exact: true,
+    })
+    await tone.scrollIntoViewIfNeeded()
+    await expect(tone).toBeInViewport()
+    await expect(
+      review.getByRole('button', { name: 'Playback source', exact: true }),
+    ).toBeInViewport()
+    await expect(
+      review.getByRole('button', { name: 'Play take playback', exact: true }),
+    ).toBeInViewport()
+    const reviewPlay = (await review
+      .getByRole('button', { name: 'Play take playback', exact: true })
+      .boundingBox())!
+    const pinnedKeep = (await review
+      .getByRole('button', { name: 'Keep take', exact: true })
+      .boundingBox())!
+    expect(reviewPlay.y + reviewPlay.height).toBeLessThanOrEqual(pinnedKeep.y)
+    expect(
+      await tone.evaluate((element) => element.getBoundingClientRect().height),
+    ).toBeGreaterThanOrEqual(44)
+    await page.screenshot({
+      path: test.info().outputPath(`recording-playback-review-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 850 })
   await review
     .getByRole('button', { name: 'Review and correct notes', exact: true })
     .click()
@@ -98,6 +180,81 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await expect(
     review.getByRole('button', { name: 'Take kept', exact: true }),
   ).toBeDisabled()
+  await review
+    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .click()
+  await page
+    .getByRole('button', { name: 'Play recording', exact: true })
+    .click()
+  await expect(
+    page.getByRole('status', { name: 'Playback position', exact: true }),
+  ).toContainText('0:01')
+  await page
+    .getByRole('button', { name: 'Pause recording replay', exact: true })
+    .click()
+  const deck = page.getByTestId('guitar-recorder-deck')
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 850 })
+    await expect(
+      deck.getByRole('button', { name: 'Play recording', exact: true }),
+    ).toBeInViewport()
+    const playBounds = (await deck
+      .getByRole('button', { name: 'Play recording', exact: true })
+      .boundingBox())!
+    expect(playBounds.y + playBounds.height).toBeLessThanOrEqual(
+      width === 320 ? 568 : 850,
+    )
+    await expect(
+      deck.getByRole('button', { name: 'Record a melody', exact: true }),
+    ).toBeInViewport()
+    await expect(
+      deck.getByRole('button', { name: 'Playback tone', exact: true }),
+    ).toBeInViewport()
+    expect(
+      await deck.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true)
+    await page.screenshot({
+      path: test.info().outputPath(`recording-deck-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 850 })
+  const stageBefore = (await flow.boundingBox())!
+  const libraryButton = page.getByRole('button', {
+    name: 'My melodies, 1 recording',
+    exact: true,
+  })
+  await libraryButton.click()
+  const gallery = page.getByRole('dialog', { name: 'My melodies', exact: true })
+  await expect(
+    gallery.getByRole('img', { name: /Captured melody/ }),
+  ).toBeVisible()
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 850 })
+    const bounds = (await gallery.boundingBox())!
+    expect(bounds.x).toBeGreaterThanOrEqual(0)
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
+    expect(
+      await gallery.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true)
+    await expect(
+      gallery.getByRole('button', { name: 'Close My melodies', exact: true }),
+    ).toBeInViewport()
+    await page.screenshot({
+      path: test.info().outputPath(`melody-gallery-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 850 })
+  await page.keyboard.press('Escape')
+  await expect(gallery).not.toBeVisible()
+  await expect(libraryButton).toBeFocused()
+  expect((await flow.boundingBox())!.height).toBeCloseTo(stageBefore.height, 0)
+  await libraryButton.click()
+  await gallery
+    .getByRole('button', { name: 'Review First local melody', exact: true })
+    .click()
+  await expect(review).toBeVisible()
   expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(1)
   // MicManager releases the lease immediately, then closes hardware after its
   // existing two-second page-switch linger. Do not bypass the shared owner.
@@ -200,6 +357,9 @@ test('captures with a backing at fixed speed and reloads the accepted score plac
     .click()
   const session = page.getByRole('dialog', { name: 'Session', exact: true })
   await session
+    .getByRole('checkbox', { name: 'Live notes', exact: true })
+    .uncheck()
+  await session
     .getByRole('button', { name: 'Direct input', exact: true })
     .click()
   await session
@@ -218,6 +378,9 @@ test('captures with a backing at fixed speed and reloads the accepted score plac
   await expect(
     page.getByRole('button', { name: /Speed up from/ }),
   ).toBeDisabled()
+  await expect(
+    page.locator('canvas[data-tab-presentation]'),
+  ).not.toHaveAttribute('aria-label', /guided notes/)
   await page.getByRole('button', { name: 'Pause backing', exact: true }).click()
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
   await expect(review).toBeVisible()

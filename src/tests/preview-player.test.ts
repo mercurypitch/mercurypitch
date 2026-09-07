@@ -50,31 +50,28 @@ class FakeAudioContext {
   state = 'running'
   destination = {}
   gainParam = new FakeGainParam()
-  createMediaElementSource() {
-    return { connect: () => ({}) }
+  source = { connect: vi.fn(), disconnect: vi.fn() }
+  envelope = {
+    gain: this.gainParam,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
   }
-  createGain() {
-    return {
-      gain: this.gainParam,
-      connect: () => ({}),
-      disconnect: () => {},
-    }
-  }
+  createMediaElementSource = vi.fn(() => this.source)
+  createGain = vi.fn(() => this.envelope)
   resume() {
     return Promise.resolve()
   }
-  close() {
-    return Promise.resolve()
-  }
+  close = vi.fn(() => Promise.resolve())
 }
 
-class FakeAudio {
+class FakeAudio extends EventTarget {
   static instances: FakeAudio[] = []
   src = ''
   preload = ''
   currentTime = 0
   duration = 200
   paused = true
+  seeking = false
   /** Empty string is what a real element reports with no attribute set. */
   crossOrigin = ''
   removeAttribute = vi.fn((name: string) => {
@@ -88,7 +85,9 @@ class FakeAudio {
   pause = vi.fn(() => {
     this.paused = true
   })
+  load = vi.fn()
   constructor() {
+    super()
     FakeAudio.instances.push(this)
   }
 }
@@ -102,6 +101,7 @@ const RELEASE_SETTLED_MS = ENVELOPE_DEFAULTS.releaseMs + 100
 
 beforeEach(() => {
   vi.useFakeTimers()
+  vi.mocked(showNotification).mockClear()
   FakeAudio.instances = []
   fakeCtx = new FakeAudioContext()
   vi.stubGlobal('Audio', FakeAudio)
@@ -119,6 +119,410 @@ afterEach(() => {
 })
 
 describe('createPreviewPlayer', () => {
+  it('positions the first Play before opening its output envelope', async () => {
+    const player = createPreviewPlayer()
+    const started = player.play('blob:offset', { startSeconds: 1.237 })
+    expect(gainOps().some((op) => op.op === 'exp')).toBe(false)
+    expect(await started).toBe(true)
+    expect(lastElement().currentTime).toBe(1.237)
+    expect(gainOps().at(-1)?.op).toBe('exp')
+    player.dispose()
+  })
+
+  it('keeps startup silent until seeking is ready, with last scrub winning', async () => {
+    const player = createPreviewPlayer()
+    const started = player.play('blob:offset', { startSeconds: 12 })
+    const element = lastElement()
+    element.seeking = true
+    await Promise.resolve()
+    expect(element.currentTime).toBe(12)
+    expect(gainOps().some((op) => op.op === 'exp')).toBe(false)
+    player.seekToFraction(0.4)
+    await Promise.resolve()
+    expect(player.currentTime).toBe(80)
+    element.seeking = false
+    element.dispatchEvent(new Event('seeked'))
+    expect(await started).toBe(true)
+    expect(element.currentTime).toBe(80)
+    expect(gainOps().at(-1)?.op).toBe('exp')
+    player.dispose()
+  })
+
+  it.each(['pause', 'stop', 'dispose'] as const)(
+    'cancels a startup decoder seek when %s wins',
+    async (action) => {
+      const player = createPreviewPlayer()
+      const started = player.play('blob:offset', { startSeconds: 12 })
+      const element = lastElement()
+      element.seeking = true
+      await Promise.resolve()
+      player[action]()
+      expect(await started).toBe(false)
+      element.seeking = false
+      element.dispatchEvent(new Event('seeked'))
+      await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+      expect(gainOps().some((op) => op.op === 'exp')).toBe(false)
+      expect(player.playing).toBe(false)
+      player.dispose()
+    },
+  )
+
+  it.each(['pause', 'stop'] as const)(
+    '%s cancels a live seek dip without reopening output',
+    async (action) => {
+      const player = createPreviewPlayer()
+      await player.play('blob:seek')
+      lastElement().currentTime = 10
+      player.seekToFraction(0.5)
+      player[action]()
+      const operations = gainOps().length
+      await vi.advanceTimersByTimeAsync(25)
+      expect(gainOps()).toHaveLength(operations)
+      expect(lastElement().currentTime).toBe(10)
+      await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+      expect(player.playing).toBe(false)
+      expect(lastElement().currentTime).toBe(action === 'stop' ? 0 : 100)
+      player.dispose()
+    },
+  )
+
+  it('defers paused scrubs until the audible release has finished', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:seek')
+    lastElement().currentTime = 10
+    player.pause()
+    player.seekToFraction(0.1)
+    player.seekToFraction(0.4)
+    expect(player.currentTime).toBe(80)
+    expect(lastElement().currentTime).toBe(10)
+    await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+    expect(lastElement().currentTime).toBe(80)
+    expect(lastElement().paused).toBe(true)
+    player.dispose()
+  })
+
+  it('rewinds a rapid Stop then Play, after a safe dip rather than an audible jump', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:seek')
+    lastElement().currentTime = 10
+    player.stop()
+    const restarted = player.play('blob:seek')
+    await Promise.resolve()
+    expect(lastElement().currentTime).toBe(10)
+    expect(player.currentTime).toBe(0)
+    await vi.advanceTimersByTimeAsync(25)
+    expect(await restarted).toBe(true)
+    expect(lastElement().currentTime).toBe(0)
+    await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+    expect(lastElement().paused).toBe(false)
+    player.dispose()
+  })
+
+  it('keeps the latest scrub when it follows Stop before release completes', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:seek')
+    lastElement().currentTime = 10
+    player.stop()
+    player.seekToFraction(0.3)
+    expect(player.currentTime).toBe(60)
+    expect(lastElement().currentTime).toBe(10)
+    await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+    expect(player.currentTime).toBe(60)
+    expect(lastElement().paused).toBe(true)
+    player.dispose()
+  })
+
+  it('does not restore an old live seek when a second scrub or Pause wins', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:seek')
+    const element = lastElement()
+    element.seeking = true
+    player.seekToFraction(0.2)
+    await vi.advanceTimersByTimeAsync(25)
+    expect(element.currentTime).toBe(40)
+    player.seekToFraction(0.6)
+    const operations = gainOps().length
+    // This may be the first seek's completion. A fresh dip must still finish
+    // before moving to the new target or allowing it to become audible.
+    element.dispatchEvent(new Event('seeked'))
+    await Promise.resolve()
+    expect(gainOps()).toHaveLength(operations)
+    expect(element.currentTime).toBe(40)
+    await vi.advanceTimersByTimeAsync(25)
+    expect(element.currentTime).toBe(120)
+    player.pause()
+    const pausedOperations = gainOps().length
+    element.seeking = false
+    element.dispatchEvent(new Event('seeked'))
+    await Promise.resolve()
+    expect(gainOps()).toHaveLength(pausedOperations)
+    expect(player.playing).toBe(false)
+    player.dispose()
+  })
+
+  it('cancels startup seek readiness when the URL is replaced', async () => {
+    const player = createPreviewPlayer()
+    const old = player.play('blob:old', { startSeconds: 12 })
+    const element = lastElement()
+    element.seeking = true
+    await Promise.resolve()
+    const latest = player.play('blob:new')
+    expect(await latest).toBe(true)
+    const operations = gainOps().length
+    element.seeking = false
+    element.dispatchEvent(new Event('seeked'))
+    expect(await old).toBe(false)
+    expect(gainOps()).toHaveLength(operations)
+    expect(element.src).toBe('blob:new')
+    expect(player.playing).toBe(true)
+    player.dispose()
+  })
+
+  it('bounds seek readiness and reports failure instead of playing the wrong offset', async () => {
+    const player = createPreviewPlayer()
+    const started = player.play('blob:offset', { startSeconds: 12 })
+    lastElement().seeking = true
+    await vi.advanceTimersByTimeAsync(5_001)
+    expect(await started).toBe(false)
+    expect(player.playing).toBe(false)
+    expect(gainOps().some((op) => op.op === 'exp')).toBe(false)
+    expect(showNotification).toHaveBeenCalledOnce()
+    player.dispose()
+  })
+
+  it('ignores invalid fractions and allows an exact end position', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:offset')
+    player.pause()
+    await vi.advanceTimersByTimeAsync(RELEASE_SETTLED_MS)
+    lastElement().currentTime = 10
+    player.seekToFraction(NaN)
+    player.seekToFraction(Infinity)
+    expect(lastElement().currentTime).toBe(10)
+    player.seekToFraction(4)
+    expect(lastElement().currentTime).toBe(200)
+    player.seekToFraction(-1)
+    expect(lastElement().currentTime).toBe(0)
+    player.dispose()
+  })
+
+  it.each(['pause', 'stop', 'dispose'] as const)(
+    'does not open the envelope when a pending play settles after %s',
+    async (action) => {
+      const player = createPreviewPlayer()
+      await player.play('blob:initial')
+      player.pause()
+      vi.advanceTimersByTime(RELEASE_SETTLED_MS)
+      const element = lastElement()
+      let complete!: () => void
+      element.play.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            complete = resolve
+          }),
+      )
+      const playing = player.play('blob:pending')
+      player[action]()
+      const envelopeOperations = gainOps().length
+      complete()
+      expect(await playing).toBe(false)
+      expect(gainOps()).toHaveLength(envelopeOperations)
+      expect(player.playing).toBe(false)
+      vi.advanceTimersByTime(RELEASE_SETTLED_MS)
+      expect(element.paused).toBe(true)
+      if (action === 'dispose') {
+        expect(await player.play('blob:after-dispose')).toBe(false)
+        expect(fakeCtx.createMediaElementSource).toHaveBeenCalledTimes(1)
+      } else player.dispose()
+    },
+  )
+
+  it.each(['resolve', 'reject'] as const)(
+    'a stale play %s cannot affect a newer successful playback',
+    async (completion) => {
+      const player = createPreviewPlayer()
+      await player.play('blob:initial')
+      const element = lastElement()
+      let resolveOld!: () => void
+      let rejectOld!: (error: Error) => void
+      element.play.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            resolveOld = resolve
+            rejectOld = reject
+          }),
+      )
+      const oldPlay = player.play('blob:old')
+      expect(await player.play('blob:new')).toBe(true)
+      const operations = gainOps().length
+      if (completion === 'resolve') resolveOld()
+      else rejectOld(new Error('Old source failed'))
+      expect(await oldPlay).toBe(false)
+      expect(gainOps()).toHaveLength(operations)
+      expect(player.playing).toBe(true)
+      expect(element.src).toBe('blob:new')
+      expect(element.pause).not.toHaveBeenCalled()
+      expect(showNotification).not.toHaveBeenCalled()
+      player.dispose()
+    },
+  )
+
+  it('creates optional processing lazily and routes it before the final envelope', async () => {
+    const processing = {
+      input: {} as AudioNode,
+      output: { connect: vi.fn() },
+      dispose: vi.fn(),
+    }
+    const createProcessing = vi.fn(() => ({
+      ...processing,
+      output: processing.output as unknown as AudioNode,
+    }))
+    const destination = {} as AudioNode
+    const player = createPreviewPlayer({
+      audioGraph: {
+        context: fakeCtx as unknown as AudioContext,
+        destination,
+      },
+      createProcessing,
+    })
+    expect(FakeAudio.instances).toHaveLength(0)
+    expect(createProcessing).not.toHaveBeenCalled()
+    expect(fakeCtx.createMediaElementSource).not.toHaveBeenCalled()
+
+    expect(await player.play('blob:recording')).toBe(true)
+    expect(createProcessing).toHaveBeenCalledWith(fakeCtx)
+    expect(fakeCtx.source.connect).toHaveBeenCalledExactlyOnceWith(
+      processing.input,
+    )
+    expect(processing.output.connect).toHaveBeenCalledExactlyOnceWith(
+      fakeCtx.envelope,
+    )
+    expect(fakeCtx.envelope.connect).toHaveBeenCalledExactlyOnceWith(
+      destination,
+    )
+    expect(gainOps().at(-1)).toMatchObject({ op: 'exp', value: 1 })
+
+    player.pause()
+    expect(processing.dispose).not.toHaveBeenCalled()
+    expect(lastElement().pause).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(RELEASE_SETTLED_MS)
+    expect(lastElement().pause).toHaveBeenCalledTimes(1)
+    expect(processing.dispose).not.toHaveBeenCalled()
+    await player.play('blob:recording')
+    expect(createProcessing).toHaveBeenCalledTimes(1)
+
+    player.dispose()
+    expect(fakeCtx.source.disconnect).toHaveBeenCalledTimes(1)
+    expect(processing.dispose).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.envelope.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.close).not.toHaveBeenCalled()
+    player.dispose()
+    expect(processing.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses a supplied context and destination without optional processing or ownership', async () => {
+    const destination = {} as AudioNode
+    const player = createPreviewPlayer({
+      audioGraph: { context: fakeCtx as unknown as AudioContext, destination },
+    })
+    vi.stubGlobal('AudioContext', function ForbiddenAudioContext() {
+      throw new Error('Must borrow the supplied context')
+    })
+    expect(await player.play('blob:recording')).toBe(true)
+    expect(fakeCtx.source.connect).toHaveBeenCalledExactlyOnceWith(
+      fakeCtx.envelope,
+    )
+    expect(fakeCtx.envelope.connect).toHaveBeenCalledExactlyOnceWith(
+      destination,
+    )
+    player.dispose()
+    expect(fakeCtx.close).not.toHaveBeenCalled()
+  })
+
+  it('disposes optional processing and closes its own context', async () => {
+    const processing = {
+      input: {} as AudioNode,
+      output: { connect: vi.fn() } as unknown as AudioNode,
+      dispose: vi.fn(),
+    }
+    const player = createPreviewPlayer({ createProcessing: () => processing })
+    await player.play('blob:recording')
+    expect(fakeCtx.envelope.connect).toHaveBeenCalledExactlyOnceWith(
+      fakeCtx.destination,
+    )
+    player.dispose()
+    expect(processing.dispose).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.source.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.envelope.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails explicit processing safely and allows retry without ever playing dry', async () => {
+    const processing = {
+      input: {} as AudioNode,
+      output: { connect: vi.fn() } as unknown as AudioNode,
+      dispose: vi.fn(),
+    }
+    const createProcessing = vi.fn(() => processing)
+    createProcessing.mockImplementationOnce(() => {
+      throw new Error('Amp unavailable')
+    })
+    const player = createPreviewPlayer({
+      audioGraph: {
+        context: fakeCtx as unknown as AudioContext,
+        destination: {} as AudioNode,
+      },
+      createProcessing,
+      errorMessage: 'This take could not be processed. Try again.',
+    })
+    expect(await player.play('blob:recording')).toBe(false)
+    const failedElement = lastElement()
+    expect(failedElement.play).not.toHaveBeenCalled()
+    expect(fakeCtx.source.connect).not.toHaveBeenCalled()
+    expect(fakeCtx.source.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.envelope.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.close).not.toHaveBeenCalled()
+    expect(player.playing).toBe(false)
+    expect(showNotification).toHaveBeenCalledWith(
+      'This take could not be processed. Try again.',
+      'error',
+    )
+
+    expect(await player.play('blob:recording')).toBe(true)
+    expect(lastElement()).not.toBe(failedElement)
+    expect(createProcessing).toHaveBeenCalledTimes(2)
+    expect(fakeCtx.source.connect).toHaveBeenCalledExactlyOnceWith(
+      processing.input,
+    )
+    player.dispose()
+  })
+
+  it('releases a prepared processor when connecting the explicit graph fails', async () => {
+    const processing = {
+      input: {} as AudioNode,
+      output: {
+        connect: vi.fn(() => {
+          throw new Error('Invalid output route')
+        }),
+      },
+      dispose: vi.fn(),
+    }
+    const player = createPreviewPlayer({
+      createProcessing: () => ({
+        ...processing,
+        output: processing.output as unknown as AudioNode,
+      }),
+    })
+    expect(await player.play('blob:recording')).toBe(false)
+    expect(lastElement().play).not.toHaveBeenCalled()
+    expect(processing.dispose).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.source.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.envelope.disconnect).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.close).toHaveBeenCalledTimes(1)
+    player.dispose()
+    expect(processing.dispose).toHaveBeenCalledTimes(1)
+  })
+
   it('swells in exponentially, only after playback starts', async () => {
     const player = createPreviewPlayer()
     await player.play('blob:stem')
@@ -172,7 +576,7 @@ describe('createPreviewPlayer', () => {
     expect(gainOps().at(-1)).toMatchObject({ op: 'linear', value: 0 })
     expect(element.currentTime).toBe(0) // not moved yet — still dipping
 
-    vi.advanceTimersByTime(ENVELOPE_DEFAULTS.seekFadeMs + 15)
+    await vi.advanceTimersByTimeAsync(ENVELOPE_DEFAULTS.seekFadeMs + 15)
     expect(element.currentTime).toBeCloseTo(100)
     expect(gainOps().at(-1)).toMatchObject({ op: 'linear', value: 1 })
   })

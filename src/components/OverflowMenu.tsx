@@ -7,16 +7,16 @@
 // on some menus and not others. This is the one the session card uses,
 // and the one anything new should use.
 //
-// It portals to <body> for the reason InfoPopover documents: a panel
-// rendered inside a scrolling or clipped ancestor is cut off by it, and
-// on a card in a grid that is every panel.
+// It portals outside the scrolling content so cards do not clip it. Inside
+// a dialog it stays in that dialog's interaction/focus boundary; elsewhere
+// it mounts under <body>, like InfoPopover.
 //
 // On a narrow screen it is a bottom sheet instead of a popover. A
 // popover anchored to a card in a two-column phone layout has nowhere to
 // go: it either runs off the edge or covers the thing it belongs to.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, Index, onCleanup, Show, } from 'solid-js'
+import { children, createEffect, createMemo, createSignal, Index, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { isNarrow } from '@/lib/use-viewport'
 import styles from './OverflowMenu.module.css'
@@ -29,6 +29,11 @@ export interface OverflowMenuItem {
   /** A second line, for a row whose consequence is not obvious. */
   note?: string
   disabled?: boolean
+  /** Defined for selectable choices; omitted for ordinary actions. */
+  checked?: boolean
+  checkType?: 'radio' | 'checkbox'
+  /** Separate independent radio choices, such as playback source and tone. */
+  separatorBefore?: boolean
   /**
    * Sorted to the bottom, under a divider.
    *
@@ -49,6 +54,10 @@ export interface OverflowMenuProps {
   onOpen?: () => void
   /** Extra class on the trigger, so a host can size it to its own row. */
   triggerClass?: string
+  /** Instrument surfaces may use their own artwork without reimplementing menus. */
+  triggerContent?: JSX.Element
+  panelClass?: string
+  triggerTitle?: string
   testId?: string
 }
 
@@ -62,6 +71,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
   const [pos, setPos] = createSignal({ x: 0, y: 0 })
   let trigger: HTMLButtonElement | undefined
   let panel: HTMLDivElement | undefined
+  const triggerContent = children(() => props.triggerContent)
 
   // Ordinary rows keep their given order; destructive ones go last
   // whatever order the caller listed them in, so a host cannot
@@ -101,7 +111,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
   const focusable = (): HTMLButtonElement[] =>
     Array.from(
       panel?.querySelectorAll<HTMLButtonElement>(
-        '[role="menuitem"]:not([disabled])',
+        '[role^="menuitem"]:not([disabled])',
       ) ?? [],
     )
 
@@ -125,6 +135,10 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
     props.onOpen?.()
     setOpen(true)
   }
+
+  createEffect(() => {
+    if (props.disabled === true && open()) close(false)
+  })
 
   createEffect(() => {
     if (!open()) return
@@ -198,6 +212,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
         class={`${styles.trigger} ${props.triggerClass ?? ''}`}
         data-testid={props.testId}
         aria-label={props.label}
+        title={props.triggerTitle}
         aria-haspopup="menu"
         aria-expanded={open()}
         disabled={props.disabled}
@@ -213,21 +228,32 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
           }
         }}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          aria-hidden="true"
-          fill="currentColor"
+        <Show
+          when={triggerContent()}
+          fallback={
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              aria-hidden="true"
+              fill="currentColor"
+            >
+              <circle cx="5" cy="12" r="1.9" />
+              <circle cx="12" cy="12" r="1.9" />
+              <circle cx="19" cy="12" r="1.9" />
+            </svg>
+          }
         >
-          <circle cx="5" cy="12" r="1.9" />
-          <circle cx="12" cy="12" r="1.9" />
-          <circle cx="19" cy="12" r="1.9" />
-        </svg>
+          {triggerContent()}
+        </Show>
       </button>
 
       <Show when={open()}>
-        <Portal>
+        {/* Stay inside an owning dialog's interaction boundary, but outside
+            its scrolling body. Room menus still portal to the document. */}
+        <Portal
+          mount={trigger?.closest<HTMLElement>('[role="dialog"]') ?? undefined}
+        >
           {/* The sheet gets a backdrop; a popover does not, because a
               backdrop over a card list swallows the scroll it needs. */}
           <Show when={sheet()}>
@@ -239,7 +265,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
           </Show>
           <div
             ref={panel}
-            class={styles.panel}
+            class={`${styles.panel} ${props.panelClass ?? ''}`}
             classList={{ [styles.panelSheet!]: sheet() }}
             role="menu"
             aria-label={props.label}
@@ -254,14 +280,22 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
                 <>
                   <Show
                     when={
-                      firstDestructive() > 0 && index === firstDestructive()
+                      item().separatorBefore === true ||
+                      (firstDestructive() > 0 && index === firstDestructive())
                     }
                   >
                     <div class={styles.divider} role="separator" />
                   </Show>
                   <button
                     type="button"
-                    role="menuitem"
+                    role={
+                      item().checked === undefined
+                        ? 'menuitem'
+                        : item().checkType === 'checkbox'
+                          ? 'menuitemcheckbox'
+                          : 'menuitemradio'
+                    }
+                    aria-checked={item().checked}
                     data-testid={`overflow-${item().key}`}
                     class={styles.row}
                     classList={{

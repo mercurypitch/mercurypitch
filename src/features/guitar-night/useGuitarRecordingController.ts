@@ -1,14 +1,14 @@
 // Guitar recorder owns explicit capture intent, never playback or the player's existing monitoring lease.
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
 import { createGuitarRecordingStore } from '@/db/services/guitar-recording-service'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { startGuitarRecordingCapture } from '@/lib/guitar/recording-capture'
 import { acquireGuitarRecordingLock } from '@/lib/guitar/recording-lock'
-import type { GuitarRecording, GuitarRecordingBacking, } from '@/lib/guitar/recording-types'
-import { GUITAR_DETECTOR_VERSION } from '@/lib/guitar/recording-types'
+import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingBacking, } from '@/lib/guitar/recording-types'
+import { GUITAR_DETECTOR_VERSION, GUITAR_RECORDING_LIMIT_SECONDS, } from '@/lib/guitar/recording-types'
 import { midiToNote } from '@/lib/scale-data'
 import type { GuitarListeningController } from './useGuitarListeningController'
 
@@ -40,7 +40,16 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   const [duration, setDuration] = createSignal(0)
   const [noteCount, setNoteCount] = createSignal(0)
   const [heardNote, setHeardNote] = createSignal<string | null>(null)
+  const [captureRow, setCaptureRow] = createSignal<GuitarRecording | null>(null)
+  const [completedNotes, setCompletedNotes] = createSignal<
+    readonly GuitarRecordedNote[]
+  >([])
+  const [pendingNote, setPendingNote] = createSignal<GuitarRecordedNote | null>(
+    null,
+  )
   const [draft, setDraft] = createSignal<GuitarRecordingDraft | null>(null)
+  const [previewScore, setPreviewScore] =
+    createSignal<GuitarPracticeScore | null>(null)
   const [reviewOpen, setReviewOpen] = createSignal(false)
   const [catalogue, setCatalogue] = createSignal<GuitarRecording[]>([])
   const busy = createMemo(() => state() !== 'idle')
@@ -51,6 +60,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   let ownsInput = false
   let disposed = false
   let generation = 0
+  let selectionGeneration = 0
   let startFrame: number | null = null
   let backingPlaying = false
   let pinnedInput: ReturnType<GuitarListeningController['recordingInput']> =
@@ -78,17 +88,27 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     }
   }
   onMount(() => void refresh())
-  const recover = async (id: string): Promise<void> => {
-    if (busy()) return
+  const recover = async (
+    id: string,
+    request: { review?: boolean } = {},
+  ): Promise<void> => {
+    if (busy()) {
+      if (request.review === false)
+        throw new Error('Finish recording before switching melodies.')
+      return
+    }
+    const attempt = ++selectionGeneration
     setError(null)
     let release: (() => void) | null = null
     try {
       release = await acquireGuitarRecordingLock(id)
+      if (disposed || attempt !== selectionGeneration) return
       if (release === null)
         throw new Error(
           'This melody is still recording in another tab. Stop it there before recovering it here.',
         )
       let result = await store().load(id)
+      if (disposed || attempt !== selectionGeneration) return
       if (result.recording.state === 'capturing') {
         if (
           typeof navigator.locks?.request !== 'function' &&
@@ -110,15 +130,23 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
         )
         result = await store().load(id)
       }
-      setDraft(result)
-      setReviewOpen(true)
+      if (disposed || attempt !== selectionGeneration) return
+      // Switching never discards the previous draft's durable audio/evidence.
+      // A late load must not replace a newer selection or a fresh capture.
+      batch(() => {
+        setDraft(result)
+        setPreviewScore(null)
+        setReviewOpen(request.review !== false)
+      })
       await refresh()
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : 'The draft could not be recovered.',
-      )
+      if (!disposed && attempt === selectionGeneration)
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'The draft could not be recovered.',
+        )
+      if (request.review === false) throw cause
     } finally {
       release?.()
     }
@@ -138,6 +166,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   }
   const start = async (): Promise<void> => {
     if (busy() || options.blocked()) return
+    selectionGeneration++
     if (options.listening.inputProfile() === 'midi') {
       setError(
         'Choose Direct input or Room mic to record both audio and notes. MIDI-only recording is not available yet.',
@@ -156,6 +185,9 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     setDuration(0)
     setNoteCount(0)
     setHeardNote(null)
+    setCaptureRow(null)
+    setCompletedNotes([])
+    setPendingNote(null)
     setDraft(null)
     setReviewOpen(false)
     options.clearLoop()
@@ -205,6 +237,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
         scoreId: null,
       }
       await store().begin(row)
+      if (!disposed) setCaptureRow(row)
       if (disposed || attempt !== generation) {
         await store().discard(id)
         return
@@ -239,18 +272,24 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           )
           if (!disposed) setState('recording')
         },
-        async onChunk(chunk) {
+        async onChunk(chunk, previewNote) {
           await startWrite
           await store().checkpoint(chunk)
-          if (!disposed) {
-            setDuration(
-              (chunk.firstFrame + chunk.frames) / input.context.sampleRate,
-            )
-            setNoteCount((count) => count + chunk.notes.length)
-            const pitch = chunk.pitches.at(-1)?.midi
-            const named = pitch == null ? null : midiToNote(Math.round(pitch))
-            setHeardNote(named === null ? null : `${named.name}${named.octave}`)
-          }
+          if (!disposed)
+            batch(() => {
+              setDuration(
+                (chunk.firstFrame + chunk.frames) / input.context.sampleRate,
+              )
+              setNoteCount((count) => count + chunk.notes.length)
+              if (chunk.notes.length)
+                setCompletedNotes((notes) => [...notes, ...chunk.notes])
+              setPendingNote(previewNote)
+              const pitch = chunk.pitches.at(-1)?.midi
+              const named = pitch == null ? null : midiToNote(Math.round(pitch))
+              setHeardNote(
+                named === null ? null : `${named.name}${named.octave}`,
+              )
+            })
         },
       })
       completion = capture.done
@@ -343,16 +382,40 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   })
   onCleanup(() => {
     disposed = true
+    selectionGeneration++
     void stop('The room was closed. Recover the saved draft to keep it.')
     if (capture === null) abort?.abort()
+  })
+  const previewNotes = createMemo(() => {
+    if (!busy()) return draft()?.notes ?? []
+    const pending = pendingNote()
+    return pending === null ? completedNotes() : [...completedNotes(), pending]
   })
   return {
     state,
     busy,
     error,
     duration,
+    // Read-only visual clock. Never drive capture/evidence from render frames
+    // or wait for worker + IndexedDB checkpoints to move the highway.
+    captureSeconds: () =>
+      state() === 'recording' && pinnedInput !== null && startFrame !== null
+        ? Math.min(
+            GUITAR_RECORDING_LIMIT_SECONDS,
+            Math.max(
+              0,
+              pinnedInput.context.currentTime -
+                startFrame / pinnedInput.context.sampleRate,
+            ),
+          )
+        : duration(),
     noteCount,
     heardNote,
+    previewScore,
+    setPreviewScore,
+    previewRecording: () =>
+      busy() ? captureRow() : (draft()?.recording ?? null),
+    previewNotes,
     draft,
     reviewOpen,
     catalogue,
@@ -370,10 +433,28 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
       await refresh()
     },
     async remove(id: string) {
-      await store().remove(id)
-      setDraft(null)
-      setReviewOpen(false)
-      await refresh()
+      if (busy()) throw new Error('Finish recording before removing a melody.')
+      const release = await acquireGuitarRecordingLock(id)
+      if (release === null)
+        throw new Error(
+          'This melody is in use in another tab. Close it there and try again.',
+        )
+      try {
+        await store().remove(id)
+        if (!disposed)
+          setCatalogue((rows) => rows.filter((row) => row.id !== id))
+        if (!disposed && draft()?.recording.id === id) {
+          selectionGeneration++
+          batch(() => {
+            setDraft(null)
+            setPreviewScore(null)
+            setReviewOpen(false)
+          })
+        }
+        await refresh()
+      } finally {
+        release()
+      }
     },
   }
 }

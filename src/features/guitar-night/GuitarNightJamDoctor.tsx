@@ -136,6 +136,8 @@ export function GuitarNightJamDoctor(props: GuitarNightJamDoctorProps) {
     if (!props.open) return
     const handleDialogKeys = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
+        // A source/tone menu belongs to this sheet and owns the first Escape.
+        if (sheet?.querySelector('[role="menu"]')) return
         event.preventDefault()
         event.stopPropagation()
         props.onClose()

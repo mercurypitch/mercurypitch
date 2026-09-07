@@ -169,7 +169,7 @@ for (const host of ['song', 'score'] as const) {
         }),
       ).toBeHidden()
       await expect(amp.getByRole('status')).toHaveText(
-        'Cabinet loads when you play an electric part or monitor Direct input.',
+        'Cabinet loads when amp playback or Direct input monitoring starts.',
       )
       await assertControls(amp)
       await capture(page, amp, `${host}-${viewport.width}-heavy.png`)

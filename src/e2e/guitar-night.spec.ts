@@ -3235,6 +3235,9 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
       viewportWidth: window.innerWidth,
     }
   })
+  await page.screenshot({
+    path: test.info().outputPath('prepared-song-layout.png'),
+  })
   expect(fullRoomLayout.roomWidth).toBeGreaterThanOrEqual(
     fullRoomLayout.viewportWidth * 0.98,
   )
@@ -3439,7 +3442,10 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   expect(microphoneRequests).toBe(0)
 
   await room
-    .getByRole('button', { name: 'Turn on Listening', exact: true })
+    .getByRole('button', {
+      name: 'Listening is off. Switch to Room mic',
+      exact: true,
+    })
     .click()
   await expect(room.getByRole('alert')).toContainText(
     'Unexpected microphone request',
@@ -3478,6 +3484,9 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     await expect(room).toBeVisible()
     const stage = page.getByTestId('guitar-night-stage')
     const mobileStage = await stage.boundingBox()
+    await page.screenshot({
+      path: test.info().outputPath('prepared-song-phone.png'),
+    })
     expect(mobileStage).not.toBeNull()
     expect(mobileStage?.width).toBeGreaterThanOrEqual(388)
     expect(mobileStage?.height).toBeGreaterThanOrEqual(844 * 0.65)

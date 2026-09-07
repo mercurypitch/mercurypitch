@@ -312,7 +312,11 @@ describe('transport-owned song loops', () => {
   }
 
   afterEach(async () => {
-    for (const harness of harnesses.splice(0)) await harness.transport.dispose()
+    const releases = harnesses
+      .splice(0)
+      .map((harness) => harness.transport.dispose())
+    if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(240)
+    await Promise.all(releases)
     vi.useRealTimers()
   })
 
@@ -1770,17 +1774,156 @@ describe('createGuitarBackingTransport', () => {
   })
 
   it('stops active sources and closes its owned context exactly once', async () => {
+    vi.useFakeTimers()
     const harness = audioHarness()
     harness.transport.configure(session('dispose'))
     await harness.transport.play()
     const source = harness.context.sources[0]
+    const master = harness.transport.getAudioGraph()!
+      .master as unknown as FakeGainNode
+    try {
+      const first = harness.transport.dispose()
+      const second = harness.transport.dispose()
+      expect(master.gain.operations.at(-1)).toEqual({
+        kind: 'target',
+        value: 0,
+        when: 10,
+        timeConstant: 0.036,
+      })
+      expect(source.stop).not.toHaveBeenCalled()
+      expect(source.disconnect).not.toHaveBeenCalled()
+      expect(harness.context.close).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(239)
+      expect(source.stop).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await Promise.all([first, second])
+      expect(source.stop).toHaveBeenCalledOnce()
+      expect(source.disconnect).toHaveBeenCalledOnce()
+      expect(harness.context.close).toHaveBeenCalledOnce()
+    } finally {
+      await vi.advanceTimersByTimeAsync(240)
+      vi.useRealTimers()
+    }
+  })
 
-    await harness.transport.dispose()
-    await harness.transport.dispose()
+  it('releases shared guide audio on room exit even when no backing song was playing', async () => {
+    vi.useFakeTimers()
+    const harness = audioHarness()
+    await harness.transport.activate()
+    const graph = harness.transport.getAudioGraph()!
+    const master = graph.master as unknown as FakeGainNode
+    const guide = graph.buses.guide as unknown as FakeGainNode
+    try {
+      const finished = harness.transport.dispose()
+      expect(harness.transport.getAudioGraph()).toBeNull()
+      expect(harness.transport.getAudioContext()).toBeNull()
+      await expect(harness.transport.activate()).resolves.toBe(false)
+      await expect(harness.transport.play()).resolves.toBe(false)
+      expect(master.gain.operations.at(-1)).toEqual({
+        kind: 'target',
+        value: 0,
+        when: 10,
+        timeConstant: 0.036,
+      })
+      expect(guide.disconnect).not.toHaveBeenCalled()
+      expect(master.disconnect).not.toHaveBeenCalled()
+      expect(harness.context.close).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(239)
+      expect(guide.disconnect).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await finished
+      expect(guide.disconnect).toHaveBeenCalledOnce()
+      expect(master.disconnect).toHaveBeenCalledOnce()
+      expect(harness.context.close).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      await vi.advanceTimersByTimeAsync(240)
+      vi.useRealTimers()
+    }
+  })
 
-    expect(source.stop).toHaveBeenCalledOnce()
-    expect(source.disconnect).toHaveBeenCalledOnce()
-    expect(harness.context.close).toHaveBeenCalledOnce()
+  it('disposes a silent borrowed context immediately without closing it or allocating audio', async () => {
+    vi.useFakeTimers()
+    const context = new FakeAudioContext()
+    const contextFactory = vi.fn(() => context as unknown as AudioContext)
+    const transport = createGuitarBackingTransport({
+      contextFactory,
+      closeContextOnDispose: false,
+      activateContext: async () => undefined,
+    })
+    try {
+      await transport.activate()
+      const graph = transport.getAudioGraph()!
+      await transport.dispose()
+      expect(contextFactory).toHaveBeenCalledOnce()
+      expect(graph.master.disconnect).toHaveBeenCalledOnce()
+      expect(context.close).not.toHaveBeenCalled()
+      expect(vi.getTimerCount()).toBe(0)
+      const inertFactory = vi.fn(() => context as unknown as AudioContext)
+      await createGuitarBackingTransport({
+        contextFactory: inertFactory,
+      }).dispose()
+      expect(inertFactory).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels an in-flight load immediately so it cannot reopen the retiring room', async () => {
+    vi.useFakeTimers()
+    const harness = audioHarness()
+    const pending = deferred<ArrayBuffer>()
+    harness.fetchArrayBuffer.mockImplementationOnce(() => pending.promise)
+    harness.transport.configure(session('disposing-load'))
+    const playing = harness.transport.play()
+    try {
+      await vi.waitFor(() =>
+        expect(harness.fetchArrayBuffer).toHaveBeenCalledOnce(),
+      )
+      const signal = harness.fetchArrayBuffer.mock.calls[0][1]
+      const finished = harness.transport.dispose()
+      expect(signal.aborted).toBe(true)
+      pending.resolve(new ArrayBuffer(8))
+      await expect(playing).resolves.toBe(false)
+      expect(harness.context.decodeAudioData).not.toHaveBeenCalled()
+      expect(harness.context.sources).toHaveLength(0)
+      expect(harness.contextFactory).toHaveBeenCalledOnce()
+      expect(harness.transport.getAudioGraph()).toBeNull()
+      expect(harness.context.close).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(240)
+      await finished
+      expect(harness.context.close).toHaveBeenCalledOnce()
+    } finally {
+      await vi.advanceTimersByTimeAsync(240)
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps streamed media connected through the disposal release before retiring it', async () => {
+    vi.useFakeTimers()
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('disposing-stream'))
+    await harness.transport.play()
+    const media = harness.mediaElements[0]
+    const source = harness.context.mediaSources[0]
+    media.pause.mockClear()
+    try {
+      const finished = harness.transport.dispose()
+      expect(media.pause).not.toHaveBeenCalled()
+      expect(source.disconnect).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(239)
+      expect(media.pause).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await finished
+      expect(media.pause).toHaveBeenCalled()
+      expect(source.disconnect).toHaveBeenCalledOnce()
+      expect(media.src).toBe('')
+      expect(harness.context.close).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      await vi.advanceTimersByTimeAsync(240)
+      vi.useRealTimers()
+    }
   })
 })
 
