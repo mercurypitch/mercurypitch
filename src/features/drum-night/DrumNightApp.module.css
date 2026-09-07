@@ -2889,6 +2889,29 @@
     cursor: pointer;
     text-align: left;
   }
+  /* Below 1040px the phrase-coach column is hidden, so its Finish moves here.
+     The dock is the one take surface these widths always show, and it sits
+     clear of the transport, which keeps plain Play and Pause. */
+  .coachCueFinish {
+    display: inline-grid;
+    min-height: 44px;
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 7px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    color: var(--room);
+    background: var(--cyan);
+    box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 760;
+  }
+  .coachCueFinish > svg {
+    width: 16px;
+    height: 16px;
+  }
   .coachCueKeep {
     display: grid;
     width: 100%;
@@ -3327,23 +3350,6 @@
   .mobileNav .mobilePlay > .playLoadPercent {
     font-size: 12px;
   }
-  /* A take waiting to be finished takes the disc over, so the rail keeps five
-     items instead of wrapping a sixth off the bottom of the screen. The green
-     ink separates it from the amber transport at a glance. */
-  .mobileNav .mobilePlay.mobilePlayFinish {
-    background: var(--cyan);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 34%);
-  }
-  .mobileNav .mobilePlay.mobilePlayFinish > svg {
-    width: 20px;
-    height: 20px;
-  }
-  .mobilePlayFinishLabel {
-    font-size: 10px;
-    font-weight: 760;
-    line-height: 1;
-  }
-
   .sheetScrim {
     position: absolute;
     z-index: 70;

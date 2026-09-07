@@ -37,7 +37,11 @@ const [dismissed, setDismissed] = createSignal(loadDismissed())
 // A dismissal lasts the tab session, which on a phone can be weeks. It ends
 // at the next sign-in, so the nudge and its Resend come back for whoever
 // signs in then; a reload while signed in is not a sign-in.
-let wasSignedIn = hasValidToken()
+//
+// Read on the first refresh rather than here: `hasValidToken` reaches
+// localStorage, and a browser with site data blocked throws on the getter —
+// at module scope that takes the whole app down on import.
+let wasSignedIn: boolean | null = null
 
 function clearDismissal(): void {
   setDismissed(false)
@@ -56,7 +60,9 @@ let latestStamp: unknown = Symbol('none')
 function refresh(stamp: unknown): Promise<void> {
   latestStamp = stamp
   const signedIn = hasValidToken()
-  if (signedIn && !wasSignedIn) clearDismissal()
+  // The first pass only records where we started; a page opened while
+  // already signed in is not a sign-in.
+  if (wasSignedIn === false && signedIn) clearDismissal()
   wasSignedIn = signedIn
   if (inFlight !== null && inFlight.stamp === stamp) return inFlight.done
   const done = (async () => {

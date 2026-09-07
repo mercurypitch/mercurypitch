@@ -8022,6 +8022,13 @@
     border: 0;
   }
 
+  /* Clipped text is still readable; a clipped BUTTON is a tab stop nobody
+     can see. Its one action, Replay, is what the transport's own play button
+     already does at this width. */
+  .roomFooter button {
+    display: none;
+  }
+
   .roomStatus {
     display: none;
   }

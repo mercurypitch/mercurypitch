@@ -1959,6 +1959,25 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       if (open !== 'coach') setCoachLead('coach')
     }),
   )
+  // The phrase-coach column is `display: none` at 1040px and below, so the room
+  // has to know the same cutoff to move that column's Finish into the strip.
+  // The stage's own query, not `use-viewport`, because 1040 is this room's
+  // layout breakpoint and nothing else in the app shares it.
+  const [compactCoachLayout, setCompactCoachLayout] = createSignal(false)
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+  ) {
+    const mql = window.matchMedia('(max-width: 1040px)')
+    setCompactCoachLayout(mql.matches)
+    const onChange = (): void => {
+      setCompactCoachLayout(mql.matches)
+    }
+    mql.addEventListener('change', onChange)
+    onCleanup(() => {
+      mql.removeEventListener('change', onChange)
+    })
+  }
   // Only a saved, prepared First Pocket keeps take history.
   const takeEligible = (): boolean =>
     activeProject() !== null &&
@@ -1979,19 +1998,21 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
     takeFinishStateKind() === 'idle' &&
     !takeFinishPreparing()
-  // A phone hides the phrase-coach column, so its bottom rail is the only
-  // Finish a musician can see. Pressing Play there while a take waits only
-  // resumes evidence that still has to be finished behind a tap nobody has a
-  // reason to make, so the primary control becomes the thing to do next. The
-  // swap holds only while the clock is idle — a running take keeps its Pause,
-  // which is the rail's only way to stop the transport (UX-37).
-  const phoneFinishLeads = (): boolean =>
-    isNarrow() && takeReadyToFinish() && !isPlaying()
+  // Below 1040px the phrase-coach column is hidden, and with it the only
+  // Finish control in the room. The always-visible take strip carries one
+  // instead. The transport is left alone: Play and Pause keep meaning Play and
+  // Pause while a take waits, which is how a take is cut everywhere else
+  // (UX-37). `isNarrow` is the tested phone path; the wider query covers the
+  // 721-1040 tablet band, where the column is hidden too.
+  const coachColumnHidden = (): boolean => isNarrow() || compactCoachLayout()
+  const takeFinishInStrip = (): boolean =>
+    coachColumnHidden() && takeReadyToFinish()
   // Keeping the live-kit replay is the other decision that lives in the hidden
   // column, and Play is refused until it is made. The always-visible take strip
-  // carries it on a phone so the refusal is never a dead end.
+  // carries it wherever that column is hidden, so the refusal is never a dead
+  // end — tablets in the 721-1040 band included.
   const phoneKeepPending = (): boolean => {
-    if (!isNarrow() || takeFinishStateKind() !== 'saved') return false
+    if (!coachColumnHidden() || takeFinishStateKind() !== 'saved') return false
     const replay = takeCapture.state()
     return replay === 'processing' || replay === 'ready' || replay === 'saving'
   }
@@ -2028,9 +2049,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (omitted > 0) {
       return `${retained} strikes ready · ${omitted} older not retained.`
     }
-    return activeProject() === null
-      ? `${retained} strikes ready to compare.`
-      : `${retained} strikes ready · Review and finish.`
+    // "Review and finish" only where finishing is actually on offer: a take
+    // over a play-along song is never eligible, and promising a review the
+    // room will not give is worse than saying nothing about it.
+    return takeEligible()
+      ? `${retained} strikes ready · Review and finish.`
+      : `${retained} strikes ready to compare.`
   }
   const takeCueDetail = (): string => {
     const finishKind = takeFinishStateKind()
@@ -3999,6 +4023,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     </span>
                     <ChevronDown />
                   </button>
+                  <Show when={takeFinishInStrip()}>
+                    <button
+                      class={styles.coachCueFinish}
+                      type="button"
+                      inert={drawerInteractionLocked()}
+                      onClick={finishTake}
+                    >
+                      <CheckSmall aria-hidden="true" />
+                      <span>Finish take</span>
+                    </button>
+                  </Show>
                   <Show when={phoneKeepPending()}>
                     <div
                       class={styles.coachCueKeep}
@@ -5056,52 +5091,31 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </button>
           <button
             class={styles.mobilePlay}
-            classList={{
-              [styles.playButtonLoading]: playLoadingShown(),
-              [styles.mobilePlayFinish]: phoneFinishLeads(),
-            }}
+            classList={{ [styles.playButtonLoading]: playLoadingShown() }}
             type="button"
-            onClick={() => {
-              if (phoneFinishLeads()) {
-                finishTake()
-                return
-              }
-              togglePlaying()
-            }}
+            onClick={togglePlaying}
             aria-label={
-              phoneFinishLeads()
-                ? 'Finish take'
-                : playLoadingShown()
-                  ? `Loading ${sessionTitle()} audio`
-                  : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+              playLoadingShown()
+                ? `Loading ${sessionTitle()} audio`
+                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
             }
           >
             <Show
-              when={phoneFinishLeads()}
+              when={playLoadingShown()}
               fallback={
-                <Show
-                  when={playLoadingShown()}
-                  fallback={
-                    <>
-                      {isPlaying() ? <Pause /> : <Play />}
-                      <span class={styles.playSrLabel}>
-                        {isPlaying() ? 'Pause' : 'Play'}
-                      </span>
-                    </>
-                  }
-                >
-                  {/* The same meter as the console button: the phone bar is
-                      the only transport a phone sees while a song loads. A
-                      loading song is stem backing, which can never hold a
-                      finishable take, so the two states cannot collide. */}
-                  <DrumPlayLoadMeter
-                    fraction={stemPlayAlongSnapshot().loadFraction}
-                  />
-                </Show>
+                <>
+                  {isPlaying() ? <Pause /> : <Play />}
+                  <span class={styles.playSrLabel}>
+                    {isPlaying() ? 'Pause' : 'Play'}
+                  </span>
+                </>
               }
             >
-              <CheckSmall />
-              <span class={styles.mobilePlayFinishLabel}>Finish</span>
+              {/* The same meter as the console button: the phone bar is the
+                  only transport a phone sees while a song loads. */}
+              <DrumPlayLoadMeter
+                fraction={stemPlayAlongSnapshot().loadFraction}
+              />
             </Show>
           </button>
           <button

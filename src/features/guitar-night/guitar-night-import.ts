@@ -3,12 +3,9 @@
 // ============================================================
 
 import type { UnifiedSongImportKind } from '@/features/play-along/song-import'
-import { classifyUnifiedSongImport, UNIFIED_SONG_IMPORT_ACCEPT, } from '@/features/play-along/song-import'
+import { classifyUnifiedSongImport } from '@/features/play-along/song-import'
 
 export type { UnifiedSongImportKind as GuitarNightImportKind } from '@/features/play-along/song-import'
-
-/** Ready-to-use accept list for the single Guitar Night file picker. */
-export const GUITAR_NIGHT_IMPORT_ACCEPT = UNIFIED_SONG_IMPORT_ACCEPT
 
 /** Calm, compact copy shared by picker and drop affordances. */
 export const GUITAR_NIGHT_IMPORT_FORMATS =
