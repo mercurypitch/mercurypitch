@@ -7,7 +7,7 @@
 // the resulting controller truth.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, createUniqueId, For, Match, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, For, Match, Show, Switch, } from 'solid-js'
 import { AlertTriangle, CheckSmall, History, Loader2 } from '@/components/icons'
 import type { DrumTakeHistoryProps } from './drum-persistence-ui'
 import { formatPersistenceCount, formatPersistenceDate, formatSignedPersistenceMeasurement, } from './drum-persistence-ui'
@@ -36,7 +36,10 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
       .slice(0, 6),
   )
 
-  onMount(() => {
+  // An effect, not onMount: saving a groove while this surface is open returns
+  // history to idle, and that fresh project's takes must still load without
+  // the musician closing and reopening the coach.
+  createEffect(() => {
     if (props.mode === 'expanded' && props.view.history.kind === 'idle') {
       props.onLoadHistory()
     }
@@ -268,7 +271,17 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
                 {props.view.unavailableReason ??
                   'Open an authored score or saved groove to create a comparable take.'}
               </p>
+              <Show when={props.onSaveProject !== undefined}>
+                <p class={styles.heldTakeNote}>
+                  Your captured strikes stay in this take while you save.
+                </p>
+              </Show>
             </div>
+            <Show when={props.onSaveProject !== undefined}>
+              <button type="button" onClick={() => props.onSaveProject?.()}>
+                Save project
+              </button>
+            </Show>
           </Match>
 
           <Match
@@ -309,6 +322,19 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
                 <span>
                   <strong>Opening recent takes</strong>
                   <small>Reading compact summaries on this device…</small>
+                </span>
+              </div>
+            </Match>
+            <Match when={props.view.history.kind === 'unavailable'}>
+              <div class={styles.historyState} role="status">
+                <History />
+                <span>
+                  <strong>No take history to open yet</strong>
+                  <small>
+                    {props.view.history.kind === 'unavailable'
+                      ? props.view.history.message
+                      : ''}
+                  </small>
                 </span>
               </div>
             </Match>

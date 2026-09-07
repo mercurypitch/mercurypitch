@@ -35,6 +35,7 @@ vi.mock('@/features/exercises/feedback', () => ({
 }))
 vi.mock('@/lib/audio-unlock', () => ({
   unlockAudio: vi.fn(async () => undefined),
+  activateAudioPlayback: vi.fn(async () => undefined),
 }))
 vi.mock('@/db/services/uvr-service', () => ({
   getStemBlobUrl: vi.fn(async () => null),

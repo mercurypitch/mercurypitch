@@ -27,6 +27,17 @@ export function songImportAcceptForDevice(
   return isAppleTouchDevice(nav) ? undefined : UNIFIED_SONG_IMPORT_ACCEPT
 }
 
+/**
+ * The same rule for a picker that takes authored scores only — Drum Night's,
+ * which offers MIDI and Guitar Pro. Same reason: on an Apple touch device an
+ * `accept` list greys out the Guitar Pro files the picker exists to open.
+ */
+export function referenceAcceptForDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): string | undefined {
+  return isAppleTouchDevice(nav) ? undefined : SONG_REFERENCE_FILE_ACCEPT
+}
+
 export function isMidiSongFile(fileName: string): boolean {
   return /\.midi?$/i.test(fileName)
 }

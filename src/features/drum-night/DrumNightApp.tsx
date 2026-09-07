@@ -1968,10 +1968,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   // waiting to be finished: on phones the nav offers Finish take then, where
   // the coach cue that holds it is collapsed. The control is rendered only
   // there, so wide layouts keep one Finish control (UX-36, UX-37).
+  // Captured evidence is enough to show the strip. An unsaved groove renders
+  // the held-take card with its Save project action instead of the Finish
+  // button, so no second Finish control appears — and a musician who just
+  // played a take is never shown an empty coach column.
   const takeRailShown = (): boolean =>
-    activeProject() !== null &&
-    (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
-      (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle')
+    retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
+    (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle'
   const takeReadyToFinish = (): boolean =>
     takeEligible() &&
     retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
@@ -2020,6 +2023,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         })
     }
     updateUrl(view(), nextWorkspace)
+  }
+
+  // Take summaries are stored per saved project, so a held take on an unsaved
+  // groove needs the save prompt, not a dead-end explanation. Saving keeps the
+  // captured strikes: the active-project boundary only resets the take history
+  // controller, never the runtime evidence.
+  const openProjectSavePrompt = (): void => {
+    setProjectSavePromptOpen(true)
+    openWorkspace('projects')
   }
 
   const closeWorkspace = (): void => {
@@ -3857,6 +3869,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <DrumTakeHistoryHost
                       mode="compact"
                       controller={takeHistoryController()}
+                      historyProjectId={activeProjectId()}
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
@@ -3865,6 +3878,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
                           : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      onSaveProject={
+                        activeProject() === null
+                          ? openProjectSavePrompt
+                          : undefined
                       }
                       preparing={takeFinishPreparing()}
                       onFinishTake={finishTake}
@@ -4142,10 +4160,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                                   <button
                                     class={styles.saveProjectAction}
                                     type="button"
-                                    onClick={() => {
-                                      setProjectSavePromptOpen(true)
-                                      openWorkspace('projects')
-                                    }}
+                                    onClick={openProjectSavePrompt}
                                   >
                                     Save project
                                   </button>
@@ -4671,6 +4686,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <DrumTakeHistoryHost
                       mode="expanded"
                       controller={takeHistoryController()}
+                      historyProjectId={activeProjectId()}
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
@@ -4679,6 +4695,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
                           : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      onSaveProject={
+                        activeProject() === null
+                          ? openProjectSavePrompt
+                          : undefined
                       }
                       preparing={takeFinishPreparing()}
                       onFinishTake={finishTake}

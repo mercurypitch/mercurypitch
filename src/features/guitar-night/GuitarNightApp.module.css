@@ -8003,14 +8003,14 @@
     min-height: var(--touch-target);
   }
 
+  /* The strip is a status readout — "Set · beat 12.5", and the elapsed time
+     the rail above already shows. On a phone it costs a whole row for that,
+     and its one button (Replay, when a take is complete) is the same action
+     the transport's play button already offers under the same name. So the
+     strip is screen-reader only at this width in every room, and the row
+     goes to the neck and the transport. The readout is still announced,
+     because it is the room's live region. */
   .roomFooter {
-    min-height: 2.6rem;
-    margin: 0;
-    padding: 0 max(0.55rem, var(--safe-right)) max(0.1rem, var(--safe-bottom))
-      max(0.55rem, var(--safe-left));
-  }
-
-  [data-room-kind='backing'] .roomFooter {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -8020,10 +8020,6 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-  }
-
-  .roomFooter p {
-    display: grid;
   }
 
   .roomStatus {
@@ -8187,12 +8183,6 @@
     height: 54px;
   }
 
-  .roomFooter {
-    min-height: 44px;
-    padding: 0 max(8px, var(--safe-right)) max(2px, var(--safe-bottom))
-      max(8px, var(--safe-left));
-  }
-
   .firstWinRoom {
     grid-template-rows: minmax(280px, 1fr) auto;
     overflow-y: auto;
@@ -8242,10 +8232,6 @@
 
   .roomHeadingRow {
     min-height: 3.1rem;
-  }
-
-  .roomFooter small {
-    display: none;
   }
 }
 

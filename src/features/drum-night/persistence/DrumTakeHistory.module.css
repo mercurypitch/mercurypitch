@@ -226,6 +226,10 @@
   color: var(--take-cyan);
 }
 
+.actionCopy .heldTakeNote {
+  color: var(--take-cyan);
+}
+
 .finishRail[data-state='idle'] button {
   border-color: rgb(231 173 82 / 54%);
   color: var(--take-ink);

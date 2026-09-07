@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { classifyUnifiedSongImport, isGuitarProSongFile, isMidiSongFile, songImportAcceptForDevice, UNIFIED_SONG_IMPORT_ACCEPT, } from './song-import'
+import { classifyUnifiedSongImport, isGuitarProSongFile, isMidiSongFile, referenceAcceptForDevice, songImportAcceptForDevice, UNIFIED_SONG_IMPORT_ACCEPT, } from './song-import'
 
 function file(name: string, type = ''): File {
   return new File(['music'], name, { type })
@@ -65,5 +65,31 @@ describe('songImportAcceptForDevice', () => {
         platform: 'MacIntel',
       }),
     ).toBeUndefined()
+  })
+})
+
+describe('referenceAcceptForDevice', () => {
+  const IPHONE = {
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+    maxTouchPoints: 5,
+    platform: 'iPhone',
+  }
+  const LINUX = {
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
+    maxTouchPoints: 0,
+    platform: 'Linux x86_64',
+  }
+
+  it('lists MIDI and Guitar Pro where the picker honours a list', () => {
+    const accept = referenceAcceptForDevice(LINUX)
+    expect(accept).toContain('.gp5')
+    expect(accept).toContain('.mid')
+  })
+
+  it('sends no list on an Apple touch device', () => {
+    // Drum Night's picker is for authored scores, so an accept list there
+    // greys out every Guitar Pro file it exists to open — the same defect
+    // Guitar Night had.
+    expect(referenceAcceptForDevice(IPHONE)).toBeUndefined()
   })
 })
