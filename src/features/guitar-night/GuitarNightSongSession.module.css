@@ -1,0 +1,47 @@
+/* A single reading column; no transport grid placement leaks into settings. */
+.sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.inputDisclosure {
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgb(244 234 219 / 0.12);
+}
+
+.inputDisclosure summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  color: var(--ivory);
+  cursor: pointer;
+}
+
+.inputDisclosure summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--amber-bright);
+}
+
+.inputDisclosure[open] summary::after {
+  content: '−';
+}
+
+.inputDisclosure summary span,
+.note {
+  color: var(--muted-readable);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.inputDisclosure summary:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0.5rem 0 0;
+}

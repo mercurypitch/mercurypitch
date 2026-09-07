@@ -9,8 +9,9 @@ import { readGuitarNightDrumSound } from '@/features/guitar-night/guitar-night-d
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { DrumVoiceId } from '@/lib/drum-voices'
 import { triggerDrumVoice } from '@/lib/drum-voices'
+import { createGuitarAmpStage } from '@/lib/guitar/guitar-amp-stage'
 import type { GuitarElectricAmpParameters, GuitarElectricAmpStage, } from '@/lib/guitar/guitar-electric-amp'
-import { createGuitarElectricAmpStage, DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, } from '@/lib/guitar/guitar-electric-amp'
+import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
@@ -578,7 +579,7 @@ export function createGuitarRoomBand(
   const createPercussionPlayer =
     options.createPercussionPlayer ?? createLazyGuitarRoomDrumPlayer
   const createElectricAmpStage =
-    options.createElectricAmpStage ?? createGuitarElectricAmpStage
+    options.createElectricAmpStage ?? createGuitarAmpStage
   const readDrumSoundPreference =
     options.readDrumSoundPreference ?? readGuitarNightDrumSound
   const loadHumanizer = options.loadHumanizer ?? loadGuitarRoomHumanizer
@@ -914,7 +915,8 @@ export function createGuitarRoomBand(
       guideOutput.electric.gain.value = 1
       drumsOutput.gain.value = 1
       guideOutput.clean.connect(currentGraph.guideInputs.clean)
-      guideOutput.electric.connect(currentGraph.guideInputs.electric)
+      // Every electric voice is summed by track below, then its processed
+      // output meets the clean guide bus. Do not wake an unused global amp.
       drumsOutput.connect(currentGraph.buses.drums)
       const melodyChannels = new Map<
         string,

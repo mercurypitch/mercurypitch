@@ -1,9 +1,15 @@
-// Guitar Night amp calibration tests pin curated loudness, headroom, and voicing.
+// Guitar Night Lite calibration tests pin the original curated loudness, headroom, and voicing.
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import { computeGuitarElectricAmpToneResponse, computeGuitarElectricAmpVoicing, shapeGuitarElectricPowerAmp, shapeGuitarElectricPreamp, } from '@/lib/guitar/guitar-electric-amp'
 import { GUITAR_NIGHT_AMP_PRESETS } from './guitar-amp-settings'
+
+// This reference models the original Lite functions, not the Studio head or
+// cabinet convolution. Studio needs the real rendered-audio regression gate.
+const LITE_PRESETS = GUITAR_NIGHT_AMP_PRESETS.filter(
+  (preset) => preset.settings.engine === 'lite',
+)
 
 const REFERENCE_SAMPLE_RATE = 8192
 const REFERENCE_SAMPLE_COUNT = 8192
@@ -77,19 +83,19 @@ function renderAmpPresetReference(
   }
 }
 
-describe('Guitar Night curated amp calibration', () => {
-  const metrics = GUITAR_NIGHT_AMP_PRESETS.map(renderAmpPresetReference)
+describe('Guitar Night curated Lite amp calibration', () => {
+  const metrics = LITE_PRESETS.map(renderAmpPresetReference)
 
   it('matches reference energy instead of making higher drive merely louder', () => {
     const rmsLevels = metrics.map((result) => result.rmsDb)
 
     expect(Math.max(...rmsLevels) - Math.min(...rmsLevels)).toBeLessThan(1.5)
-    expect(
-      GUITAR_NIGHT_AMP_PRESETS.map((preset) => preset.settings.drive),
-    ).toEqual([0.22, 0.42, 0.68, 0.84])
-    expect(
-      GUITAR_NIGHT_AMP_PRESETS.map((preset) => preset.settings.output),
-    ).toEqual([0.72, 0.6, 0.4, 0.25])
+    expect(LITE_PRESETS.map((preset) => preset.settings.drive)).toEqual([
+      0.22, 0.42, 0.68, 0.84,
+    ])
+    expect(LITE_PRESETS.map((preset) => preset.settings.output)).toEqual([
+      0.72, 0.6, 0.4, 0.25,
+    ])
   })
 
   it('retains conservative peak headroom after each strongest tone boost', () => {
@@ -100,7 +106,7 @@ describe('Guitar Night curated amp calibration', () => {
   })
 
   it('progressively focuses the mids and removes brittle cabinet top end', () => {
-    const responses = GUITAR_NIGHT_AMP_PRESETS.map((preset) =>
+    const responses = LITE_PRESETS.map((preset) =>
       computeGuitarElectricAmpToneResponse(preset.settings, [750, 6000]),
     )
     const midLevels = responses.map((response) => response[0])

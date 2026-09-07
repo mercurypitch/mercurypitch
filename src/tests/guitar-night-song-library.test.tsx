@@ -114,6 +114,8 @@ function fakeBackingTransport() {
         id: track.id,
         label: track.label,
         muted: track.muted ?? false,
+        effectiveMuted: track.muted ?? false,
+        levelDb: 0,
         level: track.level ?? 1,
         available: true,
       })) ?? []
@@ -144,9 +146,16 @@ function fakeBackingTransport() {
     }),
     setMasterVolume: vi.fn(),
     setElectricAmpParameters: vi.fn(),
+    setTrackLevelDb: vi.fn(),
+    toggleTrackSolo: vi.fn(),
+    resetTrackLevels: vi.fn(),
+    setLoopRange: vi.fn(() => true),
+    getLoopRange: () => null,
+    getLoopMode: () => null,
+    getLoopError: () => null,
     setTrackMuted: vi.fn((id, muted) => {
       trackStates = trackStates.map((track) =>
-        track.id === id ? { ...track, muted } : track,
+        track.id === id ? { ...track, muted, effectiveMuted: muted } : track,
       )
       emit()
     }),
@@ -165,6 +174,7 @@ function fakeBackingTransport() {
     getPlaybackRate: () => playbackRate,
     getMasterVolume: () => 0.78,
     getTrackStates: () => trackStates,
+    getSoloedTrackId: () => null,
     getError: () => null,
     subscribe(listener) {
       listeners.add(listener)
@@ -327,9 +337,17 @@ describe('GuitarNightApp prepared songs', () => {
       screen.getByRole('heading', { name: 'Quiet Room.wav' }),
     ).toHaveFocus()
     expect(screen.getByRole('button', { name: 'Play backing' })).toBeVisible()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Open track mixer for Quiet Room.wav',
+      }),
+    )
     expect(
-      screen.getByRole('button', { name: 'Guitar muted' }),
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.getByRole('button', { name: 'Unmute Guitar' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close the track mixer' }),
+    )
     expect(backingTransport.configure).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionId: 'session-room',
@@ -345,7 +363,10 @@ describe('GuitarNightApp prepared songs', () => {
     ).toBeVisible()
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to Songs' }))
-    expect(backingTransport.transport.pause).toHaveBeenCalledOnce()
+    // Both room cleanup and the route park the same transport idempotently.
+    // What matters is that it is silent before the room disappears.
+    expect(backingTransport.transport.getStatus()).toBe('paused')
+    expect(screen.queryByTestId('guitar-night-room')).toBeNull()
     const resumeSong = await screen.findByRole('button', {
       name: /^Quiet Room\.wav/,
     })
@@ -384,16 +405,17 @@ describe('GuitarNightApp prepared songs', () => {
     )
     fireEvent.click(await screen.findByRole('button', { name: 'Enter room' }))
 
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Open track mixer for/ }),
+    )
     expect(
       screen.getByText(
         'Backing ready. Guitar remains inside this mix, so it cannot be muted independently.',
       ),
     ).toBeInTheDocument()
-    // No guitar *channel*: a mute chip is named "<track> on"/"<track> muted".
-    // The stage's instrument picker also says "Guitar", and it is not a claim
-    // about the mix, so match the channel naming rather than the word.
+    // No guitar channel: the stage instrument picker is not a stem control.
     expect(
-      screen.queryByRole('button', { name: /^Guitar (on|muted)$/ }),
+      screen.queryByRole('button', { name: /^(Mute|Unmute) Guitar$/ }),
     ).toBeNull()
   })
 
@@ -1212,6 +1234,9 @@ describe('GuitarNightApp prepared songs', () => {
     // The mix is two-stem, which is exactly what normally offers the
     // upgrade — but "Separate guitar" reconnects to a durable separation
     // record the demo has never had, and then names a price in credits.
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Open track mixer for/ }),
+    )
     expect(screen.queryByRole('button', { name: /Separate guitar/ })).toBeNull()
   })
 
@@ -1238,6 +1263,9 @@ describe('GuitarNightApp prepared songs', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
     fireEvent.click(await screen.findByRole('button', { name: /Mine\.wav/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'Enter room' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Open track mixer for/ }),
+    )
 
     expect(
       screen.getByRole('button', { name: /Separate guitar/ }),

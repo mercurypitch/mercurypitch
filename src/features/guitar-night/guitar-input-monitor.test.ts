@@ -9,8 +9,8 @@ const amp = vi.hoisted(() => ({
   createStage: vi.fn(),
 }))
 
-vi.mock('@/lib/guitar/guitar-electric-amp', () => ({
-  createGuitarElectricAmpStage: amp.createStage,
+vi.mock('@/lib/guitar/guitar-amp-stage', () => ({
+  createGuitarAmpStage: amp.createStage,
 }))
 
 const PARAMETERS: GuitarElectricAmpParameters = {
@@ -76,23 +76,37 @@ function createHarness() {
 describe('createGuitarInputMonitor', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('adds one initially silent wet branch to the supplied monitor bus', () => {
+  it('keeps the amp dormant until explicit monitor opt-in', () => {
     const harness = createHarness()
 
-    createGuitarInputMonitor({
+    const monitor = createGuitarInputMonitor({
       context: harness.context,
       source: harness.source,
       destination: harness.monitorBus,
       parameters: PARAMETERS,
     })
 
-    expect(amp.createStage).toHaveBeenCalledWith(harness.context, PARAMETERS)
+    expect(amp.createStage).not.toHaveBeenCalled()
+    expect(harness.source.connect).not.toHaveBeenCalled()
+    expect(harness.gain.setValueAtTime).toHaveBeenCalledWith(0, 2)
+    expect(harness.gain.setTargetAtTime).not.toHaveBeenCalled()
+    const updated = {
+      ...PARAMETERS,
+      engine: 'studio' as const,
+      character: 0.25,
+    }
+    monitor.setParameters(updated)
+    expect(amp.createStage).not.toHaveBeenCalled()
+    expect(monitor.setEnabled(true)).toBe(true)
+    expect(amp.createStage).toHaveBeenCalledWith(harness.context, updated)
     expect(harness.source.connect).toHaveBeenCalledOnce()
     expect(harness.source.connect).toHaveBeenCalledWith(harness.input)
     expect(harness.stageOutput.connect).toHaveBeenCalledWith(harness.output)
     expect(harness.output.connect).toHaveBeenCalledWith(harness.monitorBus)
-    expect(harness.gain.setValueAtTime).toHaveBeenCalledWith(0, 2)
-    expect(harness.gain.setTargetAtTime).not.toHaveBeenCalled()
+    monitor.setEnabled(false)
+    monitor.setEnabled(true)
+    expect(amp.createStage).toHaveBeenCalledOnce()
+    monitor.dispose()
   })
 
   it('ramps live toggles, forwards amp changes, and disposes synchronously', () => {
@@ -108,7 +122,13 @@ describe('createGuitarInputMonitor', () => {
     expect(harness.gain.cancelAndHoldAtTime).toHaveBeenCalledWith(2)
     expect(harness.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, 2, 0.01)
 
-    const changed = { ...PARAMETERS, drive: 0.8 }
+    const changed = {
+      ...PARAMETERS,
+      engine: 'studio' as const,
+      head: 'definition' as const,
+      character: 0.4,
+      drive: 0.8,
+    }
     monitor.setParameters(changed)
     expect(harness.stage.setParameters).toHaveBeenCalledWith(changed, 2)
 
@@ -118,6 +138,23 @@ describe('createGuitarInputMonitor', () => {
     expect(harness.source.disconnect).toHaveBeenCalledWith(harness.input)
     expect(harness.output.disconnect).toHaveBeenCalledOnce()
     expect(harness.stage.dispose).toHaveBeenCalledOnce()
+    expect(harness.source.disconnect).toHaveBeenCalledTimes(1)
+    expect(monitor.setEnabled(true)).toBe(false)
+  })
+
+  it('disposes an unopened monitor without touching the dry input connections', () => {
+    const harness = createHarness()
+    const monitor = createGuitarInputMonitor({
+      context: harness.context,
+      source: harness.source,
+      destination: harness.monitorBus,
+      parameters: PARAMETERS,
+    })
+    monitor.dispose()
+    monitor.dispose()
+    expect(amp.createStage).not.toHaveBeenCalled()
+    expect(harness.source.disconnect).not.toHaveBeenCalled()
+    expect(harness.output.disconnect).toHaveBeenCalledOnce()
     expect(monitor.setEnabled(true)).toBe(false)
   })
 })

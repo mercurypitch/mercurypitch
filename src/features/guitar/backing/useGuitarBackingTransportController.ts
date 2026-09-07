@@ -5,6 +5,7 @@ import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { recordAnimationFrame } from '@/lib/device-tier'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
+import type { LoopSpan } from '@/lib/guitar/loop-span'
 import type { GuitarBackingLoadMode, GuitarBackingLoadProgress, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
 import { createGuitarBackingTransport } from './guitar-backing-transport'
 
@@ -40,7 +41,19 @@ export function useGuitarBackingTransportController(
   const [tracks, setTracks] = createSignal<readonly GuitarBackingTrackState[]>(
     transport.getTrackStates(),
   )
+  const [soloedTrackId, setSoloedTrackId] = createSignal<string | null>(
+    transport.getSoloedTrackId(),
+  )
   const [error, setError] = createSignal<string | null>(transport.getError())
+  const [loopRange, setLoopRangeSignal] = createSignal<LoopSpan | null>(
+    transport.getLoopRange(),
+  )
+  const [loopMode, setLoopMode] = createSignal<GuitarBackingLoadMode | null>(
+    transport.getLoopMode(),
+  )
+  const [loopError, setLoopError] = createSignal<string | null>(
+    transport.getLoopError(),
+  )
   let frame: number | null = null
 
   const cancelFrame = (): void => {
@@ -74,7 +87,11 @@ export function useGuitarBackingTransportController(
     setPlaybackRateSignal(transport.getPlaybackRate())
     setMasterVolumeSignal(transport.getMasterVolume())
     setTracks(transport.getTrackStates())
+    setSoloedTrackId(transport.getSoloedTrackId())
     setError(transport.getError())
+    setLoopRangeSignal(transport.getLoopRange())
+    setLoopMode(transport.getLoopMode())
+    setLoopError(transport.getLoopError())
     if (nextStatus === 'playing' && frame === null) {
       frame = requestAnimationFrame(updateClock)
     } else if (nextStatus !== 'playing') {
@@ -124,6 +141,12 @@ export function useGuitarBackingTransportController(
     sync()
   }
 
+  const setLoopRange = (range: LoopSpan | null): boolean => {
+    const accepted = transport.setLoopRange(range)
+    sync()
+    return accepted
+  }
+
   const setElectricAmpParameters = (
     parameters: GuitarElectricAmpParameters,
   ): void => {
@@ -138,6 +161,21 @@ export function useGuitarBackingTransportController(
 
   const setTrackMuted = (id: string, muted: boolean): void => {
     transport.setTrackMuted(id, muted)
+    sync()
+  }
+
+  const setTrackLevelDb = (id: string, db: number): void => {
+    transport.setTrackLevelDb(id, db)
+    sync()
+  }
+
+  const toggleTrackSolo = (id: string): void => {
+    transport.toggleTrackSolo(id)
+    sync()
+  }
+
+  const resetTrackLevels = (): void => {
+    transport.resetTrackLevels()
     sync()
   }
 
@@ -159,17 +197,25 @@ export function useGuitarBackingTransportController(
     playbackRate,
     masterVolume,
     tracks,
+    soloedTrackId,
     error,
+    loopRange,
+    loopMode,
+    loopError,
     configure,
     activate,
     play,
     pause,
     stop,
     seek,
+    setLoopRange,
     setPlaybackRate,
     setMasterVolume,
     setElectricAmpParameters,
     setTrackMuted,
+    setTrackLevelDb,
+    toggleTrackSolo,
+    resetTrackLevels,
     getAudioGraph,
   }
 }

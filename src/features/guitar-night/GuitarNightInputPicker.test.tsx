@@ -2,12 +2,47 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 
 afterEach(() => cleanup())
 
 describe('GuitarNightInputPicker', () => {
+  it('keeps a saved but missing interface selected until an explicit device choice', () => {
+    const [selected, setSelected] = createSignal<string | null>('missing-di')
+    render(() => (
+      <GuitarNightInputPicker
+        profile={() => 'interface'}
+        profileLabel={() => 'Direct input'}
+        audioInputs={() => [{ id: 'builtin', label: 'Built-in microphone' }]}
+        selectedAudioInputId={selected}
+        midiInputs={() => []}
+        selectedMidiInputId={() => null}
+        midiStatus={() => 'idle'}
+        evidenceExportEnabled={() => false}
+        canExportEvidence={() => false}
+        switching={() => false}
+        onProfile={() => undefined}
+        onAudioInput={setSelected}
+        onMidiInput={() => undefined}
+        onRefreshAudio={() => undefined}
+        onRefreshMidi={() => undefined}
+        onExportEvidence={() => undefined}
+      />
+    ))
+    const device = screen.getByRole('combobox', { name: 'Audio input device' })
+    expect(device).toHaveValue('missing-di')
+    expect(
+      screen.getByRole('option', { name: 'Saved input (not listed)' }),
+    ).toBeInTheDocument()
+    fireEvent.change(device, { target: { value: 'builtin' } })
+    expect(device).toHaveValue('builtin')
+    expect(
+      screen.queryByRole('option', { name: 'Saved input (not listed)' }),
+    ).toBeNull()
+  })
+
   it('refreshes audio inputs and exposes the three explicit routes', () => {
     const chooseProfile = vi.fn()
     const refreshAudio = vi.fn()

@@ -40,13 +40,19 @@ const FOCUSABLE_SELECTOR = [
   'textarea:not([disabled])',
   'audio[controls]',
   'video[controls]',
+  'details > summary:first-of-type',
   '[contenteditable="true"]',
   '[tabindex]',
 ].join(',')
 
 function isRendered(element: HTMLElement, root: HTMLElement): boolean {
+  // Native summaries are tab stops even in DOM implementations that report
+  // tabIndex=-1 by default. An explicit negative tabindex still opts out.
+  const nativeSummary =
+    element.matches('details > summary:first-of-type') &&
+    !element.hasAttribute('tabindex')
   if (
-    element.tabIndex < 0 ||
+    (element.tabIndex < 0 && !nativeSummary) ||
     element.matches(':disabled') ||
     element.closest('[hidden], [inert], [aria-hidden="true"]')
   ) {
@@ -55,6 +61,10 @@ function isRendered(element: HTMLElement, root: HTMLElement): boolean {
 
   let current: HTMLElement | null = element
   while (current !== null) {
+    if (current instanceof HTMLDetailsElement && !current.open) {
+      const summary = current.querySelector(':scope > summary')
+      if (summary === null || !summary.contains(element)) return false
+    }
     const style = window.getComputedStyle(current)
     if (style.display === 'none' || style.visibility === 'hidden') return false
     if (current === root) return true
@@ -136,7 +146,7 @@ export function useFocusTrap(
       queueMicrotask(() => {
         if (root.contains(document.activeElement)) return
         const fallback =
-          focusWithinDialog !== undefined && root.contains(focusWithinDialog)
+          focusWithinDialog !== undefined && isRendered(focusWithinDialog, root)
             ? focusWithinDialog
             : focusable()[0]
         ;(fallback ?? root).focus({ preventScroll: true })

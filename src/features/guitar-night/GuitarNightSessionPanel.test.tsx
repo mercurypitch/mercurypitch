@@ -156,14 +156,14 @@ describe('GuitarNightSessionPanel', () => {
       />
     ))
 
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByTestId('guitar-night-session-scrim'))
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 
-  it('dismisses from the scrim without activating the covered stage', () => {
+  it('dismisses from the scrim without activating the covered stage', async () => {
     const onClose = vi.fn()
     const onHighwayPointerDown = vi.fn()
     render(() => (
@@ -179,6 +179,7 @@ describe('GuitarNightSessionPanel', () => {
       </>
     ))
 
+    await Promise.resolve()
     expect(
       screen.getByRole('button', { name: 'Close the track mixer' }),
     ).toHaveFocus()

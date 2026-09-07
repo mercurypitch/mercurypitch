@@ -44,13 +44,20 @@ function fakeTransport(): {
     pause: vi.fn(),
     stop: vi.fn(),
     seek: vi.fn(),
+    setLoopRange: vi.fn(() => true),
     setPlaybackRate: vi.fn(async () => true),
     setMasterVolume: vi.fn(),
     setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
+    setTrackLevelDb: vi.fn(),
+    toggleTrackSolo: vi.fn(),
+    resetTrackLevels: vi.fn(),
     getAudioContext: () => null,
     getAudioGraph: () => null,
     getLoadMode: () => null,
+    getLoopRange: () => null,
+    getLoopMode: () => null,
+    getLoopError: () => null,
     getLoadProgress: () => null,
     getStatus: () => status,
     getCurrentTime: () => 0,
@@ -58,6 +65,7 @@ function fakeTransport(): {
     getPlaybackRate: () => 1,
     getMasterVolume: () => 1,
     getTrackStates: () => [],
+    getSoloedTrackId: () => null,
     getError: () => null,
     subscribe: (listener: () => void) => {
       listeners.add(listener)
@@ -150,6 +158,62 @@ describe('the backing clock feeds the frame-health sampler', () => {
       expect(fake.transport.setElectricAmpParameters).toHaveBeenCalledWith(
         parameters,
       )
+      expect(fake.transport.activate).not.toHaveBeenCalled()
+      dispose()
+    })
+  })
+
+  it('forwards mixer edits and Solo state without starting or seeking playback', () => {
+    const fake = fakeTransport()
+    let solo: string | null = null
+    fake.transport.getSoloedTrackId = () => solo
+    fake.transport.toggleTrackSolo = vi.fn((id) => {
+      solo = solo === id ? null : id
+    })
+    createRoot((dispose) => {
+      const controller = useGuitarBackingTransportController({
+        createTransport: () => fake.transport,
+      })
+      controller.setTrackLevelDb('drums', 4)
+      controller.toggleTrackSolo('drums')
+      expect(controller.soloedTrackId()).toBe('drums')
+      controller.setTrackMuted('guitar', true)
+      controller.resetTrackLevels()
+      expect(fake.transport.setTrackLevelDb).toHaveBeenCalledWith('drums', 4)
+      expect(fake.transport.setTrackMuted).toHaveBeenCalledWith('guitar', true)
+      expect(fake.transport.resetTrackLevels).toHaveBeenCalledOnce()
+      expect(fake.transport.activate).not.toHaveBeenCalled()
+      expect(fake.transport.play).not.toHaveBeenCalled()
+      expect(fake.transport.seek).not.toHaveBeenCalled()
+      dispose()
+    })
+  })
+
+  it('forwards loop marks and exposes transport acceptance, mode and errors without a UI seek loop', () => {
+    const fake = fakeTransport()
+    let range: { start: number; end: number } | null = null
+    let error: string | null = null
+    fake.transport.getLoopRange = () => range
+    fake.transport.getLoopMode = () => 'buffered'
+    fake.transport.getLoopError = () => error
+    fake.transport.setLoopRange = vi.fn((next) => {
+      range = next
+      return true
+    })
+    createRoot((dispose) => {
+      const controller = useGuitarBackingTransportController({
+        createTransport: () => fake.transport,
+      })
+      expect(controller.setLoopRange({ start: 1, end: 3 })).toBe(true)
+      expect(controller.loopRange()).toEqual({ start: 1, end: 3 })
+      expect(controller.loopMode()).toBe('buffered')
+      range = null
+      error = 'Loop memory budget exceeded'
+      fake.emit()
+      expect(controller.loopRange()).toBeNull()
+      expect(controller.loopError()).toBe(error)
+      expect(fake.transport.seek).not.toHaveBeenCalled()
+      expect(fake.transport.play).not.toHaveBeenCalled()
       expect(fake.transport.activate).not.toHaveBeenCalled()
       dispose()
     })

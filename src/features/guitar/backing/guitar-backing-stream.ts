@@ -132,8 +132,11 @@ function setElementTime(element: HTMLMediaElement, seconds: number): boolean {
 
 function mediaDuration(streamed: StreamedTrack): number {
   const declared = streamed.track.durationSeconds
+  const actual = streamed.element.duration
   if (declared !== undefined && Number.isFinite(declared) && declared > 0) {
-    return declared
+    return Number.isFinite(actual) && actual > 0
+      ? Math.min(declared, actual)
+      : declared
   }
   return Number.isFinite(streamed.element.duration) &&
     streamed.element.duration > 0
@@ -571,7 +574,8 @@ export function createGuitarBackingStreamEngine(
       })
       const settled = await Promise.allSettled(starts)
       if (disposed || currentGeneration !== generation) {
-        pauseNow()
+        // Pause, dispose or a newer play already owns these same elements.
+        // In particular, do not pause a newer run when this old promise lands.
         return null
       }
 
@@ -596,7 +600,6 @@ export function createGuitarBackingStreamEngine(
         }),
       )
       if (disposed || currentGeneration !== generation) {
-        pauseNow()
         return null
       }
       const alignedStarted = started.filter((streamed, index) => {
@@ -611,7 +614,6 @@ export function createGuitarBackingStreamEngine(
         ),
       )
       if (disposed || currentGeneration !== generation) {
-        pauseNow()
         return null
       }
 
@@ -634,7 +636,6 @@ export function createGuitarBackingStreamEngine(
         ),
       )
       if (disposed || currentGeneration !== generation) {
-        pauseNow()
         return null
       }
 

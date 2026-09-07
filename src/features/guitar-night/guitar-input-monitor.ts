@@ -1,8 +1,8 @@
 // Guitar input monitoring adds an opt-in wet branch to an already-owned interface source.
 // ============================================================
 
-import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
-import { createGuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
+import { createGuitarAmpStage } from '@/lib/guitar/guitar-amp-stage'
+import type { GuitarElectricAmpParameters, GuitarElectricAmpStage, } from '@/lib/guitar/guitar-electric-amp'
 
 const MONITOR_GAIN_TIME_CONSTANT_SECONDS = 0.01
 
@@ -41,32 +41,37 @@ function setMonitorGainTarget(
 export function createGuitarInputMonitor(
   options: GuitarInputMonitorOptions,
 ): GuitarInputMonitor {
-  const stage = createGuitarElectricAmpStage(
-    options.context,
-    options.parameters,
-  )
   const output = options.context.createGain()
   output.gain.setValueAtTime(0, options.context.currentTime)
-  options.source.connect(stage.input)
-  stage.output.connect(output)
   output.connect(options.destination)
 
+  let stage: GuitarElectricAmpStage | undefined
+  let parameters = options.parameters
   let enabled = false
   let disposed = false
 
   const disconnect = (): void => {
-    try {
-      options.source.disconnect(stage.input)
-    } catch {
-      // The listening controller may already have disconnected every branch.
+    if (stage !== undefined) {
+      try {
+        options.source.disconnect(stage.input)
+      } catch {
+        // The listening controller may already have disconnected every branch.
+      }
+      stage.dispose()
     }
     output.disconnect()
-    stage.dispose()
   }
 
   return {
     setEnabled(nextEnabled) {
       if (disposed) return false
+      if (nextEnabled && stage === undefined) {
+        // Listening alone needs only dry analysis. Studio assets and DSP wait
+        // for the separate, explicit headphone-monitor action.
+        stage = createGuitarAmpStage(options.context, parameters)
+        options.source.connect(stage.input)
+        stage.output.connect(output)
+      }
       enabled = nextEnabled
       setMonitorGainTarget(
         output.gain,
@@ -75,9 +80,10 @@ export function createGuitarInputMonitor(
       )
       return enabled
     },
-    setParameters(parameters) {
+    setParameters(nextParameters) {
       if (disposed) return
-      stage.setParameters(parameters, options.context.currentTime)
+      parameters = nextParameters
+      stage?.setParameters(nextParameters, options.context.currentTime)
     },
     dispose() {
       if (disposed) return
