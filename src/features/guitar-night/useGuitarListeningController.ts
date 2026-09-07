@@ -1728,6 +1728,19 @@ export function useGuitarListeningController(
     take,
     /** The already-owned dry route; consumers must never stop its tracks. */
     recordableStream,
+    /** Borrow a dry side tap, never ownership of the stream or monitor. */
+    recordingInput: () => {
+      const stream = recordableStream()
+      if (stream === null || source === null || takeContext === null)
+        return null
+      return {
+        context: takeContext,
+        source,
+        stream,
+        channel: monitorInputChannel(),
+        channelCount: pitchAnalysers.length,
+      }
+    },
     /** The score scheduler and replay recorder read this same audio clock. */
     recordableAudioContext: () => takeContext,
     evidenceExportEnabled,

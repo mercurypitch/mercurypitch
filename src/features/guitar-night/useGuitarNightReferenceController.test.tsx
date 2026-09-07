@@ -5,6 +5,7 @@ import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import type { GuitarNightReferencePort, GuitarNightReferenceSource, GuitarNightTranscriptionPort, } from './reference-port'
 import { openGuitarNightReference, suggestReferenceInstrument, } from './reference-port'
 import { useGuitarNightReferenceController } from './useGuitarNightReferenceController'
@@ -109,11 +110,15 @@ function fakePort(overrides: Partial<GuitarNightReferencePort> = {}) {
   return { port, rememberTrack }
 }
 
-function mount(port: GuitarNightReferencePort) {
+function mount(
+  port: GuitarNightReferencePort,
+  backingSessionId?: () => string | null,
+) {
   let controller!: ReturnType<typeof useGuitarNightReferenceController>
   const Harness: Component = () => {
     controller = useGuitarNightReferenceController({
       loadReferencePort: async () => port,
+      backingSessionId,
     })
     return null
   }
@@ -148,6 +153,69 @@ describe('useGuitarNightReferenceController', () => {
   afterEach(() => {
     cleanup()
     window.history.replaceState(null, '', '/guitar-night')
+  })
+
+  it('restores recorded placement, persists a nudge and clears it for a new attachment', async () => {
+    const save = vi.fn(async () => undefined)
+    const alignment = {
+      source: 'manual' as const,
+      anchors: [{ scoreSeconds: 0, audioSeconds: 3 }],
+    }
+    const { port } = fakePort({
+      readRecordedPlacement: async () => alignment,
+      saveRecordedPlacement: save,
+    })
+    const controller = mount(port, () => 'backing')
+    await controller.attach(VELVET_RIFF.id)
+    await controller.restoreRecordedPlacement(VELVET_RIFF.id, 'backing')
+    expect(controller.readingOnRecording()?.alignment).toEqual(alignment)
+    expect(controller.handPlacement()?.marks.firstAudioSeconds).toBe(3)
+    controller.nudgeScoreOnRecording(0.2)
+    expect(save).toHaveBeenCalledWith(
+      VELVET_RIFF.id,
+      'backing',
+      expect.objectContaining({
+        anchors: [{ scoreSeconds: 0, audioSeconds: 3.2 }],
+      }),
+    )
+    await controller.attach(VELVET_RIFF.id, 'track-rhythm')
+    expect(controller.readingOnRecording()).toBeNull()
+    expect(controller.handPlacement()).toBeNull()
+  })
+
+  it('ignores a late saved placement after the user detaches the score', async () => {
+    let resolve!: (value: ScoreAlignment | null) => void
+    const pending = new Promise<ScoreAlignment | null>((done) => {
+      resolve = done
+    })
+    const { port } = fakePort({ readRecordedPlacement: () => pending })
+    const controller = mount(port, () => 'backing')
+    await controller.attach(VELVET_RIFF.id)
+    const restoring = controller.restoreRecordedPlacement(
+      VELVET_RIFF.id,
+      'backing',
+    )
+    controller.detach()
+    resolve({
+      source: 'manual',
+      anchors: [{ scoreSeconds: 0, audioSeconds: 3 }],
+    })
+    await restoring
+    expect(controller.reference()).toBeNull()
+    expect(controller.handPlacement()).toBeNull()
+  })
+
+  it('clears a placed score synchronously without removing the empty hand-placement controls', async () => {
+    const { port } = fakePort()
+    const controller = mount(port, () => 'backing')
+    await controller.attach(VELVET_RIFF.id)
+    await controller.placeScoreByHand(VELVET_RIFF.id, 'track-rhythm')
+    controller.markScoreOnRecording('first', 3)
+    expect(controller.readingOnRecording()).not.toBeNull()
+    controller.clearHandPlacement()
+    expect(controller.readingOnRecording()).toBeNull()
+    expect(controller.handPlacement()?.marks).toEqual({})
+    expect(controller.reference()?.kind).toBe('authored')
   })
 
   it('attaches a saved score and routes it on the score axis alone', async () => {

@@ -31,6 +31,25 @@ section[data-room-kind='backing'] .loopDock {
 
 section[data-room-kind='backing'] .playbackDock {
   grid-area: controls;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+section[data-room-kind='backing'] .playbackDock > label {
+  width: 7rem;
+}
+
+section[data-room-kind='backing'] .playbackDock > [role='group'] {
+  width: auto;
+  min-width: 7.8rem;
+}
+
+section[data-room-kind='backing'][data-free-form='true']
+  .transportWithListening {
+  grid-template-areas: 'listening controls' 'mix controls';
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 @media (max-width: 1100px) {

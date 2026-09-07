@@ -66,11 +66,17 @@ for (const width of [1440, 390, 320]) {
         }),
       ).toBeVisible()
     }
-    const menuBox = await picker.boundingBox()
-    if (menuBox === null) throw new Error('Listening picker has no layout')
-    expect(menuBox.x).toBeGreaterThanOrEqual(7)
-    expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width - 7)
-    expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(box.y)
+    // The shared fan measures and clamps itself on the next animation frame.
+    // Assert its settled geometry, not the unpositioned first paint.
+    await expect(async () => {
+      const menuBox = await picker.boundingBox()
+      const anchorBox = await listening.boundingBox()
+      if (menuBox === null || anchorBox === null)
+        throw new Error('Listening picker has no layout')
+      expect(menuBox.x).toBeGreaterThanOrEqual(7)
+      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width - 7)
+      expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(anchorBox.y)
+    }).toPass({ timeout: 5000 })
     expect(await audioActivity(page)).toEqual(baseline)
     expect(cabinetRequests).toEqual([])
     const directory = process.env.GUITAR_SONG_LISTENING_ARTIFACTS
@@ -139,8 +145,14 @@ for (const width of [1440, 390, 320]) {
       }),
     ).toBeDisabled()
     const dockBox = await dockMix.boundingBox()
-    if (dockBox === null) throw new Error('Song mix has no layout')
-    expect(dockBox.y).toBeGreaterThanOrEqual(box.y + box.height)
+    // Selecting Direct input changes the compact dock's row height. Compare
+    // both current boxes, not the earlier Room-mic position before Session.
+    const currentListeningBox = await listening.boundingBox()
+    if (dockBox === null || currentListeningBox === null)
+      throw new Error('Song mix has no layout')
+    expect(dockBox.y).toBeGreaterThanOrEqual(
+      currentListeningBox.y + currentListeningBox.height,
+    )
     expect(dockBox.x).toBeLessThan(40)
     const dockPath = test.info().outputPath(`song-mix-dock-${width}.png`)
     await page.screenshot({ path: dockPath })
@@ -169,12 +181,15 @@ for (const width of [1440, 390, 320]) {
     await controls
       .getByRole('button', { name: 'Unmute backing', exact: true })
       .click()
-    const quickBox = await controls.boundingBox()
-    if (quickBox === null)
-      throw new Error('Quick Listening controls have no layout')
-    expect(quickBox.x).toBeGreaterThanOrEqual(7)
-    expect(quickBox.x + quickBox.width).toBeLessThanOrEqual(width - 7)
-    expect(quickBox.y + quickBox.height).toBeLessThanOrEqual(box.y)
+    await expect(async () => {
+      const quickBox = await controls.boundingBox()
+      const anchorBox = await listening.boundingBox()
+      if (quickBox === null || anchorBox === null)
+        throw new Error('Quick Listening controls have no layout')
+      expect(quickBox.x).toBeGreaterThanOrEqual(7)
+      expect(quickBox.x + quickBox.width).toBeLessThanOrEqual(width - 7)
+      expect(quickBox.y + quickBox.height).toBeLessThanOrEqual(anchorBox.y)
+    }).toPass({ timeout: 5000 })
     for (const toggle of await controls.getByRole('button').all()) {
       const toggleBox = await toggle.boundingBox()
       expect(toggleBox?.width).toBeGreaterThanOrEqual(44)

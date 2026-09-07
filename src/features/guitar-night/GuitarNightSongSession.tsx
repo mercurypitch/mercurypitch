@@ -116,7 +116,7 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
         <div>
           <GuitarNightAmpControls
             targetLabel="Direct input only"
-            takeNotice="This song room does not save audio."
+            takeNotice="Record captures dry input. The amp stays on your live monitor."
             parameters={props.amp.parameters}
             presetId={() => props.amp.settings().presetId}
             inputProfile={props.listening.inputProfile}

@@ -19,6 +19,7 @@ import type { MidiProgramFamily } from '@/lib/midi-program-family'
 import { resolveMidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiSongNote, MidiSongPercussionHit, MidiTempoChange, } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
+import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
 import type { GuitarNightStemKind } from './song-port'
 
@@ -132,6 +133,17 @@ export type GuitarNightOpenReferenceResult =
   | { ok: false; code: 'not-found' | 'no-playable-notes' }
 
 export interface GuitarNightReferencePort {
+  /** Refresh a local async catalogue before resolving a new recorded revision. */
+  refresh?(): Promise<void>
+  readRecordedPlacement?(
+    songId: string,
+    backingId: string,
+  ): Promise<ScoreAlignment | null>
+  saveRecordedPlacement?(
+    songId: string,
+    backingId: string,
+    alignment: ScoreAlignment | null,
+  ): Promise<void>
   listReferences(): readonly GuitarNightReferenceSummary[]
   openReference(
     songId: string,

@@ -52,6 +52,7 @@ import type { GuidedVoiceTakeContextV1 } from './guided-voice-take'
 import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './guided-voice-take'
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
+import { GuitarRecordedTakeLink } from './GuitarRecordedTakeLink'
 import { bindListeningRoomSettings } from './listening-room-settings'
 import { PerformanceTakeScoreCard } from './PerformanceTakeScoreCard'
 import { PracticeLoomPanel } from './PracticeLoomPanel'
@@ -1961,6 +1962,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         <>
           Delete <strong>{intent.take.title}</strong> from this device? This
           cannot be undone.
+          <Show when={intent.take.source === 'guitar-night'}>
+            {' '}
+            Saved melody notes are kept in Guitar Night; only the take audio is
+            removed here.
+          </Show>
           <Show when={deleteError()}>
             <span class={styles.deleteDialogError} role="alert">
               {deleteError()}
@@ -1976,6 +1982,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           {intent.thread.takes.length}{' '}
           {intent.thread.takes.length === 1 ? 'take' : 'takes'} from this
           device? Every other practice thread stays intact.
+          <Show when={intent.thread.source === 'guitar-night'}>
+            {' '}
+            Saved melody notes remain in Guitar Night.
+          </Show>
           <Show when={deleteError()}>
             <span class={styles.deleteDialogError} role="alert">
               {deleteError()}
@@ -1987,7 +1997,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     return (
       <>
         Delete all {intent?.count ?? 0} kept takes from this device? Their audio
-        cannot be recovered.
+        cannot be recovered. Saved guitar melody notes remain in Guitar Night.
         <Show when={deleteError()}>
           <span class={styles.deleteDialogError} role="alert">
             {deleteError()}
@@ -2351,6 +2361,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                               </Show>
                             </div>
 
+                            <Show when={thread.takes[0]}>
+                              {(take) => (
+                                <GuitarRecordedTakeLink take={take()} />
+                              )}
+                            </Show>
                             <Show when={selectedGuidedFocus()} keyed>
                               {(focus) => {
                                 const copy = savedFocusCopy(focus)

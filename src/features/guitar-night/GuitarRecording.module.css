@@ -1,0 +1,192 @@
+/* Recorder extends the room's warm faceplate without turning it into a DAW. */
+.recordControl {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.recordControl output {
+  color: #e6c5ba;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.recordButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #935847;
+  border-radius: 6px;
+  background: #34221e;
+  color: #ffd3c4;
+  font: inherit;
+  cursor: pointer;
+}
+.recordButton svg {
+  width: 18px;
+  height: 18px;
+}
+.recordButton:hover:not(:disabled) {
+  background: #593027;
+}
+.recordButton[aria-pressed='true'] {
+  background: #653429;
+}
+.recordButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.status {
+  color: #d1c4ad;
+  font-size: 0.8rem;
+  max-height: 5.5rem;
+  overflow-y: auto;
+}
+.status p {
+  margin: 0.25rem 0;
+}
+.status button {
+  text-align: left;
+  display: block;
+  max-width: 100%;
+  min-height: 44px;
+  background: none;
+  color: #f4cb8e;
+  border: 0;
+  padding: 0.4rem 0.2rem;
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.status small {
+  display: block;
+  color: #c6b8a1;
+}
+.status summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.status summary::before {
+  content: '+';
+  color: #f4cb8e;
+}
+.status details[open] summary::before {
+  content: '−';
+}
+.review {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  color: #eee2cd;
+}
+.reviewOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 65;
+  pointer-events: none;
+}
+.review p {
+  margin: 0;
+  color: #c6b8a1;
+  line-height: 1.5;
+}
+.review label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+.review input,
+.review select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid #645540;
+  background: #191612;
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: #eee2cd;
+  font: inherit;
+}
+.review audio {
+  width: 100%;
+}
+.review button,
+.mainActions button {
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #68543b;
+  border-radius: 5px;
+  background: #251e16;
+  color: #f4dfbb;
+  font: inherit;
+  cursor: pointer;
+}
+.review button:hover:not(:disabled),
+.mainActions button:hover:not(:disabled) {
+  background: #453321;
+}
+.review button:disabled,
+.mainActions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.mainActions .primary {
+  color: #24170b;
+  background: #e8b973;
+  border-color: #e8b973;
+  font-weight: 650;
+}
+.mainActions .primary:hover:not(:disabled) {
+  background: #f3cd96;
+}
+.mainActions {
+  width: 100%;
+}
+.mainActions button {
+  flex: 1 1 auto;
+  font-size: 0.8rem;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.editor {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #4a3d2a;
+  padding: 1rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.review :focus-visible,
+.mainActions :focus-visible,
+.recordButton:focus-visible,
+.status button:focus-visible {
+  outline: 2px solid #f4cb8e;
+  outline-offset: 3px;
+}
+@media (max-width: 390px) {
+  .recordControl {
+    gap: 0.2rem;
+    flex-wrap: wrap;
+  }
+  .recordControl output {
+    font-size: 0.65rem;
+  }
+}

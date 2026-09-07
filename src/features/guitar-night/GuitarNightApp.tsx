@@ -10,7 +10,8 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
 import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
-import { ChevronLeft, GuitarTab, Info, LinkChain, ScoreDocument, Split, X, } from '@/components/icons'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ChevronLeft, GuitarTab, Info, LinkChain, MusicNote, ScoreDocument, Split, X, } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
@@ -30,6 +31,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
+import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
@@ -52,12 +54,13 @@ import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
 import { GuitarNightOnRecording } from './GuitarNightOnRecording'
 import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
+import { GuitarNightScoreLibrary } from './GuitarNightScoreLibrary'
 import { StoppedPreparationActions } from './GuitarNightStoppedPreparation'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking } from './reference-port'
-import { readGuitarNightSession } from './session-link'
+import { readGuitarNightRecording, readGuitarNightScore, readGuitarNightSession, } from './session-link'
 import type { GuitarNightStemKind } from './song-port'
 import type { GuitarNightSongPort, GuitarNightSongSummary } from './song-port'
 import { formatGuitarNightGlassValue, GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, guitarNightGlassLabel, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
@@ -274,9 +277,36 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
   const [venueMenuOpen, setVenueMenuOpen] = createSignal(false)
   const initialSessionId = readGuitarNightSession()
+  const initialRecordingId = readGuitarNightRecording()
+  const [pendingRecordingId, setPendingRecordingId] =
+    createSignal(initialRecordingId)
   const [view, setView] = createSignal<EntryView>(
-    initialSessionId === null ? 'choices' : 'song',
+    initialRecordingId !== null
+      ? 'room'
+      : initialSessionId === null &&
+          readGuitarNightScore()?.startsWith('recorded:') !== true
+        ? 'choices'
+        : 'song',
   )
+  const [freeRoom, setFreeRoom] = createSignal(initialRecordingId !== null)
+  const [replaceRecordedScore, setReplaceRecordedScore] =
+    createSignal<GuitarPracticeScore | null>(null)
+  const attachRecordedScore = async (
+    score: GuitarPracticeScore,
+  ): Promise<void> => {
+    await referenceController.attach(score.id)
+    setFreeRoom(false)
+    const backing = activeBacking()
+    if (backing !== null) {
+      await referenceController.restoreRecordedPlacement(
+        score.id,
+        backing.sessionId,
+      )
+      if (referenceController.readingOnRecording()?.songId !== score.id)
+        await referenceController.placeScoreByHand(score.id, 'melody')
+    }
+    setView('song')
+  }
   const [learnOpen, setLearnOpen] = createSignal(false)
   const [learnInitialFocus, setLearnInitialFocus] =
     createSignal<GuitarNightLearnActivityId>('first-steps')
@@ -461,11 +491,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       setVisitedRoomSessionId(null)
     },
   })
-  // The song detail always renders the tab shelf beside the prepared-song
-  // selection. Route restoration can enter this view without calling the
-  // explicit "Load a song" action, so the shelf must follow the view itself.
+  // Deep links and returning from a free recording can enter this view without
+  // "Load a song". Both shelves must hydrate even when no backing is staged.
   createEffect(() => {
-    if (view() === 'song') referenceController.initialize()
+    if (view() === 'song') {
+      songController.initialize()
+      referenceController.initialize()
+    }
   })
   const attachedReference = referenceController.reference
   const unavailableReference = createMemo(() => {
@@ -720,6 +752,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       onNudge: referenceController.nudgeScoreOnRecording,
     }
   })
+  let restoredRecordingPair: string | null = null
+  createEffect(() => {
+    const currentView = view()
+    const backing = activeBacking()
+    const score = authoredReference()
+    if (
+      (currentView !== 'song' && currentView !== 'room') ||
+      freeRoom() ||
+      backing === null ||
+      score === null
+    )
+      return
+    const key = JSON.stringify([backing.sessionId, score.songId])
+    if (key === restoredRecordingPair) return
+    restoredRecordingPair = key
+    void referenceController.restoreRecordedPlacement(
+      score.songId,
+      backing.sessionId,
+    )
+  })
   const unavailableSelection = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
@@ -954,10 +1006,17 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const enterRoom = () => {
     const backing = activeBacking()
     if (backing === null) return
+    setFreeRoom(false)
     if (visitedRoomSessionId() !== backing.sessionId) {
       playbackController.configure(guitarNightBackingSession(backing))
       setVisitedRoomSessionId(backing.sessionId)
     }
+    setView('room')
+  }
+  const enterFreeRoom = (): void => {
+    playbackController.configure(null)
+    setVisitedRoomSessionId(null)
+    setFreeRoom(true)
     setView('room')
   }
 
@@ -970,6 +1029,22 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     if (authoredReference() === null) return
     playbackController.pause()
     setView('score-room')
+  }
+
+  const practiceRecordedScore = async (
+    score: GuitarPracticeScore,
+  ): Promise<void> => {
+    await referenceController.attach(score.id)
+    enterScoreRoom()
+  }
+
+  const requestRecordedAttachment = async (
+    score: GuitarPracticeScore,
+  ): Promise<void> => {
+    const current = attachedReference()
+    if (current !== null && current.songId !== score.id)
+      setReplaceRecordedScore(score)
+    else await attachRecordedScore(score)
   }
 
   // A drums-only import opens a backing room, not a scored tab rehearsal —
@@ -1097,7 +1172,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   createEffect(() => {
-    if (view() !== 'room' || activeBacking() !== null) return
+    if (view() !== 'room' || freeRoom() || activeBacking() !== null) return
     playbackController.configure(null)
     setView('song')
   })
@@ -1740,6 +1815,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </Match>
                 </Switch>
               </GuitarNightFileDrop>
+              <button
+                type="button"
+                class={styles.stageInvitationAction}
+                onClick={enterFreeRoom}
+              >
+                Play free form
+              </button>
 
               <section
                 class={styles.songLibrary}
@@ -2034,30 +2116,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     </p>
                   </Match>
                   <Match when={referenceController.references().length > 0}>
-                    <ul class={styles.songList}>
-                      <For each={referenceController.references()}>
-                        {(summary) => (
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void referenceController.attach(summary.songId)
-                              }
-                            >
-                              <span>
-                                <strong>{summary.title}</strong>
-                                <small>
-                                  {summary.trackCount}{' '}
-                                  {summary.trackCount === 1 ? 'part' : 'parts'}{' '}
-                                  · {formatPreparedDate(summary.importedAt)}
-                                </small>
-                              </span>
-                              <i aria-hidden="true">Attach</i>
-                            </button>
-                          </li>
-                        )}
-                      </For>
-                    </ul>
+                    <GuitarNightScoreLibrary
+                      references={referenceController.references()}
+                      formatDate={formatPreparedDate}
+                      onAttach={(id) => void referenceController.attach(id)}
+                    />
                   </Match>
                   <Match when={true}>
                     <p class={styles.songMessage}>
@@ -2141,21 +2204,27 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               </section>
             </Match>
 
-            <Match when={view() === 'room' && activeBacking()}>
+            <Match when={view() === 'room' && (freeRoom() || activeBacking())}>
               <GuitarNightRoom
-                backing={activeBacking()!}
+                backing={freeRoom() ? null : activeBacking()}
+                initialRecordingId={pendingRecordingId()}
+                onRecordingOpened={() => setPendingRecordingId(null)}
                 transport={playbackController}
-                reference={measuredReference}
+                reference={() => (freeRoom() ? null : measuredReference())}
+                onPracticeRecording={practiceRecordedScore}
+                onAttachRecording={requestRecordedAttachment}
                 tuning={referenceController.tuning}
                 onInstrument={referenceController.setInstrument}
                 onStringCount={referenceController.setStringCount}
                 onTuning={referenceController.setTuning}
                 suspended={learnOpen}
                 onSongs={returnToSongs}
-                authoredReference={authoredReference}
+                authoredReference={() =>
+                  freeRoom() ? null : authoredReference()
+                }
                 onRehearseTab={enterScoreRoom}
                 onAttachTab={returnToSongs}
-                handSync={handSync}
+                handSync={() => (freeRoom() ? null : handSync())}
                 // Withheld for the demo. "Separate guitar" reconnects to a
                 // durable separation record and then bills a cloud GPU
                 // split against it; the demo has never had one, so the
@@ -2600,6 +2669,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         </div>
       </Show>
 
+      <ConfirmDialog
+        open={replaceRecordedScore() !== null}
+        title="Use this melody with the song?"
+        message="This replaces the current room attachment. Both saved scores and the song remain in your library. Choose the song, then Align to mark the first and last notes."
+        confirmLabel="Use recorded melody"
+        confirmIcon={<MusicNote />}
+        tone="primary"
+        onCancel={() => setReplaceRecordedScore(null)}
+        onConfirm={() => {
+          const score = replaceRecordedScore()
+          setReplaceRecordedScore(null)
+          if (score !== null) void attachRecordedScore(score)
+        }}
+      />
       <input
         ref={importInput}
         class={styles.fileInput}
