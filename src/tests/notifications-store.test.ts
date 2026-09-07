@@ -171,3 +171,107 @@ describe('notifications store on a phone', () => {
     ])
   })
 })
+
+// ============================================================
+// The cap has to survive a rotation
+// ============================================================
+//
+// Reported from a device retest: "tried on mobile and then turned the phone
+// other direction and more than two can be visible". A phone crossing the
+// breakpoint fires the viewport change twice, and only one direction was
+// handled -- widening admitted everything that was waiting, narrowing did
+// nothing at all, so whatever landscape had put on screen was still there
+// in portrait. The cap was enforced when a toast ARRIVED, never when the
+// viewport changed under the toasts already up.
+
+describe('notifications store across a rotation', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    resetNotifications()
+    viewport.setNarrow(true)
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    resetNotifications()
+    viewport.setNarrow(false)
+  })
+
+  it('takes the extra slots back when the viewport narrows again', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+    showNotification('Four', 'info')
+
+    viewport.setNarrow(false)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'One',
+      'Two',
+      'Three',
+      'Four',
+    ])
+
+    viewport.setNarrow(true)
+    expect(notifications().map((item) => item.message)).toEqual(['One', 'Two'])
+  })
+
+  it('re-queues the overflow instead of dropping it, still in order', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+    showNotification('Four', 'info')
+
+    viewport.setNarrow(false)
+    viewport.setNarrow(true)
+
+    removeNotification(notifications()[0]!.id)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Two',
+      'Three',
+    ])
+    removeNotification(notifications()[0]!.id)
+    expect(notifications().map((item) => item.message)).toEqual([
+      'Three',
+      'Four',
+    ])
+  })
+
+  // Time already spent on screen is time spent. A toast sent back to the
+  // queue returns with what was left of its window, not a whole new one --
+  // otherwise rotating the phone would be a way to keep a toast up.
+  it('gives a re-queued toast the time it had left, not a fresh window', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+
+    viewport.setNarrow(false)
+    vi.advanceTimersByTime(4000)
+    viewport.setNarrow(true)
+    expect(notifications().map((item) => item.message)).toEqual(['One', 'Two'])
+
+    // One and Two run out at six seconds, which frees a slot for Three.
+    vi.advanceTimersByTime(2000)
+    expect(notifications().map((item) => item.message)).toEqual(['Three'])
+
+    // Two of its six seconds were left, so the floor gives it 2.5 -- not
+    // another six.
+    vi.advanceTimersByTime(2499)
+    expect(notifications()).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(notifications()).toHaveLength(0)
+  })
+
+  // The other direction still works: widening has room for everything.
+  it('leaves a widened window alone', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+
+    viewport.setNarrow(false)
+    expect(notifications()).toHaveLength(3)
+
+    viewport.setNarrow(false)
+    expect(notifications()).toHaveLength(3)
+  })
+})

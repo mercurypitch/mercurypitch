@@ -54,10 +54,13 @@
 //     nothing costs more to respawn each time — the delay doubles per quiet
 //     session — and after `QUIET_ROLLOVER_LIMIT` of them the timer stops and
 //     the ear dozes: the next touch anywhere brings it back, one session per
-//     touch, until it hears a word. All of that is for devices where a
-//     respawn is visible (`visibleRespawn`). Desktop respawns are silent, so
-//     desktop keeps the flat 300 ms and never dozes: hands-free is the point
-//     of voice control at a piano. Typing is not a touch — a keystroke or a
+//     touch, until it hears a word. Every wait long enough to notice is
+//     announced as `dozing`, because a pill that says "listening" over a
+//     recognizer that is not running is worse than one that admits it is
+//     waiting for a tap. All of that is for devices where a respawn is
+//     visible (`visibleRespawn`). Desktop respawns are silent, so desktop
+//     keeps the flat 300 ms and never dozes: hands-free is the point of
+//     voice control at a piano. Typing is not a touch — a keystroke or a
 //     tap in a text field never starts a session — and neither is a tap on
 //     the pill itself, which has its own meaning.
 
@@ -115,17 +118,36 @@ const FAST_END_LIMIT = 5
 const CONFIRM_START_MS = 4000
 /**
  * The respawn delay after a session that was live and heard nothing doubles
- * with every consecutive quiet session, and stops growing here. On iOS each
- * respawn is a permission bubble; on desktop the wait is invisible.
+ * with every consecutive quiet session, and stops growing here. Short,
+ * because every one of these waits is a stretch where the pill is on and the
+ * room is not being heard: the doze below is the honest end state, not a
+ * fifteen-second gap that still calls itself listening.
  */
-const QUIET_RESPAWN_MAX_MS = 15_000
+const QUIET_RESPAWN_MAX_MS = 3000
 /**
  * Consecutive quiet sessions before the timed respawn stops altogether and
  * the ear dozes until the next touch — where a respawn is visible (see
- * `WebSpeechListenerOptions.visibleRespawn`). Six is well under a minute of
- * silence on iOS.
+ * `WebSpeechListenerOptions.visibleRespawn`). Three, so the ambiguous ramp
+ * is a couple of seconds rather than most of a minute: on iOS the choice is
+ * between a permission bubble every few seconds and an ear that waits to be
+ * woken, and the second is only tolerable if the pill says so quickly.
  */
-const QUIET_ROLLOVER_LIMIT = 6
+const QUIET_ROLLOVER_LIMIT = 3
+/**
+ * A wait longer than this is announced as `dozing` rather than left looking
+ * like listening. The pill saying "listening" over a recognizer that is not
+ * running is the "it says it hears me and it does not" report: below this the
+ * gap is a blink, above it the singer is owed the truth and a tap that fixes
+ * it.
+ */
+const QUIET_ANNOUNCE_MS = 900
+/**
+ * A session that heard a word respawns on the next task, not after
+ * `RESTART_DELAY_MS`: WebKit ends a session as soon as it delivers a final
+ * result, and the 300 ms that followed swallowed the beginning of a second
+ * command given straight after the first.
+ */
+const HEARD_RESPAWN_MS = 0
 /**
  * A confirmed session that has not fired any event for this long is presumed
  * dead — WebKit drops sessions without an `end` when another capture, Siri
@@ -134,6 +156,17 @@ const QUIET_ROLLOVER_LIMIT = 6
  * another, not a visible restart.
  */
 const STALE_SESSION_MS = 45_000
+/**
+ * The same check where a respawn is visible, which is also where sessions
+ * are short-lived: WebKit ends one after a few seconds of silence, so a
+ * confirmed session that has said nothing for this long is far more likely
+ * to be a phantom than a patient one. Forty-five seconds of a pill claiming
+ * to listen over a dead recognizer is the reported "he indicates he is
+ * listening, he doesn't listen"; this bounds it, and the replacement counts
+ * as a quiet session, so a phone that keeps doing it dozes rather than
+ * rebuilding for ever.
+ */
+const VISIBLE_STALE_SESSION_MS = 12_000
 /**
  * A user gesture may replace a session that still calls itself live but has
  * been event-free this long: a phantom is indistinguishable from a quiet
@@ -306,6 +339,10 @@ export function createWebSpeechListener(
 
   const scheduleRestart = (delay: number) => {
     clearRestartTimer()
+    // A wait the singer would notice is a pause, and is named one. The next
+    // session's own `start` event puts the pill back to listening, and the
+    // gesture seam can cut the wait short in the meantime.
+    if (delay >= QUIET_ANNOUNCE_MS) callbacks.onStateChange('dozing')
     restartTimer = setTimeout(() => {
       restartTimer = null
       if (started) spinUp()
@@ -449,18 +486,21 @@ export function createWebSpeechListener(
    */
   const armStaleTimer = (r: SpeechRecognitionLike) => {
     clearStaleTimer()
-    staleTimer = setTimeout(() => {
-      staleTimer = null
-      if (!started || recognition !== r || !live) return
-      quietRollovers += 1
-      discard()
-      callbacks.onInterim('')
-      if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
-        doze()
-        return
-      }
-      spinUp()
-    }, STALE_SESSION_MS)
+    staleTimer = setTimeout(
+      () => {
+        staleTimer = null
+        if (!started || recognition !== r || !live) return
+        quietRollovers += 1
+        discard()
+        callbacks.onInterim('')
+        if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+          doze()
+          return
+        }
+        spinUp()
+      },
+      visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
+    )
   }
 
   const spinUp = () => {
@@ -580,7 +620,7 @@ export function createWebSpeechListener(
       scheduleRestart(
         Math.max(
           fastEnds >= FAST_END_LIMIT ? FAST_END_BACKOFF_MS : 0,
-          quietRespawnDelay(),
+          wasQuiet || !wasLive ? quietRespawnDelay() : HEARD_RESPAWN_MS,
         ),
       )
     }

@@ -425,34 +425,34 @@ describe('a room that stays quiet', () => {
     expect(FakeRecognition.instances).toHaveLength(3)
   })
 
-  it('stops respawning on a timer after six quiet sessions, without calling it an error', () => {
+  it('stops respawning on a timer after three quiet sessions, without calling it an error', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    for (let i = 0; i < 6; i++) quietSession(h)
+    for (let i = 0; i < 3; i++) quietSession(h)
 
-    // Six sessions, then nothing: no timer is running.
-    expect(FakeRecognition.instances).toHaveLength(6)
+    // Three sessions, then nothing: no timer is running.
+    expect(FakeRecognition.instances).toHaveLength(3)
     vi.advanceTimersByTime(600_000)
-    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(FakeRecognition.instances).toHaveLength(3)
 
     // Dozing, not failing. The sessions were healthy, and `error` would
     // expand the pill over a header the singer is trying to use.
     expect(h.last()).toEqual({ state: 'dozing', detail: undefined })
     expect(h.states.map((s) => s.state)).not.toContain('error')
-    // The cold start announced itself once; the five respawns did not.
+    // The cold start announced itself once; the respawns did not.
     expect(h.states.filter((s) => s.state === 'starting')).toHaveLength(1)
   })
 
   it('wakes on the next touch, one session per touch', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    for (let i = 0; i < 6; i++) quietSession(h)
+    for (let i = 0; i < 3; i++) quietSession(h)
     expect(h.last().state).toBe('dozing')
     const settled = h.states.length
 
     window.dispatchEvent(new Event('pointerdown'))
 
-    expect(FakeRecognition.instances).toHaveLength(7)
+    expect(FakeRecognition.instances).toHaveLength(4)
     // A continuation, not a cold start: nothing announced until it confirms.
     expect(h.states.slice(settled)).toEqual([])
     h.latest().confirm()
@@ -461,7 +461,7 @@ describe('a room that stays quiet', () => {
     // Still quiet: it ends, and it is back to waiting for a touch at once.
     h.latest().onend?.()
     vi.advanceTimersByTime(600_000)
-    expect(FakeRecognition.instances).toHaveLength(7)
+    expect(FakeRecognition.instances).toHaveLength(4)
     expect(h.last().state).toBe('dozing')
   })
 
@@ -491,15 +491,50 @@ describe('a room that stays quiet', () => {
   it('forgets the quiet stretch the moment it hears something', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    for (let i = 0; i < 5; i++) quietSession(h)
-    // Five in; a sixth quiet end would doze. Instead, a word.
+    for (let i = 0; i < 2; i++) quietSession(h)
+    // Two in; a third quiet end would doze. Instead, a word.
     h.latest().confirm()
     h.latest().final('play')
     h.latest().onend?.()
 
-    vi.advanceTimersByTime(400)
-    expect(FakeRecognition.instances).toHaveLength(7)
+    // Two quiet sessions, the one that heard, and its replacement — which
+    // comes on the next task, not after a wait, so a second command given
+    // straight after the first is not spoken into a dead gap.
+    vi.advanceTimersByTime(0)
+    expect(FakeRecognition.instances).toHaveLength(4)
     expect(h.last().state).not.toBe('dozing')
+
+    // And the quiet stretch is forgotten: the next quiet end waits the
+    // first, shortest delay again rather than the one it had reached.
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersByTime(599)
+    expect(FakeRecognition.instances).toHaveLength(4)
+    vi.advanceTimersByTime(1)
+    expect(FakeRecognition.instances).toHaveLength(5)
+  })
+
+  it('says it is paused rather than listening while it waits out a gap', () => {
+    // The report: "he indicates he is listening, he doesn't listen", then it
+    // comes back on its own after five to fifteen seconds. The pill kept the
+    // `listening` it had from the last live session while the respawn timer
+    // ran, so the gap looked like a mic that had stopped hearing the room.
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+
+    // First quiet end: a blink of a wait, not worth a word.
+    quietSession(h)
+    expect(h.last().state).toBe('listening')
+
+    // The second wait is long enough to notice, so it is named.
+    h.latest().confirm()
+    h.latest().onend?.()
+    expect(h.last()).toEqual({ state: 'dozing', detail: undefined })
+
+    // And the session that follows says listening again on its own.
+    vi.advanceTimersToNextTimer()
+    h.latest().confirm()
+    expect(h.last().state).toBe('listening')
   })
 
   it('does not announce a network hiccup', () => {
@@ -744,7 +779,39 @@ describe('a browser with no recognizer at all', () => {
   })
 })
 
+describe('a session that goes silent without ending', () => {
+  it('is replaced sooner where sessions are short-lived', () => {
+    // WebKit drops a session under Siri, a call or another capture with no
+    // `end` and no `error`, and `live` stays true over nothing: the pill
+    // says listening and the room is not heard. On a phone, where a healthy
+    // session ends after a few seconds of silence anyway, waiting 45 s to
+    // notice is most of a minute of the pill lying.
+    const phone = harness({ visibleRespawn: true })
+    phone.listener.start()
+    phone.latest().confirm()
+
+    vi.advanceTimersByTime(11_999)
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(FakeRecognition.instances).toHaveLength(2)
+    phone.listener.stop()
+
+    // Desktop keeps the longer window: Chrome's own sessions legitimately
+    // sit quiet for the best part of a minute.
+    FakeRecognition.instances = []
+    const desktop = harness({ visibleRespawn: false })
+    desktop.listener.start()
+    desktop.latest().confirm()
+    vi.advanceTimersByTime(12_000)
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(33_000)
+    expect(FakeRecognition.instances).toHaveLength(2)
+  })
+})
+
 describe('what counts as a touch', () => {
+  /** `QUIET_ROLLOVER_LIMIT` in the listener. */
+  const QUIET_SESSIONS_BEFORE_DOZE = 3
   const quiet = (h: ReturnType<typeof harness>) => {
     h.latest().confirm()
     h.latest().onend?.()
@@ -753,7 +820,7 @@ describe('what counts as a touch', () => {
   const dozeOff = () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    for (let i = 0; i < 6; i++) quiet(h)
+    for (let i = 0; i < QUIET_SESSIONS_BEFORE_DOZE; i++) quiet(h)
     expect(h.last().state).toBe('dozing')
     return h
   }
@@ -775,7 +842,7 @@ describe('what counts as a touch', () => {
     pageShow.persisted = true
     window.dispatchEvent(pageShow)
 
-    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(FakeRecognition.instances).toHaveLength(QUIET_SESSIONS_BEFORE_DOZE)
     expect(h.states.slice(settled)).toEqual([])
   })
 
@@ -791,10 +858,12 @@ describe('what counts as a touch', () => {
     document.body.append(hud)
 
     button.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(FakeRecognition.instances).toHaveLength(QUIET_SESSIONS_BEFORE_DOZE)
 
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    expect(FakeRecognition.instances).toHaveLength(7)
+    expect(FakeRecognition.instances).toHaveLength(
+      QUIET_SESSIONS_BEFORE_DOZE + 1,
+    )
     hud.remove()
   })
 
@@ -804,7 +873,7 @@ describe('what counts as a touch', () => {
     document.body.append(input)
 
     input.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    expect(FakeRecognition.instances).toHaveLength(6)
+    expect(FakeRecognition.instances).toHaveLength(QUIET_SESSIONS_BEFORE_DOZE)
     expect(h.last().state).toBe('dozing')
     input.remove()
   })

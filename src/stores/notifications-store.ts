@@ -102,11 +102,26 @@ function narrowViewport(): boolean {
   return isNarrow()
 }
 
-// A window that widens past the phone breakpoint has room for everything
-// that was waiting; without this they waited for a visible toast to go.
+// The cap has to hold across a rotation, in BOTH directions. Widening past
+// the phone breakpoint has room for everything that was waiting; narrowing
+// back has to take back the slots it no longer has, or a landscape phone's
+// four toasts all stay on screen in portrait — which is what it did, since
+// the cap was only ever applied as a toast arrived.
+//
+// Both calls are guarded, so the order below is the whole logic: give the
+// slots back first, then fill whatever is free.
 // App-lifetime root: the store outlives every component.
 createRoot(() => {
-  createEffect(on(isNarrow, () => admitWaiting(), { defer: true }))
+  createEffect(
+    on(
+      isNarrow,
+      () => {
+        evictOverflow()
+        admitWaiting()
+      },
+      { defer: true },
+    ),
+  )
 })
 
 /**
@@ -129,6 +144,30 @@ function dropVisible(id: number): void {
   timers.delete(id)
   deadlines.delete(id)
   setNotifications((n) => n.filter((x) => x.id !== id))
+}
+
+/**
+ * Bring the visible stack back inside the phone cap after a rotation.
+ *
+ * The oldest stay: they have been readable longest and are nearest their
+ * own end anyway. The overflow goes back to the FRONT of the queue in
+ * arrival order — nothing is dropped, and the order a phone shows them in
+ * is still the order they arrived in.
+ *
+ * A re-queued toast carries the time it had LEFT rather than a fresh full
+ * lifetime — it has already been on screen — floored so one with 80ms on
+ * the clock does not come back only to flash.
+ */
+function evictOverflow(): void {
+  if (!narrowViewport()) return
+  const overflow = notifications().slice(MAX_VISIBLE_NARROW)
+  if (overflow.length === 0) return
+  const requeued = overflow.map((notif) => {
+    const left = (deadlines.get(notif.id) ?? 0) - Date.now()
+    dropVisible(notif.id)
+    return { notif, durationMs: Math.max(left, MIN_ON_SCREEN_MS) }
+  })
+  waiting.unshift(...requeued)
 }
 
 function admitWaiting(): void {
@@ -168,8 +207,13 @@ function pushNotification(notif: Notification, durationMs: number): void {
 const deadlines = new Map<number, number>()
 const timers = new Map<number, ReturnType<typeof setTimeout>>()
 
-/** The shortest a merged toast gets to be read before it goes. */
-const MIN_AFTER_MERGE_MS = 2500
+/**
+ * The shortest a toast gets to be read once it is (back) on screen.
+ *
+ * Two callers: a merge extending a toast that was about to expire, and a
+ * toast a rotation pushed back into the queue coming round again.
+ */
+const MIN_ON_SCREEN_MS = 2500
 
 function scheduleRemoval(id: number, inMs: number): void {
   const existing = timers.get(id)
@@ -218,7 +262,7 @@ export function showNotification(
         ),
       )
       const left = (deadlines.get(live.id) ?? 0) - Date.now()
-      scheduleRemoval(live.id, Math.max(left, MIN_AFTER_MERGE_MS))
+      scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
       return
     }
   }

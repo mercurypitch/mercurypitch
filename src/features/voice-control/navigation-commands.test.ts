@@ -3,7 +3,7 @@ import { TAB_HOME, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import { activeTab, hideLibrary, isLibraryModalOpen, setActiveTab, } from '@/stores/ui-store'
 import { matchVoiceCommand } from './command-grammar'
 import type { NavigationVoiceDeps } from './navigation-commands'
-import { createNavigationVoiceCommands, createVoiceHelpCommands, } from './navigation-commands'
+import { createLeaveForStudioVoiceCommands, createNavigationVoiceCommands, createVoiceHelpCommands, } from './navigation-commands'
 
 // The real uvr-store drags the whole separation stack into the test
 // environment; the navigation commands only need the session list.
@@ -236,5 +236,97 @@ describe('karaoke by voice, by screen', () => {
 
     expect(leaveForPage).not.toHaveBeenCalled()
     expect(activeTab()).toBe(TAB_SETTINGS)
+  })
+})
+
+// ============================================================
+// A standalone room needs a spoken way out
+// ============================================================
+//
+// Karaoke Night, Guitar Night and the other standalone documents never load
+// the tab set above — so voice could carry a singer INTO a room and then had
+// nothing to say that left it. The reported symptom: on Karaoke Night the
+// only commands were Mercury Sing's and "what can I say".
+
+describe('leaving a standalone room by voice', () => {
+  function fireLeave(
+    utterance: string,
+    deps?: NavigationVoiceDeps,
+  ): string | undefined {
+    const commands = createLeaveForStudioVoiceCommands(deps)
+    const match = matchVoiceCommand(utterance, commands)
+    if (match === null) return undefined
+    const result = match.command.run({ n: match.n })
+    return typeof result === 'string' ? result : match.command.label
+  }
+
+  it.each([
+    ['go home', '/#/home'],
+    ['take me home', '/#/home'],
+    ['back to the studio', '/#/home'],
+    ['back to the app', '/#/home'],
+    ['go to the home page', '/#/home'],
+    ['go to singing', '/#/singing'],
+    ['open the karaoke tab', '/#/karaoke'],
+    ['show piano', '/#/piano'],
+    ['switch to guitar', '/#/guitar'],
+    ['go to exercises', '/#/exercises'],
+    ['open drills', '/#/exercises'],
+    ['show challenges', '/#/challenges'],
+    ['switch to settings', '/#/settings'],
+  ])('"%s" leaves the page for %s', (utterance, path) => {
+    const leaveForPage = vi.fn()
+
+    fireLeave(utterance, { leaveForPage })
+
+    expect(leaveForPage).toHaveBeenCalledWith(path)
+  })
+
+  it('says where it is going', () => {
+    expect(fireLeave('go home', { leaveForPage: vi.fn() })).toBe('Go to Home')
+    expect(fireLeave('go to singing', { leaveForPage: vi.fn() })).toBe(
+      'Go to Singing',
+    )
+  })
+
+  // It leaves the document rather than switching a tab: there is no tab
+  // shell on the page saying it.
+  it('does not touch the app shell tab underneath', () => {
+    fireLeave('go to singing', { leaveForPage: vi.fn() })
+
+    expect(activeTab()).toBe(TAB_HOME)
+  })
+
+  it('goes quiet while an immersive surface suspends navigation', () => {
+    const commands = createLeaveForStudioVoiceCommands({
+      suspended: () => true,
+    })
+
+    expect(matchVoiceCommand('go home', commands)).toBeNull()
+    expect(commands.every((command) => command.available?.() === false)).toBe(
+      true,
+    )
+  })
+
+  it('is an exit, not a second tab bar', () => {
+    const commands = createLeaveForStudioVoiceCommands()
+
+    expect(matchVoiceCommand('go to the jam room', commands)).toBeNull()
+    expect(matchVoiceCommand('go to the leaderboard', commands)).toBeNull()
+  })
+
+  it('answers to every room, so a set carries no room-specific wording', () => {
+    const commands = createLeaveForStudioVoiceCommands()
+
+    expect(commands.map((command) => command.id)).toEqual([
+      'nav.leave.home',
+      'nav.leave.singing',
+      'nav.leave.karaoke',
+      'nav.leave.piano',
+      'nav.leave.guitar',
+      'nav.leave.exercises',
+      'nav.leave.challenges',
+      'nav.leave.settings',
+    ])
   })
 })

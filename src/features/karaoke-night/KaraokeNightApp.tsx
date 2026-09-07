@@ -19,7 +19,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
-import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -98,6 +98,11 @@ export function KaraokeNightApp() {
     openVoiceHelp: () => setShowVoiceHelp(true),
   })
   onCleanup(registerVoiceCommands(() => voiceHelpCommands))
+  // Nor was there anything to say that LEFT this page. Voice could bring a
+  // singer here and then had no way out: "go home" and "go to singing"
+  // belong to the shell's tab set, which this document never loads.
+  const leaveCommands = createLeaveForStudioVoiceCommands()
+  onCleanup(registerVoiceCommands(() => leaveCommands))
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our

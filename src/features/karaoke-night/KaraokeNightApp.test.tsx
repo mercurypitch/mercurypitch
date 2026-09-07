@@ -4,6 +4,8 @@
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
+import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { KaraokeNightApp } from './KaraokeNightApp'
 
 vi.mock('./demo-song', () => ({
@@ -38,5 +40,38 @@ describe('KaraokeNightApp background integration', () => {
     expect(
       screen.getByRole('button', { name: 'Choose karaoke stage background' }),
     ).toBeInTheDocument()
+  })
+})
+
+// ============================================================
+// A room you can leave by voice
+// ============================================================
+//
+// Reported from a device retest: on this page voice offered Mercury Sing's
+// commands and "what can I say", and nothing else. The tab set that carries
+// "go home" belongs to the app shell, which this document is not — so a
+// singer with the phone across the room could get here by voice and then
+// had no phrase that got them out again.
+
+describe('KaraokeNightApp voice navigation', () => {
+  it('registers a spoken way back into the app', () => {
+    render(() => <KaraokeNightApp />)
+
+    const ids = new Set(activeVoiceCommands().map((command) => command.id))
+    expect(ids).toContain('nav.leave.home')
+    expect(ids).toContain('nav.leave.singing')
+    expect(ids).toContain('nav.leave.karaoke')
+    // The set it used to be registered beside, still there.
+    expect(ids).toContain('nav.voiceHelp')
+  })
+
+  it('answers the phrases a singer would actually say', () => {
+    render(() => <KaraokeNightApp />)
+
+    for (const utterance of ['go home', 'back to the studio', 'go to singing'])
+      expect(
+        matchVoiceCommand(utterance, activeVoiceCommands()),
+        utterance,
+      ).not.toBeNull()
   })
 })
