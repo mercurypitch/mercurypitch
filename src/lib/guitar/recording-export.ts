@@ -36,22 +36,29 @@ export async function exportRecordingMidi(
   const problem = recordingMidiProblem(score)
   if (problem !== null) throw new Error(problem)
   const { buildMidiFile, TICKS_PER_BEAT } = await import('../midi-generator')
-  const result = buildMidiFile(
-    score.notes.map((note) => ({
+  const notes = score.notes
+    .map((note) => ({
       midi: note.midi,
       tickOn: Math.round(note.startBeat * TICKS_PER_BEAT),
       tickOff: Math.max(
         Math.round(note.startBeat * TICKS_PER_BEAT) + 1,
         Math.round(note.endBeat * TICKS_PER_BEAT),
       ),
-    })),
-    score.bpm,
-    {
-      trackName: score.title,
-      timeSignature: score.timeSignature,
-      program: recordingScoreTuning(score).instrument === 'bass' ? 33 : 27,
-    },
-  )
+    }))
+    .sort((a, b) => a.tickOn - b.tickOn)
+  const pitchEnds = new Map<number, number>()
+  for (const note of notes) {
+    if (note.tickOn < (pitchEnds.get(note.midi) ?? 0))
+      throw new Error(
+        'Some attacks of the same pitch are too close for MIDI timing. Separate or merge those notes before exporting.',
+      )
+    pitchEnds.set(note.midi, note.tickOff)
+  }
+  const result = buildMidiFile(notes, score.bpm, {
+    trackName: score.title,
+    timeSignature: score.timeSignature,
+    program: recordingScoreTuning(score).instrument === 'bass' ? 33 : 27,
+  })
   if (result === null)
     throw new Error('This score could not be exported as MIDI.')
   return result

@@ -2,12 +2,13 @@
 import { guitarWavHeader, recoverGuitarMelody, } from '@/lib/guitar/recording-evidence'
 import { createRecordingPreview } from '@/lib/guitar/recording-gallery'
 import { recordingScoreProblem } from '@/lib/guitar/recording-score'
-import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingChunk, GuitarRecordingSummary, } from '@/lib/guitar/recording-types'
+import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRefinementBackup, } from '@/lib/guitar/recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS } from '@/lib/guitar/recording-types'
 import type { DexieAdapter } from '../adapters/dexie-adapter'
 import { durableWrite, hasRoomFor } from '../durable-write'
 import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '../entities'
 import { getLocalDatabase } from '../local-database'
+import { createGuitarRecordingRefinementStore } from './guitar-recording-refinement'
 
 export interface GuitarRecordingDraft {
   recording: GuitarRecording
@@ -16,6 +17,7 @@ export interface GuitarRecordingDraft {
   peaks: number[]
   editableScore?: GuitarPracticeScore
   acceptedScore?: GuitarPracticeScore
+  refinementBackup?: GuitarRefinementBackup
 }
 
 function validateRecording(row: GuitarRecording): void {
@@ -108,6 +110,7 @@ export function createGuitarRecordingStore(
     await db.addStrict('guitarPracticeScores', score)
   }
   return {
+    ...createGuitarRecordingRefinementStore(db, read),
     read,
     async preview(id: string) {
       const row = await read(id)
@@ -247,6 +250,7 @@ export function createGuitarRecordingStore(
         const peaks: number[] = []
         let notes: GuitarRecordedNote[] = []
         let editableScore: GuitarPracticeScore | undefined
+        let refinementBackup: GuitarRefinementBackup | undefined
         let hasEnding = false
         for (const part of parts) {
           if (
@@ -293,6 +297,7 @@ export function createGuitarRecordingStore(
             hasEnding = true
             notes = part.notes
             editableScore = part.editableScore
+            refinementBackup = part.refinementBackup
             continue
           }
           if (
@@ -350,6 +355,7 @@ export function createGuitarRecordingStore(
           peaks,
           editableScore,
           acceptedScore,
+          refinementBackup,
         }
       })
     },

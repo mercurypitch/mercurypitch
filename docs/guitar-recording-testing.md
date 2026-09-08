@@ -2,7 +2,8 @@
 
 Contract: [Guitar recorder EARS](specs/guitar-recording.ears.md).
 Original recorder: merged [PR 739](https://github.com/mercurypitch/mercurypitch/pull/739).
-Active follow-up: draft [PR 741](https://github.com/mercurypitch/mercurypitch/pull/741).
+Recorder follow-up: merged [PR 741](https://github.com/mercurypitch/mercurypitch/pull/741).
+Experimental chord refinement: `feat/guitar-chord-refinement` (separate PR).
 Drum sound work is intentionally separate and deferred.
 
 ## Implemented phases
@@ -64,9 +65,32 @@ Drum sound work is intentionally separate and deferred.
     touch shortcut. Both views offer confirmed deletion. Switching does not
     autoplay or open Review, and failed/stale loads preserve the selected take.
 
-Publication: the original recorder shipped in merged PR 739. The follow-up below
-is published on `feat/guitar-live-recording` in draft PR 741 for the
-recorder fixes and post-stop chord work; drum sound work remains separate.
+Publication: recorder fixes shipped in PR 741. The chord integration is separate;
+drum sound work remains deferred.
+
+## Chord refinement preview checks
+
+1. Record a dry chord phrase, Stop, then open Review take. Refine chords is
+   explicit; merely opening review must not fetch the model or start input.
+2. Run Refine chords. Compare Current/Refined with the shared Notes Play control
+   and highway. Check open/power chords, picked arpeggios and independent releases.
+   More detected notes is not itself a quality improvement.
+3. Keep current notes discards the proposal only. Repeat and Use refined notes;
+   Keep, reload, then Restore previous notes. Original input/evidence must survive.
+4. Correct uncertain pitches/fingerings, then Practice through the existing input
+   setup and scoring. MIDI/GP7 preserve chord voices; verify the GP7 in native GP8
+   for balanced bars, correct strings, ties and independently ending notes.
+5. Cancel analysis, close review during loading, remove source audio, or switch
+   takes. No late proposal, automatic monitoring or phantom playback may appear.
+
+Coverage: `guitar-recording-refinement.test.ts` (service and Worker lifecycle),
+`guitar-refinement-audio.test.ts`, `recording-refinement-score.test.ts`,
+`recording-score.test.ts`, `recording-export.test.ts`,
+`useGuitarChordRefinement.test.tsx`, `recorded-score-reference-port.test.ts`,
+`guitar-refinement-worker.spec.ts` (real bundled model), and
+`guitar-chord-refinement.spec.ts` (real UI/persistence/reload).
+Synthetic/browser results do not establish real-guitar accuracy or round-trip
+latency. Full shared piano-roll extraction and live polyphony are follow-ups.
 
 ## Compact score downloads
 
@@ -184,8 +208,8 @@ explicit offline model testing, not a shipping model or sample bank.
 
 ### Next priority: chord transcription after export/UI acceptance
 
-Chord recognition is **not enabled in the recorder** by the shared detector
-configuration. C1 now implements and benchmarks a local post-stop candidate;
+Chord recognition is **not enabled during live capture** by the shared detector
+configuration. Explicit post-stop refinement now integrates the C1 candidate;
 see [the detailed implementation checklist and results](guitar-chord-refinement.md).
 The bounded next phase is reviewable polyphonic notes, before resuming drum
 sound work. Do not put an unbenchmarked model in the live monitor path.

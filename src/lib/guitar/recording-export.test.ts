@@ -194,6 +194,117 @@ describe('guitar recording exports', () => {
       [57, 2.5, 2, 2, 0],
     ])
   })
+  it('round-trips chord voices and strummed entries with independent ties and release times', async () => {
+    const chord: GuitarPracticeScore = {
+      ...score,
+      notes: [
+        {
+          ...score.notes[0],
+          id: 'low',
+          evidenceId: 'low',
+          startBeat: 0.5,
+          endBeat: 6.5,
+        },
+        {
+          ...score.notes[1],
+          id: 'middle',
+          evidenceId: 'middle',
+          midi: 61,
+          string: 2,
+          fret: 0,
+          startBeat: 0.5,
+          endBeat: 2,
+        },
+        {
+          ...score.notes[1],
+          id: 'high',
+          evidenceId: 'high',
+          midi: 66,
+          string: 1,
+          fret: 0,
+          startBeat: 0.5,
+          endBeat: 0.75,
+        },
+        {
+          ...score.notes[2],
+          id: 'strummed',
+          evidenceId: 'strummed',
+          startBeat: 1.25,
+          endBeat: 5,
+        },
+        {
+          ...score.notes[0],
+          id: 'repick',
+          evidenceId: 'repick',
+          startBeat: 6.5,
+          endBeat: 7.25,
+        },
+      ],
+    }
+    const original = structuredClone(chord)
+    const expected = chord.notes.map((note) => [
+      note.midi,
+      note.startBeat,
+      note.endBeat - note.startBeat,
+    ])
+    const midi = parseMidiSong(await exportRecordingMidi(chord))!
+    const rows = (song: typeof midi) =>
+      song.tracks
+        .flatMap((track) => track.notes)
+        .sort((a, b) => a.startBeat - b.startBeat || a.midi - b.midi)
+        .map((note) => [note.midi, note.startBeat, note.duration])
+    const sortedExpected = expected.sort((a, b) => a[1] - b[1] || a[0] - b[0])
+    expect(rows(midi)).toEqual(sortedExpected)
+    const bytes = await exportRecordingGuitarPro(chord)
+    const xml = readGpif(bytes)
+    expectBalancedNotation(xml)
+    expect(xml.querySelectorAll('MasterBars > MasterBar')).toHaveLength(3)
+    expect(
+      [...xml.querySelectorAll('Beats > Beat > Notes')].some(
+        (notes) => notes.textContent!.split(' ').length === 3,
+      ),
+    ).toBe(true)
+    const { importer } = await import('@coderline/alphatab')
+    const imported = scoreToMidiSong(
+      importer.ScoreLoader.loadScoreFromBytes(bytes),
+    )
+    expect(rows(imported)).toEqual(sortedExpected)
+    expect(chord).toEqual(original)
+  })
+  it('keeps the last release of an earlier chord voice when allocating final GP7 bars', async () => {
+    const chord = {
+      ...score,
+      notes: [
+        { ...score.notes[0], startBeat: 0, endBeat: 9.5 },
+        { ...score.notes[2], startBeat: 1, endBeat: 2 },
+      ],
+    }
+    const bytes = await exportRecordingGuitarPro(chord)
+    const xml = readGpif(bytes)
+    expectBalancedNotation(xml)
+    expect(xml.querySelectorAll('MasterBars > MasterBar')).toHaveLength(4)
+    const { importer } = await import('@coderline/alphatab')
+    const imported = scoreToMidiSong(
+      importer.ScoreLoader.loadScoreFromBytes(bytes),
+    )
+    expect(
+      imported.tracks
+        .flatMap((track) => track.notes)
+        .find((note) => note.midi === 42)?.duration,
+    ).toBe(9.5)
+  })
+  it('rejects same-pitch MIDI tick collisions without silently losing an attack', async () => {
+    const collision = {
+      ...score,
+      notes: [
+        { ...score.notes[0], startBeat: 0, endBeat: 0.0001 },
+        { ...score.notes[1], startBeat: 0.0001, endBeat: 0.0002 },
+      ],
+    }
+    await expect(exportRecordingMidi(collision)).rejects.toThrow(
+      'same pitch are too close',
+    )
+  })
   it('writes readable GP7 notation without changing free-timed practice or MIDI', async () => {
     const free = {
       ...score,
@@ -299,6 +410,64 @@ describe('guitar recording exports', () => {
         ).toBeLessThanOrEqual(1 / 16)
         expect(notes[index].duration).toBeGreaterThan(0)
       }
+    },
+  )
+  it.each([
+    [3, 4],
+    [4, 4],
+    [5, 8],
+    [7, 16],
+    [6, 8],
+    [2, 2],
+  ] as const)(
+    'balances independently held chord voices and repeated attacks in %s/%s',
+    async (numerator, denominator) => {
+      const polyphonic = {
+        ...score,
+        timeSignature: [numerator, denominator] as [number, number],
+        notes: score.tuning
+          .flatMap((open, stringIndex) =>
+            Array.from({ length: 8 }, (_, index) => ({
+              id: `voice-${stringIndex}-${index}`,
+              evidenceId: `voice-${stringIndex}-${index}`,
+              midi: open + score.capo,
+              string: stringIndex + 1,
+              fret: 0,
+              startBeat: index * 2 + stringIndex * 0.131,
+              endBeat:
+                index * 2 +
+                stringIndex * 0.131 +
+                0.417 +
+                (stringIndex % 3) * 0.317,
+            })),
+          )
+          .sort((a, b) => a.startBeat - b.startBeat),
+      }
+      const bytes = await exportRecordingGuitarPro(polyphonic)
+      expectBalancedNotation(readGpif(bytes))
+      const { importer } = await import('@coderline/alphatab')
+      const notes = scoreToMidiSong(
+        importer.ScoreLoader.loadScoreFromBytes(bytes),
+      ).tracks.flatMap((track) => track.notes)
+      const byString = (rows: number[][]) =>
+        rows.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      expect(
+        byString(
+          notes.map((note) => [
+            note.midi,
+            note.startBeat,
+            note.startBeat + note.duration,
+          ]),
+        ),
+      ).toEqual(
+        byString(
+          polyphonic.notes.map((note) => [
+            note.midi,
+            Math.round(note.startBeat * 8) / 8,
+            Math.round(note.endBeat * 8) / 8,
+          ]),
+        ),
+      )
     },
   )
   it.each(['guitar', 'bass'] as const)(

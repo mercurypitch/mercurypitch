@@ -1,7 +1,7 @@
 // Recording projection preserves evidence clocks, neck identity and explicit revision boundaries.
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_GUITAR_TUNING } from './instrument-tuning'
-import { acceptRecordingScoreRevision, changeRecordingNote, changeRecordingScoreTempo, createRecordingScore, quantizeRecordingScore, recordingScoreProblem, } from './recording-score'
+import { acceptRecordingScoreRevision, changeRecordingNote, changeRecordingScoreTempo, createRecordingScore, mergeRecordingNote, quantizeRecordingScore, recordingMergeTarget, recordingMidiProblem, recordingScoreProblem, splitRecordingNote, } from './recording-score'
 import type { GuitarRecordedNote, GuitarRecording } from './recording-types'
 
 const recording: GuitarRecording = {
@@ -140,5 +140,135 @@ describe('recorded practice score', () => {
     expect(() =>
       acceptRecordingScoreRevision({ ...initial, notes: [] }, 1),
     ).toThrow('No stable')
+  })
+  it('allows independent chord voices, but not same-pitch or same-string collisions', () => {
+    const initial = score()
+    const chord = {
+      ...initial,
+      notes: [
+        { ...initial.notes[0], startBeat: 0, endBeat: 2 },
+        {
+          ...initial.notes[1],
+          midi: 59,
+          string: 2,
+          fret: 0,
+          startBeat: 0,
+          endBeat: 1,
+        },
+      ],
+    }
+    expect(recordingScoreProblem(chord)).toBeNull()
+    const conflicting = changeRecordingNote(chord, 'b', { midi: 65 })
+    expect(recordingMidiProblem(conflicting)).toBeNull()
+    expect(recordingScoreProblem(conflicting)).toContain('same string')
+    const duplicatePitch = {
+      ...chord,
+      notes: [chord.notes[0], { ...chord.notes[1], midi: 64, fret: 5 }],
+    }
+    expect(recordingMidiProblem(duplicatePitch)).toContain('same pitch')
+    expect(() => acceptRecordingScoreRevision(duplicatePitch, 2)).toThrow(
+      'same pitch',
+    )
+  })
+  it('snaps simultaneous voices independently and exposes new conflicts instead of arpeggiating', () => {
+    const initial = score()
+    const chord = {
+      ...initial,
+      notes: [
+        { ...initial.notes[0], startBeat: 0.13, endBeat: 1.12 },
+        {
+          ...initial.notes[1],
+          midi: 59,
+          string: 2,
+          fret: 0,
+          startBeat: 0.13,
+          endBeat: 0.52,
+        },
+      ],
+    }
+    const snapped = quantizeRecordingScore(chord, 4)
+    expect(snapped.notes.map((note) => [note.startBeat, note.endBeat])).toEqual(
+      [
+        [0.25, 1],
+        [0.25, 0.5],
+      ],
+    )
+    expect(recordingScoreProblem(snapped)).toBeNull()
+    const crowded = {
+      ...initial,
+      notes: [
+        { ...initial.notes[0], startBeat: 0, endBeat: 0.01 },
+        { ...initial.notes[1], startBeat: 0.01, endBeat: 0.03 },
+      ],
+    }
+    const conflict = quantizeRecordingScore(crowded, 4)
+    expect(conflict.notes.map((note) => note.startBeat)).toEqual([0, 0])
+    expect(recordingScoreProblem(conflict)).toContain('same string')
+  })
+  it('splits and merges one chord voice without deleting or extending neighbouring voices', () => {
+    const initial = score()
+    const chord = {
+      ...initial,
+      notes: [
+        { ...initial.notes[0], startBeat: 0, endBeat: 2 },
+        {
+          ...initial.notes[1],
+          midi: 59,
+          string: 2,
+          fret: 0,
+          startBeat: 0,
+          endBeat: 3,
+        },
+      ],
+    }
+    expect(recordingMergeTarget(chord, 'a')).toBeNull()
+    expect(mergeRecordingNote(chord, 'a')).toBe(chord)
+    const split = splitRecordingNote(chord, 'a', 'split')
+    expect(split.notes.find((note) => note.id === 'b')).toEqual(chord.notes[1])
+    expect(split.notes.find((note) => note.id === 'split')).toMatchObject({
+      startBeat: 1,
+      endBeat: 2,
+      evidenceId: 'a',
+    })
+    expect(recordingScoreProblem(split)).toBeNull()
+    expect(recordingMergeTarget(split, 'a')?.id).toBe('split')
+    const merged = mergeRecordingNote(split, 'a')
+    expect(merged.notes).toEqual(chord.notes)
+    expect(merged.attachment).toBeNull()
+    expect(splitRecordingNote(chord, 'a', 'b')).toBe(chord)
+    const different = changeRecordingNote(split, 'split', { midi: 65 })
+    expect(recordingMergeTarget(different, 'a')).toBeNull()
+  })
+  it('preserves model confidence by source evidence through split, delete, merge and acceptance', () => {
+    const initial = score()
+    initial.refinement = {
+      version: 1,
+      model: 'basic-pitch',
+      modelSha256: 'a'.repeat(64),
+      decoderVersion: 'test-decoder',
+      createdAt: '2026-09-08T12:00:00.000Z',
+      source: 'recorded-audio',
+      confidenceByNoteId: { a: 0.82, b: 0.61 },
+    }
+    const original = structuredClone(initial)
+    const split = splitRecordingNote(initial, 'a', 'child')
+    const child = split.notes.find((note) => note.id === 'child')!
+    expect(child.evidenceId).toBe('a')
+    expect(split.refinement?.confidenceByNoteId[child.evidenceId]).toBe(0.82)
+    expect(split.refinement?.confidenceByNoteId.child).toBeUndefined()
+    const deleted = {
+      ...split,
+      notes: split.notes.filter((note) => note.id !== 'b'),
+    }
+    const merged = mergeRecordingNote(deleted, 'a')
+    const accepted = acceptRecordingScoreRevision(merged, 2)
+    expect(accepted.notes).toHaveLength(1)
+    expect(accepted.notes[0].evidenceId).toBe('a')
+    expect(accepted.refinement).toEqual(original.refinement)
+    expect(
+      accepted.refinement?.confidenceByNoteId[accepted.notes[0].evidenceId],
+    ).toBe(0.82)
+    expect(accepted.refinement?.confidenceByNoteId.b).toBe(0.61)
+    expect(initial).toEqual(original)
   })
 })

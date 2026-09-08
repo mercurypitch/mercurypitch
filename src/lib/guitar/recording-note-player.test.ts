@@ -75,6 +75,35 @@ afterEach(() => {
 })
 
 describe('recording note player', () => {
+  it('releases chord voices independently and resumes only those still held at a seek', async () => {
+    const graph = setup()
+    const player = createRecordingNotePlayer({
+      audioGraph: graph.audioGraph,
+      notes: [
+        { midi: 40, startSeconds: 0, endSeconds: 3 },
+        { midi: 47, startSeconds: 0, endSeconds: 1 },
+        { midi: 52, startSeconds: 0, endSeconds: 2 },
+      ],
+      durationSeconds: 4,
+    })
+    await player.play()
+    expect(graph.voices).toHaveLength(3)
+    expect(
+      graph.voices.map(
+        (voice) => voice.gain.gain.setTargetAtTime.mock.calls[0][1],
+      ),
+    ).toEqual([13, 11, 12])
+    player.pause()
+    player.seek(1.5)
+    await vi.advanceTimersByTimeAsync(240)
+    vi.mocked(createGuitarVoice).mockClear()
+    await player.play()
+    expect(createGuitarVoice).toHaveBeenCalledTimes(2)
+    expect(
+      vi.mocked(createGuitarVoice).mock.calls.map((call) => call[2]),
+    ).toEqual([1500, 500])
+    player.dispose()
+  })
   it('opens the voice after uncached synthesis advances the audio clock', async () => {
     const graph = setup()
     const createVoice = vi.mocked(createGuitarVoice).getMockImplementation()!
