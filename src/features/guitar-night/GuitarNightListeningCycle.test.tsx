@@ -297,6 +297,22 @@ describe('GuitarNightListeningCycle', () => {
       ).toHaveAttribute('aria-checked', 'false')
     })
 
+    it('portals the picker outside the rail without opening input', () => {
+      const onSelect = vi.fn()
+      const { container } = render(() => (
+        <GuitarNightListeningCycle
+          status={() => 'off'}
+          profile={() => 'interface'}
+          onSelect={onSelect}
+        />
+      ))
+      openViaRightClick()
+      const picker = screen.getByTestId('guitar-night-listening-picker')
+      expect(document.body.contains(picker)).toBe(true)
+      expect(container.contains(picker)).toBe(false)
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
     it('reaches direct input without ever opening the microphone', () => {
       // The whole point: cycling can only get here through Room mic, which
       // costs a browser consent prompt a plugged-in player never wanted.

@@ -185,6 +185,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
 }
+.confirmationSkin {
+  display: contents;
+  color-scheme: dark;
+  --bg-primary: #100d0b;
+  --bg-secondary: #1c1713;
+  --bg-tertiary: #2b231c;
+  --bg-hover: #3b2e23;
+  --fg-primary: #f4eadb;
+  --fg-secondary: #cfbeaa;
+  --border: rgba(224, 164, 93, 0.28);
+  --accent: #f0bd78;
+  --red: #e69886;
+  --on-danger: #23110d;
+}
+
 .editor {
   margin: 0;
   border: 0;
@@ -193,6 +208,21 @@
   display: grid;
   gap: 0.75rem;
   min-width: 0;
+}
+.editorAdvanced {
+  border-top: 1px solid #4a3d2a;
+}
+.editorAdvanced summary {
+  padding: 0.75rem 0;
+  min-height: 44px;
+  color: #f4dfbb;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.editorTools {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
 }
 .review :focus-visible,
 .mainActions :focus-visible,

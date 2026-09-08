@@ -20,10 +20,12 @@ import type { CameraState } from '../camera'
 import { cameraEye, DEFAULT_CAMERA } from '../camera'
 import { nextTabEvent, visibleTabEvents, visibleTabNotes, } from '../compile-tab-notes'
 import { beatsToDepth } from '../projection'
+import { RECORDING_NOW_DEPTH, recordingNoteDepth } from '../recording-history'
 import type { TabRenderer, TabScene, TabSceneEvent, TabSceneNote, } from '../TabRenderer'
 import { colorForString, labelInk, lighten, withAlpha } from './color'
 import { cellKey, cellNoteName, isDoubleFretMarker, isFretMarker, } from './FretboardStrip'
 import { TAB_FLOOR_DEPTH as FLOOR_DEPTH, TAB_LANE_HEIGHT as LANE_HEIGHT, TAB_WALL_BOTTOM as Y_BOTTOM, TAB_WALL_TOP as WALL_TOP, tabConvergedX, tabFlightPoint, tabFretStringY, tabFretX, tabLoopDepthRange, tabStringLaneX, tabTransverseWorldSpan, } from './highway-geometry'
+import { drawRecordingHistoryRail } from './recording-history-rail'
 
 // ── Scene constants (world units) ──────────────────────────
 
@@ -333,35 +335,55 @@ export class Canvas2dTabRenderer implements TabRenderer {
       } else {
         this.drawFretboard(ctx, scene, N, maxFret, upcomingCells)
       }
-      this.drawTargetFeedback(
-        ctx,
-        scene,
-        N,
-        maxFret,
-        nextEvent?.notes ?? [],
-        visibleNotes,
-      )
-      this.drawHits(ctx, scene, N, maxFret)
-      this.drawDetected(ctx, scene, N, maxFret)
+      if (scene.recordingHistory !== true) {
+        this.drawTargetFeedback(
+          ctx,
+          scene,
+          N,
+          maxFret,
+          nextEvent?.notes ?? [],
+          visibleNotes,
+        )
+        this.drawHits(ctx, scene, N, maxFret)
+        this.drawDetected(ctx, scene, N, maxFret)
+      }
     }
 
     const visible = visibleNotes
       .map((note) => ({
         note,
-        t0: beatsToDepth(note.startBeat - ph, beatWindow),
-        t1: beatsToDepth(note.startBeat + note.durationBeats - ph, beatWindow),
+        t0:
+          scene.recordingHistory === true
+            ? recordingNoteDepth(note.startBeat, ph, beatWindow)
+            : beatsToDepth(note.startBeat - ph, beatWindow),
+        t1:
+          scene.recordingHistory === true
+            ? Math.min(
+                RECORDING_NOW_DEPTH,
+                recordingNoteDepth(
+                  note.startBeat + note.durationBeats,
+                  ph,
+                  beatWindow,
+                ),
+              )
+            : beatsToDepth(
+                note.startBeat + note.durationBeats - ph,
+                beatWindow,
+              ),
       }))
       .filter((o) => o.t1 > -0.05 && o.t0 < 1.04)
       .sort((a, b) => b.t0 - a.t0)
 
     // Chord spines (bind simultaneous main-track notes) — behind the chips.
-    this.drawChordSpines(ctx, scene, visibleTabEvents(scene), N, maxFret)
+    if (scene.recordingHistory !== true)
+      this.drawChordSpines(ctx, scene, visibleTabEvents(scene), N, maxFret)
 
     for (const { note, t0, t1 } of visible) {
       const isNext = !note.isBacking && nextNoteIds.has(note.id)
       this.drawNote(ctx, scene, note, t0, t1, N, maxFret, beatWindow, isNext)
     }
-    this.drawTechniqueMarks(ctx, scene, visible, N, maxFret)
+    if (scene.recordingHistory !== true)
+      this.drawTechniqueMarks(ctx, scene, visible, N, maxFret)
   }
 
   private drawBackground(ctx: CanvasRenderingContext2D, scene: TabScene): void {
@@ -562,6 +584,16 @@ export class Canvas2dTabRenderer implements TabRenderer {
         const x = this.fretX(f, maxFret, scene.display.leftHanded)
         this.line(ctx, x, floorY, 0, x, floorY, -FLOOR_DEPTH, laneColor, 1)
       }
+    }
+    if (scene.recordingHistory === true) {
+      drawRecordingHistoryRail(ctx, {
+        project: (x, y, z) => this.project(x, y, z),
+        laneX: (x, depth) => this.depthAdjustedX(scene, x, depth),
+        left,
+        right,
+        floorY,
+      })
+      return
     }
     const startBeat = Math.ceil(scene.playheadBeat)
     for (
@@ -940,7 +972,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     )
     const color =
       scene.display.theme === 'velvet' && isNext ? '#f2c98f' : stringColor
-    const headT = Math.max(t0, -0.03)
+    const headT = Math.max(t0, scene.recordingHistory === true ? 0 : -0.03)
     const [hx, hy, hz] = this.notePos(
       scene,
       note.stringIndex,
@@ -975,10 +1007,15 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
 
     const ba = note.startBeat - scene.playheadBeat
-    const near = clamp01(1 - ba / NEAR_BEATS)
-    const far = clamp01((ba - 0.6 * beatWindow) / (0.4 * beatWindow))
+    const near =
+      scene.recordingHistory === true ? 0 : clamp01(1 - ba / NEAR_BEATS)
+    const far =
+      scene.recordingHistory === true
+        ? 0
+        : clamp01((ba - 0.6 * beatWindow) / (0.4 * beatWindow))
     let alpha = 1 - far * 0.7
-    if (t0 < 0) alpha *= clamp01(1 + t0 / 0.06) // fade just-passed notes out
+    if (scene.recordingHistory === true) alpha *= clamp01(t1 / 0.06)
+    else if (t0 < 0) alpha *= clamp01(1 + t0 / 0.06) // fade just-passed notes out
 
     // Sustain ribbon along the flight line.
     if (t1 - t0 > 0.04) {

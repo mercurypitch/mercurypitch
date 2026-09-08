@@ -31,6 +31,7 @@ import type { GuitarInputDeviceOption, GuitarInputProfileKind, GuitarInputProfil
 import { guitarInputProfileLabel, loadGuitarAudioInputId, loadGuitarInputProfile, loadGuitarMidiInputId, saveGuitarAudioInputId, saveGuitarInputProfile, saveGuitarMidiInputId, } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarMidiNoteMessage, GuitarMidiPort, } from '@/lib/guitar/guitar-midi-input'
 import { GuitarMidiInputAdapter, mapMidiTimestampToAudioClock, } from '@/lib/guitar/guitar-midi-input'
+import { createGuitarPitchDetector, guitarPitchConfiguration, } from '@/lib/guitar/guitar-pitch-evidence'
 import type { GuitarTakeEvent, GuitarTakeRecorder, GuitarTakeSnapshot, } from '@/lib/guitar/guitar-take-recorder'
 import { createGuitarTakeRecorder } from '@/lib/guitar/guitar-take-recorder'
 import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealthReading, GuitarInputTimingSource, } from '@/lib/guitar/input-events'
@@ -40,7 +41,6 @@ import { LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, m
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { PitchDetector } from '@/lib/pitch-detector'
 import { buildClickSchedule } from '@/lib/tap-calibration'
 import { micLatencyMsForDevice, micLatencySpreadMsForDevice, setMicLatencyMeasurementForDevice, } from '@/stores/mic-latency-store'
 import { recordGuitarDetectCost, resetGuitarAnalysisCost, } from './guitar-analysis-cost'
@@ -1333,15 +1333,13 @@ export function useGuitarListeningController(
       // How far back the analyser's window reaches. A note named from it began
       // at least this long ago, which is what the strike it belongs to knows.
       const windowSeconds = analyserSize / context.sampleRate
-      const detector = new PitchDetector({
-        algorithm: 'mpm',
-        sampleRate: context.sampleRate,
-        bufferSize: analyserSize,
-        minFrequency: minimumFrequency,
-        maxFrequency: 1600,
-        minConfidence: 0.38,
-        minAmplitude: 0.018,
-      })
+      const detector = createGuitarPitchDetector(
+        context.sampleRate,
+        guitarPitchConfiguration('rehearsal', {
+          bufferSize: analyserSize,
+          minFrequency: minimumFrequency,
+        }),
+      )
       const fallbackNoiseFloor = createNoiseFloorFollower()
       let smoothedRms = 0.008
       let silentFrames = 0

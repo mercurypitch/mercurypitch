@@ -193,6 +193,28 @@ describe('recording corrections', () => {
       screen.getByRole('button', { name: 'Practice these notes' }),
     ).toBeDisabled()
   })
+  it('explains notation rounding before GP export and keeps the accepted practice timing', async () => {
+    renderReview()
+    const gp = screen.getByRole('button', { name: 'Export Guitar Pro' })
+    expect(gp).toHaveAccessibleDescription(
+      /Guitar Pro rounds timing to thirty-second notes/,
+    )
+    fireEvent.click(gp)
+    await waitFor(() => expect(store.download).toHaveBeenCalledOnce())
+    expect(store.accept).toHaveBeenCalledOnce()
+    expect(store.accept.mock.calls[0][0].notes[0]).toMatchObject({
+      midi: 57,
+      startBeat: 0,
+      endBeat: 1,
+    })
+    expect(store.download.mock.calls[0][0]).toEqual(
+      store.accept.mock.calls[0][0],
+    )
+    expect(store.download.mock.calls[0][1]).toBe('gp')
+    expect(
+      screen.getByText(/Saved audio and practice timing are unchanged/),
+    ).toBeVisible()
+  })
   it('offers MIDI and an undoable path to practice when only one note has impossible fingering', () => {
     renderReview(true)
     expect(

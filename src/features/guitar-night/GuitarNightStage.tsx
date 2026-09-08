@@ -10,7 +10,6 @@ import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import { sameCamera } from '@/features/guitar-tab-3d/renderer/camera'
 import type { TabCameraPresetId } from '@/features/guitar-tab-3d/renderer/camera-presets'
 import { TAB_CAMERA_PRESET_CHOICES, tabCameraPreset, } from '@/features/guitar-tab-3d/renderer/camera-presets'
-import { tabFretX, tabStringLaneX, } from '@/features/guitar-tab-3d/renderer/canvas2d/highway-geometry'
 import type { TabPresentation, TabSceneLoopSpan, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
@@ -709,10 +708,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       'flow',
       {
         validator: (value): value is TabCameraPresetId =>
-          value === 'flow' ||
-          value === 'player-neck' ||
-          value === 'full-neck' ||
-          value === 'phrase-focus',
+          value === 'flow' || value === 'player-neck' || value === 'full-neck',
       },
     )
   const [handedness, setHandedness] =
@@ -789,8 +785,13 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const actualPlayheadBeat = createMemo(() =>
     props.source.timeline.playheadBeat(),
   )
+  const recordingHistory = createMemo(
+    () => props.source.recordingHistory?.() === true,
+  )
   const visualPlayheadBeat = createMemo(() =>
-    guidePreviewBeat(notes(), actualPlayheadBeat()),
+    recordingHistory()
+      ? (actualPlayheadBeat() ?? 0)
+      : guidePreviewBeat(notes(), actualPlayheadBeat()),
   )
   const authoredLoopStart = createMemo(() => {
     const value = props.loopStart?.() ?? null
@@ -814,9 +815,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   })
   const actualEventContext = createMemo(() =>
     stageEventContext(noteIndex(), actualPlayheadBeat()),
-  )
-  const visualEventContext = createMemo(() =>
-    stageEventContext(noteIndex(), visualPlayheadBeat()),
   )
   const firstGuideNote = createMemo(() =>
     notes().reduce<GuitarNote | null>(
@@ -920,39 +918,13 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         ? ('reduced' as const)
         : ('full' as const),
   }))
-  const phraseFocusX = createMemo(() => {
-    const context = visualEventContext()
-    const event =
-      context.activeNotes.length > 0 ? context.activeNotes : context.nextNotes
-    if (event.length === 0) return 0
-    const ordered = [...event].sort((left, right) => {
-      const leftPosition =
-        flowPresentation() === 'string-highway' ? left.stringIndex : left.fret
-      const rightPosition =
-        flowPresentation() === 'string-highway' ? right.stringIndex : right.fret
-      return leftPosition - rightPosition
-    })
-    const middle = ordered[Math.floor(ordered.length / 2)]
-    if (middle === undefined) return 0
-    const worldX =
-      flowPresentation() === 'string-highway'
-        ? tabStringLaneX(
-            middle.stringIndex,
-            tuning().stringCount,
-            handedness() === 'left',
-          )
-        : tabFretX(middle.fret, maxAuthoredFret(), handedness() === 'left')
-    return worldX * 0.42
-  })
-  // `phraseFocusX` retracks on every note, and `tabCameraPreset` resolves a
-  // fresh object each call, so without an equality check this memo notified
-  // continuously through playback and scrubbing while returning the same
-  // framing. Only 'phrase-focus' actually consumes the focus offset.
+  // Camera framing never depends on authored or detected notes. Legacy
+  // phrase-focus preferences fail the validator above and fall back to Runway.
+  // Both song/recorder and tab rehearsal use this same stable host.
   const cameraPreset = createMemo(
     () =>
       tabCameraPreset(cameraPresetId(), {
         narrow: narrowViewport(),
-        phraseFocusX: phraseFocusX(),
       }),
     undefined,
     { equals: sameCamera },
@@ -1097,6 +1069,8 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     return `${ordinal}, ${label}`
   }
   const targetSummary = createMemo(() => {
+    if (recordingHistory())
+      return 'Recorded note positions are suggested, not targets to play.'
     const { activeNotes: active, nextNotes: upcoming } = actualEventContext()
     if (active.length > 0) {
       return `Current target: ${targetGroupSummary(active, tuning(), noteById())}`
@@ -1135,18 +1109,23 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     return null
   })
   const flowSummary = createMemo(() =>
-    hasGuide()
-      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()} ${loopDescription()}`
-      : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached. ${loopDescription()}`,
+    recordingHistory()
+      ? `${props.source.title()}. ${notes().length} recorded notes. New notes appear at NOW and move toward you as history, not targets to play. Fingering is suggested.`
+      : hasGuide()
+        ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()} ${loopDescription()}`
+        : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached. ${loopDescription()}`,
   )
   const tabSummary = createMemo(() =>
-    hasGuide()
-      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()} ${loopDescription()}`
-      : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached. ${loopDescription()}`,
+    recordingHistory()
+      ? `${props.source.title()}. Recorded tablature with ${tuning().stringCount} string rows. You played: recent notes remain behind NOW. Fingering is suggested, not measured.`
+      : hasGuide()
+        ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()} ${loopDescription()}`
+        : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached. ${loopDescription()}`,
   )
   const visualSource: GuitarPerformanceStageSource = {
     title: () => props.source.title(),
     notes: () => props.source.notes(),
+    recordingHistory,
     timeline: {
       positionSeconds: () => props.source.timeline.positionSeconds(),
       durationSeconds: () => props.source.timeline.durationSeconds(),
@@ -1196,18 +1175,22 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                     ? heardNote() === null
                       ? 'Listening'
                       : 'Heard now'
-                    : hasGuide()
-                      ? 'Guide ready'
-                      : idleStatus().label}
+                    : recordingHistory()
+                      ? 'Recorded notes'
+                      : hasGuide()
+                        ? 'Guide ready'
+                        : idleStatus().label}
                 </span>
                 <strong>
                   {heardCopy() ??
-                    (hasGuide()
-                      ? actualPlayheadBeat() === null
-                        ? readyGuideCopy()
-                        : (props.guideLabel?.() ??
-                          'Follow the next note into the neck')
-                      : idleStatus().detail)}
+                    (recordingHistory()
+                      ? 'You played · suggested fingering'
+                      : hasGuide()
+                        ? actualPlayheadBeat() === null
+                          ? readyGuideCopy()
+                          : (props.guideLabel?.() ??
+                            'Follow the next note into the neck')
+                        : idleStatus().detail)}
                 </strong>
               </Show>
               <Show when={signalAccessory()}>
@@ -1418,7 +1401,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               <Guitar3DStage
                 source={visualSource}
                 tuning={tuning}
-                visibleBeatWindow={() => 8}
+                visibleBeatWindow={() => (recordingHistory() ? 6 : 8)}
                 showNoteLabels={() => props.flowLabelMode !== 'fret'}
                 showFretboard={() => true}
                 isActive={() => props.active() && mode() === 'flow'}
@@ -1430,7 +1413,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 fallbackText={flowSummary}
                 borderRadius={() => '0'}
                 cameraPreset={cameraPreset}
-                cameraAutoFollow={() => cameraPresetId() === 'phrase-focus'}
                 reducedMotion={systemReducedMotion}
                 reducedEffects={() => display().effects === 'reduced'}
               />
@@ -1479,6 +1461,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             tuning={tuning}
             tempoBpm={() => props.source.timeline.tempoBpm()}
             playheadBeat={visualPlayheadBeat}
+            recordingHistory={recordingHistory}
             summary={tabSummary}
             hasGuide={hasGuide}
             loopStart={authoredLoopStart}

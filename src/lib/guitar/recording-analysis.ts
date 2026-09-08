@@ -1,5 +1,6 @@
 // Frame-clock guitar transcription and PCM encoding run off the audio rendering thread.
-import { PitchDetector } from '../pitch-detector'
+import type { GuitarPitchConfiguration, GuitarPitchProfile, } from './guitar-pitch-evidence'
+import { createGuitarPitchDetector, guitarPitchConfiguration, } from './guitar-pitch-evidence'
 import { createGuitarMelodySegmenter } from './recording-evidence'
 
 export {
@@ -11,6 +12,12 @@ import type { GuitarPitchEvidence, GuitarRecordingChunk, } from './recording-typ
 
 const WINDOW = 4096
 const HOP = 1024
+
+export interface GuitarRecordingAnalysisOptions {
+  /** Headless A/B seam. Live recording retains its existing policy by default. */
+  pitchProfile?: GuitarPitchProfile
+  pitchOverrides?: Partial<Omit<GuitarPitchConfiguration, 'bufferSize'>>
+}
 
 /** Preserve sample values and ordering; Web Audio currentFrame anomalies are diagnostics only. */
 export function encodeGuitarPcm16(
@@ -35,18 +42,16 @@ export function encodeGuitarPcm16(
 export function createGuitarRecordingAnalysis(
   recordingId: string,
   sampleRate: number,
+  options: GuitarRecordingAnalysisOptions = {},
 ) {
-  const detector = new PitchDetector({
-    sampleRate,
-    bufferSize: WINDOW,
-    algorithm: 'yin',
-    minFrequency: 28,
-    maxFrequency: 2200,
-    minAmplitude: 0.006,
-    minConfidence: 0.65,
-    stabilize: false,
-    telemetry: 'off',
-  })
+  const pitchConfiguration = guitarPitchConfiguration(
+    options.pitchProfile ?? 'recording',
+    {
+      ...options.pitchOverrides,
+      bufferSize: WINDOW,
+    },
+  )
+  const detector = createGuitarPitchDetector(sampleRate, pitchConfiguration)
   const attacks = createAttackDetector({ sampleRate, floorLevel: 0.012 })
   const segmenter = createGuitarMelodySegmenter(sampleRate)
   const ring = new Float32Array(WINDOW)
@@ -82,7 +87,8 @@ export function createGuitarRecordingAnalysis(
         const pitch = detector.detect(window)
         const frame = frames - WINDOW / 2
         const midi =
-          pitch.frequency > 0 && pitch.clarity >= 0.65
+          pitch.frequency > 0 &&
+          pitch.clarity >= pitchConfiguration.minConfidence
             ? 69 + 12 * Math.log2(pitch.frequency / 440)
             : null
         const evidence = { frame, midi, clarity: pitch.clarity }

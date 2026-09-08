@@ -89,36 +89,45 @@ export function useGuitarRecordingStage(
           },
         ]
       })
-    return recorder.previewNotes().flatMap((note) => {
-      const position = assignStringForMidi(note.midi, tuning())
-      // Unplayable pitches stay in the recording/review, never folded onto a string.
-      if (position === null) return []
-      const name = midiToNote(note.midi)
-      return [
-        {
-          id: note.id,
-          midi: note.midi,
-          noteName: `${name.name}${name.octave}`,
-          stringIndex: position.stringIndex,
-          fret: position.fret,
-          startBeat: (note.startFrame / row.sampleRate) * 2,
-          duration: ((note.endFrame - note.startFrame) / row.sampleRate) * 2,
-          targetFreq: midiToFreq(note.midi),
-        },
-      ]
-    })
+    // Only live presentation is bounded: cover the largest history window with
+    // margin, including held notes. Do not recompile an entire five-minute take
+    // on every pending-note update. Review and audition retain all evidence.
+    const visibleFrom = recorder.busy()
+      ? Math.max(0, (recorder.duration() - 6) * row.sampleRate)
+      : -Infinity
+    return recorder
+      .previewNotes()
+      .filter((note) => note.endFrame >= visibleFrom)
+      .flatMap((note) => {
+        const position = assignStringForMidi(note.midi, tuning())
+        // Unplayable pitches stay in the recording/review, never folded onto a string.
+        if (position === null) return []
+        const name = midiToNote(note.midi)
+        return [
+          {
+            id: note.id,
+            midi: note.midi,
+            noteName: `${name.name}${name.octave}`,
+            stringIndex: position.stringIndex,
+            fret: position.fret,
+            startBeat: (note.startFrame / row.sampleRate) * 2,
+            duration: ((note.endFrame - note.startFrame) / row.sampleRate) * 2,
+            targetFreq: midiToFreq(note.midi),
+          },
+        ]
+      })
   })
   const source: GuitarPerformanceStageSource = {
     title: () => 'Detected melody · draft',
     notes,
+    recordingHistory: () => recorder.busy() || playback?.engaged() !== true,
     timeline: {
-      // The normal highway looks forward. Aim its read-only viewport at the
-      // recent three seconds so just-detected notes appear on the runway,
-      // rather than vanishing behind NOW immediately. Audio is never delayed.
+      // Keep capture time truthful. The renderer projects history behind NOW;
+      // never disguise past evidence as future targets by offsetting the clock.
       positionSeconds: () =>
         !recorder.busy() && playback?.engaged() === true
           ? playback.position()
-          : Math.max(0, seconds() - 3),
+          : seconds(),
       durationSeconds: () =>
         !recorder.busy() && playback?.engaged() === true
           ? (playback.duration?.() ?? seconds())
@@ -126,7 +135,7 @@ export function useGuitarRecordingStage(
       playheadBeat: () =>
         (!recorder.busy() && playback?.engaged() === true
           ? playback.position()
-          : Math.max(0, seconds() - 3)) * 2,
+          : seconds()) * 2,
       // Projection unit only, never an inferred tempo or timing correction.
       tempoBpm: () => 120,
     },

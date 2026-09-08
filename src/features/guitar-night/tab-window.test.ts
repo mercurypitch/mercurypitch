@@ -27,6 +27,26 @@ describe('tabWindowEntries', () => {
     playheadBeat: number | null,
   ) => tabWindowEntries(buildStageTabWindowIndex(notes), playheadBeat, WINDOW)
 
+  it('keeps recorded history behind the actual now-line without including future notes', () => {
+    const sustain = { ...note(0), duration: 8 }
+    const past = note(6)
+    const now = note(10)
+    const future = note(11)
+    const index = buildStageTabWindowIndex([sustain, past, now, future])
+
+    const history = tabWindowEntries(index, 10, 6, true)
+
+    expect(history.map((entry) => entry.note)).toEqual([sustain, past, now])
+    expect(history[1].offsetPercent).toBeCloseTo(82 - (4 / 6) * 100)
+    expect(history[2].offsetPercent).toBeCloseTo(82)
+    expect(history[2].isActive).toBe(true)
+    expect(past.startBeat).toBe(6)
+    expect(tabWindowEntries(index, 10, 6).map((entry) => entry.note)).toEqual([
+      now,
+      future,
+    ])
+  })
+
   it('shows only the notes inside the moving window', () => {
     const notes = Array.from({ length: 60 }, (_, index) => note(index))
 

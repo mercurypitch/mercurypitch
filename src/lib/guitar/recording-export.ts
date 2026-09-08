@@ -1,21 +1,34 @@
 // Portable exports use corrected MIDI notes or accepted guitar revisions, never renamed audio bytes.
 import { recordingMidiProblem, recordingScoreProblem, recordingScoreTuning, } from './recording-score'
-import type { GuitarPracticeNote, GuitarPracticeScore } from './recording-types'
+import type { GuitarPracticeScore } from './recording-types'
 
 export function guitarRecordingFilename(
   title: string,
   extension: 'mid' | 'gp',
   now = new Date(),
 ): string {
-  const name =
-    title
-      .normalize('NFKC')
-      .replace(/[^\p{L}\p{N} _-]/gu, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .slice(0, 80) || 'guitar-melody'
-  return `${name}-${now.toISOString().replace(/[:.]/g, '-')}.${extension}`
+  const normalized = title.normalize('NFKC').trim().toLowerCase()
+  // Older unnamed takes include a locale-formatted date in their title. Keep
+  // that display title intact, but do not put a second date in the filename.
+  const unnamed =
+    /^guitar melody(?:\s*·\s*\p{N}[\p{N}\p{Z}\p{Cf}\s/.,:apm-]*)?$/u.test(
+      normalized,
+    )
+  const name = unnamed
+    ? ''
+    : Array.from(normalized.replace(/[^\p{L}\p{N}]+/gu, '-'))
+        .slice(0, 48)
+        .join('')
+        .replace(/^-+|-+$/g, '')
+  const pad = (value: number): string => String(value).padStart(2, '0')
+  const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+  return `melody-${name === '' ? '' : `${name}-`}${date}-${time}.${extension}`
 }
+
+// Downloads in the same second get a small suffix without adding milliseconds
+// to every filename. Existing files on disk remain the browser's responsibility.
+const downloadCounts = new Map<string, number>()
 
 export async function exportRecordingMidi(
   score: GuitarPracticeScore,
@@ -44,122 +57,14 @@ export async function exportRecordingMidi(
   return result
 }
 
-const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
-
-/** Ordinary durations when possible; exact rational tuplets retain free timing to 1/480 beat. */
+/** GP7 is a notation copy; original free timing stays in practice and MIDI. */
 export async function exportRecordingGuitarPro(
   score: GuitarPracticeScore,
 ): Promise<Uint8Array> {
   const problem = recordingScoreProblem(score)
   if (problem !== null) throw new Error(problem)
-  const alphaTab = await import('@coderline/alphatab')
-  const { model } = alphaTab
-  const result = new model.Score()
-  result.title = score.title
-  result.subTitle = `Recorded melody · revision ${score.revision}`
-  result.notices =
-    'Single-note transcription accepted by the player. Fingering is suggested. Free timing is rounded to 1/480 beat; use the note editor grid for simpler notation.'
-  const instrument = recordingScoreTuning(score).instrument
-  const track = new model.Track()
-  track.name = `Recorded ${instrument}`
-  result.addTrack(track)
-  track.playbackInfo.program = instrument === 'bass' ? 33 : 27
-  const staff = new model.Staff()
-  staff.stringTuning = new model.Tuning(
-    'Recorded tuning',
-    [...score.tuning],
-    false,
-  )
-  staff.capo = score.capo
-  staff.showTablature = true
-  staff.showStandardNotation = true
-  track.addStaff(staff)
-  const ticksPerBar =
-    ((score.timeSignature[0] * 4) / score.timeSignature[1]) * 480
-  const timedNotes = [...score.notes]
-    .sort((a, b) => a.startBeat - b.startBeat)
-    .map((note) => {
-      const start = Math.round(note.startBeat * 480)
-      return {
-        note,
-        start,
-        end: Math.max(start + 1, Math.round(note.endBeat * 480)),
-      }
-    })
-  if (
-    timedNotes.some(
-      (note, index) => index > 0 && note.start < timedNotes[index - 1].end,
-    )
-  )
-    throw new Error(
-      "Some notes overlap at Guitar Pro's 1/480-beat resolution. Separate or lengthen the short notes, or export MIDI instead.",
-    )
-  // A short note can round into the next bar. Allocate the exact bounds emitted
-  // below, including the one-tick minimum, rather than its original end time.
-  const lastTick = Math.max(...timedNotes.map((note) => note.end))
-  const bars = Math.max(1, Math.ceil(lastTick / ticksPerBar))
-  if (bars > 2048) throw new Error('This score is too long to export safely.')
-  const voices: InstanceType<typeof model.Voice>[] = []
-  for (let index = 0; index < bars; index++) {
-    const master = new model.MasterBar()
-    master.timeSignatureNumerator = score.timeSignature[0]
-    master.timeSignatureDenominator = score.timeSignature[1]
-    if (index === 0)
-      master.tempoAutomations.push(
-        model.Automation.buildTempoAutomation(false, 0, score.bpm, 2),
-      )
-    result.addMasterBar(master)
-    const bar = new model.Bar()
-    staff.addBar(bar)
-    const voice = new model.Voice()
-    bar.addVoice(voice)
-    voices.push(voice)
-  }
-  let cursor = 0
-  const emit = (end: number, source: GuitarPracticeNote | null): void => {
-    let previous: InstanceType<typeof model.Note> | null = null
-    while (cursor < end) {
-      const barIndex = Math.floor(cursor / ticksPerBar)
-      const count = Math.min(
-        end - cursor,
-        (barIndex + 1) * ticksPerBar - cursor,
-      )
-      const beat = new model.Beat()
-      beat.isEmpty = false
-      const regular = [1, 2, 4, 8, 16, 32, 64, 128, 256].find(
-        (duration) => 1920 / duration === count,
-      )
-      if (regular !== undefined) beat.duration = regular
-      else {
-        beat.duration = model.Duration.Quarter
-        const divisor = gcd(480, count)
-        beat.tupletNumerator = 480 / divisor
-        beat.tupletDenominator = count / divisor
-      }
-      voices[barIndex].addBeat(beat)
-      if (source !== null) {
-        const note = new model.Note()
-        note.string = score.tuning.length + 1 - source.string!
-        note.fret = source.fret!
-        if (previous !== null) {
-          note.isTieDestination = true
-          note.tieOrigin = previous
-          previous.tieDestination = note
-        }
-        beat.addNote(note)
-        previous = note
-      }
-      cursor += count
-    }
-  }
-  for (const { note, start, end } of timedNotes) {
-    emit(start, null)
-    emit(end, note)
-  }
-  emit(bars * ticksPerBar, null)
-  const settings = new alphaTab.Settings()
-  result.finish(settings)
-  return new alphaTab.exporter.Gp7Exporter().export(result, settings)
+  const { writeRecordingGuitarPro } = await import('./recording-gp7')
+  return writeRecordingGuitarPro(score)
 }
 
 export async function downloadRecordingScore(
@@ -178,7 +83,13 @@ export async function downloadRecordingScore(
   )
   const link = document.createElement('a')
   link.href = url
-  link.download = guitarRecordingFilename(score.title, format)
+  const filename = guitarRecordingFilename(score.title, format)
+  const count = (downloadCounts.get(filename) ?? 0) + 1
+  downloadCounts.set(filename, count)
+  link.download =
+    count === 1
+      ? filename
+      : filename.replace(`.${format}`, `-${count}.${format}`)
   // Focus-managed sheets block background clicks, including synthetic anchor
   // clicks. Keep the download inside the initiating review, not behind it.
   container.append(link)

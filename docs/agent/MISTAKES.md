@@ -335,6 +335,15 @@ another one. What it does, and what any replacement must also do:
 **See:** `src/components/InfoPopover.tsx`, and the badge hints in
 `VocalChallenges.tsx` for a call site.
 
+### Supply semantic colours at a standalone portal's call site
+
+**Symptom:** Guitar Night's removal confirmation had transparent panels and an invisible action.
+**Cause:** its shared dialog expected app theme tokens; a nested body portal had only room colours.
+**Rule:** a portal skin bridge copies existing tokens, not missing aliases. Supply the shared
+component's semantic colours at its immediate caller and test both nested and ordinary entry paths.
+**See:** `src/features/guitar-night/GuitarRecordingRemoval.tsx`,
+`src/components/portal-skin.ts`, `src/e2e/guitar-recorder-overlays.spec.ts`.
+
 ### `scrollWidth` cannot tell you there is room to spare
 
 **Symptom:** a responsive bar that adapts its content to the available width
@@ -929,6 +938,13 @@ selects the destination by its exact accessible name.
 **See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
 
 ## Process
+
+### Validate native notation, not just the exporter importing its own bytes
+
+**Symptom:** GP7 round trips passed, but GP8 showed red bars and huge tuplet ratios.
+**Cause:** free-time fractions became isolated rational tuplets; shared parser/exporter behavior hid incompatible notation and wrong instrument metadata.
+**Rule:** keep exact timing in MIDI; disclose GP-only notation rounding and independently check GPIF bar sums, rhythms and instrument fields. Owner native-app verification is still required.
+**See:** `src/lib/guitar/recording-gp7.ts`, `recording-export.test.ts`
 
 ### Do not pack capture and every responsive screenshot into one browser deadline
 

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startGuitarRecordingCapture } from './recording-capture'
 import type { GuitarCaptureMessage, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
-import { GUITAR_RECORDING_CHUNK_FRAMES, GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
+import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 
 const edge = vi.hoisted(() => ({ worker: vi.fn() }))
 vi.mock('@/workers/guitar-recorder.worker.ts?worker', () => ({
@@ -116,6 +116,7 @@ function harness() {
       channelCount: 2,
     },
     onStart: vi.fn(),
+    onPreview: vi.fn(),
     onChunk,
   }
   const finish = () => worker.send({ type: 'finished', summary })
@@ -167,6 +168,114 @@ afterEach(() => {
 })
 
 describe('borrowed guitar capture boundary', () => {
+  it('publishes ordered ephemeral evidence before slow durable writes and retires it on finish', async () => {
+    const h = harness()
+    const write = deferred()
+    h.onChunk.mockImplementationOnce(() => write.promise)
+    const capture = await startGuitarRecordingCapture(h.options)
+    const first = {
+      sequence: 0,
+      frames: 2048,
+      notes: [],
+      pendingNote: null,
+      pitch: null,
+      ended: false,
+    }
+    h.worker.send({ type: 'preview', preview: first })
+    h.worker.send({ type: 'chunk', chunk: chunk(), recycled: [] })
+    h.worker.send({
+      type: 'preview',
+      preview: { ...first, sequence: 8, frames: 1024 },
+    })
+    const final = { ...first, sequence: 1, frames: 4096, ended: true }
+    h.worker.send({ type: 'preview', preview: final })
+    h.worker.send({ type: 'preview', preview: first })
+    h.worker.send({ type: 'preview', preview: { ...final, sequence: 2 } })
+    expect(h.options.onPreview.mock.calls).toEqual([[first], [final]])
+    h.finish()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(h.worker.terminate).not.toHaveBeenCalled()
+    write.resolve()
+    await capture.done
+    h.worker.send({ type: 'preview', preview: { ...first, sequence: 3 } })
+    expect(h.options.onPreview).toHaveBeenCalledTimes(2)
+  })
+
+  it('saves queued audio even if the preview consumer throws, with an explicit stop reason', async () => {
+    const h = harness()
+    h.options.onPreview.mockImplementation(() => {
+      throw new Error('view failed')
+    })
+    const capture = await startGuitarRecordingCapture(h.options)
+    const first = chunk()
+    h.worker.send({
+      type: 'preview',
+      preview: {
+        sequence: 0,
+        frames: 128,
+        notes: [],
+        pendingNote: null,
+        pitch: null,
+        ended: false,
+      },
+    })
+    const buffers = [new ArrayBuffer(512), new ArrayBuffer(512)]
+    h.worker.send({ type: 'chunk', chunk: first, recycled: buffers })
+    h.worker.send({
+      type: 'preview',
+      preview: {
+        sequence: 1,
+        frames: 128,
+        notes: [],
+        pendingNote: null,
+        pitch: null,
+        ended: true,
+      },
+    })
+    h.finish()
+    await expect(capture.done).resolves.toMatchObject({
+      interruption:
+        'Live note preview failed. The captured audio is being saved.',
+    })
+    expect(h.onChunk).toHaveBeenCalledExactlyOnceWith(first, null)
+    expect(h.options.onPreview).toHaveBeenCalledOnce()
+    expect(h.node.port.postMessage).toHaveBeenCalledWith({
+      type: 'stop',
+      reason: 'Live note preview failed. The captured audio is being saved.',
+    })
+    for (const buffer of buffers)
+      expect(h.node.port.postMessage).toHaveBeenCalledWith(
+        { type: 'buffer', buffer },
+        [buffer],
+      )
+    expectReleased(h)
+  })
+
+  it('waits for slow storage after analysis has finished without misreporting a worker timeout', async () => {
+    const h = harness()
+    const write = deferred()
+    h.onChunk.mockImplementationOnce(() => write.promise)
+    const capture = await startGuitarRecordingCapture(h.options)
+    h.node.send({ type: 'started', audioStartFrame: 100 })
+    h.node.send({
+      type: 'stopped',
+      frames: 128,
+      clockAnomalies: 0,
+      reason: null,
+    })
+    h.worker.send({
+      type: 'chunk',
+      chunk: chunk(),
+      recycled: [new ArrayBuffer(512)],
+    })
+    h.finish()
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(h.worker.terminate).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+    write.resolve()
+    await expect(capture.done).resolves.toEqual(summary)
+  })
+
   it('isolates the selected channel, bounds its buffer pool and never owns the input or output', async () => {
     const h = harness()
     const capture = await startGuitarRecordingCapture(h.options)
@@ -183,7 +292,7 @@ describe('borrowed guitar capture boundary', () => {
     )
     expect(buffers).toHaveLength(GUITAR_RECORDING_POOL_SIZE)
     for (const [message, transfer] of buffers) {
-      expect(message.buffer.byteLength).toBe(GUITAR_RECORDING_CHUNK_FRAMES * 4)
+      expect(message.buffer.byteLength).toBe(GUITAR_RECORDING_PCM_FRAMES * 4)
       expect(transfer).toEqual([message.buffer])
     }
     expect(h.node.port.postMessage).toHaveBeenCalledWith({
@@ -277,11 +386,11 @@ describe('borrowed guitar capture boundary', () => {
     const first = chunk(0)
     const second = chunk(1)
     const recycled = new ArrayBuffer(512)
-    h.worker.send({ type: 'chunk', chunk: first, recycled })
+    h.worker.send({ type: 'chunk', chunk: first, recycled: [recycled] })
     h.worker.send({
       type: 'chunk',
       chunk: second,
-      recycled: new ArrayBuffer(512),
+      recycled: [new ArrayBuffer(512)],
     })
     h.finish()
     await vi.advanceTimersByTimeAsync(0)
@@ -311,12 +420,12 @@ describe('borrowed guitar capture boundary', () => {
     h.worker.send({
       type: 'chunk',
       chunk: chunk(),
-      recycled: new ArrayBuffer(512),
+      recycled: [new ArrayBuffer(512)],
     })
     h.worker.send({
       type: 'chunk',
       chunk: chunk(1),
-      recycled: new ArrayBuffer(512),
+      recycled: [new ArrayBuffer(512)],
     })
     await vi.advanceTimersByTimeAsync(0)
     expect(h.node.port.postMessage).toHaveBeenCalledWith({
@@ -341,7 +450,7 @@ describe('borrowed guitar capture boundary', () => {
     h.worker.send({
       type: 'chunk',
       chunk: chunk(),
-      recycled: new ArrayBuffer(512),
+      recycled: [new ArrayBuffer(512)],
     })
     await vi.advanceTimersByTimeAsync(0)
     h.worker.onerror?.()

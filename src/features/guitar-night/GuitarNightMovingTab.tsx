@@ -8,7 +8,7 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
-import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabNoteScale, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
+import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_RECORDING_WINDOW_BEATS, tabLoopWindow, tabNoteScale, tabPlayheadRatio, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
 
 export const GUITAR_NIGHT_TAB_ZOOM_KEY = 'guitar-night-tab-zoom-v1'
 export const GUITAR_NIGHT_TAB_SIZE_KEY = 'guitar-night-tab-size-v1'
@@ -22,6 +22,7 @@ interface GuitarNightMovingTabProps {
   tuning: Accessor<InstrumentTuning>
   tempoBpm: Accessor<number | null>
   playheadBeat: Accessor<number | null>
+  recordingHistory?: Accessor<boolean>
   summary: Accessor<string>
   hasGuide: Accessor<boolean>
   loopStart: Accessor<number | null>
@@ -68,9 +69,13 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
   let zoomDirty = false
   let wheelPersistTimer: ReturnType<typeof setTimeout> | undefined
   const index = createMemo(() => buildStageTabWindowIndex(props.notes()))
+  const recordingHistory = createMemo(() => props.recordingHistory?.() === true)
+  const playheadRatio = createMemo(() => tabPlayheadRatio(recordingHistory()))
   const timelineOriginBeat = createMemo(() => index().notes[0]?.startBeat ?? 0)
   const adaptiveWindow = createMemo(() =>
-    adaptiveTabWindowBeats(props.notes(), props.tempoBpm()),
+    recordingHistory()
+      ? TAB_RECORDING_WINDOW_BEATS * TAB_DEFAULT_ZOOM_MULTIPLIER
+      : adaptiveTabWindowBeats(props.notes(), props.tempoBpm()),
   )
   const windowBeats = createMemo(() =>
     zoomedTabWindowBeats(adaptiveWindow(), zoomMultiplier()),
@@ -82,30 +87,45 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
     () => `${zoomPercent()}% zoom, ${beatSpanLabel()} beats visible`,
   )
   const visibleNotes = createMemo(() =>
-    tabWindowNotes(index(), props.playheadBeat(), windowBeats()),
+    tabWindowNotes(
+      index(),
+      props.playheadBeat(),
+      windowBeats(),
+      recordingHistory(),
+    ),
   )
   const visibleNotesByString = createMemo(() => {
-    const rows = Array.from(
-      { length: props.tuning().stringCount },
-      () => [] as GuitarNote[],
-    )
-    for (const note of visibleNotes()) rows[note.stringIndex]?.push(note)
+    const rows = Array.from({ length: props.tuning().stringCount }, () => ({
+      moving: [] as GuitarNote[],
+      continued: [] as GuitarNote[],
+    }))
+    const historyStart =
+      (props.playheadBeat() ?? 0) - windowBeats() * playheadRatio()
+    for (const note of visibleNotes()) {
+      const lane =
+        recordingHistory() && note.startBeat < historyStart
+          ? 'continued'
+          : 'moving'
+      rows[note.stringIndex]?.[lane].push(note)
+    }
     return rows
   })
   const loop = createMemo(() =>
-    tabLoopWindow(
-      props.loopStart(),
-      props.loopEnd(),
-      props.playheadBeat(),
-      windowBeats(),
-    ),
+    recordingHistory()
+      ? { range: null, markers: [] }
+      : tabLoopWindow(
+          props.loopStart(),
+          props.loopEnd(),
+          props.playheadBeat(),
+          windowBeats(),
+        ),
   )
 
   const tabTrackWidthPercent = createMemo(() => 100 / windowBeats())
   const tabTrackShiftPercent = createMemo(
     () =>
       (timelineOriginBeat() +
-        windowBeats() * TAB_PLAYHEAD_RATIO -
+        windowBeats() * playheadRatio() -
         (props.playheadBeat() ?? 0)) *
       100,
   )
@@ -218,6 +238,30 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
     })
   })
 
+  const noteMarker = (note: GuitarNote, continuation = false) => (
+    <b
+      classList={{
+        [styles.stageTabNoteActive]:
+          props.playheadBeat() !== null &&
+          note.startBeat <= (props.playheadBeat() ?? 0) &&
+          note.startBeat + note.duration > (props.playheadBeat() ?? 0),
+        [styles.stageTabNotePast]:
+          props.playheadBeat() !== null &&
+          note.startBeat + note.duration <= (props.playheadBeat() ?? 0),
+        [styles.stageTabNoteBacking]: note.isBacking === true,
+      }}
+      data-note-id={note.id}
+      data-history-continuation={continuation ? 'true' : undefined}
+      style={{
+        left: continuation
+          ? 'calc(var(--stage-tab-note-size) / 2)'
+          : `${(note.startBeat - timelineOriginBeat()) * 100}%`,
+      }}
+    >
+      {note.fret}
+    </b>
+  )
+
   return (
     <div
       class={styles.stageTab}
@@ -235,6 +279,9 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
         role="img"
         aria-label={props.summary()}
         data-testid="guitar-night-moving-tab"
+        data-tab-timeline={
+          recordingHistory() ? 'recording-history' : 'upcoming'
+        }
         style={{
           '--stage-tab-track-width': `${tabTrackWidthPercent()}%`,
           '--stage-tab-track-shift': `${tabTrackShiftPercent()}%`,
@@ -269,8 +316,13 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
           </For>
           <div
             class={styles.stageTabPlayhead}
-            style={{ left: `${TAB_PLAYHEAD_RATIO * 100}%` }}
-          />
+            data-testid="guitar-night-tab-now"
+            style={{ left: `${playheadRatio() * 100}%` }}
+          >
+            <Show when={recordingHistory()}>
+              <span>NOW</span>
+            </Show>
+          </div>
         </div>
         <For each={props.tuning().labels}>
           {(label, stringIndex) => (
@@ -279,31 +331,28 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
               <i aria-hidden="true" />
               <div aria-hidden="true" data-testid="guitar-night-tab-note-track">
                 <div class={styles.stageTabNoteFlow}>
-                  <For each={visibleNotesByString()[stringIndex()] ?? []}>
-                    {(note) => (
-                      <b
-                        classList={{
-                          [styles.stageTabNoteActive]:
-                            props.playheadBeat() !== null &&
-                            note.startBeat <= (props.playheadBeat() ?? 0) &&
-                            note.startBeat + note.duration >
-                              (props.playheadBeat() ?? 0),
-                          [styles.stageTabNotePast]:
-                            props.playheadBeat() !== null &&
-                            note.startBeat + note.duration <=
-                              (props.playheadBeat() ?? 0),
-                          [styles.stageTabNoteBacking]: note.isBacking === true,
-                        }}
-                        data-note-id={note.id}
-                        style={{
-                          left: `${(note.startBeat - timelineOriginBeat()) * 100}%`,
-                        }}
-                      >
-                        {note.fret}
-                      </b>
-                    )}
+                  <For
+                    each={visibleNotesByString()[stringIndex()]?.moving ?? []}
+                  >
+                    {(note) => noteMarker(note)}
                   </For>
                 </div>
+                <Show when={recordingHistory()}>
+                  {/* A sustain can overlap history after its onset scrolls away.
+                      Pin only its continuation badge, not the measured onset. */}
+                  <div
+                    class={styles.stageTabContinuations}
+                    data-testid="guitar-night-tab-continuations"
+                  >
+                    <For
+                      each={
+                        visibleNotesByString()[stringIndex()]?.continued ?? []
+                      }
+                    >
+                      {(note) => noteMarker(note, true)}
+                    </For>
+                  </div>
+                </Show>
               </div>
             </div>
           )}

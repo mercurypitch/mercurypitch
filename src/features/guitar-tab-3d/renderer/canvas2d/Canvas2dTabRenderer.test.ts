@@ -78,6 +78,42 @@ function fakeCanvas() {
 
 describe('Canvas2dTabRenderer notation', () => {
   it.each(['string-highway', 'fret-axis'] as const)(
+    'labels recording history without scoring glow, authored marks or future targets in %s',
+    (presentation) => {
+      const scene = buildTabScene({
+        notes: [
+          note('heard', {
+            startBeat: 9.75,
+            notation: { chordLabel: 'Am', techniques: [{ kind: 'palm-mute' }] },
+          }),
+          note('future', { startBeat: 11, fret: 99 }),
+        ],
+        playheadBeat: 10,
+        visibleBeatWindow: 6,
+        showNoteLabels: true,
+        showFretboard: true,
+        display: VELVET_DISPLAY,
+        presentation,
+        recordingHistory: true,
+        loopSpan: { startBeat: 9, endBeat: 11, active: true },
+      })
+      const fake = fakeCanvas()
+      const renderer = new Canvas2dTabRenderer()
+      renderer.mount(fake.canvas)
+      renderer.resize(960, 600, 1)
+      renderer.render(scene)
+      const labels = fake.fillText.mock.calls.map((call) => call[0])
+      expect(labels).toEqual(
+        expect.arrayContaining(['NOW · You played', 'History']),
+      )
+      for (const label of ['Am', 'PM', '99'])
+        expect(labels).not.toContain(label)
+      expect(scene.loopSpan).toBeUndefined()
+      expect(fake.shadowBlurWrites).toHaveLength(0)
+    },
+  )
+
+  it.each(['string-highway', 'fret-axis'] as const)(
     'draws labelled A/B planes in the %s presentation',
     (presentation) => {
       const scene = buildTabScene({

@@ -41,6 +41,7 @@ export function Guitar3DStage(props: Guitar3DStageProps) {
     <GuitarTab3DView
       fallingNotes={props.source.notes}
       playheadBeat={() => props.source.timeline.playheadBeat() ?? 0}
+      recordingHistory={() => props.source.recordingHistory?.() ?? false}
       visibleBeatWindow={props.visibleBeatWindow}
       showNoteLabels={props.showNoteLabels}
       showFretboard={props.showFretboard}

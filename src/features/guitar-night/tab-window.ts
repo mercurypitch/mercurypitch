@@ -5,6 +5,9 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 
 /** Where the now-line sits, leaving a little played history behind it. */
 export const TAB_PLAYHEAD_RATIO = 0.18
+/** Recorded evidence needs history, while a little margin keeps NOW legible. */
+export const TAB_RECORDING_PLAYHEAD_RATIO = 0.82
+export const TAB_RECORDING_WINDOW_BEATS = 6
 export const TAB_MIN_WINDOW_BEATS = 1.75
 export const TAB_MAX_WINDOW_BEATS = 10
 export const TAB_DEFAULT_ZOOM_MULTIPLIER = 1.25
@@ -185,14 +188,19 @@ export function tabNoteScale(windowBeats: number): number {
 function tabWindowBounds(
   playheadBeat: number | null,
   windowBeats: number,
+  recordingHistory = false,
 ): { head: number; start: number; end: number; window: number } {
   const window = Math.max(
     1,
     Number.isFinite(windowBeats) ? windowBeats : EMPTY_TAB_WINDOW_BEATS,
   )
   const head = playheadBeat ?? 0
-  const start = head - window * TAB_PLAYHEAD_RATIO
-  return { head, start, end: start + window, window }
+  const start = head - window * tabPlayheadRatio(recordingHistory)
+  return { head, start, end: recordingHistory ? head : start + window, window }
+}
+
+export function tabPlayheadRatio(recordingHistory = false): number {
+  return recordingHistory ? TAB_RECORDING_PLAYHEAD_RATIO : TAB_PLAYHEAD_RATIO
 }
 
 /**
@@ -203,8 +211,13 @@ export function tabWindowNotes(
   index: StageTabWindowIndex,
   playheadBeat: number | null,
   windowBeats = EMPTY_TAB_WINDOW_BEATS,
+  recordingHistory = false,
 ): GuitarNote[] {
-  const { start, end } = tabWindowBounds(playheadBeat, windowBeats)
+  const { start, end } = tabWindowBounds(
+    playheadBeat,
+    windowBeats,
+    recordingHistory,
+  )
   const notes: GuitarNote[] = []
   if (index.notes.length === 0) return notes
 
@@ -228,8 +241,13 @@ export function tabNoteOffsetPercent(
   noteStartBeat: number,
   playheadBeat: number | null,
   windowBeats: number,
+  recordingHistory = false,
 ): number {
-  const { start, window } = tabWindowBounds(playheadBeat, windowBeats)
+  const { start, window } = tabWindowBounds(
+    playheadBeat,
+    windowBeats,
+    recordingHistory,
+  )
   return ((noteStartBeat - start) / window) * 100
 }
 
@@ -238,21 +256,25 @@ export function tabWindowEntries(
   index: StageTabWindowIndex,
   playheadBeat: number | null,
   windowBeats = EMPTY_TAB_WINDOW_BEATS,
+  recordingHistory = false,
 ): TabWindowEntry[] {
-  const { head } = tabWindowBounds(playheadBeat, windowBeats)
-  return tabWindowNotes(index, playheadBeat, windowBeats).map((note) => ({
-    note,
-    offsetPercent: tabNoteOffsetPercent(
-      note.startBeat,
-      playheadBeat,
-      windowBeats,
-    ),
-    isActive:
-      playheadBeat !== null &&
-      note.startBeat <= playheadBeat &&
-      note.startBeat + note.duration > playheadBeat,
-    isPast: playheadBeat !== null && note.startBeat + note.duration <= head,
-  }))
+  const { head } = tabWindowBounds(playheadBeat, windowBeats, recordingHistory)
+  return tabWindowNotes(index, playheadBeat, windowBeats, recordingHistory).map(
+    (note) => ({
+      note,
+      offsetPercent: tabNoteOffsetPercent(
+        note.startBeat,
+        playheadBeat,
+        windowBeats,
+        recordingHistory,
+      ),
+      isActive:
+        playheadBeat !== null &&
+        note.startBeat <= playheadBeat &&
+        note.startBeat + note.duration > playheadBeat,
+      isPast: playheadBeat !== null && note.startBeat + note.duration <= head,
+    }),
+  )
 }
 
 /** Place read-only A/B context on the exact moving beat window used by Tab. */

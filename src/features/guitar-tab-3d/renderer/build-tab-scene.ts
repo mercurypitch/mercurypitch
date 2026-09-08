@@ -21,6 +21,7 @@ export interface BuildTabSceneOptions {
   notes: readonly GuitarNote[]
   playheadBeat: number
   visibleBeatWindow: number
+  recordingHistory?: boolean
   showNoteLabels: boolean
   showFretboard: boolean
   display?: TabScene['display']
@@ -58,8 +59,10 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
   const laidMaxFret = Math.min(24, Math.max(12, compiled.maxFret))
   const clampFret = (fret: number) => Math.max(0, Math.min(laidMaxFret, fret))
   const now = options.now ?? Date.now()
-  const feedback = options.feedback
-  const requestedLoop = options.loopSpan
+  const feedback =
+    options.recordingHistory === true ? undefined : options.feedback
+  const requestedLoop =
+    options.recordingHistory === true ? undefined : options.loopSpan
   const loopSpan =
     requestedLoop !== null &&
     requestedLoop !== undefined &&
@@ -124,6 +127,7 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
     maxNoteDurationBeats: compiled.maxNoteDurationBeats,
     playheadBeat: options.playheadBeat,
     visibleBeatWindow: Math.max(1, options.visibleBeatWindow),
+    recordingHistory: options.recordingHistory ?? false,
     stringCount,
     openMidi,
     maxFret: laidMaxFret,

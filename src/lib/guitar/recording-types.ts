@@ -6,7 +6,10 @@ export const GUITAR_RECORDING_VERSION = 1
 export const GUITAR_DETECTOR_VERSION = 'guitar-melody-1.1'
 export const GUITAR_RECORDING_LIMIT_SECONDS = 300
 export const GUITAR_RECORDING_CHUNK_FRAMES = 8192
-export const GUITAR_RECORDING_POOL_SIZE = 8
+/** Short analysis delivery, independent of the durable checkpoint size. */
+export const GUITAR_RECORDING_PCM_FRAMES = 2048
+// Preserve the original 65,536-sample backpressure budget, not a longer queue.
+export const GUITAR_RECORDING_POOL_SIZE = 32
 
 export interface GuitarPitchEvidence {
   frame: number
@@ -21,6 +24,17 @@ export interface GuitarRecordedNote {
   endFrame: number
   clarity: number
   onset: 'attack' | 'pitch-change'
+}
+
+/** Ephemeral ordered delta, never proof that its audio/evidence are durable. */
+export interface GuitarRecordingPreview {
+  sequence: number
+  frames: number
+  /** Every newly completed note since the previous preview, delivered once. */
+  notes: GuitarRecordedNote[]
+  pendingNote: GuitarRecordedNote | null
+  pitch: GuitarPitchEvidence | null
+  ended: boolean
 }
 
 export interface GuitarRecordingChunk {
@@ -135,10 +149,11 @@ export type GuitarCaptureCommand =
   | { type: 'stop'; reason: string | null }
 
 export type GuitarRecordingWorkerMessage =
+  | { type: 'preview'; preview: GuitarRecordingPreview }
   | {
       type: 'chunk'
       chunk: GuitarRecordingChunk
-      recycled: ArrayBuffer
+      recycled: ArrayBuffer[]
       previewNote?: GuitarRecordedNote | null
     }
   | { type: 'finished'; summary: GuitarRecordingSummary }

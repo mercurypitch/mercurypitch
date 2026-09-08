@@ -1,8 +1,8 @@
 // Guitar capture borrows an existing input and context, keeping a bounded dry side branch off the monitor path.
 import RecordingWorker from '@/workers/guitar-recorder.worker.ts?worker'
 import workletUrl from '@/workers/guitar-recorder.worklet.ts?worker&url'
-import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
-import { GUITAR_RECORDING_CHUNK_FRAMES, GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
+import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingPreview, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
+import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 
 export interface GuitarRecordingInput {
   context: AudioContext
@@ -17,6 +17,8 @@ interface GuitarCaptureOptions {
   input: GuitarRecordingInput
   signal: AbortSignal
   onStart(audioFrame: number): void
+  /** Synchronous bounded evidence deltas; never wait for storage or render here. */
+  onPreview?(preview: GuitarRecordingPreview): void
   onChunk(
     chunk: GuitarRecordingChunk,
     previewNote: GuitarRecordedNote | null,
@@ -90,6 +92,10 @@ export async function startGuitarRecordingCapture(
   let stopped = false
   let started = false
   let failure: Error | null = null
+  let previewFailure: Error | null = null
+  let previewSequence = -1
+  let previewFrames = 0
+  let previewEnded = false
   let writes: Promise<void> = Promise.resolve()
   let resolveDone!: (summary: GuitarRecordingSummary) => void
   let rejectDone!: (error: Error) => void
@@ -116,7 +122,10 @@ export async function startGuitarRecordingCapture(
     node.disconnect()
     silence.disconnect()
     node.port.onmessage = null
+    node.onprocessorerror = null
     node.port.close()
+    worker.onmessage = null
+    worker.onerror = null
     worker.terminate()
   }
   const fail = (error: Error): void => {
@@ -183,17 +192,37 @@ export async function startGuitarRecordingCapture(
   ): void => {
     if (disposed) return
     const message = event.data
-    if (message.type === 'chunk') {
+    if (message.type === 'preview') {
+      const preview = message.preview
+      if (
+        previewEnded ||
+        failure !== null ||
+        preview.sequence <= previewSequence ||
+        preview.frames < previewFrames
+      )
+        return
+      previewSequence = preview.sequence
+      previewFrames = preview.frames
+      previewEnded = preview.ended
+      try {
+        options.onPreview?.(preview)
+      } catch {
+        // A view failure must not discard the PCM already queued for saving.
+        previewEnded = true
+        previewFailure = new Error(
+          'Live note preview failed. The captured audio is being saved.',
+        )
+        void stop(previewFailure.message)
+      }
+    } else if (message.type === 'chunk') {
       writes = writes
         .then(async () => {
           if (failure !== null) return
           await options.onChunk(message.chunk, message.previewNote ?? null)
           // A buffer is reusable only after its encoded audio/evidence are durable.
           if (!disposed)
-            node.port.postMessage(
-              { type: 'buffer', buffer: message.recycled },
-              [message.recycled],
-            )
+            for (const buffer of message.recycled)
+              node.port.postMessage({ type: 'buffer', buffer }, [buffer])
         })
         .catch((error: unknown) => {
           failure =
@@ -203,11 +232,16 @@ export async function startGuitarRecordingCapture(
           void stop(failure.message)
         })
     } else if (message.type === 'finished') {
+      previewEnded = true
+      clearTimeout(timer)
       void writes.then(() => {
         if (disposed) return
         const summary = {
           ...message.summary,
-          interruption: failure?.message ?? message.summary.interruption,
+          interruption:
+            failure?.message ??
+            previewFailure?.message ??
+            message.summary.interruption,
         }
         dispose()
         resolveDone(summary)
@@ -225,7 +259,7 @@ export async function startGuitarRecordingCapture(
       sampleRate: context.sampleRate,
     })
     for (let index = 0; index < GUITAR_RECORDING_POOL_SIZE; index++) {
-      const buffer = new ArrayBuffer(GUITAR_RECORDING_CHUNK_FRAMES * 4)
+      const buffer = new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4)
       node.port.postMessage({ type: 'buffer', buffer }, [buffer])
     }
     source.connect(splitter)

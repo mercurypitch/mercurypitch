@@ -13,6 +13,20 @@ approves this design and placement.
 
 Use case: stylized-concept. Asset type: a single collectible recording emblem for the 'My melodies' gallery in MercuryPitch Guitar Night, an intimate dark velvet rehearsal room. Primary request: an exquisitely crafted miniature analog reel-to-reel tape cartridge with two small brushed brass reels, smoked charcoal housing, and a single amber guitar pick tucked against its lower front edge. It should feel like a musician's cherished personal recording, not a corporate app icon. Three-quarter slightly overhead view, compact readable silhouette, tactile worn brass and walnut edge detail, warm ivory highlights and one subtle teal signal light. Refined realistic product illustration, warm studio light, understated craftsmanship, no excessive glow, no neon. Center the entire isolated object with breathing room, square composition, genuinely transparent background and preserved alpha. No text, lettering, logos, musical-note glyphs, watermark, UI, floor or backdrop. This will be used around 100–160px wide in a beautiful translucent charcoal guitar-room gallery.
 
+## Recorder animation prompt — 2026-09-08
+
+Use `public/guitar-night/melody-recorder.webp` as the reference image:
+
+> Animate only the two brass reels and visible tape transport in this exact
+> recorder. Smooth, steady rotation and natural tape movement. Lock the camera,
+> housing, guitar pick, lights, framing and background. No zoom, morphing, new
+> parts, text or sound. Seamless 4-second loop with matching first and last
+> frames. Preserve transparency if supported.
+
+Keep the still image as the reduced-motion and idle fallback. Animation is
+decorative, not an audio meter; later integration should run it only while
+recording. No video has been generated or added to the app yet.
+
 ## Playback amp/cabinet — 2026-09-07
 
 Generated with the built-in OpenAI image-generation tool, without a reference

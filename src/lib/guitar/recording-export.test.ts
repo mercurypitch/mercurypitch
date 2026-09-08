@@ -1,8 +1,9 @@
 // Real import/export round trips protect guitar pitch, timing, fingering, tempo and metre.
-import { describe, expect, it } from 'vitest'
+import { strFromU8, unzipSync } from 'fflate'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseMidiSong } from '../midi-song'
 import { scoreToMidiSong } from '../tab/gp-to-midi-song'
-import { exportRecordingGuitarPro, exportRecordingMidi, guitarRecordingFilename, } from './recording-export'
+import { downloadRecordingScore, exportRecordingGuitarPro, exportRecordingMidi, guitarRecordingFilename, } from './recording-export'
 import type { GuitarPracticeScore } from './recording-types'
 
 const score: GuitarPracticeScore = {
@@ -49,7 +50,83 @@ const score: GuitarPracticeScore = {
   ],
 }
 
+function readGpif(bytes: Uint8Array): Document {
+  const files = unzipSync(bytes)
+  expect(strFromU8(files.VERSION)).toBe('7.0')
+  const xml = new DOMParser().parseFromString(
+    strFromU8(files['Content/score.gpif']),
+    'application/xml',
+  )
+  expect(xml.querySelector('parsererror')).toBeNull()
+  return xml
+}
+
+// Independent of alphaTab's duration calculation: GP8 rejects malformed bars
+// even when an export -> import round trip through the same library succeeds.
+function expectBalancedNotation(xml: Document): void {
+  expect(xml.querySelector('PrimaryTuplet, SecondaryTuplet')).toBeNull()
+  const values: Record<string, number> = {
+    Whole: 32,
+    Half: 16,
+    Quarter: 8,
+    Eighth: 4,
+    '16th': 2,
+    '32nd': 1,
+  }
+  const rhythms = new Map(
+    [...xml.querySelectorAll('Rhythms > Rhythm')].map((rhythm) => {
+      const units = values[rhythm.querySelector('NoteValue')!.textContent!]
+      const dots = Number(
+        rhythm.querySelector('AugmentationDot')?.getAttribute('count') ?? 0,
+      )
+      expect(units).toBeGreaterThan(0)
+      expect(dots).toBeLessThanOrEqual(1)
+      return [rhythm.id, units * (dots === 1 ? 1.5 : 1)]
+    }),
+  )
+  const beats = new Map(
+    [...xml.querySelectorAll('Beats > Beat')].map((beat) => [
+      beat.id,
+      rhythms.get(beat.querySelector('Rhythm')!.getAttribute('ref')!)!,
+    ]),
+  )
+  const voices = new Map(
+    [...xml.querySelectorAll('Voices > Voice')].map((voice) => [
+      voice.id,
+      voice
+        .querySelector('Beats')!
+        .textContent!.split(' ')
+        .reduce((sum, id) => sum + beats.get(id)!, 0),
+    ]),
+  )
+  const bars = new Map(
+    [...xml.querySelectorAll('Bars > Bar')].map((bar) => [bar.id, bar]),
+  )
+  const masters = [...xml.querySelectorAll('MasterBars > MasterBar')]
+  expect(masters.length).toBeGreaterThan(0)
+  for (const master of masters) {
+    const [num, den] = master
+      .querySelector('Time')!
+      .textContent!.split('/')
+      .map(Number)
+    for (const id of master.querySelector('Bars')!.textContent!.split(' ')) {
+      for (const voice of bars
+        .get(id)!
+        .querySelector('Voices')!
+        .textContent!.split(' ')) {
+        expect(voices.get(voice), `bar ${id}, voice ${voice}`).toBe(
+          (num * 32) / den,
+        )
+      }
+    }
+  }
+}
+
 describe('guitar recording exports', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
   it('exports valid MIDI pitches outside the neck without inventing guitar fingering', async () => {
     const mixed = {
       ...score,
@@ -117,22 +194,29 @@ describe('guitar recording exports', () => {
       [57, 2.5, 2, 2, 0],
     ])
   })
-  it('retains free-timed boundaries at MIDI tick resolution in GP7', async () => {
+  it('writes readable GP7 notation without changing free-timed practice or MIDI', async () => {
     const free = {
       ...score,
       notes: [{ ...score.notes[0], startBeat: 0.123, endBeat: 0.763 }],
     }
+    const original = structuredClone(free)
     const bytes = await exportRecordingGuitarPro(free)
+    expectBalancedNotation(readGpif(bytes))
     const { importer } = await import('@coderline/alphatab')
     const imported = scoreToMidiSong(
       importer.ScoreLoader.loadScoreFromBytes(bytes),
     )
     const note = imported.tracks.flatMap((track) => track.notes)[0]
     expect(note.midi).toBe(42)
-    expect(Math.abs(note.startBeat - 0.123)).toBeLessThan(1 / 480)
-    expect(Math.abs(note.startBeat + note.duration - 0.763)).toBeLessThan(
+    expect(note.startBeat).toBe(0.125)
+    expect(note.startBeat + note.duration).toBe(0.75)
+    const midi = parseMidiSong(await exportRecordingMidi(free))!
+    const exact = midi.tracks.flatMap((track) => track.notes)[0]
+    expect(Math.abs(exact.startBeat - 0.123)).toBeLessThan(1 / 480)
+    expect(Math.abs(exact.startBeat + exact.duration - 0.763)).toBeLessThan(
       1 / 480,
     )
+    expect(free).toEqual(original)
   })
   it('retains a short note rounded past the final bar boundary in GP7', async () => {
     const boundary = {
@@ -149,10 +233,11 @@ describe('guitar recording exports', () => {
     expect(notes).toHaveLength(1)
     expect(notes[0].midi).toBe(42)
     expect(notes[0].startBeat).toBe(3)
-    expect(notes[0].duration).toBeCloseTo(1 / 480)
+    expect(notes[0].duration).toBe(0.125)
+    expectBalancedNotation(readGpif(bytes))
     expect(boundary).toEqual(original)
   })
-  it('rejects GP7 tick collisions without silently dropping corrected notes', async () => {
+  it('rejects GP7 notation collisions without dropping notes or shifting the whole phrase', async () => {
     const colliding = {
       ...score,
       notes: [
@@ -168,7 +253,7 @@ describe('guitar recording exports', () => {
     }
     const original = structuredClone(colliding)
     await expect(exportRecordingGuitarPro(colliding)).rejects.toThrow(
-      "Some notes overlap at Guitar Pro's 1/480-beat resolution",
+      'Some note attacks are too close for thirty-second-note notation',
     )
     expect(colliding).toEqual(original)
     const midi = parseMidiSong(await exportRecordingMidi(colliding))!
@@ -179,13 +264,137 @@ describe('guitar recording exports', () => {
         .sort((a, b) => a - b),
     ).toEqual([42, 43])
   })
-  it('makes safe timestamped filenames', () => {
+  it.each([
+    [3, 4],
+    [4, 4],
+    [5, 8],
+    [7, 16],
+    [6, 8],
+    [2, 2],
+  ] as const)(
+    'balances notes, dotted durations, rests and ties in %s/%s without arbitrary tuplets',
+    async (numerator, denominator) => {
+      const uneven = {
+        ...score,
+        timeSignature: [numerator, denominator] as [number, number],
+        notes: Array.from({ length: 36 }, (_, index) => ({
+          ...score.notes[index % 3],
+          id: `note-${index}`,
+          startBeat: index * 0.731 + 0.017,
+          endBeat: index * 0.731 + 0.129 + (index % 7) * 0.091,
+        })),
+      }
+      const bytes = await exportRecordingGuitarPro(uneven)
+      expectBalancedNotation(readGpif(bytes))
+      const { importer } = await import('@coderline/alphatab')
+      const notes = scoreToMidiSong(
+        importer.ScoreLoader.loadScoreFromBytes(bytes),
+      ).tracks.flatMap((track) => track.notes)
+      expect(notes.map((note) => note.midi)).toEqual(
+        uneven.notes.map((note) => note.midi),
+      )
+      for (let index = 0; index < notes.length; index++) {
+        expect(
+          Math.abs(notes[index].startBeat - uneven.notes[index].startBeat),
+        ).toBeLessThanOrEqual(1 / 16)
+        expect(notes[index].duration).toBeGreaterThan(0)
+      }
+    },
+  )
+  it.each(['guitar', 'bass'] as const)(
+    'writes native %s identity, clef and octave display without transposing audio',
+    async (instrument) => {
+      // Explicit bass can have six strings: do not infer its identity from count.
+      const bytes = await exportRecordingGuitarPro({
+        ...score,
+        instrument,
+        title: 'Riff <&> "lead"',
+      })
+      const xml = readGpif(bytes)
+      expect(xml.querySelector('Score > Title')!.textContent).toBe(
+        'Riff <&> "lead"',
+      )
+      expect(
+        xml.querySelector('Property[name="Tuning"] > Instrument')!.textContent,
+      ).toBe(instrument === 'bass' ? 'Bass' : 'Guitar')
+      expect(xml.querySelector('Track > Transpose > Octave')!.textContent).toBe(
+        '-1',
+      )
+      expect(
+        [...xml.querySelectorAll('MasterBar > Key > AccidentalCount')].every(
+          (key) => key.textContent === '0',
+        ),
+      ).toBe(true)
+      expect(xml.querySelector('Bar > Clef')!.textContent).toBe(
+        instrument === 'bass' ? 'F4' : 'G2',
+      )
+      expect(
+        xml.querySelector('Property[name="FretCount"] > Number')!.textContent,
+      ).toBe('24')
+      const { importer } = await import('@coderline/alphatab')
+      const imported = scoreToMidiSong(
+        importer.ScoreLoader.loadScoreFromBytes(bytes),
+      )
+      expect(
+        imported.tracks
+          .flatMap((track) => track.notes)
+          .map((note) => note.midi),
+      ).toEqual([42, 42, 57])
+    },
+  )
+  it('makes lowercase filenames with a compact local date and seconds', () => {
     expect(
       guitarRecordingFilename(
-        '../My melody',
+        '../My RIFF',
         'gp',
-        new Date('2026-09-07T12:34:56.789Z'),
+        new Date(2026, 8, 8, 13, 0, 54, 99),
       ),
-    ).toBe('My-melody-2026-09-07T12-34-56-789Z.gp')
+    ).toBe('melody-my-riff-20260908-130054.gp')
+  })
+  it.each([
+    '',
+    '../?!',
+    'Guitar melody',
+    'Guitar melody · 9/8/2026, 12:59:40 PM',
+    'Guitar melody · 8. 9. 2026. 12:59:40',
+  ])('does not repeat the generated title date: %s', (title) => {
+    expect(
+      guitarRecordingFilename(title, 'mid', new Date(2026, 8, 8, 0, 4, 5)),
+    ).toBe('melody-20260908-000405.mid')
+  })
+  it('retains user names, collapses separators and bounds the slug', () => {
+    const now = new Date(2026, 8, 8, 13, 0, 54)
+    expect(guitarRecordingFilename('Guitar melody · Sunset', 'mid', now)).toBe(
+      'melody-guitar-melody-sunset-20260908-130054.mid',
+    )
+    expect(guitarRecordingFilename('  ÉTÉ__ Riff / 2  ', 'mid', now)).toBe(
+      'melody-été-riff-2-20260908-130054.mid',
+    )
+    expect(guitarRecordingFilename('A'.repeat(100), 'mid', now)).toBe(
+      `melody-${'a'.repeat(48)}-20260908-130054.mid`,
+    )
+  })
+  it('adds a short counter to repeated same-second downloads inside the review', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 8, 8, 13, 0, 54))
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:score-export')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const host = document.createElement('div')
+    const filenames: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      expect(this.parentElement).toBe(host)
+      filenames.push(this.download)
+    })
+    await downloadRecordingScore(score, 'mid', host)
+    await downloadRecordingScore(score, 'mid', host)
+    expect(filenames).toEqual([
+      'melody-my-melody-20260908-130054.mid',
+      'melody-my-melody-20260908-130054-2.mid',
+    ])
+    expect(host.childElementCount).toBe(0)
+    vi.runAllTimers()
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
   })
 })

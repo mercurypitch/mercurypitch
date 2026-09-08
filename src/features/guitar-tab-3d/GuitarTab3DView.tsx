@@ -33,6 +33,8 @@ export interface GuitarTab3DViewProps {
   fallingNotes: Accessor<readonly GuitarNote[]>
   playheadBeat: Accessor<number>
   visibleBeatWindow: Accessor<number>
+  /** Draw recorded evidence behind NOW instead of future practice targets. */
+  recordingHistory?: Accessor<boolean>
   showNoteLabels: Accessor<boolean>
   /** Draw the neck (fretboard) at the hit line. */
   showFretboard: Accessor<boolean>
@@ -349,6 +351,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       notes: props.fallingNotes(),
       playheadBeat: props.playheadBeat(),
       visibleBeatWindow: props.visibleBeatWindow(),
+      recordingHistory: props.recordingHistory?.() ?? false,
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
       display,
@@ -476,6 +479,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       props.fallingNotes()
       props.playheadBeat()
       props.visibleBeatWindow()
+      props.recordingHistory?.()
       props.showNoteLabels()
       props.showFretboard()
       props.display?.()
@@ -640,6 +644,9 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         aria-label={props.ariaLabel?.() ?? 'Interactive guitar tab fretboard'}
         data-camera-ready={interactive()}
         data-tab-presentation={props.presentation?.() ?? 'fret-axis'}
+        data-tab-timeline={
+          props.recordingHistory?.() === true ? 'recording-history' : 'upcoming'
+        }
         data-camera-yaw={camera().yaw.toFixed(4)}
         data-camera-radius={camera().radius.toFixed(4)}
         data-camera-target-x={camera().target[0].toFixed(4)}
