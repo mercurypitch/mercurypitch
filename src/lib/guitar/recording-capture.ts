@@ -1,8 +1,8 @@
 // Guitar capture borrows an existing input and context, keeping a bounded dry side branch off the monitor path.
 import RecordingWorker from '@/workers/guitar-recorder.worker.ts?worker'
-import workletUrl from '@/workers/guitar-recorder.worklet.ts?worker&url'
 import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingPreview, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
+import { createGuitarPcmNode, prepareGuitarPcmWorklet, } from './recording-worklet'
 
 export interface GuitarRecordingInput {
   context: AudioContext
@@ -25,22 +25,13 @@ interface GuitarCaptureOptions {
   ): Promise<void>
 }
 
-const registered = new WeakMap<AudioContext, Promise<void>>()
-
 function createCaptureBranch(context: AudioContext, channelCount: number) {
   let splitter: ChannelSplitterNode | undefined
   let node: AudioWorkletNode | undefined
   let silence: GainNode | undefined
   try {
     splitter = context.createChannelSplitter(channelCount)
-    node = new AudioWorkletNode(context, 'guitar-recorder', {
-      numberOfInputs: 1,
-      numberOfOutputs: 1,
-      outputChannelCount: [1],
-      channelCount: 1,
-      channelCountMode: 'explicit',
-      channelInterpretation: 'discrete',
-    })
+    node = createGuitarPcmNode(context)
     silence = context.createGain()
     silence.gain.value = 0
     return { splitter, node, silence, worker: new RecordingWorker() }
@@ -72,17 +63,7 @@ export async function startGuitarRecordingCapture(
     channelCount > 32
   )
     throw new Error('Choose an available input channel before recording.')
-  let module = registered.get(context)
-  if (module === undefined) {
-    module = context.audioWorklet
-      .addModule(workletUrl)
-      .catch((error: unknown) => {
-        registered.delete(context)
-        throw error
-      })
-    registered.set(context, module)
-  }
-  await module
+  await prepareGuitarPcmWorklet(context)
   options.signal.throwIfAborted()
   const { worker, splitter, node, silence } = createCaptureBranch(
     context,

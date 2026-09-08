@@ -46,6 +46,7 @@ import { GuitarRecordingGallery, GuitarRecordingGalleryButton, } from './GuitarR
 import { GuitarRecordingReview } from './GuitarRecordingReview'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
+import { useGuitarChordSettings } from './useGuitarChordSettings'
 import { useGuitarFreeFormSession } from './useGuitarFreeFormSession'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
@@ -227,7 +228,9 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     blocked: () => props.suspended?.() === true || tunerOpen(),
     sourceIdentity: () => props.backing,
   })
+  const chordSettings = useGuitarChordSettings()
   const recorder = useGuitarRecordingController({
+    refineAfterStop: chordSettings.afterStop,
     listening,
     startListening: songPlayback.startListening,
     amp: amp.parameters,
@@ -305,6 +308,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const showRecordingStage = () =>
     reference() === null && recordingStage.available()
   const freeForm = useGuitarFreeFormSession({
+    liveChordsEnabled: chordSettings.live,
     enabled: () => props.backing === null,
     blocked: () =>
       props.suspended?.() === true ||
@@ -1516,6 +1520,11 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         }}
       />
       <GuitarNightSongSession
+        chords={{
+          settings: chordSettings,
+          live: freeForm.chords,
+          liveAvailable: props.backing === null,
+        }}
         routePending={
           listeningRoutePending() ||
           recorder.busy() ||
@@ -1547,6 +1556,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           <GuitarRecordingReview
             draft={draft}
             open={recorder.reviewOpen()}
+            autoRefine={
+              !recorder.busy() && recorder.autoRefineId() === draft.recording.id
+            }
+            onAutoRefine={recorder.consumeAutoRefine}
             tuning={roomTuning()}
             onClose={() => recorder.setReviewOpen(false)}
             onDiscard={() => recorder.discard(draft.recording.id)}

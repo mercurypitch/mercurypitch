@@ -170,7 +170,7 @@ export type GuitarCaptureMessage =
 
 export type GuitarCaptureCommand =
   | { type: 'buffer'; buffer: ArrayBuffer }
-  | { type: 'start'; maxFrames: number }
+  | { type: 'start'; maxFrames: number; stopOnClockGap?: boolean }
   | { type: 'stop'; reason: string | null }
 
 export type GuitarRecordingWorkerMessage =

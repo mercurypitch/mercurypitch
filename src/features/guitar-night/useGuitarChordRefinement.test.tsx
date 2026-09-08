@@ -63,7 +63,7 @@ describe('chord proposal review', () => {
     vi.unstubAllGlobals()
   })
 
-  async function setup() {
+  async function setup(auto = false) {
     const row: GuitarRecording = {
       id: 'review-refine',
       version: 1,
@@ -124,6 +124,8 @@ describe('chord proposal review', () => {
     let current!: () => GuitarPracticeScore
     let edit!: (next: GuitarPracticeScore) => void
     let close!: () => void
+    let reopen!: () => void
+    const consumed = vi.fn()
     const rendered = render(() => {
       const [score, setScore] = createSignal(
         createRecordingScore(
@@ -136,6 +138,7 @@ describe('chord proposal review', () => {
       current = score
       edit = setScore
       close = () => setOpen(false)
+      reopen = () => setOpen(true)
       const playback = useGuitarRecordingPlayback({
         draft: () => draft,
         score,
@@ -150,6 +153,8 @@ describe('chord proposal review', () => {
         open,
         blocked: () => false,
         onScore: setScore,
+        autoStart: () => auto,
+        onAutoStart: consumed,
         onSaved: () => {},
         playback,
         store,
@@ -163,7 +168,7 @@ describe('chord proposal review', () => {
         />
       )
     })
-    return { view, current, edit, close, rendered, draft }
+    return { view, current, edit, close, reopen, consumed, rendered, draft }
   }
 
   async function proposal() {
@@ -175,6 +180,23 @@ describe('chord proposal review', () => {
     BrowserWorker.instances[previousWorkers].finish()
     await screen.findByRole('button', { name: 'Use refined notes' })
   }
+
+  it('automatically prepares a proposal once without accepting it, and never restarts after cancel/reopen', async () => {
+    const state = await setup(true)
+    await waitFor(() => expect(BrowserWorker.instances).toHaveLength(1))
+    expect(state.consumed).toHaveBeenCalledOnce()
+    BrowserWorker.instances[0].finish()
+    await screen.findByRole('button', { name: 'Use refined notes' })
+    expect(state.current().notes).toHaveLength(1)
+    expect(
+      (await store.load(state.draft.recording.id)).editableScore,
+    ).toBeUndefined()
+    state.close()
+    state.reopen()
+    expect(state.view.candidate()).toBeNull()
+    expect(BrowserWorker.instances).toHaveLength(1)
+    expect(state.consumed).toHaveBeenCalledOnce()
+  })
 
   it('compares without writing, then applies and restores without modifying source evidence', async () => {
     const state = await setup()

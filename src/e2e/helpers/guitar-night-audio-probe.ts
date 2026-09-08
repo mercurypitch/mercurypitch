@@ -25,8 +25,17 @@ declare global {
 }
 
 /** Only hardware/browser edges are intercepted; app transports and DSP stay real. */
-export async function installSongAudioProbe(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+export async function installSongAudioProbe(
+  page: Page,
+  options: { autoRefineAfterStop?: boolean; audioBase64?: string } = {},
+): Promise<void> {
+  await page.addInitScript(({ autoRefineAfterStop, audioBase64 }) => {
+    // Transport/recorder specs exercise the explicit manual path. Dedicated chord
+    // specs opt into automatic proposals with the real model, never a model mock.
+    localStorage.setItem(
+      'guitar-chords-after-stop-v1',
+      JSON.stringify(autoRefineAfterStop ?? false),
+    )
     const probe: SongAudioProbe = {
       frames: [],
       sources: [],
@@ -170,11 +179,22 @@ export async function installSongAudioProbe(page: Page): Promise<void> {
       value: async () => {
         probe.micCalls += 1
         const context = new AudioContext()
-        const oscillator = context.createOscillator()
+        const oscillator =
+          audioBase64 === undefined
+            ? context.createOscillator()
+            : context.createBufferSource()
         const level = context.createGain()
         const destination = context.createMediaStreamDestination()
-        oscillator.frequency.value = 110
-        level.gain.value = 0.06
+        if (oscillator instanceof OscillatorNode)
+          oscillator.frequency.value = 110
+        else {
+          const bytes = Uint8Array.from(atob(audioBase64!), (value) =>
+            value.charCodeAt(0),
+          )
+          oscillator.buffer = await context.decodeAudioData(bytes.buffer)
+          oscillator.loop = true
+        }
+        level.gain.value = audioBase64 === undefined ? 0.06 : 0.7
         oscillator.connect(level)
         level.connect(destination)
         oscillator.start()
@@ -191,7 +211,7 @@ export async function installSongAudioProbe(page: Page): Promise<void> {
         return destination.stream
       },
     })
-  })
+  }, options)
 }
 
 /** Analyse the actual post-limiter PCM, not requested gain values or callbacks. */

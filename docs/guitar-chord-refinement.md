@@ -2,12 +2,12 @@
 
 Status: C1 inference/benchmark foundation merged in PR [741](https://github.com/mercurypitch/mercurypitch/pull/741).
 The dedicated `feat/guitar-chord-refinement` branch integrates experimental
-post-stop refinement, overlapping-score/export contracts and reversible review.
+post-stop refinement, optional live chord preview, overlapping-score/export contracts and reversible review in PR [746](https://github.com/mercurypitch/mercurypitch/pull/746).
 Real-guitar quality and native GP8 chord acceptance are still owner gates.
 The owner approved the corrected native Guitar Pro 8 export on 2026-09-08.
 This is the next recorder phase; drum sound work stays separate.
 
-### This PR: explicit post-stop refinement
+### This PR: reversible refinement and optional live preview
 
 - Refine chords is available inside the existing stopped-take review. It lazily
   loads a pinned, self-hosted Basic Pitch model and single-thread ONNX WASM into
@@ -25,7 +25,47 @@ This is the next recorder phase; drum sound work stays separate.
   existing corrections rather than embedding that owner or creating a third editor.
 - Existing decoder defaults are retained, not declared optimal. Decoder comparison,
   manual dry-guitar truth, fast-arpeggio quality and native GP8 chord audition are
-  still outstanding. No live polyphonic or physical-latency claim is made.
+  still outstanding. The optional live preview below is experimental, not a
+  real-guitar accuracy or physical-latency guarantee.
+
+#### Session preferences — owner-requested follow-up
+
+- **Live chords** defaults off. In Free form Live and Record it borrows the
+  selected dry input channel on a silent side branch. It never acquires a mic,
+  creates an AudioContext, processes the audible path or changes known-score
+  Practice. Single-note preview remains the fallback; MIDI retains its own voices.
+- **Refine after Stop** defaults on, independently. Only a freshly completed,
+  nonempty take schedules one proposal. Opening an old/recovered melody does not
+  trigger analysis; cancellation/closing does not restart it on reopen. Automatic
+  means prepare Current/Refined, never choose Use or save/replace notes.
+- Live and post-stop reuse the pinned model/tensor loader, decoder, resampling
+  kernel and chord fingering. The bounded PCM worklet registration is shared
+  with the recorder; each side tap has its own finite pool and disposal.
+- Live retains about 2.1 seconds of source PCM and six seconds of note history.
+  Roughly two-second model windows advance at most every 330 ms. In-flight work
+  is not duplicated; the next pass uses the newest window. Source-frame times,
+  not message arrival times, anchor notes. Model frames are consumed once.
+- Session reports measured preview lag and analysis time, **not audio latency**.
+  Short context/lookahead and note confirmation mean visible notes follow the
+  sound; monitoring never waits. Three consecutive passes over 500 ms, missing
+  PCM, inference gaps or worker failure stop this optional preview with a reason.
+- Toggle off, Listening/channel/route changes, hidden page, Replay/Practice,
+  review and unmount dispose the live worker/tap. Recording and monitored audio
+  remain owned by their original controllers. Full-take refinement starts only
+  after the live worker is retired. Live results are not persisted as evidence.
+
+Follow-up verification (2026-09-08): 162 focused tests and 17 relevant browser
+checks passed. The real bundled live model detected the synthetic power-chord
+fixture's MIDI 40/47/52 pitches both in Live and during Record. Turning the
+switch off preserved fresh nonzero monitored PCM and the original input lease;
+Stop retired live analysis before starting exactly one unapplied proposal.
+Desktop and 390 px Session screenshots passed visual review. In that local
+13-window run, analysis took 80.7 ms median / 125.2 ms maximum per pass; these
+fixture timings are not audible latency or real-guitar accuracy measurements.
+
+The following C1 research records the earlier monophonic release and the
+post-stop-first decision. It is historical context; this follow-up explicitly
+adds the opt-in live path described above without replacing its saved evidence.
 
 #### Browser verification, 2026-09-08
 
@@ -72,7 +112,7 @@ notes in a strum is useful but cannot establish simultaneous-pitch recall. There
 is no enabled polyphonic Live engine to copy into Record. The C1 candidate below
 remains offline, not secretly active in either mode.
 
-This is not the best possible transcription. The next quality work should be:
+This is not the best possible transcription. Continuing quality work should be:
 
 1. **Compare decoders before replacing models.** Our onset-only decoder differs
    from upstream Basic Pitch. Its reference decoder adds onset candidates from
@@ -109,8 +149,9 @@ chord release. The supplied video integration does not change any detector.
 
 ## Boundaries
 
-- Analyze the retained dry, selected-channel recording after Stop. Never add a
-  detector, model, queue or resampling stage to live monitoring.
+- Analyze the retained dry, selected-channel recording after Stop. Optional live
+  analysis uses a silent side branch; never add a model, queue or resampling stage
+  to the audible monitoring path.
 - Keep original audio, the live single-note evidence, corrections and accepted
   practice revisions. A refined result is a separate, explicitly reviewed draft.
 - Detect individual simultaneous pitches with their own onsets/releases. A chord
@@ -223,7 +264,8 @@ by Julian-br is the separate CC0 control. Neither dataset is redistributed here.
 
 Decision: viable post-stop candidate to continue evaluating, not ready for an
 automatic replacement. Preserve the original, show a reviewable alternative,
-and keep live monitoring and live single-note preview unchanged.
+and keep live monitoring unchanged. The subsequent Session preference adds an
+optional experimental live preview without replacing original single-note evidence.
 
 ### Reproduce C1
 

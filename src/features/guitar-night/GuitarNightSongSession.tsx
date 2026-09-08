@@ -1,6 +1,7 @@
 // Recorded-song settings compose the shared input, amp and manual-alignment controls.
 import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
+import { GuitarChordSettings } from './GuitarChordSettings'
 import { GuitarNightAmpControls } from './GuitarNightAmpControls'
 import roomStyles from './GuitarNightApp.module.css'
 import { GuitarNightHandSync } from './GuitarNightHandSync'
@@ -11,7 +12,9 @@ import { GuitarNightMixerDialog } from './GuitarNightMixControls'
 import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import styles from './GuitarNightSongSession.module.css'
 import { GuitarRecordingLiveNotesToggle } from './GuitarRecordingControls'
+import type { GuitarChordSettings as ChordSettings } from './useGuitarChordSettings'
 import type { GuitarListeningController } from './useGuitarListeningController'
+import type { GuitarLiveChords } from './useGuitarLiveChords'
 import type { GuitarNightAmpSettingsController } from './useGuitarNightAmpSettings'
 import type { useGuitarNightSongPlayback } from './useGuitarNightSongPlayback'
 
@@ -28,6 +31,11 @@ interface GuitarNightSongSessionProps {
   handSync?: Accessor<GuitarNightRoomHandSync | null>
   focusHandPlacement?: boolean
   routePending?: boolean
+  chords?: {
+    settings: ChordSettings
+    live: GuitarLiveChords
+    liveAvailable: boolean
+  }
   recordingPreview?:
     | {
         enabled: Accessor<boolean>
@@ -119,6 +127,15 @@ export function GuitarNightSongSession(props: GuitarNightSongSessionProps) {
             latencyMs={props.listening.latencyMs}
             onCalibrate={() => void props.playback.calibrate()}
           />
+        </Show>
+        <Show when={props.chords}>
+          {(chords) => (
+            <GuitarChordSettings
+              settings={chords().settings}
+              live={chords().live}
+              liveAvailable={chords().liveAvailable}
+            />
+          )}
         </Show>
         <div>
           <GuitarNightAmpControls

@@ -28,6 +28,8 @@ import type { GuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 export function GuitarRecordingReview(props: {
   draft: GuitarRecordingDraft
   open: boolean
+  autoRefine?: boolean
+  onAutoRefine?(): void
   tuning: InstrumentTuning
   onClose(): void
   onDiscard(): Promise<void>
@@ -82,6 +84,8 @@ export function GuitarRecordingReview(props: {
     open: () => props.open,
     score: editableScore,
     blocked: () => busy() || deleting(),
+    autoStart: () => props.autoRefine === true,
+    onAutoStart: () => props.onAutoRefine?.(),
     onScore: (next) =>
       batch(() => {
         setEditorMounted(false)

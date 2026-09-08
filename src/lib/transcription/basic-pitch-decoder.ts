@@ -69,6 +69,7 @@ export function createBasicPitchDecoder(
   } | null = null
   let before: Float32Array = new Float32Array(88)
   let ended = false
+  let consumedThrough = 0
 
   function close(pitch: number, end: number) {
     const voice = voices[pitch]!
@@ -90,6 +91,7 @@ export function createBasicPitchDecoder(
   function consume(nextOnsets: Float32Array) {
     if (previous === null) return
     const { time, frames, onsets } = previous
+    consumedThrough = time
     for (let pitch = 0; pitch < 88; pitch++) {
       const peak =
         onsets[pitch] >= options.onsetThreshold &&
@@ -127,6 +129,32 @@ export function createBasicPitchDecoder(
   }
 
   return {
+    /** Bounded live history, including confirmed sustains; never advances them to the UI clock. */
+    recent(sinceSeconds: number): PolyphonicNote[] {
+      if (ended || !Number.isFinite(sinceSeconds))
+        throw new Error('Invalid live decoder snapshot.')
+      for (let index = notes.length - 1; index >= 0; index--)
+        if (notes[index].endSeconds < sinceSeconds) notes.splice(index, 1)
+      const active = voices.flatMap((voice, pitch) => {
+        if (voice === null) return []
+        const end = voice.gap > 0 ? voice.gapStart : consumedThrough
+        return end - voice.start >= options.minDurationSeconds &&
+          voice.count > 0 &&
+          end >= sinceSeconds
+          ? [
+              {
+                midi: pitch + 21,
+                startSeconds: voice.start,
+                endSeconds: end,
+                confidence: voice.sum / voice.count,
+              },
+            ]
+          : []
+      })
+      return [...notes, ...active].sort(
+        (a, b) => a.startSeconds - b.startSeconds || a.midi - b.midi,
+      )
+    },
     push(time: number, frames: Float32Array, onsets: Float32Array) {
       if (ended) throw new Error('This note decoder has finished.')
       if (

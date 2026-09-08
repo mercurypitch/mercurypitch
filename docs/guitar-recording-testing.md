@@ -3,7 +3,7 @@
 Contract: [Guitar recorder EARS](specs/guitar-recording.ears.md).
 Original recorder: merged [PR 739](https://github.com/mercurypitch/mercurypitch/pull/739).
 Recorder follow-up: merged [PR 741](https://github.com/mercurypitch/mercurypitch/pull/741).
-Experimental chord refinement: `feat/guitar-chord-refinement` (separate PR).
+Experimental chord refinement: [PR 746](https://github.com/mercurypitch/mercurypitch/pull/746), `feat/guitar-chord-refinement`.
 Drum sound work is intentionally separate and deferred.
 
 ## Implemented phases
@@ -70,9 +70,11 @@ drum sound work remains deferred.
 
 ## Chord refinement preview checks
 
-1. Record a dry chord phrase, Stop, then open Review take. Refine chords is
-   explicit; merely opening review must not fetch the model or start input.
-2. Run Refine chords. Compare Current/Refined with the shared Notes Play control
+1. Session offers Live chords (off initially) and Refine after Stop (on initially).
+   Record a dry chord phrase and Stop: a proposal is prepared automatically, never
+   applied. Turn Refine after Stop off to use the manual path. Merely opening an
+   existing/recovered take must not fetch the model or start input.
+2. Run Refine chords manually or wait for the automatic proposal. Compare Current/Refined with the shared Notes Play control
    and highway. Check open/power chords, picked arpeggios and independent releases.
    More detected notes is not itself a quality improvement.
 3. Keep current notes discards the proposal only. Repeat and Use refined notes;
@@ -90,7 +92,30 @@ Coverage: `guitar-recording-refinement.test.ts` (service and Worker lifecycle),
 `guitar-refinement-worker.spec.ts` (real bundled model), and
 `guitar-chord-refinement.spec.ts` (real UI/persistence/reload).
 Synthetic/browser results do not establish real-guitar accuracy or round-trip
-latency. Full shared piano-roll extraction and live polyphony are follow-ups.
+latency. Full shared piano-roll extraction and real-guitar quality evaluation remain follow-ups.
+
+### Live chord preference checks
+
+1. In Free form, enable Live chords and Direct input Listening. Play open/power
+   chords. Several supported pitches should appear in the NOW/history stage;
+   model preview has analysis delay, distinct from the amp's audible latency.
+2. Switch live analysis off/on, change the input channel, enter Replay/Practice,
+   hide the tab and reopen it. No stale notes, repeated mic grants, ownerless
+   Solid warnings or interrupted monitoring should result. MIDI stays unchanged.
+3. Record with Live chords enabled. Stop must retire its worker before the full
+   take proposal begins. Cancel/close/reopen does not retry automatically. Use
+   remains explicit; original audio/notes stay intact.
+4. Inspect Session's preview lag/analysis time on the actual DI setup. On slow
+   devices turn Live chords off and keep Refine after Stop on. Failure or sustained
+   overload falls back to single-note preview with a reason in Session.
+
+Coverage: `basic-pitch-live.test.ts`, `live-chord-capture.test.ts`,
+`useGuitarLiveChords.test.ts`, `GuitarChordSettings.test.tsx`,
+`useGuitarRecordingController.test.ts`, `useGuitarChordRefinement.test.tsx`,
+and `guitar-live-chords.spec.ts` (real model, worklet, recording, monitoring,
+automatic proposal and desktop/phone Session layout). The shared audio test
+probe selects manual refinement for unrelated transport tests; this dedicated
+spec exercises the default automatic mode with real analysis, not a model mock.
 
 ## Compact score downloads
 
@@ -208,8 +233,8 @@ explicit offline model testing, not a shipping model or sample bank.
 
 ### Next priority: chord transcription after export/UI acceptance
 
-Chord recognition is **not enabled during live capture** by the shared detector
-configuration. Explicit post-stop refinement now integrates the C1 candidate;
+The saved shared-detector evidence remains single-note. Optional Live chords
+now adds a separate preview; post-stop refinement integrates the C1 candidate;
 see [the detailed implementation checklist and results](guitar-chord-refinement.md).
 The bounded next phase is reviewable polyphonic notes, before resuming drum
 sound work. Do not put an unbenchmarked model in the live monitor path.
@@ -247,8 +272,9 @@ automatically replaces the original single-note draft.
 
 The authored-tab host, Studio Lead DSP and operating-system/browser audio
 settings are unchanged by the recorder implementation. There is no cloud upload,
-background recording, bundled polyphonic model or second monitor. The explicitly
-downloaded, checksum-pinned research model stays outside the application bundle.
+background recording or second audible monitor. PR 746 self-hosts the pinned model
+and runtime lazily for explicit live preview or post-stop proposals; private
+research audio stays outside the application bundle.
 
 ## Automated checks
 

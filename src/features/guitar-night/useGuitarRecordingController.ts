@@ -29,6 +29,7 @@ interface GuitarRecordingOptions {
   backing: Accessor<GuitarRecordingBacking | null>
   playing: Accessor<boolean>
   blocked: Accessor<boolean>
+  refineAfterStop?: Accessor<boolean>
   clearLoop(): void
 }
 
@@ -51,6 +52,10 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   const [previewScore, setPreviewScore] =
     createSignal<GuitarPracticeScore | null>(null)
   const [reviewOpen, setReviewOpen] = createSignal(false)
+  const [autoRefineId, setAutoRefineId] = createSignal<string | null>(null)
+  createEffect(() => {
+    if (!reviewOpen()) setAutoRefineId(null)
+  })
   const [catalogue, setCatalogue] = createSignal<GuitarRecording[]>([])
   const busy = createMemo(() => state() !== 'idle')
   let capture: Awaited<ReturnType<typeof startGuitarRecordingCapture>> | null =
@@ -134,6 +139,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
       // Switching never discards the previous draft's durable audio/evidence.
       // A late load must not replace a newer selection or a fresh capture.
       batch(() => {
+        setAutoRefineId(null)
         setDraft(result)
         setPreviewScore(null)
         setReviewOpen(request.review !== false)
@@ -189,6 +195,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     setCompletedNotes([])
     setPendingNote(null)
     setDraft(null)
+    setAutoRefineId(null)
     setReviewOpen(false)
     options.clearLoop()
     try {
@@ -300,8 +307,17 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           if (!disposed) {
             const loaded = await store().load(id)
             if (disposed) return
-            setDraft(loaded)
-            setReviewOpen(true)
+            batch(() => {
+              setAutoRefineId(
+                options.refineAfterStop?.() === true &&
+                  !document.hidden &&
+                  loaded.recording.frames > 0
+                  ? id
+                  : null,
+              )
+              setDraft(loaded)
+              setReviewOpen(true)
+            })
           }
         })
         .catch((cause: unknown) => {
@@ -420,6 +436,8 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     previewNotes,
     draft,
     reviewOpen,
+    autoRefineId,
+    consumeAutoRefine: () => setAutoRefineId(null),
     catalogue,
     start,
     stop,

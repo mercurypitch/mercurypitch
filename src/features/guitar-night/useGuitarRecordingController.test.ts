@@ -58,6 +58,7 @@ function harness(
   open = false,
   profile: GuitarInputProfileKind = 'interface',
   permission?: Promise<boolean>,
+  refineAfterStop = false,
 ) {
   return createRoot((dispose) => {
     disposers.push(dispose)
@@ -104,6 +105,7 @@ function harness(
       playing,
       blocked,
       clearLoop,
+      refineAfterStop: () => refineAfterStop,
     })
     return {
       controller,
@@ -160,6 +162,35 @@ afterEach(async () => {
 })
 
 describe('explicit guitar recording lifecycle', () => {
+  it('requests one automatic proposal only for a freshly completed enabled take, never recovery', async () => {
+    const h = harness(true, 'interface', undefined, true)
+    await h.controller.start()
+    await h.controller.stop()
+    const id = h.controller.draft()!.recording.id
+    expect(h.controller.autoRefineId()).toBe(id)
+    h.controller.consumeAutoRefine()
+    expect(h.controller.autoRefineId()).toBeNull()
+    h.controller.setReviewOpen(false)
+    h.controller.setReviewOpen(true)
+    expect(h.controller.autoRefineId()).toBeNull()
+    await h.controller.recover(id)
+    expect(h.controller.autoRefineId()).toBeNull()
+  })
+
+  it('does not schedule automatic work when disabled or hidden', async () => {
+    const disabled = harness(true)
+    await disabled.controller.start()
+    await disabled.controller.stop()
+    expect(disabled.controller.autoRefineId()).toBeNull()
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    const h = harness(true, 'interface', undefined, true)
+    ending = deferred<GuitarRecordingSummary>()
+    await h.controller.start()
+    await h.controller.stop()
+    expect(h.controller.autoRefineId()).toBeNull()
+    hidden.mockRestore()
+  })
+
   const savedDraft = (id: string): GuitarRecordingDraft => ({
     recording: {
       id,
