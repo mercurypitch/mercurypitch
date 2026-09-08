@@ -15,8 +15,8 @@ function setup() {
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
   const calls: Parameters<typeof startLiveChordCapture>[0][] = []
   const context = { currentTime: 11.2 } as AudioContext
-  const source = {} as AudioNode
   const stream = {} as MediaStream
+  const source = { mediaStream: stream } as MediaStreamAudioSourceNode
   const result = createRoot((dispose) => {
     disposers.push(dispose)
     const [enabled, setEnabled] = createSignal(false)

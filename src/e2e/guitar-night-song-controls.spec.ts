@@ -360,6 +360,18 @@ test('keeps every song dialog control reachable in short landscape @smoke', asyn
   const session = page.getByRole('dialog', { name: 'Session', exact: true })
   await session.getByText('Shape tone & cabinet', { exact: true }).click()
   await expectReachableControls(session)
+  for (const [name, checked] of [
+    ['Live chords', false],
+    ['Refine after Stop', true],
+  ] as const) {
+    const control = session.getByRole('switch', { name, exact: true })
+    await expect(control).toBeChecked({ checked })
+    // The transparent corner belongs to the target, outside its compact track.
+    await control.click({ position: { x: 2, y: 2 } })
+    await expect(control).toBeChecked({ checked: !checked })
+    await control.press('Space')
+    await expect(control).toBeChecked({ checked })
+  }
   await page.screenshot({
     path: test.info().outputPath('session-landscape.png'),
   })
