@@ -62,12 +62,40 @@ const ENGINES: Array<{
   },
 ]
 
+/** Widest the docked menu is allowed to be; mirrors `max-width` on `.menu`. */
+const DOCKED_MENU_MAX_WIDTH = 256
+const DOCKED_MENU_MARGIN = 8
+
+/**
+ * How far the docked menu sits from the viewport's right edge.
+ *
+ * The menu is placed against the viewport rather than the tools group, so a
+ * pill that grows underneath it cannot drag it off the screen. Pinning it to
+ * the right margin outright was wrong on a wide screen: Guitar Night docks its
+ * pill mid-header, and the menu flew to the far corner instead of opening
+ * under the cog. So the gap follows the tools group, clamped at both ends —
+ * never inside the right margin, and never so far right that the menu's own
+ * left edge leaves the screen.
+ */
+export function dockedMenuRightGap(
+  toolsRight: number,
+  viewportWidth: number,
+): number {
+  const underTheCog = viewportWidth - toolsRight
+  const furthest = Math.max(
+    DOCKED_MENU_MARGIN,
+    viewportWidth - DOCKED_MENU_MAX_WIDTH - DOCKED_MENU_MARGIN,
+  )
+  return Math.min(Math.max(underTheCog, DOCKED_MENU_MARGIN), furthest)
+}
+
 export function VoiceControlHud(props: VoiceControlHudProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
   /** The pill's shape at the moment the menu opened; see `expanded`. */
   let expandedAtMenuOpen = false
-  /** Viewport y for the docked menu, measured when it opens. */
+  /** Viewport placement for the docked menu, measured when it opens. */
   const [menuTop, setMenuTop] = createSignal(0)
+  const [menuRight, setMenuRight] = createSignal(DOCKED_MENU_MARGIN)
   let statusEl: HTMLSpanElement | undefined
   let toolsEl: HTMLDivElement | undefined
   /**
@@ -239,9 +267,16 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
                   props.controller.hasSomethingToSay()
                 // Docked, the menu is placed against the viewport rather
                 // than the tools group, so it cannot be dragged off the
-                // screen by a pill that grows underneath it. This is the
-                // one measurement that placement needs.
-                setMenuTop(toolsEl?.getBoundingClientRect().bottom ?? 0)
+                // screen by a pill that grows underneath it. Both numbers are
+                // read once, here, and never again while the menu is open.
+                const tools = toolsEl?.getBoundingClientRect()
+                setMenuTop(tools?.bottom ?? 0)
+                setMenuRight(
+                  dockedMenuRightGap(
+                    tools?.right ?? window.innerWidth,
+                    window.innerWidth,
+                  ),
+                )
               }
               setMenuOpen(opening)
             }}
@@ -252,7 +287,10 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             <div
               class={styles.menu}
               role="menu"
-              style={{ '--voice-menu-top': `${menuTop()}px` }}
+              style={{
+                '--voice-menu-top': `${menuTop()}px`,
+                '--voice-menu-right': `${menuRight()}px`,
+              }}
               onMouseLeave={() => setMenuOpen(false)}
             >
               {/* What the ear is doing right now. Collapsed, the pill says
