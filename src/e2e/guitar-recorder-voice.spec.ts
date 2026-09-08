@@ -1,7 +1,7 @@
 // Spoken free-form controls cross the real dispatcher, capture worker and audition owners.
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { enterRecording } from './helpers/guitar-recording'
+import { enterRecording, RECORDING_ID } from './helpers/guitar-recording'
 
 async function installSpeechResults(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -135,13 +135,18 @@ test('voice records an idea, blocks seeking and finalizes the real take for revi
   await expect(stop).toBeEnabled()
   await expect
     .poll(() =>
-      page.evaluate(async () => {
+      page.evaluate(async (seededId) => {
         const request = indexedDB.open('MercuryPitchDB')
         const db = await new Promise<IDBDatabase>((resolve) => {
           request.onsuccess = () => resolve(request.result)
         })
         const rows = await new Promise<
-          Array<{ id: string; state: string; frames: number }>
+          Array<{
+            id: string
+            state: string
+            frames: number
+            interruption: string | null
+          }>
         >((resolve) => {
           const request = db
             .transaction('guitarRecordings')
@@ -150,10 +155,20 @@ test('voice records an idea, blocks seeking and finalizes the real take for revi
           request.onsuccess = () => resolve(request.result)
         })
         db.close()
-        return rows.find((row) => row.state === 'capturing')?.frames ?? 0
-      }),
+        // A safely interrupted capture is no longer `capturing`. Report it
+        // rather than turning a completed short take into an ambiguous zero.
+        const recording = rows.find((row) => row.id !== seededId)
+        const frames = recording?.frames ?? 0
+        if (recording?.state === 'capturing' && frames > 48000)
+          return 'capturing with more than 48000 frames'
+        return {
+          state: recording?.state ?? 'missing',
+          interruption: recording?.interruption ?? null,
+          frames,
+        }
+      }, RECORDING_ID),
     )
-    .toBeGreaterThan(48000)
+    .toBe('capturing with more than 48000 frames')
   await say(page, 'stop recording')
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
   await expect(review).toBeVisible()
