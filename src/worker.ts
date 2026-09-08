@@ -95,6 +95,18 @@ const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 // against the real registry by src/tests/worker-entry-routing.test.ts.
 const EXERCISE_PATH = /^\/exercises\/[a-z0-9-]+\/?$/
 
+// The friendly admin entries (/admin, /admin/weekly, ...). Same shape of
+// problem as the exercise deep links and missed when they were fixed: there is
+// no file behind any of them either. normalizeAdminEntryRoute() reads the path
+// when the app boots and rewrites it to the matching hash route, so they need
+// the shell, and `not_found_handling: "404-page"` otherwise answers 404.
+//
+// One optional segment, matching src/lib/admin-entry-route.ts, and never
+// /administrator. Case-insensitive because adminHashForPath is — though a
+// shouty-caps URL still has to clear wrangler's own route patterns first, and
+// those are listed in lower case.
+const ADMIN_PATH = /^\/admin(\/[a-z0-9-]+)?\/?$/i
+
 const GLASS_PATHS = new Set([
   '/glass',
   '/break-glass-with-your-voice',
@@ -356,6 +368,14 @@ export default {
     // '/index.html' for the same reason as the aliases above: ASSETS.fetch
     // answers an explicit .html path with a drop-`.html` redirect.
     if (EXERCISE_PATH.test(url.pathname) && method === 'GET') {
+      const shellUrl = new URL(request.url)
+      shellUrl.pathname = '/'
+      return env.ASSETS.fetch(new Request(shellUrl.toString(), request))
+    }
+
+    // Admin entries serve the shell; the client rewrites the URL to the hash
+    // route before App mounts, so the pathname never has to survive.
+    if (ADMIN_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
       return env.ASSETS.fetch(new Request(shellUrl.toString(), request))

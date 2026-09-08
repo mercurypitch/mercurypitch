@@ -422,10 +422,17 @@ describe('unmatched paths', () => {
     )
   })
 
-  it('keeps the one prefix that relied on the fallback', () => {
+  it('keeps every prefix that relied on the fallback', () => {
     const wrangler = repoFile('wrangler.jsonc')
 
     expect(wrangler).toContain('"/exercises/*"')
+    // /admin and its sections have no file either. Missed the first time, and
+    // six real URLs went to the 404 page because of it.
+    expect(wrangler).toContain('"/admin"')
+    expect(wrangler).toContain('"/admin/*"')
+    // Not "/admin/": wrangler rejects it as redundant against the wildcard,
+    // and a config it refuses to load fails the deploy, not the gate.
+    expect(wrangler).not.toContain('"/admin/",')
   })
 
   it('builds the 404 document as a real entry', () => {
