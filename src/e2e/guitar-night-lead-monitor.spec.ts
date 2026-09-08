@@ -205,9 +205,14 @@ for (const width of [1440, 390]) {
       .info()
       .attach('Score mix dock', { path: dockPath, contentType: 'image/png' })
     await cycle.click({ button: 'right' })
-    const quick = room.getByRole('group', {
-      name: 'Direct input quick controls',
-    })
+    await expect(cycle).toHaveAttribute('aria-expanded', 'true')
+    // The shared picker is portalled above both room layouts and the recorder.
+    const quick = page
+      .getByRole('dialog', { name: 'Listening controls', exact: true })
+      .getByRole('group', {
+        name: 'Direct input quick controls',
+        exact: true,
+      })
     await expect(
       quick.getByRole('button', { name: 'Turn on Listening', exact: true }),
     ).toBeEnabled()

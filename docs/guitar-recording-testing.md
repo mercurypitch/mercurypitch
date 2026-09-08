@@ -1,7 +1,8 @@
 # Guitar recorder: implementation and preview checks
 
 Contract: [Guitar recorder EARS](specs/guitar-recording.ears.md).
-Work item: [PR 739](https://github.com/mercurypitch/mercurypitch/pull/739).
+Original recorder: merged [PR 739](https://github.com/mercurypitch/mercurypitch/pull/739).
+Active follow-up: draft [PR 741](https://github.com/mercurypitch/mercurypitch/pull/741).
 Drum sound work is intentionally separate and deferred.
 
 ## Implemented phases
@@ -64,7 +65,7 @@ Drum sound work is intentionally separate and deferred.
     autoplay or open Review, and failed/stale loads preserve the selected take.
 
 Publication: the original recorder shipped in merged PR 739. The follow-up below
-is being published on `feat/guitar-live-recording` as one draft PR for the
+is published on `feat/guitar-live-recording` in draft PR 741 for the
 recorder fixes and post-stop chord work; drum sound work remains separate.
 
 ## Compact score downloads
@@ -178,14 +179,16 @@ contours but make no full-note/technique accuracy claim.
 Remaining G2 work is labelled real-guitar evaluation before segmentation changes,
 recorder-specific evidence visualization, and separately scoped post-stop
 polyphonic/technique refinement with score/editor/export compatibility. Known-tab
-chord scoring is not a general chord transcriber. No new model or sample licence
-is introduced by this follow-up.
+chord scoring is not a general chord transcriber. The C1 evaluation below adds
+explicit offline model testing, not a shipping model or sample bank.
 
 ### Next priority: chord transcription after export/UI acceptance
 
-Chord recognition is **not implemented** by the shared detector configuration.
-The next bounded phase is post-stop polyphonic transcription, before resuming
-drum sound work. Do not put an unbenchmarked model in the live monitor path.
+Chord recognition is **not enabled in the recorder** by the shared detector
+configuration. C1 now implements and benchmarks a local post-stop candidate;
+see [the detailed implementation checklist and results](guitar-chord-refinement.md).
+The bounded next phase is reviewable polyphonic notes, before resuming drum
+sound work. Do not put an unbenchmarked model in the live monitor path.
 
 1. **Evidence and baseline:** build a labelled dry-DI set of two-note intervals,
    power chords, major/minor open and barre chords, sustained/strummed chords,
@@ -213,13 +216,15 @@ drum sound work. Do not put an unbenchmarked model in the live monitor path.
    and memory limits. Live preview stays explicitly single-note initially;
    real-time multi-note preview is a later, separately measured optimization.
 
-This is a plan, not a promise that unrestricted chords or techniques already
-work. The first implementation decision is which evaluated/licensed approach
-passes the fixture gate, not a date or a blind YIN-to-MPM replacement.
+Only the C1 inference/benchmark foundation is implemented so far. The candidate
+improves simultaneous-note recall but still adds false/duplicate notes; its
+quality gate and C2–C4 review/storage/editor/export work remain open. Nothing
+automatically replaces the original single-note draft.
 
 The authored-tab host, Studio Lead DSP and operating-system/browser audio
 settings are unchanged by the recorder implementation. There is no cloud upload,
-new asset licence, background recording, polyphonic model or second monitor.
+background recording, bundled polyphonic model or second monitor. The explicitly
+downloaded, checksum-pinned research model stays outside the application bundle.
 
 ## Automated checks
 
