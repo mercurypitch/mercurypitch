@@ -1,5 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { copyFileSync } from 'node:fs'
+import { appendFileSync, copyFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { visualizer } from 'rollup-plugin-visualizer'
@@ -162,6 +162,41 @@ function standaloneAliasFilesPlugin() {
   }
 }
 
+// dev.mercurypitch.com and every PR preview serve the same documents as
+// production, with the same `index, follow` meta and the same allow-all
+// robots.txt — so a crawler that finds one can index a second copy of the
+// whole site and pick the wrong host as canonical. The cross-host canonical
+// tag is the only thing arguing against it today, and a canonical is a hint.
+//
+// It has to happen at build time. `_headers` is served by the Cloudflare asset
+// layer, which answers most requests without ever reaching src/worker.ts
+// (assets.run_worker_first lists only the alias paths), so a header set in the
+// Worker would not reach the browser. Both non-production deploys build with
+// `build:dev`, i.e. mode === 'development', which is what this keys on.
+function nonProductionNoindexPlugin(isProductionBuild: boolean) {
+  return {
+    name: 'non-production-noindex',
+    // After writeBundle, so it lands on top of the copied public/ files rather
+    // than being overwritten by them.
+    closeBundle() {
+      if (isProductionBuild) return
+      const outDir = resolve(__dirname, 'dist')
+      writeFileSync(
+        resolve(outDir, 'robots.txt'),
+        '# Not the production site. mercurypitch.com is the one to index.\n' +
+          'User-agent: *\nDisallow: /\n',
+        'utf-8',
+      )
+      appendFileSync(
+        resolve(outDir, '_headers'),
+        '\n# Non-production deploy: never index this copy.\n/*\n' +
+          '  X-Robots-Tag: noindex, nofollow\n',
+        'utf-8',
+      )
+    },
+  }
+}
+
 function removeWasmAssetsPlugin() {
   return {
     name: 'remove-wasm-assets',
@@ -210,6 +245,7 @@ export default defineConfig(({ command, mode }) => {
       typegpuPlugin({}),
       standaloneEntryRewritePlugin(),
       standaloneAliasFilesPlugin(),
+      nonProductionNoindexPlugin(mode === 'production'),
       removeWasmAssetsPlugin(),
       // PWA. `injectManifest` — not `generateSW` — because the caching rules
       // are the risky part of shipping a worker here (see src/sw.ts for the two

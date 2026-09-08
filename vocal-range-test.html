@@ -11,7 +11,7 @@
     </title>
     <meta
       name="description"
-      content="Glide from your lowest comfortable note to your highest and get both notes, your semitone span and a broad voice-type guide. Free in your browser; audio stays on your device."
+      content="Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, and your audio stays on your device."
     />
     <meta
       name="keywords"
@@ -98,9 +98,115 @@
         ]
       }
     </script>
+    <!-- Crawlers and link previews fetch this document without running the app
+         bundle, so #root is empty for them and the page carries no text at all.
+         The prelude below is what they read: the page's own heading and claim,
+         plus links to the sibling rooms so no entry document is an orphan. It
+         doubles as the loading state — the moment the app mounts,
+         `#root:not(:empty)` hides it. Pinned by launch-entry-seo.test.ts. -->
+    <style>
+      .entry-prelude {
+        box-sizing: border-box;
+        min-height: 100vh;
+        padding: 12vh 1.5rem 4rem;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family:
+          'Inter',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        line-height: 1.6;
+      }
+      .entry-prelude > * {
+        max-width: 42rem;
+        margin-inline: auto;
+      }
+      .entry-prelude h1 {
+        margin: 0 0 0.75rem;
+        color: #f0f6fc;
+        font-size: clamp(1.5rem, 4vw, 2.25rem);
+        line-height: 1.2;
+      }
+      .entry-prelude p {
+        margin: 0 0 2rem;
+      }
+      .entry-prelude nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.25rem;
+        font-size: 0.9375rem;
+      }
+      .entry-prelude a {
+        color: #7dd3c8;
+      }
+      html[data-theme='light'] .entry-prelude {
+        background: #f3f4f6;
+        color: #24292f;
+      }
+      html[data-theme='light'] .entry-prelude h1 {
+        color: #0d1117;
+      }
+      html[data-theme='light'] .entry-prelude a {
+        color: #0f766e;
+      }
+      .entry-prelude__faq h2 {
+        margin: 2rem 0 0.5rem;
+        color: #f0f6fc;
+        font-size: 1.0625rem;
+      }
+      html[data-theme='light'] .entry-prelude__faq h2 {
+        color: #0d1117;
+      }
+      #root:not(:empty) ~ .entry-prelude {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div class="entry-prelude">
+      <h1>Free vocal range test</h1>
+      <p>
+        Glide from your lowest comfortable note to your highest and get both
+        notes, your span in semitones and a broad voice-type guide. It runs in
+        your browser, takes about ninety seconds, and needs no piano and no
+        teacher.
+      </p>
+      <nav aria-label="More from MercuryPitch">
+        <a href="/">Home</a>
+        <a href="/mirror">Voice Mirror</a>
+        <a href="/karaoke-night">Karaoke Night</a>
+        <a href="/glass">Break Glass</a>
+        <a href="/piano-night">Piano Night</a>
+        <a href="/guitar-night">Guitar Night</a>
+        <a href="/ear-lab">Ear Lab</a>
+        <a href="/jam">Jam Rooms</a>
+        <a href="https://about.mercurypitch.com/">About MercuryPitch</a>
+      </nav>
+      <section class="entry-prelude__faq">
+        <h2>How do I test my vocal range?</h2>
+        <p>
+          Sing a comfortable siren glide from low to high and back down.
+          MercuryPitch measures sustained notes from both glides and reports the
+          lowest and highest notes that were heard reliably.
+        </p>
+        <h2>Does vocal range determine my voice type?</h2>
+        <p>
+          Not by itself. MercuryPitch shows the broad voice band that overlaps
+          your measured range most, but voice type also depends on comfortable
+          tessitura, tone and training. Treat the label as a guide, not a
+          verdict.
+        </p>
+        <h2>Is this vocal range test free?</h2>
+        <p>
+          Yes. The test runs in your browser and your microphone audio stays on
+          your device. Only the derived note and pitch measurements are used to
+          build your result.
+        </p>
+      </section>
+    </div>
     <noscript
       >The vocal range test needs JavaScript — your voice is analyzed here in
       your browser and never uploaded.</noscript
