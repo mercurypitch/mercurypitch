@@ -87,7 +87,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await editorTab.click()
     await page.waitForTimeout(300)
 
-    await expect(page.locator('nav')).toBeVisible()
+    await expect(page.locator('#root nav')).toBeVisible()
     await expect(page.locator('#tab-compose')).toHaveClass(/active/)
 
     // Navigate back to practice
@@ -783,7 +783,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
-    await expect(page.locator('nav')).toBeVisible()
+    await expect(page.locator('#root nav')).toBeVisible()
     await expect(page.locator('#tab-singing')).toBeVisible()
     await expect(page.locator('#tab-compose')).toBeVisible()
     await expect(page.locator('#tab-settings')).toBeVisible()
