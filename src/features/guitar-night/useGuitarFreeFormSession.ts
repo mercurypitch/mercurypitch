@@ -33,6 +33,7 @@ export function useGuitarFreeFormSession(options: {
   amp: Accessor<GuitarElectricAmpParameters>
   activateGraph(): Promise<GuitarSessionAudioGraph | null>
   onMissingSource(): void
+  onListeningRequired?(): void
   /** Durable-store boundary; the production path uses the device's recording store. */
   recordingStore?: ReturnType<typeof createGuitarRecordingStore>
   createPracticeCapture?: Parameters<
@@ -65,6 +66,7 @@ export function useGuitarFreeFormSession(options: {
     listening: options.listening,
     amp: options.amp,
     activateGraph: options.activateGraph,
+    onListeningRequired: () => options.onListeningRequired?.(),
     ...(options.createPracticeCapture === undefined
       ? {}
       : { createCapture: options.createPracticeCapture }),

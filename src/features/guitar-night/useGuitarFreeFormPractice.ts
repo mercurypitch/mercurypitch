@@ -40,6 +40,8 @@ interface GuitarFreeFormPracticeOptions {
   >
   amp: Accessor<GuitarElectricAmpParameters>
   activateGraph(): Promise<GuitarSessionAudioGraph | null>
+  /** Offer explicit input setup; never acquire input or queue a delayed Play. */
+  onListeningRequired?(): void
   /** Scheduler boundary injection; scoring and take capture remain shared. */
   createBand?(): GuitarRoomBand
   /** Capture boundary injection; the shared Keep state machine remains intact. */
@@ -247,6 +249,7 @@ export function useGuitarFreeFormPractice(
     if (reference === null) return
     if (options.listening.status() !== 'listening') {
       setNotice('Turn on Listening to score your playing against these notes.')
+      options.onListeningRequired?.()
       return
     }
     const range =
@@ -381,6 +384,13 @@ export function useGuitarFreeFormPractice(
     const route = routeGeneration()
     const status = options.listening.status()
     const inputKind = options.listening.inputProfile()
+    if (status === 'listening')
+      setNotice((message) =>
+        message ===
+        'Turn on Listening to score your playing against these notes.'
+          ? null
+          : message,
+      )
     if (
       route !== previousRoute ||
       inputKind !== previousInputKind ||

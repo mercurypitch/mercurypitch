@@ -635,6 +635,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const state = songController.selectionState()
     return state.kind === 'ready' ? state.lease : null
   })
+  // The room reads this after asynchronous admission. Keep conditional memo
+  // creation in the component owner, not a compiler-generated JSX getter.
+  const roomBacking = createMemo(() => (freeRoom() ? null : activeBacking()))
 
   /**
    * What is staged right now, for the panel beside the library.
@@ -2212,7 +2215,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
             <Match when={view() === 'room' && (freeRoom() || activeBacking())}>
               <GuitarNightRoom
-                backing={freeRoom() ? null : activeBacking()}
+                backing={roomBacking()}
                 initialRecordingId={pendingRecordingId()}
                 onRecordingOpened={() => setPendingRecordingId(null)}
                 transport={playbackController}
