@@ -145,6 +145,13 @@ const openGuide = async () => {
 const NEEDS_CLOUD_DATA = new Set([
   'Leaderboard::Top of the board',
   'Leaderboard::Full rankings',
+  // Same limitation, one page over: the Progress cabinet renders its
+  // "Reconnect to load your badges and achievements" fallback when the account
+  // side is unavailable (`available: input.availability?.account`), and the
+  // badge and achievement groups are inside that Show. With the cloud, both
+  // targets are there.
+  'Challenges::Earn badges',
+  'Challenges::Achievements',
 ])
 
 let totalSteps = 0
