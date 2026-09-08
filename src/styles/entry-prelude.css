@@ -7,15 +7,56 @@
  * sibling room, and doubles as the loading state: the moment the app mounts,
  * `#root:not(:empty)` hides it.
  *
+ * Which makes it the first thing a visitor sees, for as long as the bundle
+ * takes to boot — so it IS the loading screen, and wears what the loading
+ * screen wears: the First Light plate and the brand lockup from the app's own
+ * opening curtain (.appOpening in src/components/App.module.css). The lockup
+ * sits at the curtain's height on the same ground, so an entry that hands over
+ * to the curtain barely moves, and a standalone room, which has no curtain of
+ * its own, still opens on the brand rather than on a dark rectangle.
+ *
+ * Dark in both themes, like the curtain: this is the plate, not a page.
+ *
+ * Timing: the ground paints immediately, because delaying it would flash the
+ * body's white through first. The lockup and then the copy fade in behind
+ * short delays, so a boot that beats them replaces the prelude before either
+ * fires and no words are ever glimpsed.
+ *
  * One file, linked from every entry document, so the ten copies cannot drift.
  * Pinned by src/tests/launch-entry-seo.test.ts.
  */
 
+/* This sheet is linked only by the entry documents, and it is in the head
+   before the bundle's own reset arrives — without it the loading screen opens
+   inset by the browser's default body margin and then jumps flush. */
+body {
+  margin: 0;
+}
+
 .entry-prelude {
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
   min-height: 100vh;
-  padding: 12vh 1.5rem 4rem;
-  background: #0d1117;
+  min-height: 100svh;
+  /* The curtain's own lockup height: the plate's horizon falls under
+     halfway, and both tiers keep clean dark sky up here. */
+  padding: clamp(72px, 27vh, 260px) 1.5rem 4rem;
+  /* The scrim is what makes the copy readable over rippling chrome. It stays
+     clear across the sky where the lockup sits, then closes over the water. */
+  background:
+    linear-gradient(
+        180deg,
+        rgba(13, 17, 23, 0) 0%,
+        rgba(13, 17, 23, 0.45) 32%,
+        rgba(13, 17, 23, 0.88) 62%,
+        rgb(13, 17, 23) 100%
+      )
+      no-repeat,
+    url('/opening/first-light-wide.webp') center / cover no-repeat,
+    #0d1117;
   color: #c9d1d9;
   font-family:
     'Inter',
@@ -24,47 +65,123 @@
     'Segoe UI',
     sans-serif;
   line-height: 1.6;
+  text-align: center;
+}
+/* The same wide/tall tiers the preloads and App.tsx's <picture> choose
+   between — a phone must never upscale the middle quarter of the wide plate. */
+@media (max-aspect-ratio: 1/1) {
+  .entry-prelude {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(13, 17, 23, 0) 0%,
+        rgba(13, 17, 23, 0.45) 32%,
+        rgba(13, 17, 23, 0.88) 62%,
+        rgb(13, 17, 23) 100%
+      ),
+      url('/opening/first-light-tall.webp');
+  }
 }
 .entry-prelude > * {
-  max-width: 42rem;
-  margin-inline: auto;
+  width: min(42rem, 100%);
+  margin: 0;
 }
+
+/* The brand lockup, at the curtain's proportions. The mark is the shipped
+   asset — never an inlined copy, which is how this app once shipped a
+   superseded mark. */
+.entry-prelude__lockup {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 24px rgba(0, 0, 0, 0.55));
+}
+.entry-prelude__mark {
+  flex: none;
+  width: 68px;
+  height: 68px;
+}
+.entry-prelude__wordmark {
+  color: #e6edf3;
+  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-size: clamp(1.7rem, 5vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.entry-prelude__wordmark > span {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+@media (max-width: 480px) {
+  .entry-prelude__lockup {
+    gap: 10px;
+  }
+  .entry-prelude__mark {
+    width: 52px;
+    height: 52px;
+  }
+}
+
 .entry-prelude h1 {
-  margin: 0 0 0.75rem;
   color: #f0f6fc;
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  line-height: 1.2;
+  font-size: clamp(1.25rem, 3.2vw, 1.75rem);
+  line-height: 1.25;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
 .entry-prelude p {
-  margin: 0 0 2rem;
+  width: min(36rem, 100%);
 }
 .entry-prelude nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.25rem;
+  justify-content: center;
   font-size: 0.9375rem;
 }
 .entry-prelude a {
   color: #7dd3c8;
 }
-html[data-theme='light'] .entry-prelude {
-  background: #f3f4f6;
-  color: #24292f;
-}
-html[data-theme='light'] .entry-prelude h1 {
-  color: #0d1117;
-}
-html[data-theme='light'] .entry-prelude a {
-  color: #0f766e;
+.entry-prelude__faq {
+  width: min(36rem, 100%);
 }
 .entry-prelude__faq h2 {
-  margin: 2rem 0 0.5rem;
+  margin: 1.75rem 0 0.5rem;
   color: #f0f6fc;
   font-size: 1.0625rem;
 }
-html[data-theme='light'] .entry-prelude__faq h2 {
-  color: #0d1117;
+.entry-prelude__faq p {
+  width: 100%;
 }
+
+/* Nothing but the plate is on screen until these fire. */
+@keyframes entryPreludeRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.entry-prelude__lockup {
+  animation: entryPreludeRise 320ms ease 160ms both;
+}
+.entry-prelude > :not(.entry-prelude__lockup) {
+  animation: entryPreludeRise 320ms ease 620ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Keep both waits, drop the movement: the delay is the point, the rise is
+     decoration. */
+  .entry-prelude__lockup,
+  .entry-prelude > :not(.entry-prelude__lockup) {
+    animation-duration: 1ms;
+  }
+}
+
 /* The whole contract: the prelude is a later sibling of #root, and #root is
    empty until the app renders into it. */
 #root:not(:empty) ~ .entry-prelude {

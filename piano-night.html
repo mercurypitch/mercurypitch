@@ -59,6 +59,25 @@
     <!-- The prelude after #root is what crawlers and link previews read. Its
          styles are shared by every entry document from
          src/styles/entry-prelude.css. Pinned by launch-entry-seo.test.ts. -->
+    <!-- The prelude below is the loading screen, so its plate and mark race
+         the bundle the way the app's own opening curtain does. Media-gated:
+         a phone fetches only the portrait recomposition, a desktop only the
+         wide one. -->
+    <link
+      rel="preload"
+      as="image"
+      href="/opening/first-light-wide.webp"
+      media="(min-aspect-ratio: 1/1)"
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/opening/first-light-tall.webp"
+      media="(max-aspect-ratio: 1/1)"
+      fetchpriority="high"
+    />
+    <link rel="preload" as="image" href="/brand-mark.svg" />
     <link rel="stylesheet" href="/src/styles/entry-prelude.css" />
     <script type="application/ld+json">
       {
@@ -82,6 +101,16 @@
   <body style="background: #08090a">
     <div id="root"></div>
     <div class="entry-prelude">
+      <div class="entry-prelude__lockup">
+        <img
+          class="entry-prelude__mark"
+          src="/brand-mark.svg"
+          width="68"
+          height="68"
+          alt=""
+        />
+        <span class="entry-prelude__wordmark">Mercury<span>Pitch</span></span>
+      </div>
       <h1>Piano Night — practise piano, phrase by phrase</h1>
       <p>
         A focused room for the keyboard. Slow a phrase down, loop the bar that
