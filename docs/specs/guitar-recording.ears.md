@@ -170,6 +170,22 @@ or existing signal-only Jam Doctor.
   accuracy, matched onset timing and processing throughput shall be distinguished
   from real-guitar accuracy, polyphonic transcription and physical latency.
 
+- **GR-039:** WHEN voice control is enabled in free form, Play/Pause/Stop,
+  From the top, Go to start and relative seeks shall address the selected
+  Recording/Notes audition with its selected tone, not an empty backing player.
+  Play/Pause/seek shall not acquire input. Empty or unavailable sources shall
+  explain why no action occurred; repeated Play shall not cancel a pending start.
+- **GR-040:** WHEN Record, Record a melody or Record idea is spoken, the room
+  shall invoke the same explicit capture action as its Record button. Repeating
+  Record shall not toggle capture off. Stop/Stop recording shall cancel pending
+  preparation or finalize active capture into its usual review without discarding
+  audio or changing pre-existing monitoring. Seeking, playback changes and a
+  second finalization shall remain blocked during capture/saving. Focused room
+  sheets and suspended routes shall retain their voice guards; unmount shall
+  unregister the commands. Audition shall participate in existing wake-word
+  playback detection. Voice control shall remain opt-in and shall not add another
+  speech engine, audio graph or analysis branch to the monitoring path.
+
 ## Verification and limits
 
 Automated coverage and owner checks: [recorder testing](../guitar-recording-testing.md).

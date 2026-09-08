@@ -8,6 +8,7 @@ import { batch, createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportStatus } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
+import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
@@ -277,6 +278,73 @@ describe('GuitarNightRoom', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Recorder options' }))
     fireEvent.click(screen.getByTestId('overflow-attach-tab'))
     expect(onAttachTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers free-form voice controls and reports empty playback without starting input', () => {
+    const transport = createTransport()
+    const { unmount } = render(() => (
+      <GuitarNightRoom backing={null} transport={transport} onSongs={vi.fn()} />
+    ))
+    const play = matchVoiceCommand('play', activeVoiceCommands())
+    expect(play?.command.run({})).toEqual({
+      failed: true,
+      message: 'Record or open a melody first.',
+    })
+    expect(
+      matchVoiceCommand('record idea', activeVoiceCommands())?.command.id,
+    ).toBe('guitarNight.record')
+    expect(transport.play).not.toHaveBeenCalled()
+    expect(transport.activate).not.toHaveBeenCalled()
+    expect(listening.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    expect(activeVoiceCommands()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session' }))
+    expect(matchVoiceCommand('record', activeVoiceCommands())).not.toBeNull()
+    unmount()
+    expect(activeVoiceCommands()).toEqual([])
+  })
+
+  it('keeps spoken Stop reachable while the real recorder awaits input, without double-starting', async () => {
+    let resolveInput!: (ready: boolean) => void
+    listening.start.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveInput = resolve
+        }),
+    )
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    const say = (phrase: string) =>
+      matchVoiceCommand(phrase, activeVoiceCommands())?.command.run({})
+    expect(say('record a melody')).toBe('Starting recording')
+    await waitFor(() => expect(listening.start).toHaveBeenCalledTimes(1))
+    expect(
+      screen.getByRole('button', {
+        name: 'Cancel recording start',
+      }),
+    ).toBeEnabled()
+    expect(say('record idea')).toEqual({
+      failed: true,
+      message: 'Recording is preparing',
+    })
+    expect(say('forward')).toEqual({
+      failed: true,
+      message: 'Finish recording with Stop before changing playback.',
+    })
+    expect(say('stop recording')).toBe('Cancelling recording start')
+    resolveInput(false)
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Record a melody' }),
+      ).toBeEnabled(),
+    )
+    expect(listening.start).toHaveBeenCalledTimes(1)
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
   })
 
   it.each(['button', 'Space', 'voice'] as const)(

@@ -322,6 +322,13 @@ isolated browser storage and generated input; do not point them at production.
 
 ## Owner audition on dev
 
+- [ ] Enable voice control and use a microphone that can hear speech (a guitar
+      DI channel alone cannot). In free form say Record a melody / Record idea,
+      then Stop recording. Replay Recording and Notes with Play, Pause, Forward,
+      Back five seconds, Go to start, From the top and Stop. Prefix Mercury if
+      wake-word-while-playing is enabled. Check capture blocks seeking, repeated
+      Record does not stop it, and Pause/seek never start input. See the saved
+      [voice plan and command contract](guitar-recording-voice.md).
 - [ ] Enter Play free form. Confirm nothing plays or requests input until asked.
 - [ ] Select Direct input / the guitar channel. Enable Listening and You, then
       compare monitor-only with Record running at the same amp/rate/route.
