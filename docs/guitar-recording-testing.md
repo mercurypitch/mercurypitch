@@ -341,6 +341,23 @@ isolated browser storage and generated input; do not point them at production.
 
 ## Owner audition on dev
 
+- [ ] With Listening off, choose Practice then Play (or Space/voice Play).
+      The input prompt should explain scoring, offer all three routes and Replay
+      without scoring. Enable Direct input, then explicitly Play; the timeline
+      should move. Monitoring remains opt-in. Try denied permission and close
+      during a pending request: controls must recover immediately and late
+      permission must not reopen capture. Reload the local page after updating;
+      Record/Practice/Live transitions should not log ownerless Solid warnings.
+
+Recovery regression coverage: `GuitarNightSourceOwnership.test.tsx` exercises
+the actual compiled App/Room prop getters outside an owner; the original
+implementation fails with four warnings. `GuitarPracticeInputPrompt.test.tsx`
+checks focus/actions/errors; `useGuitarFreeFormPractice.test.tsx` verifies no
+delayed Play. `guitar-practice-input.spec.ts` checks desktop/mobile presentation,
+real scheduled Practice, denied permission, deferred device enumeration and
+closing/reopening before an old input promise resolves. The existing real-score
+free-form browser test still covers completed grading with opt-in DI monitoring.
+
 - [ ] Enable voice control and use a microphone that can hear speech (a guitar
       DI channel alone cannot). In free form say Record a melody / Record idea,
       then Stop recording. Replay Recording and Notes with Play, Pause, Forward,

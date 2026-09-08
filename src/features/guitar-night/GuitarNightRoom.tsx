@@ -38,6 +38,7 @@ import { GuitarNightSongMixer } from './GuitarNightSongMixer'
 import { GuitarNightSongSession } from './GuitarNightSongSession'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
+import { GuitarPracticeInputPrompt } from './GuitarPracticeInputPrompt'
 import { GuitarRecorderDeck } from './GuitarRecorderDeck'
 import { GuitarRecorderStage } from './GuitarRecorderStage'
 import { GuitarRecordButton, GuitarRecordingStatus, } from './GuitarRecordingControls'
@@ -175,6 +176,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const [quickMelodiesOpen, setQuickMelodiesOpen] = createSignal(false)
   const [sessionHandPlacement, setSessionHandPlacement] = createSignal(false)
   const [listeningRoutePending, setListeningRoutePending] = createSignal(false)
+  let listeningRouteGeneration = 0
+  const [practiceInputOpen, setPracticeInputOpen] = createSignal(false)
+  const [practiceInputError, setPracticeInputError] = createSignal<
+    string | null
+  >(null)
+  let practiceInputGeneration = 0
   let disposed = false
   onCleanup(() => {
     disposed = true
@@ -308,6 +315,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       quickMelodiesOpen() ||
       doctorOpen() ||
       mixerOpen() ||
+      practiceInputOpen() ||
       recorder.reviewOpen(),
     listening,
     recorder,
@@ -320,11 +328,24 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       return (await transport.activate()) ? transport.getAudioGraph() : null
     },
     onMissingSource: () => setMelodiesOpen(true),
+    onListeningRequired: () => {
+      setPracticeInputError(null)
+      setPracticeInputOpen(true)
+    },
   })
   const recoverMelody = (id: string, review = true) =>
     props.backing === null
       ? freeForm.recover(id, review)
       : recorder.recover(id, { review })
+  // RAF reads this source outside Solid's owner. Resolve the conditional here
+  // once per change instead of creating conditional memos inside a JSX getter.
+  const stageSource = createMemo(() =>
+    props.backing === null
+      ? freeForm.stage
+      : showRecordingStage()
+        ? recordingStage.source
+        : performance.stage,
+  )
   const removeMelody = (id: string) =>
     props.backing === null ? freeForm.remove(id) : recorder.remove(id)
   useGuitarNightTakeKeepPrompt({
@@ -366,11 +387,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
   async function selectListeningRoute(
     next: GuitarNightListeningSelection,
+    current: () => boolean = () => true,
   ): Promise<void> {
     if (recorder.busy()) await recorder.stop('The listening mode changed.')
     if (props.backing === null) await freeForm.modes.park()
     if (
       disposed ||
+      !current() ||
       listeningRoutePending() ||
       props.suspended?.() === true ||
       tunerOpen()
@@ -381,11 +404,14 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       return
     }
     const backing = props.backing
+    const operation = ++listeningRouteGeneration
     setListeningRoutePending(true)
     try {
       await songPlayback.selectInputProfile(next)
       if (
         disposed ||
+        operation !== listeningRouteGeneration ||
+        !current() ||
         props.backing !== backing ||
         props.suspended?.() === true ||
         tunerOpen() ||
@@ -394,9 +420,55 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         return
       await songPlayback.startListening()
     } finally {
-      if (!disposed) setListeningRoutePending(false)
+      if (!disposed && operation === listeningRouteGeneration)
+        setListeningRoutePending(false)
     }
   }
+
+  function closePracticeInput(): void {
+    practiceInputGeneration++
+    // Dismissal also cancels an in-flight permission/device request. A late
+    // response must not turn Listening on after this prompt was dismissed.
+    if (practiceInputOpen() && listeningRoutePending()) {
+      listeningRouteGeneration++
+      listening.stop()
+      setListeningRoutePending(false)
+    }
+    setPracticeInputOpen(false)
+  }
+
+  async function enablePracticeInput(
+    next: Exclude<GuitarNightListeningSelection, null>,
+  ): Promise<void> {
+    if (!practiceInputOpen() || listeningRoutePending()) return
+    const operation = practiceInputGeneration
+    const current = () =>
+      !disposed && practiceInputOpen() && operation === practiceInputGeneration
+    setPracticeInputError(null)
+    try {
+      await selectListeningRoute(next, current)
+      if (!current()) return
+      if (listening.status() === 'listening') setPracticeInputOpen(false)
+      else if (listening.error() === null)
+        setPracticeInputError(
+          'Listening could not start. Check your input in Session settings, then try again.',
+        )
+    } catch {
+      if (current())
+        setPracticeInputError(
+          'Listening could not start. Check your input in Session settings, then try again.',
+        )
+    }
+  }
+
+  createEffect(() => {
+    if (
+      props.backing !== null ||
+      freeForm.modes.mode() !== 'practice' ||
+      props.suspended?.() === true
+    )
+      untrack(closePracticeInput)
+  })
 
   /** 0..1 across the whole song, 0 before the first byte lands. */
   const loadFraction = createMemo(() => {
@@ -440,10 +512,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     playbackIssue: () => {
       if (props.backing !== null) return null
       if (recorder.draft() === null) return 'Record or open a melody first.'
-      if (freeForm.modes.mode() === 'practice')
-        return listening.status() === 'listening'
-          ? null
-          : 'Turn on Listening to practise these notes.'
+      // Practice's shared Play boundary opens input recovery for voice too.
+      if (freeForm.modes.mode() === 'practice') return null
       return recordingPlayback.available()
         ? null
         : 'The selected audio, notes or saved amp are unavailable. Choose another replay source or tone.'
@@ -526,6 +596,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       recorder.reviewOpen() ||
       freeForm.scoreOpen() ||
       freeForm.practice.consentOpen() ||
+      practiceInputOpen() ||
       listeningRoutePending() ||
       tunerOpen() ||
       isCalibrating()
@@ -719,6 +790,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           !recorder.reviewOpen() &&
           !freeForm.scoreOpen() &&
           !freeForm.practice.consentOpen() &&
+          !practiceInputOpen() &&
           !tunerOpen() &&
           !mixerOpen() &&
           !sessionOpen() &&
@@ -881,13 +953,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </Show>
 
       <GuitarNightStage
-        source={
-          props.backing === null
-            ? freeForm.stage
-            : showRecordingStage()
-              ? recordingStage.source
-              : performance.stage
-        }
+        source={stageSource()}
         tuning={() =>
           props.backing === null
             ? freeForm.tuning()
@@ -1517,6 +1583,23 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         />
       </Show>
       <Show when={props.backing === null}>
+        <GuitarPracticeInputPrompt
+          open={practiceInputOpen()}
+          pending={listeningRoutePending()}
+          profile={listening.inputProfile()}
+          error={practiceInputError() ?? listening.error()}
+          onEnable={(kind) => void enablePracticeInput(kind)}
+          onClose={closePracticeInput}
+          onReplay={() => {
+            closePracticeInput()
+            void freeForm.modes.select('replay')
+          }}
+          onSettings={() => {
+            closePracticeInput()
+            setSessionHandPlacement(false)
+            setSessionOpen(true)
+          }}
+        />
         <GuitarNightRoomMicConsent
           open={freeForm.practice.consentOpen()}
           onContinue={() => void freeForm.practice.confirmMic(false)}

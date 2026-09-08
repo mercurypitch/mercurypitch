@@ -467,6 +467,16 @@ verify bounding boxes and screenshots rather than only element visibility.
 them after the click; keep the background guard and verify a real download event.
 **See:** `src/lib/guitar/recording-export.ts`
 
+### Hoist conditional JSX props before asynchronous consumers read them
+
+**Symptom:** recorder RAF and Practice clicks repeatedly warned about ownerless computations.
+**Cause:** Solid compiled ternary `source`/`backing` JSX props into getters that created
+fresh conditional memos whenever an async callback read them outside the render owner.
+**Rule:** derive these values in component-owned `createMemo`s and pass their plain reads;
+do not hide the warning with a new root per frame. Capture a browser warning stack first.
+**See:** `src/features/guitar-night/GuitarNightSourceOwnership.test.tsx` exercises
+the actual compiled prop getters.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

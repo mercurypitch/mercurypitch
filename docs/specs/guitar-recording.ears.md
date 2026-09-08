@@ -1,7 +1,7 @@
 # Guitar Night melody recorder — EARS requirements
 
 Status: core recorder and GR-023–035 follow-ups implemented on PR 739;
-Live/Replay/Practice (GR-041–048) implemented on draft PR 741. Automated coverage
+Live/Replay/Practice and recovery (GR-041–050) implemented on PR 741. Automated coverage
 is indexed below, with owner dev audition still required. Extends
 [Guitar Night](guitar-night.ears.md), without changing its authored-tab rehearsal
 or existing signal-only Jam Doctor.
@@ -237,6 +237,17 @@ or existing signal-only Jam Doctor.
   original still; stopped/unmounted motion shall release its decoder. Late media
   completion shall not revive an obsolete recording. Native Record/Stop and its
   accessible label shall remain usable independently of media readiness.
+
+- **GR-050:** WHEN Practice Play is requested without Listening, buttons, Space
+  and voice shall offer the same focus-managed input setup prompt. Direct input,
+  Room mic and MIDI shall require explicit selection; Replay without scoring and
+  the existing input settings shall remain available alternatives. Enabling an
+  input shall not enable monitoring or queue playback; Play remains explicit.
+  Permission failures shall remain actionable in the prompt. Dismissal shall free
+  controls immediately and cancel pending acquisition, releasing late streams
+  without closing a newer prompt or changing its input ownership. Reactive stage
+  props read by animation frames or asynchronous admission shall retain their
+  component-owned lifetime, without creating undisposable computations.
 
 ## Verification and limits
 

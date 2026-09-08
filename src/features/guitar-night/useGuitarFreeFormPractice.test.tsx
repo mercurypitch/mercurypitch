@@ -159,6 +159,7 @@ function harness() {
       dispose: vi.fn(async () => undefined),
     }
     const activateGraph = vi.fn(async () => null)
+    const onListeningRequired = vi.fn()
     const practice = useGuitarFreeFormPractice({
       reference,
       enabled,
@@ -166,6 +167,7 @@ function harness() {
       listening,
       amp: () => DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
       activateGraph,
+      onListeningRequired,
       createBand: () => band,
     })
     const attack = (beat: number, midi = 60 + beat) => {
@@ -192,6 +194,7 @@ function harness() {
     }
     return {
       practice,
+      onListeningRequired,
       band,
       listening,
       clock,
@@ -262,6 +265,9 @@ describe('useGuitarFreeFormPractice', () => {
     h.setStatus('off')
     await h.practice.play()
     expect(h.practice.notice()).toMatch(/Turn on Listening/)
+    expect(h.onListeningRequired).toHaveBeenCalledOnce()
+    expect(h.listening.armTakeAt).not.toHaveBeenCalled()
+    expect(h.band.activate).not.toHaveBeenCalled()
     h.setStatus('listening')
     h.setBlocked(true)
     await h.practice.play()
@@ -270,6 +276,20 @@ describe('useGuitarFreeFormPractice', () => {
     await h.practice.play()
     expect(h.band.start).not.toHaveBeenCalled()
     expect(h.listening.stop).not.toHaveBeenCalled()
+    expect(h.onListeningRequired).toHaveBeenCalledOnce()
+  })
+
+  it('does not start later just because Listening becomes available after a blocked Play', async () => {
+    const h = harness()
+    h.setStatus('off')
+    await h.practice.toggle()
+    expect(h.onListeningRequired).toHaveBeenCalledOnce()
+    h.setStatus('listening')
+    await flush()
+    expect(h.band.start).not.toHaveBeenCalled()
+    await h.practice.play()
+    expect(h.band.start).toHaveBeenCalledOnce()
+    expect(h.practice.notice()).toBeNull()
   })
 
   it('waits for cancelled asynchronous admission before admitting Record', async () => {

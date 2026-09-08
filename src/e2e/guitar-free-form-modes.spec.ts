@@ -340,6 +340,10 @@ test('admits accepted notes explicitly and scores with the same opt-in DI monito
   ).toBe(0)
   expect(await scoreHistory(page)).toEqual([])
 
+  await page
+    .getByRole('dialog', { name: 'Enable Listening to practice', exact: true })
+    .getByRole('button', { name: 'Close practice input', exact: true })
+    .click()
   await enableDirectMonitor(page)
   const monitorContext = await expectFreshMonitorAudio(page)
   // Make the musical count-in observable independently of saved preferences.
