@@ -168,24 +168,26 @@
    tap to undo rather than changing the route. */
 .pickerBackdrop {
   position: fixed;
-  z-index: 40;
+  z-index: 90;
   inset: 0;
 }
 
 /* Opens upward: this control lives on the bottom rail, so there is no room
    below it and a downward menu would sit off-screen on a phone. */
 .picker {
-  position: absolute;
-  z-index: 41;
-  bottom: calc(100% + 0.55rem);
-  left: 50%;
+  position: fixed;
+  z-index: 91;
   display: grid;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.45rem 0.5rem 0.6rem;
   border: 1px solid rgba(224, 164, 93, 0.28);
   border-radius: 0.9rem;
   background: #18120d;
   box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.45);
-  transform: translateX(calc(-50% + var(--picker-shift, 0px)));
   animation: pickerRise 140ms ease-out;
 }
 
@@ -203,7 +205,7 @@
 @keyframes pickerRise {
   from {
     opacity: 0;
-    transform: translate(calc(-50% + var(--picker-shift, 0px)), 0.35rem);
+    transform: translateY(0.35rem);
   }
 }
 

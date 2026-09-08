@@ -1229,10 +1229,12 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   hammer-ons, pull-offs, vibrato, palm mute, and let ring only when authored;
   it shall not infer labels or techniques from visual coincidence.
 - **REQ-GN-STAGE-014 — Player-owned framing:** Guitar Night shall offer calm
-  Flow, player-neck, full-neck, and phrase-focus camera presets. Automatic
-  phrase framing shall yield immediately to pointer, touch, wheel, or keyboard
-  camera input and shall resume only after an explicit Reset. Reduced motion
-  shall snap camera changes instead of tweening them.
+  Flow, player-neck, and full-neck camera presets. Authored and detected notes
+  shall not pan or reframe the camera during recording, playback or scrubbing.
+  Saved phrase-focus choices shall fall back to fixed Flow framing. Pointer,
+  touch, wheel and keyboard camera choices shall remain player-owned; Reset
+  shall restore the selected fixed preset, not enable following. Reduced
+  motion shall snap camera changes instead of tweening them.
 - **REQ-GN-STAGE-015 — Instrument preferences:** Guitar Night shall preserve
   right- and left-handed Highway, Grid, Tab, and Neck meaning; support declared
   4–8-string guitar/bass setups, alternate tuning, and capo; and keep Tab and

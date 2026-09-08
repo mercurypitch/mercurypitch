@@ -50,8 +50,8 @@ export function GuitarRecordingEditor(props: {
     >
       <strong>Detected melody · draft</strong>
       <p>
-        Single notes, not chords. Fingering is a suggestion. Original audio and
-        measured timing are never rewritten.
+        Correct one note at a time. Fingering is suggested; chords are not yet
+        transcribed. Your original recording stays untouched.
       </p>
       <Show when={problems().length > 0}>
         <p>
@@ -94,66 +94,6 @@ export function GuitarRecordingEditor(props: {
           </button>
         </div>
       </Show>
-      <div class={styles.fields}>
-        <label>
-          Display tempo (BPM)
-          <input
-            type="number"
-            min="20"
-            max="300"
-            value={props.score.bpm}
-            onChange={(event) =>
-              change(
-                changeRecordingScoreTempo(
-                  props.score,
-                  Number(event.currentTarget.value),
-                ),
-              )
-            }
-          />
-        </label>
-        <label>
-          Display metre
-          <select
-            value={props.score.timeSignature.join('/')}
-            onChange={(event) => {
-              const parts = event.currentTarget.value.split('/').map(Number)
-              change({
-                ...props.score,
-                grid: 'chosen',
-                timeSignature: [parts[0], parts[1]],
-              })
-            }}
-          >
-            <For each={['4/4', '3/4', '6/8', '2/4', '5/4', '7/8']}>
-              {(signature) => <option value={signature}>{signature}</option>}
-            </For>
-          </select>
-        </label>
-      </div>
-      <p>
-        {props.score.grid === 'display'
-          ? 'Free timing: 120 BPM is a display grid, not an estimated song tempo.'
-          : 'The chosen grid changes notation. Timing remains as played until you edit a note.'}
-      </p>
-      <div class={styles.actions}>
-        <button
-          type="button"
-          onClick={() => change(quantizeRecordingScore(props.score, 2))}
-        >
-          Snap to eighth notes
-        </button>
-        <button
-          type="button"
-          onClick={() => change(quantizeRecordingScore(props.score, 4))}
-        >
-          Snap to sixteenth notes
-        </button>
-      </div>
-      <p>
-        Snapping makes notation simpler but changes the practice rhythm. Undo
-        returns to the previous timing.
-      </p>
       <Show when={note()}>
         {(current) => (
           <>
@@ -322,6 +262,73 @@ export function GuitarRecordingEditor(props: {
       >
         Undo correction
       </button>
+      <details class={styles.editorAdvanced}>
+        <summary>Tempo and snapping</summary>
+        <div class={styles.editorTools}>
+          <div class={styles.fields}>
+            <label>
+              Display tempo (BPM)
+              <input
+                type="number"
+                min="20"
+                max="300"
+                value={props.score.bpm}
+                onChange={(event) =>
+                  change(
+                    changeRecordingScoreTempo(
+                      props.score,
+                      Number(event.currentTarget.value),
+                    ),
+                  )
+                }
+              />
+            </label>
+            <label>
+              Display metre
+              <select
+                value={props.score.timeSignature.join('/')}
+                onChange={(event) => {
+                  const parts = event.currentTarget.value.split('/').map(Number)
+                  change({
+                    ...props.score,
+                    grid: 'chosen',
+                    timeSignature: [parts[0], parts[1]],
+                  })
+                }}
+              >
+                <For each={['4/4', '3/4', '6/8', '2/4', '5/4', '7/8']}>
+                  {(signature) => (
+                    <option value={signature}>{signature}</option>
+                  )}
+                </For>
+              </select>
+            </label>
+          </div>
+          <p>
+            {props.score.grid === 'display'
+              ? 'Free timing: 120 BPM is a display grid, not an estimated song tempo.'
+              : 'The chosen grid changes notation. Timing remains as played until you edit a note.'}
+          </p>
+          <div class={styles.actions}>
+            <button
+              type="button"
+              onClick={() => change(quantizeRecordingScore(props.score, 2))}
+            >
+              Snap to eighth notes
+            </button>
+            <button
+              type="button"
+              onClick={() => change(quantizeRecordingScore(props.score, 4))}
+            >
+              Snap to sixteenth notes
+            </button>
+          </div>
+          <p>
+            Snapping makes notation simpler but changes the practice rhythm.
+            Undo returns to the previous timing.
+          </p>
+        </div>
+      </details>
     </fieldset>
   )
 }

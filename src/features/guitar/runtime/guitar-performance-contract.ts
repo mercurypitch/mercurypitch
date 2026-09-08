@@ -35,6 +35,8 @@ export interface GuitarPerformanceStageSource {
   title: Accessor<string>
   notes: Accessor<readonly GuitarNote[]>
   timeline: GuitarPerformanceTimeline
+  /** Measured history, not upcoming targets. Omitted for normal playback/practice. */
+  recordingHistory?: Accessor<boolean>
 }
 
 export interface GuitarPerformanceTransport {

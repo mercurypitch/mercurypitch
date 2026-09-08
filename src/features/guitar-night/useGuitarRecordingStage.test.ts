@@ -10,7 +10,39 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 describe('recording stage projection', () => {
-  it('follows dry replay position without the live-history offset or accepting a score', () =>
+  it('bounds live projection work while preserving long sustains and all stopped evidence', () =>
+    createRoot((dispose) => {
+      const [busy, setBusy] = createSignal(true)
+      const notes = Array.from({ length: 3000 }, (_, index) => ({
+        id: `note-${index}`,
+        midi: 64,
+        startFrame: index * 4800,
+        endFrame: index * 4800 + 4000,
+        clarity: 0.9,
+        onset: 'attack' as const,
+      }))
+      notes.push({ ...notes[0], id: 'sustain', endFrame: 300 * 48000 })
+      const stage = useGuitarRecordingStage(
+        {
+          busy,
+          state: () => 'idle',
+          captureSeconds: () => 300,
+          duration: () => 300,
+          previewRecording: () =>
+            ({ sampleRate: 48000, frames: 300 * 48000 }) as GuitarRecording,
+          previewScore: () => null,
+          previewNotes: () => notes,
+        },
+        () => DEFAULT_GUITAR_TUNING,
+      )
+      expect(stage.source.notes()).toHaveLength(61)
+      expect(stage.source.notes().at(-1)?.id).toBe('sustain')
+      expect(notes).toHaveLength(3001)
+      setBusy(false)
+      expect(stage.source.notes()).toHaveLength(3001)
+      dispose()
+    }))
+  it('keeps capture time intact and switches from history to dry replay without accepting a score', () =>
     createRoot((dispose) => {
       const [engaged, setEngaged] = createSignal(false)
       const [position, setPosition] = createSignal(0)
@@ -32,8 +64,10 @@ describe('recording stage projection', () => {
         () => DEFAULT_GUITAR_TUNING,
         { engaged, position },
       )
-      expect(stage.source.timeline.positionSeconds()).toBe(7)
+      expect(stage.source.timeline.positionSeconds()).toBe(10)
+      expect(stage.source.recordingHistory?.()).toBe(true)
       setEngaged(true)
+      expect(stage.source.recordingHistory?.()).toBe(false)
       expect(stage.source.timeline.playheadBeat()).toBe(0)
       setPosition(1.25)
       expect(stage.source.timeline.playheadBeat()).toBe(2.5)
@@ -81,20 +115,20 @@ describe('recording stage projection', () => {
       expect(callbacks.size).toBe(0)
       setState('recording')
       frame()
-      expect(stage.source.timeline.positionSeconds()).toBe(2)
+      expect(stage.source.timeline.positionSeconds()).toBe(5)
       captured = 5.02
       frame()
-      expect(stage.source.timeline.positionSeconds()).toBeCloseTo(2.02)
+      expect(stage.source.timeline.positionSeconds()).toBeCloseTo(5.02)
       captured = 5.04
       frame()
-      expect(stage.source.timeline.positionSeconds()).toBeCloseTo(2.04)
+      expect(stage.source.timeline.positionSeconds()).toBeCloseTo(5.04)
       stage.setShowLiveNotes(false)
       expect(callbacks.size).toBe(0)
       stage.setShowLiveNotes(true)
       expect(callbacks.size).toBe(1)
       setState('idle')
       expect(callbacks.size).toBe(0)
-      expect(stage.source.timeline.positionSeconds()).toBe(2)
+      expect(stage.source.timeline.positionSeconds()).toBe(5)
       setState('recording')
       expect(callbacks.size).toBe(1)
       dispose()
@@ -168,7 +202,7 @@ describe('recording stage projection', () => {
       await Promise.resolve()
       expect(stage.tuning().capo).toBe(2)
       expect(stage.source.notes()[0].midi).toBe(42)
-      expect(stage.source.timeline.positionSeconds()).toBe(8)
+      expect(stage.source.timeline.positionSeconds()).toBe(11)
       setBusy(false)
       expect(stage.tuning().capo).toBe(0)
       expect(stage.source.notes()).toEqual([
@@ -241,14 +275,15 @@ describe('recording stage projection', () => {
           duration: (29000 - 12345) / 24000,
         }),
       ])
-      expect(stage.source.timeline.playheadBeat()).toBe(0)
+      expect(stage.source.timeline.playheadBeat()).toBe(4)
       expect(stage.source.timeline.durationSeconds()).toBe(2)
       stage.setShowLiveNotes(false)
       expect(stage.source.notes()).toEqual([])
       expect(notes).toHaveLength(2)
       setBusy(false)
       expect(stage.source.notes()).toHaveLength(1)
-      expect(stage.source.timeline.positionSeconds()).toBe(0)
+      expect(stage.source.timeline.positionSeconds()).toBe(2)
+      expect(stage.source.recordingHistory?.()).toBe(true)
       setRow(null)
       expect(stage.available()).toBe(false)
       expect(stage.source.notes()).toEqual([])

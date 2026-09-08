@@ -3267,8 +3267,8 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     'string-highway',
   )
   await room.getByLabel('Camera, Runway', { exact: true }).click()
-  await room.getByRole('button', { name: /Phrase follow/ }).click()
-  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
+  await room.getByRole('button', { name: /Player angle/ }).click()
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'false')
   await flowCanvas.scrollIntoViewIfNeeded()
   const initialYaw = await flowCanvas.getAttribute('data-camera-yaw')
   const canvasBox = await flowCanvas.boundingBox()
@@ -3319,7 +3319,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await room
     .getByRole('group', { name: '3D performance view controls' })
     .press('r')
-  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'false')
 
   await room.getByRole('button', { name: 'Neck', exact: true }).click()
   await expect(room.locator('[data-stage-mode="neck"]')).toBeVisible()

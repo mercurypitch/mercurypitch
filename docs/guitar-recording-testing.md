@@ -7,8 +7,10 @@ Drum sound work is intentionally separate and deferred.
 ## Implemented phases
 
 1. Selected-channel capture borrows Listening's source/context. An AudioWorklet
-   copies sequential PCM into eight reusable 8,192-frame buffers. A Worker runs
+   copies sequential PCM into 32 reusable 2,048-frame buffers. A Worker runs
    pitch/onset analysis and PCM16 encoding. The amp path is unchanged.
+   Four deliveries share each 8,192-frame durable checkpoint, retaining the
+   original 65,536-sample pool budget and storage cadence.
 2. Play free form opens the existing song room without fake assets. Explicit
    Record works with no backing or fixed-rate backing, up to five minutes.
    Route changes, page hiding and resource failure preserve recoverable drafts.
@@ -61,8 +63,159 @@ Drum sound work is intentionally separate and deferred.
     touch shortcut. Both views offer confirmed deletion. Switching does not
     autoplay or open Review, and failed/stale loads preserve the selected take.
 
-Publication: the recorder and final review fixes belong to the existing PR 739.
-Merge and dev deployment follow the repository workflow; drum sound work remains separate.
+Publication: the original recorder shipped in merged PR 739. The follow-up below
+is being published on `feat/guitar-live-recording` as one draft PR for the
+recorder fixes and post-stop chord work; drum sound work remains separate.
+
+## Compact score downloads
+
+MIDI and GP7 downloads use lowercase `melody-<name>-YYYYMMDD-HHmmss.mid` or
+`.gp`, with local 24-hour time and no milliseconds. Unnamed takes omit the name
+and their auto-generated title date; saved display titles remain unchanged.
+Names are sanitized and limited to 48 characters. Repeated exports of the same
+name/format within a second add `-2`, `-3`, etc. during the page session; the
+browser handles conflicts with files already on disk.
+
+Guitar Pro export is not GPX: it writes a real GP7 `.gp` file. It requires valid
+string/fret assignments for every note, just like Practice and Attach. A pitch
+outside the recorded tuning blocks those actions but not MIDI export. Use
+Review problem notes to correct or explicitly exclude those notes; exporting
+must not silently drop them or shift them by an octave.
+
+### GP8 notation compatibility follow-up
+
+The owner's two native GP8 checks exposed a hole in the original same-library
+round-trip test. Free timing had been represented by isolated, arbitrary tuplets
+(159 and 329 beat markings in the two files). GP8 displayed ratios such as
+240:173 and red bars. [GP8 documents red bars as incorrect bar lengths](https://www.guitar-pro.com/docs/gp8/score/bars).
+Passing alphaTab export/import alone did not prove a usable native score.
+
+The `.gp` export now makes an explicitly disclosed notation copy on a
+thirty-second-note grid. It uses ordinary/dotted durations, ties and complete
+rests; at 120 BPM the maximum onset rounding is 31.25 ms. Very short notes are
+given one grid unit without overlapping the next attack. If distinct attacks
+round to one position, export explains the conflict instead of dropping notes
+or shifting the rest of the phrase; MIDI remains available. There is no automatic
+tempo detection, swing/triplet inference or change to saved practice timing.
+MIDI retains the corrected performance timing at MIDI tick resolution.
+
+Guitar/bass use their normal octave-displaced written pitch without transposing
+the sounding notes; bass uses its bass clef. A scoped adapter fixes alphaTab
+1.8.3's incorrect GPIF tuning Instrument and FretCount element in our generated
+single-track file. It does not patch the installed library or imported scores.
+
+Regression tests inspect ZIP/GPIF directly for independent bar arithmetic,
+absent arbitrary tuplets, instrument, clef, octave, key and escaping, then
+round-trip pitches, repeats, ties, capo and rounded timings. Cases cover 3/4,
+4/4, 5/8, 7/16, 6/8 and 2/2. The browser flow checks the actual downloaded GPIF.
+Both owner files were re-exported locally without changing their inputs: all
+124/238 included notes and fingerings retained, 25/51 balanced bars and no
+tuplets. On 2026-09-08 the owner opened the corrected comparison take in native
+Guitar Pro 8 and confirmed the exports look good. Excluded notes cannot be
+recovered from these exports; originals remain in the local take evidence.
+
+## Recorder overlay and camera polish
+
+- Melody deletion reuses the shared confirmation with an explicit, opaque
+  Velvet skin. Both the gallery and quick-switch portal supply those semantic
+  colours; room transparency cannot erase the dialog or destructive action.
+- The shared Listening picker is a body portal, fixed above its trigger and
+  clamped on resize/scroll/content changes. It clears the stage recorder in
+  both hosts without increasing the recorder rail's stacking level.
+- Song/recorder and Rehearse the Tab already share `GuitarNightStage`. Its old
+  Phrase follow setting intentionally moved the camera between note positions.
+  The three remaining presets are fixed, and old saved Phrase follow choices
+  fall back to Runway. Notes no longer enter camera calculations. Manual camera
+  gestures remain intact through seeks and playback; Reset restores fixed framing.
+- Corrections start with note selection, pitch and fingering. Tempo and snapping
+  are one optional disclosure, with the same explicit actions and Undo. The full
+  shared editor remains a later phase rather than a second editor built here.
+- The short owner-facing loop prompt is in [recorder artwork](guitar-recorder-art.md).
+  No animation or audio-path changes are part of this polish.
+
+`guitar-recorder-overlays.spec.ts` reproduces the original transparent dialog,
+covered picker and saved camera-follow behavior before the fix. It verifies
+both deletion entry points (Cancel only), focus return, real hit targets,
+desktop/phone bounds, re-anchoring, optional notation tools and manual orbit
+through a real-pointer seek/play cycle. Companion recorder-layout and song
+Listening/score transport checks cover 1440, 390 and 320px layouts.
+
+## Live recording follow-up (G1 and G2 evidence baseline)
+
+G1 removes the three-second visual clock offset. Flow now places captured notes
+at NOW / You played and carries them toward the player as history without
+practice-hit effects. Tab has its own behind-NOW history window. Replay and
+accepted rehearsal retain the existing upcoming-note layout. Live projection
+only compiles recent notes (including long sustains), so a five-minute draft is
+not rebuilt in full at every preview; raw evidence and stopped views stay whole.
+
+Preview deliveries are 2,048 frames (~42.7 ms at 48 kHz), previously 8,192
+(~170.7 ms), and publish before asynchronous storage finishes. These are delivery
+cadences, not input-to-display or input-to-speaker measurements. Analysis still
+uses 4,096-frame windows and 1,024-frame hops. Buffer recycling remains gated by
+durability; slow storage, terminal notes, overflow and disposal have regressions.
+
+G2 centralizes recorder/rehearsal pitch profiles without changing either
+production default. Run the repeatable comparison from the checkout:
+
+```bash
+timeout 90 node scripts/benchmark-guitar-recording.mjs --chunk-frames 2048
+timeout 90 node scripts/benchmark-guitar-recording.mjs --chunk-frames 8192
+```
+
+Both use identical generated 48 kHz PCM and recorder segmentation; the MPM
+candidate uses rehearsal detector settings, not its display cadence or known-tab
+score matcher. On 50 labelled synthetic notes, recall was 38/50 for recorder YIN,
+43/50 for rehearsal MPM and 45/50 with MPM stabilization disabled; precision was
+100% on these fixtures. MPM helped strongly damped repeated picks but cut a quiet
+sustain roughly 315 ms early versus 16 ms with YIN, and ran about 2.4 times slower
+in one local comparison. This does not justify a blanket production switch.
+All 39 fixture/config pairs retained identical note/evidence results at both
+delivery sizes. Throughput varies with host load; matched/backdated onset errors
+are not display latency. Chord, bend, slide and vibrato fixtures preserve raw
+contours but make no full-note/technique accuracy claim.
+
+Remaining G2 work is labelled real-guitar evaluation before segmentation changes,
+recorder-specific evidence visualization, and separately scoped post-stop
+polyphonic/technique refinement with score/editor/export compatibility. Known-tab
+chord scoring is not a general chord transcriber. No new model or sample licence
+is introduced by this follow-up.
+
+### Next priority: chord transcription after export/UI acceptance
+
+Chord recognition is **not implemented** by the shared detector configuration.
+The next bounded phase is post-stop polyphonic transcription, before resuming
+drum sound work. Do not put an unbenchmarked model in the live monitor path.
+
+1. **Evidence and baseline:** build a labelled dry-DI set of two-note intervals,
+   power chords, major/minor open and barre chords, sustained/strummed chords,
+   muted strings and overlapping arpeggios. Include silence, single notes and
+   distortion monitoring as negative/regression cases. Retain known note sets,
+   tuning/capo, attack order and approximate releases. GP/MIDI exports cannot
+   recover simultaneous notes the current detector missed.
+2. **Candidate gate:** compare local post-stop multi-pitch approaches against
+   those labels, with note precision/recall, chord-set accuracy, false octaves,
+   timing, decode/analysis time, memory and cancellation. Audit implementation
+   and model-weight redistribution licences before choosing a shipping model.
+   Report weak/ambiguous results honestly; do not infer every chord tone merely
+   from a guessed root or reuse score-conditioned matching as transcription.
+3. **Versioned notes:** keep original audio/evidence immutable and store a
+   separate refined draft. Add overlapping-note/chord-group support, individual
+   durations/confidence and uncertainty. Assign playable distinct strings where
+   supported; never hide extra pitches or force an impossible fingering. Audit
+   validation, corrections/Undo, audition, acceptance, deletion and migrations.
+4. **Shared editor and integration:** reuse the piano-roll timing/editing work
+   for the new polyphonic draft, with Guitar Night styling. Feed accepted notes
+   into the existing practice/score paths. Extend MIDI and GP7 with real chord
+   beats, voices/ties for independent sustains, and native GP8 regression checks.
+5. **Release gate:** compare owner listening and labelled chord results with the
+   original single-note draft. Test cancel/reload/failure, large takes, storage
+   and memory limits. Live preview stays explicitly single-note initially;
+   real-time multi-note preview is a later, separately measured optimization.
+
+This is a plan, not a promise that unrestricted chords or techniques already
+work. The first implementation decision is which evaluated/licensed approach
+passes the fixture gate, not a date or a blind YIN-to-MPM replacement.
 
 The authored-tab host, Studio Lead DSP and operating-system/browser audio
 settings are unchanged by the recorder implementation. There is no cloud upload,
@@ -90,6 +243,10 @@ IndexedDB and exported download path with generated audio:
 - Intermediate canvas paints between checkpoints; dry playback and gallery
   reopening without another input request; gallery Escape/focus restoration,
   unchanged stage bounds.
+- First live evidence from actual Worker deliveries, history mode during capture
+  and Stop, then normal presentation during audition. A separate
+  `guitar-recording-history.spec.ts` checks actual canvas text/geometry and
+  desktop/phone captures without overloading the longer persistence flow.
 - Unit coverage for lazy/bounded gallery reads, real note counts, unavailable
   versus empty evidence, retry, interrupted/removed-audio states, and replay
   pause/disposal/late-start races.
@@ -127,6 +284,9 @@ fakes are complemented by the real worklet/Worker and audio-render browser tests
 | GR-024–029: live/draft highway clock, gallery, compact responsive controls                                  | `useGuitarRecordingStage.test.ts`, `GuitarRecordingGallery.test.tsx`, `GuitarRecordingControls.test.tsx`, `guitar-recorder-layout.spec.ts`, `guitar-recorder-transport.spec.ts`                    |
 | GR-030–034: audio/notes, Current/Clean/Saved amp, stereo, seeking and stale completion                      | `recording-note-player.test.ts`, `recording-playback.test.ts`, `useGuitarRecordingPlayback.test.ts`, `preview-player.test.ts`, real rendered PCM and held-pointer browser tests                    |
 | GR-035: gallery/quick switch, long touch, exact deletion and stale loads                                    | `GuitarRecordingQuickMenu.test.tsx`, `GuitarRecordingGallery.test.tsx`, `useGuitarRecordingController.test.ts`, `guitar-recorder-transport.spec.ts`                                                |
+| GR-036: truthful NOW/history, sustains, live projection bounds and ordinary replay                          | `recording-history.test.ts`, `Canvas2dTabRenderer.test.ts`, `useGuitarRecordingStage.test.ts`, `GuitarNightMovingTab.test.tsx`, `tab-window.test.ts`, real history/capture browser tests           |
+| GR-037: preview before storage, bounded pool, final/stale evidence and recovery                             | `guitar-recorder.worker.test.ts`, `recording-pcm-capture.test.ts`, `recording-capture.test.ts`, `useGuitarRecordingController.test.ts`, persistence and real monitoring browser tests              |
+| GR-038: profile parity, chunk-size invariance and honest comparison metrics                                 | `recording-benchmark.test.ts`, existing Listening/analysis suites and `benchmark-guitar-recording.mjs`                                                                                             |
 | Studio Lead / cabinet and preset migration                                                                  | `guitar-studio-head.test.ts`, `guitar-amp-stage.test.ts`, `guitar-amp-cabinet.test.ts`, amp-settings tests, `guitar-night-amp.spec.ts`, `guitar-night-lead-monitor.spec.ts`                        |
 | DI monitoring / diagnostics / shared song controls                                                          | `guitar-input-monitor.test.ts`, `useGuitarListeningController.test.tsx`, `useGuitarMonitorDiagnostics.test.ts`, `GuitarNightMonitorLatency.test.tsx`, song audio/listening/controls browser suites |
 | Shared-component and store regressions                                                                      | `OverflowMenu.test.tsx`, `use-focus-trap.test.tsx`, `uvr-store-startup.test.ts`, `karaoke-rail-song-switch.spec.ts`                                                                                |
@@ -148,6 +308,7 @@ pnpm build:e2e
 VITE_E2E_PORT=35219 PLAYWRIGHT_HTML_OPEN=never pnpm exec playwright test \
   src/e2e/guitar-night-recording.spec.ts src/e2e/guitar-recording-playback.spec.ts \
   src/e2e/guitar-recorder-transport.spec.ts src/e2e/guitar-recorder-layout.spec.ts \
+  src/e2e/guitar-recorder-overlays.spec.ts \
   --workers=1 --reporter=line
 ```
 
@@ -165,6 +326,8 @@ isolated browser storage and generated input; do not point them at production.
 - [ ] Check Recording with Clean/bypass, note pitch/endings and suggested frets. Correct a note,
       collapse/reopen corrections, Undo, then Keep and reload Hear Yourself.
 - [ ] Toggle Live notes while recording; confirm the monitored sound is unchanged.
+      Check notes appear beside NOW, then move toward you as history. Switch to
+      Tab: recent notes should remain behind NOW, not appear as future targets.
       Stop and close review: the melody remains visible. Review take reopens it.
 - [ ] Use the rail's Play control to replay the take; check the highway
       follows it. Open My melodies and review the actual note miniature/details.

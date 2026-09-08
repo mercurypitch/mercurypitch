@@ -36,6 +36,11 @@ workspace.
 
 ## Interaction contract
 
+- Recorder export help distinguishes readable GP7 notation from free-timed
+  MIDI before the action. GP7's thirty-second-note rounding affects the exported
+  copy only; the take's audio and practice timing remain unchanged. Keep this
+  alongside the export actions, not another modal or permanently visible rail.
+
 - `Start` first makes four open low-E notes feel musical, then teaches a
   one-string tab phrase. Touch and keyboard work before any listening
   permission. The explicit count-in starts a local percussion pulse; progress
@@ -120,6 +125,10 @@ workspace.
   backing-parts state; recorded songs use a transient gain mask. Input changes
   still reset monitoring for safety. The picker is opaque for readability,
   keyboard reachable, and does not open audio merely by appearing.
+  It is portalled above stage artwork, anchored to Listening and clamped on
+  viewport/content changes; nesting it inside the rail must not bury it beneath
+  the recorder. Melody removal has a separate opaque confirmation faceplate,
+  independent of room clarity, using the shared dialog and its skin bridge.
 - Backing is also one click away directly below the song's bottom-left Listening
   control; Direct input adds You beside it. Tab rehearsal retains Backing and
   Target and adds the same You action. Shared toggles mirror the picker without
@@ -386,9 +395,10 @@ core Learn set in
   choice is stored locally. Guitar Night supplies its own translucent Velvet
   palette, direct mouse/touch camera, responsive entry/Reset framing, larger
   next target and truthful `NOW` rail without changing the legacy renderer
-  defaults. Four calm camera presets include phrase following that yields as
-  soon as the player drags, wheels, touches, or uses the keyboard and resumes
-  only on Reset. Left-handed Highway and Grid mirror their spatial projection;
+  defaults. Three fixed camera presets never follow authored or detected notes;
+  saved Phrase follow choices fall back to Runway. Manual orbit/pan/zoom remains
+  player-owned through playback, scrubbing and recording. Reset restores the
+  selected fixed framing. Left-handed Highway and Grid mirror their spatial projection;
   the moving thirteen-fret Neck reverses consistently; 4–8 strings, alternate
   tuning, and capo remain source-aware. Authored chords and bend, slide,
   hammer/pull, vibrato, palm-mute, and let-ring marks reach the stage without
@@ -523,6 +533,15 @@ core Learn set in
 - The recorder's visible clock reads the existing capture AudioContext between
   worker checkpoints. Notes retain their exact frame-time evidence. Stopping or
   disabling Live notes retires the visual frame loop, not the recording input.
+  Recording Flow has an explicit NOW / You played boundary near mid-runway:
+  new evidence appears there and travels toward the player as three seconds of
+  history, without next-target glow or a scored landing. Tab places NOW toward
+  the right and shows its recent history behind it. The clock is never shifted
+  to disguise recorded notes as future targets. Only live projection is bounded
+  to recent evidence; a stopped draft, review and audition retain the full take.
+  Small Worker previews publish independently of IndexedDB checkpoints, with
+  the same total PCM buffer capacity. This changes visual delivery, not the
+  amp/monitor signal path or claimed physical round-trip latency.
   Playback offers Recording (original input) and Notes (current corrected
   pitches/timing), sharing one owner with review. Both offer Current amp,
   Clean/bypass and Saved amp; saved means settings at Record, not an exact wet

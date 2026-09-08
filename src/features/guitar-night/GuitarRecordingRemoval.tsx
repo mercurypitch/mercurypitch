@@ -2,6 +2,7 @@
 import { createSignal, onCleanup, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { GuitarRecording } from '@/lib/guitar/recording-types'
+import styles from './GuitarRecording.module.css'
 
 export function useGuitarRecordingRemoval(options: {
   remove(id: string): Promise<void>
@@ -58,24 +59,29 @@ export function GuitarRecordingRemoveDialog(props: {
   removal: ReturnType<typeof useGuitarRecordingRemoval>
 }) {
   return (
-    <ConfirmDialog
-      open={props.removal.target() !== null}
-      title="Remove this melody?"
-      message={
-        <>
-          Remove <strong>{props.removal.target()?.title}</strong> from this
-          device, including its original audio, detected notes, corrections, all
-          practice revisions, song attachments and Hear Yourself entry? This
-          cannot be undone. Other melodies and practice attempts remain.
-          <Show when={props.removal.error()}>
-            {(message) => <span role="alert"> {message()}</span>}
-          </Show>
-        </>
-      }
-      busy={props.removal.busy()}
-      confirmLabel="Remove melody"
-      onCancel={props.removal.cancel}
-      onConfirm={() => void props.removal.confirm()}
-    />
+    // Both callers may already be portalled out of the room. Supply the
+    // shared confirmation's semantic tokens here so its skin bridge can
+    // carry an opaque faceplate, independently of room transparency.
+    <span class={styles.confirmationSkin}>
+      <ConfirmDialog
+        open={props.removal.target() !== null}
+        title="Remove this melody?"
+        message={
+          <>
+            Remove <strong>{props.removal.target()?.title}</strong> from this
+            device, including its original audio, detected notes, corrections,
+            all practice revisions, song attachments and Hear Yourself entry?
+            This cannot be undone. Other melodies and practice attempts remain.
+            <Show when={props.removal.error()}>
+              {(message) => <span role="alert"> {message()}</span>}
+            </Show>
+          </>
+        }
+        busy={props.removal.busy()}
+        confirmLabel="Remove melody"
+        onCancel={props.removal.cancel}
+        onConfirm={() => void props.removal.confirm()}
+      />
+    </span>
   )
 }

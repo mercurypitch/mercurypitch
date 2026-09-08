@@ -270,26 +270,26 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           void startWrite.catch(() =>
             untrack(() => void stop('The recording start could not be saved.')),
           )
-          if (!disposed) setState('recording')
+          if (!disposed && state() !== 'stopping') setState('recording')
         },
-        async onChunk(chunk, previewNote) {
-          await startWrite
-          await store().checkpoint(chunk)
-          if (!disposed)
+        onPreview(preview) {
+          if (!disposed && attempt === generation && activeId === id)
             batch(() => {
-              setDuration(
-                (chunk.firstFrame + chunk.frames) / input.context.sampleRate,
-              )
-              setNoteCount((count) => count + chunk.notes.length)
-              if (chunk.notes.length)
-                setCompletedNotes((notes) => [...notes, ...chunk.notes])
-              setPendingNote(previewNote)
-              const pitch = chunk.pitches.at(-1)?.midi
+              setDuration(preview.frames / input.context.sampleRate)
+              setNoteCount((count) => count + preview.notes.length)
+              if (preview.notes.length)
+                setCompletedNotes((notes) => [...notes, ...preview.notes])
+              setPendingNote(preview.pendingNote)
+              const pitch = preview.pitch?.midi
               const named = pitch == null ? null : midiToNote(Math.round(pitch))
               setHeardNote(
                 named === null ? null : `${named.name}${named.octave}`,
               )
             })
+        },
+        async onChunk(chunk) {
+          await startWrite
+          await store().checkpoint(chunk)
         },
       })
       completion = capture.done

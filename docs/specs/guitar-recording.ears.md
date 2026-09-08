@@ -78,8 +78,14 @@ or existing signal-only Jam Doctor.
   (MIDI) or accepted playable revision (Guitar Pro) shall be exported with a safe
   timestamped filename. MIDI shall not require guitar fingering or implicitly
   replace an accepted guitar target. `.gp` shall contain actual
-  GP7 data; note timing, tuning/capo and fingering shall round-trip through the
-  installed parser. Exporters shall load on demand.
+  GP7 data with readable thirty-second-note timing, ordinary/dotted durations,
+  ties and fully balanced bars, not arbitrary tuplets for free-timing fractions.
+  This export-only rounding shall be disclosed before export and shall not
+  modify audio, captured evidence, corrections or accepted practice timing.
+  Pitches, tuning/capo, fingering and notation timing shall round-trip through
+  the installed parser; native GPIF metadata/bar lengths shall also be tested
+  independently. Distinct attacks shall not be silently dropped or shifted
+  into later phrases when notation collides. Exporters shall load on demand.
 - **GR-023:** IF notes need fingering, THEN review shall identify their count,
   select a problem note directly, and offer explicit undoable exclusion from the
   editable melody. Captured notes/audio shall remain unchanged. Guitar practice,
@@ -143,7 +149,26 @@ or existing signal-only Jam Doctor.
   without auto-playing or opening Review. Trash actions in both views shall
   confirm the exact take and linked local data before deletion. Failed or
   stale loads shall preserve the active take; deleting another take shall not
-  clear it. Capturing/locked recordings shall not be removed.
+  clear it. Capturing/locked recordings shall not be removed. Confirmations
+  shall have an opaque, readable faceplate and visible actions regardless of
+  room transparency or whether the originating gallery is itself portalled.
+- **GR-036:** WHILE showing a recording draft outside audition, Flow shall
+  place newly recognized notes beside a labelled NOW / You played boundary,
+  then move them toward the player as recent history. Tab shall show recent
+  notes behind NOW. Neither shall label history as an upcoming practice target
+  or score its landing. True capture times shall remain unchanged; audition
+  and accepted rehearsal shall retain their ordinary playback presentation.
+- **GR-037:** WHEN new analysis evidence arrives, a bounded ephemeral preview
+  shall publish independently of durable storage. Smaller preview deliveries
+  shall not increase the total PCM pool or normal checkpoint frequency.
+  Buffers shall recycle only after durable writes; Stop shall finalize pending
+  evidence exactly once. Stale, terminal and disposed previews shall not revive
+  capture or bypass interruption/recovery behavior.
+- **GR-038:** Guitar evidence comparisons shall use explicit shared detector
+  configurations and identical PCM. A rehearsal setting shall not implicitly
+  replace unknown-note transcription with score-conditioned matching. Synthetic
+  accuracy, matched onset timing and processing throughput shall be distinguished
+  from real-guitar accuracy, polyphonic transcription and physical latency.
 
 ## Verification and limits
 

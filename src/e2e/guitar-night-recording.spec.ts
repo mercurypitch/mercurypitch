@@ -1,5 +1,7 @@
 // Free recording runs real worklet/worker/IndexedDB without a song or physical audio hardware.
 import { expect, test } from '@playwright/test'
+import { strFromU8, unzipSync } from 'fflate'
+import { readFile } from 'node:fs/promises'
 import { installSongAudioProbe, readSongAudio, } from './helpers/guitar-night-audio-probe'
 import { enterSong, SONG_TITLE } from './helpers/guitar-night-song'
 import { dismissOverlays, openNavTab } from './helpers/ui'
@@ -17,6 +19,36 @@ test('records and keeps a dry melody without playback, then opens its accepted t
         paints.push(performance.now())
       return clear.apply(this, args)
     }
+    const evidence = { firstPcmAt: 0, firstNoteAt: 0, firstPcmFrames: 0 }
+    ;(
+      window as unknown as { recorderEvidence: typeof evidence }
+    ).recorderEvidence = evidence
+    const post = Worker.prototype.postMessage
+    Worker.prototype.postMessage = function (message, options) {
+      if (message?.type === 'pcm' && evidence.firstPcmAt === 0) {
+        evidence.firstPcmAt = performance.now()
+        evidence.firstPcmFrames = message.frames
+      }
+      return post.call(this, message, options as StructuredSerializeOptions)
+    }
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        const element = change.target
+        if (
+          evidence.firstNoteAt === 0 &&
+          element instanceof HTMLCanvasElement &&
+          /[1-9]\d* recorded notes/.test(
+            element.getAttribute('aria-label') ?? '',
+          )
+        ) {
+          evidence.firstNoteAt = performance.now()
+        }
+      }
+    }).observe(document, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-label'],
+    })
   })
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -42,8 +74,8 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await expect(
     page.getByRole('status', { name: 'Recording duration', exact: true }),
   ).toContainText('0:06', { timeout: 16000 })
-  // Durable PCM chunks arrive ~170 ms apart. Painting must follow the capture
-  // clock between those chunks, not freeze until another worker/DB result.
+  // Preview arrives in smaller batches than durable PCM checkpoints. Painting
+  // still follows the capture clock, never a worker/IndexedDB update cadence.
   const gaps = await page.evaluate(() => {
     const paints = (window as unknown as { recorderPaints: number[] })
       .recorderPaints
@@ -55,17 +87,44 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   })
   expect(gaps.length).toBeGreaterThan(25)
   expect(gaps[Math.floor(gaps.length / 2)]).toBeLessThan(80)
+  const evidence = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          recorderEvidence: {
+            firstPcmAt: number
+            firstNoteAt: number
+            firstPcmFrames: number
+          }
+        }
+      ).recorderEvidence,
+  )
+  expect(evidence.firstPcmFrames).toBe(2048)
+  expect(evidence.firstNoteAt).toBeGreaterThan(evidence.firstPcmAt)
+  // Includes detector settling and UI publication, not physical input latency.
+  expect(evidence.firstNoteAt - evidence.firstPcmAt).toBeLessThan(700)
+  await test.info().attach('live-preview-timing', {
+    body: JSON.stringify({
+      ...evidence,
+      medianPaintGapMs: gaps[Math.floor(gaps.length / 2)],
+    }),
+    contentType: 'application/json',
+  })
   const flow = page.locator('canvas[data-tab-presentation]')
   await expect(flow).toHaveAttribute(
     'aria-label',
-    /Detected melody.*[1-9]\d* guided notes/,
+    /Detected melody.*[1-9]\d* recorded notes.*history, not targets/,
   )
+  await expect(flow).toHaveAttribute('data-tab-timeline', 'recording-history')
   await page.screenshot({ path: test.info().outputPath('live-notes.png') })
   await page
     .getByRole('button', { name: 'Recorder options', exact: true })
     .click()
   await page.getByTestId('overflow-live-notes').click()
-  await expect(flow).not.toHaveAttribute('aria-label', /guided notes/)
+  await expect(flow).not.toHaveAttribute(
+    'aria-label',
+    /[1-9]\d* recorded notes/,
+  )
   await expect(
     page.getByRole('button', { name: 'Stop recording', exact: true }),
   ).toBeVisible()
@@ -79,8 +138,9 @@ test('records and keeps a dry melody without playback, then opens its accepted t
     .click()
   await expect(flow).toHaveAttribute(
     'aria-label',
-    /Detected melody.*[1-9]\d* guided notes/,
+    /Detected melody.*[1-9]\d* recorded notes/,
   )
+  await expect(flow).toHaveAttribute('data-tab-timeline', 'recording-history')
   await page.screenshot({ path: test.info().outputPath('stopped-notes.png') })
   await page.getByRole('button', { name: 'Review take', exact: true }).click()
   await expect(review).toBeVisible()
@@ -125,6 +185,7 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await page
     .getByRole('button', { name: 'Play recording', exact: true })
     .click()
+  await expect(flow).toHaveAttribute('data-tab-timeline', 'upcoming')
   await expect(
     page.getByRole('status', { name: 'Playback position', exact: true }),
   ).toContainText('0:01')
@@ -215,15 +276,25 @@ test('records and keeps a dry melody without playback, then opens its accepted t
     .getByRole('button', { name: 'Export MIDI', exact: true })
     .click()
   expect((await midiDownload).suggestedFilename()).toMatch(
-    /^First-local-melody-.*\.mid$/,
+    /^melody-first-local-melody-\d{8}-\d{6}\.mid$/,
   )
   const gpDownload = page.waitForEvent('download')
+  await expect(
+    reopened.getByRole('button', { name: 'Export Guitar Pro', exact: true }),
+  ).toHaveAccessibleDescription(/rounds timing to thirty-second notes/)
   await reopened
     .getByRole('button', { name: 'Export Guitar Pro', exact: true })
     .click()
-  expect((await gpDownload).suggestedFilename()).toMatch(
-    /^First-local-melody-.*\.gp$/,
+  const downloadedGp = await gpDownload
+  expect(downloadedGp.suggestedFilename()).toMatch(
+    /^melody-first-local-melody-\d{8}-\d{6}\.gp$/,
   )
+  const gpFiles = unzipSync(await readFile((await downloadedGp.path())!))
+  expect(strFromU8(gpFiles.VERSION)).toBe('7.0')
+  const gpif = strFromU8(gpFiles['Content/score.gpif'])
+  expect(gpif).not.toContain('PrimaryTuplet')
+  expect(gpif).toContain('<Instrument>Guitar</Instrument>')
+  expect(gpif).toContain('<Octave>-1</Octave>')
   await page.goto('/')
   await page.waitForSelector('#app-tabs')
   // This is the first visit to the main app, not a return from its onboarding.

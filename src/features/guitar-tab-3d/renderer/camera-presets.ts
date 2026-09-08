@@ -3,11 +3,7 @@
 
 import type { CameraState } from './camera'
 
-export type TabCameraPresetId =
-  | 'flow'
-  | 'player-neck'
-  | 'full-neck'
-  | 'phrase-focus'
+export type TabCameraPresetId = 'flow' | 'player-neck' | 'full-neck'
 
 export interface TabCameraPresetChoice {
   id: TabCameraPresetId
@@ -31,20 +27,13 @@ export const TAB_CAMERA_PRESET_CHOICES: readonly TabCameraPresetChoice[] = [
     label: 'Overview',
     description: 'A wider overview for position work.',
   },
-  {
-    id: 'phrase-focus',
-    label: 'Phrase follow',
-    description: 'Gently follows the next authored position.',
-  },
 ]
 
 interface TabCameraPresetContext {
   narrow: boolean
-  /** A bounded world-space offset derived from the next authored event. */
-  phraseFocusX?: number
 }
 
-const WIDE: Record<Exclude<TabCameraPresetId, 'phrase-focus'>, CameraState> = {
+const WIDE: Record<TabCameraPresetId, CameraState> = {
   flow: {
     yaw: 0,
     pitch: 0.55,
@@ -65,10 +54,7 @@ const WIDE: Record<Exclude<TabCameraPresetId, 'phrase-focus'>, CameraState> = {
   },
 }
 
-const NARROW: Record<
-  Exclude<TabCameraPresetId, 'phrase-focus'>,
-  CameraState
-> = {
+const NARROW: Record<TabCameraPresetId, CameraState> = {
   flow: {
     yaw: 0,
     pitch: 0.75,
@@ -89,20 +75,16 @@ const NARROW: Record<
   },
 }
 
-/** Resolve a fresh camera object so hosts may safely add responsive focus. */
+/** Resolve a fresh fixed camera; only viewport size or user choices reframe it. */
 export function tabCameraPreset(
   id: TabCameraPresetId,
   context: TabCameraPresetContext,
 ): CameraState {
   const collection = context.narrow ? NARROW : WIDE
-  const base = id === 'phrase-focus' ? collection.flow : collection[id]
-  const focusX =
-    id === 'phrase-focus'
-      ? Math.max(-2.6, Math.min(2.6, context.phraseFocusX ?? 0))
-      : 0
+  const base = collection[id]
 
   return {
     ...base,
-    target: [focusX, base.target[1], base.target[2]],
+    target: [...base.target],
   }
 }

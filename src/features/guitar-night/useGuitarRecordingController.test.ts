@@ -290,6 +290,25 @@ describe('explicit guitar recording lifecycle', () => {
     expect(h.stopInput).not.toHaveBeenCalled()
     expect(h.status()).toBe('listening')
   })
+  it('does not resume recording state when its first audio acknowledgement follows Stop', async () => {
+    mocks.capture.mockImplementation(
+      async (options: Parameters<typeof startGuitarRecordingCapture>[0]) => {
+        captured = options
+        return { done: ending.promise, stop: () => ending.promise }
+      },
+    )
+    const h = harness(true)
+    await h.controller.start()
+    expect(h.controller.state()).toBe('preparing')
+    const stopping = h.controller.stop()
+    captured.onStart(240000)
+    expect(h.controller.state()).toBe('stopping')
+    ending.resolve(summary)
+    await stopping
+    expect(h.controller.state()).toBe('idle')
+    expect(mocks.started).toHaveBeenCalledWith(row.id, 240000, null)
+    expect(h.stopInput).not.toHaveBeenCalled()
+  })
   it('cancels pending permission without letting a late grant start a take', async () => {
     const permission = deferred<boolean>()
     const h = harness(false, 'interface', permission.promise)
@@ -370,7 +389,7 @@ describe('explicit guitar recording lifecycle', () => {
     expect(h.controller.error()).toContain('another tab')
     expect(mocks.load).not.toHaveBeenCalled()
   })
-  it('orders a start checkpoint before later chunks and shows identified notes without starting playback', async () => {
+  it('shows evidence before start and audio checkpoints resolve, without starting playback', async () => {
     const h = harness(true)
     const pending = deferred<undefined>()
     mocks.started.mockReturnValue(pending.promise)
@@ -399,16 +418,74 @@ describe('explicit guitar recording lifecycle', () => {
       onset: 'attack' as const,
     }
     const writing = captured.onChunk(chunk, open)
+    captured.onPreview?.({
+      sequence: 0,
+      frames: 8192,
+      notes: [],
+      pendingNote: open,
+      pitch: chunk.pitches[0],
+      ended: false,
+    })
     expect(mocks.checkpoint).not.toHaveBeenCalled()
-    pending.resolve(undefined)
-    await writing
-    expect(mocks.checkpoint).toHaveBeenCalledWith(chunk)
     expect(h.controller.heardNote()).toBe('A3')
     expect(h.controller.duration()).toBeCloseTo(8192 / 48000)
     expect(h.controller.previewNotes()).toEqual([open])
     expect(h.controller.previewRecording()?.tuning).toEqual(
       DEFAULT_GUITAR_TUNING,
     )
+    pending.resolve(undefined)
+    await writing
+    expect(mocks.checkpoint).toHaveBeenCalledWith(chunk)
     await h.controller.stop()
+  })
+  it('keeps final note evidence visible while saving and ignores previews after room disposal', async () => {
+    const h = harness(true)
+    const finishing = deferred<undefined>()
+    mocks.finish.mockReturnValue(finishing.promise)
+    await h.controller.start()
+    const note = {
+      id: 'note-0',
+      midi: 57,
+      startFrame: 0,
+      endFrame: 8192,
+      clarity: 0.9,
+      onset: 'attack' as const,
+    }
+    captured.onPreview?.({
+      sequence: 0,
+      frames: 8192,
+      notes: [],
+      pendingNote: note,
+      pitch: { frame: 8192, midi: 57, clarity: 0.9 },
+      ended: false,
+    })
+    expect(h.controller.previewNotes()).toEqual([note])
+    const finalNote = { ...note, endFrame: 10240 }
+    captured.onPreview?.({
+      sequence: 1,
+      frames: 10240,
+      notes: [finalNote],
+      pendingNote: null,
+      pitch: null,
+      ended: true,
+    })
+    const stopping = h.controller.stop()
+    await vi.waitFor(() => expect(mocks.finish).toHaveBeenCalledOnce())
+    expect(h.controller.previewNotes()).toEqual([finalNote])
+    expect(h.controller.noteCount()).toBe(1)
+    expect(h.controller.heardNote()).toBeNull()
+    h.dispose()
+    captured.onPreview?.({
+      sequence: 2,
+      frames: 20000,
+      notes: [],
+      pendingNote: note,
+      pitch: null,
+      ended: false,
+    })
+    expect(h.controller.duration()).toBeCloseTo(10240 / 48000)
+    finishing.resolve(undefined)
+    await stopping
+    expect(h.controller.reviewOpen()).toBe(false)
   })
 })

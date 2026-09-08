@@ -6,8 +6,10 @@
 // advances through the four room-level states.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Match, onCleanup, Show, Switch, untrack, } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { AudioWave, Loader2, Mic, MidiDin, PowerSymbol, } from '@/components/icons'
+import { createPortalSkinBridge } from '@/components/portal-skin'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import { guitarInputProfileLabel } from '@/lib/guitar/guitar-input-profile'
 import styles from './GuitarNightListeningCycle.module.css'
@@ -175,10 +177,12 @@ export function GuitarNightListeningCycle(
   // give. The picker is the way past that, on the secondary gesture so the
   // one-tap toggle keeps its meaning.
   const [pickerOpen, setPickerOpen] = createSignal(false)
-  // How far the fan has to slide to stay on screen. The control sits at the
-  // left end of the bottom rail, so a menu centred on it hangs its first chip
-  // off the edge of a narrow window.
-  const [pickerShift, setPickerShift] = createSignal(0)
+  const portalSkin = createPortalSkinBridge(pickerOpen)
+  const [pickerPosition, setPickerPosition] = createSignal({
+    left: 8,
+    top: 8,
+    maxHeight: 320,
+  })
   let button: HTMLButtonElement | undefined
   let pickerRoot: HTMLDivElement | undefined
   let longPressTimer = 0
@@ -193,28 +197,43 @@ export function GuitarNightListeningCycle(
   }
   onCleanup(cancelLongPress)
 
-  /** Slide the fan back inside the window, measured after it has laid out. */
-  let measureFrame = 0
-  const cancelMeasure = (): void => {
-    if (measureFrame !== 0) cancelAnimationFrame(measureFrame)
-    measureFrame = 0
-  }
-  onCleanup(cancelMeasure)
-
-  const keepPickerOnScreen = (element: HTMLDivElement): void => {
-    setPickerShift(0)
-    cancelMeasure()
-    measureFrame = requestAnimationFrame(() => {
-      measureFrame = 0
-      const rect = element.getBoundingClientRect()
-      if (rect.width === 0) return
-      const margin = 8
-      const overflowLeft = margin - rect.left
-      const overflowRight = rect.right - (window.innerWidth - margin)
-      if (overflowLeft > 0) setPickerShift(overflowLeft)
-      else if (overflowRight > 0) setPickerShift(-overflowRight)
+  // A body portal escapes both hosts' rail/stage stacking contexts. Keep its
+  // fixed position anchored on resize, scrolling, and quick-control reflow.
+  createEffect(() => {
+    if (!pickerOpen()) return
+    const place = (): void => {
+      if (button === undefined || pickerRoot === undefined) return
+      const anchor = button.getBoundingClientRect()
+      const width = pickerRoot.offsetWidth
+      const maxHeight = Math.max(44, anchor.top - 16)
+      setPickerPosition({
+        left: Math.max(
+          8,
+          Math.min(
+            anchor.left + anchor.width / 2 - width / 2,
+            window.innerWidth - width - 8,
+          ),
+        ),
+        top: Math.max(
+          8,
+          anchor.top - Math.min(pickerRoot.offsetHeight, maxHeight) - 8,
+        ),
+        maxHeight,
+      })
+    }
+    place()
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(place)
+    if (pickerRoot !== undefined) observer?.observe(pickerRoot)
+    if (button !== undefined) observer?.observe(button)
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    onCleanup(() => {
+      observer?.disconnect()
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
     })
-  }
+  })
 
   const openPicker = (): void => {
     // Read once, deliberately untracked: a long press resolves inside a timer,
@@ -303,6 +322,7 @@ export function GuitarNightListeningCycle(
 
   return (
     <div class={styles.dock}>
+      <span ref={portalSkin.anchorRef} hidden aria-hidden="true" />
       <button
         type="button"
         ref={button}
@@ -352,91 +372,99 @@ export function GuitarNightListeningCycle(
         </span>
       </button>
       <Show when={pickerOpen()}>
-        <div
-          class={styles.pickerBackdrop}
-          data-testid="guitar-night-listening-picker-backdrop"
-          aria-hidden="true"
-          onPointerDown={() => {
-            closePicker(false)
-          }}
-        />
-        <div
-          class={styles.picker}
-          ref={(element) => {
-            pickerRoot = element
-            keepPickerOnScreen(element)
-          }}
-          style={{ '--picker-shift': `${pickerShift()}px` }}
-          role={props.quickControls === undefined ? undefined : 'dialog'}
-          tabIndex={-1}
-          data-testid="guitar-night-listening-picker"
-          aria-label={
-            props.quickControls === undefined ? undefined : 'Listening controls'
-          }
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault()
-              closePicker(true)
-              return
-            }
-            const chips = [
-              ...(pickerRoot?.querySelectorAll('[data-chip]') ?? []),
-            ]
-            const index = chips.indexOf(event.target as Element)
-            if (index < 0) return
-            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-              event.preventDefault()
-              moveChipFocus(index, 1)
-            }
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-              event.preventDefault()
-              moveChipFocus(index, -1)
-            }
-          }}
-        >
+        <Portal>
           <div
-            class={styles.pickerRoutes}
-            role="menu"
-            aria-label="Listening route"
+            class={styles.pickerBackdrop}
+            data-testid="guitar-night-listening-picker-backdrop"
+            aria-hidden="true"
+            onPointerDown={() => {
+              closePicker(false)
+            }}
+          />
+          <div
+            class={styles.picker}
+            ref={(element) => {
+              pickerRoot = element
+            }}
+            style={{
+              ...portalSkin.style(),
+              left: `${pickerPosition().left}px`,
+              top: `${pickerPosition().top}px`,
+              'max-height': `${pickerPosition().maxHeight}px`,
+            }}
+            role={props.quickControls === undefined ? undefined : 'dialog'}
+            tabIndex={-1}
+            data-testid="guitar-night-listening-picker"
+            aria-label={
+              props.quickControls === undefined
+                ? undefined
+                : 'Listening controls'
+            }
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                closePicker(true)
+                return
+              }
+              const chips = [
+                ...(pickerRoot?.querySelectorAll('[data-chip]') ?? []),
+              ]
+              const index = chips.indexOf(event.target as Element)
+              if (index < 0) return
+              if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                event.preventDefault()
+                moveChipFocus(index, 1)
+              }
+              if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                moveChipFocus(index, -1)
+              }
+            }}
           >
-            <For each={PROFILE_ORDER}>
-              {(profile, index) => (
-                <button
-                  type="button"
-                  data-chip={profile}
-                  disabled={blocked()}
-                  class={styles.pickerChip}
-                  data-current={route() === profile}
-                  // The fan: outer chips sit lower and lean away from the middle.
-                  style={{ '--chip-slot': String(index() - 1) }}
-                  role="menuitemradio"
-                  aria-checked={route() === profile}
-                  aria-label={chipLabel(profile)}
-                  title={chipLabel(profile)}
-                  ref={(element) => {
-                    if (route() === profile || index() === 0) {
-                      queueMicrotask(() => {
-                        if (element.disabled) pickerRoot?.focus()
-                        else element.focus()
-                      })
-                    }
-                  }}
-                  onClick={() => {
-                    chooseProfile(profile)
-                  }}
-                >
-                  <span class={styles.pickerIcon} aria-hidden="true">
-                    {profileIcon(profile)}
-                  </span>
-                  <span class={styles.pickerName} aria-hidden="true">
-                    {guitarInputProfileLabel(profile)}
-                  </span>
-                </button>
-              )}
-            </For>
+            <div
+              class={styles.pickerRoutes}
+              role="menu"
+              aria-label="Listening route"
+            >
+              <For each={PROFILE_ORDER}>
+                {(profile, index) => (
+                  <button
+                    type="button"
+                    data-chip={profile}
+                    disabled={blocked()}
+                    class={styles.pickerChip}
+                    data-current={route() === profile}
+                    // The fan: outer chips sit lower and lean away from the middle.
+                    style={{ '--chip-slot': String(index() - 1) }}
+                    role="menuitemradio"
+                    aria-checked={route() === profile}
+                    aria-label={chipLabel(profile)}
+                    title={chipLabel(profile)}
+                    ref={(element) => {
+                      if (route() === profile || index() === 0) {
+                        queueMicrotask(() => {
+                          if (element.disabled) pickerRoot?.focus()
+                          else element.focus()
+                        })
+                      }
+                    }}
+                    onClick={() => {
+                      chooseProfile(profile)
+                    }}
+                  >
+                    <span class={styles.pickerIcon} aria-hidden="true">
+                      {profileIcon(profile)}
+                    </span>
+                    <span class={styles.pickerName} aria-hidden="true">
+                      {guitarInputProfileLabel(profile)}
+                    </span>
+                  </button>
+                )}
+              </For>
+            </div>
+            {props.quickControls?.()}
           </div>
-          {props.quickControls?.()}
-        </div>
+        </Portal>
       </Show>
       <span
         class={styles.visuallyHidden}

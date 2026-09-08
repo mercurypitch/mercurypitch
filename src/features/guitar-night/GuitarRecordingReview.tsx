@@ -124,7 +124,7 @@ export function GuitarRecordingReview(props: {
             reviewHost,
           )
           setNotice(
-            `Revision ${accepted.revision} saved and exported. Original audio is unchanged.`,
+            `Revision ${accepted.revision} saved. Guitar Pro exported with thirty-second-note timing. Saved audio and practice timing are unchanged.`,
           )
         }
       }
@@ -306,6 +306,11 @@ export function GuitarRecordingReview(props: {
                   keep a playable practice revision; MIDI saves the current note
                   corrections.
                 </p>
+                <p id="recording-export-timing">
+                  Guitar Pro rounds timing to thirty-second notes for readable
+                  notation. MIDI keeps your played timing. Neither changes this
+                  take’s audio or practice timing.
+                </p>
                 <div class={styles.actions}>
                   <Show when={props.onAttach}>
                     <button
@@ -326,6 +331,7 @@ export function GuitarRecordingReview(props: {
                   <button
                     type="button"
                     disabled={busy() || problem() !== null}
+                    aria-describedby="recording-export-timing"
                     onClick={() => void save('gp')}
                   >
                     Export Guitar Pro
