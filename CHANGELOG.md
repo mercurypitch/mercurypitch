@@ -25,6 +25,14 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 - **Guitar Night records what you play.** A melody take, with Studio amp
   tones and monitoring while you are playing it, alongside percussion parts
   from an imported file.
+- **Play your take back, or practise against it.** A recorded melody becomes
+  something you can replay — original audio or the notes it heard, clean or
+  through your amp — or practise against, scored the way a rehearsal is, with
+  the loop, the tempo and the count-in you already know.
+- **Take a melody with you.** A recorded take exports as MIDI or as a Guitar
+  Pro file that opens as readable notation.
+- **Record without touching anything.** "Record an idea" starts a take and
+  "stop recording" finishes it, hands free.
 - **Sign in with a passkey**, a code sent to your email, or a second factor
   with a way back in if you lose it — and see every device on your account,
   with a way to revoke any of them.
@@ -51,6 +59,9 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
   which is what lets a phone open a full band at all.
 - **Practice is ordered Singing, Piano, Guitar, Drums**, and Drum Night has
   its own row on the home gallery.
+- **Every room opens on the MercuryPitch mark** while it loads, instead of on
+  an empty screen, and a link shared from any of them arrives with a
+  description a search engine and a chat app can both read.
 
 ### Fixed
 

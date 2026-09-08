@@ -57,7 +57,7 @@ comparison against a saved groove, and cannot exist without one. The UI stated
 that requirement as a dead end for a long time; it now offers the save that
 unblocks it.
 
-### Guitar Night: percussion, then recording (#632, #634, #646, #678, #690, #739)
+### Guitar Night: percussion, then recording (#632, #634, #646, #678, #690, #739, #741)
 
 Imported percussion support and the percussion song timeline, then the scoring
 work that measures what the player actually played, then the melody recorder:
@@ -65,6 +65,24 @@ Studio amp tones, Studio Lead, live monitoring while recording, and shared song
 controls. The amp runs a Lite tone until the cabinet impulse response has been
 fetched, checksummed and decoded, then crossfades to Studio — which is a trap
 for any test that measures level or tone (#740, and see below).
+
+#741 completed the recorder: Live, Replay and Practice over one stable stage
+and the existing input ownership, with Practice reusing the Rehearse scoring
+engine, A/B, tempo, count-in, results and Keep. Replay chooses original audio
+or synthesized notes, clean or through the current or the saved amp. Exports
+gained compact filenames and native GP7 notation, written by a dedicated
+`recording-gp7.ts` that repairs the two GPIF metadata fields alphaTab 1.8.3
+writes incorrectly. Capture now previews short PCM batches while keeping the
+durable checkpoints bounded, and blocked Practice Play opens an actionable
+input prompt whose cancellation safely rejects a late device or permission
+result. Two ownerless Solid computations were fixed by moving conditional memo
+creation out of JSX getters into component-owned memos.
+
+Left standing: capture-driven browser specs measure real-time frames, and
+buffers recycle only after each checkpoint is durable, so they fail under IO
+contention (reproduced locally by moving the browser profile off tmpfs) — the
+same 1.4 s budget that stops a take with "processing fell behind" on slow
+device storage. Chord refinement is a separate follow-up (#746).
 
 ### Signing in (#664, #672, #722)
 
@@ -120,6 +138,44 @@ the bottom rail keeps plain play and pause. History handling was rebuilt around
 position stamps: a return traversal is known by its stamp and a push by the
 absence of `popstate`, because real browsers split those two into different
 tasks and jsdom does not.
+
+### Crawlable entry documents (#743, #745, #747)
+
+`mercurypitch.com` held five indexed URLs and appeared for none of the eighteen
+keywords we target, because every entry document is a JavaScript shell: `#root`
+is empty in the file, so a crawler that does not run the bundle read no
+heading, no sentence and no link out, and the nine sitemap-only orphans got the
+lowest crawl priority there is. #743 put a prelude after `#root` in all ten
+documents — the page's own `h1`, its claim, a link to every sibling room and to
+the landing — hidden by `#root:not(:empty) ~ .entry-prelude` the moment the app
+mounts. It also made the four `FAQPage` blocks describe something visible,
+added `Organization` and `WebApplication` structured data, put `/jam` in the
+sitemap, and stopped non-production deploys competing with production: a
+build-time Vite plugin writes a disallow-all `robots.txt` and an
+`X-Robots-Tag: noindex, nofollow` for `build:dev`, which has to happen at build
+time because the Cloudflare asset layer answers most requests without ever
+reaching `src/worker.ts`.
+
+#745 took the ten byte-identical inline `<style>` blocks into one
+`src/styles/entry-prelude.css`, and made Drum Night a listed page — it shipped
+as a `noindex, nofollow` pilot with nothing linking to it, while shipping as a
+feature in this very release.
+
+#747 answered what the prelude actually is: the loading screen. The home entry
+preloads 55 modules — 4.8 MB of JS — so it holds the screen for the whole boot,
+and it was showing left-aligned body copy before the app's own opening curtain
+arrived with a plate and a lockup. It now wears the curtain's clothes: the
+First Light plate, the brand lockup at the curtain's height, everything
+centred, a scrim over the water. The ground paints immediately — delaying it
+flashes the body's white through first — while the lockup waits 160 ms and the
+copy 620 ms, so a boot that beats them is never interrupted by a word. The
+standalone rooms matter most here: they mount their own entry and never show
+App.tsx's curtain at all.
+
+Trap worth keeping: clearing `#root` after boot is **not** a way to inspect the
+pre-boot paint. The bundle's injected CSS then gives `#root` a 100vh
+min-height and pushes the prelude off screen. Strip every stylesheet but the
+prelude's own — which is also how the missing `body { margin: 0 }` surfaced.
 
 ### Testing and CI (#655, #659, #740)
 
