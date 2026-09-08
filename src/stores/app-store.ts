@@ -21,7 +21,7 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -1693,20 +1693,24 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_CHALLENGES,
   },
   {
+    // Badges and achievements left the Challenges tab for the Progress
+    // cabinet, so these two steps follow them rather than pointing at
+    // sections that no longer render. The walk catches this: `.badges-section`
+    // and `.achievements-section` were both MISS on desktop and mobile.
     title: 'Earn badges',
     description:
-      'Completing challenges unlocks badges that show up here — collect them all.',
-    targetSelector: '.badges-section',
+      'Completing challenges unlocks badges. They live in Progress, with everything else you have earned.',
+    targetSelector: '[data-tour="progress.badges"]',
     placement: 'top',
-    requiredTab: TAB_CHALLENGES,
+    requiredTab: TAB_PROGRESS,
   },
   {
     title: 'Achievements',
     description:
       'Long-term milestones tracked across everything you do in the app — see which are earned and what is still ahead.',
-    targetSelector: '.achievements-section',
+    targetSelector: '[data-tour="progress.achievements"]',
     placement: 'top',
-    requiredTab: TAB_CHALLENGES,
+    requiredTab: TAB_PROGRESS,
   },
 ]
 
