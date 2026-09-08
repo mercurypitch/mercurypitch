@@ -404,3 +404,120 @@ describe('entry document prelude', () => {
     expect(vite).toContain("nonProductionNoindexPlugin(mode === 'production')")
   })
 })
+
+// ── Unmatched paths ───────────────────────────────────────────
+//
+// Until now every path that matched no file was answered with index.html and a
+// 200, so /llms.txt, /foo/bar and every dead link looked like the home page to
+// a crawler. These pin the three pieces that make an unmatched path a real 404
+// without taking the exercise deep links down with it.
+describe('unmatched paths', () => {
+  it('asks the asset layer for a 404 document rather than the app shell', () => {
+    const wrangler = repoFile('wrangler.jsonc')
+
+    expect(wrangler).toContain('"not_found_handling": "404-page"')
+    // The setting itself, not the comment above it explaining what it replaced.
+    expect(wrangler).not.toMatch(
+      /"not_found_handling":\s*"single-page-application"/,
+    )
+  })
+
+  it('keeps the one prefix that relied on the fallback', () => {
+    const wrangler = repoFile('wrangler.jsonc')
+
+    expect(wrangler).toContain('"/exercises/*"')
+  })
+
+  it('builds the 404 document as a real entry', () => {
+    const vite = repoFile('vite.config.ts')
+
+    expect(vite).toContain("notFound: resolve(__dirname, '404.html')")
+  })
+
+  it('gives the 404 document a heading, a way out, and no canonical', () => {
+    const document = repoHtml('404.html')
+
+    expect(document.title).toBe('Page not found | MercuryPitch')
+    expect(document.querySelector('h1')?.textContent?.trim()).toBeTruthy()
+    // A page that does not exist must not claim to be a copy of one that does.
+    expect(document.querySelector('link[rel="canonical"]')).toBeNull()
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, follow')
+    // No app shell: the 404 is a static document and must not boot the studio.
+    expect(document.querySelector('#root')).toBeNull()
+    expect(document.querySelector('script[type="module"]')).toBeNull()
+    expect(
+      document.querySelector('link[rel="stylesheet"]')?.getAttribute('href'),
+    ).toBe('/src/styles/entry-prelude.css')
+
+    const links = [...document.querySelectorAll('nav a')].map((anchor) =>
+      anchor.getAttribute('href'),
+    )
+    for (const path of [
+      '/',
+      '/mirror',
+      '/vocal-range-test',
+      '/karaoke-night',
+      '/glass',
+      '/piano-night',
+      '/guitar-night',
+      '/drum-night',
+      '/ear-lab',
+      '/jam',
+    ]) {
+      expect(links).toContain(path)
+    }
+  })
+})
+
+// ── llms.txt ──────────────────────────────────────────────────
+//
+// The llmstxt.org convention: an H1 with the name, a blockquote summary, then
+// H2 sections of markdown links. GPTBot is the single largest crawler on this
+// domain and the project allows it, so the file is worth keeping honest.
+describe('llms.txt', () => {
+  const llms = () => repoFile('public/llms.txt')
+
+  it('opens with the name and a blockquote summary', () => {
+    const lines = llms().split('\n')
+
+    expect(lines[0]).toBe('# MercuryPitch')
+    expect(lines.find((line) => line.startsWith('> '))).toBeTruthy()
+  })
+
+  it('lists every room in the sitemap', () => {
+    const text = llms()
+    const sitemap = repoFile('public/sitemap.xml')
+    const indexed = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
+      .map((match) => match[1])
+      .filter((url) => url !== 'https://mercurypitch.com/')
+
+    for (const url of indexed) {
+      expect(text).toContain(`(${url})`)
+    }
+  })
+
+  it('states what the app does not do, so an assistant cannot fill the gap', () => {
+    const text = llms()
+
+    expect(text).toContain('## What MercuryPitch does not do')
+    // The claim the feature map forbids above all others.
+    expect(text).toMatch(/not a tone-deafness test/i)
+  })
+
+  it('links nothing that is not a real destination', () => {
+    const hosts = [...llms().matchAll(/\((https?:\/\/[^)]+)\)/g)].map(
+      (match) => new URL(match[1]).hostname,
+    )
+
+    for (const host of hosts) {
+      expect([
+        'mercurypitch.com',
+        'about.mercurypitch.com',
+        'github.com',
+        'llmstxt.org',
+      ]).toContain(host)
+    }
+  })
+})

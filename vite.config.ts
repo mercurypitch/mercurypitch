@@ -400,6 +400,11 @@ export default defineConfig(({ command, mode }) => {
           drumNight: resolve(__dirname, 'drum-night.html'),
           earLab: resolve(__dirname, 'ear-lab.html'),
           glass: resolve(__dirname, 'glass.html'),
+          // Served by the asset layer for every unmatched path, with a 404
+          // status (wrangler.jsonc `not_found_handling`). A build input rather
+          // than a public/ file so it shares the entry-prelude stylesheet
+          // instead of carrying its own copy.
+          notFound: resolve(__dirname, '404.html'),
         },
         output: {
           manualChunks(id) {

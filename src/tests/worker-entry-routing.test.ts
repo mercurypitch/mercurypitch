@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { EXERCISE_SLUGS } from '@/features/exercises/slug-map'
 import type { Env } from '@/worker'
 import worker from '@/worker'
 
@@ -183,6 +184,63 @@ describe('standalone entry routing', () => {
       expect(new URL(fetch.mock.calls[0][0].url).pathname).not.toMatch(
         /\.html$/,
       )
+    }
+  })
+})
+
+// ── Exercise deep links ───────────────────────────────────────
+//
+// These are the one thing that relied on `not_found_handling:
+// single-page-application`. Now that unmatched paths get a real 404, the worker
+// serves them, and a slug the landing links must not be able to fall through
+// the pattern.
+describe('exercise deep links', () => {
+  it('serves the studio shell with the URL intact', async () => {
+    const { env, fetch } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/exercises/perfect-octave?src=ig'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/')
+    expect(new URL(fetch.mock.calls[0][0].url).search).toBe('?src=ig')
+  })
+
+  it('accepts a trailing slash', async () => {
+    const { env } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/exercises/speed-scales/'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/')
+  })
+
+  it('serves every slug the landing is allowed to link', async () => {
+    for (const slug of Object.keys(EXERCISE_SLUGS)) {
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test/exercises/${slug}`),
+        env,
+      )
+
+      await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  it('leaves anything that is not an exercise path to the asset layer', async () => {
+    for (const path of [
+      '/exercises',
+      '/exercises/',
+      '/exercises/one/two',
+      '/exercise/perfect-octave',
+    ]) {
+      const { env, fetch } = entryEnv()
+      await worker.fetch(new Request(`https://mercurypitch.test${path}`), env)
+
+      // Untouched: the same path goes through, so the asset layer decides —
+      // which now means a 404 document rather than the home page.
+      expect(new URL(fetch.mock.calls[0][0].url).pathname).toBe(path)
     }
   })
 })
