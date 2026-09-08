@@ -367,7 +367,10 @@
 .docked .menu {
   position: fixed;
   top: calc(var(--voice-menu-top, 3.5rem) + 0.5rem);
-  right: 0.5rem;
+  /* Measured from the tools group as the menu opens, and clamped so it opens
+     under the cog on a wide header without ever leaving the screen on a
+     phone, where the pill spans the row and the gap collapses to the margin. */
+  right: var(--voice-menu-right, 0.5rem);
   bottom: auto;
   left: auto;
   max-width: min(16rem, calc(100vw - 1rem));

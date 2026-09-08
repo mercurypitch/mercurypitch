@@ -10,7 +10,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceControlController } from './useVoiceControlController'
-import { VoiceControlHud } from './VoiceControlHud'
+import { dockedMenuRightGap, VoiceControlHud } from './VoiceControlHud'
 
 afterEach(cleanup)
 
@@ -80,6 +80,38 @@ describe('the docked menu holds still', () => {
     // every rect, so the presence of the custom property is the contract.
     const menu = screen.getByRole('menu')
     expect(menu.style.getPropertyValue('--voice-menu-top')).toBe('0px')
+    expect(menu.style.getPropertyValue('--voice-menu-right')).not.toBe('')
+  })
+
+  describe('dockedMenuRightGap', () => {
+    // Reported on a tablet: "only in guitar night it seems to open on the
+    // right side of screen instead of under the around middle positioned
+    // voice command toggle". Guitar Night docks its pill mid-header, and the
+    // menu was pinned to the viewport's right margin outright.
+    it('opens under the cog when the pill sits mid-header', () => {
+      expect(dockedMenuRightGap(800, 1440)).toBe(640)
+    })
+
+    it('keeps the phone margin when the pill spans the row', () => {
+      // A docked pill on a phone reaches the right margin itself, so following
+      // it and keeping the margin are the same answer.
+      expect(dockedMenuRightGap(382, 390)).toBe(8)
+      expect(dockedMenuRightGap(390, 390)).toBe(8)
+    })
+
+    it('never pushes its own left edge off the screen', () => {
+      // A cog near the left edge would otherwise put the menu's 16rem body
+      // past x = 0. 1440 - 256 - 8 is as far right as the gap may go.
+      expect(dockedMenuRightGap(200, 1440)).toBe(1176)
+    })
+
+    it('falls back to the margin on a screen narrower than the menu', () => {
+      // Below 16rem plus its margins there is no room to follow the cog at
+      // all, so both clamps meet at the margin and `max-width` handles the
+      // rest. Every cog position gives the same answer.
+      expect(dockedMenuRightGap(100, 240)).toBe(8)
+      expect(dockedMenuRightGap(238, 240)).toBe(8)
+    })
   })
 })
 
