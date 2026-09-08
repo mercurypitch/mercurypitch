@@ -1,0 +1,72 @@
+/*
+ * The entry prelude: the text a crawler or link preview reads from an entry
+ * document. Every entry (index.html, mirror.html, drum-night.html, ...) is a
+ * JavaScript shell whose #root is empty in the file, so without the prelude
+ * the page carries no heading, no sentence and no link out. The prelude sits
+ * right after #root with the page's own h1, its claim and a link to every
+ * sibling room, and doubles as the loading state: the moment the app mounts,
+ * `#root:not(:empty)` hides it.
+ *
+ * One file, linked from every entry document, so the ten copies cannot drift.
+ * Pinned by src/tests/launch-entry-seo.test.ts.
+ */
+
+.entry-prelude {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 12vh 1.5rem 4rem;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  line-height: 1.6;
+}
+.entry-prelude > * {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+.entry-prelude h1 {
+  margin: 0 0 0.75rem;
+  color: #f0f6fc;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.2;
+}
+.entry-prelude p {
+  margin: 0 0 2rem;
+}
+.entry-prelude nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.9375rem;
+}
+.entry-prelude a {
+  color: #7dd3c8;
+}
+html[data-theme='light'] .entry-prelude {
+  background: #f3f4f6;
+  color: #24292f;
+}
+html[data-theme='light'] .entry-prelude h1 {
+  color: #0d1117;
+}
+html[data-theme='light'] .entry-prelude a {
+  color: #0f766e;
+}
+.entry-prelude__faq h2 {
+  margin: 2rem 0 0.5rem;
+  color: #f0f6fc;
+  font-size: 1.0625rem;
+}
+html[data-theme='light'] .entry-prelude__faq h2 {
+  color: #0d1117;
+}
+/* The whole contract: the prelude is a later sibling of #root, and #root is
+   empty until the app renders into it. */
+#root:not(:empty) ~ .entry-prelude {
+  display: none;
+}

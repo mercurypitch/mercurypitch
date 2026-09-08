@@ -251,11 +251,12 @@ describe('entry document prelude', () => {
     })
 
     it(`hides ${file}'s prelude the moment the app mounts`, () => {
-      // The selector is the whole contract: the prelude must be a later sibling
-      // of #root, and #root must be empty in the file, or the rule never fires
-      // and the room renders under a stack of loading text.
+      // The selector in the shared stylesheet is the whole contract: the
+      // prelude must be a later sibling of #root, and #root must be empty in
+      // the file, or the rule never fires and the room renders under a stack
+      // of loading text.
       const raw = repoFile(file)
-      expect(raw).toContain('#root:not(:empty) ~ .entry-prelude')
+      expect(raw).toContain('href="/src/styles/entry-prelude.css"')
       expect(raw).toContain('<div id="root"></div>')
       expect(raw.indexOf('class="entry-prelude"')).toBeGreaterThan(
         raw.indexOf('<div id="root"></div>'),
@@ -272,6 +273,17 @@ describe('entry document prelude', () => {
       expect(description.length).toBeLessThanOrEqual(160)
     })
   }
+
+  it('keeps the hide rule in the one stylesheet every entry links', () => {
+    const css = repoFile('src/styles/entry-prelude.css')
+    expect(css).toMatch(
+      /#root:not\(:empty\) ~ \.entry-prelude \{\s*display: none;/,
+    )
+    // No entry document may carry a private copy: ten inline blocks drift.
+    for (const file of ENTRY_FILES) {
+      expect(repoFile(file)).not.toContain('.entry-prelude {')
+    }
+  })
 
   // Google's structured-data rules require FAQPage content to be visible on the
   // page. These four documents declared Q&A that no reader could ever see.
