@@ -937,6 +937,13 @@ selects the destination by its exact accessible name.
 **Rule:** freeze and hash-verify the original pre-amp PCM for head-only comparisons. Re-parse score metadata and bound regenerated-source error separately so frozen audio cannot hide a changed or silent synth. Keep exact output-hash assertions for unchanged heads.
 **See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
 
+### Keep full-page screenshots out of bounded real-time capture assertions
+
+**Symptom:** the CI live-history timer froze at three seconds, although the test passed locally.
+**Cause:** the trace showed safe backpressure finalization during expensive page screenshots; a 1.92-second screenshot exceeded the 65,536-sample PCM budget at normal audio rates.
+**Rule:** inspect the capture stop reason, not only its timer. Attach existing canvas pixels during recording and capture page chrome afterward; retain active-duration assertions and production buffer limits.
+**See:** `src/e2e/guitar-recording-history.spec.ts`, PR Gate run `34252164591`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

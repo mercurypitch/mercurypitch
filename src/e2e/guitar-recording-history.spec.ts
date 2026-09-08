@@ -40,6 +40,18 @@ test('paints a newly heard note near NOW and retains readable history @smoke', a
     .click()
   const canvas = page.locator('canvas[data-tab-presentation]')
   await expect(canvas).toHaveAttribute('aria-label', /[1-9]\d* recorded notes/)
+  // Read the already-painted bitmap without a full-page compositor capture.
+  // CI screenshots stalled long enough to exhaust the real recorder's bounded
+  // PCM pool. Keep the audio guard intact; inspect page chrome after capture.
+  const attachCanvas = async (name: string) => {
+    const png = await canvas.evaluate((element: HTMLCanvasElement) =>
+      element.toDataURL('image/png'),
+    )
+    await test.info().attach(name, {
+      body: Buffer.from(png.split(',')[1], 'base64'),
+      contentType: 'image/png',
+    })
+  }
   const read = () =>
     page.evaluate(() => {
       const canvas = document.querySelector<HTMLCanvasElement>(
@@ -73,7 +85,7 @@ test('paints a newly heard note near NOW and retains readable history @smoke', a
     body: JSON.stringify(await read()),
     contentType: 'application/json',
   })
-  await page.screenshot({ path: test.info().outputPath('history-desktop.png') })
+  await attachCanvas('history-desktop')
   await page.setViewportSize({ width: 390, height: 844 })
   // Wait for the existing responsive camera tween, not just resized DOM bounds.
   await expect
@@ -90,25 +102,43 @@ test('paints a newly heard note near NOW and retains readable history @smoke', a
     body: JSON.stringify(await read()),
     contentType: 'application/json',
   })
-  await page.screenshot({ path: test.info().outputPath('history-phone.png') })
+  await attachCanvas('history-phone')
+  await expect
+    .poll(
+      async () => {
+        const duration = await page
+          .getByRole('status', { name: 'Recording duration', exact: true })
+          .innerText()
+        return duration
+          .split(':')
+          .reduce((total, value) => total * 60 + Number(value), 0)
+      },
+      { timeout: 12000 },
+    )
+    .toBeGreaterThanOrEqual(6)
   await expect(
-    page.getByRole('status', { name: 'Recording duration', exact: true }),
-  ).toContainText('0:06', { timeout: 12000 })
+    page.getByRole('button', { name: 'Stop recording', exact: true }),
+  ).toBeEnabled()
+  const sustained = await read()
+  expect(sustained.labels.map((label) => label.text)).toContain('0')
   await test.info().attach('sustain-geometry', {
     body: JSON.stringify(await read()),
     contentType: 'application/json',
   })
-  await page.screenshot({ path: test.info().outputPath('history-sustain.png') })
+  await attachCanvas('history-sustain')
   await page.getByRole('button', { name: 'Tab', exact: true }).click()
   await expect(page.getByTestId('guitar-night-moving-tab')).toHaveAttribute(
     'data-tab-timeline',
     'recording-history',
   )
   await expect(page.getByTestId('guitar-night-tab-now')).toHaveText('NOW')
-  await page.screenshot({
-    path: test.info().outputPath('history-tab-phone.png'),
-  })
   await page
     .getByRole('button', { name: 'Stop recording', exact: true })
     .click()
+  await expect(
+    page.getByRole('dialog').filter({ hasText: 'Recorded melody' }),
+  ).toBeVisible()
+  await page.screenshot({
+    path: test.info().outputPath('history-review-phone.png'),
+  })
 })
