@@ -250,8 +250,11 @@ IndexedDB and exported download path with generated audio:
   unchanged stage bounds.
 - First live evidence from actual Worker deliveries, history mode during capture
   and Stop, then normal presentation during audition. A separate
-  `guitar-recording-history.spec.ts` checks actual canvas text/geometry and
-  desktop/phone captures without overloading the longer persistence flow.
+  `guitar-recording-history.spec.ts` observes the first actual canvas note draw,
+  then checks at least six seconds of active history and moving-tab NOW at each
+  desktop/phone viewport. It does not resize during capture or encode recording-time
+  screenshots; review screenshots follow explicit Stop. Responsive transitions
+  remain separate from this real-time capture check.
 - Unit coverage for lazy/bounded gallery reads, real note counts, unavailable
   versus empty evidence, retry, interrupted/removed-audio states, and replay
   pause/disposal/late-start races.

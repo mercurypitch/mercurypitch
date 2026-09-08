@@ -951,8 +951,15 @@ selects the destination by its exact accessible name.
 
 **Symptom:** the CI live-history timer froze at three seconds, although the test passed locally.
 **Cause:** the trace showed safe backpressure finalization during expensive page screenshots; a 1.92-second screenshot exceeded the 65,536-sample PCM budget at normal audio rates.
-**Rule:** inspect the capture stop reason, not only its timer. Attach existing canvas pixels during recording and capture page chrome afterward; retain active-duration assertions and production buffer limits.
+**Rule:** inspect the capture stop reason, not only its timer. Observe first-note geometry at the actual canvas draw rather than a later automation read; encode images only after Stop. Test desktop/phone capture at separate fixed viewports, retaining active-duration assertions and production buffer limits.
 **See:** `src/e2e/guitar-recording-history.spec.ts`, PR Gate run `34252164591`.
+
+### Rebuild the tested bundle after changing source or rebasing
+
+**Symptom:** a recorder capture test passed, but a newer voice command was missing.
+**Cause:** the correct worktree's `dist` still predated its newer commits; Playwright only serves it.
+**Rule:** run `pnpm build:e2e` before production-browser checks after source changes or rebase. A matching worktree port proves location, not bundle freshness; do not count stale-build results as current-head verification.
+**See:** `playwright.config.ts`, `docs/agent/TESTING.md`
 
 ## Process
 
