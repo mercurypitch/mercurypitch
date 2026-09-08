@@ -273,28 +273,46 @@ PCM to verify that both sources seek before Play and during playback, Stop rewin
 and the two-row transport stays independent of Listening at 320/390/1440px. It also
 checks quick switching, cancelled/confirmed deletion, and real mobile long press.
 
+### Free-form modes
+
+The [mode contract and implementation checklist](plans/guitar-free-form-modes.md)
+keeps Live, Replay and Practice separate from the explicit Record action.
+`src/e2e/guitar-free-form-modes.spec.ts` covers empty Live without persistence,
+fresh rendered DI-monitor audio, source/position retention through Live, accepted
+revision reuse, an actual scored attempt, mouse seek/A–B and 320/390/1440px hit
+targets. The score uses the production detector, target builder and scorer with
+deterministic input, not a stubbed grade. This is not a physical latency test.
+
+Colocated Session/Practice tests exercise real controllers around deferred input,
+scheduler and IndexedDB boundaries: cancelled admission, rapid mode/source
+changes, stale completions, result opening, partial results, Keep, and rearm.
+The live collector tests bound history/voices, silence, pitch enrichment and
+actual polyphonic MIDI release without adding another detector or recorder.
+
 ### Requirement-to-test coverage
 
 This is behavioral coverage, not a claim of 100% line coverage or every hardware
 combination. Colocated tests exercise actual controllers/services; browser-port
 fakes are complemented by the real worklet/Worker and audio-render browser tests.
 
-| Contract / risk                                                                                             | Automated evidence                                                                                                                                                                                 |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GR-001–003: inert free-form entry, explicit Record, cancellation, MIDI-only refusal                         | `useGuitarRecordingController.test.ts`, `GuitarNightRoom.test.tsx`, `guitar-night-recording.spec.ts`                                                                                               |
-| GR-004–008: selected-channel ownership, bounded buffers, Stop/interruption, frame limit                     | `recording-capture.test.ts`, `recording-analysis.test.ts`, `useGuitarRecordingController.test.ts`, real capture/monitoring in `guitar-night-recording.spec.ts`                                     |
-| GR-009–014: checkpoints, live-draft locks, atomic Keep/retry, exact deletion, local-only migration          | `recording-lock.test.ts`, `guitar-recording-service.test.ts`, `useGuitarRecordingController.test.ts`, reload/Hear Yourself browser flow                                                            |
-| GR-015–018, 021–023: immutable evidence, free timing, corrections/Undo, accepted revisions and real exports | `recording-analysis.test.ts`, `recording-score.test.ts`, `recording-export.test.ts`, `GuitarRecordingReview.test.tsx`, `guitar-recording-service.test.ts`, capture-to-Practice/export browser flow |
-| GR-019–020: existing tab practice and exact-song attachment                                                 | `guitar-score-attachment-service.test.ts`, `useGuitarNightReferenceController.test.tsx`, `guitar-night-recording.spec.ts` and the existing Guitar Night A/B/scoring suites                         |
-| GR-024–029: live/draft highway clock, gallery, compact responsive controls                                  | `useGuitarRecordingStage.test.ts`, `GuitarRecordingGallery.test.tsx`, `GuitarRecordingControls.test.tsx`, `guitar-recorder-layout.spec.ts`, `guitar-recorder-transport.spec.ts`                    |
-| GR-030–034: audio/notes, Current/Clean/Saved amp, stereo, seeking and stale completion                      | `recording-note-player.test.ts`, `recording-playback.test.ts`, `useGuitarRecordingPlayback.test.ts`, `preview-player.test.ts`, real rendered PCM and held-pointer browser tests                    |
-| GR-035: gallery/quick switch, long touch, exact deletion and stale loads                                    | `GuitarRecordingQuickMenu.test.tsx`, `GuitarRecordingGallery.test.tsx`, `useGuitarRecordingController.test.ts`, `guitar-recorder-transport.spec.ts`                                                |
-| GR-036: truthful NOW/history, sustains, live projection bounds and ordinary replay                          | `recording-history.test.ts`, `Canvas2dTabRenderer.test.ts`, `useGuitarRecordingStage.test.ts`, `GuitarNightMovingTab.test.tsx`, `tab-window.test.ts`, real history/capture browser tests           |
-| GR-037: preview before storage, bounded pool, final/stale evidence and recovery                             | `guitar-recorder.worker.test.ts`, `recording-pcm-capture.test.ts`, `recording-capture.test.ts`, `useGuitarRecordingController.test.ts`, persistence and real monitoring browser tests              |
-| GR-038: profile parity, chunk-size invariance and honest comparison metrics                                 | `recording-benchmark.test.ts`, existing Listening/analysis suites and `benchmark-guitar-recording.mjs`                                                                                             |
-| Studio Lead / cabinet and preset migration                                                                  | `guitar-studio-head.test.ts`, `guitar-amp-stage.test.ts`, `guitar-amp-cabinet.test.ts`, amp-settings tests, `guitar-night-amp.spec.ts`, `guitar-night-lead-monitor.spec.ts`                        |
-| DI monitoring / diagnostics / shared song controls                                                          | `guitar-input-monitor.test.ts`, `useGuitarListeningController.test.tsx`, `useGuitarMonitorDiagnostics.test.ts`, `GuitarNightMonitorLatency.test.tsx`, song audio/listening/controls browser suites |
-| Shared-component and store regressions                                                                      | `OverflowMenu.test.tsx`, `use-focus-trap.test.tsx`, `uvr-store-startup.test.ts`, `karaoke-rail-song-switch.spec.ts`                                                                                |
+| Contract / risk                                                                                             | Automated evidence                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GR-001–003: inert free-form entry, explicit Record, cancellation, MIDI-only refusal                         | `useGuitarRecordingController.test.ts`, `GuitarNightRoom.test.tsx`, `guitar-night-recording.spec.ts`                                                                                                                     |
+| GR-004–008: selected-channel ownership, bounded buffers, Stop/interruption, frame limit                     | `recording-capture.test.ts`, `recording-analysis.test.ts`, `useGuitarRecordingController.test.ts`, real capture/monitoring in `guitar-night-recording.spec.ts`                                                           |
+| GR-009–014: checkpoints, live-draft locks, atomic Keep/retry, exact deletion, local-only migration          | `recording-lock.test.ts`, `guitar-recording-service.test.ts`, `useGuitarRecordingController.test.ts`, reload/Hear Yourself browser flow                                                                                  |
+| GR-015–018, 021–023: immutable evidence, free timing, corrections/Undo, accepted revisions and real exports | `recording-analysis.test.ts`, `recording-score.test.ts`, `recording-export.test.ts`, `GuitarRecordingReview.test.tsx`, `guitar-recording-service.test.ts`, capture-to-Practice/export browser flow                       |
+| GR-019–020: existing tab practice and exact-song attachment                                                 | `guitar-score-attachment-service.test.ts`, `useGuitarNightReferenceController.test.tsx`, `guitar-night-recording.spec.ts` and the existing Guitar Night A/B/scoring suites                                               |
+| GR-024–029: live/draft highway clock, gallery, compact responsive controls                                  | `useGuitarRecordingStage.test.ts`, `GuitarRecordingGallery.test.tsx`, `GuitarRecordingControls.test.tsx`, `guitar-recorder-layout.spec.ts`, `guitar-recorder-transport.spec.ts`                                          |
+| GR-030–034: audio/notes, Current/Clean/Saved amp, stereo, seeking and stale completion                      | `recording-note-player.test.ts`, `recording-playback.test.ts`, `useGuitarRecordingPlayback.test.ts`, `preview-player.test.ts`, real rendered PCM and held-pointer browser tests                                          |
+| GR-035: gallery/quick switch, long touch, exact deletion and stale loads                                    | `GuitarRecordingQuickMenu.test.tsx`, `GuitarRecordingGallery.test.tsx`, `useGuitarRecordingController.test.ts`, `guitar-recorder-transport.spec.ts`                                                                      |
+| GR-036: truthful NOW/history, sustains, live projection bounds and ordinary replay                          | `recording-history.test.ts`, `Canvas2dTabRenderer.test.ts`, `useGuitarRecordingStage.test.ts`, `GuitarNightMovingTab.test.tsx`, `tab-window.test.ts`, real history/capture browser tests                                 |
+| GR-037: preview before storage, bounded pool, final/stale evidence and recovery                             | `guitar-recorder.worker.test.ts`, `recording-pcm-capture.test.ts`, `recording-capture.test.ts`, `useGuitarRecordingController.test.ts`, persistence and real monitoring browser tests                                    |
+| GR-038: profile parity, chunk-size invariance and honest comparison metrics                                 | `recording-benchmark.test.ts`, existing Listening/analysis suites and `benchmark-guitar-recording.mjs`                                                                                                                   |
+| GR-039–040: free-form voice transport and explicit capture                                                  | `guitar-night-voice-commands.test.ts`, `voice-command-registry.test.ts`, Practice asynchronous restart regression                                                                                                        |
+| GR-041–048: Live/Replay/Practice, retained DI, pinned revisions, shared score results and safe transitions  | `useGuitarFreeFormModes.test.ts`, `useGuitarFreeFormSession.test.ts`, `useGuitarFreeFormPractice.test.tsx`, `useGuitarNightScoreResults.test.tsx`, `accept-recording-practice.test.ts`, `guitar-free-form-modes.spec.ts` |
+| Studio Lead / cabinet and preset migration                                                                  | `guitar-studio-head.test.ts`, `guitar-amp-stage.test.ts`, `guitar-amp-cabinet.test.ts`, amp-settings tests, `guitar-night-amp.spec.ts`, `guitar-night-lead-monitor.spec.ts`                                              |
+| DI monitoring / diagnostics / shared song controls                                                          | `guitar-input-monitor.test.ts`, `useGuitarListeningController.test.tsx`, `useGuitarMonitorDiagnostics.test.ts`, `GuitarNightMonitorLatency.test.tsx`, song audio/listening/controls browser suites                       |
+| Shared-component and store regressions                                                                      | `OverflowMenu.test.tsx`, `use-focus-trap.test.tsx`, `uvr-store-startup.test.ts`, `karaoke-rail-song-switch.spec.ts`                                                                                                      |
 
 The final capture-boundary audit adds explicit checks for ordered durable writes
 before buffer recycling/completion, failed module retry, partial-allocation
@@ -330,6 +348,9 @@ isolated browser storage and generated input; do not point them at production.
       Record does not stop it, and Pause/seek never start input. See the saved
       [voice plan and command contract](guitar-recording-voice.md).
 - [ ] Enter Play free form. Confirm nothing plays or requests input until asked.
+- [ ] With no melody loaded, Live is selected. Enable Listening/You; play without
+      pressing Record. NOW/history should respond without creating a take.
+      Toggle Live notes off/on without muting or reacquiring the input.
 - [ ] Select Direct input / the guitar channel. Enable Listening and You, then
       compare monitor-only with Record running at the same amp/rate/route.
       Note output estimate and underruns, but judge feel by playing.
@@ -357,6 +378,12 @@ isolated browser storage and generated input; do not point them at production.
       should become available once fingering and note timing are valid.
 - [ ] Practice these notes; test preferred views, an A/B loop and a new scored
       attempt. The original improvisation itself must remain ungraded.
+- [ ] Switch Replay → Live → Replay. Preserve the melody, corrections and replay
+      position; changing input does not switch modes. Choose Practice explicitly,
+      test tempo/count-in, the optional synthesized guide, score results and Keep.
+      On a local development build inspect the existing score debug panel.
+      Pause/open results/Play again and switch modes during count-in. Confirm
+      enabled DI monitoring remains audible, with no second input request.
 - [ ] Record along with a song; attach and nudge if needed. Reload and verify
       placement. For unrelated free play, use manual first/last-note placement.
 - [ ] Download `.mid` and `.gp`; open `.gp` in Guitar Pro or a compatible reader.
@@ -371,7 +398,11 @@ isolated browser storage and generated input; do not point them at production.
 - Single-note transcription is approximate. Original pitch evidence is retained,
   but bend/vibrato technique notation and overlapping chords need correction.
 - Free time uses a labelled 120 BPM display grid; optional snapping helps produce
-  simpler notation. Count-in and automatic tempo detection are not shipped.
+  simpler notation. Practice has its own count-in and playback tempo; automatic
+  tempo detection and a recording count-in are not shipped.
+- Practice uses a synchronized synthesized guide, not original-audio accompaniment.
+  Original audio remains available in Replay. Retiming corrected notes alongside
+  original audio needs an explicit compatibility policy before that is supported.
 - Browser storage can be evicted. Local persistence is not a cloud backup.
 - Automated browser coverage is Chromium with synthetic input. Real-interface
   latency, transcription quality, Firefox and Safari require explicit testing.

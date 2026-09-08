@@ -14,6 +14,7 @@ import { createGuitarRecordingStore } from '@/db/services/guitar-recording-servi
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { acceptRecordingScoreRevision, createRecordingScore, recordingMidiProblem, recordingNoteNeedsFingering, recordingScoreProblem, } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
+import { acceptRecordingPractice } from './accept-recording-practice'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightJamDoctor } from './GuitarNightJamDoctor'
 import styles from './GuitarRecording.module.css'
@@ -81,6 +82,20 @@ export function GuitarRecordingReview(props: {
     const store = createGuitarRecordingStore()
     try {
       const corrections = { ...score(), title: title() }
+      if (action === 'practice') {
+        const accepted = await acceptRecordingPractice(
+          props.draft,
+          corrections,
+          store,
+        )
+        setKept(true)
+        setRevision(accepted.revision)
+        setScore(accepted)
+        props.onSaved()
+        props.playback.pause()
+        await props.onPractice(accepted)
+        return
+      }
       const accepted =
         action === 'keep' || action === 'midi'
           ? undefined
@@ -113,8 +128,7 @@ export function GuitarRecordingReview(props: {
         setRevision(accepted.revision)
         setScore(accepted)
         props.playback.pause()
-        if (action === 'practice') await props.onPractice(accepted)
-        else if (action === 'attach') await props.onAttach?.(accepted)
+        if (action === 'attach') await props.onAttach?.(accepted)
         else {
           const { downloadRecordingScore } =
             await import('@/lib/guitar/recording-export')

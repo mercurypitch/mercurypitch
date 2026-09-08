@@ -1,7 +1,8 @@
 # Guitar Night melody recorder — EARS requirements
 
 Status: core recorder and GR-023–035 follow-ups implemented on PR 739;
-automated coverage is indexed below, with owner dev audition still required. Extends
+Live/Replay/Practice (GR-041–048) implemented on draft PR 741. Automated coverage
+is indexed below, with owner dev audition still required. Extends
 [Guitar Night](guitar-night.ears.md), without changing its authored-tab rehearsal
 or existing signal-only Jam Doctor.
 
@@ -172,7 +173,7 @@ or existing signal-only Jam Doctor.
 
 - **GR-039:** WHEN voice control is enabled in free form, Play/Pause/Stop,
   From the top, Go to start and relative seeks shall address the selected
-  Recording/Notes audition with its selected tone, not an empty backing player.
+  Replay audition or Practice transport, not an empty backing player.
   Play/Pause/seek shall not acquire input. Empty or unavailable sources shall
   explain why no action occurred; repeated Play shall not cancel a pending start.
 - **GR-040:** WHEN Record, Record a melody or Record idea is spoken, the room
@@ -186,10 +187,53 @@ or existing signal-only Jam Doctor.
   playback detection. Voice control shall remain opt-in and shall not add another
   speech engine, audio graph or analysis branch to the monitoring path.
 
+## Interchangeable free-form modes
+
+- **GR-041:** An empty free-form session shall default to Live. Listening and
+  monitoring shall remain explicit. Live shall show the existing detector's
+  current notes and six seconds of bounded NOW/history, without starting an
+  audio recorder, second detector, recording worker or persistence of that
+  history. Audio recognition shall not claim general chord transcription;
+  actual MIDI simultaneous voices/releases shall retain their identity.
+- **GR-042:** Selecting Live shall hide but preserve the selected melody,
+  corrections and Replay position. Returning to Replay shall remain paused.
+  Loading a melody shall select paused Replay. Input-route selection shall
+  not replace the player's chosen content mode. Deleting the selected melody
+  shall return to empty Live without deleting another recording.
+- **GR-043:** Selecting Practice shall explicitly validate and accept an
+  immutable target through the shared recording/reference boundary. Equivalent
+  accepted revisions shall be reused. Invalid notes shall require correction
+  or explicit exclusion; pending/stale admissions shall not replace newer
+  intent or begin input, monitoring, playback or grading.
+- **GR-044:** Practice shall reuse Rehearse's scheduled target clock, scoring
+  controller, results, Keep and development-only evidence inspector. Its
+  optional synthesized guide shall follow its exact target tempo/range. Speed
+  changes shall not mutate the accepted revision. Original-audio accompaniment
+  shall remain a Replay option, not an unsynchronized Practice source.
+- **GR-045:** The session shall retain its explicitly enabled direct-input
+  route, channel, amp and monitor between mode/attempt transitions. A Practice
+  run shall own only its scheduled sources and evidence boundary, not the
+  borrowed output graph or input lifetime. Off, route loss and exit shall still
+  release input. Existing Rehearse-host ownership defaults shall be unchanged.
+- **GR-046:** Record shall remain a separate action. Starting it shall cancel
+  pending Practice or settle/drain its active boundary before capture starts.
+  Source, mode and transport transitions shall reject stale async continuations;
+  a saving Keep shall block conflicting admissions. Opening results shall
+  preserve a paused partial result rather than silently completing it.
+- **GR-047:** Live, Replay and Practice shall share one stable stage/camera and
+  keep the independent Listening column and at most two transport rows. Practice
+  shall expose real-pointer seek/A/B controls, compact tempo/count-in/guide
+  options and results. Buttons, Space and voice shall address the same active
+  transport; From the top shall await seeking before restarting Practice.
+- **GR-048:** Room-microphone Practice with audible guide/click shall require
+  the same explicit mix-contamination consent as Rehearse. Cancel, changed
+  source/route, disposal or a newer intent shall invalidate pending consent.
+  Direct input shall not show that room-microphone warning.
+
 ## Verification and limits
 
 Automated coverage and owner checks: [recorder testing](../guitar-recording-testing.md).
 V1 is five-minute mono dry recording, editable monophonic transcription and
-local persistence. Count-in, polyphonic/bend-technique notation, wet recording,
+local persistence. Recording count-in, polyphonic/bend-technique notation, wet recording,
 cloud backup and MIDI-input-only recording are follow-ups. Browser latency
 estimates and synthetic render tests are not physical round-trip measurements.

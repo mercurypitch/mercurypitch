@@ -37,6 +37,8 @@ export interface GuitarPerformanceStageSource {
   timeline: GuitarPerformanceTimeline
   /** Measured history, not upcoming targets. Omitted for normal playback/practice. */
   recordingHistory?: Accessor<boolean>
+  /** Describe transient live history honestly; existing recorded sources default to recording. */
+  historyKind?: Accessor<'live' | 'recording'>
 }
 
 export interface GuitarPerformanceTransport {

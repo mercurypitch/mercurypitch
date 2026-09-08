@@ -113,6 +113,41 @@ describe('GuitarNightStage views', () => {
     expect(stage).toHaveAccessibleName(/1 guided notes/)
   })
 
+  it('names transient Live history honestly across Highway and Tab without changing its clock or camera', async () => {
+    const [kind, setKind] = createSignal<'live' | 'recording'>('live')
+    render(() => (
+      <GuitarNightStage
+        source={{
+          ...GUIDED_SOURCE,
+          title: () => 'A source title does not choose the history kind',
+          recordingHistory: () => true,
+          historyKind: kind,
+          timeline: { ...SOURCE.timeline, playheadBeat: () => 2.123 },
+        }}
+        active={() => false}
+      />
+    ))
+    const stage = await screen.findByTestId('shared-3d-stage')
+    expect(stage).toHaveAccessibleName(
+      /1 heard notes.*NOW.*You played; nothing is recorded/,
+    )
+    expect(screen.getByText('Live input')).toBeVisible()
+    expect(stage).toHaveAttribute('data-playhead-beat', '2.123')
+    expect(stage).toHaveAttribute('data-camera-following', 'false')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+    expect(
+      screen.getByRole('img', {
+        name: /Live tablature.*You played.*Nothing is recorded/,
+      }),
+    ).toBeVisible()
+    setKind('recording')
+    expect(
+      screen.getByRole('img', { name: /Recorded tablature.*You played/ }),
+    ).toBeVisible()
+    expect(screen.getByText('Recorded notes')).toBeVisible()
+  })
+
   it('switches one mounted Flow stage between Highway and Grid and remembers it', async () => {
     const first = render(() => (
       <GuitarNightStage source={SOURCE} active={() => true} />

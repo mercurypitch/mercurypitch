@@ -17,6 +17,8 @@ import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
+import { GuitarFreeFormModePicker } from './GuitarFreeFormModePicker'
+import { GuitarFreeFormPracticeDeck } from './GuitarFreeFormPracticeDeck'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputNotice } from './GuitarNightInputNotice'
@@ -25,9 +27,13 @@ import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoc
 import type { GuitarNightListeningSelection } from './GuitarNightListeningCycle'
 import { GuitarNightListeningCycle } from './GuitarNightListeningCycle'
 import { GuitarNightListeningQuickControls } from './GuitarNightListeningQuickControls'
+import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightBackingToggle, GuitarNightMonitorToggle, } from './GuitarNightMixToggle'
 import songStyles from './GuitarNightRoom.module.css'
+import { GuitarNightRoomMicConsent } from './GuitarNightRoomMicConsent'
+import { GuitarNightScoreDebugDock } from './GuitarNightScoreDebug'
+import { GuitarNightScoreSheet } from './GuitarNightScoreSheet'
 import { GuitarNightSongMixer } from './GuitarNightSongMixer'
 import { GuitarNightSongSession } from './GuitarNightSongSession'
 import { GuitarNightStage } from './GuitarNightStage'
@@ -39,10 +45,12 @@ import { GuitarRecordingGallery, GuitarRecordingGalleryButton, } from './GuitarR
 import { GuitarRecordingReview } from './GuitarRecordingReview'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
+import { useGuitarFreeFormSession } from './useGuitarFreeFormSession'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import { useGuitarNightSongPlayback } from './useGuitarNightSongPlayback'
+import { useGuitarNightTakeKeepPrompt } from './useGuitarNightTakeKeepPrompt'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 import { useGuitarRecordingController } from './useGuitarRecordingController'
 import { useGuitarRecordingPlayback } from './useGuitarRecordingPlayback'
@@ -180,6 +188,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const amp = useGuitarNightAmpSettings()
   createEffect(() => props.transport.setElectricAmpParameters(amp.parameters()))
   const listening = useGuitarListeningController({
+    retainDirectInputOnTakeCompletion: untrack(() => props.backing === null),
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
     ampParameters: amp.parameters,
@@ -288,9 +297,61 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   )
   const showRecordingStage = () =>
     reference() === null && recordingStage.available()
+  const freeForm = useGuitarFreeFormSession({
+    enabled: () => props.backing === null,
+    blocked: () =>
+      props.suspended?.() === true ||
+      tunerOpen() ||
+      isCalibrating() ||
+      listeningRoutePending() ||
+      melodiesOpen() ||
+      quickMelodiesOpen() ||
+      doctorOpen() ||
+      mixerOpen() ||
+      recorder.reviewOpen(),
+    listening,
+    recorder,
+    playback: recordingPlayback,
+    recordingStage,
+    tuning: roomTuning,
+    amp: amp.parameters,
+    activateGraph: async () => {
+      const transport = props.transport
+      return (await transport.activate()) ? transport.getAudioGraph() : null
+    },
+    onMissingSource: () => setMelodiesOpen(true),
+  })
+  const recoverMelody = (id: string, review = true) =>
+    props.backing === null
+      ? freeForm.recover(id, review)
+      : recorder.recover(id, { review })
+  const removeMelody = (id: string) =>
+    props.backing === null ? freeForm.remove(id) : recorder.remove(id)
+  useGuitarNightTakeKeepPrompt({
+    state: () => freeForm.results.scoreTakeKeep()?.state ?? 'idle',
+    boundaryId: () =>
+      freeForm.results.scoreTakeKeep() === null
+        ? null
+        : freeForm.practice.capture.boundaryId(),
+    scoreOpen: freeForm.scoreOpen,
+    onKeep: freeForm.practice.capture.keep,
+    onOpenScore: () => void freeForm.openScore(),
+  })
+  createEffect(() => {
+    if (
+      props.backing === null &&
+      (recorder.reviewOpen() ||
+        melodiesOpen() ||
+        tunerOpen() ||
+        props.suspended?.() === true)
+    )
+      untrack(() => {
+        void freeForm.modes.park()
+      })
+  })
   const togglePlayback = (): void => {
     if (props.backing === null) {
-      if (!recorder.busy()) void recordingPlayback.toggle()
+      if (!recorder.busy()) freeForm.toggle()
       return
     }
     if (recorder.busy()) {
@@ -307,6 +368,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     next: GuitarNightListeningSelection,
   ): Promise<void> {
     if (recorder.busy()) await recorder.stop('The listening mode changed.')
+    if (props.backing === null) await freeForm.modes.park()
     if (
       disposed ||
       listeningRoutePending() ||
@@ -373,46 +435,60 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   // Free form uses the selected Recording/Notes audition; Play along retains
   // the backing transport. Neither route adds an audio graph or input lease.
   const voiceCommands = createGuitarNightVoiceCommands({
-    playing: () =>
-      props.backing === null ? recordingPlayback.playing() : isPlaying(),
-    pending: () =>
-      props.backing === null ? recordingPlayback.pending() : isLoading(),
+    playing: () => (props.backing === null ? freeForm.playing() : isPlaying()),
+    pending: () => (props.backing === null ? freeForm.pending() : isLoading()),
     playbackIssue: () => {
       if (props.backing !== null) return null
       if (recorder.draft() === null) return 'Record or open a melody first.'
+      if (freeForm.modes.mode() === 'practice')
+        return listening.status() === 'listening'
+          ? null
+          : 'Turn on Listening to practise these notes.'
       return recordingPlayback.available()
         ? null
         : 'The selected audio, notes or saved amp are unavailable. Choose another replay source or tone.'
     },
     positionSeconds: () =>
       props.backing === null
-        ? recordingPlayback.position()
+        ? freeForm.position()
         : props.transport.positionSeconds(),
     durationSeconds: () =>
       props.backing === null
-        ? recordingPlayback.duration()
+        ? freeForm.duration()
         : props.transport.durationSeconds(),
     play: () => {
-      if (props.backing === null) void recordingPlayback.toggle()
+      if (props.backing === null) void freeForm.play()
       else void songPlayback.play()
     },
+    restart: () => {
+      if (props.backing === null) return freeForm.restart()
+      props.transport.seek(0)
+      return songPlayback.play()
+    },
     pause: () =>
-      props.backing === null
-        ? recordingPlayback.pause()
-        : props.transport.pause(),
-    stop: () =>
-      props.backing === null
-        ? recordingPlayback.stop()
-        : props.transport.stop(),
+      props.backing === null ? freeForm.pause() : props.transport.pause(),
+    stop: () => {
+      if (props.backing === null) void freeForm.stop()
+      else props.transport.stop()
+    },
     seek: (seconds) =>
       props.backing === null
-        ? recordingPlayback.seek(seconds)
+        ? freeForm.seek(seconds)
         : props.transport.seek(seconds),
-    speedAvailable: () => props.backing !== null,
+    speedAvailable: () =>
+      props.backing !== null || freeForm.modes.mode() === 'practice',
     stemsAvailable: () => props.backing !== null,
-    playbackRate: () => props.transport.playbackRate(),
+    playbackRate: () =>
+      props.backing === null
+        ? freeForm.practice.room.tempoBpm() /
+          (freeForm.reference()?.tempoBpm ?? 120)
+        : props.transport.playbackRate(),
     setPlaybackRate: (rate) => {
-      void props.transport.setPlaybackRate(rate)
+      if (props.backing === null)
+        void freeForm.practice.setTempo(
+          rate * (freeForm.reference()?.tempoBpm ?? 120),
+        )
+      else void props.transport.setPlaybackRate(rate)
     },
     tracks: () =>
       props.transport
@@ -421,7 +497,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     setTrackMuted: (id, muted) => props.transport.setTrackMuted(id, muted),
     recorder: {
       state: recorder.state,
-      start: recorder.start,
+      start: () =>
+        props.backing === null ? freeForm.modes.record() : recorder.start(),
       stop: recorder.stop,
       startIssue: () =>
         isLoading()
@@ -445,6 +522,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       quickMelodiesOpen() ||
       doctorOpen() ||
       recorder.reviewOpen() ||
+      freeForm.scoreOpen() ||
+      freeForm.practice.consentOpen() ||
       listeningRoutePending() ||
       tunerOpen() ||
       isCalibrating()
@@ -456,7 +535,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   onCleanup(
     registerMusicPlayingSource(
       // eslint-disable-next-line solid/reactivity
-      () => isPlaying() || recordingPlayback.playing(),
+      () =>
+        isPlaying() ||
+        recordingPlayback.playing() ||
+        freeForm.practice.running(),
     ),
   )
   const isListening = createMemo(
@@ -568,6 +650,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   }
 
   const openTuner = async (): Promise<void> => {
+    if (props.backing === null) await freeForm.modes.park()
     if (recorder.busy())
       await recorder.stop('Recording ended to open the tuner.')
     setDoctorOpen(false)
@@ -585,6 +668,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const practiceRecording = async (
     score: GuitarPracticeScore,
   ): Promise<void> => {
+    if (props.backing === null) {
+      await freeForm.reviewPractice(score)
+      return
+    }
     const onPractice = props.onPracticeRecording
     await recorder.stop()
     songPlayback.stopAll()
@@ -592,6 +679,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   }
 
   const leaveRoom = async (): Promise<void> => {
+    if (props.backing === null) await freeForm.modes.park()
     if (recorder.busy())
       await recorder.stop('Recording ended when leaving the room.')
     tuner.close()
@@ -627,6 +715,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           props.suspended?.() !== true &&
           !doctorOpen() &&
           !recorder.reviewOpen() &&
+          !freeForm.scoreOpen() &&
+          !freeForm.practice.consentOpen() &&
           !tunerOpen() &&
           !mixerOpen() &&
           !sessionOpen() &&
@@ -682,7 +772,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         <div class={`${styles.roomHeadingMeta} ${songStyles.headingMeta}`}>
           <span class={styles.trackCount}>
             {props.backing === null
-              ? 'No song needed · saved on this device'
+              ? 'No song needed · your private studio'
               : `${props.backing.stems.length} tracks · on this device`}
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
@@ -690,6 +780,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               count={recorder.catalogue().length}
               disabled={
                 recorder.busy() ||
+                freeForm.practice.capture.state() === 'saving' ||
                 recorder.reviewOpen() ||
                 sessionOpen() ||
                 tunerOpen() ||
@@ -699,8 +790,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               }
               rows={recorder.catalogue()}
               currentId={recorder.draft()?.recording.id}
-              onSelect={(id) => recorder.recover(id, { review: false })}
-              onRemove={recorder.remove}
+              onSelect={(id) => recoverMelody(id, false)}
+              onRemove={removeMelody}
               onQuickOpenChange={setQuickMelodiesOpen}
               onOpen={() => setMelodiesOpen(true)}
             />
@@ -765,17 +856,53 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         </div>
       </div>
 
+      <Show when={props.backing === null}>
+        <GuitarFreeFormModePicker
+          mode={freeForm.modes.mode()}
+          pending={freeForm.modes.pending()}
+          recording={recorder.busy()}
+          disabled={
+            recorder.busy() ||
+            freeForm.practice.capture.state() === 'saving' ||
+            isCalibrating()
+          }
+          sourceTitle={recorder.draft()?.recording.title ?? null}
+          onSelect={(mode) => void freeForm.modes.select(mode)}
+          onCancel={freeForm.modes.cancel}
+        />
+        <GuitarNightInputNotice message={freeForm.notice} />
+      </Show>
+
       <GuitarNightStage
         source={
-          showRecordingStage() ? recordingStage.source : performance.stage
+          props.backing === null
+            ? freeForm.stage
+            : showRecordingStage()
+              ? recordingStage.source
+              : performance.stage
         }
         tuning={() =>
-          showRecordingStage() ? recordingStage.tuning() : roomTuning()
+          props.backing === null
+            ? freeForm.tuning()
+            : showRecordingStage()
+              ? recordingStage.tuning()
+              : roomTuning()
         }
-        instrumentSetupDisabled={recorder.busy}
+        instrumentSetupDisabled={() =>
+          recorder.busy() ||
+          (props.backing === null && freeForm.modes.mode() === 'practice')
+        }
         onInstrument={props.onInstrument}
         onStringCount={props.onStringCount}
         guideLabel={() => {
+          if (props.backing === null && recorder.busy())
+            return 'Recording · audio and detected melody notes'
+          if (props.backing === null)
+            return freeForm.modes.mode() === 'live'
+              ? 'Live input · notes you played · nothing recorded'
+              : freeForm.modes.mode() === 'practice'
+                ? 'Practice · play the target notes'
+                : 'Replay · not scored'
           if (showRecordingStage())
             return 'Detected melody · draft · suggested fingering'
           const attached = reference()
@@ -854,16 +981,42 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         listening={isListening}
         heardNote={listening.currentNote}
         heardClarity={listening.clarity}
+        signalAccessory={
+          <Show
+            when={
+              props.backing === null &&
+              freeForm.modes.mode() === 'practice' &&
+              freeForm.practice.liveScore.visible()
+            }
+          >
+            <GuitarNightLiveScore
+              state={freeForm.practice.liveScore.state}
+              basis={freeForm.practice.liveScore.basis}
+              label={freeForm.practice.liveScore.label}
+              detail={freeForm.practice.liveScore.detail}
+              score={freeForm.practice.liveScore.score}
+              grade={freeForm.practice.liveScore.grade}
+              announcement={freeForm.practice.liveScore.announcement}
+            />
+          </Show>
+        }
         overlay={
           <>
             <Show when={props.backing === null}>
               <GuitarRecorderStage
-                recorder={recorder}
+                recorder={freeForm.recorder}
                 playback={recordingPlayback}
                 liveNotes={recordingStage.showLiveNotes()}
                 onLiveNotes={recordingStage.setShowLiveNotes}
                 onAttachTab={props.onAttachTab}
-                disabled={isCalibrating() || isLoading()}
+                allowRecordDuringPlayback
+                liveMode={freeForm.modes.mode() === 'live'}
+                onHistory={() => void freeForm.showHistory()}
+                disabled={
+                  isCalibrating() ||
+                  isLoading() ||
+                  freeForm.practice.capture.state() === 'saving'
+                }
               />
             </Show>
             <Show
@@ -953,11 +1106,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     canMonitor={listening.canAmpMonitor()}
                     monitoringEnabled={listening.ampMonitoringEnabled()}
                     monitoringActive={listening.ampMonitoringActive()}
-                    onListening={() =>
-                      void recorder
-                        .stop('Listening was stopped.')
-                        .then(() => songPlayback.toggleListening())
-                    }
+                    onListening={() => void selectListeningRoute(null)}
                     onBacking={(enabled) =>
                       props.transport.setBackingMuted(!enabled)
                     }
@@ -1090,11 +1239,34 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               </>
             }
           >
-            <GuitarRecorderDeck
-              recorder={recorder}
-              playback={recordingPlayback}
-              disabled={isCalibrating() || isLoading()}
-            />
+            <Show
+              when={freeForm.modes.mode() === 'practice' && !recorder.busy()}
+              fallback={
+                <GuitarRecorderDeck
+                  recorder={freeForm.recorder}
+                  playback={recordingPlayback}
+                  liveMode={freeForm.modes.mode() === 'live'}
+                  onPlay={freeForm.toggle}
+                  allowRecordDuringPlayback
+                  disabled={
+                    isCalibrating() ||
+                    isLoading() ||
+                    freeForm.practice.capture.state() === 'saving'
+                  }
+                />
+              }
+            >
+              <GuitarFreeFormPracticeDeck
+                practice={freeForm.practice}
+                recording={freeForm.recorder}
+                onScore={() => void freeForm.openScore()}
+                disabled={
+                  isCalibrating() ||
+                  freeForm.modes.pending() !== null ||
+                  freeForm.practice.capture.state() === 'saving'
+                }
+              />
+            </Show>
           </Show>
         </div>
         <Show when={props.backing !== null}>
@@ -1220,7 +1392,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           </strong>
           <small>
             {props.backing === null
-              ? 'Record a melody · saved on this device'
+              ? recorder.busy()
+                ? 'Recording audio and notes on this device'
+                : freeForm.modes.mode() === 'live'
+                  ? 'Turn on Listening to see your notes · Record saves an idea'
+                  : freeForm.modes.mode() === 'practice'
+                    ? 'Play your accepted melody · scored just like Rehearse'
+                    : 'Replay original audio or detected notes · not scored'
               : props.transport.status() === 'armed'
                 ? 'Press Play or Space to start audio'
                 : isLoading()
@@ -1257,15 +1435,20 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       <GuitarRecordingGallery
         isOpen={melodiesOpen()}
         rows={recorder.catalogue()}
-        onRemove={recorder.remove}
+        onRemove={removeMelody}
         onClose={() => setMelodiesOpen(false)}
         onReview={(id) => {
           setMelodiesOpen(false)
-          void recorder.recover(id)
+          void recoverMelody(id)
         }}
       />
       <GuitarNightSongSession
-        routePending={listeningRoutePending() || recorder.busy()}
+        routePending={
+          listeningRoutePending() ||
+          recorder.busy() ||
+          freeForm.practice.busy() ||
+          freeForm.practice.running()
+        }
         isOpen={sessionOpen()}
         focusHandPlacement={sessionHandPlacement()}
         onClose={() => setSessionOpen(false)}
@@ -1294,7 +1477,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             tuning={roomTuning()}
             onClose={() => recorder.setReviewOpen(false)}
             onDiscard={() => recorder.discard(draft.recording.id)}
-            onRemove={() => recorder.remove(draft.recording.id)}
+            onRemove={() => removeMelody(draft.recording.id)}
             onSaved={() => void recorder.refresh()}
             onPreviewScore={recorder.setPreviewScore}
             playback={recordingPlayback}
@@ -1325,6 +1508,41 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           onRecoveryAction={() => void listening.useInputHere()}
           onBack={closeTuner}
         />
+      </Show>
+      <Show when={props.backing === null}>
+        <GuitarNightRoomMicConsent
+          open={freeForm.practice.consentOpen()}
+          onContinue={() => void freeForm.practice.confirmMic(false)}
+          onMute={() => void freeForm.practice.confirmMic(true)}
+          onCancel={freeForm.practice.cancelStart}
+          returnFocus={() => roomHeading}
+        />
+        <GuitarNightScoreSheet
+          open={freeForm.scoreOpen()}
+          current={freeForm.results.scoreReplay()?.summary ?? null}
+          history={freeForm.results.scoreHistory()}
+          returnFocus={() => roomHeading}
+          onClose={() => freeForm.setScoreOpen(false)}
+          keepState={freeForm.results.scoreTakeKeep()?.state}
+          keepMessage={freeForm.results.scoreTakeKeep()?.message}
+          onKeepTake={() => void freeForm.practice.capture.keep()}
+          onDiscardTake={() => {
+            freeForm.practice.capture.discard()
+            freeForm.setScoreOpen(false)
+          }}
+          {...(freeForm.results.scoreReplay() === null
+            ? {}
+            : { onPlayAgain: () => void freeForm.playAgain() })}
+        />
+        <Show
+          when={import.meta.env.DEV && freeForm.modes.mode() === 'practice'}
+        >
+          <GuitarNightScoreDebugDock
+            model={freeForm.practice.liveScore.debugModel}
+            playheadSeconds={freeForm.practice.liveScore.debugPlayheadSeconds}
+            bottomClearance="calc(10rem + env(safe-area-inset-bottom, 0px))"
+          />
+        </Show>
       </Show>
     </section>
   )
