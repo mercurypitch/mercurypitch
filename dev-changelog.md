@@ -9,6 +9,131 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-09-08
+
+481 commits on `main` that are not in `v0.9.1`, spanning late July to 8
+September. The 0.9.1 tag was cut off the mainline around #636, so two rooms
+that were built before it — Ear Lab and Drum Night — reach a release for the
+first time here. Grouped by arc rather than by commit; the arcs each carry
+their own plan document under `docs/plans/`.
+
+### Ear Lab: measurement-first ear training (#647, #661, #685, #723)
+
+Thirteen drills, each on its own stage inside the room, built in phases: the
+bench as the Regulator Room, one latency number and the seal as a ritual, the
+report in the room, doors and native readiness, the rhythm seam, then the
+rooms themselves. Pulse, Echo and Span, Beat Hunt and Drift, Gravity and The
+Pull, Cadence and Bassline, Subdivide, The Chart. On top of the catalogue: the
+Ear Path (milestones as a going train on the bench), the Daily Sprint with its
+own page tour, the mixing desk (Colour, Weight and Critique on an offline
+render), and the Field Book, which builds a drill out of a song the user
+brings.
+
+Traps worth keeping:
+
+- The room enters with **no AudioContext by design**, which made every
+  playback path responsible for waking one inside the gesture. `PlayPad`
+  called `unlockAudio` on a context that did not exist yet, and
+  `wild-playback.excerpt()` never activated at all. `playExcerpt` schedules
+  against `ctx.currentTime` but resolves its promise on a wall clock, so a
+  suspended context walks a whole drill in silence with no error. Fixed with
+  `activateAudioPlayback(engine)`, which creates the context synchronously
+  before its first await.
+- A stopped run has to stay stopped, book nothing and go quiet; the first
+  three attempts each left one of those three behind (#723).
+
+### Drum Night: a playable room (#628, #656, #690, #714)
+
+A playable kit and e-kit input, four lazily loaded kit flavours, a
+session-local groove rack, an idiom pattern library to start from, loops
+projected onto the score, the shared song timeline, full-band play-along, and
+imported authored drum sessions. The feel engine is taught from measured
+performances rather than hand-tuned, and sampled hits vary so a repeated note
+stops machine-gunning.
+
+Saved grooves and take history came with the gate that a take summary is
+stamped with the project id, revision and fingerprint — so a take is a
+comparison against a saved groove, and cannot exist without one. The UI stated
+that requirement as a dead end for a long time; it now offers the save that
+unblocks it.
+
+### Guitar Night: percussion, then recording (#632, #634, #646, #678, #690, #739)
+
+Imported percussion support and the percussion song timeline, then the scoring
+work that measures what the player actually played, then the melody recorder:
+Studio amp tones, Studio Lead, live monitoring while recording, and shared song
+controls. The amp runs a Lite tone until the cabinet impulse response has been
+fetched, checksummed and decoded, then crossfades to Studio — which is a trap
+for any test that measures level or tone (#740, and see below).
+
+### Signing in (#664, #672, #722)
+
+Passkeys, TOTP two-factor with recovery, email-code sign-in, and one row per
+signed-in device. #722 closed the three holes the review found: passkeys verify
+locally, enabling 2FA revokes legacy tokens, and code guesses burn atomically
+so they cannot be raced. #672 makes a returning singer's device offer the way
+it already signed in.
+
+### Challenges, badges and Progress (#698, #703, #708, #709, #710, #718, #719, #735)
+
+A challenge closes cleanly, publishes its podium and awards it; a podium that
+closed before badges existed can still be awarded after the fact; a closed
+challenge cannot be set live again. The podium definitions travel as a
+migration rather than a seed. The Legends view took the leaderboard, the
+Progress cabinet took every badge and achievement, and the vocal challenges
+moved into Practice beside the exercises.
+
+### Storage and playback (#656, #683, #694)
+
+Separated stems move out of the database and into Blobs with windowed
+playback, which is what lets a phone open a full-band song at all. Karaoke
+streams a song on a phone rather than holding it. The stem mixer's vocal
+lyrics generator came out into its own hook (Slice F).
+
+### Voice control (#662, #691, #715, #737, #740)
+
+The pill borrows the header row on a phone and gives it back. Segment offsets
+sit on the clock that indexes them. A refused microphone stands down. Then the
+0.9.2 retest rounds, which found four separate causes behind one symptom:
+
+- The quiet-session backoff left waits of up to 15 s while the pill still read
+  `listening`. Any wait over 900 ms now reports `dozing`, and the ramp caps at
+  3 s.
+- WebKit drops a session under Siri or a call with no `end` and no `error`,
+  leaving `live` true over nothing. Stale-session detection is 12 s where a
+  respawn is visible and 45 s on desktop.
+- WebKit also ends a session as soon as it delivers a final result, and the
+  300 ms respawn ate the start of the next command. A session that heard a
+  word now respawns on the next task.
+- `go` was in `PLAY_PHRASES` and is the first word of every navigation phrase.
+  A recognizer that finalises an utterance in pieces delivers a bare "go",
+  which started playback before the rest of the sentence arrived.
+
+Still open on iOS: see `VC-1` in the backlog. Android is unaffected.
+
+### Shell, mobile and the retest rounds (#674, #676, #720, #734, #737, #738, #740)
+
+Phone toast cap of two, the verify-email nudge as an inline strip, the docked
+voice pill, Piano Night's one-row phone landscape, Guitar Night's phone rows
+returned to the neck and transport, and the drum take strip carrying Finish so
+the bottom rail keeps plain play and pause. History handling was rebuilt around
+position stamps: a return traversal is known by its stamp and a push by the
+absence of `popstate`, because real browsers split those two into different
+tasks and jsdom does not.
+
+### Testing and CI (#655, #659, #740)
+
+The PR gate is parallel and runs the full browser suite on PRs, sharded four
+ways. Each fake-mic tone length got its own file. Two traps are now written
+down where they bit:
+
+- A `createMemo` runs **eagerly at creation**, so a memo that reads a signal
+  declared below it throws during render. The unit suite cannot see it; only
+  the browser suite can.
+- Any Guitar Night browser test that measures tone or level has to settle the
+  amp first, or it is racing a 172 KB cabinet download. Reproduce by delaying
+  `**/*.wav`.
+
 ## [0.9.1] - 2026-08-25
 
 ### Guitar Night: multi-track reading (#611, #613, #616, #617, #619)
