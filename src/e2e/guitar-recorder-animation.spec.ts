@@ -120,14 +120,12 @@ test('loops actual reel pixels during capture and releases video when stopped @s
     page.getByRole('button', { name: 'Record using tape deck', exact: true }),
   ).toBeEnabled()
   // Visual artifact is captured only after the recorder has flushed.
-  await test
-    .info()
-    .attach('recorder-idle-after-animation', {
-      body: await page.screenshot({
-        path: test.info().outputPath('recorder-idle.png'),
-      }),
-      contentType: 'image/png',
-    })
+  await test.info().attach('recorder-idle-after-animation', {
+    body: await page.screenshot({
+      path: test.info().outputPath('recorder-idle.png'),
+    }),
+    contentType: 'image/png',
+  })
   expect(errors).toEqual([])
 })
 

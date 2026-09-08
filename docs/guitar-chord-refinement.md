@@ -1,7 +1,9 @@
 # Guitar recorder chord refinement
 
-Status: C1 inference/benchmark foundation implemented on draft PR [741](https://github.com/mercurypitch/mercurypitch/pull/741);
-candidate quality gate still open, C2–C4 not yet integrated.
+Status: C1 inference/benchmark foundation implemented in PR [741](https://github.com/mercurypitch/mercurypitch/pull/741).
+The owner approved merging the recorder release separately from the remaining
+chord work. Candidate quality acceptance and C2–C4 move to the next dedicated
+branch/PR; they are not enabled by this recorder release.
 The owner approved the corrected native Guitar Pro 8 export on 2026-09-08.
 This is the next recorder phase; drum sound work stays separate.
 
