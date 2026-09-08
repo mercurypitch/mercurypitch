@@ -914,9 +914,11 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
       .filter({ hasText: 'Audio, samples, and MIDI stay off' }),
   ).toBeVisible()
   await expect(page.getByText('MIDI not connected')).toBeVisible()
+  // The room came off `noindex` on 2026-09-08 — a listed page now, not an
+  // unlisted pilot. See the sitemap and src/tests/launch-entry-seo.test.ts.
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
-    'noindex, nofollow',
+    'index, follow',
   )
   expect(await boundaryCounts(page)).toEqual({
     audio: 0,

@@ -62,8 +62,9 @@ describe('launch entry documents', () => {
     expect(document).toContain('vocal range and pitch accuracy')
   })
 
-  // Both instrument rooms were `noindex, nofollow` pilots until 2026-08-20.
-  // They are listed now, so what is worth pinning is that each one is *safe* to
+  // The instrument rooms were `noindex, nofollow` pilots: Piano and Guitar
+  // Night until 2026-08-20, Drum Night until 2026-09-08. They are listed now,
+  // so what is worth pinning is that each one is *safe* to
   // index: a page enters the sitemap only once it has its own title, a
   // description worth showing, a self-canonical and a share card. A sitemap
   // entry whose canonical points elsewhere is how you earn "duplicate,
@@ -85,6 +86,14 @@ describe('launch entry documents', () => {
       entry: '/src/features/guitar-night/main.tsx',
       vitePaths: "GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])",
       viteInput: "guitarNight: resolve(__dirname, 'guitar-night.html')",
+    },
+    {
+      room: 'Drum Night',
+      file: 'drum-night.html',
+      path: 'drum-night',
+      entry: '/src/features/drum-night/main.tsx',
+      vitePaths: "DRUM_NIGHT_PATHS = new Set(['/drum-night'])",
+      viteInput: "drumNight: resolve(__dirname, 'drum-night.html')",
     },
   ] as const
 
@@ -142,34 +151,6 @@ describe('launch entry documents', () => {
     expect(consume).toBeGreaterThan(-1)
     expect(restore).toBeGreaterThan(consume)
   })
-
-  it('builds Drum Night from a dedicated noindex playable document', () => {
-    const document = repoHtml('drum-night.html')
-    const vite = repoFile('vite.config.ts')
-    const serviceWorker = repoFile('src/lib/sw-runtime.ts')
-    const sitemap = repoFile('public/sitemap.xml')
-
-    expect(document.title).toBe('Drum Night — MercuryPitch')
-    expect(
-      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
-    ).toBe('https://mercurypitch.com/drum-night')
-    expect(
-      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
-    ).toBe('noindex, nofollow')
-    expect(
-      document
-        .querySelector('meta[name="description"]')
-        ?.getAttribute('content'),
-    ).toContain('drum room for touch, keys and e-kits')
-    expect(
-      document.querySelector('script[type="module"]')?.getAttribute('src'),
-    ).toBe('/src/features/drum-night/main.tsx')
-    expect(vite).toContain("DRUM_NIGHT_PATHS = new Set(['/drum-night'])")
-    expect(vite).toContain("drumNight: resolve(__dirname, 'drum-night.html')")
-    expect(serviceWorker).toContain("'/drum-night'")
-    expect(serviceWorker).toContain("'/drum-night.html'")
-    expect(sitemap).not.toContain('mercurypitch.com/drum-night')
-  })
 })
 
 // Every entry document is a JavaScript shell: `#root` is empty in the file, so a
@@ -193,9 +174,8 @@ describe('entry document prelude', () => {
     'jam.html',
   ] as const
 
-  // Everything the nav offers is `index, follow` and in the sitemap. Drum Night
-  // is neither, so nothing links to it: a nofollow pilot collecting internal
-  // links from nine indexed documents is a contradiction a crawler notices.
+  // Everything the nav offers is `index, follow` and in the sitemap, and every
+  // document links every sibling but itself, so none of them is an orphan.
   const SIBLING_PATHS = [
     '/',
     '/mirror',
@@ -204,6 +184,7 @@ describe('entry document prelude', () => {
     '/glass',
     '/piano-night',
     '/guitar-night',
+    '/drum-night',
     '/ear-lab',
     '/jam',
   ] as const
@@ -246,8 +227,6 @@ describe('entry document prelude', () => {
       // The app repo never linked to the marketing site, so the landing sat
       // outside the only pages with any crawl budget.
       expect(hrefs).toContain('https://about.mercurypitch.com/')
-      // A noindex, nofollow pilot must not collect internal links.
-      expect(hrefs).not.toContain('/drum-night')
     })
 
     it(`hides ${file}'s prelude the moment the app mounts`, () => {
