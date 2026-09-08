@@ -6,8 +6,8 @@ generation tool on 2026-09-07. No third-party reference image was supplied.
 Runtime asset: `public/guitar-night/melody-recorder.webp`, a 384px WebP derivative
 with transparency retained. Used by the free-form recorder and My melodies
 gallery. The image is decorative; real buttons, status, time and notes are native
-UI. No video is loaded or generated. Animated artwork is deferred until the owner
-approves this design and placement.
+UI. The gallery stays still. The owner-approved recorder-only video composite is
+documented below; the original transparent image has not been replaced.
 
 ## Generation prompt
 
@@ -50,10 +50,9 @@ compositing animated reel interiors over the original transparent still. Do not
 key out the black parts of the recorder housing.
 
 Keep the still image as the reduced-motion and idle fallback. Animation is
-decorative, not an audio meter; later integration should run it only while
+decorative, not an audio meter; integration runs it only while
 recording. Start/stop acknowledgements must never delay audio capture. A prior
-owner-generated video has been reviewed privately, but no video has been added
-to the app yet.
+owner-generated clip supplied the short reel-motion derivative below.
 
 ## Playback amp/cabinet — 2026-09-07
 
@@ -66,3 +65,51 @@ are real UI, not text baked into the image. No new audio/IR asset is bundled.
 ### Generation prompt
 
 Use case: product-mockup. Asset type: transparent miniature amp/cabinet artwork for the Guitar Night music application's playback-tone button. Create one beautiful unbranded electric guitar amplifier head sitting on a compact single speaker cabinet, isolated on genuinely transparent alpha background. Premium tactile near-photoreal 3D product illustration, slight three-quarter front view with entire object centered and tight comfortable padding. Dark charcoal acoustic cloth and black walnut cabinet edges, warm aged brass control plate with a few readable small knobs and one subtle amber valve/power light, ivory trim. Strong silhouette and believable single speaker grille, charming high-quality studio equipment, designed to stay readable at 48 to 64 pixels tall as a UI instrument icon. Soft upper-left studio light with restrained dimensional shadows confined to the object. No surrounding room, no floor plane, no badge or circular frame, no words, no letters, no brand logo, no watermark, no extra objects. Actual transparent background, not a checkerboard illustration. Square composition.
+
+## Approved motion integration — 2026-09-08
+
+The owner approved integration and then flagged changing screw counts in both
+the Omni and newer Higgsfield generations. Raw four-second clips are not suitable
+as whole-object loops. Keep the original master/runtime still unchanged.
+
+Implementation plan:
+
+- Focal moment: the existing tape-deck button's reel faces move only during
+  acknowledged recording, never during preparation, saving, Live or Replay.
+- Continuity: use a short early Omni segment and composite only the reel faces.
+  Keep the rim, casing, pick and transparent silhouette from the original still.
+  A frozen-hub annulus trial was rejected: mismatched projections cut into the
+  moving openings. The shipped early faces preserve their three-screw section,
+  with a short seam blend; this is decorative motion, not a perfect rigid rotor.
+- Feedback: native Record/Stop, text and duration remain authoritative. Media
+  loading/play permission/failure must never gate capture or monitoring.
+- Budget: one small, silent, lazy-loaded native video; no audio track, new
+  dependencies, per-frame JavaScript masking or audio-clock work. No gallery
+  animations. Stop decoding when idle, hidden, offscreen or disposed.
+- Accessibility: honor reduced motion (including changes while recording),
+  preserve still-image fallback, hit target, focus and accessible button label.
+- Verification: inspect actual composite/seam, verify decoded frame progression
+  in a browser alongside real capture, and test reduced motion, media failure,
+  route/unmount cleanup and repeated starts. Owner visual acceptance remains.
+
+Runtime assets:
+
+- `public/guitar-night/melody-recorder-reels-v1.mp4`: H.264, 384 × 384,
+  18 frames at 24 fps / 0.75 seconds, 41,474 bytes, **no audio stream**.
+- `public/guitar-night/melody-recorder-reels-mask-v1.png`: 384px alpha mask,
+  4,996 bytes; two feathered reel faces, applied by CSS over the untouched still.
+  An opaque video alone is not the finished artwork and must not replace the img.
+- Source: owner-supplied Omni MP4, SHA-256
+  `0485535f51f2b4846a56c9384cedea3a0cb10b5d41ccb963c068c001d7223ed5`.
+  Source-frame ranges (zero-based) are left 5–25, right 3–23: approximately
+  0.125–1.042 seconds, with three-frame tail/head blending. Later morphing frames,
+  the grey backdrop and source AAC audio are not used.
+- Reproduce with `node scripts/prepare-guitar-recorder-loop.mjs
+/absolute/path/to/approved-omni.mp4 /absolute/empty-output-directory`.
+  Requires FFmpeg and the existing Sharp dependency. Checks source hash, bounds
+  decoding, refuses overwrite and emits MP4/mask. Original source stays private.
+
+The video element exists only during acknowledged, visible, on-screen recording
+with motion allowed and CSS masks supported. Failure leaves the still without a
+retry loop; next room mount may retry. Idle, preparation, saving, Replay, reduced
+motion and unmount release the decoder. Play is never awaited by Record/Stop.

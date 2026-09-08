@@ -23,6 +23,53 @@ accept → Practice/export**. Real-time simultaneous-note display is not include
 in that checkpoint and needs a separate quality/latency gate. Keep the existing
 low-latency monitoring route untouched.
 
+### Follow-up research: the Free-form Live test — 2026-09-08
+
+The owner clarified that the apparent chord detections were in **Free-form
+Live**, not an analysis screen. The local server on port 5217 serves this branch.
+Tracing its code confirms `useGuitarListeningController` publishes the shared
+MPM rehearsal profile's single pitch through `liveObservations.pitch`;
+`guitar-live-history.ts` maintains one held audio note (actual MIDI is separate).
+`recording-analysis.ts` still uses YIN single-note evidence. Picking out some
+notes in a strum is useful but cannot establish simultaneous-pitch recall. There
+is no enabled polyphonic Live engine to copy into Record. The C1 candidate below
+remains offline, not secretly active in either mode.
+
+This is not the best possible transcription. The next quality work should be:
+
+1. **Compare decoders before replacing models.** Our onset-only decoder differs
+   from upstream Basic Pitch. Its reference decoder adds onset candidates from
+   note-activation rises, works backward through detected onsets to consume
+   explained energy, and optionally searches remaining activation with a Melodia
+   heuristic. Test these as separate benchmark candidates against our bounded
+   decoder, especially retriggers, fast singles and overlapping releases. They
+   are hypotheses, not guaranteed improvements; no threshold change ships just
+   because it increases the number of detected notes.
+   [Upstream decoder](https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/basic_pitch/note_creation.py).
+2. **Measure real precision as well as recall.** Manually label a held-out dry
+   set of open/power/barre chords and fast phrases. Report per-pitch/onset F1,
+   exact simultaneous sets, false octaves and releases separately. A tuning-aware
+   range and distinct-string assignment can flag impossible candidates, but must
+   not invent missing tones or silently remove uncertainty. Preserve originals.
+3. **Profile in the actual browser Worker.** Load one pinned model per job owner,
+   reuse bounded buffers, transfer rather than copy PCM, and record cold-load,
+   resampling, inference, decoding, memory and cancel time separately. Start with
+   single-thread WASM for this small model; benchmark two threads where isolation
+   allows it and WebGPU only as measured alternatives. ONNX explicitly separates
+   worker UI responsiveness from inference speed. Extra threads are not audio
+   priority and must not compete unchecked with monitoring.
+   [ONNX performance guidance](https://onnxruntime.ai/docs/tutorials/web/performance-diagnosis.html),
+   [environment/worker constraints](https://onnxruntime.ai/docs/tutorials/web/env-flags-and-session-options.html).
+4. **Keep post-stop and real-time gates separate.** The current candidate sees
+   roughly two-second windows. Faster-than-real-time batch throughput does not
+   prove immediate causal chord display. Ship the explicit post-stop comparison
+   through C2/C3 first; evaluate a separate streaming display only after measuring
+   onset delay, sustained inner voices and monitor continuity. Never delay the
+   direct-input audio to wait for recognized notes.
+
+These are researched next tasks, not new accuracy/speed measurements or an enabled
+chord release. The supplied video integration does not change any detector.
+
 ## Boundaries
 
 - Analyze the retained dry, selected-channel recording after Stop. Never add a

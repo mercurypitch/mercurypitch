@@ -117,7 +117,7 @@ or existing signal-only Jam Doctor.
   compact source/tone choices. Listening/mix shall keep independent tight rows.
   The stage illustration shall be a labelled alternative Record/Stop action,
   beside take metadata, Review and an options menu containing Live notes.
-  Artwork shall remain static until its separate animation phase is approved.
+  Decorative artwork shall follow the separately approved GR-049 motion boundary.
 - **GR-030:** WHEN Play is chosen, the selected Recording or Notes source shall
   drive the draft highway from its actual playback position. Recording shall
   replay original input with captured evidence; Notes shall synthesize valid
@@ -229,6 +229,14 @@ or existing signal-only Jam Doctor.
   the same explicit mix-contamination consent as Rehearse. Cancel, changed
   source/route, disposal or a newer intent shall invalidate pending consent.
   Direct input shall not show that room-microphone warning.
+
+- **GR-049:** Only acknowledged recording shall animate the tape-deck reel faces.
+  The silent video shall not load in idle/preparing/saving/Replay, acquire audio,
+  delay capture, alter layout or change gallery artwork. Reduced motion, hidden
+  or offscreen artwork, unsupported masking and media failure shall use the
+  original still; stopped/unmounted motion shall release its decoder. Late media
+  completion shall not revive an obsolete recording. Native Record/Stop and its
+  accessible label shall remain usable independently of media readiness.
 
 ## Verification and limits
 
