@@ -253,7 +253,7 @@ import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/featur
 import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceHistoryPage'
 import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
-import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
+import { RELEASE_0_9 } from '@/features/whats-new/whats-new-content'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -3088,7 +3088,7 @@ const AppShell: Component<AppProps> = (props) => {
 
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>
-            <WhatsNewPage release={RELEASE_0_9_0} onClose={whatsNew.close} />
+            <WhatsNewPage release={RELEASE_0_9} onClose={whatsNew.close} />
           </Suspense>
         </Show>
 
