@@ -55,7 +55,9 @@
     //             (no byte-copied HTML files, unlike mirror/karaoke aliases;
     //             /glass itself maps via html_handling).
     //   /exercises/* — served as the studio shell with the URL preserved, so
-    //             the client can read the slug. Nothing else falls back now.
+    //             the client can read the slug.
+    //   /admin*  — the friendly admin entries, likewise: no file behind them,
+    //             the client rewrites the path to a hash route on boot.
     "run_worker_first": [
       "/api/*",
       "/",
@@ -69,6 +71,12 @@
       // have no file to fall back to — without this line every /exercises/*
       // link on the landing page returns 404.
       "/exercises/*",
+      // The friendly admin entries, for the same reason. Two patterns, not
+      // three: wrangler rejects `/admin/` as redundant against `/admin/*`,
+      // which settles that the wildcard covers the trailing slash. The bare
+      // `/admin` it does not cover, and wrangler accepts both.
+      "/admin",
+      "/admin/*",
     ],
   },
   "compatibility_flags": ["nodejs_compat"],
