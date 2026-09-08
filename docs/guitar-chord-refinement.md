@@ -5,6 +5,24 @@ candidate quality gate still open, C2–C4 not yet integrated.
 The owner approved the corrected native Guitar Pro 8 export on 2026-09-08.
 This is the next recorder phase; drum sound work stays separate.
 
+### Current in-app behaviour — owner retest, 2026-09-08
+
+The Live/Replay/Practice release does **not** enable this chord candidate. Direct
+guitar input still contributes one detected pitch per frame in Live and in the
+original recorder evidence. Hearing a chord but seeing one note is the current
+feature boundary, not evidence of an input-device or buffer problem. Recording
+uses the shared YIN profile, rehearsal uses MPM; neither is a polyphonic
+transcriber. The known-tab scorer can judge an authored chord onset through one
+supported voice and mark other voices unprovable. It does not recover their
+independent pitches.
+
+Next delivery remains C1 real-DI quality acceptance, C2 overlapping-note and
+export contracts, then C3 explicit post-stop refinement/review. The first
+user-facing chord test will be **Record → Stop → Refine chords → compare →
+accept → Practice/export**. Real-time simultaneous-note display is not included
+in that checkpoint and needs a separate quality/latency gate. Keep the existing
+low-latency monitoring route untouched.
+
 ## Boundaries
 
 - Analyze the retained dry, selected-channel recording after Stop. Never add a

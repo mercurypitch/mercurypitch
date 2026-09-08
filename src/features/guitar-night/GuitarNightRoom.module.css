@@ -1,4 +1,29 @@
 /* Song transport makes room for the same Listening dock used in score rehearsal. */
+section[data-free-form='true'] > .heading {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(14rem, 1fr) auto;
+  gap: 0.5rem 1.25rem;
+}
+
+/* Source identity and mode share the header; room tools retain the right edge.
+   On narrow screens the mode wraps inside that header, not into a new rail. */
+@media (max-width: 900px) {
+  section[data-free-form='true'] > .heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+  }
+
+  section[data-free-form='true'] > .heading > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  section[data-free-form='true'] > .heading > .headingMeta {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
 section[data-room-kind='backing'] .transportWithListening {
   grid-template-areas: 'listening rail rail loop' 'listening record controls controls';
   grid-template-columns: auto minmax(0, 1fr) auto auto;

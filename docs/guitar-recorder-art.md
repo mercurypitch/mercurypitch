@@ -15,17 +15,45 @@ Use case: stylized-concept. Asset type: a single collectible recording emblem fo
 
 ## Recorder animation prompt — 2026-09-08
 
-Use `public/guitar-night/melody-recorder.webp` as the reference image:
+Upload-ready reference:
+[opaque grey landscape PNG](assets/guitar-recorder/recorder-animation-reference-grey-16x9.png).
+This is a 1672 × 941 RGB PNG with no alpha, prepared with the built-in image
+editing tool from the original 1254 × 1254 transparent PNG. It is an edited
+animation reference, not a pixel-exact composite or a replacement for the
+approved transparent app artwork. The recorder, pick and reels remain fully
+visible, with horizontal padding for a 16:9 video. Do not upload the small
+384px runtime WebP or expect an opaque video to preserve transparency.
 
-> Animate only the two brass reels and visible tape transport in this exact
-> recorder. Smooth, steady rotation and natural tape movement. Lock the camera,
-> housing, guitar pick, lights, framing and background. No zoom, morphing, new
-> parts, text or sound. Seamless 4-second loop with matching first and last
-> frames. Preserve transparency if supported.
+For the first attempt, select **16:9, 4 seconds, 24 fps, no audio** where the
+generator offers these settings. If its duration/rate is fixed, retain those
+settings and inspect/cut a loop afterward. No extra image preparation is needed.
+Keep the camera and body still; begin with a constant-speed loop, not separate
+start/stop clips. Use this prompt:
+
+```text
+Animate this exact brass reel-to-reel recorder. Keep the camera, perspective,
+framing, housing, guitar pick, teal light and lighting completely fixed.
+Only the two brass reels and visible tape transport move. Rotate the reels
+rigidly and smoothly at a constant gentle speed, one full turn in four seconds.
+Preserve every reel opening, hub and screw without deformation. Make a seamless
+four-second loop with matching reel phase and brightness at both ends and
+continuous motion through the seam. Keep the supplied grey background unchanged.
+No zoom, camera movement, body movement, morphing, new parts, flicker, text,
+sound, fade, pause, acceleration or slowdown.
+```
+
+If first/last image inputs are available, the same prepared image can be used
+for both, but check for holds or reversal: prompting does not guarantee a loop.
+Grey is an explicit backdrop to avoid ambiguous alpha handling, not an alpha
+channel or a guarantee of perfect chroma keying. After approval, prefer
+compositing animated reel interiors over the original transparent still. Do not
+key out the black parts of the recorder housing.
 
 Keep the still image as the reduced-motion and idle fallback. Animation is
 decorative, not an audio meter; later integration should run it only while
-recording. No video has been generated or added to the app yet.
+recording. Start/stop acknowledgements must never delay audio capture. A prior
+owner-generated video has been reviewed privately, but no video has been added
+to the app yet.
 
 ## Playback amp/cabinet — 2026-09-07
 
