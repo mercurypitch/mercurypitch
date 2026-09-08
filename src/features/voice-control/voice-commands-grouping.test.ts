@@ -42,6 +42,8 @@ const REPRESENTATIVE_IDS = [
   'karaoke.songsOpen',
   'karaoke.songsClose',
   'guitarNight.play',
+  'guitarNight.record',
+  'guitarNight.stopRecording',
   'guitarNight.mute.drums',
   'mercurySing.start',
   'mercurySing.cancel',

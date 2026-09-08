@@ -370,19 +370,46 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   })
 
   // ── Voice commands (room-owned) ────────────────────────────
-  // The same transport controller the room's buttons drive; registered for
-  // the room's lifetime. Track ids are stem kinds, so the shared stem
-  // vocabulary maps straight onto mute/unmute.
+  // Free form uses the selected Recording/Notes audition; Play along retains
+  // the backing transport. Neither route adds an audio graph or input lease.
   const voiceCommands = createGuitarNightVoiceCommands({
-    playing: () => props.transport.status() === 'playing',
-    positionSeconds: () => props.transport.positionSeconds(),
-    durationSeconds: () => props.transport.durationSeconds(),
-    play: () => {
-      void songPlayback.play()
+    playing: () =>
+      props.backing === null ? recordingPlayback.playing() : isPlaying(),
+    pending: () =>
+      props.backing === null ? recordingPlayback.pending() : isLoading(),
+    playbackIssue: () => {
+      if (props.backing !== null) return null
+      if (recorder.draft() === null) return 'Record or open a melody first.'
+      return recordingPlayback.available()
+        ? null
+        : 'The selected audio, notes or saved amp are unavailable. Choose another replay source or tone.'
     },
-    pause: () => props.transport.pause(),
-    stop: () => props.transport.stop(),
-    seek: (seconds) => props.transport.seek(seconds),
+    positionSeconds: () =>
+      props.backing === null
+        ? recordingPlayback.position()
+        : props.transport.positionSeconds(),
+    durationSeconds: () =>
+      props.backing === null
+        ? recordingPlayback.duration()
+        : props.transport.durationSeconds(),
+    play: () => {
+      if (props.backing === null) void recordingPlayback.toggle()
+      else void songPlayback.play()
+    },
+    pause: () =>
+      props.backing === null
+        ? recordingPlayback.pause()
+        : props.transport.pause(),
+    stop: () =>
+      props.backing === null
+        ? recordingPlayback.stop()
+        : props.transport.stop(),
+    seek: (seconds) =>
+      props.backing === null
+        ? recordingPlayback.seek(seconds)
+        : props.transport.seek(seconds),
+    speedAvailable: () => props.backing !== null,
+    stemsAvailable: () => props.backing !== null,
     playbackRate: () => props.transport.playbackRate(),
     setPlaybackRate: (rate) => {
       void props.transport.setPlaybackRate(rate)
@@ -392,6 +419,17 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         .tracks()
         .map((t) => ({ id: t.id, muted: t.muted, available: t.available })),
     setTrackMuted: (id, muted) => props.transport.setTrackMuted(id, muted),
+    recorder: {
+      state: recorder.state,
+      start: recorder.start,
+      stop: recorder.stop,
+      startIssue: () =>
+        isLoading()
+          ? 'Wait for the song to finish loading.'
+          : listening.inputProfile() === 'midi'
+            ? 'Choose Direct input or Room mic to record audio and notes.'
+            : null,
+    },
   })
   // A suspending sheet parks EVERY side effect (its contract, see props) —
   // spoken transport included, or "play" would punch through the sheet.
@@ -406,9 +444,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       melodiesOpen() ||
       quickMelodiesOpen() ||
       doctorOpen() ||
-      recorder.busy() ||
       recorder.reviewOpen() ||
-      props.backing === null ||
+      listeningRoutePending() ||
       tunerOpen() ||
       isCalibrating()
         ? []
@@ -417,8 +454,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   )
   // Wake-word mode must hear this stage's playback as "music rolling".
   onCleanup(
-    // eslint-disable-next-line solid/reactivity
-    registerMusicPlayingSource(() => props.transport.status() === 'playing'),
+    registerMusicPlayingSource(
+      // eslint-disable-next-line solid/reactivity
+      () => isPlaying() || recordingPlayback.playing(),
+    ),
   )
   const isListening = createMemo(
     () =>
