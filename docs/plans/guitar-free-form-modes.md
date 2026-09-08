@@ -21,6 +21,9 @@ recorder; the separate Rehearse the tab layout remains unchanged.
   user's DI channel/amp/monitor through mode changes, release on Off/exit.
 - Keep one stable stage/camera, the independent Listening column and two-row
   rail. Route buttons, Space and voice through the same active transport.
+- Group Live/Replay/Practice with the session title in the header, left aligned;
+  keep My melodies, Tune and Session on the right. At narrow widths the mode
+  controls wrap within the same header rather than taking a separate stage strip.
 - Room mic Practice retains audible-mix consent. Direct input has no irrelevant
   room-feedback warning. Pending operations cannot revive after cancellation,
   source changes, device loss or leaving the session.
@@ -59,6 +62,12 @@ recorder; the separate Rehearse the tab layout remains unchanged.
 
 These checks use isolated fixture storage and synthetic input. They do not prove
 physical-interface latency, native speech recognition or new chord accuracy.
+
+Header follow-up: the seven-case Chromium suite passes with additional
+320/390/1440px assertions that all three modes belong to the session header,
+remain pointer-accessible at 44px or larger, and sit between the title and room
+tools on desktop. Desktop/phone screenshots were inspected. The Room component's
+37 existing tests also pass. This is a layout relocation, not chord integration.
 
 ## Verification requirements
 

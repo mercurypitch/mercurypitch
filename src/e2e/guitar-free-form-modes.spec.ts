@@ -450,6 +450,53 @@ for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await enterRecording(page)
     await selectMode(page, 'Practice')
+    const heading = page.getByTestId('guitar-session-heading')
+    const modes = heading.getByRole('group', { name: 'Free-form mode' })
+    await expect(modes).toBeVisible()
+    const headerShape = await heading.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      const title = element.querySelector('h1')!.getBoundingClientRect()
+      const modes = element.querySelector('[aria-label="Free-form mode"]')!
+      const modeBounds = modes.getBoundingClientRect()
+      const tools = element
+        .querySelector('[aria-label="Room tools"]')!
+        .getBoundingClientRect()
+      return {
+        left: bounds.left,
+        right: bounds.right,
+        titleRight: title.right,
+        modeLeft: modeBounds.left,
+        modeRight: modeBounds.right,
+        toolsLeft: tools.left,
+        withinHeader:
+          modeBounds.top >= bounds.top && modeBounds.bottom <= bounds.bottom,
+        controls: [...modes.querySelectorAll('button')].map((button) => {
+          const rect = button.getBoundingClientRect()
+          return {
+            width: rect.width,
+            height: rect.height,
+            receivesPointer: button.contains(
+              document.elementFromPoint(
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2,
+              ),
+            ),
+          }
+        }),
+      }
+    })
+    expect(headerShape.withinHeader).toBe(true)
+    expect(headerShape.modeLeft).toBeGreaterThanOrEqual(headerShape.left)
+    expect(headerShape.modeRight).toBeLessThanOrEqual(headerShape.right)
+    if (width > 900) {
+      expect(headerShape.modeLeft).toBeGreaterThan(headerShape.titleRight)
+      expect(headerShape.modeRight).toBeLessThan(headerShape.toolsLeft)
+    }
+    for (const control of headerShape.controls) {
+      expect(control.width).toBeGreaterThanOrEqual(44)
+      expect(control.height).toBeGreaterThanOrEqual(44)
+      expect(control.receivesPointer).toBe(true)
+    }
     const deck = page.getByTestId('guitar-free-form-practice-deck')
     const shape = await deck.evaluate((element) => {
       const rect = element.getBoundingClientRect()

@@ -11,6 +11,7 @@ import { GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightScoreRoom } from './GuitarNightScoreRoom'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease } from './song-port'
+import type * as ScoreRoomModule from './useGuitarNightScoreRoomController'
 import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreLiveBoundary, } from './useGuitarNightScoreRoomController'
 
 const listening = vi.hoisted(() => ({
@@ -30,6 +31,10 @@ const listening = vi.hoisted(() => ({
   latencyMs: vi.fn(() => 0),
   health: vi.fn(() => null),
   recordableStream: vi.fn(() => null),
+  recordableAudioContext: vi.fn(() => null),
+  liveInputRoute: vi.fn(() => null),
+  subscribeLiveObservations: vi.fn(() => () => undefined),
+  settleTake: vi.fn(async () => null),
   recordingInput: vi.fn(() => null),
   monitorInputChannel: vi.fn(() => 0),
   canAmpMonitor: vi.fn(() => false),
@@ -134,9 +139,8 @@ vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
   Guitar3DStage: () => <div role="img" aria-label="Guitar stage" />,
 }))
 
-vi.mock('./useGuitarNightScoreRoomController', () => ({
-  SCORE_ROOM_MIN_TEMPO: 40,
-  SCORE_ROOM_MAX_TEMPO: 220,
+vi.mock('./useGuitarNightScoreRoomController', async (importOriginal) => ({
+  ...(await importOriginal<typeof ScoreRoomModule>()),
   useGuitarNightScoreRoomController: () => scoreRoom,
 }))
 

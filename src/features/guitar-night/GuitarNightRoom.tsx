@@ -460,10 +460,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       if (props.backing === null) void freeForm.play()
       else void songPlayback.play()
     },
-    restart: () => {
-      if (props.backing === null) return freeForm.restart()
-      props.transport.seek(0)
-      return songPlayback.play()
+    restart: async () => {
+      if (props.backing === null) await freeForm.restart()
+      else {
+        props.transport.seek(0)
+        await songPlayback.play()
+      }
     },
     pause: () =>
       props.backing === null ? freeForm.pause() : props.transport.pause(),
@@ -739,7 +741,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       data-playback-mode={props.transport.loadMode() ?? 'unloaded'}
     >
       <div class={styles.panelEdge} aria-hidden="true" />
-      <div class={`${styles.roomHeadingRow} ${songStyles.heading}`}>
+      <div
+        class={`${styles.roomHeadingRow} ${songStyles.heading}`}
+        data-testid="guitar-session-heading"
+      >
         <div class={styles.roomIdentity}>
           <button
             class={styles.roomBack}
@@ -769,6 +774,21 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             </h1>
           </div>
         </div>
+        <Show when={props.backing === null}>
+          <GuitarFreeFormModePicker
+            mode={freeForm.modes.mode()}
+            pending={freeForm.modes.pending()}
+            recording={recorder.busy()}
+            disabled={
+              recorder.busy() ||
+              freeForm.practice.capture.state() === 'saving' ||
+              isCalibrating()
+            }
+            sourceTitle={recorder.draft()?.recording.title ?? null}
+            onSelect={(mode) => void freeForm.modes.select(mode)}
+            onCancel={freeForm.modes.cancel}
+          />
+        </Show>
         <div class={`${styles.roomHeadingMeta} ${songStyles.headingMeta}`}>
           <span class={styles.trackCount}>
             {props.backing === null
@@ -857,19 +877,6 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </div>
 
       <Show when={props.backing === null}>
-        <GuitarFreeFormModePicker
-          mode={freeForm.modes.mode()}
-          pending={freeForm.modes.pending()}
-          recording={recorder.busy()}
-          disabled={
-            recorder.busy() ||
-            freeForm.practice.capture.state() === 'saving' ||
-            isCalibrating()
-          }
-          sourceTitle={recorder.draft()?.recording.title ?? null}
-          onSelect={(mode) => void freeForm.modes.select(mode)}
-          onCancel={freeForm.modes.cancel}
-        />
         <GuitarNightInputNotice message={freeForm.notice} />
       </Show>
 

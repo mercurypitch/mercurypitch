@@ -1,12 +1,42 @@
 // Free recording runs real worklet/worker/IndexedDB without a song or physical audio hardware.
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { strFromU8, unzipSync } from 'fflate'
 import { readFile } from 'node:fs/promises'
+import type { GuitarPracticeScore, GuitarRecording, } from '../lib/guitar/recording-types'
 import { installSongAudioProbe, readSongAudio, } from './helpers/guitar-night-audio-probe'
 import { enterSong, SONG_TITLE } from './helpers/guitar-night-song'
 import { dismissOverlays, openNavTab } from './helpers/ui'
 
-test('records and keeps a dry melody without playback, then opens its accepted tab @smoke', async ({
+async function readAcceptedMelody(page: Page) {
+  return page.evaluate(async () => {
+    const request = indexedDB.open('MercuryPitchDB')
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const transaction = db.transaction([
+      'guitarRecordings',
+      'guitarPracticeScores',
+    ])
+    const read = <T>(store: string) =>
+      new Promise<T[]>((resolve, reject) => {
+        const query = transaction.objectStore(store).getAll()
+        query.onsuccess = () => resolve(query.result)
+        query.onerror = () => reject(query.error)
+      })
+    try {
+      const [recordings, scores] = await Promise.all([
+        read<GuitarRecording>('guitarRecordings'),
+        read<GuitarPracticeScore>('guitarPracticeScores'),
+      ])
+      return { recordings, scores }
+    } finally {
+      db.close()
+    }
+  })
+}
+
+test('records and keeps a dry melody without playback, then practices its accepted notes in place @smoke', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -228,41 +258,40 @@ test('records and keeps a dry melody without playback, then opens its accepted t
   await review
     .getByRole('button', { name: 'Practice these notes', exact: true })
     .click()
-  await expect(page.getByTestId('guitar-night-score-room')).toBeVisible()
+  await expect(review).not.toBeVisible()
+  await expect(page.getByTestId('guitar-night-score-room')).toHaveCount(0)
+  await expect(
+    page
+      .getByRole('group', { name: 'Free-form mode', exact: true })
+      .getByRole('button', { name: 'Practice', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  const practice = page.getByTestId('guitar-free-form-practice-deck')
+  await expect(practice).toBeVisible()
+  await expect(
+    practice.getByRole('button', { name: 'Play practice', exact: true }),
+  ).toBeEnabled()
   await expect(
     page.getByRole('heading', {
-      name: 'First local melody · recorded melody',
+      name: 'Free form',
       exact: true,
     }),
   ).toBeVisible()
-  await page.reload()
-  await expect(
-    page
-      .getByText('First local melody · recorded melody', { exact: true })
-      .first(),
-  ).toBeVisible()
-  const recordingId = await page.evaluate(
-    () =>
-      new Promise<string>((resolve, reject) => {
-        const open = indexedDB.open('MercuryPitchDB')
-        open.onerror = () => reject(open.error)
-        open.onsuccess = () => {
-          const db = open.result
-          const query = db
-            .transaction('guitarRecordings')
-            .objectStore('guitarRecordings')
-            .getAllKeys()
-          query.onsuccess = () => {
-            db.close()
-            resolve(String(query.result[0]))
-          }
-          query.onerror = () => {
-            db.close()
-            reject(query.error)
-          }
-        }
-      }),
+  await expect(flow).toHaveAttribute(
+    'aria-label',
+    /First local melody · recorded melody.*[1-9]\d* guided notes/,
   )
+  await expect(flow).toHaveAttribute('data-tab-timeline', 'upcoming')
+  expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(1)
+  const accepted = await readAcceptedMelody(page)
+  expect(accepted.recordings).toHaveLength(1)
+  expect(accepted.scores).toHaveLength(1)
+  const recordingId = accepted.recordings[0].id
+  expect(accepted.recordings[0].scoreId).toBe(accepted.scores[0].id)
+  expect(accepted.scores[0].recordingId).toBe(recordingId)
+  expect(accepted.scores[0].title).toBe('First local melody')
+  expect(accepted.scores[0].notes.length).toBeGreaterThan(0)
+  // Inline Practice must still commit the revision durably, even though it no
+  // longer navigates away to the separate Rehearse room.
   await page.goto(`/guitar-night?recording=${encodeURIComponent(recordingId)}`)
   const reopened = page
     .getByRole('dialog')
@@ -271,6 +300,7 @@ test('records and keeps a dry melody without playback, then opens its accepted t
     reopened.getByRole('button', { name: 'Take kept', exact: true }),
   ).toBeDisabled()
   expect(await page.evaluate(() => window.__songAudioProbe.micCalls)).toBe(0)
+  expect(await readAcceptedMelody(page)).toEqual(accepted)
   const midiDownload = page.waitForEvent('download')
   await reopened
     .getByRole('button', { name: 'Export MIDI', exact: true })
