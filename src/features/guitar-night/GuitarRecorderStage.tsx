@@ -2,9 +2,9 @@
 import { Show } from 'solid-js'
 import { Eye, EyeOff, Headphones } from '@/components/icons'
 import { OverflowMenu } from '@/components/OverflowMenu'
+import { GuitarRecorderArtwork } from './GuitarRecorderArtwork'
 import styles from './GuitarRecorderStage.module.css'
 import { recordingTime } from './GuitarRecordingControls'
-import { MELODY_RECORDER_ART } from './GuitarRecordingGallery'
 import { recordingToneDescription } from './GuitarRecordingPlaybackControls'
 import playbackStyles from './GuitarRecordingPlaybackControls.module.css'
 import type { GuitarRecordingController } from './useGuitarRecordingController'
@@ -62,7 +62,9 @@ export function GuitarRecorderStage(props: {
             : void props.recorder.start()
         }
       >
-        <img src={MELODY_RECORDER_ART} width="128" height="128" alt="" />
+        <GuitarRecorderArtwork
+          recording={props.recorder.state() === 'recording'}
+        />
       </button>
       <div class={styles.label}>
         <span class={styles.status}>

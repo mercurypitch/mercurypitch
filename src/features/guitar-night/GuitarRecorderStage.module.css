@@ -23,12 +23,6 @@
   background: transparent;
   cursor: pointer;
 }
-.machine img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
 .machine:hover:not(:disabled) {
   filter: brightness(1.12);
 }
