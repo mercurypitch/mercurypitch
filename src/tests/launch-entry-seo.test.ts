@@ -16,7 +16,7 @@ describe('launch entry documents', () => {
     const vite = repoFile('vite.config.ts')
 
     expect(document.title).toBe(
-      'Free Vocal Range Test — Find Your Lowest & Highest Note | MercuryPitch',
+      'Free Vocal Range Test — Lowest & Highest Note | MercuryPitch',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -240,6 +240,17 @@ describe('entry document prelude', () => {
       expect(raw.indexOf('class="entry-prelude"')).toBeGreaterThan(
         raw.indexOf('<div id="root"></div>'),
       )
+    })
+
+    it(`keeps ${file}'s title short enough to survive a result`, () => {
+      // Bing Webmaster Tools' URL inspection reports a title outside roughly 15
+      // to 65 characters, and Google truncates on pixel width at about 60. The
+      // tail is where the brand sits, so an overrun costs the least important
+      // words first — but it still reads as a truncated result.
+      const title = repoHtml(file).title.trim()
+
+      expect(title.length).toBeGreaterThan(15)
+      expect(title.length).toBeLessThanOrEqual(65)
     })
 
     it(`keeps ${file}'s description short enough to survive a result`, () => {
