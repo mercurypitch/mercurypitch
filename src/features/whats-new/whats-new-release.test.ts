@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, } from './whats-new-release'
+import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, WHATS_NEW_SEEN_KEY, } from './whats-new-release'
 
 describe('releaseLine', () => {
   it('reduces a version to the line it belongs to', () => {
@@ -63,6 +63,28 @@ describe('shouldAnnounce', () => {
   it('says nothing when the version cannot be read', () => {
     expect(
       shouldAnnounce({ current: 'dev', seen: '0.8', returning: true }),
+    ).toBe(false)
+  })
+})
+
+describe('the seen key', () => {
+  it('carries a suffix, so 0.9.2 announces on a line already told', () => {
+    // Ear Lab and Drum Night reach a release for the first time in 0.9.2, a
+    // patch on a line every returning device has seen. The key was reset once
+    // so the announcement fires; if this ever reverts to the bare key, that
+    // release goes out silently to everyone who was already here.
+    expect(WHATS_NEW_SEEN_KEY).toBe('pitchperfect_whats_new_seen_v2')
+    // The reset works by making every device read as never-told.
+    expect(
+      shouldAnnounce({ current: '0.9.2', seen: null, returning: true }),
+    ).toBe(true)
+  })
+
+  it('goes quiet again for the next patch on the same line', () => {
+    // The reset is one-off: once 0.9 is written under the new key, 0.9.3
+    // must not interrupt anybody.
+    expect(
+      shouldAnnounce({ current: '0.9.3', seen: '0.9', returning: true }),
     ).toBe(false)
   })
 })

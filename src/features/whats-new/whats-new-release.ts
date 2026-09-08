@@ -10,8 +10,17 @@
 // Pure on purpose: the decision is a string comparison, and it is the part
 // worth testing. Storage and rendering live with the surface.
 
-/** localStorage key holding the last release line announced on this device. */
-export const WHATS_NEW_SEEN_KEY = 'pitchperfect_whats_new_seen'
+/**
+ * localStorage key holding the last release line announced on this device.
+ *
+ * The suffix is a deliberate one-off reset, not versioning for its own sake.
+ * 0.9.2 is the release that first carries Ear Lab and Drum Night, and it is a
+ * patch on a line every returning device has already been told about — so
+ * without a new key the announcement the release actually deserves would
+ * never fire. Changing the key makes every device unseen exactly once; the
+ * once-per-line rule below is unchanged and takes over again immediately.
+ */
+export const WHATS_NEW_SEEN_KEY = 'pitchperfect_whats_new_seen_v2'
 
 /**
  * The `major.minor` of a semver-ish string — the granularity the panel
