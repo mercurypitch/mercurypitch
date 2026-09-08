@@ -33,6 +33,11 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
   Pro file that opens as readable notation.
 - **Record without touching anything.** "Record an idea" starts a take and
   "stop recording" finishes it, hands free.
+- **Chords, if you want them.** Guitar Night can show more than one note at a
+  time while you play, and after you stop it can offer a reading of the chords
+  it heard. You compare it against what was captured, keep it or leave it, and
+  go back to the original in one step. Both switches live in Session, and it
+  all happens on your own device.
 - **Sign in with a passkey**, a code sent to your email, or a second factor
   with a way back in if you lose it — and see every device on your account,
   with a way to revoke any of them.
@@ -82,6 +87,8 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
   could not be saved.
 - **A closed challenge cannot be set live again**, and past challenges show
   the day they actually closed.
+- **A link to a page that does not exist says so** instead of quietly opening
+  the home page.
 
 ## [0.9.1] - 2026-08-25
 

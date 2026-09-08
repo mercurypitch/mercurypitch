@@ -78,6 +78,18 @@ input prompt whose cancellation safely rejects a late device or permission
 result. Two ownerless Solid computations were fixed by moving conditional memo
 creation out of JSX getters into component-owned memos.
 
+#746 added chord refinement on top of it, deliberately reversible and off the
+audible path. A pinned, self-hosted Basic Pitch model and single-threaded ONNX
+WASM load lazily into a disposable Worker — about 13 MiB of WASM and a 230 kB
+model on first use, no upload and no second microphone. Two independent Session
+switches: **Live chords** (off initially), which borrows the selected dry input
+through a silent bounded side tap to show simultaneous pitches while playing,
+and **Refine after Stop** (on initially), which prepares a Current/Refined
+comparison a take can accept or reject, with a one-step restore that survives a
+reload. Split, merge, practice, MIDI and GP7 are polyphony-safe without moving
+the original performance timing; the captured evidence and accepted practice
+revisions are never overwritten.
+
 Left standing: capture-driven browser specs measure real-time frames, and
 buffers recycle only after each checkpoint is durable, so they fail under IO
 contention (reproduced locally by moving the browser profile off tmpfs) — the
@@ -139,7 +151,7 @@ position stamps: a return traversal is known by its stamp and a push by the
 absence of `popstate`, because real browsers split those two into different
 tasks and jsdom does not.
 
-### Crawlable entry documents (#743, #745, #747)
+### Crawlable entry documents (#743, #744, #745, #747, #748, #749)
 
 `mercurypitch.com` held five indexed URLs and appeared for none of the eighteen
 keywords we target, because every entry document is a JavaScript shell: `#root`
@@ -176,6 +188,31 @@ Trap worth keeping: clearing `#root` after boot is **not** a way to inspect the
 pre-boot paint. The bundle's injected CSS then gives `#root` a 100vh
 min-height and pushes the prelude off screen. Strip every stylesheet but the
 prelude's own — which is also how the missing `body { margin: 0 }` surfaced.
+
+#744 brought five entry titles inside the roughly 15-to-65-character window
+Bing's URL inspection reports on, trimming from the tail so the query stays at
+the front, and pinned the bound across all ten documents. The root title stays
+at 63: shortening it means choosing what MercuryPitch leads with, which is a
+positioning call rather than a length one.
+
+#748 stopped `not_found_handling: "single-page-application"` answering every
+unmatched path with `index.html` and a 200 — soft 404s by the infinite supply,
+on a site whose actual problem is too few indexed pages. It is `404-page` now,
+with a real 404 document built as a Vite input so it shares the prelude
+stylesheet, carrying `noindex, follow` and no canonical. `/exercises/<slug>`
+was the one path genuinely relying on the fallback and is served on purpose by
+`src/worker.ts` with the URL intact. It also ships an `llms.txt`, including a
+"what MercuryPitch does not do" section drawn from the claims list, because
+GPTBot is the largest crawler on this domain.
+
+#749 closed what that sweep missed, found in review: the six friendly admin
+paths in `src/lib/admin-entry-route.ts` had exactly the same shape as the
+exercise deep links — no file, normalized to a hash route on boot — and went to
+404 with the fallback. The lesson is the one the CRITICAL comment in
+`wrangler.jsonc` already states: the asset layer answers every path not listed
+in `run_worker_first` **without invoking the Worker**, so every pathname the
+client routes on has to be listed there deliberately. A unit test over the
+mapping function cannot see this; only a routing test can.
 
 ### Testing and CI (#655, #659, #740)
 
