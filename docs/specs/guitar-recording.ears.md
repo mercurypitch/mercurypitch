@@ -193,7 +193,7 @@ or existing signal-only Jam Doctor.
   monitoring shall remain explicit. Live shall show the existing detector's
   current notes and six seconds of bounded NOW/history, without starting an
   audio recorder, second detector, recording worker or persistence of that
-  history. Audio recognition shall not claim general chord transcription;
+  history by default. Opt-in live chord analysis is specified by GR-058–060;
   actual MIDI simultaneous voices/releases shall retain their identity.
 - **GR-042:** Selecting Live shall hide but preserve the selected melody,
   corrections and Replay position. Returning to Replay shall remain paused.
@@ -263,7 +263,8 @@ or existing signal-only Jam Doctor.
   releases, original seconds and model provenance/confidence. Model activation
   shall not be labelled live-detector clarity or accuracy. Fingering shall use
   distinct available strings or explicitly remain unresolved, never omit pitches
-  or transpose them to fit. Live and original recorded evidence remain monophonic.
+  or transpose them to fit. Original recorded evidence remains monophonic;
+  optional live chord ink shall not replace that evidence.
 - **GR-053:** A completed proposal shall offer Current/Refined comparison through
   the existing stage and Notes audition. Comparing shall not save or autoplay.
   Use refined notes shall atomically save editable notes plus one previous-score
@@ -286,9 +287,30 @@ or existing signal-only Jam Doctor.
   or the decoding memory limit shall fail explicitly, and model/runtime assets shall
   be self-hosted and lazy. Real-guitar/native-editor acceptance remains a separate gate.
 
+### Optional live chords and automatic proposals
+
+- **GR-058:** Session shall offer independent, persisted Live chords (default off)
+  and Refine after Stop (default on) switches. A newly completed nonempty recording
+  shall schedule at most one automatic proposal while visible if the latter is on.
+  Opening/recovering old takes, cancelling, or reopening review shall not rerun it.
+  Automatic processing shall retain the explicit comparison/acceptance of GR-053.
+- **GR-059:** WHEN Live chords is enabled in Free form Live or recording, with
+  Listening audio and Live notes on, one optional Worker shall analyse a bounded
+  rolling buffer from the selected dry channel. It shall reuse the pinned model,
+  resampler, decoder and chord fingering without acquiring an input or context,
+  delaying monitoring, storing live results, or changing Practice/Replay scoring.
+  At most one inference shall run; old windows shall not accumulate in a queue.
+  Notes shall retain source-clock timing and independent simultaneous pitches.
+- **GR-060:** Switching Live chords off, route/channel changes, hiding the page,
+  leaving Live/Record, opening review, or disposing the room shall retire the
+  optional worker/tap and reject late results without stopping owned input or
+  recording. Failure/overload shall show a fallback reason. Session shall distinguish
+  measured preview lag and processing time from audio/physical round-trip latency.
+  Full-take refinement shall not overlap the live model worker.
+
 Automated coverage and owner checks: [recorder testing](../guitar-recording-testing.md).
 V1 is five-minute mono dry recording, editable monophonic transcription and
-local persistence, with optional experimental post-stop chord refinement.
-Recording count-in, real-time polyphonic/bend-technique notation, wet recording,
+local persistence, with optional experimental live chord preview and post-stop refinement.
+Recording count-in, bend-technique notation, wet recording,
 cloud backup and MIDI-input-only recording are follow-ups. Browser latency
 estimates and synthetic render tests are not physical round-trip measurements.

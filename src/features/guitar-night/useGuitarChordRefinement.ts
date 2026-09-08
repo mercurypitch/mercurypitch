@@ -18,6 +18,9 @@ export function useGuitarChordRefinement(options: {
   open: Accessor<boolean>
   score: Accessor<GuitarPracticeScore>
   blocked: Accessor<boolean>
+  /** One fresh completed take, never an existing/recovered melody. */
+  autoStart?: Accessor<boolean>
+  onAutoStart?(): void
   onScore(score: GuitarPracticeScore): void
   onSaved(): void
   playback: GuitarRecordingPlayback
@@ -46,6 +49,7 @@ export function useGuitarChordRefinement(options: {
   let controller: AbortController | null = null
   let generation = 0
   let disposed = false
+  let autoStarted = false
   const running = () => progress() !== null
   const pendingReview = () => candidate() !== null
   const locked = () => running() || persisting() || pendingReview()
@@ -204,6 +208,20 @@ export function useGuitarChordRefinement(options: {
       if (!disposed) setPersisting(false)
     }
   }
+  createEffect(() => {
+    if (
+      autoStarted ||
+      options.autoStart?.() !== true ||
+      !options.open() ||
+      options.blocked()
+    )
+      return
+    autoStarted = true
+    untrack(() => {
+      options.onAutoStart?.()
+      void start()
+    })
+  })
   const restore = async () => {
     if (!canRestore() || locked() || options.blocked()) return
     const current = options.score()

@@ -5,6 +5,27 @@ import type { GuitarCaptureMessage } from './recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 
 describe('bounded guitar PCM delivery', () => {
+  it.each([false, true])(
+    'preserves recorder clock reporting and optionally stops live analysis on a gap: %s',
+    (stopOnClockGap) => {
+      const messages: GuitarCaptureMessage[] = []
+      const capture = createGuitarPcmCapture((message) =>
+        messages.push(message),
+      )
+      capture.command({ type: 'buffer', buffer: new ArrayBuffer(8192) })
+      capture.command({ type: 'start', maxFrames: 48000, stopOnClockGap })
+      capture.process(new Float32Array(128), 0)
+      capture.process(new Float32Array(128), 256)
+      if (!stopOnClockGap) capture.command({ type: 'stop', reason: null })
+      expect(messages.at(-1)).toEqual({
+        type: 'stopped',
+        frames: stopOnClockGap ? 128 : 256,
+        clockAnomalies: 1,
+        reason: stopOnClockGap ? 'The live audio clock was interrupted.' : null,
+      })
+    },
+  )
+
   it('delivers every 2048 frames with the original pooled sample capacity and stops explicitly on exhaustion', () => {
     const messages: GuitarCaptureMessage[] = []
     const capture = createGuitarPcmCapture((message, transfer = []) =>

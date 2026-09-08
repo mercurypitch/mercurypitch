@@ -16,6 +16,7 @@ import type { GuitarFreeFormMode } from './useGuitarFreeFormModes'
 import { useGuitarFreeFormModes } from './useGuitarFreeFormModes'
 import { useGuitarFreeFormPractice } from './useGuitarFreeFormPractice'
 import type { GuitarListeningController } from './useGuitarListeningController'
+import { useGuitarLiveChords } from './useGuitarLiveChords'
 import { useGuitarLiveHistoryStage } from './useGuitarLiveHistoryStage'
 import { useGuitarNightScoreResults } from './useGuitarNightScoreResults'
 import type { GuitarRecordingController } from './useGuitarRecordingController'
@@ -24,6 +25,7 @@ import type { useGuitarRecordingStage } from './useGuitarRecordingStage'
 
 export function useGuitarFreeFormSession(options: {
   enabled: Accessor<boolean>
+  liveChordsEnabled?: Accessor<boolean>
   blocked: Accessor<boolean>
   listening: GuitarListeningController
   recorder: GuitarRecordingController
@@ -169,14 +171,31 @@ export function useGuitarFreeFormSession(options: {
       !options.recorder.busy() &&
       options.recordingStage.showLiveNotes(),
   })
+  const chords = useGuitarLiveChords({
+    enabled: () =>
+      options.enabled() &&
+      options.liveChordsEnabled?.() === true &&
+      !sessionBlocked() &&
+      options.recordingStage.showLiveNotes() &&
+      (options.recorder.state() === 'recording' ||
+        (!options.recorder.busy() && modes.mode() === 'live')),
+    recording: () => options.recorder.state() === 'recording',
+    tuning: () =>
+      options.recorder.busy()
+        ? (options.recorder.previewRecording()?.tuning ?? options.tuning())
+        : options.tuning(),
+    listening: options.listening,
+  })
   const currentStage = createMemo(() =>
-    options.recorder.busy()
-      ? options.recordingStage.source
-      : modes.mode() === 'live'
-        ? live.source
-        : modes.mode() === 'practice'
-          ? practice.stage
-          : options.recordingStage.source,
+    chords.active()
+      ? chords.source
+      : options.recorder.busy()
+        ? options.recordingStage.source
+        : modes.mode() === 'live'
+          ? live.source
+          : modes.mode() === 'practice'
+            ? practice.stage
+            : options.recordingStage.source,
   )
   // Forward into one stable stage so source changes never remount its camera/canvas.
   const stage: GuitarPerformanceStageSource = {
@@ -381,6 +400,7 @@ export function useGuitarFreeFormSession(options: {
     await practice.play(replay.range)
   }
   return {
+    chords,
     modes,
     practice,
     results,

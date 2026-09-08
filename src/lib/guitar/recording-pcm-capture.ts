@@ -14,6 +14,7 @@ export function createGuitarPcmCapture(
   let limit = 0
   let expectedFrame: number | null = null
   let anomalies = 0
+  let stopOnClockGap = false
   const flush = (): void => {
     if (buffer === undefined || used === 0) return
     const bytes = buffer.buffer as ArrayBuffer
@@ -42,6 +43,7 @@ export function createGuitarPcmCapture(
       else if (command.type === 'start' && !started && !active) {
         active = true
         limit = command.maxFrames
+        stopOnClockGap = command.stopOnClockGap === true
       } else if (command.type === 'stop') stop(command.reason)
     },
     process(input: Float32Array | undefined, audioFrame: number) {
@@ -54,7 +56,13 @@ export function createGuitarPcmCapture(
         started = true
         send({ type: 'started', audioStartFrame: audioFrame })
       }
-      if (expectedFrame !== null && expectedFrame !== audioFrame) anomalies++
+      if (expectedFrame !== null && expectedFrame !== audioFrame) {
+        anomalies++
+        if (stopOnClockGap) {
+          stop('The live audio clock was interrupted.')
+          return
+        }
+      }
       expectedFrame = audioFrame + input.length
       let index = 0
       while (index < input.length && active) {

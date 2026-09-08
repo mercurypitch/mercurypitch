@@ -80,7 +80,23 @@ export function createRefinedRecordingScore(
         a.midi - b.midi ||
         a.id.localeCompare(b.id),
     )
-  const occupiedUntil = base.tuning.map(() => 0)
+  assignChordFingering(notes, base.tuning, base.capo)
+  return {
+    score: { ...base, notes, attachment: null },
+    unassignedNoteIds: notes
+      .filter((note) => note.string === null)
+      .map((note) => note.id),
+    confidenceByNoteId,
+  }
+}
+
+/** Shared live/offline fingering; mutates freshly created, time-sorted notes only. */
+export function assignChordFingering(
+  notes: GuitarPracticeNote[],
+  tuning: readonly number[],
+  capo: number,
+) {
+  const occupiedUntil = tuning.map(() => 0)
   let first = 0
   while (first < notes.length) {
     let last = first + 1
@@ -93,9 +109,9 @@ export function createRefinedRecordingScore(
     for (const note of notes.slice(first, last)) {
       positions.set(
         note,
-        base.tuning
+        tuning
           .flatMap((open, index) => {
-            const fret = note.midi - open - base.capo
+            const fret = note.midi - open - capo
             return fret >= 0 &&
               fret <= 24 &&
               occupiedUntil[index] <= note.startBeat
@@ -129,16 +145,9 @@ export function createRefinedRecordingScore(
       assign(note, new Set())
     for (const [string, note] of owners) {
       note.string = string
-      note.fret = note.midi - base.tuning[string - 1] - base.capo
+      note.fret = note.midi - tuning[string - 1] - capo
       occupiedUntil[string - 1] = note.endBeat
     }
     first = last
-  }
-  return {
-    score: { ...base, notes, attachment: null },
-    unassignedNoteIds: notes
-      .filter((note) => note.string === null)
-      .map((note) => note.id),
-    confidenceByNoteId,
   }
 }

@@ -1,37 +1,9 @@
 // Bounded WAV-to-model PCM decoding stays in the refinement worker, never the live audio graph.
 import { parseWavBlobFormat, readWavBlobWindow } from '../wav-blob-window'
 import { BASIC_PITCH } from './basic-pitch-inference'
+import { basicPitchResamplingKernel, RESAMPLING_PHASES as PHASES, } from './basic-pitch-resampling'
 
 export const GUITAR_REFINEMENT_MAX_BYTES = 256 * 1024 * 1024
-const PHASES = 256
-
-/** Blackman-windowed sinc phases remove above-Nyquist energy before downsampling. */
-function resamplingKernel(sourceRate: number) {
-  const cutoff = 0.94 * Math.min(1, BASIC_PITCH.sampleRate / sourceRate)
-  const radius = Math.ceil(24 / cutoff)
-  const width = radius * 2 + 1
-  const phases = new Float32Array(PHASES * width)
-  for (let phase = 0; phase < PHASES; phase++) {
-    let sum = 0
-    for (let tap = 0; tap < width; tap++) {
-      const distance = tap - radius - phase / PHASES
-      const position = distance / radius
-      const angle = Math.PI * distance * cutoff
-      const sinc = angle === 0 ? cutoff : (Math.sin(angle) / angle) * cutoff
-      const window =
-        Math.abs(position) > 1
-          ? 0
-          : 0.42 +
-            0.5 * Math.cos(Math.PI * position) +
-            0.08 * Math.cos(2 * Math.PI * position)
-      const weight = sinc * window
-      phases[phase * width + tap] = weight
-      sum += weight
-    }
-    for (let tap = 0; tap < width; tap++) phases[phase * width + tap] /= sum
-  }
-  return { radius, width, phases }
-}
 
 /**
  * Read at most one second plus FIR overlap at a time. The only full-size
@@ -60,7 +32,9 @@ export async function decodeGuitarRefinementAudio(
   const length = Math.floor(format.durationSeconds * BASIC_PITCH.sampleRate)
   if (length < 1) throw new Error('Recording audio is empty.')
   const samples = new Float32Array(length)
-  const { radius, width, phases } = resamplingKernel(format.sampleRate)
+  const { radius, width, phases } = basicPitchResamplingKernel(
+    format.sampleRate,
+  )
   const ratio = format.sampleRate / BASIC_PITCH.sampleRate
   onProgress(0)
   for (
