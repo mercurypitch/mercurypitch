@@ -1081,7 +1081,12 @@ function CornerGlyph(props: { corner: DockCorner }) {
  * means it can also sit on top of the transport, hence the corner snaps and the
  * drag handle — a debug surface that hides the Play button is worse than none.
  */
-export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
+export function GuitarNightScoreDebugDock(
+  props: GuitarNightScoreDebugProps & {
+    /** Reserve the host's transport only while snapped to a bottom corner. */
+    bottomClearance?: string
+  },
+) {
   const [placement, setPlacement] =
     createSignal<DockPlacement>(readDockPlacement())
   let dock: HTMLDivElement | undefined
@@ -1122,8 +1127,14 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
     // falls through to the corner assignment below
     style[current.corner.endsWith('right') ? 'right' : 'left'] =
       `${DOCK_MARGIN}px`
-    style[current.corner.startsWith('bottom') ? 'bottom' : 'top'] =
-      `${DOCK_MARGIN}px`
+    const bottom = current.corner.startsWith('bottom')
+    style[bottom ? 'bottom' : 'top'] = bottom
+      ? (props.bottomClearance ?? `${DOCK_MARGIN}px`)
+      : `${DOCK_MARGIN}px`
+    if (bottom && current.open && props.bottomClearance !== undefined) {
+      style['max-height'] =
+        `min(90vh, calc(100dvh - ${props.bottomClearance} - ${DOCK_MARGIN}px))`
+    }
     return style
   })
 

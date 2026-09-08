@@ -302,6 +302,15 @@ export interface GuitarRoomBandOptions {
   contextFactory?: () => AudioContext
   activateContext?: (context: AudioContext) => Promise<void>
   /**
+   * The room owner activates and retains this graph for the band's lifetime.
+   * Null refuses playback without creating a fallback context. Borrowed bands
+   * own only their run outputs and players; master/amp controls stay local to
+   * their accompaniment and dispose never closes or disposes the shared graph.
+   */
+  borrowedAudioGraph?: {
+    activate(): Promise<GuitarSessionAudioGraph | null>
+  }
+  /**
    * Injected for tests and future Guitar-specific kit preferences. The default
    * is the zero-download Mercury Synth manifest; sampled kits remain lazy.
    */
@@ -536,6 +545,7 @@ export function createGuitarRoomBand(
     options.contextFactory ??
     (() => new AudioContext({ latencyHint: 'interactive' }))
   const activateContext = options.activateContext ?? defaultActivateContext
+  const borrowedAudioGraph = options.borrowedAudioGraph
   const scheduleAheadSeconds = options.scheduleAheadSeconds ?? 0.12
   const schedulerIntervalMs = options.schedulerIntervalMs ?? 24
 
@@ -713,6 +723,22 @@ export function createGuitarRoomBand(
     return graph
   }
 
+  const activateGraph = async (): Promise<GuitarSessionAudioGraph | null> => {
+    if (borrowedAudioGraph !== undefined) {
+      const activatedGraph = await borrowedAudioGraph.activate()
+      if (disposed || activatedGraph === null) return null
+      if (graph !== null && graph !== activatedGraph) {
+        throw new Error('A borrowed room band requires a stable audio graph')
+      }
+      graph = activatedGraph
+      context = activatedGraph.context
+      return activatedGraph
+    }
+    const ownedGraph = ensureGraph()
+    await activateContext(ownedGraph.context)
+    return disposed ? null : ownedGraph
+  }
+
   const clearTimers = (): void => {
     if (interval !== null) window.clearInterval(interval)
     interval = null
@@ -810,25 +836,39 @@ export function createGuitarRoomBand(
 
     async activate() {
       if (disposed) return null
-      const currentGraph = ensureGraph()
       try {
-        await activateContext(currentGraph.context)
+        return await activateGraph()
       } catch {
         return null
       }
-      return currentGraph
     },
 
     setMasterLevel(position) {
       masterLevel = Math.min(1, Math.max(0, position))
       if (disposed) return
-      graph?.setMasterLevel(masterLevel)
+      if (borrowedAudioGraph === undefined) {
+        graph?.setMasterLevel(masterLevel)
+      } else if (runOutput !== null) {
+        const now = context?.currentTime ?? 0
+        for (const output of [
+          ...Object.values(runOutput.guide),
+          runOutput.drums,
+        ]) {
+          setGuitarSessionGainTarget(
+            output.gain,
+            sliderToGain(masterLevel),
+            now,
+          )
+        }
+      }
     },
 
     setElectricAmpParameters(parameters) {
       electricAmpParameters = { ...parameters }
       if (disposed) return
-      graph?.setElectricAmpParameters(electricAmpParameters)
+      if (borrowedAudioGraph === undefined) {
+        graph?.setElectricAmpParameters(electricAmpParameters)
+      }
       const now = context?.currentTime ?? 0
       for (const stage of runOutput?.electricAmpStages.values() ?? []) {
         stage.setParameters(electricAmpParameters, now)
@@ -896,9 +936,8 @@ export function createGuitarRoomBand(
           holder.player.setKit(drumKitId)
         }
       }
-      const currentGraph = ensureGraph()
-      await activateContext(currentGraph.context)
-      if (currentGeneration !== generation) {
+      const currentGraph = await activateGraph()
+      if (currentGraph === null || currentGeneration !== generation) {
         return {
           expectedHitTimesMs: [],
           exerciseStartedAtSeconds: null,
@@ -911,9 +950,11 @@ export function createGuitarRoomBand(
         electric: currentGraph.context.createGain(),
       } satisfies Record<GuitarGuideInput, GainNode>
       const drumsOutput = currentGraph.context.createGain()
-      guideOutput.clean.gain.value = 1
-      guideOutput.electric.gain.value = 1
-      drumsOutput.gain.value = 1
+      const runGain =
+        borrowedAudioGraph === undefined ? 1 : sliderToGain(masterLevel)
+      guideOutput.clean.gain.value = runGain
+      guideOutput.electric.gain.value = runGain
+      drumsOutput.gain.value = runGain
       guideOutput.clean.connect(currentGraph.guideInputs.clean)
       // Every electric voice is summed by track below, then its processed
       // output meets the clean guide bus. Do not wake an unused global amp.
@@ -1674,17 +1715,22 @@ export function createGuitarRoomBand(
       await Promise.all([...pendingReleases])
       for (const holder of percussionPlayers.values()) {
         holder.unsubscribeStatus?.()
+        holder.output.disconnect()
       }
       await Promise.all(
         [...percussionPlayers.values()].map(({ player }) => player.dispose()),
       )
       percussionPlayers.clear()
       drumPlaybackListeners.clear()
-      graph?.dispose()
+      if (borrowedAudioGraph === undefined) graph?.dispose()
       graph = null
       const ownedContext = context
       context = null
-      if (ownedContext !== null && ownedContext.state !== 'closed') {
+      if (
+        borrowedAudioGraph === undefined &&
+        ownedContext !== null &&
+        ownedContext.state !== 'closed'
+      ) {
         await ownedContext.close()
       }
     },

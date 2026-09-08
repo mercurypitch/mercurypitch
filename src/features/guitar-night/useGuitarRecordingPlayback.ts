@@ -355,6 +355,10 @@ export function useGuitarRecordingPlayback(
     seek,
     toggle,
     restart,
+    showHistory: () => {
+      pause()
+      setEngaged(false)
+    },
     available,
   }
 }

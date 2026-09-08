@@ -788,6 +788,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const recordingHistory = createMemo(
     () => props.source.recordingHistory?.() === true,
   )
+  const historyKind = () => props.source.historyKind?.() ?? 'recording'
   const visualPlayheadBeat = createMemo(() =>
     recordingHistory()
       ? (actualPlayheadBeat() ?? 0)
@@ -1070,7 +1071,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   }
   const targetSummary = createMemo(() => {
     if (recordingHistory())
-      return 'Recorded note positions are suggested, not targets to play.'
+      return `${historyKind() === 'live' ? 'Heard' : 'Recorded'} note positions are suggested, not targets to play.`
     const { activeNotes: active, nextNotes: upcoming } = actualEventContext()
     if (active.length > 0) {
       return `Current target: ${targetGroupSummary(active, tuning(), noteById())}`
@@ -1110,14 +1111,14 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   })
   const flowSummary = createMemo(() =>
     recordingHistory()
-      ? `${props.source.title()}. ${notes().length} recorded notes. New notes appear at NOW and move toward you as history, not targets to play. Fingering is suggested.`
+      ? `${props.source.title()}. ${notes().length} ${historyKind() === 'live' ? 'heard' : 'recorded'} notes. New notes appear at NOW and move toward you as history, not targets to play. Fingering is suggested.${historyKind() === 'live' ? ' You played; nothing is recorded.' : ''}`
       : hasGuide()
         ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()} ${loopDescription()}`
         : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached. ${loopDescription()}`,
   )
   const tabSummary = createMemo(() =>
     recordingHistory()
-      ? `${props.source.title()}. Recorded tablature with ${tuning().stringCount} string rows. You played: recent notes remain behind NOW. Fingering is suggested, not measured.`
+      ? `${props.source.title()}. ${historyKind() === 'live' ? 'Live' : 'Recorded'} tablature with ${tuning().stringCount} string rows. You played: recent notes remain behind NOW. Fingering is suggested, not measured.${historyKind() === 'live' ? ' Nothing is recorded.' : ''}`
       : hasGuide()
         ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()} ${loopDescription()}`
         : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached. ${loopDescription()}`,
@@ -1126,6 +1127,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     title: () => props.source.title(),
     notes: () => props.source.notes(),
     recordingHistory,
+    historyKind,
     timeline: {
       positionSeconds: () => props.source.timeline.positionSeconds(),
       durationSeconds: () => props.source.timeline.durationSeconds(),
@@ -1176,7 +1178,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                       ? 'Listening'
                       : 'Heard now'
                     : recordingHistory()
-                      ? 'Recorded notes'
+                      ? historyKind() === 'live'
+                        ? 'Live input'
+                        : 'Recorded notes'
                       : hasGuide()
                         ? 'Guide ready'
                         : idleStatus().label}

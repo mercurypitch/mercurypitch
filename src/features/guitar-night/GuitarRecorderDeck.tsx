@@ -12,6 +12,9 @@ export function GuitarRecorderDeck(props: {
   recorder: GuitarRecordingController
   playback: GuitarRecordingPlayback
   disabled: boolean
+  liveMode?: boolean
+  allowRecordDuringPlayback?: boolean
+  onPlay?(): void
 }) {
   const busy = () => props.recorder.busy() || props.disabled
   const running = () => props.playback.playing() || props.playback.pending()
@@ -22,7 +25,13 @@ export function GuitarRecorderDeck(props: {
       data-testid="guitar-recorder-deck"
     >
       <div class={styles.timeline}>
-        <Show when={props.recorder.draft() !== null && !props.recorder.busy()}>
+        <Show
+          when={
+            props.liveMode !== true &&
+            props.recorder.draft() !== null &&
+            !props.recorder.busy()
+          }
+        >
           <GuitarRecordingTimeline
             playback={props.playback}
             disabled={props.disabled}
@@ -52,7 +61,9 @@ export function GuitarRecorderDeck(props: {
             disabled={!props.playback.available() || busy()}
             aria-busy={props.playback.pending()}
             title={running() ? 'Pause playback' : 'Play the take'}
-            onClick={() => void props.playback.toggle()}
+            onClick={() =>
+              props.onPlay ? props.onPlay() : void props.playback.toggle()
+            }
           >
             <Show when={running()} fallback={<Play />}>
               <Pause />
@@ -70,7 +81,10 @@ export function GuitarRecorderDeck(props: {
           <GuitarRecordButton
             controller={props.recorder}
             iconOnly
-            disabled={props.disabled || running()}
+            disabled={
+              props.disabled ||
+              (running() && props.allowRecordDuringPlayback !== true)
+            }
             showDuration={false}
             disabledReason={
               running()

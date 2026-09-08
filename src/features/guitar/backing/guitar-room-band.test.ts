@@ -10,7 +10,7 @@ import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomBand, GuitarRoomBandBeatPhase, } from './guitar-room-band'
 import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, guitarRoomBandVelocityGain, resolveBandLoop, } from './guitar-room-band'
 import { resolveGuitarRoomRhythmPreset } from './guitar-room-rhythm'
-import { setGuitarSessionGainTarget } from './guitar-session-audio-graph'
+import { createGuitarSessionAudioGraph, setGuitarSessionGainTarget, } from './guitar-session-audio-graph'
 
 const guitarVoices = vi.hoisted(() => ({
   createBassVoice: vi.fn(),
@@ -2238,5 +2238,229 @@ describe('createGuitarRoomBand', () => {
     await vi.advanceTimersByTimeAsync(1)
     await pending
     expect(context.close).toHaveBeenCalledOnce()
+  })
+})
+
+describe('borrowed room-band audio ownership', () => {
+  it('borrows the activated graph without changing the owner master or amp', async () => {
+    const context = fakeAudioContext()
+    const graph = createGuitarSessionAudioGraph(context, { masterLevel: 0.64 })
+    const activate = vi.fn(async () => graph)
+    const contextFactory = vi.fn(() => {
+      throw new Error('A borrowed band must not create an AudioContext')
+    })
+    const initialMaster = graph.master.gain.value
+    const initialAmp = graph.getElectricAmpParameters()
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: { activate },
+      contextFactory,
+    })
+    band.setMasterLevel(0.42)
+    band.setElectricAmpParameters({ ...initialAmp, drive: 0.91 })
+    expect(activate).not.toHaveBeenCalled()
+    expect(band.getAudioGraph()).toBeNull()
+
+    const activated = await band.activate()
+    band.setMasterLevel(0.2)
+    band.setElectricAmpParameters({ ...initialAmp, drive: 0.27 })
+
+    expect(activated).toBe(graph)
+    expect(band.getAudioGraph()).toBe(graph)
+    expect(contextFactory).not.toHaveBeenCalled()
+    expect(graph.master.gain.value).toBe(initialMaster)
+    expect(graph.master.gain.setTargetAtTime).not.toHaveBeenCalled()
+    expect(graph.getElectricAmpParameters()).toEqual(initialAmp)
+    await band.dispose()
+    expect(context.close).not.toHaveBeenCalled()
+    expect(graph.buses.monitor.disconnect).not.toHaveBeenCalled()
+    graph.dispose()
+  })
+
+  it('fades only its own guide and click gates while the shared monitor stays connected', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const gains: Parameters<typeof fakeAudioContext>[0] = []
+    const context = fakeAudioContext(gains)
+    const graph = createGuitarSessionAudioGraph(context)
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: { activate: async () => graph },
+      scheduleAheadSeconds: 2,
+    })
+    band.setMasterLevel(0.42)
+    const ownerGainCount = gains.length
+    await band.start({
+      tempoBpm: 60,
+      countInBeats: 1,
+      exerciseBeats: 8,
+      durationBeats: 8,
+      feel: 'click',
+    })
+    const runGates = gains.slice(ownerGainCount)
+    expect(runGates).toHaveLength(3)
+    expect(runGates[0].connect).toHaveBeenCalledWith(graph.guideInputs.clean)
+    expect(runGates[2].connect).toHaveBeenCalledWith(graph.buses.drums)
+    expect(runGates.map((gate) => gate.gain.value)).toEqual([
+      sliderToGain(0.42),
+      sliderToGain(0.42),
+      sliderToGain(0.42),
+    ])
+    band.setMasterLevel(0.7)
+    for (const gate of runGates) {
+      expect(gate.gain.setTargetAtTime).toHaveBeenLastCalledWith(
+        sliderToGain(0.7),
+        5,
+        0.012,
+      )
+    }
+    const scheduledClicks = drumVoices.triggerDrumVoice.mock.calls.length
+    const pending = band.dispose()
+
+    for (const gate of runGates) {
+      expect(gate.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 5, 0.012)
+      expect(gate.disconnect).not.toHaveBeenCalled()
+    }
+    await vi.advanceTimersByTimeAsync(80)
+    await pending
+    await vi.advanceTimersByTimeAsync(10_000)
+    for (const gate of runGates) expect(gate.disconnect).toHaveBeenCalledOnce()
+    expect(drumVoices.triggerDrumVoice).toHaveBeenCalledTimes(scheduledClicks)
+    for (const node of [graph.master, ...Object.values(graph.buses)]) {
+      expect(node.disconnect).not.toHaveBeenCalled()
+      expect(node.gain.setTargetAtTime).not.toHaveBeenCalled()
+    }
+    expect(context.close).not.toHaveBeenCalled()
+    expect(band.getAudioGraph()).toBeNull()
+    graph.dispose()
+  })
+
+  it('does not admit a borrowed activation that completes after disposal', async () => {
+    const context = fakeAudioContext()
+    const graph = createGuitarSessionAudioGraph(context)
+    let resolveActivation!: (value: typeof graph) => void
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: {
+        activate: () =>
+          new Promise((resolve) => {
+            resolveActivation = resolve
+          }),
+      },
+    })
+
+    const pending = band.activate()
+    await band.dispose()
+    resolveActivation(graph)
+
+    await expect(pending).resolves.toBeNull()
+    expect(band.getAudioGraph()).toBeNull()
+    expect(context.close).not.toHaveBeenCalled()
+    expect(graph.buses.monitor.disconnect).not.toHaveBeenCalled()
+    graph.dispose()
+  })
+
+  it('owns and releases its guide amp without changing the shared monitor amp', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const graph = createGuitarSessionAudioGraph(context)
+    const stage = fakeElectricAmpStage()
+    const createElectricAmpStage = vi.fn(() => stage)
+    const initialAmp = graph.getElectricAmpParameters()
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: { activate: async () => graph },
+      createElectricAmpStage,
+    })
+    const guideAmp = { ...initialAmp, drive: 0.81 }
+    band.setElectricAmpParameters(guideAmp)
+    await band.start({
+      tempoBpm: 60,
+      countInBeats: 0,
+      exerciseBeats: 4,
+      feel: 'click',
+      melody: [
+        {
+          midi: 64,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'recorded-melody',
+          instrumentFamily: 'electric-guitar',
+        },
+      ],
+    })
+
+    expect(createElectricAmpStage).toHaveBeenCalledWith(context, guideAmp)
+    band.setElectricAmpParameters({ ...guideAmp, drive: 0.35 })
+    expect(stage.setParameters).toHaveBeenCalledWith(
+      { ...guideAmp, drive: 0.35 },
+      5,
+    )
+    expect(graph.getElectricAmpParameters()).toEqual(initialAmp)
+
+    const pending = band.dispose()
+    expect(stage.dispose).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(80)
+    await pending
+    expect(stage.dispose).toHaveBeenCalledOnce()
+    expect(graph.buses.monitor.disconnect).not.toHaveBeenCalled()
+    expect(context.close).not.toHaveBeenCalled()
+    graph.dispose()
+  })
+
+  it('does not schedule a stopped run after borrowed activation resolves', async () => {
+    const context = fakeAudioContext()
+    const graph = createGuitarSessionAudioGraph(context)
+    let resolveActivation!: (value: typeof graph) => void
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: {
+        activate: () =>
+          new Promise((resolve) => {
+            resolveActivation = resolve
+          }),
+      },
+    })
+    const pending = band.start({
+      tempoBpm: 60,
+      countInBeats: 0,
+      exerciseBeats: 4,
+      feel: 'click',
+    })
+    band.stop()
+    resolveActivation(graph)
+
+    expect(await pending).toEqual({
+      expectedHitTimesMs: [],
+      exerciseStartedAtSeconds: null,
+      completedAtSeconds: null,
+    })
+    expect(drumVoices.triggerDrumVoice).not.toHaveBeenCalled()
+    await band.dispose()
+    expect(graph.buses.monitor.disconnect).not.toHaveBeenCalled()
+    expect(context.close).not.toHaveBeenCalled()
+    graph.dispose()
+  })
+
+  it('refuses unavailable borrowed audio without creating a fallback context', async () => {
+    const contextFactory = vi.fn(() => {
+      throw new Error('A borrowed band must not create a fallback AudioContext')
+    })
+    const band = createGuitarRoomBand({
+      borrowedAudioGraph: { activate: async () => null },
+      contextFactory,
+    })
+
+    const boundary = await band.start({
+      tempoBpm: 60,
+      countInBeats: 0,
+      exerciseBeats: 4,
+      feel: 'click',
+    })
+
+    expect(boundary).toEqual({
+      expectedHitTimesMs: [],
+      exerciseStartedAtSeconds: null,
+      completedAtSeconds: null,
+    })
+    expect(contextFactory).not.toHaveBeenCalled()
+    expect(band.getAudioGraph()).toBeNull()
+    await band.dispose()
   })
 })

@@ -110,6 +110,45 @@ describe('guitar night voice commands', () => {
     expect(fixture.calls).toEqual(['pause'])
   })
 
+  it('delegates restart to the scored host instead of racing synchronous seek against Play', async () => {
+    const fixture = makeFixture()
+    let releaseSeek!: () => void
+    const seek = new Promise<void>((resolve) => {
+      releaseSeek = resolve
+    })
+    const restart = vi.fn(async () => {
+      fixture.calls.push('draining')
+      await seek
+      fixture.calls.push('seek-complete')
+      fixture.deps.play()
+    })
+    fixture.deps.restart = restart
+    expect(fire(fixture, 'from the top')).toBe('From the top')
+    expect(restart).toHaveBeenCalledOnce()
+    expect(fixture.calls).toEqual(['draining'])
+    expect(fixture.seekedTo()).toBeNull()
+    releaseSeek()
+    await restart.mock.results[0]?.value
+    expect(fixture.calls).toEqual(['draining', 'seek-complete', 'play'])
+  })
+
+  it('keeps recording and unavailable-media guards ahead of the optional restart', () => {
+    const fixture = makeFixture()
+    const restart = vi.fn()
+    fixture.deps.restart = restart
+    fixture.deps.playbackIssue = () => 'Record or open a melody first.'
+    expect(fire(fixture, 'from the top')).toBe('Record or open a melody first.')
+    fixture.deps.playbackIssue = () => null
+    fixture.deps.recorder = {
+      state: () => 'recording',
+      start: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined),
+      startIssue: () => null,
+    }
+    expect(fire(fixture, 'from the top')).toMatch(/Finish recording/)
+    expect(restart).not.toHaveBeenCalled()
+  })
+
   it('omits unsupported audition speed and stem commands', () => {
     const fixture = makeFixture()
     fixture.deps.speedAvailable = () => false

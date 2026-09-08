@@ -31,6 +31,8 @@ export interface GuitarNightVoiceDeps {
   pause: () => void
   stop: () => void
   seek: (seconds: number) => void
+  /** Scored hosts must finish their asynchronous seek before admitting Play. */
+  restart?: () => void | Promise<void>
   playbackRate: Accessor<number>
   setPlaybackRate: (rate: number) => void
   tracks: () => GuitarNightVoiceTrack[]
@@ -155,8 +157,11 @@ export function createGuitarNightVoiceCommands(
       label: 'From the top',
       phrases: RESTART_PHRASES,
       run: () => {
-        deps.seek(0)
-        if (!deps.playing() && deps.pending?.() !== true) deps.play()
+        if (deps.restart !== undefined) void deps.restart()
+        else {
+          deps.seek(0)
+          if (!deps.playing() && deps.pending?.() !== true) deps.play()
+        }
         return 'From the top'
       },
     },

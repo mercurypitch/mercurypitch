@@ -17,6 +17,9 @@ export function GuitarRecorderStage(props: {
   onLiveNotes(enabled: boolean): void
   onAttachTab?(): void
   disabled: boolean
+  allowRecordDuringPlayback?: boolean
+  liveMode?: boolean
+  onHistory?(): void
 }) {
   const replaying = () => props.playback.playing() || props.playback.pending()
   const label = () =>
@@ -42,14 +45,16 @@ export function GuitarRecorderStage(props: {
             : 'Record using tape deck'
         }
         title={
-          replaying()
+          replaying() && props.allowRecordDuringPlayback !== true
             ? 'Stop playback before recording'
             : props.recorder.busy()
               ? 'Stop recording'
               : 'Tap to record a melody'
         }
         disabled={
-          props.disabled || replaying() || props.recorder.state() === 'stopping'
+          props.disabled ||
+          (replaying() && props.allowRecordDuringPlayback !== true) ||
+          props.recorder.state() === 'stopping'
         }
         onClick={() =>
           props.recorder.busy()
@@ -72,7 +77,9 @@ export function GuitarRecorderStage(props: {
                   ? 'Opening playback'
                   : props.playback.playing()
                     ? 'Playing'
-                    : 'Your melody'}
+                    : props.liveMode === true
+                      ? 'Live · not recording'
+                      : 'Your melody'}
         </span>
         <strong title={label()}>{label()}</strong>
         <div class={styles.metadata}>
@@ -125,10 +132,26 @@ export function GuitarRecorderStage(props: {
             checkType: 'checkbox',
             note: props.liveNotes
               ? 'On · show recognized notes as you play'
-              : 'Off · audio is still recorded',
+              : props.recorder.busy()
+                ? 'Off · audio is still recorded'
+                : 'Off · the input remains available',
             icon: () => (props.liveNotes ? <Eye /> : <EyeOff />),
             onSelect: () => props.onLiveNotes(!props.liveNotes),
           },
+          ...(props.onHistory === undefined
+            ? []
+            : [
+                {
+                  key: 'history',
+                  label: 'Show recorded history',
+                  note: 'Pause replay and see the notes you recorded',
+                  disabled:
+                    props.disabled ||
+                    props.recorder.busy() ||
+                    props.recorder.draft() === null,
+                  onSelect: () => props.onHistory?.(),
+                },
+              ]),
           {
             key: 'review',
             label: 'Review take',
