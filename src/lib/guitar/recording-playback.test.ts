@@ -50,6 +50,22 @@ describe('recording audition evidence', () => {
       { midi: 60, startSeconds: 0.365, endSeconds: 0.49 },
     ])
   })
+  it('auditions corrected chord notes at simultaneous attacks and independent releases', () => {
+    const corrections = {
+      recordingId: 'take',
+      bpm: 120,
+      notes: [
+        { midi: 40, startBeat: 0.13, endBeat: 4 },
+        { midi: 47, startBeat: 0.13, endBeat: 1 },
+        { midi: 52, startBeat: 0.51, endBeat: 2 },
+      ],
+    } as GuitarPracticeScore
+    expect(recordingPlaybackNotes(draft, corrections)).toEqual([
+      { midi: 40, startSeconds: 0.065, endSeconds: 2 },
+      { midi: 47, startSeconds: 0.065, endSeconds: 0.5 },
+      { midi: 52, startSeconds: 0.255, endSeconds: 1 },
+    ])
+  })
   it('returns independent current, bypass and saved starting tones', () => {
     const current = Object.freeze({
       ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,

@@ -251,8 +251,44 @@ or existing signal-only Jam Doctor.
 
 ## Verification and limits
 
+### Explicit post-stop chord refinement
+
+- **GR-051:** WHEN Refine chords is explicitly chosen for a stopped recording,
+  a lazy, local Worker shall analyse its saved audio with the pinned model.
+  No new input, live detector, audio context or monitoring path shall be started.
+  Loading, preparation and analysis shall show progress and offer cancellation.
+  Cancel, close, source replacement and disposal shall terminate the Worker and
+  reject late results without changing notes or persisting partial analysis.
+- **GR-052:** Refinement shall retain independent overlapping pitch events and
+  releases, original seconds and model provenance/confidence. Model activation
+  shall not be labelled live-detector clarity or accuracy. Fingering shall use
+  distinct available strings or explicitly remain unresolved, never omit pitches
+  or transpose them to fit. Live and original recorded evidence remain monophonic.
+- **GR-053:** A completed proposal shall offer Current/Refined comparison through
+  the existing stage and Notes audition. Comparing shall not save or autoplay.
+  Use refined notes shall atomically save editable notes plus one previous-score
+  backup; Keep current notes shall discard only the proposal. Neither accepts a
+  practice revision or alters original audio/evidence. Failures retain the proposal.
+- **GR-054:** Applying refinement shall reject stale corrections, changed accepted
+  targets, changed source frames, missing audio and active capture. Restore previous
+  notes shall survive reload and unchanged Keep, but reject later edits or accepted
+  revisions instead of overwriting them. Storage failure shall roll back all writes.
+- **GR-055:** Corrections shall treat chord voices independently. Split and merge
+  shall not remove neighbouring voices; merge shall require compatible successive
+  notes on the same string. Explicit snapping may create a validation conflict but
+  shall not automatically arpeggiate the chord or silently move the next phrase.
+- **GR-056:** MIDI shall preserve simultaneous pitches and independent releases at
+  tick resolution. Native GP7 shall represent chord beats and individual ties with
+  independently balanced bars; export-only timing rounding and collisions remain
+  disclosed. Accepted practice shall reuse the existing reference/scoring path.
+- **GR-057:** Chord refinement shall be labelled experimental. The original recording
+  remains playable when analysis fails or returns no notes. Sources over five minutes
+  or the decoding memory limit shall fail explicitly, and model/runtime assets shall
+  be self-hosted and lazy. Real-guitar/native-editor acceptance remains a separate gate.
+
 Automated coverage and owner checks: [recorder testing](../guitar-recording-testing.md).
 V1 is five-minute mono dry recording, editable monophonic transcription and
-local persistence. Recording count-in, polyphonic/bend-technique notation, wet recording,
+local persistence, with optional experimental post-stop chord refinement.
+Recording count-in, real-time polyphonic/bend-technique notation, wet recording,
 cloud backup and MIDI-input-only recording are follow-ups. Browser latency
 estimates and synthetic render tests are not physical round-trip measurements.

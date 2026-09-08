@@ -160,7 +160,7 @@ export function recordingMidiProblem(
   )
     return 'Choose a supported time signature.'
   const ids = new Set<string>()
-  let end = 0
+  const pitchEnds = new Map<number, number>()
   if (
     score.notes.some(
       (note) =>
@@ -185,11 +185,11 @@ export function recordingMidiProblem(
       note.endBeat <= note.startBeat
     )
       return 'Give each note a valid pitch, start and end.'
-    if (note.startBeat < end - 0.000001)
-      return 'Some notes overlap. Adjust their start/end or merge them before practicing.'
+    if (note.startBeat < (pitchEnds.get(note.midi) ?? 0) - 0.000001)
+      return 'Some notes of the same pitch overlap. Adjust their start/end or merge them before practicing.'
     if ((note.endBeat * 60) / score.bpm > 301)
       return 'This melody exceeds the five-minute recording limit.'
-    end = note.endBeat
+    pitchEnds.set(note.midi, note.endBeat)
   }
   return null
 }
@@ -216,9 +216,17 @@ export function recordingScoreProblem(
 ): string | null {
   const problem = recordingMidiProblem(score)
   if (problem !== null) return problem
-  return score.notes.some((note) => recordingNoteNeedsFingering(score, note))
-    ? 'Some notes do not fit this tuning. Correct their pitch or fingering, or exclude them from the practice notes.'
-    : null
+  if (score.notes.some((note) => recordingNoteNeedsFingering(score, note)))
+    return 'Some notes do not fit this tuning. Correct their pitch or fingering, or exclude them from the practice notes.'
+  const stringEnds = new Map<number, number>()
+  for (const note of [...score.notes].sort(
+    (a, b) => a.startBeat - b.startBeat,
+  )) {
+    if (note.startBeat < (stringEnds.get(note.string!) ?? 0) - 0.000001)
+      return 'Some notes overlap on the same string. Choose different strings or adjust their start/end before practicing.'
+    stringEnds.set(note.string!, note.endBeat)
+  }
+  return null
 }
 
 /** Explicit, undoable quantisation affects notation only; capture frames stay intact. */
@@ -226,22 +234,100 @@ export function quantizeRecordingScore(
   score: GuitarPracticeScore,
   division: 2 | 4,
 ): GuitarPracticeScore {
-  let previousEnd = 0
   const notes = [...score.notes]
     .sort((a, b) => a.startBeat - b.startBeat)
     .map((note) => {
-      const startBeat = Math.max(
-        previousEnd,
-        Math.round(note.startBeat * division) / division,
-      )
+      const startBeat = Math.round(note.startBeat * division) / division
       const endBeat = Math.max(
         startBeat + 1 / division,
         Math.round(note.endBeat * division) / division,
       )
-      previousEnd = endBeat
       return { ...note, startBeat, endBeat }
     })
   return { ...score, grid: 'chosen', notes, attachment: null }
+}
+
+/** A split changes only this voice; neighbouring chord notes keep their releases. */
+export function splitRecordingNote(
+  score: GuitarPracticeScore,
+  id: string,
+  newId: string,
+): GuitarPracticeScore {
+  const index = score.notes.findIndex((note) => note.id === id)
+  if (index < 0 || !newId || score.notes.some((note) => note.id === newId))
+    return score
+  const source = score.notes[index]
+  const middle = (source.startBeat + source.endBeat) / 2
+  if (
+    !Number.isFinite(middle) ||
+    middle <= source.startBeat ||
+    middle >= source.endBeat
+  )
+    return score
+  const notes = [...score.notes]
+  notes.splice(
+    index,
+    1,
+    { ...source, endBeat: middle },
+    { ...source, id: newId, startBeat: middle },
+  )
+  return { ...score, notes, attachment: null }
+}
+
+/** Find the next attack on this string, never a neighbouring chord voice. */
+export function recordingMergeTarget(
+  score: GuitarPracticeScore,
+  id: string,
+): GuitarPracticeNote | null {
+  const source = score.notes.find((note) => note.id === id)
+  if (!source || recordingNoteNeedsFingering(score, source)) return null
+  const next = score.notes
+    .filter(
+      (note) =>
+        note.id !== id &&
+        note.string === source.string &&
+        note.startBeat >= source.startBeat,
+    )
+    .sort((a, b) => a.startBeat - b.startBeat)
+    .at(0)
+  if (
+    !next ||
+    next.midi !== source.midi ||
+    next.fret !== source.fret ||
+    next.startBeat < source.endBeat - 0.000001 ||
+    next.endBeat <= source.endBeat
+  )
+    return null
+  // Do not introduce a same-pitch collision across other strings while filling a gap.
+  if (
+    score.notes.some(
+      (note) =>
+        note.id !== id &&
+        note.id !== next.id &&
+        (note.midi === source.midi || note.string === source.string) &&
+        note.startBeat < next.endBeat - 0.000001 &&
+        note.endBeat > source.startBeat + 0.000001,
+    )
+  )
+    return null
+  return next
+}
+
+export function mergeRecordingNote(
+  score: GuitarPracticeScore,
+  id: string,
+): GuitarPracticeScore {
+  const next = recordingMergeTarget(score, id)
+  if (!next) return score
+  return {
+    ...score,
+    attachment: null,
+    notes: score.notes
+      .filter((note) => note.id !== next.id)
+      .map((note) =>
+        note.id === id ? { ...note, endBeat: next.endBeat } : note,
+      ),
+  }
 }
 
 export function acceptRecordingScoreRevision(

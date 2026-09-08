@@ -7,7 +7,7 @@ FIRST VIEWPORT: Source, tone and title lead; Keep and Practice stay pinned below
 FORM: Extend the existing Jam Doctor sheet, not a new editor page or visual identity.
 */
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
 import { createGuitarRecordingStore } from '@/db/services/guitar-recording-service'
@@ -15,12 +15,14 @@ import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { acceptRecordingScoreRevision, createRecordingScore, recordingMidiProblem, recordingNoteNeedsFingering, recordingScoreProblem, } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { acceptRecordingPractice } from './accept-recording-practice'
+import { GuitarChordRefinementPanel } from './GuitarChordRefinementPanel'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightJamDoctor } from './GuitarNightJamDoctor'
 import styles from './GuitarRecording.module.css'
 import { recordingTime } from './GuitarRecordingControls'
 import { GuitarRecordingEditor } from './GuitarRecordingEditor'
 import { GuitarRecordingPlaybackControls } from './GuitarRecordingPlaybackControls'
+import { useGuitarChordRefinement } from './useGuitarChordRefinement'
 import type { GuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
 export function GuitarRecordingReview(props: {
@@ -51,7 +53,11 @@ export function GuitarRecordingReview(props: {
   const [revision, setRevision] = createSignal(
     initialDraft.acceptedScore?.revision ?? 0,
   )
-  const [title, setTitle] = createSignal(initialDraft.recording.title)
+  const [title, setTitle] = createSignal(
+    initialDraft.editableScore?.title ??
+      initialDraft.acceptedScore?.title ??
+      initialDraft.recording.title,
+  )
   const [kept, setKept] = createSignal(initialDraft.recording.state === 'kept')
   const [busy, setBusy] = createSignal(false)
   const [discarding, setDiscarding] = createSignal(false)
@@ -60,6 +66,10 @@ export function GuitarRecordingReview(props: {
   const [editorMounted, setEditorMounted] = createSignal(false)
   const [notice, setNotice] = createSignal<string | null>(null)
   const [deleting, setDeleting] = createSignal(false)
+  const editableScore = createMemo(() => {
+    const current = score()
+    return current.title === title() ? current : { ...current, title: title() }
+  })
   const problem = createMemo(() => recordingScoreProblem(score()))
   const midiProblem = createMemo(() => recordingMidiProblem(score()))
   const fingeringCount = createMemo(
@@ -67,7 +77,27 @@ export function GuitarRecordingReview(props: {
       score().notes.filter((note) => recordingNoteNeedsFingering(score(), note))
         .length,
   )
-  createEffect(() => props.onPreviewScore?.(score()))
+  const refinement = useGuitarChordRefinement({
+    draft: initialDraft,
+    open: () => props.open,
+    score: editableScore,
+    blocked: () => busy() || deleting(),
+    onScore: (next) =>
+      batch(() => {
+        setEditorMounted(false)
+        setEditing(false)
+        setScore(next)
+        setTitle(next.title)
+      }),
+    onSaved: () => props.onSaved(),
+    get playback() {
+      return props.playback
+    },
+  })
+  const locked = () => busy() || refinement.locked()
+  createEffect(() =>
+    props.onPreviewScore?.(refinement.preview() ?? editableScore()),
+  )
   let reviewHost: HTMLDivElement | undefined
   createEffect(() => {
     if (!props.open || busy() || deleting())
@@ -76,12 +106,12 @@ export function GuitarRecordingReview(props: {
   const save = async (
     action: 'keep' | 'practice' | 'attach' | 'midi' | 'gp',
   ): Promise<void> => {
-    if (busy()) return
+    if (locked()) return
     setBusy(true)
     setError(null)
     const store = createGuitarRecordingStore()
     try {
-      const corrections = { ...score(), title: title() }
+      const corrections = editableScore()
       if (action === 'practice') {
         const accepted = await acceptRecordingPractice(
           props.draft,
@@ -91,6 +121,7 @@ export function GuitarRecordingReview(props: {
         setKept(true)
         setRevision(accepted.revision)
         setScore(accepted)
+        await refinement.saved(corrections, accepted.id)
         props.onSaved()
         props.playback.pause()
         await props.onPractice(accepted)
@@ -115,6 +146,7 @@ export function GuitarRecordingReview(props: {
         await store.saveCorrections(corrections)
         setNotice('Note corrections saved on this device.')
       }
+      await refinement.saved(corrections, accepted?.id)
       props.onSaved()
       if (action === 'midi') {
         const { downloadRecordingScore } =
@@ -153,7 +185,7 @@ export function GuitarRecordingReview(props: {
     }
   }
   const discard = async (): Promise<void> => {
-    if (busy()) return
+    if (locked()) return
     setBusy(true)
     setDiscarding(true)
     setError(null)
@@ -177,7 +209,9 @@ export function GuitarRecordingReview(props: {
         ? `${props.draft.notes.length} ${props.draft.notes.length === 1 ? 'note' : 'notes'} captured.`
         : 'Audio captured. No stable notes identified.',
     detail:
-      'Detected melody · draft. Single notes work best; chords and bends may need correction.',
+      score().refinement !== undefined
+        ? 'Chord-refined draft. Review pitches and suggested fingering before practice; bends are not transcribed.'
+        : 'Detected melody · draft. Try Refine chords for simultaneous notes after recording.',
     evidence: [],
     unavailableReasons: [],
     recoveryLabel: 'Back to playing',
@@ -191,10 +225,16 @@ export function GuitarRecordingReview(props: {
           open={props.open && !deleting()}
           view={view()}
           onClose={() => {
-            if (!busy()) props.onClose()
+            if (!busy() && !refinement.persisting()) {
+              refinement.cancel()
+              props.onClose()
+            }
           }}
           onRecover={() => {
-            if (!busy()) props.onClose()
+            if (!busy() && !refinement.persisting()) {
+              refinement.cancel()
+              props.onClose()
+            }
           }}
           fallbackFocus={props.fallbackFocus}
           actions={
@@ -202,7 +242,7 @@ export function GuitarRecordingReview(props: {
               <button
                 type="button"
                 class={styles.primary}
-                disabled={kept() || busy() || props.draft.blob === null}
+                disabled={kept() || locked() || props.draft.blob === null}
                 onClick={() => void save('keep')}
               >
                 {busy()
@@ -218,7 +258,7 @@ export function GuitarRecordingReview(props: {
               <button
                 type="button"
                 disabled={
-                  busy() ||
+                  locked() ||
                   problem() !== null ||
                   (!kept() && props.draft.blob === null)
                 }
@@ -237,7 +277,15 @@ export function GuitarRecordingReview(props: {
                 playback={props.playback}
                 transport
                 details
+                disabled={
+                  busy() || refinement.running() || refinement.persisting()
+                }
+              />
+              <GuitarChordRefinementPanel
+                controller={refinement}
+                score={score()}
                 disabled={busy()}
+                hasAudio={props.draft.blob !== null}
               />
               <label>
                 Take title
@@ -245,10 +293,10 @@ export function GuitarRecordingReview(props: {
                   value={title()}
                   maxLength={180}
                   onInput={(event) => setTitle(event.currentTarget.value)}
-                  disabled={kept() || busy()}
+                  disabled={kept() || locked()}
                 />
               </label>
-              <Show when={props.draft.notes.length > 0}>
+              <Show when={score().notes.length > 0}>
                 <Show when={fingeringCount() > 0}>
                   <p>
                     {fingeringCount()}{' '}
@@ -259,7 +307,7 @@ export function GuitarRecordingReview(props: {
                 </Show>
                 <button
                   type="button"
-                  disabled={busy()}
+                  disabled={locked()}
                   aria-expanded={editing()}
                   onClick={() => {
                     setEditorMounted(true)
@@ -276,7 +324,7 @@ export function GuitarRecordingReview(props: {
                   <div hidden={!editing()}>
                     <GuitarRecordingEditor
                       score={score()}
-                      disabled={busy()}
+                      disabled={locked()}
                       onChange={setScore}
                     />
                   </div>
@@ -298,7 +346,7 @@ export function GuitarRecordingReview(props: {
                 <Show when={kept() && editing()}>
                   <button
                     type="button"
-                    disabled={busy()}
+                    disabled={locked()}
                     onClick={() => void save('keep')}
                   >
                     Save note corrections
@@ -307,7 +355,7 @@ export function GuitarRecordingReview(props: {
                 <Show when={!kept()}>
                   <button
                     type="button"
-                    disabled={busy()}
+                    disabled={locked()}
                     onClick={() => void discard()}
                   >
                     Discard recording
@@ -329,7 +377,7 @@ export function GuitarRecordingReview(props: {
                   <Show when={props.onAttach}>
                     <button
                       type="button"
-                      disabled={busy() || problem() !== null}
+                      disabled={locked() || problem() !== null}
                       onClick={() => void save('attach')}
                     >
                       Attach to a song
@@ -337,14 +385,14 @@ export function GuitarRecordingReview(props: {
                   </Show>
                   <button
                     type="button"
-                    disabled={busy() || midiProblem() !== null}
+                    disabled={locked() || midiProblem() !== null}
                     onClick={() => void save('midi')}
                   >
                     Export MIDI
                   </button>
                   <button
                     type="button"
-                    disabled={busy() || problem() !== null}
+                    disabled={locked() || problem() !== null}
                     aria-describedby="recording-export-timing"
                     onClick={() => void save('gp')}
                   >
@@ -355,7 +403,7 @@ export function GuitarRecordingReview(props: {
               <Show when={kept()}>
                 <button
                   type="button"
-                  disabled={busy()}
+                  disabled={locked()}
                   onClick={() => setDeleting(true)}
                 >
                   Remove recording and notes

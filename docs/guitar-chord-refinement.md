@@ -1,13 +1,49 @@
 # Guitar recorder chord refinement
 
-Status: C1 inference/benchmark foundation implemented in PR [741](https://github.com/mercurypitch/mercurypitch/pull/741).
-The owner approved merging the recorder release separately from the remaining
-chord work. Candidate quality acceptance and C2–C4 move to the next dedicated
-branch/PR; they are not enabled by this recorder release.
+Status: C1 inference/benchmark foundation merged in PR [741](https://github.com/mercurypitch/mercurypitch/pull/741).
+The dedicated `feat/guitar-chord-refinement` branch integrates experimental
+post-stop refinement, overlapping-score/export contracts and reversible review.
+Real-guitar quality and native GP8 chord acceptance are still owner gates.
 The owner approved the corrected native Guitar Pro 8 export on 2026-09-08.
 This is the next recorder phase; drum sound work stays separate.
 
-### Current in-app behaviour — owner retest, 2026-09-08
+### This PR: explicit post-stop refinement
+
+- Refine chords is available inside the existing stopped-take review. It lazily
+  loads a pinned, self-hosted Basic Pitch model and single-thread ONNX WASM into
+  a disposable Worker. Bounded WAV decoding/resampling happens there too.
+- Current/Refined comparison borrows the existing Notes audition and stage.
+  Only Use refined notes writes corrections, with a reloadable one-step backup.
+  Original audio/evidence and immutable practice revisions remain untouched.
+- Pitches retain independent releases and exact seconds. Suggested chord
+  fingerings use separate available strings; unresolved notes are flagged.
+  MIDI and native GP7 support simultaneous notes and individual releases/ties.
+- Cancellation, stale source/edits, missing audio, quota failure and disposal
+  retain the original. No live audio or monitoring implementation changes.
+- The full shared piano-roll port remains separate: `PianoRollCanvas` currently
+  creates a Compose-specific audio owner/global registrations. This PR reuses
+  existing corrections rather than embedding that owner or creating a third editor.
+- Existing decoder defaults are retained, not declared optimal. Decoder comparison,
+  manual dry-guitar truth, fast-arpeggio quality and native GP8 chord audition are
+  still outstanding. No live polyphonic or physical-latency claim is made.
+
+#### Browser verification, 2026-09-08
+
+The production bundle's real single-thread Worker identifies overlapping MIDI
+40/47/52 in the labelled synthetic power-chord fixture. Corrupt model bytes and
+cancellation during model loading are rejected. The complete app flow verifies
+compare → apply → Keep → reload → restore and MIDI download, with no ownerless
+Solid warnings. These are integration checks, not real-guitar quality acceptance.
+
+A separate local five-minute silence capacity probe completed 183 model windows
+in 10.85 seconds of Worker time and returned no notes. Whole-headless-browser
+PSS rose from 142.0 MiB to a sampled 338.8 MiB and was 303.2 MiB immediately after
+termination; that includes the source fixture and browser allocator retention,
+not an isolated model-memory measurement or proof of a leak. Mobile headroom,
+physical latency and real-guitar precision are not inferred from these numbers.
+No long capacity probe is added to the regular CI suite.
+
+### Previous release behaviour — owner retest, 2026-09-08
 
 The Live/Replay/Practice release does **not** enable this chord candidate. Direct
 guitar input still contributes one detected pitch per frame in Live and in the
@@ -18,17 +54,16 @@ transcriber. The known-tab scorer can judge an authored chord onset through one
 supported voice and mark other voices unprovable. It does not recover their
 independent pitches.
 
-Next delivery remains C1 real-DI quality acceptance, C2 overlapping-note and
-export contracts, then C3 explicit post-stop refinement/review. The first
-user-facing chord test will be **Record → Stop → Refine chords → compare →
-accept → Practice/export**. Real-time simultaneous-note display is not included
+The first user-facing chord test is **Record → Stop → Refine chords → compare →
+Use refined notes → Practice/export**. Real-time simultaneous-note display is not included
 in that checkpoint and needs a separate quality/latency gate. Keep the existing
 low-latency monitoring route untouched.
 
 ### Follow-up research: the Free-form Live test — 2026-09-08
 
 The owner clarified that the apparent chord detections were in **Free-form
-Live**, not an analysis screen. The local server on port 5217 serves this branch.
+Live**, not an analysis screen. That test used the previous recorder branch
+served on local port 5217, not this separate refinement worktree.
 Tracing its code confirms `useGuitarListeningController` publishes the shared
 MPM rehearsal profile's single pitch through `liveObservations.pitch`;
 `guitar-live-history.ts` maintains one held audio note (actual MIDI is separate).
@@ -105,8 +140,9 @@ chord release. The supplied video integration does not change any detector.
 - [ ] Manually verify real dry-guitar labels and acceptance quality, including
       actual owner open/power chords and fast phrases. Investigate false notes,
       retriggers and independent releases before choosing a shipping decoder.
-- [ ] Verify actual browser Worker loading/cancellation and disposal under load
-      during C3. The five-minute unit test is not browser memory/latency acceptance.
+- [x] Verify actual browser Worker loading/cancellation and disposal during C3,
+      including a separate local five-minute capacity probe. This is not mobile
+      headroom or monitoring-latency acceptance.
 
 Candidate: [Spotify Basic Pitch](https://github.com/spotify/basic-pitch), upstream
 commit `fa5997af0a8210982619003269994a1be25eddf3`, official
@@ -116,10 +152,11 @@ Prefer the existing ONNX runtime over introducing a second TensorFlow runtime.
 The model is a candidate, not an unconditional production-detector replacement.
 The checked file is 230,444 bytes, SHA-256
 `2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec`.
-No model binary, publisher audio, MIDI annotations or private recording is bundled
-in this checkpoint. Preserve the pinned [LICENSE](https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/LICENSE)
+The integration now bundles this model with its pinned
+[LICENSE](https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/LICENSE)
 and [NOTICE](https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/NOTICE)
-before adding a self-hosted model asset.
+under `public/models/basic-pitch/`, alongside ONNX runtime redistribution notices.
+Publisher audio, MIDI annotations and private recordings are not bundled.
 
 ### C1 implementation and measurements — 2026-09-08
 
@@ -231,26 +268,27 @@ source checksum, tuning/capo and annotation uncertainty alongside the report.
 
 ### C2 — polyphonic note and export contracts
 
-- [ ] Add versioned refinement metadata separate from original evidence; accept
+- [x] Add versioned refinement metadata separate from original evidence; accept
       independently timed overlapping notes and retain model confidence/provenance.
-- [ ] Validate simultaneous pitches independently of fingering. Assign distinct
+- [x] Validate simultaneous pitches independently of fingering. Assign distinct
       playable strings for overlapping notes or flag uncertainty. Explicit edits
       cannot accidentally place two simultaneous notes on one string.
-- [ ] Audit split/merge/delete/Undo and snapping so chord notes are not serialized
+- [x] Audit split/merge/delete/Undo and snapping so chord notes are not serialized
       into an arpeggio. Preserve original seconds unless the owner explicitly snaps.
-- [ ] Test persistence, stale results, reload, deletion, quota and rollback.
-- [ ] Carry chords into existing audition/practice/MIDI and proper GP7 chord
+- [x] Test persistence, stale results, reload, deletion, quota and rollback.
+- [x] Carry chords into existing audition/practice/MIDI and proper GP7 chord
       beats/ties with independent releases. Keep the approved single-note GP8 cases
-      green and add independent per-bar arithmetic plus native GP8 chord checks.
+      green and add independent per-bar arithmetic.
+- [ ] Owner verifies the new chord exports in native Guitar Pro 8 (C4).
 
 ### C3 — review and shared editor
 
-- [ ] Add explicit post-stop Refine chords with local progress, cancellation and
+- [x] Add explicit post-stop Refine chords with local progress, cancellation and
       original/refined comparison. No auto-replacement or auto-accept on completion.
-- [ ] Feed accepted notes into the existing score/practice paths.
+- [x] Feed accepted notes into the existing score/practice paths.
 - [ ] Reuse the shared piano-roll editor through a small adapter and Guitar Night
       skin; do not create a third timing editor or change the tab-rehearsal layout.
-- [ ] Cover actual browser Worker/asset loading, no input permission acquisition,
+- [x] Cover actual browser Worker/asset loading, no input permission acquisition,
       stop/cancel/switch/unmount races, and accessible desktop/phone review.
 
 ### C4 — owner acceptance

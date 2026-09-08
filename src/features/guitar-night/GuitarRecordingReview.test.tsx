@@ -1,9 +1,11 @@
 // Recorder correction tests preserve Undo across disclosure and freeze edits during durable saves.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
+import { createRecordingScore } from '@/lib/guitar/recording-score'
+import { BASIC_PITCH } from '@/lib/transcription/basic-pitch-inference'
 import { GuitarRecordingReview } from './GuitarRecordingReview'
 import { useGuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 
@@ -11,7 +13,27 @@ const store = vi.hoisted(() => ({
   saveCorrections: vi.fn(),
   accept: vi.fn(),
   download: vi.fn(),
+  readRefinementState: vi.fn(),
 }))
+
+beforeEach(() => {
+  // This component seam reflects its last completed save; real transaction and
+  // cross-tab baseline behavior lives in the hook/service integration tests.
+  store.readRefinementState.mockImplementation(async () => {
+    const writes = [store.saveCorrections, store.accept]
+      .flatMap((method) =>
+        method.mock.calls.map((args, index) => ({
+          score: args[0],
+          order: method.mock.invocationCallOrder[index],
+        })),
+      )
+      .sort((a, b) => b.order - a.order)
+    return {
+      editableScore: writes[0]?.score ?? null,
+      acceptedScoreId: store.accept.mock.calls.at(-1)?.[0].id ?? null,
+    }
+  })
+})
 vi.mock('@/db/services/guitar-recording-service', () => ({
   createGuitarRecordingStore: () => store,
 }))
@@ -25,6 +47,7 @@ function renderReview(
     draft?: boolean
     onDiscard?: () => Promise<void>
     onClose?: () => void
+    configureDraft?: (draft: GuitarRecordingDraft) => void
   } = {},
 ) {
   const draft: GuitarRecordingDraft = {
@@ -70,6 +93,7 @@ function renderReview(
       startFrame: 30000,
       endFrame: 40000,
     })
+  options.configureDraft?.(draft)
   return render(() => {
     const playback = useGuitarRecordingPlayback({
       draft: () => draft,
@@ -100,6 +124,48 @@ afterEach(() => {
 })
 
 describe('recording corrections', () => {
+  it('reopens a renamed refined draft with its saved title and available undo, not the original recording title', () => {
+    renderReview(false, {
+      draft: true,
+      configureDraft: (draft) => {
+        const previous = createRecordingScore(
+          draft.recording,
+          draft.notes,
+          DEFAULT_GUITAR_TUNING,
+        )
+        const applied = {
+          ...previous,
+          title: 'My renamed chord idea',
+          refinement: {
+            version: 1 as const,
+            model: 'basic-pitch' as const,
+            source: 'recorded-audio' as const,
+            modelSha256: BASIC_PITCH.modelSha256,
+            decoderVersion: BASIC_PITCH.decoderVersion,
+            createdAt: '2026-09-08T10:00:00Z',
+            confidenceByNoteId: { note: 0.85 },
+          },
+        }
+        draft.editableScore = applied
+        draft.refinementBackup = {
+          version: 1,
+          createdAt: '2026-09-08T10:00:00Z',
+          previousScore: previous,
+          appliedScore: applied,
+          acceptedScoreId: null,
+          frames: draft.recording.frames,
+        }
+      },
+    })
+    expect(screen.getByRole('textbox', { name: 'Take title' })).toHaveValue(
+      'My renamed chord idea',
+    )
+    expect(
+      screen.getByRole('button', { name: 'Restore previous notes' }),
+    ).toBeEnabled()
+    expect(store.saveCorrections).not.toHaveBeenCalled()
+  })
+
   it('locks the unsaved review while discarding and restores it if deletion fails', async () => {
     let rejectDiscard!: (cause: Error) => void
     const onDiscard = vi.fn(

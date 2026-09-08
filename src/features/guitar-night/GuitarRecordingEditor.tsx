@@ -1,6 +1,7 @@
 // Bounded melody corrections edit a score revision while preserving the immutable recording evidence.
 import { createMemo, createSignal, For, Show, untrack } from 'solid-js'
 import { changeRecordingNote, changeRecordingScoreTempo, quantizeRecordingScore, recordingNoteNeedsFingering, } from '@/lib/guitar/recording-score'
+import { mergeRecordingNote, recordingMergeTarget, splitRecordingNote, } from '@/lib/guitar/recording-score'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { midiToNote } from '@/lib/scale-data'
 import styles from './GuitarRecording.module.css'
@@ -50,8 +51,8 @@ export function GuitarRecordingEditor(props: {
     >
       <strong>Detected melody · draft</strong>
       <p>
-        Correct one note at a time. Fingering is suggested; chords are not yet
-        transcribed. Your original recording stays untouched.
+        Correct one note at a time. Fingering is suggested, including for chord
+        notes. Your original recording stays untouched.
       </p>
       <Show when={problems().length > 0}>
         <p>
@@ -193,41 +194,24 @@ export function GuitarRecordingEditor(props: {
               <button
                 type="button"
                 onClick={() => {
-                  const item = current()
-                  const middle = (item.startBeat + item.endBeat) / 2
-                  change({
-                    ...props.score,
-                    attachment: null,
-                    notes: props.score.notes.flatMap((row) =>
-                      row.id === item.id
-                        ? [
-                            { ...row, endBeat: middle },
-                            {
-                              ...row,
-                              id: globalThis.crypto.randomUUID(),
-                              startBeat: middle,
-                            },
-                          ]
-                        : [row],
+                  change(
+                    splitRecordingNote(
+                      props.score,
+                      current().id,
+                      globalThis.crypto.randomUUID(),
                     ),
-                  })
+                  )
                 }}
               >
                 Split note
               </button>
               <button
                 type="button"
-                disabled={selected() >= props.score.notes.length - 1}
+                disabled={
+                  recordingMergeTarget(props.score, current().id) === null
+                }
                 onClick={() => {
-                  const rows = [...props.score.notes]
-                  const index = selected()
-                  const next = rows[index + 1]
-                  if (next === undefined) return
-                  rows.splice(index, 2, {
-                    ...rows[index],
-                    endBeat: next.endBeat,
-                  })
-                  change({ ...props.score, attachment: null, notes: rows })
+                  change(mergeRecordingNote(props.score, current().id))
                 }}
               >
                 Merge with next

@@ -24,22 +24,29 @@ function notationNotes(score: GuitarPracticeScore) {
       start: Math.round(note.startBeat * UNITS_PER_BEAT),
       end: Math.round(note.endBeat * UNITS_PER_BEAT),
     }))
-  if (
-    notes.some(
-      (note, index) => index > 0 && note.start <= notes[index - 1].start,
+  const previousOnString = new Map<number, (typeof notes)[number]>()
+  const previousPitch = new Map<number, (typeof notes)[number]>()
+  for (const note of notes) {
+    // Independent voices may start together. Only a second attack of the same
+    // string or pitch collides when rounded onto that same notation boundary.
+    const previous = previousOnString.get(note.note.string!)
+    const samePitch = previousPitch.get(note.note.midi)
+    if (
+      (previous && note.start <= previous.start) ||
+      (samePitch && note.start <= samePitch.start)
     )
-  )
-    throw new Error(
-      'Some note attacks are too close for thirty-second-note notation. Separate or merge those notes, or export MIDI to keep their original timing.',
-    )
-  return notes.map((note, index) => ({
-    ...note,
-    // Retain short attacks, but do not overlap the next one or shift the phrase.
-    end: Math.min(
-      notes[index + 1]?.start ?? Infinity,
-      Math.max(note.start + 1, note.end),
-    ),
-  }))
+      throw new Error(
+        'Some note attacks are too close for thirty-second-note notation. Separate or merge those notes, or export MIDI to keep their original timing.',
+      )
+    // A sub-grid attack still receives one unit, without stealing a held note
+    // from another string. Original practice/MIDI timing is not changed.
+    note.end = Math.max(note.start + 1, note.end)
+    if (previous) previous.end = Math.min(previous.end, note.start)
+    if (samePitch) samePitch.end = Math.min(samePitch.end, note.start)
+    previousOnString.set(note.note.string!, note)
+    previousPitch.set(note.note.midi, note)
+  }
+  return notes
 }
 
 /** Repair two GPIF metadata fields alphaTab 1.8.3 writes incorrectly.
@@ -84,7 +91,7 @@ export async function writeRecordingGuitarPro(
   const unitsPerBar = (score.timeSignature[0] * 32) / score.timeSignature[1]
   const bars = Math.max(
     1,
-    Math.ceil(timedNotes[timedNotes.length - 1].end / unitsPerBar),
+    Math.ceil(Math.max(...timedNotes.map((note) => note.end)) / unitsPerBar),
   )
   if (bars > 2048) throw new Error('This score is too long to export safely.')
   const alphaTab = await import('@coderline/alphatab')
@@ -93,7 +100,7 @@ export async function writeRecordingGuitarPro(
   result.title = score.title
   result.subTitle = `Recorded melody · revision ${score.revision}`
   result.notices =
-    'Single-note transcription with suggested fingering. This notation copy rounds timing to thirty-second notes at the chosen display tempo. Saved audio, practice timing and MIDI export retain the original timing.'
+    'Transcription with suggested fingering. This notation copy rounds timing to thirty-second notes at the chosen display tempo. Saved audio, practice timing and MIDI export retain the original timing.'
   const instrument = recordingScoreTuning(score).instrument
   const track = new model.Track()
   track.name = `Recorded ${instrument}`
@@ -130,8 +137,12 @@ export async function writeRecordingGuitarPro(
     voices.push(voice)
   }
   let cursor = 0
-  const emit = (end: number, source: GuitarPracticeNote | null): void => {
-    let previous: InstanceType<typeof model.Note> | null = null
+  const previous = new Map<string, InstanceType<typeof model.Note>>()
+  const emit = (end: number, sources: readonly GuitarPracticeNote[]): void => {
+    const continuing = new Set(sources.map((note) => note.id))
+    for (const id of previous.keys()) {
+      if (!continuing.has(id)) previous.delete(id)
+    }
     while (cursor < end) {
       const barIndex = Math.floor(cursor / unitsPerBar)
       const remaining = Math.min(
@@ -150,26 +161,50 @@ export async function writeRecordingGuitarPro(
       beat.duration = rhythm.duration
       beat.dots = rhythm.dots
       voices[barIndex].addBeat(beat)
-      if (source !== null) {
+      for (const source of sources) {
         const note = new model.Note()
         note.string = score.tuning.length + 1 - source.string!
         note.fret = source.fret!
-        if (previous !== null) {
+        const origin = previous.get(source.id)
+        if (origin) {
           note.isTieDestination = true
-          note.tieOrigin = previous
-          previous.tieDestination = note
+          note.tieOrigin = origin
+          origin.tieDestination = note
         }
         beat.addNote(note)
-        previous = note
+        previous.set(source.id, note)
       }
       cursor += rhythm.units
     }
   }
-  for (const { note, start, end } of timedNotes) {
-    emit(start, null)
-    emit(end, note)
+  const events = new Map<
+    number,
+    { starts: GuitarPracticeNote[]; ends: string[] }
+  >()
+  const event = (unit: number) => {
+    let value = events.get(unit)
+    if (!value) {
+      value = { starts: [], ends: [] }
+      events.set(unit, value)
+    }
+    return value
   }
-  emit(bars * unitsPerBar, null)
+  event(0)
+  event(bars * unitsPerBar)
+  for (const { note, start, end } of timedNotes) {
+    event(start).starts.push(note)
+    event(end).ends.push(note.id)
+  }
+  const boundaries = [...events.keys()].sort((a, b) => a - b)
+  const active = new Map<string, GuitarPracticeNote>()
+  for (let index = 0; index < boundaries.length - 1; index++) {
+    const change = events.get(boundaries[index])!
+    for (const id of change.ends) active.delete(id)
+    for (const note of change.starts) active.set(note.id, note)
+    // One rhythm per event span, with per-note ties across the other voices'
+    // onsets and releases. This keeps balanced bars and independent sustain.
+    emit(boundaries[index + 1], [...active.values()])
+  }
   const settings = new alphaTab.Settings()
   result.finish(settings)
   return nativeInstrumentMetadata(

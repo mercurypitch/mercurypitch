@@ -54,6 +54,8 @@ export interface GuitarRecordingChunk {
   peak: number
   /** Unaccepted corrections are stored separately from measured notes. */
   editableScore?: GuitarPracticeScore
+  /** One explicit refinement undo, separate from immutable evidence/revisions. */
+  refinementBackup?: GuitarRefinementBackup
 }
 
 export interface GuitarRecordingBacking {
@@ -118,6 +120,29 @@ export interface GuitarPracticeScore {
     firstSeconds: number
     lastSeconds: number
   } | null
+  /** Model evidence is not the live detector's pitch clarity or a score grade. */
+  refinement?: GuitarScoreRefinement
+}
+
+export interface GuitarScoreRefinement {
+  version: 1
+  model: 'basic-pitch'
+  modelSha256: string
+  decoderVersion: string
+  createdAt: string
+  source: 'recorded-audio'
+  /** Model activation by refined source-note ID; later edits retain evidenceId. */
+  confidenceByNoteId: Record<string, number>
+}
+
+/** Bounded to one step; scores contain provenance, never another backup. */
+export interface GuitarRefinementBackup {
+  version: 1
+  createdAt: string
+  previousScore: GuitarPracticeScore
+  appliedScore: GuitarPracticeScore
+  acceptedScoreId: string | null
+  frames: number
 }
 
 export interface GuitarRecordingSummary {

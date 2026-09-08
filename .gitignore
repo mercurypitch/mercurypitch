@@ -77,7 +77,9 @@ runpod/jobs/
 .dev.vars
 
 # ONNX models for client-side UVR (download separately)
-public/models/
+public/models/*
+# Audited tiny Basic Pitch artifact and its redistribution notices ship locally.
+!public/models/basic-pitch/
 package-lock.json
 
 # Claude Code local settings (launch.json is shared)

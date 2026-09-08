@@ -202,7 +202,13 @@ function removeWasmAssetsPlugin() {
     name: 'remove-wasm-assets',
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
       for (const fileName in bundle) {
-        if (fileName.endsWith('.wasm')) {
+        // UVR's other runtimes stay CDN-backed, but explicit post-stop guitar
+        // refinement must work entirely from this origin. Preserve its exact
+        // non-JSEP WASM asset, emitted by the worker's package ?url import.
+        if (
+          fileName.endsWith('.wasm') &&
+          !/^assets\/ort-wasm-simd-threaded-[\w-]+\.wasm$/.test(fileName)
+        ) {
           delete bundle[fileName]
         }
       }
