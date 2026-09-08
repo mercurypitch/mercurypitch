@@ -264,6 +264,62 @@ describe('entry document prelude', () => {
     }
   })
 
+  // The prelude is the loading screen, so it opens on the brand rather than on
+  // a dark rectangle, and it races the bundle the way the curtain's art does.
+  for (const file of ENTRY_FILES) {
+    it(`opens ${file} on the brand mark and its plate`, () => {
+      const document = repoHtml(file)
+      const lockup = document.querySelector('.entry-prelude__lockup')
+      const mark = lockup?.querySelector('img')
+
+      expect(lockup).not.toBeNull()
+      // The shipped asset, never an inlined copy: this app once shipped a
+      // superseded mark in the opening because that copy was hand-written.
+      expect(mark?.getAttribute('src')).toBe('/brand-mark.svg')
+      // Decorative — the h1 below already names the page.
+      expect(mark?.getAttribute('alt')).toBe('')
+      // The lockup must not become the claim a crawler reads first.
+      expect(lockup?.tagName).toBe('DIV')
+
+      const raw = repoFile(file)
+      for (const plate of [
+        '/opening/first-light-wide.webp',
+        '/opening/first-light-tall.webp',
+      ]) {
+        expect(raw).toContain(`rel="preload"`)
+        expect(raw).toContain(plate)
+      }
+      expect(raw).toContain('href="/brand-mark.svg"')
+    })
+  }
+
+  it('holds the prelude copy back so a fast boot never shows it', () => {
+    const css = repoFile('src/styles/entry-prelude.css')
+
+    // The ground paints at once — delaying it would flash the body's white
+    // through first — while the lockup and then the copy wait behind delays.
+    expect(css).toMatch(/\.entry-prelude \{[^}]*background:/s)
+    expect(css).toMatch(
+      /\.entry-prelude__lockup \{\s*animation: entryPreludeRise [\d]+ms ease [\d]+ms both;/,
+    )
+    expect(css).toMatch(
+      /\.entry-prelude > :not\(\.entry-prelude__lockup\) \{\s*animation: entryPreludeRise [\d]+ms ease [\d]+ms both;/,
+    )
+    const delay = (rule: string): number =>
+      Number(
+        /animation: entryPreludeRise \d+ms ease (\d+)ms both/.exec(
+          css.slice(css.indexOf(rule)),
+        )?.[1] ?? 0,
+      )
+    // Brand first, words second, both after the moment a warm boot needs.
+    expect(delay('.entry-prelude__lockup {')).toBeGreaterThanOrEqual(120)
+    expect(
+      delay('.entry-prelude > :not(.entry-prelude__lockup) {'),
+    ).toBeGreaterThan(delay('.entry-prelude__lockup {'))
+    // Reduced motion keeps the waits and drops the movement.
+    expect(css).toContain('prefers-reduced-motion: reduce')
+  })
+
   // Google's structured-data rules require FAQPage content to be visible on the
   // page. These four documents declared Q&A that no reader could ever see.
   const FAQ_FILES = [
