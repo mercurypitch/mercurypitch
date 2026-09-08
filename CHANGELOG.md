@@ -5,6 +5,73 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.2] - 2026-09-08
+
+Two new rooms, takes you can hear back, and a sign-in worth having.
+
+### Added
+
+- **Ear Lab.** A room for training your ear, built around measuring what you
+  hear rather than asking you to grade yourself. Thirteen drills across
+  melody, rhythm, metre and harmony, laid out as a route with a short daily
+  run that picks them for you.
+- **Ear drills on your own songs.** The Field Book builds a drill out of a
+  song you already know, so the ear work happens on music you care about.
+- **Drum Night.** A room for drummers: the kit on screen or your own e-kit,
+  grooves you start from a pattern library and shape until they are yours,
+  and a room that plays them with feel rather than on the grid.
+- **Drum takes and full-band play-along.** Record against a saved groove and
+  keep its history, or play the whole band and drum over it.
+- **Guitar Night records what you play.** A melody take, with Studio amp
+  tones and monitoring while you are playing it, alongside percussion parts
+  from an imported file.
+- **Sign in with a passkey**, a code sent to your email, or a second factor
+  with a way back in if you lose it — and see every device on your account,
+  with a way to revoke any of them.
+- **The Progress cabinet.** Every badge and achievement in one place, the
+  leaderboard in its own Legends view, and the vocal challenges beside the
+  exercises in Practice.
+- **Voice control inside the rooms.** "Go home" and its friends now get you
+  out of Karaoke Night, Guitar Night, Drum Night and Piano Night.
+- **A phone streams a karaoke song** instead of downloading all of it first.
+
+### Changed
+
+- **Piano Night in phone landscape is one bottom row** — the studio, the
+  transport, Music and More — with the falling notes and the keys both still
+  on screen.
+- **Guitar Night gives a phone its rows back**: the resting guide line and the
+  bottom status strip are gone at phone width. Both are unchanged on a wide
+  screen.
+- **Finishing a drum take is on the take strip**, which is always visible, so
+  the bottom bar keeps plain play and pause.
+- **A phone shows at most two notifications at once**, and the verify-email
+  nudge is a strip in the page rather than a card over the bottom navigation.
+- **Separated songs are stored as files** and play back a window at a time,
+  which is what lets a phone open a full band at all.
+- **Practice is ordered Singing, Piano, Guitar, Drums**, and Drum Night has
+  its own row on the home gallery.
+
+### Fixed
+
+- **Ear Lab drills play.** A drill could run its whole course in silence when
+  the sound had not been woken by your first tap.
+- **Drum Night keeps the take** through a variation switch, plays from the top
+  after a song ends, and comes back after a spell in the background.
+- **Voice control hands over when a local model will not load** instead of
+  staying on and deaf, and stops claiming to listen while it is restarting.
+- **A navigation command no longer starts the music.** "Go home" said with a
+  song loaded used to play it on the way out.
+- **Seeking in Guitar Night keeps playing** instead of pausing at the new spot.
+- **Guitar Pro and MIDI files can be picked on an iPhone.**
+- **Signing in on an iPhone no longer zooms the page**, and the dialog stays
+  above the keyboard.
+- **The Back button goes back** from a screen that asks before you leave.
+- **A screen that fails to load says so**, and so does a practice run that
+  could not be saved.
+- **A closed challenge cannot be set live again**, and past challenges show
+  the day they actually closed.
+
 ## [0.9.1] - 2026-08-25
 
 ### Added
