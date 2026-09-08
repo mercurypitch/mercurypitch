@@ -81,6 +81,20 @@ const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 // below actually serves them. /glass itself is absent from run_worker_first —
 // Cloudflare's html_handling maps it to glass.html at the asset layer. Keep in
 // sync with vite.config.ts (GLASS_PATHS) and wrangler.jsonc.
+// Marketing deep links of the form /exercises/<slug>. These have no file and
+// no alias: the slug is read off location.pathname when the app boots
+// (applyExerciseSlug in src/App.tsx) and turned into a launch intent. They used
+// to resolve by accident, because `not_found_handling: single-page-application`
+// handed index.html to EVERY unmatched path — which is also why a typo, a probe
+// and a dead link all returned 200 with the home page. The asset layer now
+// answers a real 404, so this prefix has to be served on purpose, and it MUST
+// stay listed in wrangler.jsonc `assets.run_worker_first` or the 404 wins.
+//
+// The pattern is deliberately looser than the slug registry: an unknown slug
+// still reaches the app and is handled there, exactly as it was before. Pinned
+// against the real registry by src/tests/worker-entry-routing.test.ts.
+const EXERCISE_PATH = /^\/exercises\/[a-z0-9-]+\/?$/
+
 const GLASS_PATHS = new Set([
   '/glass',
   '/break-glass-with-your-voice',
@@ -335,6 +349,16 @@ export default {
       const karaokeUrl = new URL(request.url)
       karaokeUrl.pathname = '/karaoke'
       return env.ASSETS.fetch(new Request(karaokeUrl.toString(), request))
+    }
+
+    // Exercise deep links serve the studio shell with the URL intact, so the
+    // client still reads the slug off the path. Fetching '/' rather than
+    // '/index.html' for the same reason as the aliases above: ASSETS.fetch
+    // answers an explicit .html path with a drop-`.html` redirect.
+    if (EXERCISE_PATH.test(url.pathname) && method === 'GET') {
+      const shellUrl = new URL(request.url)
+      shellUrl.pathname = '/'
+      return env.ASSETS.fetch(new Request(shellUrl.toString(), request))
     }
 
     // Glass — alias paths serve glass.html content with the URL preserved

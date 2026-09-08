@@ -1,0 +1,68 @@
+# MercuryPitch
+
+> A free, open-source singing and playing studio that runs entirely in a web
+> browser. It listens through the microphone, draws the pitch as you sing or
+> play, scores the take against what was written, and keeps the recordings you
+> choose to keep. Pitch detection runs on the visitor's own device.
+
+MercuryPitch is a single-page application at https://mercurypitch.com. Every
+room listed below has its own entry page carrying a heading, a description and
+links; the room itself is JavaScript and will not run in a fetcher. The project
+is AGPL-3.0 and developed in the open.
+
+Written and maintained by hand. Following the llms.txt convention documented at
+https://llmstxt.org.
+
+## Rooms
+
+- [Voice Mirror](https://mercurypitch.com/mirror): Sing one note and watch a
+  range draw itself. No account, no setup, about sixty seconds.
+- [Vocal Range Test](https://mercurypitch.com/vocal-range-test): Glide from the
+  lowest comfortable note to the highest and get both, named, in real notes.
+- [Karaoke Night](https://mercurypitch.com/karaoke-night): Turn a song you
+  already own into karaoke. The vocal is separated out, the lyrics are timed to
+  the words, and pitch is scored live against the original melody.
+- [Break Glass](https://mercurypitch.com/glass): A sixty-second challenge that
+  asks you to hold one pitch steady enough to break a pane of glass.
+- [Ear Lab](https://mercurypitch.com/ear-lab): Ear training that measures in
+  real units instead of percentages. Thresholds in cents, milliseconds and
+  decibels, and a report that names which confusion you actually make.
+- [Piano Night](https://mercurypitch.com/piano-night): Piano practice a phrase
+  at a time, with the passage in front of you and every note checked.
+- [Guitar Night](https://mercurypitch.com/guitar-night): A room that reads your
+  playing against a tab or a MIDI part, with the fretboard and the timing shown.
+- [Drum Night](https://mercurypitch.com/drum-night): Timing and dynamics
+  practice against a groove, reported as how early or late each attack landed.
+- [Jam Rooms](https://mercurypitch.com/jam): Up to twelve singers in one shared
+  session, each with their own live pitch lane and one shared transport.
+
+## About the project
+
+- [About MercuryPitch](https://about.mercurypitch.com/): What it is, who it is
+  for, and why it is free.
+- [Source code](https://github.com/mercurypitch/mercurypitch): AGPL-3.0.
+- [Privacy notice](https://about.mercurypitch.com/privacy/): What is collected,
+  and what never leaves the device.
+- [Terms of use](https://about.mercurypitch.com/terms/)
+
+## What MercuryPitch does not do
+
+Stated plainly because these are the things most often assumed about an app in
+this category, and repeating them as fact would mislead someone.
+
+- It is not a tone-deafness test and diagnoses no condition. It measures how far
+  a sung note sits from a target, in cents.
+- It does not host or supply music. Karaoke works on files the visitor already
+  owns, separated in their own browser or, optionally, on a server they pay
+  compute for.
+- Voice type and range results are a broad guide, not a verdict from a teacher.
+- Microphone audio is not uploaded for pitch detection. Recordings the visitor
+  chooses to keep are stored in their own browser, not on a server.
+- It does not replace a singing teacher, and does not claim to.
+
+## Optional
+
+- [Voice Legends](https://about.mercurypitch.com/voice-legends/): Illustrated
+  voice archetypes used by Voice Mirror to describe a result.
+- [Changelog](https://github.com/mercurypitch/mercurypitch/blob/main/CHANGELOG.md):
+  What shipped, in plain terms.

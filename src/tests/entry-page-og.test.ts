@@ -27,6 +27,10 @@ const pages = readdirSync(repo)
   .filter((name) => name.endsWith('.html'))
   // The 3D range tester is a scratch harness, not a shared surface.
   .filter((name) => name !== 'vocal-range-test.html')
+  // The 404 document is the opposite of a shared surface: nobody should be
+  // pasting a link to a page that does not exist, and giving it a designed
+  // card would make a dead link unfurl as though it led somewhere.
+  .filter((name) => name !== '404.html')
   .sort()
 
 function read(name: string): string {
