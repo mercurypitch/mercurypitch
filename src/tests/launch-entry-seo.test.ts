@@ -291,14 +291,33 @@ describe('entry document prelude', () => {
       expect(lockup?.tagName).toBe('DIV')
 
       const raw = repoFile(file)
-      for (const plate of [
+      const plates = [
         '/opening/first-light-wide.webp',
         '/opening/first-light-tall.webp',
-      ]) {
-        expect(raw).toContain(`rel="preload"`)
-        expect(raw).toContain(plate)
+      ]
+      if (file === 'index.html') {
+        // The app shell is the one document that PAINTS these: App.tsx's
+        // opening curtain is a real <picture>, and the plate is its LCP.
+        // Preloading it there is the whole point.
+        for (const plate of plates) expect(raw).toContain(plate)
+        expect(raw).toContain('rel="preload"')
+      } else {
+        // Every other entry document only uses the plate as a CSS background
+        // of .entry-prelude, which is hidden the moment #root fills — and the
+        // curtain that would paint it never renders on these pages at all.
+        // Preloading it at high priority put 173 KB ahead of all 36 module
+        // scripts, so the art competed with the bundle whose arrival ends the
+        // prelude. Measured on 2026-09-09: downloaded in full, painted by
+        // nothing. A browser skips a hidden element's background entirely.
+        for (const plate of plates) expect(raw).not.toContain(plate)
       }
+      // The mark is different again: a real <img> in the lockup, painted on
+      // every boot slow enough to show the prelude at all.
       expect(raw).toContain('href="/brand-mark.svg"')
+      // The art still has to reach a slow boot from somewhere.
+      expect(repoFile('src/styles/entry-prelude.css')).toContain(
+        '/opening/first-light-wide.webp',
+      )
     })
   }
 

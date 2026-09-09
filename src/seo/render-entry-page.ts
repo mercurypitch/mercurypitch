@@ -132,24 +132,19 @@ ${JSON.stringify(node, null, 2)
   )
   .join('\n')}
 
-    <!-- The opening art is the first thing painted, so it is fetched ahead of
-         the bundle the way the app's own opening curtain does. Media-gated:
-         a phone fetches only the portrait recomposition, a desktop only the
-         wide one. -->
-    <link
-      rel="preload"
-      as="image"
-      href="/opening/first-light-wide.webp"
-      media="(min-aspect-ratio: 1/1)"
-      fetchpriority="high"
-    />
-    <link
-      rel="preload"
-      as="image"
-      href="/opening/first-light-tall.webp"
-      media="(max-aspect-ratio: 1/1)"
-      fetchpriority="high"
-    />
+    <!-- The opening plates are NOT preloaded here, deliberately.
+         They were, at high fetch priority, which queued 173 KB of decoration
+         ahead of all 36 module scripts — and the bundle arriving is the very
+         thing that ends the prelude, so the art competed with its own
+         dismissal. Measured on 2026-09-09: the plate downloaded in full, and
+         nothing ever painted it. On an entry document the plate is only a CSS
+         background of .entry-prelude, and that is hidden the moment #root
+         fills; the app's own opening curtain, which does paint it, never
+         renders on these pages at all. A browser skips the background of a
+         hidden element, so a fast boot now pays nothing while a slow boot —
+         the one the prelude exists for — still gets the art while it is up.
+         index.html keeps its preload: there the curtain really does paint it.
+         The mark below is a real <img> the preload scanner finds anyway. -->
     <link rel="preload" as="image" href="/brand-mark.svg" />
     <link rel="stylesheet" href="/src/styles/entry-prelude.css" />
   </head>

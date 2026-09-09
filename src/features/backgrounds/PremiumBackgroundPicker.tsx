@@ -7,7 +7,7 @@
 // short-lived object URLs and revoked with the popover lifecycle.
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { CheckSmall, Lock, StageCurtains, X } from '@/components/icons'
 import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
@@ -108,6 +108,41 @@ function invalidatesAccess(error: unknown): error is BackgroundRequestError {
 function BackgroundArtwork(props: BackgroundArtworkProps) {
   const [ownUrl, setOwnUrl] = createSignal<string | null>(null)
   const [failed, setFailed] = createSignal(false)
+  /**
+   * Whether this card is close enough to the fold to be worth its bytes.
+   *
+   * The panel scrolls — 760px tall over a two-column grid — so most cards are
+   * below it when it opens, and each one costs a PROTECTED request for a
+   * full-size plate against a 120-a-minute budget. Piano Night spent
+   * seventeen of them to paint the four you could actually see.
+   *
+   * Without IntersectionObserver every card is "visible", which is the old
+   * behaviour: correct, just eager.
+   */
+  const [visible, setVisible] = createSignal(
+    typeof IntersectionObserver === 'undefined',
+  )
+  let artwork: HTMLSpanElement | undefined
+
+  onMount(() => {
+    if (visible()) return
+    if (artwork === undefined) {
+      setVisible(true)
+      return
+    }
+    // Generous margin: the art should already be there by the time a card is
+    // scrolled to, not start loading once it arrives.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setVisible(true)
+        observer.disconnect()
+      },
+      { rootMargin: '300px' },
+    )
+    observer.observe(artwork)
+    onCleanup(() => observer.disconnect())
+  })
 
   /**
    * The surface already holds a decoded URL for the room it is showing, so the
@@ -143,11 +178,15 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
   // it runs once per card and never again for a selection somewhere else.
   createEffect(() => {
     const option = props.option
+    const ready = visible()
     setFailed(false)
     setOwnUrl(null)
 
     if (option.publicUrl !== null) return
     if (option.access === 'locked' || option.premiumAsset === null) return
+    // The selected room still paints at once — it comes from `sharedUrl`,
+    // which costs nothing — so scrolling is the only thing this defers.
+    if (!ready) return
 
     const asset = option.premiumAsset
     const invalidateAccess = props.controller.invalidateAccess
@@ -183,6 +222,7 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
 
   return (
     <span
+      ref={artwork}
       class={styles.artwork}
       classList={{
         [styles.artworkLocked]: props.option.access === 'locked',
