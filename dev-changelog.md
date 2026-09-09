@@ -9,6 +9,56 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.5] - 2026-09-09
+
+One fix, in what a failed cloud read reports.
+
+### Fixed
+
+- **Every failed cloud read claimed the backend was unreachable, once per
+  session, and prescribed dev-only remedies on production.** Found while
+  reading the console from the tablet in 0.9.4: under an empty Karaoke
+  library sat `[db] cloud backend unreachable — ... Start the dev worker
+(pnpm dev:db) or unset VITE_API_BASE_URL`. The connection was fine, and
+  neither remedy exists on `mercurypitch.com`.
+
+  A failed cloud read degrades to an empty result so the app still loads.
+  That is deliberate offline tolerance and is unchanged here. What it costs
+  is evidence: the console line is the only thing distinguishing a library
+  that is empty from one that is broken, so the line has to be true. It was
+  not — `warnCloudUnreachable` printed the same sentence for a 404 on an
+  undeployed route, a 500 that outlived its retries, and a body that would
+  not parse, because the only thing it had was an `Error` carrying the status
+  inside its message string.
+
+  `request()` now throws a `CloudRequestError` with the status as a field
+  (same message, so anything logging it reads the same). `warnCloudReadFailed`
+  classifies on that: `http-<status>` when the backend answered, `offline`
+  only for a `TypeError` the retry loop already gave up on, `unknown`
+  otherwise. It names the entity it was reading, and the dev remedies are
+  behind `IS_DEV`.
+
+  The `offlineWarned` latch was module-level and once-ever, so the second
+  failure — usually the interesting one, and always the one on a different
+  table — never reached the console at all. It is now a set keyed by cause:
+  one line per distinct failure, still no spam when the same one repeats.
+
+  A 401 stays silent. Identities are provisioned on the first write, so a
+  visitor who has not written anything has no rows and no problem;
+  `getUserId()` mints an anonymous id unconditionally, so it cannot
+  discriminate an expired session from a fresh visitor. Telling those apart
+  needs a signed-in signal the adapter does not have, and is left alone.
+
+  Eight tests in `src/tests/server-adapter.test.ts`. Four of them fail
+  against the 0.9.4 behaviour, one per part of the defect: the mislabel, the
+  offline classification, the once-ever latch, and the dev advice on prod.
+  The production-console one re-imports the module under a mocked `IS_DEV`,
+  which is the only honest way to read that branch from a test run whose
+  `import.meta.env.DEV` is true. The spy is restored in `afterEach` rather
+  than at the end of each body — a spy leaked by a failing assertion is
+  adopted by the next `vi.spyOn` along with its recorded calls, which made an
+  earlier draft of these tests pass or fail on their order.
+
 ## [0.9.4] - 2026-09-09
 
 One fix, in how the local database behaves when an origin has several tabs.
