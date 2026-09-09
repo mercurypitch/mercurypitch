@@ -1,7 +1,7 @@
 // Guitar capture borrows an existing input and context, keeping a bounded dry side branch off the monitor path.
 import RecordingWorker from '@/workers/guitar-recorder.worker.ts?worker'
 import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingPreview, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
-import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
+import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_MAX_BUFFERED_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_LOW_WATER, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 import { createGuitarPcmNode, prepareGuitarPcmWorklet, } from './recording-worklet'
 
 export interface GuitarRecordingInput {
@@ -87,6 +87,49 @@ export async function startGuitarRecordingCapture(
   // The controller attaches before start acknowledgement; avoid an unhandled
   // rejection if an asset or device fails during that first microtask.
   void done.catch(() => undefined)
+  // ── Capture headroom ──────────────────────────────────────────
+  //
+  // A buffer only returns to the worklet once its chunk is durable, so the
+  // pool doubles as the budget for how long storage may stall. Fixed at 32
+  // buffers that budget was ~1.4 s at 48 kHz, and a stalled database ended
+  // takes after a note or two (2026-09-09, a multi-tab schema deadlock).
+  //
+  // So the pool grows under pressure. It grows HERE, on the main thread:
+  // allocating on the render thread is what causes dropouts, which is the
+  // one failure worse than the one being fixed.
+  const maxBuffers = Math.max(
+    GUITAR_RECORDING_POOL_SIZE,
+    Math.ceil(
+      (GUITAR_RECORDING_MAX_BUFFERED_SECONDS * context.sampleRate) /
+        GUITAR_RECORDING_PCM_FRAMES,
+    ),
+  )
+  let allocated = 0
+  let outstanding = 0
+  let grew = false
+  const sendBuffer = (buffer: ArrayBuffer): void => {
+    node.port.postMessage({ type: 'buffer', buffer }, [buffer])
+  }
+  /** Top the worklet back up when it is running short and we may still grow. */
+  const growPoolIfNeeded = (): void => {
+    if (disposed || stopped) return
+    const spare = allocated - outstanding
+    if (spare > GUITAR_RECORDING_POOL_LOW_WATER) return
+    const room = maxBuffers - allocated
+    if (room <= 0) return
+    const want = Math.min(GUITAR_RECORDING_POOL_SIZE - spare, room)
+    if (want <= 0) return
+    if (!grew) {
+      grew = true
+      console.warn(
+        `[guitar] recording storage is not keeping up; holding audio in memory (up to ${GUITAR_RECORDING_MAX_BUFFERED_SECONDS}s)`,
+      )
+    }
+    for (let index = 0; index < want; index++) {
+      allocated++
+      sendBuffer(new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4))
+    }
+  }
   let timer: ReturnType<typeof setTimeout> | undefined
   const dispose = (): void => {
     if (disposed) return
@@ -151,9 +194,11 @@ export async function startGuitarRecordingCapture(
       // It must not retire the newer deadline guarding the stop response.
       if (!stopped) clearTimeout(timer)
       options.onStart(message.audioStartFrame)
-    } else if (message.type === 'pcm')
+    } else if (message.type === 'pcm') {
+      outstanding++
       worker.postMessage(message, [message.buffer])
-    else {
+      growPoolIfNeeded()
+    } else {
       stopped = true
       clearTimeout(timer)
       timer = setTimeout(
@@ -200,20 +245,14 @@ export async function startGuitarRecordingCapture(
         .then(async () => {
           if (failure !== null) return
           await options.onChunk(message.chunk, message.previewNote ?? null)
-          // A buffer is reusable only after its encoded audio/evidence are durable.
-          //
-          // That makes the whole take depend on IndexedDB write latency: the
-          // pool is GUITAR_RECORDING_POOL_SIZE * GUITAR_RECORDING_PCM_FRAMES =
-          // 65,536 frames, about 1.4 seconds at 48 kHz. If a write stops
-          // resolving, capture starves in roughly a second and stops with
-          // "Recording processing fell behind" — which reads like a CPU problem
-          // and is not. Seen on 2026-09-09 when a multi-tab schema deadlock
-          // (see src/db/database-lifecycle.ts) left every write pending: takes
-          // died after a note or two. Widening this budget would only lengthen
-          // the fuse, so the fix belongs at the database, not here.
-          if (!disposed)
-            for (const buffer of message.recycled)
-              node.port.postMessage({ type: 'buffer', buffer }, [buffer])
+          // A buffer is reusable only after its encoded audio/evidence are
+          // durable, which is what ties capture to write latency at all. The
+          // pool absorbs that (see growPoolIfNeeded); returning these is what
+          // lets it shrink back to a steady state once storage recovers.
+          for (const buffer of message.recycled) {
+            outstanding--
+            if (!disposed) sendBuffer(buffer)
+          }
         })
         .catch((error: unknown) => {
           failure =
@@ -250,8 +289,8 @@ export async function startGuitarRecordingCapture(
       sampleRate: context.sampleRate,
     })
     for (let index = 0; index < GUITAR_RECORDING_POOL_SIZE; index++) {
-      const buffer = new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4)
-      node.port.postMessage({ type: 'buffer', buffer }, [buffer])
+      allocated++
+      sendBuffer(new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4))
     }
     source.connect(splitter)
     splitter.connect(node, channel, 0)

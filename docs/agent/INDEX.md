@@ -129,7 +129,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.3k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
+| `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
@@ -393,6 +393,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
+| [src/db/services/auth-service.ts](../../src/db/services/auth-service.ts) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
 | [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.3k |
@@ -401,7 +402,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
-| [src/db/services/auth-service.ts](../../src/db/services/auth-service.ts) | 1.2k |
 <!-- END:GENERATED heavy-files -->
 
 CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,
