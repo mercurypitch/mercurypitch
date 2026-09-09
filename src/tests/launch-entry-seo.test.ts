@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { ENTRY_PAGES } from '@/seo/entry-pages'
 
 function repoFile(path: string): string {
   return readFileSync(resolve(process.cwd(), path), 'utf8')
@@ -29,9 +30,11 @@ describe('launch entry documents', () => {
     expect(
       document.querySelector('script[type="module"]')?.getAttribute('src'),
     ).toBe('/src/features/mirror/main.tsx')
-    expect(vite).toContain(
-      "vocalRangeTest: resolve(__dirname, 'vocal-range-test.html')",
-    )
+    // The document, its clean path and its build input all come from one
+    // record now, so this asserts the record rather than a config literal.
+    const entry = ENTRY_PAGES.find((page) => page.slug === 'vocal-range-test')
+    expect(entry?.paths).toEqual(['/vocal-range-test'])
+    expect(entry?.boot).toBe('/src/features/mirror/main.tsx')
     expect(vite).not.toContain("'tone-deaf-test.html'")
   })
 
@@ -76,31 +79,24 @@ describe('launch entry documents', () => {
       file: 'piano-night.html',
       path: 'piano-night',
       entry: '/src/features/piano-night/main.tsx',
-      vitePaths: "PIANO_NIGHT_PATHS = new Set(['/piano-night'])",
-      viteInput: "pianoNight: resolve(__dirname, 'piano-night.html')",
     },
     {
       room: 'Guitar Night',
       file: 'guitar-night.html',
       path: 'guitar-night',
       entry: '/src/features/guitar-night/main.tsx',
-      vitePaths: "GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])",
-      viteInput: "guitarNight: resolve(__dirname, 'guitar-night.html')",
     },
     {
       room: 'Drum Night',
       file: 'drum-night.html',
       path: 'drum-night',
       entry: '/src/features/drum-night/main.tsx',
-      vitePaths: "DRUM_NIGHT_PATHS = new Set(['/drum-night'])",
-      viteInput: "drumNight: resolve(__dirname, 'drum-night.html')",
     },
   ] as const
 
   for (const room of INSTRUMENT_ROOMS) {
     it(`indexes ${room.room} from a self-canonical document with a share card`, () => {
       const document = repoHtml(room.file)
-      const vite = repoFile('vite.config.ts')
       // The standalone-document list lives with the rest of the worker's
       // routing rules, which moved out of src/sw.ts into src/lib/sw-runtime.ts.
       const serviceWorker = repoFile('src/lib/sw-runtime.ts')
@@ -135,8 +131,10 @@ describe('launch entry documents', () => {
       expect(
         document.querySelector('script[type="module"]')?.getAttribute('src'),
       ).toBe(room.entry)
-      expect(vite).toContain(room.vitePaths)
-      expect(vite).toContain(room.viteInput)
+      // One record drives the document, the dev rewrite and the build input.
+      const entry = ENTRY_PAGES.find((page) => page.slug === room.path)
+      expect(entry?.paths).toEqual([`/${room.path}`])
+      expect(entry?.boot).toBe(room.entry)
       expect(serviceWorker).toContain(`'/${room.path}'`)
       expect(serviceWorker).toContain(`'/${room.path}.html'`)
       expect(sitemap).toContain(`<loc>${url}</loc>`)

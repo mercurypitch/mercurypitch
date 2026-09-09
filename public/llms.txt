@@ -36,6 +36,25 @@ https://llmstxt.org.
 - [Jam Rooms](https://mercurypitch.com/jam): Up to twelve singers in one shared
   session, each with their own live pitch lane and one shared transport.
 
+## Ways in
+
+The same rooms, reached by what people actually search for. Each is a page in
+its own right, not a redirect — it explains the task, then opens the room that
+does it.
+
+- [Vocal Pitch Practice](https://mercurypitch.com/pitch-training): Practise
+  singing on pitch with live feedback, scored in cents rather than percentages.
+  Opens the exercises.
+- [Voice Type Test](https://mercurypitch.com/voice-type-test): Which of the
+  standard bands — soprano, mezzo, alto, tenor, baritone, bass — your measured
+  range overlaps most. A guide, not a classification.
+- [Vocal Remover](https://mercurypitch.com/vocal-remover): Split a song you
+  already own into vocal and instrumental, then sing over the result. Opens
+  Karaoke Night.
+- [Which Singer Has My Vocal Range](https://mercurypitch.com/which-singer-has-my-vocal-range):
+  Matches your measured range against the ranges well-known singers cover. It
+  compares notes, not timbre — a shared range is not a shared sound.
+
 ## About the project
 
 - [About MercuryPitch](https://about.mercurypitch.com/): What it is, who it is

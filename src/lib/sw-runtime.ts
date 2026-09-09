@@ -128,6 +128,17 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/jam.html',
   '/jam-rooms',
   '/jam-rooms.html',
+  // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing
+  // room, but the document is its own: cached under '/' the visitor would get
+  // the shell with none of the copy the page was found for.
+  '/pitch-training',
+  '/pitch-training.html',
+  '/voice-type-test',
+  '/voice-type-test.html',
+  '/vocal-remover',
+  '/vocal-remover.html',
+  '/which-singer-has-my-vocal-range',
+  '/which-singer-has-my-vocal-range.html',
 ])
 
 /**
