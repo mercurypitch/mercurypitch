@@ -65,6 +65,26 @@ describe('entry page model', () => {
     }
   })
 
+  // Five of these shipped empty. The model was extracted from the old
+  // hand-written documents, and the extractor's regex did not survive
+  // Prettier's wrapped `</noscript\n>`, so it captured nothing — and the
+  // parity check that was supposed to catch it compared that same empty
+  // extraction against an empty render and agreed. Hence a test on the value
+  // itself rather than on a round-trip.
+  it('gives every entry the prose a crawler falls back to', () => {
+    for (const page of ENTRY_PAGES) {
+      expect(page.noscript.length, `${page.slug} noscript`).toBeGreaterThan(30)
+      expect(page.noscript, page.slug).toMatch(/JavaScript/)
+      expect(page.h1.length, `${page.slug} h1`).toBeGreaterThan(8)
+      expect(page.lede.length, `${page.slug} lede`).toBeGreaterThan(80)
+      expect(page.og.title.length, `${page.slug} og:title`).toBeGreaterThan(10)
+      expect(
+        page.twitter.title.length,
+        `${page.slug} twitter:title`,
+      ).toBeGreaterThan(10)
+    }
+  })
+
   it('renders the head every crawler reads', () => {
     for (const page of ENTRY_PAGES) {
       const html = renderEntryPage(page)

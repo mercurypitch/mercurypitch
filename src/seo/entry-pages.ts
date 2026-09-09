@@ -106,7 +106,8 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         a: 'Modern pitch detection (YIN/MPM) running on raw, unprocessed microphone input resolves pitch to within a few cents — far finer than a semitone. Voice Mirror disables echo cancellation and noise suppression so the detector sees your true voice.',
       },
     ],
-    noscript: '',
+    noscript:
+      'Voice Mirror needs JavaScript — your voice is analyzed right here in your browser, and never uploaded.',
   },
   {
     slug: 'vocal-range-test',
@@ -146,7 +147,8 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         a: 'Yes. The test runs in your browser and your microphone audio stays on your device. Only the derived note and pitch measurements are used to build your result.',
       },
     ],
-    noscript: '',
+    noscript:
+      'The vocal range test needs JavaScript — your voice is analyzed here in your browser and never uploaded.',
   },
   {
     slug: 'karaoke',
@@ -187,7 +189,8 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         a: 'Yes. Enable your microphone and MercuryPitch tracks your pitch against the original vocal melody in real time, drawing every note you sing and scoring your performance.',
       },
     ],
-    noscript: '',
+    noscript:
+      'Karaoke Night needs JavaScript — the mixing, lyrics and scoring all run right here in your browser.',
   },
   {
     slug: 'glass',
@@ -233,7 +236,8 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         a: "They find the glass's ringing note by ear, then sing that exact pitch with enough volume and steadiness for the resonance to build. Amplification helps in demonstrations, but the physics is pitch matching plus sustain — skills any singer can practice.",
       },
     ],
-    noscript: '',
+    noscript:
+      'Glass needs JavaScript — your voice is analyzed right here in your browser, and never uploaded.',
   },
   {
     slug: 'piano-night',
@@ -299,7 +303,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       description:
         'A browser guitar rehearsal room that listens through mic, interface or MIDI and reads the bar back to you as tab.',
     },
-    noscript: '',
+    noscript: 'Guitar Night needs JavaScript to open the rehearsal room.',
   },
   {
     slug: 'drum-night',
