@@ -77,6 +77,9 @@ const html = `<!doctype html>
     font-weight: 600; font-size: 22px; letter-spacing: 0.01em; color: #efe6d6;
   }
   .brand svg { width: 34px; height: 34px; }
+  /* The lockup carries the signature split everywhere else; the bench
+     had it as one word, which read as a different brand. */
+  .brand .p { color: #58a6ff; font-weight: inherit; }
   .eyebrow {
     position: absolute; left: 72px; top: 178px;
     font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
@@ -113,7 +116,9 @@ const html = `<!doctype html>
     font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #b9b1a4;
   }
   .column {
-    position: absolute; right: 118px; top: 96px; width: 150px; height: 440px;
+    /* 164 wide, not 150: the "1000" label starts at x=124 and ran past the
+       old viewBox, so the top of the scale rendered as "100C". */
+    position: absolute; right: 190px; top: 96px; width: 164px; height: 440px;
   }
 </style>
 </head>
@@ -121,7 +126,7 @@ const html = `<!doctype html>
   <div class="room"></div>
   <div class="scrim"></div>
   <div class="lamp"></div>
-  <div class="brand">${mark}<span>MercuryPitch</span></div>
+  <div class="brand">${mark}<span>Mercury<b class="p">Pitch</b></span></div>
   <div class="eyebrow">Measured, not scored</div>
   <div class="rule"></div>
   <h1>Ear Lab</h1>
@@ -131,7 +136,7 @@ const html = `<!doctype html>
     <div class="reading"><b>18<small>ms</small></b><span>The Grid</span></div>
     <div class="reading"><b>618</b><span>Mercury Index</span></div>
   </div>
-  <svg class="column" viewBox="0 0 150 440" fill="none">
+  <svg class="column" viewBox="0 0 164 440" fill="none">
     <rect x="53" y="18" width="44" height="380" rx="22" stroke="#c9a45e" stroke-opacity="0.75" stroke-width="1.5" />
     <rect x="61" y="150" width="28" height="240" rx="14" fill="#c5ced8" fill-opacity="0.92" />
     <rect x="61" y="150" width="28" height="240" rx="14" fill="url(#g)" />

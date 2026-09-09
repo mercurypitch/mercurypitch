@@ -36,10 +36,14 @@ const html = /* html */ `<!doctype html>
   .glow { position: absolute; inset: 0; background: radial-gradient(38% 64% at 72% 45%, rgba(231,173,82,.22), transparent 70%), radial-gradient(30% 50% at 88% 72%, rgba(127,57,67,.26), transparent 70%); mix-blend-mode: screen; }
   .content { position: relative; z-index: 3; display: flex; height: 100%; flex-direction: column; padding: 54px 62px 46px; }
   .brand { display: flex; align-items: center; gap: 14px; }
+  /* Floor under the gap to the headline. margin-top:auto on the headline only
+     distributes LEFTOVER space, and a full card leaves almost none, so the
+     lockup and the headline ended up nearly touching. */
+  .brand { margin-bottom: 46px; }
   .mark { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; box-shadow: 0 5px 20px rgba(231,173,82,.24); }
   .mark svg { width: 100%; height: 100%; }
   .wordmark { font-weight: 760; font-size: 27px; letter-spacing: -.02em; }
-  .wordmark b { color: #e7ad52; }
+  .wordmark b { color: #58a6ff; }
   .divider { width: 1px; height: 26px; background: rgba(238,231,219,.28); }
   .kicker { color: #e7ad52; font-size: 14px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; }
   h1 { max-width: 610px; margin: auto 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 78px; font-weight: 520; letter-spacing: -.035em; line-height: .98; text-shadow: 0 4px 28px rgba(0,0,0,.8); }

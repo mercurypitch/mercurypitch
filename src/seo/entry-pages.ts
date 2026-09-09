@@ -82,8 +82,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
         'Sing for 60 seconds, get your vocal range, accuracy and steadiness as a shareable voiceprint. Analyzed entirely in your browser.',
+      image: 'https://mercurypitch.com/mirror-og.png',
       imageAlt:
-        'MercuryPitch Voice Mirror voiceprint showing a measured vocal range and pitch results.',
+        'A pitch contour rising, holding level, then falling — two glides around one steady note.',
     },
     twitter: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
@@ -123,8 +124,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
         'Sing a low-to-high glide and get your measured notes, semitone span and a broad voice-type guide. Analyzed entirely in your browser.',
+      image: 'https://mercurypitch.com/vocal-range-test-og.png',
       imageAlt:
-        'MercuryPitch Voice Mirror voiceprint showing a measured vocal range and pitch results.',
+        'A measured vocal span marked on a pitch ruler, with the lowest and highest notes lit at each end.',
     },
     twitter: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
@@ -430,8 +432,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
         'See the note you are making against the note you meant, and how far apart they are in cents. Free, in your browser.',
+      image: 'https://mercurypitch.com/pitch-training-og.png',
       imageAlt:
-        'MercuryPitch pitch practice showing a sung note tracked against its target.',
+        'A pitch readout: the note being sung tracked against its target line, the gap between them lit where they meet.',
     },
     twitter: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
@@ -478,8 +481,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
         'Sing one glide and see which voice band your measured range overlaps most. A guide, not a verdict.',
+      image: 'https://mercurypitch.com/voice-type-test-og.png',
       imageAlt:
-        'MercuryPitch voice type result showing a measured range against the standard voice bands.',
+        'Four voice bands stacked as spans on a pitch scale, with one lit to show the measured range.',
     },
     twitter: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
@@ -526,6 +530,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Free Vocal Remover — Vocals and Instrumental, Split Apart',
       description:
         'Separate a song you already own into vocal and instrumental, in your own browser, then sing over it with live pitch scoring.',
+      image: 'https://mercurypitch.com/karaoke-og.png',
       imageAlt:
         'MercuryPitch Karaoke Night showing a separated instrumental track with timed lyrics.',
     },
@@ -573,8 +578,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Which Singer Has My Vocal Range?',
       description:
         'Sing one glide and see which famous singer covers the same notes you do. Free, and your audio never leaves your device.',
+      image: 'https://mercurypitch.com/which-singer-has-my-vocal-range-og.png',
       imageAlt:
-        'MercuryPitch reveal card showing a measured vocal range beside a matched singer.',
+        'Two vocal ranges drawn as spans on a scale, the stretch they share lit between them.',
     },
     twitter: {
       title: 'Which Singer Has My Vocal Range?',
