@@ -68,7 +68,11 @@ export function createGuitarPcmCapture(
       while (index < input.length && active) {
         buffer ??= pool.pop()
         if (buffer === undefined) {
-          stop('Recording processing fell behind. The captured part is safe.')
+          // The main thread grows the pool long before this, so reaching it
+          // means storage stayed stalled for the whole headroom budget.
+          stop(
+            'Saving fell behind, so recording stopped. Everything captured before that is safe.',
+          )
           break
         }
         const count = Math.min(

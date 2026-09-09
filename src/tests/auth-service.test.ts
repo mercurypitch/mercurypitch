@@ -15,7 +15,7 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasValidToken, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -740,5 +740,64 @@ describe('persistent identity', () => {
 
     logout()
     expect(getUserId()).toBe(deviceId)
+  })
+})
+
+// ── A refused cloud session ─────────────────────────────────────
+//
+// Reads degrade to empty and a 401 is routine (identities mint on the first
+// write), so before this an expired session and a brand-new visitor were
+// indistinguishable: the library was simply empty. Only an upgraded account
+// has a session to lose, which is the discriminator these pin down.
+
+describe('handleCloudSessionRejected', () => {
+  it('signs an upgraded account out and asks it to sign in again', () => {
+    setAuthToken(makeToken(3600, 'password'))
+
+    expect(handleCloudSessionRejected()).toBe(true)
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(true)
+    expect(showNotificationMock).toHaveBeenCalledTimes(1)
+    expect(String(showNotificationMock.mock.calls[0][0])).toContain('expired')
+  })
+
+  it('stays silent for a lazily provisioned anonymous identity', () => {
+    setAuthToken(makeToken(3600, 'anonymous'))
+
+    // Routine, not a failure: this visitor has written nothing yet. Signing
+    // them "out" would mean re-provisioning on the next write for no reason,
+    // and telling them their session expired would be a lie.
+    expect(handleCloudSessionRejected()).toBe(false)
+    expect(getAuthToken()).not.toBeNull()
+    expect(needsSignIn()).toBe(false)
+    expect(showNotificationMock).not.toHaveBeenCalled()
+  })
+
+  it('stays silent when there is no token at all', () => {
+    expect(handleCloudSessionRejected()).toBe(false)
+    expect(needsSignIn()).toBe(false)
+    expect(showNotificationMock).not.toHaveBeenCalled()
+  })
+
+  it('acts once, however many reads are refused at the same time', () => {
+    setAuthToken(makeToken(3600, 'google'))
+
+    // A page load fires a dozen reads; they all come back 401 together.
+    const outcomes = [
+      handleCloudSessionRejected(),
+      handleCloudSessionRejected(),
+      handleCloudSessionRejected(),
+    ]
+
+    expect(outcomes).toEqual([true, false, false])
+    expect(showNotificationMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('can act without notifying, for callers that show their own message', () => {
+    setAuthToken(makeToken(3600, 'password'))
+
+    expect(handleCloudSessionRejected(false)).toBe(true)
+    expect(needsSignIn()).toBe(true)
+    expect(showNotificationMock).not.toHaveBeenCalled()
   })
 })

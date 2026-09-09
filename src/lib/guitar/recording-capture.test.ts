@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startGuitarRecordingCapture } from './recording-capture'
 import type { GuitarCaptureMessage, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
-import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
+import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_MAX_BUFFERED_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_LOW_WATER, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
 
 const edge = vi.hoisted(() => ({ worker: vi.fn() }))
 vi.mock('@/workers/guitar-recorder.worker.ts?worker', () => ({
@@ -535,4 +535,130 @@ describe('borrowed guitar capture boundary', () => {
       expectReleased(h)
     },
   )
+})
+
+// ── Headroom while storage stalls ───────────────────────────────
+//
+// A buffer only returns to the worklet once its chunk is durable, so the pool
+// IS the budget for how long a write may take. Fixed at 32 buffers that budget
+// was ~1.4 s at 48 kHz, and a stalled database ended takes after a note or two
+// (2026-09-09). These pin the growth that replaced it: on the main thread,
+// bounded, and only when it is actually needed.
+
+describe('capture headroom when storage stalls', () => {
+  const bufferPosts = (h: ReturnType<typeof harness>) =>
+    h.node.port.postMessage.mock.calls.filter(
+      ([message]) => message.type === 'buffer',
+    )
+
+  /** Drive `count` full buffers out of the worklet, as a live take does. */
+  function emitPcm(h: ReturnType<typeof harness>, count: number) {
+    for (let sequence = 0; sequence < count; sequence++) {
+      const buffer = new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4)
+      h.node.send({
+        type: 'pcm',
+        buffer,
+        sequence,
+        firstFrame: sequence * GUITAR_RECORDING_PCM_FRAMES,
+        frames: GUITAR_RECORDING_PCM_FRAMES,
+      })
+    }
+  }
+
+  async function started() {
+    const h = harness()
+    const capture = await startGuitarRecordingCapture(h.options)
+    h.node.send({ type: 'started', audioStartFrame: 0 })
+    return { h, capture }
+  }
+
+  it('hands the worklet more buffers rather than letting a stalled write end the take', async () => {
+    const { h } = await started()
+    const write = deferred()
+    h.onChunk.mockReturnValue(write.promise)
+    h.worker.send({ type: 'chunk', chunk: chunk(), recycled: [] })
+
+    // Nothing is coming back while the write hangs, so the pool only drains.
+    const drain = GUITAR_RECORDING_POOL_SIZE - GUITAR_RECORDING_POOL_LOW_WATER
+    emitPcm(h, drain)
+
+    // Before the fix this was still exactly GUITAR_RECORDING_POOL_SIZE, and
+    // the next few quanta exhausted the worklet and stopped the recording.
+    expect(bufferPosts(h).length).toBeGreaterThan(GUITAR_RECORDING_POOL_SIZE)
+    write.resolve()
+    await vi.advanceTimersByTimeAsync(0)
+  })
+
+  it('allocates nothing extra while writes keep up', async () => {
+    const { h } = await started()
+
+    // Each chunk resolves immediately and returns its buffer, so the pool
+    // never dips to the low-water mark.
+    for (
+      let sequence = 0;
+      sequence < GUITAR_RECORDING_POOL_SIZE * 4;
+      sequence++
+    ) {
+      const buffer = new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4)
+      h.node.send({
+        type: 'pcm',
+        buffer,
+        sequence,
+        firstFrame: sequence * GUITAR_RECORDING_PCM_FRAMES,
+        frames: GUITAR_RECORDING_PCM_FRAMES,
+      })
+      h.worker.send({
+        type: 'chunk',
+        chunk: chunk(sequence),
+        recycled: [buffer],
+      })
+      await vi.advanceTimersByTimeAsync(0)
+    }
+
+    // Growth is for trouble. A healthy take must not quietly climb to the cap.
+    expect(bufferPosts(h).length).toBe(GUITAR_RECORDING_POOL_SIZE * 5)
+    expect(
+      bufferPosts(h).filter(([, transfer]) => transfer !== undefined).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('stops growing at the memory ceiling instead of holding audio forever', async () => {
+    const { h } = await started()
+    const write = deferred()
+    h.onChunk.mockReturnValue(write.promise)
+    h.worker.send({ type: 'chunk', chunk: chunk(), recycled: [] })
+
+    const ceiling = Math.ceil(
+      (GUITAR_RECORDING_MAX_BUFFERED_SECONDS * 48000) /
+        GUITAR_RECORDING_PCM_FRAMES,
+    )
+    // Far more than the ceiling allows; the take is bounded, memory is not.
+    emitPcm(h, ceiling * 2)
+
+    expect(bufferPosts(h).length).toBe(ceiling)
+    write.resolve()
+    await vi.advanceTimersByTimeAsync(0)
+  })
+
+  it('says once, and only under pressure, that saving is behind', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const { h } = await started()
+      const write = deferred()
+      h.onChunk.mockReturnValue(write.promise)
+      h.worker.send({ type: 'chunk', chunk: chunk(), recycled: [] })
+
+      emitPcm(h, GUITAR_RECORDING_POOL_SIZE * 3)
+
+      // One line, not one per allocation — a stall produces hundreds.
+      const lines = warn.mock.calls
+        .map((call) => String(call[0]))
+        .filter((line) => line.includes('not keeping up'))
+      expect(lines).toHaveLength(1)
+      write.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
 })

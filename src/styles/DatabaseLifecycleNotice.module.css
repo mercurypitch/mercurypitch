@@ -1,0 +1,125 @@
+/* DatabaseLifecycleNotice — a slim bar pinned under the top of the shell.
+
+   The bottom of the viewport already belongs to the consent banner, the
+   practice timer pill and the sync chip, and this must not stack with any of
+   them. It also has to sit above modals: a superseded tab can be showing one,
+   and the dialog will never finish whatever it was waiting for. */
+
+@keyframes lifecycleNoticeIn {
+  from {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notice {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  top: max(0.75rem, env(safe-area-inset-top));
+  margin-inline: auto;
+  max-width: 44rem;
+  z-index: 2147483001; /* above the consent banner, which is already above modals */
+
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  padding: 0.7rem 0.95rem;
+  border-radius: 0.75rem;
+  background: var(--bg-secondary, rgba(18, 20, 28, 0.94));
+  color: var(--text-primary, #eef0f6);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: lifecycleNoticeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Superseded is terminal; blocked clears itself. Colour says which without
+   the reader having to parse the sentence first. */
+.notice[data-state='superseded'] {
+  border-color: var(--warning, #f0a530);
+}
+
+.notice[data-state='blocked'] {
+  border-color: var(--border, rgba(255, 255, 255, 0.14));
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--warning, #f0a530);
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.text {
+  flex: 1 1 16rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.text strong {
+  font-weight: 600;
+}
+
+.action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.18));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.action:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.14));
+  border-color: var(--warning, #f0a530);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--warning, #f0a530);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}
+
+/* On a phone the bar is the whole width and the button drops to its own row
+   rather than squeezing the sentence into two words per line. */
+@media (max-width: 30rem) {
+  .notice {
+    left: 0.5rem;
+    right: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .action {
+    width: 100%;
+    justify-content: center;
+  }
+}

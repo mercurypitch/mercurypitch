@@ -150,6 +150,37 @@ test.describe('multi-tab database upgrade', () => {
     )
   })
 
+  test('the shell tells the visitor the tab is out of date', async ({
+    page,
+  }) => {
+    await openApp(page)
+
+    // Nothing to say while the database is healthy.
+    await expect(page.getByRole('alert')).toHaveCount(0)
+
+    await page.evaluate(
+      async ({ name, version }) => {
+        await new Promise<void>((resolve) => {
+          const request = indexedDB.open(name, version + 10)
+          request.onsuccess = () => {
+            request.result.close()
+            resolve()
+          }
+          request.onerror = () => resolve()
+          setTimeout(resolve, 20_000)
+        })
+      },
+      { name: DB, version: APP_VERSION },
+    )
+
+    // The room-level copy only helps whoever is watching that room's spinner.
+    // This is the shell notice, so it reaches every surface — including the
+    // ones that show nothing but a spinner of their own.
+    const notice = page.getByRole('alert')
+    await expect(notice).toContainText('out of date', { timeout: 10_000 })
+    await expect(notice.getByRole('button', { name: /reload/i })).toBeVisible()
+  })
+
   test('an upgrade held up by another connection reports blocked, then completes', async ({
     page,
   }) => {

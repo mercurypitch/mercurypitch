@@ -10,6 +10,7 @@ import { Portal } from 'solid-js/web'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { ComposeMobileToolbar } from '@/components/compose/ComposeMobileToolbar'
+import { DatabaseLifecycleNotice } from '@/components/DatabaseLifecycleNotice'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { Drum, Music, MusicBoard, MusicNote, PianoKeys, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
@@ -4441,6 +4442,11 @@ const AppShell: Component<AppProps> = (props) => {
             one — and outside it, because Google's is a full-page redirect
             and the dialog is gone by the time the account is held. */}
         <LocalProgressNotice />
+
+        {/* A superseded or blocked database breaks every surface at once,
+            so the explanation belongs to the shell rather than to whichever
+            spinner the visitor happens to be watching. */}
+        <DatabaseLifecycleNotice />
 
         <Notifications />
         {/* The sync dialog and its corner chip outlive any tab — a

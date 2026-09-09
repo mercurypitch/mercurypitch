@@ -11,6 +11,27 @@ export const GUITAR_RECORDING_PCM_FRAMES = 2048
 // Preserve the original 65,536-sample backpressure budget, not a longer queue.
 export const GUITAR_RECORDING_POOL_SIZE = 32
 
+/**
+ * Grow the pool once the worklet is down to this many spare buffers.
+ *
+ * One buffer is 2048 frames, about 43 ms at 48 kHz, so eight of them is
+ * roughly a third of a second of slack — long enough that an ordinary write
+ * never triggers growth, short enough that a stall is met well before the
+ * pool runs dry.
+ */
+export const GUITAR_RECORDING_POOL_LOW_WATER = 8
+
+/**
+ * How much audio capture may hold in memory while storage is not keeping up.
+ *
+ * The pool used to be fixed at GUITAR_RECORDING_POOL_SIZE, which is 65,536
+ * frames — about 1.4 seconds at 48 kHz — because a buffer is only reusable
+ * once its chunk is durable. Any stall longer than that ended the take. At
+ * 48 kHz this ceiling is ~700 buffers, 5.8 MB, which is nothing next to the
+ * five-minute take it protects.
+ */
+export const GUITAR_RECORDING_MAX_BUFFERED_SECONDS = 30
+
 export interface GuitarPitchEvidence {
   frame: number
   midi: number | null
