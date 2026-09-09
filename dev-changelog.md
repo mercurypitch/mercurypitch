@@ -9,6 +9,57 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.6] - 2026-09-09
+
+The crawlable entries become a data model, four search intents get a page of
+their own, and PR Gate stops failing runs in which nothing failed.
+
+### Added
+
+- **Four new entry pages: `/pitch-training`, `/vocal-remover`,
+  `/voice-type-test` and `/which-singer-has-my-vocal-range`.** Each is a real
+  document at its own URL that hands over to the app in place — no redirect,
+  the address a searcher landed on is the address they can share. Verified on
+  dev: the path never changes, the canonical is self-referential, and the
+  served HTML carries the page's own H1, description and JSON-LD.
+
+### Changed
+
+- **The nine hand-written entry HTML files are one data model.** `src/seo/entry-pages.ts`
+  is now the single source of truth for all thirteen entries, and
+  `src/seo/render-entry-page.ts` renders one to HTML. It drives four things
+  that used to be maintained by hand and drift apart: the document itself, the
+  Vite build input, the dev/preview rewrite table, and the cross-links on every
+  other page. The generated `<slug>.html` files sit at the project root because
+  Cloudflare's asset-layer `html_handling` maps a clean path only to a document
+  beside it at the dist root; they are generated and git-ignored, with a Vitest
+  `globalSetup` writing them before any suite runs.
+
+### Fixed
+
+- **Five entry pages shipped an empty `<noscript>`.** The extractor's regex did
+  not survive Prettier wrapping the closing tag as `</noscript\n>`. The parity
+  check that should have caught it ran the same broken extraction on both sides
+  and compared empty to empty — a reminder that round-tripping a value through
+  the code that produced it cancels the bug out twice.
+
+- **PR Gate failed `main` on a run where 599 files and 7088 tests passed.**
+  Three `ReferenceError: localStorage is not defined` unhandled rejections, all
+  through one stack: `recordExerciseResult` persists in a fire-and-forget tail,
+  and the promise had no owner. In CI the tail outlived the test file that
+  started it, jsdom tore down and took `localStorage` with it. It hides locally
+  because Node 25 carries a global `localStorage` and CI's Node 22 does not.
+
+  The same missing owner was a real hole in the app: a browser that denies
+  storage throws on the first read, and the whole session record went down with
+  an unhandled rejection nobody logged. The tail now catches and says what it
+  lost, and `flushExerciseHistoryWrites` gives the two tests that record runs a
+  way to end where they started.
+
+  Measured under Node 22 with CI's own command: before, `--shard=2/2` failed
+  twice with 3 and 30 rejections (the count swings to 70, which is why it read
+  as a flake); after, four consecutive runs exit 0 with none.
+
 ## [0.9.5] - 2026-09-09
 
 One fix, in what a failed cloud read reports.
