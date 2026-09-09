@@ -5,6 +5,21 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.6] - 2026-09-09
+
+Four new front doors, one for each thing people arrive looking for.
+
+### Added
+
+- **Pitch Training, Voice Type Test, Vocal Remover and Singer Match each have
+  their own page now.** Every one opens straight into the tool it names, and
+  every one is an address you can bookmark or send to someone.
+
+### Fixed
+
+- **Some pages had nothing to show when JavaScript was switched off.** They now
+  say what they are and what they need in order to run.
+
 ## [0.9.5] - 2026-09-09
 
 A fix for what the app tells you when your account's data cannot load.
