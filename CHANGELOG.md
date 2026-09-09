@@ -5,6 +5,16 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.4] - 2026-09-09
+
+A fix for the app opening in more than one tab.
+
+### Fixed
+
+- **Rooms no longer hang when the site is open in two tabs.** After an update
+  an older tab could hold your recordings while a newer one waited. Nothing
+  was lost.
+
 ## [0.9.3] - 2026-09-09
 
 A fix for choosing rooms.
