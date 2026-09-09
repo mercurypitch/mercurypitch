@@ -201,6 +201,16 @@ export async function startGuitarRecordingCapture(
           if (failure !== null) return
           await options.onChunk(message.chunk, message.previewNote ?? null)
           // A buffer is reusable only after its encoded audio/evidence are durable.
+          //
+          // That makes the whole take depend on IndexedDB write latency: the
+          // pool is GUITAR_RECORDING_POOL_SIZE * GUITAR_RECORDING_PCM_FRAMES =
+          // 65,536 frames, about 1.4 seconds at 48 kHz. If a write stops
+          // resolving, capture starves in roughly a second and stops with
+          // "Recording processing fell behind" — which reads like a CPU problem
+          // and is not. Seen on 2026-09-09 when a multi-tab schema deadlock
+          // (see src/db/database-lifecycle.ts) left every write pending: takes
+          // died after a note or two. Widening this budget would only lengthen
+          // the fuse, so the fix belongs at the database, not here.
           if (!disposed)
             for (const buffer of message.recycled)
               node.port.postMessage({ type: 'buffer', buffer }, [buffer])

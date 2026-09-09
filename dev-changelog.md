@@ -9,6 +9,60 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4] - 2026-09-09
+
+One fix, in how the local database behaves when an origin has several tabs.
+
+### Fixed
+
+- **A second tab could deadlock the IndexedDB upgrade indefinitely.** Reported
+  from prod on a Galaxy Tab S9: Guitar Night and Hear Yourself sat on "opening
+  your local library" for over ten minutes, Karaoke showed an empty library,
+  and a take stopped a second after it started. All of it was one cause.
+
+  The device's database was at IndexedDB version 80 (Dexie 8) while 0.9.2
+  shipped Dexie 12 (IndexedDB 120), because that tablet had mostly been used
+  against the dev origin. A versionless open did not return in 15 seconds. Six
+  `mercurypitch.com` tabs were open. Closing them made the app work at once,
+  and the database then opened in **2 ms** — so the blob re-index everyone
+  reaches for as the explanation was never the cost. `uvrStemBlobs` held 45
+  rows.
+
+  The cause is not a missing handler. Dexie registers its own `versionchange`
+  subscriber, and it closes the connection with `disableAutoOpen: false`, which
+  leaves `autoOpen` true. The next query in that tab reopens the database at
+  the old version and blocks the upgrade again, so any tab with a live query
+  starves the upgrading tab forever. Slow would have finished; this could not.
+
+  `src/db/database-lifecycle.ts` now owns both events. `versionchange` closes
+  with `disableAutoOpen: true`, which a reopen cannot undo, and marks the tab
+  superseded. `blocked` marks the state so a waiting room can say the true
+  thing. The two loading surfaces stop asserting "re-indexing" after four
+  seconds regardless of cause, and say either "close the other tabs" or
+  "reload to continue" when that is what is actually happening.
+
+  The Guitar Night take that died after one or two seconds was the same cause
+  seen from another angle, and is documented in `recording-capture.ts` rather
+  than changed: capture buffers return to the pool only once a chunk is durable,
+  and the pool is 32 x 2048 frames — about 1.4 seconds at 48 kHz. With every
+  write pending behind the wedged upgrade, capture starved in about a second
+  and reported "Recording processing fell behind", which reads like a CPU
+  problem and is not. Widening the pool would only lengthen the fuse.
+
+### Testing
+
+- `database-lifecycle.test.ts` pins the rule against a fake connection,
+  including that `superseded` is terminal so the advice never softens back to
+  "close some tabs" when only a reload will do.
+- `database-multi-tab-upgrade.spec.ts` drives the real browser primitives. Its
+  first draft passed against the unfixed build and proved nothing, because an
+  idle tab upgrades fine either way — Dexie's default does close. The spec now
+  keeps the tab querying through a bridge probe while another connection
+  upgrades, which is the condition that produces the deadlock. Two of its three
+  tests fail against the unfixed build.
+- The deadlock itself is timing-dependent, so the deterministic guard is the
+  reported lifecycle state rather than a race the CI could lose.
+
 ## [0.9.3] - 2026-09-09
 
 One fix, in the background picker shared by every room.

@@ -5,6 +5,7 @@
 import type { Table, UpdateSpec } from 'dexie'
 import DexieDB from 'dexie'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
+import { installDatabaseLifecycle } from '../database-lifecycle'
 
 // ── Schema definitions ──────────────────────────────────────────
 // Store schema format: primaryKey, index1, index2, ...
@@ -119,6 +120,11 @@ class DexieDatabase extends DexieDB {
       guitarPracticeScores: 'id, recordingId, updatedAt',
       guitarScoreAttachments: 'id, scoreId, backingId',
     })
+    // Two tabs on one origin disagree about the schema after every deploy that
+    // raises it. Dexie's own defaults yield and then let this tab reopen at the
+    // old version, which deadlocks the upgrading tab rather than delaying it.
+    // See database-lifecycle.ts for the measurement that showed it.
+    installDatabaseLifecycle(this)
   }
 }
 

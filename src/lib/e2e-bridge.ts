@@ -1,4 +1,6 @@
 import type { Setter } from 'solid-js'
+import { databaseLifecycleState } from '@/db/database-lifecycle'
+import { getLocalDatabase } from '@/db/local-database'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { registerE2ESongSeed } from '@/lib/e2e-song-seed'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -62,6 +64,24 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
   if (playSessionSequence)
     exposeForE2E('__playSessionSequence', playSessionSequence)
   if (setPlayMode) exposeForE2E('__setPlayMode', setPlayMode)
+
+  // The cross-tab database rule, so a spec can make this tab do real database
+  // work while another connection upgrades. Without a query in flight the
+  // deadlock cannot be reproduced: Dexie's default handler closes the
+  // connection, and only the NEXT query reopens it at the old version and
+  // blocks the upgrade again. See src/db/database-lifecycle.ts.
+  exposeForE2E('__ppDatabase', {
+    lifecycle: () => databaseLifecycleState(),
+    /** One cheap read through the app's own connection, reopening it if open. */
+    read: async () => {
+      try {
+        await getLocalDatabase().getRepository('userProfiles').count()
+        return 'ok'
+      } catch (error) {
+        return error instanceof Error ? error.name : 'error'
+      }
+    },
+  })
 
   // Karaoke playlist store — lets specs seed a playlist and read it back
   // without audio hardware or UVR sessions (e.g. the vocal-slider drag spec).

@@ -36,6 +36,7 @@ import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
+import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import { cloudSplitBlocker, cloudSplitBlockerHeading, } from '@/lib/uvr-cloud-preflight'
@@ -862,6 +863,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     ),
   )
 
+  const databaseLifecycle = useDatabaseLifecycle()
   const [libraryOpenIsSlow, setLibraryOpenIsSlow] = createSignal(false)
   createEffect(() => {
     if (songController.libraryState() !== 'loading') {
@@ -1866,7 +1868,27 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       aria-live="polite"
                     >
                       Opening your local library…
-                      <Show when={libraryOpenIsSlow()}>
+                      <Show when={databaseLifecycle() === 'superseded'}>
+                        <small>
+                          Another tab updated this site while you were here, so
+                          this one is now out of date. Reload to continue.
+                          Nothing is lost.
+                        </small>
+                      </Show>
+                      <Show when={databaseLifecycle() === 'blocked'}>
+                        <small>
+                          This site is open in another tab or window, and the
+                          older one is holding the library while it updates.
+                          Close the others and it will carry on. Nothing is
+                          lost.
+                        </small>
+                      </Show>
+                      <Show
+                        when={
+                          libraryOpenIsSlow() &&
+                          databaseLifecycle() !== 'blocked'
+                        }
+                      >
                         <small>
                           The first open after an update re-checks the audio
                           already saved on this device. A large library can take

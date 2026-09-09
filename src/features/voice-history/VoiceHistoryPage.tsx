@@ -35,6 +35,7 @@ import { performanceTakeSourceLabel, takeSupportsVoiceAnalysis, } from '@/lib/do
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
 import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
+import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
@@ -358,6 +359,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
    *  update that added an index to the stem store re-indexes every kept
    *  recording inside one upgrade transaction -- minutes on a big
    *  library -- and a silent spinner reads as a hang. */
+  const databaseLifecycle = useDatabaseLifecycle()
   const [slowOpen, setSlowOpen] = createSignal(false)
   createEffect(() => {
     if (!loading()) {
@@ -2045,7 +2047,20 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             fallback={
               <div class={styles.loading} role="status">
                 Opening your local take history…
-                <Show when={slowOpen()}>
+                <Show when={databaseLifecycle() === 'superseded'}>
+                  <p>
+                    Another tab updated this site while you were here, so this
+                    one is now out of date. Reload to continue. Nothing is lost.
+                  </p>
+                </Show>
+                <Show when={databaseLifecycle() === 'blocked'}>
+                  <p>
+                    This site is open in another tab or window, and the older
+                    one is holding your takes while they update. Close the
+                    others and this will carry on. Nothing is lost.
+                  </p>
+                </Show>
+                <Show when={slowOpen() && databaseLifecycle() !== 'blocked'}>
                   <p>
                     The first open after an update re-indexes the recordings
                     kept on this device. It can take a minute on a large
