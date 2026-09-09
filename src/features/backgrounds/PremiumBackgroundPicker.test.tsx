@@ -3,10 +3,11 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PremiumBackgroundAsset } from '@/lib/backgrounds/background-runtime'
 import { loadProtectedBackgroundObjectUrl } from '@/lib/backgrounds/background-runtime'
-import type { BackgroundSurfaceController, RuntimeBackgroundOption, } from '@/lib/backgrounds/background-surface'
+import type { BackgroundSurfaceController, ResolvedBackground, RuntimeBackgroundOption, } from '@/lib/backgrounds/background-surface'
 import { PremiumBackgroundPicker } from './PremiumBackgroundPicker'
 
 vi.mock('@/lib/backgrounds/background-runtime', async (importOriginal) => {
@@ -224,6 +225,75 @@ describe('PremiumBackgroundPicker', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Aurora/ }))
     expect(controller.select).not.toHaveBeenCalled()
+  })
+
+  it('does not re-fetch every thumbnail when the resolved room changes', async () => {
+    // Regression for the 0.9.3 fix. The artwork effect used to read
+    // controller.resolved(), which subscribed every card to the current
+    // selection: one click tore down and re-fetched the full-size protected art
+    // for ALL of them. Piano Night ships seventeen rooms against a
+    // `background-read` budget of 120 a minute, so a few clicks answered 429
+    // and the picker stuttered.
+    const rooms = 17
+    const options: RuntimeBackgroundOption[] = Array.from(
+      { length: rooms },
+      (_, index) => ({
+        id: `piano-room-${index}` as RuntimeBackgroundOption['id'],
+        surface: 'piano',
+        label: `Room ${index}`,
+        description: 'Unlocked room',
+        edition: 'core',
+        focalPoint: { x: 0.5, y: 0.5 },
+        treatment: 'dark',
+        access: 'unlocked',
+        publicUrl: null,
+        premiumAsset: {
+          ...premiumAsset('golden-hour-stage'),
+          id: `piano-room-${index}`,
+          surface: 'piano',
+        },
+      }),
+    ) as RuntimeBackgroundOption[]
+
+    const publicRoom = (id: string): ResolvedBackground => ({
+      id: id as ResolvedBackground['id'],
+      url: `/piano-night/${id}.webp`,
+      focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
+      source: 'public',
+      version: null,
+      variant: null,
+    })
+    const [resolved, setResolved] =
+      createSignal<ResolvedBackground>(publicRoom('piano-room-0'))
+    const controller: BackgroundSurfaceController = {
+      ...fakeController(),
+      surface: 'piano',
+      requestedId: () => 'piano-room-0' as RuntimeBackgroundOption['id'],
+      resolved,
+      options: () => options,
+    }
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+
+    await vi.waitFor(() =>
+      expect(loadProtectedBackgroundObjectUrl).toHaveBeenCalledTimes(rooms),
+    )
+
+    // Three room changes, including settling on a protected one and leaving it.
+    setResolved({
+      id: 'piano-room-3' as ResolvedBackground['id'],
+      url: 'blob:piano-room-3',
+      focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
+      source: 'protected',
+      version: 1,
+      variant: 'landscape-2k',
+    })
+    setResolved(publicRoom('piano-room-9'))
+    setResolved(publicRoom('piano-room-0'))
+
+    // Not one extra request: the gallery is already painted.
+    expect(loadProtectedBackgroundObjectUrl).toHaveBeenCalledTimes(rooms)
   })
 
   it('awaits an authoritative selection and closes only when accepted', async () => {

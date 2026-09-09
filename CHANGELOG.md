@@ -5,6 +5,16 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.3] - 2026-09-09
+
+A fix for choosing rooms.
+
+### Fixed
+
+- **Picking a room no longer reloads the whole shelf.** Every choice
+  re-fetched the other rooms' artwork, so pictures stalled and the gallery
+  stuttered. Each room loads once now.
+
 ## [0.9.2] - 2026-09-08
 
 Two new rooms, takes you can hear back, and a sign-in worth having.

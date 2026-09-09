@@ -9,6 +9,54 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2026-09-09
+
+One fix, in the background picker shared by every room.
+
+### Fixed
+
+- **`BackgroundArtwork` re-fetched every thumbnail whenever the resolved room
+  changed.** Its loading effect read `props.controller.resolved()` in order to
+  reuse the surface's already-decoded object URL for the selected card. That
+  read subscribed *every* card in the gallery to the current selection, so a
+  single pick tore down all of them: `onCleanup` aborted each in-flight request
+  and revoked each object URL, then the effect re-ran and issued a fresh
+  full-size protected fetch per card.
+
+  Measured against the shipped component with a seventeen-room gallery: opening
+  it costs 17 requests, and three room changes took that to **67**. The
+  `background-read` bucket allows 120 a minute, and protected art is served
+  `Cache-Control: private, no-store` by design, so nothing absorbs the repeats.
+  Piano Night reached prod with seventeen rooms in 0.9.2 and was the first
+  surface wide enough to hit the ceiling; it answered `429` after a couple of
+  picks and the gallery stuttered.
+
+  The reuse itself was worth keeping, so it moved to a `createMemo`
+  (`sharedUrl`) that tracks the selection for *display only*. The loading
+  effect now depends on nothing but the option it renders, and runs once per
+  card. The selected card still shows the surface's copy the moment it exists.
+
+  This component is shared: Piano, Guitar, Drum and Karaoke Night, the Karaoke
+  mobile stage, the Ear Lab shell, the Jam panel and the stem mixer all mount
+  it, so every surface carried the same defect and every surface is fixed by
+  the same change.
+
+  Audited alongside it and found correct, so deliberately untouched: the
+  surface controller in `background-surface.ts` loads only the selected room
+  and already guards with a match check, an in-flight target comparison and a
+  generation counter; `useJamRoomBackground` reads `resolved()` in its computed
+  but manages a single background, and both its success and failure paths are
+  guarded so the re-run is a no-op rather than a retry loop.
+
+### Known, not changed here
+
+- Opening the gallery still costs one protected request per unlocked room,
+  because thumbnails are drawn from the `landscape-2k` variant and no smaller
+  tier exists. Object URLs are revoked with the popover by deliberate design
+  (the file says so), so re-opening pays again. Seven opens a minute would
+  still reach the limit. Worth a thumbnail tier or a session cache, but both
+  are design decisions rather than a patch.
+
 ## [0.9.2] - 2026-09-08
 
 481 commits on `main` that are not in `v0.9.1`, spanning late July to 8
