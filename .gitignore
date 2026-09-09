@@ -97,3 +97,21 @@ public/marketing/
 
 # Browser consoles relayed from a device on the LAN (MP_DEV_LOGS=1).
 .dev-logs/
+
+# Crawlable entry documents, generated from src/seo/entry-pages.ts by
+# tools/generate-entry-pages.ts on every vite invocation. The model is the
+# reviewable artefact; these are build output that has to sit at the project
+# root so Vite emits them to the dist root (see the generator for why).
+/mirror.html
+/vocal-range-test.html
+/karaoke.html
+/glass.html
+/piano-night.html
+/guitar-night.html
+/drum-night.html
+/ear-lab.html
+/jam.html
+/pitch-training.html
+/voice-type-test.html
+/vocal-remover.html
+/which-singer-has-my-vocal-range.html

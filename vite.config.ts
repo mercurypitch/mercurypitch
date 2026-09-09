@@ -8,7 +8,9 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
+import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
+import { writeEntryPages } from './tools/generate-entry-pages'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -58,27 +60,24 @@ try {
 // equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
 // because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
-const MIRROR_PATHS = new Set(['/mirror', '/free-sing'])
-const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
-const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
-const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
-const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
-const DRUM_NIGHT_PATHS = new Set(['/drum-night'])
-// The Ear Lab is a tab of the studio, like Jam: /ear-lab boots the studio on
-// the Ear Lab tab so the bench has a real URL with a card — see ear-lab.html.
-const EAR_LAB_PATHS = new Set(['/ear-lab'])
-// Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
-// exists so the feature has a real URL a crawler can fetch — see jam.html.
-const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
-// Glass aliases are worker-routed in production (wrangler `run_worker_first`
-// + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
-const GLASS_PATHS = new Set([
-  '/glass',
-  '/break-glass-with-your-voice',
-  '/high-note-test',
-  '/shatter',
-])
+
+// Clean path -> generated document, straight off the model in
+// src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
+// (html_handling) plus the alias handling in src/worker.ts; the dev and
+// preview servers have neither, so they need the same table built here.
+// Adding an entry to the model adds it to both without touching this file.
+const ENTRY_REWRITES = new Map<string, string>(
+  ENTRY_PAGES.flatMap((page) =>
+    page.paths.map((path) => [path, `/${page.slug}.html`] as const),
+  ),
+)
+// Two entries boot the full studio rather than a standalone mini-app (their
+// `boot` in the model is /src/index.tsx): /ear-lab and /jam each open the
+// studio on their own tab, so the feature has a real URL a crawler can fetch.
+// Glass's aliases are worker-routed in production (wrangler `run_worker_first`
+// + src/worker.ts) — deliberately NO alias HTML files are emitted for them,
+// unlike /karaoke-night and /jam-rooms (standaloneAliasFilesPlugin below).
 
 function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
@@ -109,15 +108,8 @@ function standaloneEntryRewritePlugin() {
           res.end()
           return
         }
-        if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
-        else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
-        else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
-        else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
-        else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
-        else if (DRUM_NIGHT_PATHS.has(path)) req.url = '/drum-night.html'
-        else if (EAR_LAB_PATHS.has(path)) req.url = '/ear-lab.html'
-        else if (JAM_PATHS.has(path)) req.url = '/jam.html'
-        else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
+        const entry = ENTRY_REWRITES.get(path)
+        if (entry) req.url = entry
       }
       next()
     })
@@ -217,6 +209,11 @@ function removeWasmAssetsPlugin() {
 }
 
 export default defineConfig(({ command, mode }) => {
+  // Written before Vite resolves the inputs below, so dev, preview, build and
+  // the tests all read the same documents. Git-ignored; the model is the
+  // reviewable artefact.
+  const entryInputs = writeEntryPages(__dirname)
+
   const modeEnv = loadEnv(mode, __dirname, '')
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
@@ -397,15 +394,11 @@ export default defineConfig(({ command, mode }) => {
         // bundle stays tiny — it must not pull in the app shell or ONNX.
         input: {
           index: resolve(__dirname, 'index.html'),
-          mirror: resolve(__dirname, 'mirror.html'),
-          vocalRangeTest: resolve(__dirname, 'vocal-range-test.html'),
-          karaoke: resolve(__dirname, 'karaoke.html'),
-          jam: resolve(__dirname, 'jam.html'),
-          guitarNight: resolve(__dirname, 'guitar-night.html'),
-          pianoNight: resolve(__dirname, 'piano-night.html'),
-          drumNight: resolve(__dirname, 'drum-night.html'),
-          earLab: resolve(__dirname, 'ear-lab.html'),
-          glass: resolve(__dirname, 'glass.html'),
+          // Every crawlable entry, generated from src/seo/entry-pages.ts just
+          // above. Adding a page to the model adds a build input here, a dev
+          // rewrite, and a cross-link on every other entry — nothing to keep
+          // in step by hand.
+          ...entryInputs,
           // Served by the asset layer for every unmatched path, with a 404
           // status (wrangler.jsonc `not_found_handling`). A build input rather
           // than a public/ file so it shares the entry-prelude stylesheet
