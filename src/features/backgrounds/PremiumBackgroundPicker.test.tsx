@@ -393,3 +393,143 @@ describe('PremiumBackgroundPicker', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+// ── Only the cards you can see cost a request ───────────────────
+//
+// The panel scrolls — 760px over a two-column grid — so most cards are below
+// the fold when it opens, and each one is a PROTECTED request for a full-size
+// plate against a 120-a-minute budget. Piano Night spent seventeen of them to
+// paint the four you could see. jsdom has no IntersectionObserver, so the rest
+// of this file exercises the eager fallback; these stub one in.
+
+describe('the gallery loads what is on screen', () => {
+  type ObserverEntry = { target: Element; isIntersecting: boolean }
+  let observed: Element[]
+  let callbacks: Map<Element, (entries: ObserverEntry[]) => void>
+
+  function stubObserver() {
+    observed = []
+    // Per target, not per observer: each card constructs its own, and a single
+    // shared callback made every report land on whichever card built the last
+    // one — which passed three of these tests for the wrong reason.
+    callbacks = new Map()
+    class FakeObserver {
+      constructor(private callback: (entries: ObserverEntry[]) => void) {}
+      observe(target: Element) {
+        observed.push(target)
+        callbacks.set(target, this.callback)
+      }
+      disconnect() {
+        for (const [target, callback] of callbacks)
+          if (callback === this.callback) callbacks.delete(target)
+      }
+      unobserve(target: Element) {
+        callbacks.delete(target)
+      }
+      takeRecords() {
+        return []
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', FakeObserver)
+  }
+
+  const report = (target: Element, isIntersecting: boolean) => {
+    callbacks.get(target)?.([{ target, isIntersecting }])
+  }
+
+  function pianoRooms() {
+    const rooms = PIANO_PREMIUM_BACKGROUND_IDS
+    const options: RuntimeBackgroundOption[] = rooms.map((id) => ({
+      id,
+      surface: 'piano',
+      label: id,
+      description: 'Unlocked room',
+      edition: 'core',
+      focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
+      access: 'unlocked',
+      publicUrl: null,
+      premiumAsset: premiumAsset(id, 'piano'),
+    }))
+    const controller: BackgroundSurfaceController = {
+      ...fakeController(),
+      surface: 'piano',
+      requestedId: () => rooms[0],
+      resolved: () => ({
+        id: rooms[0],
+        url: `/piano-night/${rooms[0]}.webp`,
+        focalPoint: { x: 0.5, y: 0.5 },
+        treatment: 'dark',
+        source: 'public',
+        version: null,
+        variant: null,
+      }),
+      options: () => options,
+    }
+    return { rooms, controller }
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks for nothing until a card is near the fold', async () => {
+    stubObserver()
+    const { rooms, controller } = pianoRooms()
+
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+    await Promise.resolve()
+
+    // Every card is watched, and not one of them has spent a request. Before
+    // this the count here was rooms.length the instant the panel opened.
+    expect(observed).toHaveLength(rooms.length)
+    expect(loadProtectedBackgroundObjectUrl).not.toHaveBeenCalled()
+  })
+
+  it('loads a card once it comes into view, and only that card', async () => {
+    stubObserver()
+    const { controller } = pianoRooms()
+
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+    await Promise.resolve()
+    report(observed[0], true)
+
+    await vi.waitFor(() =>
+      expect(loadProtectedBackgroundObjectUrl).toHaveBeenCalledTimes(1),
+    )
+  })
+
+  it('ignores a report that a card is still out of view', async () => {
+    stubObserver()
+    const { controller } = pianoRooms()
+
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+    await Promise.resolve()
+    // An observer fires on registration too, with isIntersecting false.
+    report(observed[0], false)
+    await Promise.resolve()
+
+    expect(loadProtectedBackgroundObjectUrl).not.toHaveBeenCalled()
+  })
+
+  it('scrolling through the whole panel still costs one request per card', async () => {
+    stubObserver()
+    const { rooms, controller } = pianoRooms()
+
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+    await Promise.resolve()
+    for (const target of [...observed]) report(target, true)
+
+    await vi.waitFor(() =>
+      expect(loadProtectedBackgroundObjectUrl).toHaveBeenCalledTimes(
+        rooms.length,
+      ),
+    )
+
+    // And a second report for a card already loaded buys nothing: the
+    // observer is disconnected once it has fired.
+    report(observed[0], true)
+    await Promise.resolve()
+    expect(loadProtectedBackgroundObjectUrl).toHaveBeenCalledTimes(rooms.length)
+  })
+})
