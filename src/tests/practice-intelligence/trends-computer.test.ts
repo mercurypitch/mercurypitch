@@ -2,10 +2,17 @@
 // trends-computer.test.ts — aggregation and trend utilities
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { computeImprovementRate, computeMonthlyTrends, computePerExerciseStats, computePracticeStats, computeRollingAverage, computeWeeklyTrends, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
-import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
+import { clearExerciseHistory, flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
+
+// recordExerciseResult persists in the background and returns before the
+// write lands. Left running, it outlives this file and reaches for a
+// localStorage that jsdom has already torn down.
+afterEach(async () => {
+  await flushExerciseHistoryWrites()
+})
 
 function seedSession(score: number, daysAgo: number) {
   const ts = Date.now() - daysAgo * 86400000
