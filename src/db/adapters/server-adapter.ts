@@ -14,6 +14,7 @@
 //   GET    /api/<entity>/count    → count
 
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
+import { IS_DEV } from '@/lib/defaults'
 
 // ── Config ──────────────────────────────────────────────────────
 
@@ -38,20 +39,79 @@ export interface ServerAdapterConfig {
   onErrorResponse?: (status: number, body: string) => void | Promise<void>
 }
 
-// Cloud reads degrade to empty when the backend is unreachable so the app
-// always loads (offline-tolerant); warn once instead of spamming the console.
-let offlineWarned = false
+// ── Failed cloud reads ──────────────────────────────────────────
+//
+// A cloud read that fails degrades to an empty result so the app still loads.
+// That is deliberate and stays. It does mean the console line is the only
+// evidence a library is empty because something broke rather than because it
+// really is empty — so the line has to be true.
+//
+// It was not. Every failure printed "cloud backend unreachable": a 404 on a
+// route that was never deployed, a 500 that outlived its retries, a body that
+// would not parse. It then named two remedies that only exist in dev. On a
+// real device on 2026-09-09 that sentence sat under an empty karaoke library
+// and pointed at the network, which was fine.
+//
+// So: say which failure it was, name the table it hit, and keep the dev
+// remedies for dev. Once per distinct cause rather than once per session,
+// because the second failure is usually the one worth reading.
 
-function warnCloudUnreachable(err: unknown): void {
+const warnedCauses = new Set<string>()
+
+/**
+ * A response the API refused, carrying its status.
+ *
+ * Same message as the plain Error it replaces, so anything logging it reads
+ * the same; the status is here so a caller can tell a missing row from a
+ * broken backend without parsing that message.
+ */
+export class CloudRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'CloudRequestError'
+  }
+}
+
+function describeCloudFailure(err: unknown): { cause: string; what: string } {
+  if (err instanceof CloudRequestError) {
+    return {
+      cause: `http-${err.status}`,
+      what: `the backend answered ${err.status}`,
+    }
+  }
+  // The retry loop only re-throws a TypeError once it has given up, so by the
+  // time one reaches here it really is the network: offline, DNS, or nothing
+  // listening at all.
+  if (err instanceof TypeError) {
+    return { cause: 'offline', what: 'the backend could not be reached' }
+  }
+  return { cause: 'unknown', what: 'the read failed' }
+}
+
+function warnCloudReadFailed(entityName: string, err: unknown): void {
   if (err instanceof NoIdentityError) return // expected, not a failure
-  if (offlineWarned) return
-  offlineWarned = true
+  const { cause, what } = describeCloudFailure(err)
+  if (warnedCauses.has(cause)) return
+  warnedCauses.add(cause)
   console.warn(
-    '[db] cloud backend unreachable — serving empty cloud reads so the app ' +
-      'still loads. Start the dev worker (pnpm dev:db) or unset ' +
-      'VITE_API_BASE_URL for full local mode.',
+    `[db] cloud read of ${entityName} came back empty: ${what}. This device ` +
+      `keeps working; anything kept in the account may be missing until it ` +
+      `recovers.${
+        IS_DEV
+          ? ' In dev, start the worker with `pnpm dev:db`, or unset ' +
+            'VITE_API_BASE_URL for full local mode.'
+          : ''
+      }`,
     err,
   )
+}
+
+/** Test seam: forget which causes have already been reported. */
+export function resetCloudReadWarningsForTests(): void {
+  warnedCauses.clear()
 }
 
 /**
@@ -73,7 +133,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   private url: string
 
   constructor(
-    entityName: string,
+    private entityName: string,
     private config: ServerAdapterConfig,
   ) {
     this.url = `${config.baseUrl}/api/${entityName}`
@@ -122,7 +182,8 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
           ) {
             await this.config.onErrorResponse?.(res.status, body)
           }
-          throw new Error(
+          throw new CloudRequestError(
+            res.status,
             `ServerAdapter: ${res.status} ${res.statusText} on ${url}${body ? ` — ${body}` : ''}`,
           )
         }
@@ -168,7 +229,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     try {
       return await this.request<T>(`/${encodeURIComponent(id)}`)
     } catch (err) {
-      warnCloudUnreachable(err)
+      warnCloudReadFailed(this.entityName, err)
       return null
     }
   }
@@ -190,7 +251,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     try {
       return await this.request<T[]>(qs ? `?${qs}` : '')
     } catch (err) {
-      warnCloudUnreachable(err)
+      warnCloudReadFailed(this.entityName, err)
       if (opts?.throwOnError === true) throw err
       return []
     }
@@ -254,7 +315,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       )
       return result.count
     } catch (err) {
-      warnCloudUnreachable(err)
+      warnCloudReadFailed(this.entityName, err)
       if (opts?.throwOnError === true) throw err
       return 0
     }
