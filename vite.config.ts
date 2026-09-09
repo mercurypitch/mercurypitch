@@ -10,8 +10,8 @@ import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
-import { writeEntryPages } from './tools/generate-entry-pages'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
+import { writeEntryPages } from './tools/generate-entry-pages'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -109,7 +109,7 @@ function standaloneEntryRewritePlugin() {
           return
         }
         const entry = ENTRY_REWRITES.get(path)
-        if (entry) req.url = entry
+        if (entry !== undefined) req.url = entry
       }
       next()
     })
