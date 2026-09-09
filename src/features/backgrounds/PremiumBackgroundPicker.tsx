@@ -7,7 +7,7 @@
 // short-lived object URLs and revoked with the popover lifecycle.
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { CheckSmall, Lock, StageCurtains, X } from '@/components/icons'
 import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
@@ -106,30 +106,48 @@ function invalidatesAccess(error: unknown): error is BackgroundRequestError {
 }
 
 function BackgroundArtwork(props: BackgroundArtworkProps) {
-  const [url, setUrl] = createSignal<string | null>(null)
+  const [ownUrl, setOwnUrl] = createSignal<string | null>(null)
   const [failed, setFailed] = createSignal(false)
 
+  /**
+   * The surface already holds a decoded URL for the room it is showing, so the
+   * matching thumbnail can display that rather than fetch a second copy.
+   *
+   * This has to be a memo, not a read inside the effect below. Reading
+   * `resolved()` there subscribed EVERY thumbnail to the current selection, so
+   * one click tore down and re-fetched the full-size art for all of them:
+   * seventeen protected requests per change on Piano Night, against a
+   * `background-read` budget of 120 a minute, which is how the picker started
+   * answering 429 and stuttering (2026-09-09).
+   */
+  const sharedUrl = createMemo(() => {
+    const option = props.option
+    const asset = option.premiumAsset
+    if (option.publicUrl !== null || asset === null) return null
+    const resolved = props.controller.resolved()
+    return resolved.id === option.id &&
+      resolved.source === 'protected' &&
+      resolved.version === asset.activeVersion
+      ? resolved.url
+      : null
+  })
+
+  const url = createMemo(() => {
+    const option = props.option
+    if (option.publicUrl !== null) return option.publicUrl
+    if (option.access === 'locked' || option.premiumAsset === null) return null
+    return sharedUrl() ?? ownUrl()
+  })
+
+  // Loads this one thumbnail. Its only dependency is the option it renders, so
+  // it runs once per card and never again for a selection somewhere else.
   createEffect(() => {
     const option = props.option
-    const resolved = props.controller.resolved()
     setFailed(false)
+    setOwnUrl(null)
 
-    if (option.publicUrl !== null) {
-      setUrl(option.publicUrl)
-      return
-    }
-    if (option.access === 'locked' || option.premiumAsset === null) {
-      setUrl(null)
-      return
-    }
-    if (
-      resolved.id === option.id &&
-      resolved.source === 'protected' &&
-      resolved.version === option.premiumAsset.activeVersion
-    ) {
-      setUrl(resolved.url)
-      return
-    }
+    if (option.publicUrl !== null) return
+    if (option.access === 'locked' || option.premiumAsset === null) return
 
     const asset = option.premiumAsset
     const invalidateAccess = props.controller.invalidateAccess
@@ -146,7 +164,7 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
           return
         }
         ownedUrl = nextUrl
-        setUrl(nextUrl)
+        setOwnUrl(nextUrl)
       })
       .catch((error: unknown) => {
         if (request.signal.aborted) return
@@ -154,7 +172,7 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
           invalidateAccess(asset.id, error.status)
         }
         setFailed(true)
-        setUrl(null)
+        setOwnUrl(null)
       })
 
     onCleanup(() => {
