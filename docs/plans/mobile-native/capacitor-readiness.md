@@ -1,6 +1,19 @@
 # Capacitor readiness — checklist & spike plan
 
-**Status:** proposed — no `capacitor.config.ts` in the repo; the spike has not been run.
+**Status:** superseded, 10 Sep 2026 — kept as a risk register, not as a plan.
+
+Both of its premises are now false: `apps/beside-cue/capacitor.config.ts`
+exists and a full Capacitor 8 app has shipped to TestFlight since build 163,
+and the spike this document proposed was never needed in the form it
+describes. The shape it assumed — wrap **this** web app in place, at Phase 5 —
+is also not what happened: Mercury Pitch is a separate package,
+`apps/mercurypitch/`, which aliases this `src/` tree rather than copying it.
+
+What is still live here is section B: the list of what WKWebView can do to an
+app like this one. B2 and B3 carry answers paid for on a device, and they are
+the reason those two rows are worth more than the rest of the file. The
+current plan of record is
+`dotfiles/personal/mercurypitch/plans/native-v1-1-implementation-plan-2026-09-10.md`.
 
 Decision (interview): make the web app native-ready during the redesign, run
 an early throwaway iOS spike, commit native projects only when the mobile
@@ -28,19 +41,26 @@ threading, and storage inside WKWebView. Full sourcing in
 Throwaway branch: `npx cap add ios` on a dev machine with Xcode; nothing
 committed except findings written back into this doc.
 
-| #   | Risk                                                                                                                                                                                         | Test                                                                                        | Expected mitigation if it bites                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | Mic permission flow: `getUserMedia` in WKWebView prompts per the native permission (`NSMicrophoneUsageDescription` in Info.plist)                                                            | Start mic on Singing stage; kill/relaunch; deny/re-allow path                               | Standard Info.plist string + graceful in-app denied-state (we already have `MicInsightHint`)                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| B2  | **Earpiece routing**: enabling mic reroutes playback to the quiet earpiece                                                                                                                   | Play melody, toggle mic, listen to output level/route                                       | ~~`@capgo/capacitor-plugin-audiosession`~~ **FIX PENDING DEVICE CONFIRMATION 2026-09-04, no plugin**: `ios/App/App/AudioSession.swift` sets `playAndRecord` + `.defaultToSpeaker` at launch/reactivation, then repairs only an actual `.builtInReceiver` route. Never mutate the category from its route-change observer: category and speaker overrides emit their own notifications, and the prior unconditional observer is the leading code-level cause of build 214's main-thread feedback-loop symptoms. |
-| B3  | **Cold audio session**: first-play stutter in fresh WKWebView (capacitor#8176, unconfirmed)                                                                                                  | Cold launch → immediate play; measure first 2s                                              | **DONE 2026-09-01**: `AudioSession.configure()` runs in `didFinishLaunchingWithOptions`, before the web layer exists. Also fixes the separate silence from `soloAmbient` — an app that never sets a category is muted by the Ring/Silent switch.                                                                                                                                                                                                                                                               |
-| B4  | Pitch-detection latency: our YIN runs on main thread via `AnalyserNode` + rAF (no AudioWorklet anywhere — verified)                                                                          | Compare detection latency/jank vs iOS Safari on the same device                             | Acceptable for v1 (same engine as mobile Safari today); AudioWorklet migration is a separate perf project, not a Capacitor blocker                                                                                                                                                                                                                                                                                                                                                                             |
-| B5  | **Threaded ONNX WASM**: UVR separation uses multi-threaded onnxruntime-web which needs cross-origin isolation (COOP/COEP); header behavior under the custom `capacitor://` scheme is unclear | Load the karaoke local-separation path; check `crossOriginIsolated`, thread count, fallback | Ship single-threaded WASM fallback in native (slower but works), or keep server-side separation as the native path; decide on data                                                                                                                                                                                                                                                                                                                                                                             |
-| B6  | IndexedDB eviction: Dexie data (sessions, songs, groups) lives in WKWebView website storage                                                                                                  | Fill DB, background app days-long, check `navigator.storage.persist()` result               | If eviction observed: Dexie→`@capacitor-community/sqlite` adapter (native only; web keeps Dexie)                                                                                                                                                                                                                                                                                                                                                                                                               |
-| B7  | Background audio: screen lock pauses WebAudio/JS timers                                                                                                                                      | Lock mid-practice; observe                                                                  | v1 policy: practice pauses on lock (acceptable for a practice app); keep-awake via `platform/` during active runs                                                                                                                                                                                                                                                                                                                                                                                              |
-| B8  | On-device dev loop: live-reload needs HTTPS on LAN for getUserMedia                                                                                                                          | Confirm `dev:host` + basic-ssl works from the device inside the shell                       | mkcert cert for LAN IP (matches existing dev setup)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| B9  | R2-hosted ONNX models (~MBs) fetched at runtime                                                                                                                                              | Confirm fetch + cache inside shell; measure                                                 | Cache API/persistent storage; optionally bundle the small SwiftF0 model, never the UVR model                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| #   | Risk                                                                                                                                                                                                                                                                                                                                                                                                                        | Test                                                                                        | Expected mitigation if it bites                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | Mic permission flow: `getUserMedia` in WKWebView prompts per the native permission (`NSMicrophoneUsageDescription` in Info.plist)                                                                                                                                                                                                                                                                                           | Start mic on Singing stage; kill/relaunch; deny/re-allow path                               | Standard Info.plist string + graceful in-app denied-state (we already have `MicInsightHint`)                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| B2  | **Earpiece routing**: enabling mic reroutes playback to the quiet earpiece                                                                                                                                                                                                                                                                                                                                                  | Play melody, toggle mic, listen to output level/route                                       | ~~`@capgo/capacitor-plugin-audiosession`~~ **FIX PENDING DEVICE CONFIRMATION 2026-09-04, no plugin**: `ios/App/App/AudioSession.swift` sets `playAndRecord` + `.defaultToSpeaker` at launch/reactivation, then repairs only an actual `.builtInReceiver` route. Never mutate the category from its route-change observer: category and speaker overrides emit their own notifications, and the prior unconditional observer is the leading code-level cause of build 214's main-thread feedback-loop symptoms. |
+| B3  | **Cold audio session**: first-play stutter in fresh WKWebView (capacitor#8176, unconfirmed)                                                                                                                                                                                                                                                                                                                                 | Cold launch → immediate play; measure first 2s                                              | **DONE 2026-09-01**: `AudioSession.configure()` runs in `didFinishLaunchingWithOptions`, before the web layer exists. Also fixes the separate silence from `soloAmbient` — an app that never sets a category is muted by the Ring/Silent switch.                                                                                                                                                                                                                                                               |
+| B4  | Pitch-detection latency: YIN runs on the main thread via `AnalyserNode` + rAF. ~~no AudioWorklet anywhere — verified~~ **WRONG, corrected 10 Sep 2026**: four worklets exist — `src/workers/guitar-input.worklet.ts`, `src/workers/guitar-recorder.worklet.ts`, `src/lib/guitar/recording-worklet.ts`, and `packages/pitch-engine/src/f0-capture.worklet.ts`, which already runs capture on the audio clock rather than rAF | Compare detection latency/jank vs iOS Safari on the same device                             | Acceptable for v1 (same engine as mobile Safari today); AudioWorklet migration is a separate perf project, not a Capacitor blocker                                                                                                                                                                                                                                                                                                                                                                             |
+| B5  | **Threaded ONNX WASM**: UVR separation uses multi-threaded onnxruntime-web which needs cross-origin isolation (COOP/COEP); header behavior under the custom `capacitor://` scheme is unclear                                                                                                                                                                                                                                | Load the karaoke local-separation path; check `crossOriginIsolated`, thread count, fallback | Ship single-threaded WASM fallback in native (slower but works), or keep server-side separation as the native path; decide on data                                                                                                                                                                                                                                                                                                                                                                             |
+| B6  | IndexedDB eviction: Dexie data (sessions, songs, groups) lives in WKWebView website storage                                                                                                                                                                                                                                                                                                                                 | Fill DB, background app days-long, check `navigator.storage.persist()` result               | If eviction observed: Dexie→`@capacitor-community/sqlite` adapter (native only; web keeps Dexie)                                                                                                                                                                                                                                                                                                                                                                                                               |
+| B7  | Background audio: screen lock pauses WebAudio/JS timers                                                                                                                                                                                                                                                                                                                                                                     | Lock mid-practice; observe                                                                  | v1 policy: practice pauses on lock (acceptable for a practice app); keep-awake via `platform/` during active runs                                                                                                                                                                                                                                                                                                                                                                                              |
+| B8  | On-device dev loop: live-reload needs HTTPS on LAN for getUserMedia                                                                                                                                                                                                                                                                                                                                                         | Confirm `dev:host` + basic-ssl works from the device inside the shell                       | mkcert cert for LAN IP (matches existing dev setup)                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| B9  | R2-hosted ONNX models (~MBs) fetched at runtime                                                                                                                                                                                                                                                                                                                                                                             | Confirm fetch + cache inside shell; measure                                                 | Cache API/persistent storage; optionally bundle the small SwiftF0 model, never the UVR model                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## C. Phase 5 — productionization (after stages ship)
+
+> **Superseded, 10 Sep 2026.** Nothing below is wired up: none of the plugins
+> listed here is a dependency of any app in this repository, and the
+> `platform/` swap the section describes never happened. Read it as the
+> shape of the problem, not as a task list. What Mercury Pitch actually
+> depends on is in `apps/mercurypitch/package.json`, and CI is
+> `.github/workflows/beside-cue-mobile.yml` plus its Mercury Pitch caller.
 
 - `capacitor.config.ts`: `webDir: 'dist'`, `appId`, iOS scheme; trim inputs
   to the `index` entry (A8).
@@ -58,46 +78,57 @@ committed except findings written back into this doc.
 
 ## D. Explicit non-goals (v1 native)
 
+> **The third bullet is superseded, 10 Sep 2026** (owner answer 8). Billing
+> does not stay web and the app does not link out: Beside Cue already depends
+> on RevenueCat 13.4.0 (`apps/beside-cue/package.json:26-27`) through
+> `packages/mobile-runtime/src/capacitor/purchases.ts`, and Mercury Pitch
+> ships an inert purchase scaffold in V1-1 with the same seam behind it. The
+> first two bullets still hold.
+
 - No native audio DSP rewrite (web engine is the product).
 - No background/lock-screen practice sessions.
 - No IAP — billing stays web (Stripe) until store policy forces the issue;
   the native app links out per current App Store external-purchase rules at
   submission time (re-check then — this area moves).
 
-## E. Running the spike (Phase S)
+## E. Running the spike — done, and the harness is gone
 
-A one-shot harness exists: `scripts/spike-capacitor.sh`. It builds the
-local-mode bundle, adds `@capacitor/*`, writes `capacitor.config.ts`,
-creates `ios/`, patches `NSMicrophoneUsageDescription`, and opens Xcode.
-It is **throwaway** — run it on a `spike/capacitor` branch and discard;
-none of what it creates is committed to the mobile PR (the native project
-lands in Phase 5, §C).
+`scripts/spike-capacitor.sh` was deleted on 10 Sep 2026. Three of the four
+assumptions it was built on turned out to be false, and each one had been
+treated as a blocker:
 
-```sh
-git switch -c spike/capacitor
-./scripts/spike-capacitor.sh          # macOS + Xcode + CocoaPods
-# run the §B smoke tests, record findings in the table below
-rm -rf ios capacitor.config.ts && git checkout package.json pnpm-lock.yaml
-git switch feat/mobile-first-redesign && git branch -D spike/capacitor
-```
+- **It needed a Mac with Xcode.** It does not. Beside Cue has shipped to
+  TestFlight from GitHub Actions `macos-latest` runners since build 163;
+  `.github/workflows/beside-cue-mobile.yml` is the whole of it. Nobody here
+  owns a Mac and none is required — the one thing that genuinely cannot be
+  done on Linux is generating the certificate signing request, which is why
+  the certificates were made through the App Store Connect API instead.
+- **It needed CocoaPods.** Capacitor 8 resolves plugins through Swift Package
+  Manager. `cap add ios` reports "All Capacitor plugins have a Package.swift
+  file and will be included in Package.swift", and it runs on Linux.
+- **Nothing would be committed.** The native projects are committed:
+  `apps/mercurypitch/ios/`, `apps/mercurypitch/android/`, and
+  `apps/mercurypitch/capacitor.config.ts` beside them. Regenerating is
+  `cap sync`, never a fresh `cap add`.
 
-For on-device getUserMedia, serve over HTTPS: `pnpm run dev:host` already
-uses `@vitejs/plugin-basic-ssl`; set `server.url` in the generated config
-to `https://<LAN-IP>:3000` (mkcert if the self-signed cert is rejected).
+The fourth assumption survives, and is the one worth keeping: on-device
+`getUserMedia` over the LAN needs HTTPS, so a device playtest against a dev
+server needs a certificate for the LAN IP (`apps/mercurypitch/.dev-cert/`,
+git-ignored and machine-specific).
 
-### Findings (fill in after running)
+### Findings
 
-| #   | Risk                           | Result | Mitigation needed? |
-| --- | ------------------------------ | ------ | ------------------ |
-| B1  | mic permission flow            | _tbd_  |                    |
-| B2  | earpiece routing on mic        | _tbd_  |                    |
-| B3  | cold audio-session first-play  | _tbd_  |                    |
-| B4  | pitch latency vs iOS Safari    | _tbd_  |                    |
-| B5  | threaded ONNX (COOP/COEP)      | _tbd_  |                    |
-| B6  | IndexedDB persistence          | _tbd_  |                    |
-| B7  | background/lock behavior       | _tbd_  |                    |
-| B8  | live-reload HTTPS getUserMedia | _tbd_  |                    |
-| B9  | R2 model fetch + cache         | _tbd_  |                    |
+Answered on a device, and written into the rows above rather than repeated
+here: **B2** (earpiece routing — `ios/App/App/AudioSession.swift`, and never
+mutate the category from the route-change observer) and **B3** (cold audio
+session — configure in `didFinishLaunchingWithOptions`, which also fixes the
+`soloAmbient` silence under the Ring/Silent switch). **B4** was answered by
+reading the tree, and the row's original claim was wrong.
+
+The rest are open, and are now tracked as Track 3 device rounds in
+`dotfiles/personal/mercurypitch/plans/native-v1-1-checklist.md` rather than in
+this table — one list, in the place it gets opened. **B5** is moot for Mercury
+Pitch: UVR is out of the native product.
 
 ## F. Capacitor `platform/` adapter (Phase 5 drop-in)
 
