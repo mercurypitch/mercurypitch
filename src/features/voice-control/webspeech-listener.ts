@@ -162,6 +162,32 @@ const HEARD_RESPAWN_MS = 0
  * silence end, so on desktop the replacement is one quiet session traded for
  * another, not a visible restart.
  */
+/**
+ * Below this, `start` did no real work.
+ *
+ * Measured across 90 sessions on an iPhone (iOS 18.7, FxiOS 155) on
+ * 2026-09-10: a session that reported `start` in under 400 ms went on to hear
+ * nothing 61 times out of 63. Every session that ever heard speech took
+ * between 321 ms and 2.4 s to start, and most took over a second — the time
+ * the platform needs to actually stand an audio pipeline up.
+ *
+ * A fast start is the platform handing back a recognizer it has not really
+ * provisioned, usually because the previous one is still being torn down. It
+ * still fires `start` and `audiostart`, and it never delivers a sample.
+ */
+const HOLLOW_START_MS = 400
+
+/**
+ * How long a suspiciously fast session gets to prove it is real.
+ *
+ * Long enough for `soundstart` from any room that is not silent, short
+ * enough that the singer is not left talking to nothing. The alternative was
+ * the stale timer below, which takes twelve seconds to reach the same
+ * conclusion and then does it twice more before giving up — thirty-six
+ * seconds of a dead microphone that looks alive.
+ */
+const HOLLOW_GRACE_MS = 2_500
+
 const STALE_SESSION_MS = 45_000
 /**
  * The same check where a respawn is visible, which is also where sessions
@@ -324,6 +350,7 @@ export function createWebSpeechListener(
     heardResult = false
     clearConfirmTimer()
     clearStaleTimer()
+    clearHollowTimer()
     if (r === null) return
     r.onresult = null
     r.onerror = null
@@ -460,6 +487,7 @@ export function createWebSpeechListener(
     clearRestartTimer()
     clearConfirmTimer()
     clearStaleTimer()
+    clearHollowTimer()
     stopListeningForGesture()
     document.removeEventListener('visibilitychange', onVisibility)
     window.removeEventListener('pageshow', onPageShow)
@@ -497,6 +525,14 @@ export function createWebSpeechListener(
    * nothing running but means the opposite: stay quiet until a touch.
    */
   let frozenWithSession = false
+  /** Set while a suspiciously fast session is on probation. */
+  let hollowTimer: ReturnType<typeof setTimeout> | null = null
+
+  const clearHollowTimer = () => {
+    if (hollowTimer === null) return
+    clearTimeout(hollowTimer)
+    hollowTimer = null
+  }
 
   const onVisibility = () => {
     log('visibilitychange', { to: document.visibilityState, started })
@@ -576,6 +612,38 @@ export function createWebSpeechListener(
    * that keeps dying silently dozes like one that keeps ending silently,
    * instead of being rebuilt forever.
    */
+  /**
+   * Give a suspiciously fast session a short window to produce any sound.
+   *
+   * When it does not, this is the shape VC-1 has been reporting all along: a
+   * recognizer that says `start` and `audiostart` and then delivers nothing,
+   * with no `error` and no `end`. Replacing it AT ONCE only produces another
+   * hollow one — the platform is still busy with the last — so the respawn
+   * goes through the same growing backoff a quiet session gets, which is the
+   * gap the healthy sessions in the record all had.
+   */
+  const armHollowTimer = (r: SpeechRecognitionLike, afterMs: number) => {
+    clearHollowTimer()
+    hollowTimer = setTimeout(() => {
+      hollowTimer = null
+      if (!started || recognition !== r) return
+      log('hollow-start', { afterMs, graceMs: HOLLOW_GRACE_MS })
+      const hollowSession = sessionSeq
+      void probeMicrophone().then((result) => {
+        if (result !== 'not-probed')
+          recordVoiceDiagnostic('mic-probe', hollowSession, { result })
+      })
+      quietRollovers += 1
+      discard()
+      callbacks.onInterim('')
+      if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+        doze()
+        return
+      }
+      scheduleRestart(quietRespawnDelay())
+    }, HOLLOW_GRACE_MS)
+  }
+
   const armStaleTimer = (r: SpeechRecognitionLike) => {
     clearStaleTimer()
     staleTimer = setTimeout(
@@ -603,7 +671,10 @@ export function createWebSpeechListener(
           doze()
           return
         }
-        spinUp()
+        // Through the backoff rather than straight into a new session: a
+        // replacement started the instant the last one was dropped is the
+        // one the platform hands back hollow.
+        scheduleRestart(quietRespawnDelay())
       },
       visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
     )
@@ -647,6 +718,9 @@ export function createWebSpeechListener(
         heardSoFar.add(event)
         log(event, { afterMs: Date.now() - spinUpAt })
       }
+      // `audiostart` proves nothing — a hollow session fires it too, within a
+      // few milliseconds. Sound is the proof, so only sound ends probation.
+      if (event !== 'audiostart' && event !== 'audioend') clearHollowTimer()
       ping()
     }
     r.onaudiostart = heard('audiostart')
@@ -658,7 +732,17 @@ export function createWebSpeechListener(
 
     r.onstart = () => {
       if (recognition !== r) return
-      log('start', { afterMs: Date.now() - spinUpAt })
+      const afterMs = Date.now() - spinUpAt
+      log('start', { afterMs })
+      // A start this fast provisioned nothing — see HOLLOW_START_MS. Put it
+      // on probation rather than trusting the stale timer, which needs twelve
+      // seconds to reach the same conclusion and then repeats itself twice.
+      // Only where respawns are visible, which is this file's name for the
+      // mobile path. A fast start on desktop is a healthy one — the platform
+      // has the pipeline standing already, and the record this was measured
+      // from is entirely iOS.
+      if (visibleRespawn && afterMs < HOLLOW_START_MS)
+        armHollowTimer(r, afterMs)
       live = true
       hasBeenLive = true
       fastEnds = 0
@@ -670,6 +754,8 @@ export function createWebSpeechListener(
 
     r.onresult = (event) => {
       if (recognition === r) {
+        // Words are the strongest proof of all.
+        clearHollowTimer()
         // Some engines deliver results without ever firing `start`. Hearing
         // one is proof enough that the session is alive.
         if (!live) {

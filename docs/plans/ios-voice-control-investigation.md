@@ -240,6 +240,53 @@ speech, the mechanism is confirmed and the remaining work is to cover
 navigations we do not initiate. If it is still deaf, the frozen document is
 innocent and the next suspect is the navigation itself.
 
+### Fourth run: it is a race, and the start time gives it away
+
+The navigate/reload split from the third run broke on the fourth: a session
+that arrived by navigation **worked** — spoke, matched a command, executed it
+— and then went deaf a few seconds later. So the frozen document is not the
+rule either.
+
+Counting every session in one day's relay, 90 of them, one number separates
+them almost perfectly:
+
+| `start afterMs` | heard audio | deaf   |
+| --------------- | ----------- | ------ |
+| under 400 ms    | 2           | **61** |
+| 400 ms or more  | 11          | 16     |
+
+Every session that ever heard speech started in **321 ms to 2.4 s**, most of
+them over a second. Every deaf one clusters at **9 to 44 ms**.
+
+That is the shape of a race, not a rule. Standing up an audio pipeline takes
+the platform real time; when it hands one back in nine milliseconds it has
+not done the work, and the session that follows fires `start` and
+`audiostart` and then delivers nothing, forever, with no error. Sometimes the
+platform is ready and the same navigation works — which is exactly why three
+hypotheses in a row each held until the next run.
+
+It also explains why nothing recovered. The stale timer waits twelve seconds,
+then replaces the session **immediately** — and an immediate replacement is
+precisely the one that comes back hollow. Three of those, thirty-six seconds,
+and then the doze. The retry was feeding the failure.
+
+**What changed.** A start under `HOLLOW_START_MS` (400 ms) is now put on
+probation for `HOLLOW_GRACE_MS` (2.5 s). Any real sound clears it —
+`audiostart` does not count, since a hollow session fires that too. Otherwise
+it is logged as `hollow-start`, dropped, and respawned **through the quiet
+backoff** rather than at once, which is the gap the healthy sessions all had.
+Both the stale path and the hollow path now go through that backoff. Mobile
+only: on desktop a fast start is a healthy one.
+
+Detection goes from thirty-six seconds to under three, and the respawn stops
+hammering a platform that is still busy.
+
+**Still a candidate, not a cure.** The backoff may need to be longer than the
+quiet ladder's 300 ms – 3 s. What to look for in the next record:
+`hollow-start` lines appearing at all (the detector working), and then
+whether the session after the backoff starts slowly — a `start afterMs` back
+over 400 ms is the platform having caught up.
+
 ### What is now worth doing, in order
 
 1. **Reproduce with `mic-probe` in the record**, on the same device, with

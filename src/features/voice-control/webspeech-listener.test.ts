@@ -84,6 +84,23 @@ class FakeRecognition {
  */
 let built: Array<{ stop: () => void }> = []
 
+/**
+ * Confirm a session the way a real one arrives — after the platform has
+ * actually stood an audio pipeline up.
+ *
+ * A session confirmed in zero milliseconds is the HOLLOW shape the listener
+ * now watches for on the mobile path (see HOLLOW_START_MS), so a test about
+ * long silences has to start from a session that looks real, or it is
+ * measuring the hollow detector by accident.
+ *
+ * `setSystemTime` rather than `advanceTimersByTime`: this moves the clock
+ * without running the queue, which is what a real start does to it.
+ */
+function confirmForReal(recognition: FakeRecognition): void {
+  vi.setSystemTime(Date.now() + 1000)
+  recognition.confirm()
+}
+
 function harness(options?: WebSpeechListenerOptions) {
   const states: Array<{ state: VoiceListenerState; detail?: string }> = []
   const utterances: string[] = []
@@ -631,7 +648,7 @@ describe('a session that stops talking', () => {
   it('lets a touch replace a session that has been silent for 10 s', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    h.latest().confirm()
+    confirmForReal(h.latest())
     const session = h.latest()
 
     // Fresh, it is left alone — see "spends only one gesture".
@@ -789,11 +806,21 @@ describe('a session that goes silent without ending', () => {
     // notice is most of a minute of the pill lying.
     const phone = harness({ visibleRespawn: true })
     phone.listener.start()
-    phone.latest().confirm()
+    confirmForReal(phone.latest())
+    const phantom = phone.latest()
 
     vi.advanceTimersByTime(11_999)
-    expect(FakeRecognition.instances).toHaveLength(1)
+    expect(phantom.aborted).toBe(false)
     vi.advanceTimersByTime(1)
+    // Dropped on time, and the replacement comes through the backoff rather
+    // than at once: a session started the instant the last was let go is the
+    // one the platform hands back hollow.
+    expect(phantom.aborted).toBe(true)
+    // Not instantly: a session started the moment the last one was let go is
+    // the one the platform hands back hollow. The exact delay is the quiet
+    // backoff's business; that it is not zero is this test's.
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(1000)
     expect(FakeRecognition.instances).toHaveLength(2)
     phone.listener.stop()
 
@@ -806,7 +833,72 @@ describe('a session that goes silent without ending', () => {
     vi.advanceTimersByTime(12_000)
     expect(FakeRecognition.instances).toHaveLength(1)
     vi.advanceTimersByTime(33_000)
+    // The replacement goes through the same short backoff here, for the same
+    // reason; desktop's is a flat 300 ms rather than a doubling one.
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(1000)
     expect(FakeRecognition.instances).toHaveLength(2)
+  })
+})
+
+describe('a session the platform never really opened', () => {
+  it('drops one that starts instantly and then hears nothing', () => {
+    // Measured across 90 sessions on an iPhone: a `start` under 400ms went on
+    // to hear nothing 61 times out of 63, while every session that ever heard
+    // speech took between 321ms and 2.4s to arrive. A fast start is the
+    // platform handing back a recognizer it has not provisioned — it fires
+    // `start` and `audiostart` and delivers no sample, with no error ever.
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    const hollow = h.latest()
+    hollow.onaudiostart?.()
+
+    vi.advanceTimersByTime(2_500)
+
+    // Three seconds, not the thirty-six the stale timer needed to reach the
+    // same conclusion three times over.
+    expect(hollow.aborted).toBe(true)
+  })
+
+  it('leaves it alone the moment it hears anything', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    const session = h.latest()
+
+    // `audiostart` proves nothing — a hollow session fires it within a few
+    // milliseconds too. Sound is the proof.
+    session.onaudiostart?.()
+    vi.advanceTimersByTime(1_000)
+    session.onsoundstart?.()
+    vi.advanceTimersByTime(5_000)
+
+    expect(session.aborted).toBe(false)
+  })
+
+  it('trusts a start that took real time', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    confirmForReal(h.latest())
+    const session = h.latest()
+
+    vi.advanceTimersByTime(5_000)
+
+    // Over 400ms means the platform actually stood a pipeline up. Silence
+    // after that is the stale timer's business, on its own longer clock.
+    expect(session.aborted).toBe(false)
+  })
+
+  it('leaves desktop out of it, where a fast start is a healthy one', () => {
+    const desktop = harness({ visibleRespawn: false })
+    desktop.listener.start()
+    desktop.latest().confirm()
+    const session = desktop.latest()
+
+    vi.advanceTimersByTime(5_000)
+
+    expect(session.aborted).toBe(false)
   })
 })
 
@@ -886,7 +978,7 @@ describe('what counts as a touch', () => {
     // the stale timer covers the phantom there.
     const phone = harness({ visibleRespawn: true })
     phone.listener.start()
-    phone.latest().confirm()
+    confirmForReal(phone.latest())
     vi.advanceTimersByTime(11_000)
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     expect(FakeRecognition.instances).toHaveLength(2)
@@ -895,7 +987,7 @@ describe('what counts as a touch', () => {
     FakeRecognition.instances = []
     const desktop = harness({ visibleRespawn: false })
     desktop.listener.start()
-    desktop.latest().confirm()
+    confirmForReal(desktop.latest())
     vi.advanceTimersByTime(11_000)
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     expect(FakeRecognition.instances).toHaveLength(1)
