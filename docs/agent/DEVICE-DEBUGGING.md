@@ -45,11 +45,12 @@ placement traps that forced this are written up in the header of
 
 ## Why it cannot reach a visitor
 
-The gate is a **build** flag, not a runtime one. `PORTABLE_CONSOLE` in
-`src/lib/defaults.ts` is a compile-time constant, so an entry writes
+The gate is a **build** flag, not a runtime one. Vite substitutes
+`import.meta.env.VITE_PORTABLE_CONSOLE` at build time, so an entry writes
 
 ```ts
-if (PORTABLE_CONSOLE) void import('@/components/PortableConsole').then(...)
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')
+  void import('@/components/PortableConsole').then(...)
 ```
 
 and a normal build folds that to `if (false)`, drops the branch, and never
@@ -58,15 +59,21 @@ pulls the module into the graph. There is nothing to leak, and no wrapped
 
 A runtime guard would not do: it still ships the code.
 
+**Read the flag inline; do not lift it into `lib/defaults.ts`.** That is the
+obvious tidy-up and it costs a room its first paint: `defaults` is pinned
+into the `pitch-core` chunk, so importing one boolean from it drags that
+whole chunk — the notifications store included — into every standalone
+entry's static graph, and `assert-piano-night-bundle.mjs` fails on it.
+
 `scripts/assert-no-portable-console.mjs` greps `dist` for the module's
 fingerprints and fails the build if it finds them. Every script that writes
 `dist` runs it — `build`, `build:dev`, `build:tours`, `build:e2e`,
 `build:e2e:devices`. **A new build script must run it too.**
 
 The one thing that breaks the elimination is a call site that stops being a
-plain `if (PORTABLE_CONSOLE)` — assigning the flag to a variable first, or
-hiding it behind a function, leaves the bundler unable to prove the branch
-is dead. The assert is what catches that.
+plain `if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')` — assigning it
+to a variable first, or hiding it behind a function, leaves the bundler
+unable to prove the branch is dead. The assert is what catches that.
 
 ## Serving over plain HTTP
 

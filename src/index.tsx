@@ -24,7 +24,6 @@ import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/service
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
-import { PORTABLE_CONSOLE } from '@/lib/defaults'
 import { initVoiceDiagnostics } from '@/features/voice-control/voice-diagnostics'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
@@ -43,14 +42,16 @@ initDeviceTier()
 // here are separate documents — walking into Karaoke Night is a full page
 // load. Wiring only the main entry left the one transition worth watching
 // unrecorded (2026-09-10).
-if (PORTABLE_CONSOLE) {
-  // Dynamic, and behind a compile-time constant: a normal build folds this to
-  // `if (false)` and the module never enters the bundle at all.
-  //
-  // The dynamic import resolves a tick late, and nothing logged before it
-  // lands is captured — so anything that speaks at boot waits for it. That is
-  // not a detail: the first line a device writes says how the document was
-  // reached, and losing it loses the seam being investigated.
+// The flag is read inline rather than imported from `lib/defaults`, because
+// that module is pinned into the `pitch-core` chunk and one constant would
+// drag the whole thing into this room's first paint. Vite substitutes the
+// literal either way, so a normal build still folds this to `if (false)` and
+// never bundles the module.
+//
+// The import resolves a tick late, and nothing logged before it lands is
+// captured — so anything that speaks at boot waits for it. Not a detail: the
+// first line a device writes says how the document was reached.
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   void import('@/components/PortableConsole').then((m) => {
     m.setupPortableConsole()
     initVoiceDiagnostics()

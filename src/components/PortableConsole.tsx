@@ -180,8 +180,8 @@ export const PortableConsole: Component = () => {
  *
  * Called from every entry — this app has several documents, and the bug being
  * chased is usually the walk between two of them. Guarded at each call site by
- * the `PORTABLE_CONSOLE` build constant, so a normal build never imports this
- * module at all.
+ * `import.meta.env.VITE_PORTABLE_CONSOLE`, so a normal build never imports
+ * this module at all.
  */
 export function setupPortableConsole(): void {
   if (typeof document === 'undefined') return

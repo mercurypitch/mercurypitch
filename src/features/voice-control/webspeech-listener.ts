@@ -65,8 +65,14 @@
 //     the pill itself, which has its own meaning.
 
 import { deviceClass } from '@/lib/device-tier'
+import { micManager } from '@/lib/mic-manager'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
-import { probeMicrophone, recordVoiceDiagnostic } from './voice-diagnostics'
+import { probeMicrophone, recordVoiceDiagnostic, registerVoiceDiagnosticsMic, } from './voice-diagnostics'
+
+// The recorder deliberately does not import the microphone — see the note on
+// `MicSource`. This module already loads with voice control and nothing else,
+// so it is the right place to hand it over.
+registerVoiceDiagnosticsMic(micManager)
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean
