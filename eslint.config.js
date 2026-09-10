@@ -47,6 +47,7 @@ export default defineConfig(
             '.dependency-cruiser.cjs',
             'scripts/assert-piano-night-bundle.mjs',
             'scripts/assert-pr-preview-isolation.mjs',
+            'scripts/audit-background-origin.mjs',
             'scripts/code-metrics.mjs',
             'scripts/curate-drum-night-kits.mjs',
             'scripts/drum-kit-calibration.mjs',
@@ -315,6 +316,7 @@ export default defineConfig(
     files: [
       '.dependency-cruiser.cjs',
       'scripts/assert-piano-night-bundle.mjs',
+      'scripts/audit-background-origin.mjs',
       'scripts/code-metrics.mjs',
       'scripts/pr-prepare.mjs',
       'scripts/pr-prepare.test.mjs',

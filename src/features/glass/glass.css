@@ -945,12 +945,7 @@ body {
     ),
     rgba(11, 16, 38, 0.55)
   );
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. Sizing to the border box removes it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   background-size: cover;
   overflow: hidden;
@@ -1253,7 +1248,7 @@ body {
     var(--glass-gold),
     var(--glass-gold-deep)
   );
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: transparent;
 }
@@ -1272,7 +1267,7 @@ body {
 .glass-fx-monitor-toggle.on {
   color: var(--glass-void-0);
   background: linear-gradient(160deg, var(--glass-aqua), #1d9a8b);
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: transparent;
 }

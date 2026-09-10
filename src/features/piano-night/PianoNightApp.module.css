@@ -614,12 +614,7 @@
     rgb(105 196 220 / 76%),
     rgb(105 196 220 / 97%)
   );
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. Sizing to the border box removes it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   box-shadow: 0 14px 24px rgb(68 184 216 / 17%);
 }
@@ -632,7 +627,7 @@
     rgb(235 133 135 / 80%),
     rgb(235 133 135 / 98%)
   );
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   box-shadow: 0 14px 24px rgb(235 133 135 / 17%);
 }

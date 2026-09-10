@@ -536,12 +536,7 @@
     rgba(88, 166, 255, 0.12),
     rgba(130, 80, 220, 0.1)
   );
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. Sizing to the border box removes it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   color: var(--accent);
   cursor: pointer;
@@ -559,7 +554,7 @@
     rgba(88, 166, 255, 0.22),
     rgba(130, 80, 220, 0.18)
   );
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.45);
   box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
@@ -608,7 +603,7 @@
     rgba(88, 166, 255, 0.1),
     rgba(130, 80, 220, 0.08)
   );
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.3);
   color: var(--accent);
@@ -620,7 +615,7 @@
     rgba(88, 166, 255, 0.18),
     rgba(130, 80, 220, 0.14)
   );
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.5);
   box-shadow: 0 0 12px rgba(88, 166, 255, 0.12);

@@ -69,12 +69,7 @@
     color-mix(in srgb, var(--lab-signal) 26%, transparent),
     color-mix(in srgb, var(--lab-measured) 12%, transparent)
   );
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. Sizing to the border box removes it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   box-shadow:
     0 8px 22px color-mix(in srgb, var(--lab-signal) 16%, transparent),

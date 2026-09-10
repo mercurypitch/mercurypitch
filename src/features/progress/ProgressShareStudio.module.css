@@ -96,13 +96,6 @@
   background:
     radial-gradient(circle at 32% 25%, rgb(125 219 255 / 24%), transparent 52%),
     #0b1322;
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. Sizing to the border box removes it. */
-  background-origin: border-box;
   box-shadow: 0 0 28px rgb(88 160 255 / 14%);
   font-family: Outfit, Inter, sans-serif;
   font-size: 0.7rem;
@@ -672,7 +665,7 @@
   border: 1px solid rgb(149 230 255 / 24%);
   color: #071016;
   background: linear-gradient(120deg, #9fdcf3, #77e1dc 54%, #afa0fa);
-  /* Restated: the `background` shorthand above resets background-origin. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   box-shadow: 0 8px 28px rgb(97 188 224 / 16%);
   transition:

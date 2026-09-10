@@ -482,23 +482,32 @@ the actual compiled prop getters.
 **Symptom:** a control with a translucent border and a gradient fill drew a flat 1px
 band at its edges, on a corner radius a pixel larger than the fill's. It reads as a
 second rectangle laid over the rounded corners.
-**Cause:** `background-origin` defaults to `padding-box` while `background-clip`
-defaults to `border-box`, so the gradient is sized to the padding box but painted out
-to the border box. The overhang gets no continuation of the gradient — it gets the
-first stop's flat colour along the top and left and the last stop's along the bottom
-and right. Only a translucent or transparent border lets it show, which is why it
-survives review. The `background` shorthand also resets `background-origin`, so a
-declaration in the base rule is a silent no-op the moment a `:hover` or
-`[aria-pressed]` rule sets `background:` again.
+**Cause:** three defaults compounding. `background-origin` is `padding-box`, so the
+gradient tile is _sized_ to the padding box; `background-clip` is `border-box`, so it
+is _painted_ out to the border box; and `background-repeat` is `repeat`, so the strip
+between the two boxes is not empty — it is filled by the neighbouring tile. The result
+is a wrap seam, not a stretched end stop: the top and left strips show the tile's
+opposite edge, the **last** stop, and the bottom and right strips show the **first**.
+Measured on `linear-gradient(180deg, #ff0000, #0000ff)` with a 6px transparent border:
+the top strip is `rgb(2,0,254)` while the fill's first row beneath it is `rgb(251,0,4)`.
+Set `background-repeat: no-repeat` and the strip is not painted at all, which is the
+proof it is tiling and not extension. Only a translucent or transparent border lets it
+show, which is why it survives review. The `background` shorthand also resets
+`background-origin`, so a declaration in the base rule is a silent no-op the moment a
+`:hover` or `[aria-pressed]` rule sets `background:` again.
 **Rule:** put `background-origin: border-box` immediately after **every** `background`
-shorthand in the chain, not once in the base rule. It is not a blanket fix: a small
-control with a tight radius shows the band, a wide panel behind a 20px radius and a
-low-contrast wash does not, and a gradient ring built out of
+shorthand in the chain, not once in the base rule. It is not a blanket fix. The seam is
+worst where the two ends of the gradient differ most and the radius is tight — so a
+small control shows it and a wide panel behind a 20px radius and a low-contrast wash
+does not. A gradient whose last layer is an opaque colour cannot show it at all, since
+that layer fills the painting area on its own. A gradient ring built out of
 `linear-gradient(...) padding-box, linear-gradient(...) border-box` depends on the
-split. Render the candidate before and after rather than trusting the CSS.
+split and must be left alone. Render the candidate before and after rather than
+trusting the CSS.
 **See:** `pnpm audit:background-origin` lists candidates and separates the deliberate
 ones; `src/features/path/PlainPathView.module.css` restates it across five orb states;
-`src/components/account/AccountSection.module.css:40` is the ring that needs the split.
+`.displayNamePill` in `src/components/account/AccountSection.module.css` (the two-layer
+`background` at line 52) is the ring that needs the split.
 
 ## Performance
 
