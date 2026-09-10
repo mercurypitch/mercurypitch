@@ -22,7 +22,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, lazy, onCleanup, Show, Suspense } from 'solid-js'
 
-const RoomVoiceControl = lazy(() => import('./RoomVoiceControl'))
+const loadRoomVoiceControl = () => import('./RoomVoiceControl')
+const RoomVoiceControl = lazy(loadRoomVoiceControl)
 
 /** Anything a person does with a page, and nothing a page does by itself. */
 const INTENT_EVENTS = [
@@ -34,12 +35,59 @@ const INTENT_EVENTS = [
   'scroll',
 ] as const
 
+/**
+ * Whether a key is one the child would have answered.
+ *
+ * V toggles voice, Shift+V and "?" open the command list — see
+ * `useVoiceToggleKey`, which is the handler that only exists once the child
+ * has mounted. Deliberately narrow: this decides what gets sent to the
+ * window a second time, and a room's own shortcuts are on that window too.
+ * Replaying Space here would play the take twice.
+ */
+function isVoiceShortcut(event: KeyboardEvent): boolean {
+  if (event.ctrlKey || event.metaKey) return false
+  return event.code === 'KeyV' || event.key === '?'
+}
+
 export const DeferredRoomVoiceControl: Component = () => {
   const [awake, setAwake] = createSignal(false)
 
-  const wake = (): void => {
+  const wake = (event: Event): void => {
     setAwake(true)
     release()
+    replayShortcut(event)
+  }
+
+  /**
+   * Give the keypress that woke us a second chance to be heard.
+   *
+   * The handler that answers V registers when the child mounts, so the press
+   * that STARTED that mount reached nothing at all: a visitor who reaches for
+   * the keyboard first — the one most likely to know the shortcut — had to
+   * press it twice, once to summon the feature and again to use it.
+   *
+   * Only the two shortcuts, and only when the press did not belong to a
+   * field: a replay is a real event on the real window, and the room's own
+   * keyboard handlers are listening there too.
+   */
+  const replayShortcut = (event: Event): void => {
+    if (!(event instanceof KeyboardEvent) || !isVoiceShortcut(event)) return
+    if (
+      event.target instanceof Element &&
+      event.target.closest('input,textarea,select,[contenteditable]') !== null
+    )
+      return
+    const again = new KeyboardEvent(event.type, {
+      code: event.code,
+      key: event.key,
+      shiftKey: event.shiftKey,
+      altKey: event.altKey,
+    })
+    // After the module resolves AND after the render it triggers: a
+    // microtask would land while `lazy` is still swapping the placeholder.
+    void loadRoomVoiceControl().then(() => {
+      setTimeout(() => window.dispatchEvent(again))
+    })
   }
   const release = (): void => {
     for (const event of INTENT_EVENTS) {

@@ -81,4 +81,51 @@ describe('DeferredRoomVoiceControl', () => {
     addSpy.mockRestore()
     removeSpy.mockRestore()
   })
+
+  it('does not swallow the very shortcut that woke it', async () => {
+    render(() => <DeferredRoomVoiceControl />)
+
+    // The V handler registers when the lazy child mounts, so the keypress
+    // that started the import reached nothing. A keyboard-only visitor
+    // pressing Shift+V first would have had to press it twice.
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { code: 'KeyV', shiftKey: true }),
+    )
+    await screen.findByTestId('voice-commands-overlay')
+  })
+
+  it('replays only the shortcuts, so a room keeps its own keys', async () => {
+    const heard: string[] = []
+    const spy = (e: Event) => heard.push((e as KeyboardEvent).code)
+    window.addEventListener('keydown', spy)
+    render(() => <DeferredRoomVoiceControl />)
+
+    // A replay is a real event on the real window, where the room's own
+    // transport listens. Sending Space back would play the take twice.
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }))
+    await screen.findByTestId('voice-control-pill')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(heard.filter((code) => code === 'Space')).toHaveLength(1)
+    window.removeEventListener('keydown', spy)
+  })
+
+  it('leaves a V typed into a field where it was typed', async () => {
+    const field = document.createElement('input')
+    document.body.append(field)
+    const heard: string[] = []
+    const spy = (e: Event) => heard.push((e as KeyboardEvent).code)
+    window.addEventListener('keydown', spy)
+    render(() => <DeferredRoomVoiceControl />)
+
+    field.dispatchEvent(
+      new KeyboardEvent('keydown', { code: 'KeyV', bubbles: true }),
+    )
+    await screen.findByTestId('voice-control-pill')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(heard.filter((code) => code === 'KeyV')).toHaveLength(1)
+    window.removeEventListener('keydown', spy)
+    field.remove()
+  })
 })
