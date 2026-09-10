@@ -19,6 +19,8 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import type { RoomChoice } from '@/features/instrument-room/room-preference'
+import { ROOM_INSTRUMENTS, ROOM_LABEL, roomChoice, setRoomChoice, } from '@/features/instrument-room/room-preference'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
@@ -1296,6 +1298,46 @@ export const SettingsPanel: Component = () => {
                   : ''}
               </small>
             </div>
+          </div>
+
+          {/* Instrument rooms — the other half of the first-visit door in
+              features/instrument-room. Whatever was chosen there (or never
+              chosen) is changed here, including going back to being asked. */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Instrument Rooms</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              Piano and Guitar each have two rooms: the lit standalone Night
+              page, and the in-app workspace with the full set of tools. Choose
+              which one the tab opens. On a phone both always open Night.
+            </p>
+
+            <For each={ROOM_INSTRUMENTS}>
+              {(instrument) => (
+                <div class={styles.settingsRow}>
+                  <label for={`room-choice-${instrument}`}>
+                    {ROOM_LABEL[instrument]} tab opens
+                  </label>
+                  <SafeSelect
+                    value={roomChoice(instrument)}
+                    onChange={(e) => {
+                      setRoomChoice(instrument, e.target.value as RoomChoice)
+                    }}
+                    id={`room-choice-${instrument}`}
+                    data-testid={`room-choice-${instrument}`}
+                  >
+                    <option value="night">
+                      {ROOM_LABEL[instrument]} Night
+                    </option>
+                    <option value="workspace">
+                      {ROOM_LABEL[instrument]} workspace
+                    </option>
+                    <option value="ask">Ask me each time</option>
+                  </SafeSelect>
+                </div>
+              )}
+            </For>
           </div>
 
           {/* Appearance */}

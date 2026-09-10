@@ -53,6 +53,10 @@ test.describe('Guitar tab', () => {
       localStorage.setItem('pitchperfect_welcome_version', version)
       localStorage.setItem('pitchperfect_active_tab', 'singing')
       localStorage.setItem('pitchperfect_focus_mode', 'false')
+      // This file is about the in-app Guitar WORKSPACE. Without an answer
+      // the tab now opens the room door instead (features/instrument-room),
+      // which is a different surface and a different spec.
+      localStorage.setItem('pitchperfect_room_guitar', 'workspace')
     }, pkg.version)
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
