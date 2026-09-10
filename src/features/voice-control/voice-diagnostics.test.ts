@@ -7,12 +7,25 @@
 // across a page load, bounded, and never carrying the singer's words.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearVoiceDiagnostics, formatVoiceDiagnostics, initVoiceDiagnostics, onVoiceDiagnostic, recordVoiceDiagnostic, resetVoiceDiagnosticsForTests, setVoiceDiagnosticsEnabled, voiceDiagnosticEntries, voiceDiagnosticsEnabled, } from './voice-diagnostics'
+import { clearVoiceDiagnostics, formatVoiceDiagnostics, initVoiceDiagnostics, onVoiceDiagnostic, probeMicrophone, recordVoiceDiagnostic, resetVoiceDiagnosticsForTests, setVoiceDiagnosticsEnabled, voiceDiagnosticEntries, voiceDiagnosticsEnabled, } from './voice-diagnostics'
 
 let info: ReturnType<typeof spyOnInfo>
 
 function spyOnInfo() {
   return vi.spyOn(console, 'info').mockImplementation(() => undefined)
+}
+
+/**
+ * The entry for one event.
+ *
+ * Turning the recording on writes a `document-open` line of its own, so
+ * `entries[0]` is not the first thing a test recorded — and indexes would
+ * break again the next time the recorder learns to note something.
+ */
+function find(event: string) {
+  const entry = voiceDiagnosticEntries().find((one) => one.event === event)
+  if (entry === undefined) throw new Error(`no ${event} entry was recorded`)
+  return entry
 }
 
 beforeEach(() => {
@@ -96,7 +109,7 @@ describe('what it records', () => {
   it('keeps the session, the event and the detail, and stamps the moment', () => {
     recordVoiceDiagnostic('doze', 3, { quiet: 3 })
 
-    const [entry] = voiceDiagnosticEntries()
+    const entry = find('doze')
     expect(entry.session).toBe(3)
     expect(entry.event).toBe('doze')
     expect(entry.detail).toEqual({ quiet: 3 })
@@ -121,7 +134,8 @@ describe('what it records', () => {
       vi.advanceTimersByTime(4200)
       recordVoiceDiagnostic('doze', 1)
 
-      const [first, second] = voiceDiagnosticEntries()
+      const first = find('spin-up')
+      const second = find('doze')
       expect(first.at).toBe(0)
       // "How long until it went quiet" is the question; epochs do not answer
       // it at a glance on a phone screen.
@@ -186,10 +200,66 @@ describe('handing the recording over', () => {
     expect(voiceDiagnosticEntries()).toHaveLength(0)
   })
 
-  it('stops recording when switched off from the panel', () => {
+  it('stops recording when switched off', () => {
     setVoiceDiagnosticsEnabled(false)
     recordVoiceDiagnostic('start', 1)
 
-    expect(voiceDiagnosticEntries()).toHaveLength(0)
+    expect(voiceDiagnosticEntries().map((entry) => entry.event)).not.toContain(
+      'start',
+    )
+  })
+})
+
+describe('asking who is holding the microphone', () => {
+  function stubMedia(getUserMedia: unknown): void {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: getUserMedia === undefined ? {} : { getUserMedia },
+    })
+  }
+
+  it('does not touch the microphone unless somebody asked for a recording', async () => {
+    const getUserMedia = vi.fn()
+    stubMedia(getUserMedia)
+    initVoiceDiagnostics('')
+
+    await expect(probeMicrophone()).resolves.toBe('not-probed')
+
+    // Opening the mic uninvited would be a permission prompt in the middle of
+    // a song, and on this platform it would also be a new contender for the
+    // very thing being measured.
+    expect(getUserMedia).not.toHaveBeenCalled()
+  })
+
+  it('reports a free microphone, and gives it straight back', async () => {
+    const stop = vi.fn()
+    stubMedia(async () => ({ getTracks: () => [{ stop }] }))
+    initVoiceDiagnostics('?voicelog=1')
+
+    await expect(probeMicrophone()).resolves.toBe('free')
+
+    // A probe that kept the track would become the second tab it is looking
+    // for, and every later answer would be its own fault.
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('names the refusal, which is the whole point of asking', async () => {
+    // "Microphone is used in another tab" reaches script as NotReadableError.
+    // A recognizer that starts cleanly and then hears nothing looks identical
+    // to a broken recognizer until this line says otherwise.
+    const held = Object.assign(new Error('busy'), { name: 'NotReadableError' })
+    stubMedia(async () => {
+      throw held
+    })
+    initVoiceDiagnostics('?voicelog=1')
+
+    await expect(probeMicrophone()).resolves.toBe('NotReadableError')
+  })
+
+  it('says so when the browser has no microphone API at all', async () => {
+    stubMedia(undefined)
+    initVoiceDiagnostics('?voicelog=1')
+
+    await expect(probeMicrophone()).resolves.toBe('unsupported')
   })
 })

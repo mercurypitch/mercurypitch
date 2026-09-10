@@ -14,8 +14,10 @@
 //
 //   1. `console.info('[voice] …')`, which `MP_DEV_LOGS=1` relays to
 //      `.dev-logs/` on the dev server — the LAN case, iPhone included.
-//   2. `VoiceDiagnosticsPanel`, on the device itself, with a Copy button —
-//      for a phone that is not on our network, or is pointed at dev.
+//   2. The portable console, on the device itself, with a Copy button — for
+//      a phone that is not on our network, or is pointed at dev. It picks
+//      these up through the same `console.info` line as (1), which is why
+//      there is no panel of our own: see lib/portable-console.ts.
 //   3. `voiceDiagnosticEntries()` from a console or a test.
 //
 // Off unless asked for: `?voicelog=1` turns it on and remembers, `?voicelog=0`
@@ -110,6 +112,29 @@ export function initVoiceDiagnostics(search = window.location.search): void {
     // Announced so a relayed log says which build produced it, and so a
     // device that was meant to be recording says so before the first event.
     console.info(`[voice] diagnostics on — ${navigator.userAgent}`)
+    recordVoiceDiagnostic('document-open', 0, {
+      how: navigationKind(),
+      path: window.location.pathname,
+    })
+  }
+}
+
+/**
+ * How this document came to be open: `navigate`, `reload`, or `back_forward`.
+ *
+ * Several rooms here are separate documents, so a log can span three of them
+ * and every one of these lines is a seam. `back_forward` in particular says
+ * the visitor walked BACK into this page — which is where voice control was
+ * reported dead, and which behaves nothing like a fresh load. Pair it with
+ * the listener's `pagehide`/`pageshow` records to tell a frozen document from
+ * a rebuilt one.
+ */
+function navigationKind(): string {
+  try {
+    const [entry] = performance.getEntriesByType('navigation')
+    return (entry as PerformanceNavigationTiming | undefined)?.type ?? 'unknown'
+  } catch {
+    return 'unknown'
   }
 }
 
@@ -229,6 +254,39 @@ export function formatVoiceDiagnostics(): string {
     '',
   ]
   return [...header, ...entries.map(formatEntry)].join('\n')
+}
+
+/**
+ * Ask the platform whether the microphone can be opened at all.
+ *
+ * The shape this exists for: the recognizer fires `start` — confirmed, in
+ * tens of milliseconds — and then delivers nothing whatsoever, no audio, no
+ * speech, no result, no end. Replacing it does not help, because the
+ * replacement is equally deaf. From inside the page the two cases are
+ * identical, and one of them is not our bug: on 2026-09-10 an iPhone showed
+ * "microphone is used in another tab" while the log read exactly like this.
+ *
+ * `getUserMedia` is the one thing that will say which. A device held by
+ * another tab or another app rejects with `NotReadableError` (or
+ * `AbortError` on some builds); a refused permission is `NotAllowedError`;
+ * success means the microphone is free and the recognizer is at fault.
+ *
+ * Diagnostics only — never called unless recording is on. Any stream it
+ * opens is stopped immediately, because holding one would create the very
+ * contention being measured.
+ */
+export async function probeMicrophone(): Promise<string> {
+  if (!enabled) return 'not-probed'
+  try {
+    const media = navigator.mediaDevices
+    if (media?.getUserMedia === undefined) return 'unsupported'
+    const stream = await media.getUserMedia({ audio: true })
+    for (const track of stream.getTracks()) track.stop()
+    return 'free'
+  } catch (err) {
+    const name = (err as { name?: string } | null)?.name
+    return name ?? 'unknown'
+  }
 }
 
 /** Test seam: forget everything, including the enabled flag. */
