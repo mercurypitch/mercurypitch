@@ -19,7 +19,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
-import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/room-navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'

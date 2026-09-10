@@ -404,6 +404,34 @@ Each is independently testable on the device with the record we now have:
 The four above come from outside; if all four fail, the next step is a second
 device on a different iOS version, not a fifth theory.
 
+### Seventh run: item 2 done, item 3 not actually tried
+
+Shipped together on 2026-09-10: **stand-by on hidden** (item 2) and a
+**microphone warm-up** (item 3). The device log settles both, and only one of
+them the way it looks.
+
+| What the record showed                                                 | Reading                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Studio: `start afterMs=1494`, `audiostart 1935`, `speechstart 6682`    | A healthy session, and the pass condition met                      |
+| Karaoke: `41.32s warm-up` and `41.32s spin-up` on the SAME millisecond | The recognizer went first. The warm-up had not finished — or begun |
+| Karaoke: `start afterMs=36`, `audiostart 37`, then `hollow-start`      | Deaf, exactly as before                                            |
+
+So **item 2 is done and did not fix VC-1** — the room still goes deaf after a
+walk into it — and **item 3 was never tested**. The warm-up was written
+fire-and-forget on the reasoning that a permission prompt nobody answers must
+not stop voice control from starting. That reasoning is sound and the
+implementation was worthless: the whole mitigation is that the microphone is
+awake _before_ the recognizer asks, and starting them together tests nothing.
+
+The warm-up now holds the first session back until `getUserMedia` returns,
+with a `WARM_UP_TIMEOUT_MS` (1.5 s) ceiling so an unanswered prompt still
+ends in a session. The line to read is **`warm-up-over afterMs=…`**: it is
+proof the wait happened, and its value is how long the hardware took. A
+`spin-up` on the same millisecond as `warm-up` means the build is old.
+
+Item 3 is therefore still open, and item 1 — one reused `SpeechRecognition`
+per listener — remains the most suspicious of the four.
+
 ### Two structural experiments, if the four above fail
 
 1. **Destroy the previous document instead of freezing it.** Every deaf run

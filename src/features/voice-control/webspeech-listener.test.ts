@@ -101,6 +101,23 @@ function confirmForReal(recognition: FakeRecognition): void {
   recognition.confirm()
 }
 
+/**
+ * Let the microphone wake-up's promise chain run out.
+ *
+ * `Promise.race` over `getUserMedia().then().catch()` is several microtask
+ * hops, and a single `await Promise.resolve()` lands in the middle of it.
+ */
+async function settle(): Promise<void> {
+  for (let i = 0; i < 6; i += 1) await Promise.resolve()
+}
+
+/**
+ * A listener with the microphone wake-up off unless a test asks for it.
+ *
+ * jsdom answers `getUserMedia` with a rejection, so the wake-up is real
+ * enough to defer the first session by a microtask everywhere — which has
+ * nothing to do with what most of this file measures.
+ */
 function harness(options?: WebSpeechListenerOptions) {
   const states: Array<{ state: VoiceListenerState; detail?: string }> = []
   const utterances: string[] = []
@@ -110,7 +127,7 @@ function harness(options?: WebSpeechListenerOptions) {
       onInterim: () => {},
       onStateChange: (state, detail) => states.push({ state, detail }),
     },
-    options,
+    { warmUpMicrophone: false, ...options },
   )
   built.push(listener)
   return {
@@ -927,6 +944,15 @@ describe('a page that goes off screen', () => {
 })
 
 describe('waking the microphone before the first session', () => {
+  /** `WARM_UP_TIMEOUT_MS` in the listener. */
+  const WARM_UP_TIMEOUT_MS = 1_500
+
+  // Every test here installs a fake `mediaDevices`; leaving one behind would
+  // silently change how the rest of the file starts its first session.
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'mediaDevices')
+  })
+
   it('opens it once and gives it straight back', async () => {
     const stop = vi.fn()
     const getUserMedia = vi.fn(async () => ({ getTracks: () => [{ stop }] }))
@@ -934,11 +960,10 @@ describe('waking the microphone before the first session', () => {
       configurable: true,
       value: { getUserMedia },
     })
-    const h = harness({ visibleRespawn: true })
+    const h = harness({ visibleRespawn: true, warmUpMicrophone: true })
 
     h.listener.start()
-    await Promise.resolve()
-    await Promise.resolve()
+    await settle()
 
     // A documented iOS mitigation for the first recognition of a document
     // failing while later ones are fine.
@@ -946,18 +971,71 @@ describe('waking the microphone before the first session', () => {
     expect(stop).toHaveBeenCalledTimes(1)
   })
 
-  it('does not make the recognizer wait for it', () => {
+  it('holds the first session back until the microphone is awake', async () => {
+    let wake: (() => void) | undefined
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () =>
+          new Promise((resolve) => {
+            wake = () => resolve({ getTracks: () => [] })
+          }),
+      },
+    })
+    const h = harness({ visibleRespawn: true, warmUpMicrophone: true })
+
+    h.listener.start()
+    await settle()
+
+    // The waiting IS the mitigation. Starting the recognizer alongside the
+    // wake-up rather than after it is what made the first device run
+    // measure nothing.
+    expect(FakeRecognition.instances).toHaveLength(0)
+
+    wake?.()
+    await settle()
+
+    expect(FakeRecognition.instances).toHaveLength(1)
+  })
+
+  it('starts anyway when the wake-up never answers', async () => {
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: async () => new Promise(() => undefined) },
     })
-    const h = harness({ visibleRespawn: true })
+    const h = harness({ visibleRespawn: true, warmUpMicrophone: true })
 
     h.listener.start()
+    await settle()
+    expect(FakeRecognition.instances).toHaveLength(0)
 
     // A permission prompt nobody answers must not mean voice control never
-    // starts, so the wake-up is begun and not waited on.
+    // starts, so the wait has a ceiling.
+    vi.advanceTimersByTime(WARM_UP_TIMEOUT_MS)
+    await settle()
+
     expect(FakeRecognition.instances).toHaveLength(1)
+  })
+
+  it('does not start a session the user has already stopped', async () => {
+    let wake: (() => void) | undefined
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () =>
+          new Promise((resolve) => {
+            wake = () => resolve({ getTracks: () => [] })
+          }),
+      },
+    })
+    const h = harness({ visibleRespawn: true, warmUpMicrophone: true })
+
+    h.listener.start()
+    h.listener.stop()
+    wake?.()
+    await settle()
+
+    expect(FakeRecognition.instances).toHaveLength(0)
   })
 
   it('wakes it once per listener, not once per session', async () => {
@@ -966,12 +1044,13 @@ describe('waking the microphone before the first session', () => {
       configurable: true,
       value: { getUserMedia },
     })
-    const h = harness({ visibleRespawn: true })
+    const h = harness({ visibleRespawn: true, warmUpMicrophone: true })
 
     h.listener.start()
+    await settle()
     h.listener.stop()
     h.listener.start()
-    await Promise.resolve()
+    await settle()
 
     expect(getUserMedia).toHaveBeenCalledTimes(1)
   })

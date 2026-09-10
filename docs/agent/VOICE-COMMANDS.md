@@ -5,8 +5,11 @@ Transport, mixing and room-specific commands are registered by the surfaces
 that own them and are not listed here.
 
 Regenerate rather than edit: the lists live in
-[`navigation-commands.ts`](../../src/features/voice-control/navigation-commands.ts),
-and a doc kept by hand goes stale the first time somebody adds a phrase.
+[`room-navigation-commands.ts`](../../src/features/voice-control/room-navigation-commands.ts)
+(the rooms and the way back into the studio) and
+[`navigation-commands.ts`](../../src/features/voice-control/navigation-commands.ts)
+(the studio's own tab and library set), and a doc kept by hand goes stale the
+first time somebody adds a phrase.
 
 ## How matching works, in one paragraph
 

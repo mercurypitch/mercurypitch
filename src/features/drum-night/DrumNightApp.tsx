@@ -17,6 +17,7 @@ import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
 import { loadUvrPlayAlongSongPort } from '@/features/play-along/song-port-loader'
 import { loadPlayAlongBandPreparationPort, usePlayAlongBandPreparationController, } from '@/features/play-along/useBandPreparationController'
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
+import { DeferredRoomVoiceControl } from '@/features/voice-control/DeferredRoomVoiceControl'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
@@ -508,18 +509,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   useBeforeUnloadGuard(isLocalSaveNavigationLocked)
   const routeHistory = acquireStandaloneRouteHistory('drum-night')
   onCleanup(routeHistory.release)
-  // Voice control, the same shape Karaoke and Guitar Night use: this shell
-  // owns the listener, the pill and the V shortcut, and the room registers
-  // what can be said here.
-  //
-  // This room had none at all — which matters more here than anywhere else,
-  // because both hands are on the pads. Voice could bring somebody to Drum
-  // Night and then had nothing that left it: "go home" and "go to singing"
-  // belong to the shell's tab set, which a standalone document never loads.
-  const RoomVoiceControl = lazy(
-    () => import('@/features/voice-control/RoomVoiceControl'),
-  )
-
   const [view, setView] = createSignal<StageView>('pocket')
   const [workspace, setWorkspace] = createSignal<Workspace>('groove')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -5336,9 +5325,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         </Suspense>
       </Show>
 
-      <Suspense>
-        <RoomVoiceControl />
-      </Suspense>
+      {/* Voice control, the same shape Karaoke and Guitar Night use: the
+          wrapper owns the listener, the pill and the V shortcut, and the
+          room registers what can be said here.
+
+          This room had none at all — which matters more here than anywhere
+          else, because both hands are on the pads. Voice could bring
+          somebody to Drum Night and then had nothing that left it: "go
+          home" and "go to singing" belong to the shell's tab set, which a
+          standalone document never loads. */}
+      <DeferredRoomVoiceControl />
     </div>
   )
 }

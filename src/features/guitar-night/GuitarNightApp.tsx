@@ -22,7 +22,7 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { songImportAcceptForDevice } from '@/features/play-along/song-import'
 import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
-import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/room-navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'

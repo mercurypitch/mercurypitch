@@ -13,7 +13,15 @@
 
 .pill {
   position: fixed;
-  left: calc(var(--safe-left, 0px) + 0.75rem);
+  /* `--voice-pill-inset-left` is the room's own claim on the bottom-left
+     corner. Piano Night keeps a full-height rail there, and the pill sat on
+     its settings button — a collision Playwright reports as "subtree
+     intercepts pointer events" and a person reports as a button that does
+     nothing. Rooms set it to their rail width; it collapses to 0 wherever
+     the rail does, which is what makes the phone layout need no rule. */
+  left: calc(
+    var(--safe-left, 0px) + var(--voice-pill-inset-left, 0px) + 0.75rem
+  );
   bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
   z-index: var(--z-tabbar, 380);
   display: flex;
