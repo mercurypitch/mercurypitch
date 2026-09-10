@@ -125,6 +125,11 @@ The churn-based hotspot section needs real history. A shallow clone (which is
 what cloud sessions get) makes it report `skipped`; run `git fetch --unshallow`
 first if you want it.
 
+A bug that only happens on a phone is not a `pnpm check` problem. `pnpm run
+dev:portable` puts the console on the device itself, and every build that
+writes `dist` asserts the feature was eliminated —
+[DEVICE-DEBUGGING.md](docs/agent/DEVICE-DEBUGGING.md).
+
 `pnpm pr:prepare` always regenerates `docs/agent/INDEX.md`, formats and lints
 only files changed from `origin/main`, and runs `git diff --check`. It does not
 typecheck or run tests. Use `--base <ref>` only when the PR targets something

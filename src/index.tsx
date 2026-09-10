@@ -24,6 +24,7 @@ import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/service
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
+import { PORTABLE_CONSOLE } from '@/lib/defaults'
 import { initVoiceDiagnostics } from '@/features/voice-control/voice-diagnostics'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
@@ -37,11 +38,21 @@ initTheme()
 // Publish the device tier on <html> before the first paint, so nothing ever
 // renders a frame of full-quality glass on a television and then downgrades.
 initDeviceTier()
+
+// Voice control and the on-device console are per DOCUMENT, and several rooms
+// here are separate documents — walking into Karaoke Night is a full page
+// load. Wiring only the main entry left the one transition worth watching
+// unrecorded (2026-09-10).
+initVoiceDiagnostics()
+if (PORTABLE_CONSOLE) {
+  // Dynamic, and behind a compile-time constant: a normal build folds this to
+  // `if (false)` and the module never enters the bundle at all.
+  void import('@/components/PortableConsole').then((m) => {
+    m.setupPortableConsole()
+  })
+}
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
-// Before anything can create a listener, so `?voicelog=1` catches the very
-// first session — the one VC-1 says is the only one that works.
-initVoiceDiagnostics()
 // `beforeinstallprompt` can fire before the first render and is never
 // replayed, so the listener has to exist before anything else runs.
 installPwaInstallListeners()

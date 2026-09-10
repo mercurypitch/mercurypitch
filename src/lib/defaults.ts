@@ -27,6 +27,16 @@ export const IS_PR_PREVIEW = import.meta.env.VITE_PR_PREVIEW === 'true'
  */
 export const PREMIUM_FEATURES = import.meta.env.VITE_PREMIUM_FEATURES === 'true'
 
+/**
+ * The on-device console (src/lib/portable-console.ts). A BUILD flag, not a
+ * runtime one: every call site is `if (PORTABLE_CONSOLE) void import(...)`,
+ * so a normal build folds it to `if (false)` and the module never enters the
+ * bundle. Turn it on for a device you cannot plug an inspector into:
+ * `pnpm run dev:portable`. Never set in a production build; that is asserted
+ * by scripts/assert-no-portable-console.mjs.
+ */
+export const PORTABLE_CONSOLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+
 // ── App metadata ──────────────────────────────────────────────
 
 /** Semantic version from package.json (e.g. "0.1.2"). */
