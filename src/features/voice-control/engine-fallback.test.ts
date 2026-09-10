@@ -28,7 +28,10 @@ const listeners = vi.hoisted(() => ({
     onStateChange: (state: string, detail?: string) => void
   },
 }))
-const notified = vi.hoisted(() => ({ calls: [] as string[] }))
+const notified = vi.hoisted(() => ({
+  calls: [] as string[],
+  actions: [] as { label: string; onClick: () => void }[],
+}))
 
 vi.mock('./webspeech-listener', () => ({
   createWebSpeechListener: (callbacks: never) => {
@@ -47,6 +50,15 @@ vi.mock('@/stores/notifications-store', () => ({
     notified.calls.push(message)
     return 1
   },
+  showActionNotification: (
+    message: string,
+    _type: string,
+    action: { label: string; onClick: () => void },
+  ) => {
+    notified.calls.push(message)
+    notified.actions.push(action)
+    return 1
+  },
   removeNotification: vi.fn(),
 }))
 
@@ -62,6 +74,7 @@ describe('local engine fallback', () => {
     sessionStorage.clear()
     disarmLocalModelAttempt()
     notified.calls = []
+    notified.actions = []
     listeners.callbacks = null
     listeners.webspeech.isSupported = true
     for (const listener of [listeners.webspeech, listeners.local]) {
@@ -156,6 +169,67 @@ describe('local engine fallback', () => {
 
     mount()
 
+    expect(listeners.local.start).toHaveBeenCalled()
+  })
+  // ── The retry after a kill is asked for, not obeyed ──────────
+  //
+  // maff dismissed the toast, picked Whisper again, and the tab died for
+  // good. The guard gave the retry back on purpose; what it must not do is
+  // hand it over silently.
+
+  it('asks before loading the model again in a document it already killed', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+    mount()
+    listeners.local.start.mockClear()
+
+    setVoiceControlEngine('local')
+
+    expect(listeners.local.start).not.toHaveBeenCalled()
+    // And the preference does not sit there claiming an engine that never ran.
+    expect(voiceControlEngine()).toBe('webspeech')
+    expect(notified.calls.join(' ')).toContain('closed this tab')
+    expect(notified.actions.at(-1)?.label).toBe('Try anyway')
+  })
+
+  it('loads the model when the retry is actually accepted', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+    mount()
+    setVoiceControlEngine('local')
+    listeners.local.start.mockClear()
+
+    notified.actions.at(-1)?.onClick()
+
+    expect(voiceControlEngine()).toBe('local')
+    expect(listeners.local.start).toHaveBeenCalled()
+  })
+
+  it('does not ask twice once the retry has been accepted', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+    mount()
+    setVoiceControlEngine('local')
+    notified.actions.at(-1)?.onClick()
+
+    setVoiceControlEngine('webspeech')
+    notified.actions = []
+    listeners.local.start.mockClear()
+    setVoiceControlEngine('local')
+
+    expect(notified.actions).toHaveLength(0)
+    expect(listeners.local.start).toHaveBeenCalled()
+  })
+
+  it('never asks in a document that did not see a kill', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    setVoiceControlEngine('webspeech')
+    mount()
+    listeners.local.start.mockClear()
+
+    setVoiceControlEngine('local')
+
+    expect(notified.actions).toHaveLength(0)
     expect(listeners.local.start).toHaveBeenCalled()
   })
 })
