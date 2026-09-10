@@ -16,13 +16,20 @@ initDeviceTier()
 // here are separate documents — walking into Karaoke Night is a full page
 // load. Wiring only the main entry left the one transition worth watching
 // unrecorded (2026-09-10).
-initVoiceDiagnostics()
 if (PORTABLE_CONSOLE) {
   // Dynamic, and behind a compile-time constant: a normal build folds this to
   // `if (false)` and the module never enters the bundle at all.
+  //
+  // The dynamic import resolves a tick late, and nothing logged before it
+  // lands is captured — so anything that speaks at boot waits for it. That is
+  // not a detail: the first line a device writes says how the document was
+  // reached, and losing it loses the seam being investigated.
   void import('@/components/PortableConsole').then((m) => {
     m.setupPortableConsole()
+    initVoiceDiagnostics()
   })
+} else {
+  initVoiceDiagnostics()
 }
 
 const root = document.getElementById('root')
