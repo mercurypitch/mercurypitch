@@ -78,11 +78,17 @@
   letter-spacing: -0.01em;
 }
 
+/* One line, and it stays one line: this sits above a list that is the whole
+   point of the panel, and on a phone every row it takes is a command the
+   reader has to scroll for. */
 .subtitle {
+  overflow: hidden;
   margin: 0;
   color: var(--text-muted);
   font-size: 0.78rem;
   line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .closeButton {
@@ -243,13 +249,55 @@
 /* ── Footer ───────────────────────────────────────────────── */
 
 .footer {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
   margin: 0;
   padding: 0.6rem 1.25rem 0.9rem;
   border-top: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.72rem;
   line-height: 1.4;
+}
+
+/* The note yields, the pill does not: a truncated shortcut is worse than a
+   truncated sentence, because half a key combination is not a key
+   combination. */
+.footerNote {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcut {
+  flex-shrink: 0;
+  padding: 0.16rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* A keycap for a pointer that has a keyboard behind it. */
+.shortcut[data-kind='spoken'] {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .shortcut[data-kind='key'] {
+    display: none;
+  }
+
+  .shortcut[data-kind='spoken'] {
+    display: inline;
+  }
 }
 
 /* Narrow screens: the label/phrase columns collapse into two lines. */
