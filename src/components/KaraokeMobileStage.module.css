@@ -859,6 +859,13 @@
 .stateActionPrimary {
   border-color: transparent;
   background: linear-gradient(90deg, #ffd9a0, #ff9ad5);
+  /* background-origin defaults to padding-box while background-clip defaults
+     to border-box, so a gradient under a border is SIZED to the padding box
+     but PAINTED out to the border box. The 1px overhang gets no continuation
+     of the gradient -- it gets the first stop's flat colour along the top and
+     left and the last stop's along the bottom and right, on a corner radius
+     one pixel larger than the fill's. Sizing to the border box removes it. */
+  background-origin: border-box;
   color: #23122f;
 }
 

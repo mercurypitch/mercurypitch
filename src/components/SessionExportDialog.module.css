@@ -268,6 +268,13 @@
 .submit {
   color: #fff;
   background: linear-gradient(145deg, #6d4bc2, #4d2da8);
+  /* background-origin defaults to padding-box while background-clip defaults
+     to border-box, so a gradient under a border is SIZED to the padding box
+     but PAINTED out to the border box. The 1px overhang gets no continuation
+     of the gradient -- it gets the first stop's flat colour along the top and
+     left and the last stop's along the bottom and right, on a corner radius
+     one pixel larger than the fill's. Sizing to the border box removes it. */
+  background-origin: border-box;
   border: 1px solid rgb(191 173 255 / 35%);
   box-shadow: 0 8px 22px rgb(99 66 194 / 24%);
 }

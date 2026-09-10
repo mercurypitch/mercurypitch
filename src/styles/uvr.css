@@ -1574,6 +1574,13 @@
 .uvr-import-button--primary {
   color: #fff;
   background: linear-gradient(135deg, #9270ee, #6f4fd0);
+  /* background-origin defaults to padding-box while background-clip defaults
+     to border-box, so a gradient under a border is SIZED to the padding box
+     but PAINTED out to the border box. The 1px overhang gets no continuation
+     of the gradient -- it gets the first stop's flat colour along the top and
+     left and the last stop's along the bottom and right, on a corner radius
+     one pixel larger than the fill's. Sizing to the border box removes it. */
+  background-origin: border-box;
   border: 1px solid rgba(205, 191, 255, 0.2);
   box-shadow: 0 8px 20px rgba(111, 79, 208, 0.22);
 }
@@ -2528,6 +2535,8 @@
 .uvr-queue-button--primary {
   color: #fff;
   background: linear-gradient(135deg, #8d6bea, #6d4dce);
+  /* Restated: the `background` shorthand above resets background-origin. */
+  background-origin: border-box;
   border-color: rgba(203, 189, 255, 0.22);
   box-shadow: 0 8px 20px rgba(109, 77, 206, 0.24);
 }

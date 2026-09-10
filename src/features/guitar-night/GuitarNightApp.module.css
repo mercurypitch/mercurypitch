@@ -3939,6 +3939,13 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.1), transparent 62%),
     rgba(244, 234, 219, 0.035);
+  /* background-origin defaults to padding-box while background-clip defaults
+     to border-box, so a gradient under a border is SIZED to the padding box
+     but PAINTED out to the border box. The 1px overhang gets no continuation
+     of the gradient -- it gets the first stop's flat colour along the top and
+     left and the last stop's along the bottom and right, on a corner radius
+     one pixel larger than the fill's. Sizing to the border box removes it. */
+  background-origin: border-box;
   text-align: left;
   cursor: pointer;
 }
@@ -3948,6 +3955,8 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.15), transparent 62%),
     rgba(244, 234, 219, 0.05);
+  /* Restated: the `background` shorthand above resets background-origin. */
+  background-origin: border-box;
 }
 
 .scoreAssessmentAction:focus-visible {
@@ -5945,6 +5954,8 @@
   background:
     linear-gradient(135deg, rgba(106, 202, 189, 0.045), transparent 52%),
     rgba(10, 8, 7, 0.8);
+  /* Restated: the `background` shorthand above resets background-origin. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);
@@ -5973,6 +5984,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.16), transparent 58%),
     rgba(10, 8, 7, 0.86);
+  /* Restated: the `background` shorthand above resets background-origin. */
+  background-origin: border-box;
   box-shadow:
     0 0 1rem rgba(224, 164, 93, 0.13),
     inset 0 1px rgba(255, 255, 255, 0.05);
@@ -6002,6 +6015,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.075), transparent 48%),
     rgba(10, 8, 7, 0.8);
+  /* Restated: the `background` shorthand above resets background-origin. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);

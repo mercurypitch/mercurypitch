@@ -36,6 +36,7 @@
     "test:tours": "node scripts/walk-tours.mjs",
     "audit:mobile": "node scripts/audit-exercises-mobile.mjs",
     "audit:ear-lab": "node scripts/audit-ear-lab-mobile.mjs",
+    "audit:background-origin": "node scripts/audit-background-origin.mjs",
     "verify:opening": "node scripts/verify-opening.mjs",
     "beside-cue:dev": "pnpm --filter @irchiinnuss/beside-cue-app dev",
     "beside-cue:build": "pnpm --filter @irchiinnuss/beside-cue-app build",

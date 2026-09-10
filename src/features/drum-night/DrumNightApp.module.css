@@ -3261,6 +3261,13 @@
     border: 1px solid rgb(238 231 219 / 15%);
     border-radius: 12px 12px 18px 18px;
     background: linear-gradient(180deg, #20252a, #14181c);
+    /* background-origin defaults to padding-box while background-clip defaults
+       to border-box, so a gradient under a border is SIZED to the padding box
+       but PAINTED out to the border box. The 1px overhang gets no continuation
+       of the gradient -- it gets the first stop's flat colour along the top and
+       left and the last stop's along the bottom and right, on a corner radius
+       one pixel larger than the fill's. Sizing to the border box removes it. */
+    background-origin: border-box;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 4%),
       0 5px 12px rgb(0 0 0 / 20%);
@@ -3274,11 +3281,15 @@
   .touchKit button.isHit {
     border-color: rgb(231 173 82 / 72%);
     background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+    /* Restated: the `background` shorthand above resets background-origin. */
+    background-origin: border-box;
     transform: translateY(1px);
   }
   .touchKit .kickPad {
     border-color: rgb(238 231 219 / 28%);
     background: linear-gradient(180deg, #2a2521, #171719);
+    /* Restated: the `background` shorthand above resets background-origin. */
+    background-origin: border-box;
   }
   .touchKit span {
     font-size: 10px;
@@ -3581,6 +3592,8 @@
     border: 1px solid rgb(238 231 219 / 15%);
     border-radius: 9px 9px 13px 13px;
     background: linear-gradient(180deg, #20252a, #14181c);
+    /* Restated: the `background` shorthand above resets background-origin. */
+    background-origin: border-box;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
     cursor: pointer;
   }
@@ -3588,10 +3601,14 @@
   .touchKit button.isHit {
     border-color: rgb(231 173 82 / 72%);
     background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+    /* Restated: the `background` shorthand above resets background-origin. */
+    background-origin: border-box;
   }
   .touchKit .kickPad {
     border-color: rgb(238 231 219 / 28%);
     background: linear-gradient(180deg, #2a2521, #171719);
+    /* Restated: the `background` shorthand above resets background-origin. */
+    background-origin: border-box;
   }
   .touchKit span {
     font-size: 10px;

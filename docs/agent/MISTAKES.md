@@ -477,6 +477,29 @@ do not hide the warning with a new root per frame. Capture a browser warning sta
 **See:** `src/features/guitar-night/GuitarNightSourceOwnership.test.tsx` exercises
 the actual compiled prop getters.
 
+### Restate `background-origin: border-box` after every `background` shorthand
+
+**Symptom:** a control with a translucent border and a gradient fill drew a flat 1px
+band at its edges, on a corner radius a pixel larger than the fill's. It reads as a
+second rectangle laid over the rounded corners.
+**Cause:** `background-origin` defaults to `padding-box` while `background-clip`
+defaults to `border-box`, so the gradient is sized to the padding box but painted out
+to the border box. The overhang gets no continuation of the gradient — it gets the
+first stop's flat colour along the top and left and the last stop's along the bottom
+and right. Only a translucent or transparent border lets it show, which is why it
+survives review. The `background` shorthand also resets `background-origin`, so a
+declaration in the base rule is a silent no-op the moment a `:hover` or
+`[aria-pressed]` rule sets `background:` again.
+**Rule:** put `background-origin: border-box` immediately after **every** `background`
+shorthand in the chain, not once in the base rule. It is not a blanket fix: a small
+control with a tight radius shows the band, a wide panel behind a 20px radius and a
+low-contrast wash does not, and a gradient ring built out of
+`linear-gradient(...) padding-box, linear-gradient(...) border-box` depends on the
+split. Render the candidate before and after rather than trusting the CSS.
+**See:** `pnpm audit:background-origin` lists candidates and separates the deliberate
+ones; `src/features/path/PlainPathView.module.css` restates it across five orb states;
+`src/components/account/AccountSection.module.css:40` is the ring that needs the split.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
