@@ -359,3 +359,57 @@ describe('ignoresWakeWord exemption', () => {
     )
   })
 })
+
+describe('a word said twice', () => {
+  const sing = {
+    id: 'nav.singing',
+    label: 'Singing',
+    phrases: ['sing', 'go to singing'],
+    run: () => 'Singing',
+  }
+
+  it('hears one sing in "sing sing"', () => {
+    // A repetition is how a person speaks when the first attempt did not
+    // seem to land, and what a recognizer makes of a hesitant start.
+    expect(matchVoiceCommand('sing sing', [sing])?.command.id).toBe(
+      'nav.singing',
+    )
+  })
+
+  it('hears it mid-phrase too', () => {
+    expect(matchVoiceCommand('go go to singing', [sing])?.command.id).toBe(
+      'nav.singing',
+    )
+  })
+
+  it('prefers the phrase as spoken, when there is one', () => {
+    // The collapse is a fallback, never a rewrite: a command that repeats a
+    // word on purpose has to keep working, or adding one later would break
+    // from a distance.
+    const stutter = {
+      id: 'test.doubled',
+      label: 'Doubled',
+      phrases: ['sing sing'],
+      run: () => 'Doubled',
+    }
+    expect(matchVoiceCommand('sing sing', [stutter, sing])?.command.id).toBe(
+      'test.doubled',
+    )
+  })
+
+  it('leaves repeated numbers alone', () => {
+    const back = {
+      id: 'transport.back',
+      label: 'Back',
+      phrases: ['back <n>'],
+      run: () => 'Back',
+    }
+    // "back two two" is either twenty-two misheard or two values. Quietly
+    // making it "back two" would change what happens rather than fail.
+    expect(matchVoiceCommand('back two two', [back])).toBeNull()
+  })
+
+  it('still refuses an utterance that is only noise', () => {
+    expect(matchVoiceCommand('la la la', [sing])).toBeNull()
+  })
+})

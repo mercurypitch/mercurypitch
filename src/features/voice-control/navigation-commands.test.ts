@@ -318,6 +318,10 @@ describe('leaving a standalone room by voice', () => {
   it('answers to every room, so a set carries no room-specific wording', () => {
     const commands = createLeaveForStudioVoiceCommands()
 
+    // The exits themselves name a tab, never the room they are spoken in.
+    // The rooms that follow are the other way out — into another night — and
+    // which of those appear DOES depend on where you are standing, which the
+    // "does not offer the room you are standing in" test covers.
     expect(commands.map((command) => command.id)).toEqual([
       'nav.leave.home',
       'nav.leave.singing',
@@ -327,6 +331,79 @@ describe('leaving a standalone room by voice', () => {
       'nav.leave.exercises',
       'nav.leave.challenges',
       'nav.leave.settings',
+      'nav.karaokeNight',
+      'nav.guitarNight',
+      'nav.pianoNight',
+      'nav.drumNight',
     ])
+  })
+})
+
+describe('the standalone rooms', () => {
+  it('answers for every night, not only karaoke', () => {
+    const commands = createNavigationVoiceCommands({})
+    const ids = commands.map((command) => command.id)
+
+    // "Go to guitar night" simply did nothing before, which reads as voice
+    // control being broken rather than as a phrase nobody wrote down.
+    expect(ids).toContain('nav.karaokeNight')
+    expect(ids).toContain('nav.guitarNight')
+    expect(ids).toContain('nav.pianoNight')
+    expect(ids).toContain('nav.drumNight')
+  })
+
+  it('takes more than one way of asking', () => {
+    const commands = createNavigationVoiceCommands({})
+    const guitar = commands.find((c) => c.id === 'nav.guitarNight')
+
+    for (const phrase of [
+      'guitar night',
+      'go to guitar night',
+      'open guitar night',
+      'start guitar night',
+      'take me to guitar night',
+    ]) {
+      expect(guitar?.phrases).toContain(phrase)
+    }
+  })
+
+  it('keeps the room and the tab apart', () => {
+    const leaves: string[] = []
+    const commands = createNavigationVoiceCommands({
+      leaveForPage: (path) => leaves.push(path),
+      isNarrow: () => false,
+    })
+
+    // A phrase has to consume the whole utterance, so these never compete:
+    // "go to guitar" is the tab, "go to guitar night" is the room.
+    expect(matchVoiceCommand('go to guitar night', commands)?.command.id).toBe(
+      'nav.guitarNight',
+    )
+    expect(matchVoiceCommand('go to guitar', commands)?.command.id).toBe(
+      'nav.guitar',
+    )
+  })
+
+  it('walks from one room to another without going home first', () => {
+    const leaves: string[] = []
+    const commands = createLeaveForStudioVoiceCommands({
+      leaveForPage: (path) => leaves.push(path),
+      currentPath: () => '/guitar-night',
+    })
+
+    matchVoiceCommand('go to karaoke night', commands)?.command.run({})
+
+    expect(leaves).toEqual(['/karaoke-night'])
+  })
+
+  it('does not offer the room you are standing in', () => {
+    const commands = createLeaveForStudioVoiceCommands({
+      currentPath: () => '/guitar-night',
+    })
+
+    // It would be a full page load that lands you exactly where you already
+    // are, which on a phone reads as the app throwing the session away.
+    expect(commands.map((c) => c.id)).not.toContain('nav.guitarNight')
+    expect(commands.map((c) => c.id)).toContain('nav.pianoNight')
   })
 })
