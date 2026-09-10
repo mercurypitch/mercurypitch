@@ -66,7 +66,7 @@
 
 import { deviceClass } from '@/lib/device-tier'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
-import { recordVoiceDiagnostic } from './voice-diagnostics'
+import { probeMicrophone, recordVoiceDiagnostic } from './voice-diagnostics'
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean
@@ -456,6 +456,7 @@ export function createWebSpeechListener(
     stopListeningForGesture()
     document.removeEventListener('visibilitychange', onVisibility)
     window.removeEventListener('pageshow', onPageShow)
+    window.removeEventListener('pagehide', onPageHide)
   }
 
   /** Give up until start() is called again, and say why. The exit for
@@ -496,14 +497,33 @@ export function createWebSpeechListener(
     spinUp()
   }
 
+  const onPageHide = (event: Event) => {
+    if (!started) return
+    // `persisted` here means the document is being FROZEN, not destroyed: it
+    // keeps its JavaScript state, and whatever it was holding it goes on
+    // holding while the next page runs. Walking into Karaoke Night — a
+    // separate document — and back is exactly this, and a frozen document
+    // that still owns the microphone would explain the shape on the far
+    // side: a recognizer that starts in 40ms and never hears a thing.
+    log('pagehide', {
+      persisted: (event as { persisted?: boolean }).persisted === true,
+      live,
+      hadSession: recognition !== null,
+    })
+  }
+
   const onPageShow = (event: Event) => {
     // `persisted` is the back/forward-cache tell: the document was frozen
     // whole and thawed with its JS state intact, which is exactly the case
     // where a stale `live` looks healthy. iOS does not reliably fire
     // `visibilitychange` for it, so it is listened for separately.
     if (!started) return
-    if ((event as { persisted?: boolean }).persisted !== true) return
-    log('pageshow-restored')
+    const persisted = (event as { persisted?: boolean }).persisted === true
+    // Logged either way. "Came back and it was a fresh document" and "came
+    // back to the frozen one" lead to completely different explanations, and
+    // logging only the second left the first looking like no event at all.
+    log(persisted ? 'pageshow-restored' : 'pageshow-fresh')
+    if (!persisted) return
     if (recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
@@ -528,6 +548,14 @@ export function createWebSpeechListener(
         log('stale-replace', {
           after: visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
           sinceLastEvent: Date.now() - lastEventAt,
+        })
+        // A confirmed session that heard nothing at all is either a broken
+        // recognizer or a microphone somebody else is holding, and only the
+        // platform can say which. No-ops unless diagnostics are recording.
+        const deafSession = sessionSeq
+        void probeMicrophone().then((result) => {
+          if (result !== 'not-probed')
+            recordVoiceDiagnostic('mic-probe', deafSession, { result })
         })
         quietRollovers += 1
         discard()
@@ -559,12 +587,35 @@ export function createWebSpeechListener(
       lastEventAt = Date.now()
       if (live) armStaleTimer(r)
     }
-    r.onaudiostart = ping
-    r.onaudioend = ping
-    r.onsoundstart = ping
-    r.onsoundend = ping
-    r.onspeechstart = ping
-    r.onspeechend = ping
+
+    /**
+     * These six were already keeping the session alive; now they say so.
+     *
+     * `audiostart` is the one that decides everything. It means the browser
+     * really opened an audio stream for this session, and its absence is the
+     * difference between a recognizer that is listening and one that agreed
+     * to listen to nothing. Until this was logged, the two were identical in
+     * the record: both show a clean `start` and then silence.
+     *
+     * First of each per session only. `audiostart` and `audioend` fire once
+     * anyway; the sound and speech pairs fire per utterance, and a line each
+     * would bury the session they belong to.
+     */
+    const heardSoFar = new Set<string>()
+    const heard = (event: string) => () => {
+      if (recognition !== r) return
+      if (!heardSoFar.has(event)) {
+        heardSoFar.add(event)
+        log(event, { afterMs: Date.now() - spinUpAt })
+      }
+      ping()
+    }
+    r.onaudiostart = heard('audiostart')
+    r.onaudioend = heard('audioend')
+    r.onsoundstart = heard('soundstart')
+    r.onsoundend = heard('soundend')
+    r.onspeechstart = heard('speechstart')
+    r.onspeechend = heard('speechend')
 
     r.onstart = () => {
       if (recognition !== r) return
@@ -735,6 +786,7 @@ export function createWebSpeechListener(
       invalidStateRetried = false
       document.addEventListener('visibilitychange', onVisibility)
       window.addEventListener('pageshow', onPageShow)
+      window.addEventListener('pagehide', onPageHide)
       listenForGesture()
       spinUp()
     },

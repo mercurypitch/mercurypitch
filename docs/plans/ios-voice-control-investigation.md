@@ -1,12 +1,14 @@
 # iOS voice control — VC-1, VC-2, VC-3
 
-Status: **Step 0 is ready to run on a device.** This document exists because
-the obvious next step — instrument the listener and take it to a device lab —
-is probably the wrong one, and it would cost days to find that out.
+Status: **Step 0 has run, and the leading hypothesis below is wrong.** VC-1 is
+not the doze. The recognizer starts successfully every time and then receives
+no audio at all; the doze is what happens at the end of that, not its cause.
+See [Step 0 came back](#step-0-came-back) — that section supersedes the two
+that follow it.
 
-The instrumentation described under "If it is not the doze" is now built, so
-Step 0 comes back with a record rather than an impression. Turn it on with
-`?voicelog=1`; see [Reading it off the device](#reading-it-off-the-device).
+The hypothesis section is kept rather than deleted because the reasoning that
+made it plausible is still the reason not to book a device lab, and because
+what falsified it took one evening with a phone.
 
 The reports are in the backlog (`TASKS.md`, third device pass, 2026-09-07/08).
 Repeated here so this reads on its own:
@@ -102,6 +104,78 @@ The outcomes are exhaustive:
 Record which of the three it is, plus the time to dim, in the backlog entry.
 That single line is worth more than everything below it.
 
+## Step 0 came back
+
+Run on 2026-09-10 by maff, on an iPhone, with `?voicelog=1`. The record, not
+an impression:
+
+**A healthy session first.** `start afterMs=1430`, `first-result
+sinceStart=2895`, then a run of commands that all landed, ending with "go to
+karaoke".
+
+**Karaoke Night: nothing.** Zero voice lines for the whole document. Not a
+finding about the app — an instrumentation gap. Karaoke Night is a separate
+entry point and the recorder was only wired into the main one. All seven
+entries are wired now.
+
+**Walking back is where it dies.** One document, three sessions, no audio:
+
+```
+s1  start  afterMs=72     ...  sinceLastEvent=12001  ->  stale-replace
+s2  start  afterMs=67     ...  sinceLastEvent=12001  ->  stale-replace
+s3  start  afterMs=31     ...  sinceLastEvent=12001  ->  doze quiet=3 limit=3
+```
+
+Read that carefully, because it is the opposite of what everyone assumed.
+
+- **The recognizer is not dead.** `start` fires in 31-72 ms, three times. On
+  the healthy session it took 1430 ms. Starting is not the problem; starting
+  is suspiciously _fast_.
+- **It hears nothing whatsoever.** `sinceLastEvent=12001` means no event of
+  any kind for twelve seconds — no result, no interim, no `error`, no `end`,
+  no `nomatch`. A live session over silence.
+- **The watchdogs work.** `stale-replace` fires exactly as designed, twice.
+  It does not help, because the replacement is equally deaf.
+- **The doze is the end state, not the cause.** `quiet=3 limit=3` is the
+  listener correctly concluding that three sessions in a row heard nothing.
+
+So this is Step 0's third outcome — recovers on neither — but with a
+correction the outcome list did not anticipate: it is not a _silent death_.
+It is a silent birth. Every session is born deaf.
+
+### The likely cause: somebody else has the microphone
+
+maff saw Firefox say **"microphone is used in another tab"** during the same
+run, and mentioned old localhost tabs still open. That fits every line above:
+`start()` resolves because the recognizer was constructed fine, and it then
+gets an audio session that belongs to someone else, so no audio ever arrives
+and no error is ever raised.
+
+Our own capture is not the contender: `mic:idle` on every entry means
+`MicManager` was holding nothing at the time.
+
+This is why `probeMicrophone()` now runs on the `stale-replace` path and
+records a `mic-probe` line. A `NotReadableError` or `AbortError` there names
+the culprit outright; `free` means the microphone was available and the
+recognizer refused to use it, which is a genuine WebKit bug and _then_ worth a
+device lab.
+
+### What is now worth doing, in order
+
+1. **Reproduce with `mic-probe` in the record**, on the same device, with
+   every other tab closed. One line decides between contention and WebKit.
+2. **If it is contention** — the app cannot take a microphone away from
+   another tab, but it can stop pretending to listen. A session that starts
+   and hears nothing for twelve seconds is a state we can detect today; it
+   should say "another app or tab is using the microphone" rather than dim a
+   pill. That is a real fix regardless of what else is true.
+3. **Only then consider WebKit.** And note the platform: the record says
+   **iOS 18.7, FxiOS 155** — a shipping OS, not the iOS 27 beta the backlog
+   entry assumed. The "retest on a device that is not running a beta OS"
+   follow-up is answered; the bug is not a beta artifact.
+
+Everything below predates this section.
+
 ## If it is the doze — a presentation problem
 
 The doze is a real trade-off and should stay: the alternative is Chrome's
@@ -155,17 +229,16 @@ caveat that iOS 27 is a beta and it is fiddly across releases.
 
 `?voicelog=1` turns the recording on and remembers it — which matters, because
 Karaoke Night is a separate document and walking into it is a fresh page load.
-`?voicelog=0` turns it off, as does **Stop** in the panel. Off for everyone
-else, always.
+`?voicelog=0` turns it off. Off for everyone else, always.
 
-Three ways to read the same record:
+Each entry is also written as a `console.info` line, which is what makes the
+record readable without a cable. Three ways to read the same thing:
 
-1. **On the device.** A bar appears at the bottom showing the last thing the
-   ear did; tapping it opens the whole log, with **Copy** for pasting it back.
-   It passes taps through everywhere except its own controls, and **Move up**
-   flips it to the other edge — the pill it is used to watch lives in the
-   header on a phone and in the bottom HUD elsewhere, so it will sometimes be
-   in the way wherever it starts.
+1. **On the device.** `pnpm run dev:portable` shows the portable console, and
+   the voice record lands in it along with everything else the page logged —
+   which is how the mystery below got solved rather than guessed at. Tap it
+   open, **Copy**, paste it back. See
+   [DEVICE-DEBUGGING.md](../agent/DEVICE-DEBUGGING.md).
 2. **On the dev server.** `MP_DEV_LOGS=1 pnpm run dev:host` relays every line
    to `.dev-logs/<date>.log`, which is the LAN case and needs nothing on the
    phone. Note the dev server is HTTPS with a self-signed certificate, and
@@ -192,8 +265,13 @@ them as one session is how this gets misread.
   existed. Look at what `mic:` says on that line.
 - `stale-replace` — a confirmed session went silent and was replaced.
 - `gesture-wake` — the touch that brought it back, which is the VC-3 answer.
-- Nothing at all after a healthy `start` — a shape none of the current
-  watchdogs catch, and the one case that would justify the device lab.
+- Nothing at all after a healthy `start` — **this is what actually happens**;
+  see [Step 0 came back](#step-0-came-back).
+- `mic-probe result=...` — fired when a session is replaced for hearing
+  nothing, and the single most useful line in the file. `NotReadableError` or
+  `AbortError` means another tab or app holds the microphone. `free` means it
+  was there for the taking and the recognizer would not use it, which is the
+  one case that justifies a device lab.
 
 **One correction to the list above.** It asks for `MediaStreamTrack.readyState`
 and `.muted`. For the Web Speech path there is no such track to read: capture
@@ -202,10 +280,11 @@ happens inside the browser's recognizer and never through MicManager. The
 half of the same question — one documented failure shape is another consumer
 taking the microphone.
 
-**Get a second iOS device on a shipping OS.** The one device runs iOS 27 beta,
-so "iOS is broken" and "this beta is broken" are currently the same
-observation. This matters less if Step 0 says doze, which is our own code on
-any OS.
+**A second iOS device is no longer the priority.** That follow-up existed
+because the one device ran an iOS 27 beta, making "iOS is broken" and "this
+beta is broken" the same observation. The Step 0 record settles it: the
+failure reproduced on **iOS 18.7 / FxiOS 155**, a shipping OS. Reproducing it
+with every other tab closed is the cheaper and more decisive next step.
 
 ## What not to do
 

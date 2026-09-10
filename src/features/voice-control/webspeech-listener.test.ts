@@ -957,6 +957,77 @@ describe('what the diagnostics record says happened', () => {
     expect(ends.every((e) => e.detail.wasQuiet === true)).toBe(true)
   })
 
+  it('records the moment the browser actually opened a microphone', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+
+    h.latest().onaudiostart?.()
+
+    // `start` only means the recognizer accepted the job. `audiostart` means
+    // audio is really flowing, and the gap between them is where VC-1 lives:
+    // a session with the first and not the second looks perfectly healthy in
+    // every other line of the record.
+    expect(events()).toContain('audiostart')
+  })
+
+  it('says it once, not once per syllable', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+
+    for (let i = 0; i < 5; i++) {
+      h.latest().onsoundstart?.()
+      h.latest().onspeechstart?.()
+    }
+
+    // These fire per utterance. A line each would bury the session they
+    // belong to on a phone screen holding a few hundred rows.
+    expect(events().filter((e) => e === 'soundstart')).toHaveLength(1)
+    expect(events().filter((e) => e === 'speechstart')).toHaveLength(1)
+  })
+
+  it('leaves a start with no audio behind it plainly visible', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    vi.advanceTimersToNextTimer()
+
+    // The shape a device reported on 2026-09-10: the session starts, and
+    // nothing about audio ever happens. Reading this used to require
+    // inferring it from a `sinceLastEvent` figure.
+    expect(events()).toContain('start')
+    expect(events()).not.toContain('audiostart')
+  })
+
+  it('records whether the page was frozen or thrown away', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+
+    window.dispatchEvent(
+      Object.assign(new Event('pagehide'), { persisted: true }),
+    )
+
+    // Walking into another room here is a separate document. `persisted`
+    // means this one was frozen rather than destroyed — it keeps its state,
+    // and anything it holds it goes on holding while the next page runs.
+    const hide = voiceDiagnosticEntries().find((e) => e.event === 'pagehide')
+    expect(hide?.detail).toMatchObject({ persisted: true, live: true })
+  })
+
+  it('stops recording page turns once voice control is off', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.listener.stop()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    // A listener that let go of the page still hooked to it would keep
+    // writing lines about a feature nobody has running.
+    expect(events().filter((e) => e === 'pagehide')).toHaveLength(0)
+  })
+
   it('separates a session from the one that replaced it', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
@@ -970,7 +1041,11 @@ describe('what the diagnostics record says happened', () => {
       .filter((entry) => entry.event === 'spin-up')
       .map((entry) => entry.session)
     expect(spinUps).toEqual([1, 2])
-    expect(voiceDiagnosticEntries()[0]).toMatchObject({
+    expect(
+      voiceDiagnosticEntries().find(
+        (entry) => entry.event === 'start-requested',
+      ),
+    ).toMatchObject({
       event: 'start-requested',
       session: 0,
     })
