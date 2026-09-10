@@ -30,6 +30,7 @@ import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
 import { initTheme } from '@/stores/theme-store'
+import { armDeveloperConsole } from '@/lib/developer-console'
 
 // The head prepaint script covers the network gap. Reconcile the persisted
 // source and install system/time watchers before Solid mounts.
@@ -63,13 +64,11 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
 }
 
 // The shipping in-app console, on whichever page the bug is on, toggled from
-// Settings' danger zone. Lazy so its panel and stylesheet cost nothing until
-// somebody turns it on; the buffer behind it is filled by
-// initGlobalErrorHandlers either way. Unrelated to the portable console
-// above, which is dev-only and must never reach a build.
-void import('@/components/ConsoleLog').then((m) => {
-  m.setupDeveloperConsole()
-})
+// Settings' danger zone. Nothing of it loads until somebody turns it on; the
+// buffer behind it is filled by initGlobalErrorHandlers either way. Unrelated
+// to the portable console above, which is dev-only and must never reach a
+// build.
+armDeveloperConsole()
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
 // `beforeinstallprompt` can fire before the first render and is never

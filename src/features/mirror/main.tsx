@@ -11,6 +11,7 @@ import { render } from 'solid-js/web'
 import './mirror.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
+import { armDeveloperConsole } from '@/lib/developer-console'
 import { mirrorEntryIntent } from './entry-intent'
 import { MirrorApp } from './MirrorApp'
 
@@ -39,13 +40,11 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
 }
 
 // The shipping in-app console, on whichever page the bug is on, toggled from
-// Settings' danger zone. Lazy so its panel and stylesheet cost nothing until
-// somebody turns it on; the buffer behind it is filled by
-// initGlobalErrorHandlers either way. Unrelated to the portable console
-// above, which is dev-only and must never reach a build.
-void import('@/components/ConsoleLog').then((m) => {
-  m.setupDeveloperConsole()
-})
+// Settings' danger zone. Nothing of it loads until somebody turns it on; the
+// buffer behind it is filled by initGlobalErrorHandlers either way. Unrelated
+// to the portable console above, which is dev-only and must never reach a
+// build.
+armDeveloperConsole()
 
 // The Mirror is the ad landing page: boot Consent Mode + the cookie banner
 // before the tag loads, so EEA/UK/CH clicks are gated from the first paint.
