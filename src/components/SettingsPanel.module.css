@@ -172,7 +172,13 @@
   max-width: 500px; /* Keep everything compact and on the left */
 }
 
-.settingsRow label {
+/* The TEXT label at the left of a row — not a control that merely happens to
+   be a <label> element. .settingsToggle is one, and min-width stretched it to
+   160px, which is why the switches read as long pills instead of fixed ones.
+   `width: 46px !important` on the toggle could never win that: !important
+   settles a cascade fight between the SAME property, and min-width clamps the
+   used width afterwards whatever `width` said. */
+.settingsRow label:not(.settingsToggle) {
   min-width: 160px;
   width: auto;
   font-size: 0.85rem;
@@ -247,7 +253,7 @@
 .settingsToggle {
   position: relative;
   display: inline-block;
-  width: 46px !important; /* Strictly enforce width */
+  width: 46px;
   height: 24px;
   flex-shrink: 0;
   cursor: pointer;
