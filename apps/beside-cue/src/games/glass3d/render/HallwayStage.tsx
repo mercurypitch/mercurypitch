@@ -35,10 +35,12 @@ import type { GroundSampler, LocomotionConfig } from '../sim/locomotion3d'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
-import { solveShatter } from '../sim/shatter3d'
+import { shatterDuration, solveShatter } from '../sim/shatter3d'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import type { HallwayView } from './Hallway3D'
 import { createHallway3D, PANE } from './Hallway3D'
+import { createStageFrame } from './stage-frame'
+import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 import { VoiceCoach } from './VoiceCoach'
 
@@ -119,6 +121,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
 
   const cfg = WORLD3D_CONFIG
   const [dials, setDials] = createSignal(false)
+  /** The chip and calm mode (render/stage-frame.ts). */
+  const pace = createStageFrame({
+    calm: () => cfg.calm,
+    backend: () => backend(),
+  })
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
@@ -141,7 +148,9 @@ export const HallwayStage = (props: HallwayStageProps) => {
   })
 
   onMount(() => {
+    const sceneFrom = performance.now()
     const r = createHallway3D(canvas, cfg)
+    pace.mark('scene', performance.now() - sceneFrom)
     // Not the shipping controls -- the ones that make the room playable
     // at a desk, which is where it gets iterated on.
     const unbindKeys = bindKeyboard(input, window)
@@ -255,12 +264,14 @@ export const HallwayStage = (props: HallwayStageProps) => {
       let frame = 0
 
       const tick = (now: number): void => {
+        pace.begin(now)
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
+          pace.level(driver?.latestLevel() ?? 0)
 
           // He walks in every phase, including the ones that are about
           // something else. A player who wants to shuffle while they
@@ -331,7 +342,22 @@ export const HallwayStage = (props: HallwayStageProps) => {
         view.launches = launches
         view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
 
-        r.render(view, frameSeconds)
+        // Calm (P3): full rate while he walks, while the shards are in
+        // the air and while he celebrates; half rate once the corridor
+        // has been still for a while.
+        const intent = input.read(now)
+        const drawn = pace.draw({
+          input: intent.move !== 0 || intent.jump,
+          voiced: (driver?.latestPitch() ?? null) !== null,
+          moving:
+            (launches !== null &&
+              view.shatterSeconds < shatterDuration(launches, cfg.shatter)) ||
+            phaseNow === 'celebrate' ||
+            !loco.grounded ||
+            Math.abs(loco.vx) > WALKING_VX,
+        })
+        if (drawn !== null) r.render(view, drawn)
+        pace.end()
         frame = requestAnimationFrame(tick)
       }
 
@@ -345,6 +371,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           broken: launches !== null,
           shards: r.centroids().length,
           backend: backend(),
+          perf: pace.stats(),
           break: (acc = 1) => {
             if (launches === null && phaseNow === 'sing') doBreak(acc)
           },
@@ -379,15 +406,17 @@ export const HallwayStage = (props: HallwayStageProps) => {
     let gone = false
 
     void r
-      .init()
+      .init(pace.mark)
       .then(() => {
         if (gone) return
         fit()
         setBackend(r.backend())
+        pace.refresh()
         begin()
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
+        pace.refresh()
         setRenderError(err instanceof Error ? err.message : String(err))
       })
 
@@ -399,6 +428,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      pace.dispose()
       delete (window as unknown as Record<string, unknown>).__w3h
     })
   })
@@ -418,6 +448,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
     if (micStarting) return
     micStarting = true
     setMicError(null)
+    pace.micAsked()
     tone.start()
     try {
       // The remembered input, if it is still plugged in -- see
@@ -437,6 +468,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -453,6 +485,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
     driver?.stop()
     driver = null
     setMicError(null)
+    pace.micAsked()
     // The switch may be the first way in: the game's tone starts with it.
     if (!started()) tone.start()
     try {
@@ -465,6 +498,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -478,17 +512,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
     <div class="stage3d" classList={{ 'has-controls': started() }}>
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      <span class="stage3d__chip">{backend()}</span>
-
-      <Show when={DevDials !== null}>
-        <button
-          type="button"
-          class="dev-dials__open"
-          onClick={() => setDials((on) => !on)}
-        >
-          dials
-        </button>
-      </Show>
+      <StageCorner
+        chipOn={pace.chipOn}
+        lines={pace.lines()}
+        onDials={DevDials === null ? undefined : () => setDials((on) => !on)}
+      />
       <Show when={DevDials !== null && dials()}>
         {(() => {
           const Panel = DevDials!
