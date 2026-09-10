@@ -9,6 +9,7 @@
 // crashes the app.
 
 import { createSignal } from 'solid-js'
+import { createPersistedSignal } from '@/lib/storage'
 
 export interface LogEntry {
   id: string
@@ -18,7 +19,15 @@ export interface LogEntry {
 }
 
 export const [consoleLogs, setConsoleLogs] = createSignal<LogEntry[]>([])
-export const [showConsoleLog, setShowConsoleLog] = createSignal<boolean>(false)
+
+/**
+ * Persisted, because "on every page" includes the pages that are their own
+ * document. Karaoke Night, the Mirror and each Night entry are separate
+ * documents; a plain signal would switch the console off the moment you walked
+ * through a door, which is exactly when a phone bug tends to show itself.
+ */
+export const [showConsoleLog, setShowConsoleLog] =
+  createPersistedSignal<boolean>('pitchperfect_developer_console', false)
 
 // Safe stringify to handle circular references and BigInt
 function safeStringify(obj: unknown): string {
@@ -92,4 +101,16 @@ export function clearConsoleLogs(): void {
 
 export function toggleConsoleLog(): void {
   setShowConsoleLog((prev) => !prev)
+}
+
+/** The whole buffer as one block of text, for a Copy that a phone can paste
+ *  into a bug report. Same shape the log reads on screen, so what gets pasted
+ *  is what was seen. */
+export function formatConsoleLogs(): string {
+  return consoleLogs()
+    .map((entry) => {
+      const time = new Date(entry.timestamp).toLocaleTimeString()
+      return `${time} [${entry.type}] ${entry.args.join(' ')}`
+    })
+    .join('\n')
 }

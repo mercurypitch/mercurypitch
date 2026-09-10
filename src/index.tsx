@@ -61,6 +61,15 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
     announceVoiceDiagnostics()
   })
 }
+
+// The shipping in-app console, on whichever page the bug is on, toggled from
+// Settings' danger zone. Lazy so its panel and stylesheet cost nothing until
+// somebody turns it on; the buffer behind it is filled by
+// initGlobalErrorHandlers either way. Unrelated to the portable console
+// above, which is dev-only and must never reach a build.
+void import('@/components/ConsoleLog').then((m) => {
+  m.setupDeveloperConsole()
+})
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
 // `beforeinstallprompt` can fire before the first render and is never
