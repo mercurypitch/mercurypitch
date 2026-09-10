@@ -1,0 +1,14 @@
+# Generated, not ours to format.
+#
+# `ios` and `android` are Capacitor's output. Prettier skips their Swift,
+# plist and Gradle files anyway under --ignore-unknown, but after a `cap sync`
+# both hold a full copy of the built bundle -- ios/App/App/public and
+# android/app/src/main/assets/public -- and those are JS, CSS and HTML that
+# prettier very much will try to check.
+android
+ios
+dist
+
+# Vendored at build time by scripts/sync-ort-assets.mjs.
+public/ort
+public/models

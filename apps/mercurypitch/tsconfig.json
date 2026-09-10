@@ -1,0 +1,46 @@
+{
+  // Mirrors the root tsconfig on purpose: `@/*` resolves to the SAME source
+  // tree, so a stricter or looser setting here would report the web app's own
+  // code differently depending on which config saw it, and the two would
+  // argue. Only three things differ, and each is a fact about this package:
+  //
+  //   paths      `@/*` points up two directories, matching the alias in
+  //              vite.config.ts. That is the whole thin-alias architecture in
+  //              one line -- there is no copy of `src` under this app.
+  //   types      no "vitest/globals": this package has no test suite. Its
+  //              behaviour is the web app's, tested where the web app is.
+  //   include    its own entry plus its config files. Everything under the
+  //              root `src` arrives by being imported, which is exactly the
+  //              check that is wanted: what the NATIVE entry point reaches.
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client", "node", "@webgpu/types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../src/*"]
+    },
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  // "../../src/vite-env.d.ts" is not reachable by import -- an ambient
+  // declaration file is never imported by anything -- so it has to be named.
+  // Without it __COMMIT_SHA__ and __SW_ENABLED__ are undeclared here while
+  // being perfectly declared for the web build, from the same source files.
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "../../src/vite-env.d.ts",
+    "vite.config.ts",
+    "capacitor.config.ts"
+  ],
+  "exclude": ["android", "ios", "dist", "node_modules"]
+}

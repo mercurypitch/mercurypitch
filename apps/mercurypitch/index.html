@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover is what lets the safe-area insets resolve to real
+         numbers; without it every env(safe-area-inset-*) is 0 and the rail
+         sits under the home indicator. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0d12" />
+
+    <title>Mercury Pitch</title>
+
+    <!-- No canonical, no Open Graph, no JSON-LD, no robots. This document is
+         never crawled: it is the shell inside an app binary. The web app's
+         index.html carries all of that and keeps it. -->
+
+    <!--
+      Deliberately absent, and each one is a bug if it comes back:
+
+      - The hosted webfont CDN. The web app links it from its own index.html
+        head; a native app must render its first frame with the network off,
+        so Inter, Outfit and Plus Jakarta Sans are self-hosted through
+        @fontsource and imported from main.tsx (task A4).
+        The CDN hostname is deliberately not spelled out anywhere in this
+        file: task A4's acceptance check is a grep for it across dist/, and
+        a comment mentioning it would fail that check forever.
+      - A web app manifest and any service worker registration. The store
+        ships updates; a second update channel inside the binary is a way to
+        serve code Apple never reviewed.
+      - Any analytics or consent loader. Owner decision, 2026-09-10: the
+        native build carries no gtag and no Google Ads tag, which is what
+        keeps Advertising Data and App Tracking Transparency off the
+        privacy label.
+
+      The Content-Security-Policy meta lands in task A6, once C1 has settled
+      which API origin is compiled in.
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

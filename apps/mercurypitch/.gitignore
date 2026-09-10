@@ -1,0 +1,19 @@
+# Build output
+dist/
+
+# Vendored at build time by scripts/sync-ort-assets.mjs — inputs, not sources.
+# Keeping them out of git means one copy of the wasm runtime and the SwiftF0
+# model in the repository (the web app's public/ tree) rather than two that
+# can drift.
+public/ort/
+public/models/
+
+# Local TLS for device playtests over the LAN. Machine-specific, and a private key.
+.dev-cert/
+
+# NOTE: the generated native artefacts — ios/App/App/public,
+# android/app/src/main/assets/public, capacitor.config.json, config.xml — are
+# NOT listed here on purpose. Capacitor writes its own ios/.gitignore and
+# android/.gitignore covering exactly those, and duplicating the rules here
+# would give two files authority over one decision. Verified with
+# `git check-ignore` after `cap add`.
