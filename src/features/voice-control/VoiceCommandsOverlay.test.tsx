@@ -72,4 +72,27 @@ describe('VoiceCommandsOverlay', () => {
     expect(screen.getByText('avánce N secondes')).toBeVisible()
     unregister()
   })
+
+  it('offers both ways back in, and lets the pointer choose', () => {
+    render(() => <VoiceCommandsOverlay close={vi.fn()} />)
+
+    // A keycap is no use to a thumb and a spoken phrase is no use to
+    // someone who just pressed a key. Both are in the markup and CSS picks,
+    // so what a test can hold is that neither was dropped — and that the
+    // keycap still names the shortcut that actually opens this.
+    const key = document.querySelector('[data-kind="key"]')
+    const spoken = document.querySelector('[data-kind="spoken"]')
+    expect(key?.textContent?.trim()).toBe('Shift+V')
+    expect(spoken?.textContent).toContain('what can I say')
+  })
+
+  it('keeps the one rule a person cannot guess', () => {
+    render(() => <VoiceCommandsOverlay close={vi.fn()} />)
+
+    // Everything else about the wake word lives in Settings under Voice
+    // Control. This panel is a command list on a phone, and the two words
+    // that are always allowed are the only part of it that changes what a
+    // reader can say here.
+    expect(screen.getByText(/always allowed/)).toBeVisible()
+  })
 })
