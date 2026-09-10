@@ -514,8 +514,17 @@ export function createWebSpeechListener(
   const onPageHide = (event: Event) => {
     if (!started) return
     const persisted = (event as { persisted?: boolean }).persisted === true
+    // Logged as it is branched on, and the pending restart shown separately.
+    // A line whose whole job is to be read literally must not report `false`
+    // for a case the code then acts on — that is how "it never started" gets
+    // concluded from a page that was about to start.
     const hadSession = recognition !== null || restartTimer !== null
-    log('pagehide', { persisted, live, hadSession: recognition !== null })
+    log('pagehide', {
+      persisted,
+      live,
+      hadSession,
+      pendingRestart: restartTimer !== null,
+    })
     if (!hadSession) return
     // Hand the recognizer back before the document is put away.
     //
