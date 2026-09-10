@@ -43,7 +43,7 @@ const html = /* html */ `<!doctype html>
   .mark { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; box-shadow: 0 5px 20px rgba(231,173,82,.24); }
   .mark svg { width: 100%; height: 100%; }
   .wordmark { font-weight: 760; font-size: 27px; letter-spacing: -.02em; }
-  .wordmark b { color: #58a6ff; }
+  .wordmark b { background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .divider { width: 1px; height: 26px; background: rgba(238,231,219,.28); }
   .kicker { color: #e7ad52; font-size: 14px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; }
   h1 { max-width: 610px; margin: auto 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 78px; font-weight: 520; letter-spacing: -.035em; line-height: .98; text-shadow: 0 4px 28px rgba(0,0,0,.8); }

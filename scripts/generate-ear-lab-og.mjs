@@ -79,7 +79,7 @@ const html = `<!doctype html>
   .brand svg { width: 34px; height: 34px; }
   /* The lockup carries the signature split everywhere else; the bench
      had it as one word, which read as a different brand. */
-  .brand .p { color: #58a6ff; font-weight: inherit; }
+  .brand .p { font-weight: inherit; background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .eyebrow {
     position: absolute; left: 72px; top: 178px;
     font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;

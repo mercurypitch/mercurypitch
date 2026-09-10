@@ -132,7 +132,12 @@ function buildHtml(page, card, backdropUri) {
   .brand .globe { width:46px; height:46px; border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,0.45); flex:none; display:block; }
   .brand .globe svg { display:block; width:100%; height:100%; }
   .wordmark { font-family:'Outfit',sans-serif; font-weight:700; font-size:27px; letter-spacing:-0.01em; }
-  .wordmark .p { color:var(--blue); }
+  /* The app's own lockup, character for character: App.module.css's
+     .appOpeningWordmark > span and entry-prelude.css's
+     .entry-prelude__wordmark > span both set exactly this gradient. A card is
+     the first frame of the page it links to, so a flat blue "Pitch" here read
+     as a different brand the moment the page painted. */
+  .wordmark .p { background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .divider { width:1px; height:26px; background:rgba(230,237,243,0.28); }
   .kicker { font-family:'Outfit',sans-serif; font-weight:700; font-size:15px;
     letter-spacing:0.26em; text-transform:uppercase; color:${card.accent}; }
