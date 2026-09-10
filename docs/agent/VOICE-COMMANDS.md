@@ -73,11 +73,16 @@ left out of its own list — shown here from Guitar Night.
 
 ## Known gaps
 
-- **Piano Night and Drum Night register no voice commands at all.** There is
-  no way to leave either by voice. They need the voice HUD wired in, which is
-  more than a phrase list.
-- **Voice Mirror and Break Glass** have no commands either. They are tools
-  rather than rooms, so it is a judgement call whether they should.
+- **Voice Mirror and Break Glass** have no commands. They are tools rather
+  than rooms, so it is a judgement call whether they should.
+
+All four nights now carry the room set. Piano Night and Drum Night reach it
+through `RoomVoiceControl`, loaded with `lazy()` — voice control's static
+graph pulls the app's router, half its stores, the practice timer and the
+local Whisper engine, and a standalone room's first paint must not pay for
+any of it. `assert-piano-night-bundle.mjs` and its drum twin fail the build
+if it ever does.
+
 - **`home` has no bare form**, deliberately: voice control listens while music
   plays, and it is in half the choruses ever written. `go home` and `take me
 home` carry the intent.

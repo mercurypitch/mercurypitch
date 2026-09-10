@@ -346,6 +346,18 @@ function formatClock(elapsedSeconds: number): string {
 export function PianoNightApp(): JSX.Element {
   const controller = usePianoNightController()
   useBeforeUnloadGuard(isLocalSaveNavigationLocked)
+  // Voice control, the same shape Karaoke and Guitar Night use: this shell
+  // owns the listener, the pill and the V shortcut, and the room registers
+  // what can be said here.
+  //
+  // This room had none at all. Voice could bring somebody to Piano Night and
+  // then had nothing that left it — "go home" and "go to singing" belong to
+  // the shell's tab set, which a standalone document never loads — so the
+  // phone across the room was a dead end.
+  const RoomVoiceControl = lazy(
+    () => import('@/features/voice-control/RoomVoiceControl'),
+  )
+
   // Owned here so the keybed and the fall stage cannot disagree about which
   // keys are on screen — the bug that put every falling note a key to the
   // left of its own key on a phone.
@@ -1910,6 +1922,10 @@ export function PianoNightApp(): JSX.Element {
       <p class={styles.srOnly} role="status" aria-live="polite">
         {announcement() || controller.statusMessage()}
       </p>
+
+      <Suspense>
+        <RoomVoiceControl />
+      </Suspense>
     </div>
   )
 }

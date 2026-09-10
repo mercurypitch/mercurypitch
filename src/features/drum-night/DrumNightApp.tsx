@@ -508,6 +508,18 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   useBeforeUnloadGuard(isLocalSaveNavigationLocked)
   const routeHistory = acquireStandaloneRouteHistory('drum-night')
   onCleanup(routeHistory.release)
+  // Voice control, the same shape Karaoke and Guitar Night use: this shell
+  // owns the listener, the pill and the V shortcut, and the room registers
+  // what can be said here.
+  //
+  // This room had none at all — which matters more here than anywhere else,
+  // because both hands are on the pads. Voice could bring somebody to Drum
+  // Night and then had nothing that left it: "go home" and "go to singing"
+  // belong to the shell's tab set, which a standalone document never loads.
+  const RoomVoiceControl = lazy(
+    () => import('@/features/voice-control/RoomVoiceControl'),
+  )
+
   const [view, setView] = createSignal<StageView>('pocket')
   const [workspace, setWorkspace] = createSignal<Workspace>('groove')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -5323,6 +5335,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <AuthModal tone="drum-night" onAuthenticated={handleAuthenticated} />
         </Suspense>
       </Show>
+
+      <Suspense>
+        <RoomVoiceControl />
+      </Suspense>
     </div>
   )
 }
