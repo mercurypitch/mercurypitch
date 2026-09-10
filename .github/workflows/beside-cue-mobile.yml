@@ -1,46 +1,16 @@
 name: Beside Cue Mobile
 
-# Native builds for the Beside Cue Capacitor shell.
+# A caller. Everything this used to hold — the triggers' reasoning, the
+# 90382 upload-limit story, the certificate-ceiling failure, the SwiftPM
+# cache trap — now lives once in `.github/workflows/capacitor-app.yml`,
+# because a second app needed the same lessons and a second copy is how the
+# two drift apart. Read that file for why any of it is the way it is.
 #
-# Three ways in, and each answers a different question:
+# What stays here is what is genuinely Beside Cue's: which paths are its
+# own, which tag prefix releases it, and which secrets it may reach.
 #
-#   pull request      Can this change be held, and does it still build for the
-#                     store? An installable Android APK, plus an iOS archive
-#                     that is signed and then thrown away.
-#   push to main      What does the merged app do? The Android build and a
-#                     TestFlight upload from the merge commit, which is not the
-#                     code any PR tested — a PR is built against its own base.
-#                     This is the build to trust when a report says "on main".
-#   beside-cue-v tag  The release. The same upload with the tag's version as the
-#                     marketing version, plus the store artifacts.
-#
-# WHY A PULL REQUEST NO LONGER UPLOADS (maff, 2026-09-04). It did, from
-# 2026-09-01, and the reason was good: a signed upload is the only way to get
-# an iOS build onto a phone, since the simulator artifact is compiled for the
-# wrong ABI. What that missed is that App Store Connect meters uploads per app
-# per day, and answers a run over the line with
-#
-#   error 90382: Upload limit reached. The upload limit for your application
-#   has been reached. Please wait 1 day and try again.
-#
-# — after the archive has already been built and signed. A day of ordinary
-# pushing therefore spends the quota on builds nobody installs and then refuses
-# the one that was wanted, with a red X on the pull request for a reason that
-# has nothing to do with the change. The archive is the part that proves
-# anything (it compiles, it signs, the profile is current); the upload is the
-# part that costs. So a pull request keeps the first and drops the second, and
-# TestFlight comes from main and from tags, where every build is one somebody
-# means to install.
-#
-# Android is untouched. Its release artifact is an APK attached to the run —
-# nothing is published to a store, so there is no quota to spend.
-#
-# Beside Cue versions independently of MercuryPitch, so this deliberately does
-# not use the `v*` tags that ship the web app to production.
-#
-# Signing is opt-in. Without the secrets the release builds still run and still
-# prove the app compiles — they are simply unsigned, and the store-upload
-# artifacts are skipped rather than failing the run.
+# Beside Cue versions independently of MercuryPitch, so this deliberately
+# does not use the `v*` tags that ship the web app to production.
 
 on:
   pull_request:
@@ -51,14 +21,17 @@ on:
       - 'packages/beside-cue-core/**'
       - 'packages/mobile-runtime/**'
       - 'packages/pitch-engine/**'
+      - 'gradle/signing.gradle'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/beside-cue-mobile.yml'
+      - '.github/workflows/capacitor-app.yml'
   # No `paths:` here on purpose, matching build.yml and pr-gate.yml. A path
   # filter on a trigger that also carries tags can skip a release: the filter
   # is evaluated against the commits the push contains, and a tag placed on a
-  # commit that is already on main contains none. The `changes` job below does
-  # the same filtering where it is safe to, and lets every tag through.
+  # commit that is already on main contains none. The `changes` job in the
+  # reusable workflow does the same filtering where it is safe to, and lets
+  # every tag through.
   push:
     branches: [main]
     tags: ['beside-cue-v*']
@@ -75,682 +48,56 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Which merges are worth a native build.
-  #
-  # The pull_request trigger already has a `paths:` filter, and a tag is always
-  # a release, so this only ever has a real decision to make for a push to
-  # main: MercuryPitch and Beside Cue share a repository, and most merges to
-  # main touch neither the app nor anything it compiles in. Building those
-  # would spend a macOS runner and put an identical binary in TestFlight,
-  # where every build has to be told apart from the one before it by hand.
-  #
-  # One ubuntu minute to decide, against ten macOS minutes to not.
-  changes:
-    name: Changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      app: ${{ steps.filter.outputs.app }}
-    steps:
-      # Full history: the comparison reaches back to the previous tip of main,
-      # which a shallow clone does not contain.
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Decide whether the app changed
-        id: filter
-        shell: bash
-        env:
-          BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-
-          yes_it_did () {
-            echo "app=true" >> "$GITHUB_OUTPUT"
-            echo "Building: $1" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          }
-
-          [[ "$GITHUB_EVENT_NAME" == "push" ]] || yes_it_did "$GITHUB_EVENT_NAME, no filtering"
-          [[ "$GITHUB_REF_TYPE" != "tag" ]] || yes_it_did "tag $GITHUB_REF_NAME"
-
-          # A first push, a force-push, or a rewritten history leaves nothing
-          # to compare against. Build rather than guess -- the failure mode of
-          # a wasted run is minutes, and of a skipped one is a change that
-          # silently never reached a device.
-          if [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            yes_it_did "no usable previous commit"
-          fi
-
-          # Kept in step with the pull_request `paths:` filter above.
-          pattern='^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine)/|package\.json$|pnpm-lock\.yaml$|\.github/workflows/beside-cue-mobile\.yml$)'
-
-          if git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -Eq "$pattern"; then
-            yes_it_did "$(git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -Ec "$pattern") changed file(s) under the app"
-          fi
-
-          echo "app=false" >> "$GITHUB_OUTPUT"
-          echo "No Beside Cue files changed in this push; native builds skipped." >> "$GITHUB_STEP_SUMMARY"
-
-  android:
-    name: Android
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      # Secrets cannot be read inside `if:`, so their presence is resolved once
-      # here into a plain boolean the steps below can branch on.
-      HAS_UPLOAD_KEY: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 != '' }}
-      HAS_DEBUG_KEY: ${{ secrets.BESIDE_CUE_DEBUG_KEYSTORE_BASE64 != '' }}
-      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/beside-cue-v') }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.12.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Resolve release version
-        id: version
-        shell: bash
-        env:
-          REF_NAME: ${{ github.ref_name }}
-          RUN_NUMBER: ${{ github.run_number }}
-        run: |
-          set -euo pipefail
-
-          # `beside-cue-v0.2.1` -> versionName 0.2.1. Play rejects a re-used
-          # versionCode, and the run number is the only value here that is
-          # guaranteed to increase, so it is the code regardless of the tag.
-          if [[ "$IS_RELEASE" == "true" ]]; then
-            name="${REF_NAME#beside-cue-v}"
-          else
-            name="0.0.0-pr${{ github.event.pull_request.number || 0 }}"
-          fi
-
-          echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "code=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
-
-      - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
-
-      # The debug APK is the artifact people sideload, and a sideloaded build
-      # cannot reach Play Billing at all — Play only serves an app it installed
-      # itself. So this one is built against the RevenueCat Test Store, which
-      # needs no Play products and works on any device. The release build below
-      # gets the real store key instead. Tag runs use the real key throughout,
-      # including their debug artifact, so no tag can carry Test Store assets.
-      - name: Build web assets for the debug APK
-        env:
-          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.IS_RELEASE == 'true' && 'store' || '' }}
-          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'android'
-          VITE_MOCK_PURCHASES: '0'
-          VITE_REVENUECAT_ALLOW_TEST_STORE: ${{ env.IS_RELEASE == 'true' && '0' || '1' }}
-          VITE_REVENUECAT_ANDROID_KEY: ${{ env.IS_RELEASE == 'true' && secrets.VITE_REVENUECAT_ANDROID_KEY || '' }}
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-
-      - name: Verify the debug build contains the V2 onboarding media
-        run: |
-          test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
-          test -f apps/beside-cue/dist/onboarding/corky-v2.5/SHA256SUMS
-
-      - name: Synchronize Android project
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
-
-      - name: Decode upload keystore
-        if: env.HAS_UPLOAD_KEY == 'true'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 }}
-        run: |
-          set -euo pipefail
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
-          # Never echo the path contents; only confirm the decode produced a file.
-          test -s "$RUNNER_TEMP/upload.jks"
-
-      # Without this the runner invents a debug key per run, and a phone refuses
-      # to update an install signed by any other one. Absent the secret the
-      # build still works; the artifact just cannot update an existing install.
-      - name: Decode debug keystore
-        if: env.HAS_DEBUG_KEY == 'true'
-        env:
-          DEBUG_KEYSTORE_BASE64: ${{ secrets.BESIDE_CUE_DEBUG_KEYSTORE_BASE64 }}
-        run: |
-          set -euo pipefail
-          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/debug.jks"
-          test -s "$RUNNER_TEMP/debug.jks"
-
-      - name: Test, lint, and package debug
-        working-directory: apps/beside-cue/android
-        env:
-          BESIDE_CUE_DEBUG_KEYSTORE_FILE: ${{ env.HAS_DEBUG_KEY == 'true' && format('{0}/debug.jks', runner.temp) || '' }}
-        run: ./gradlew test lint assembleDebug :app:assembleDebugAndroidTest --no-daemon
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-debug-apk
-          path: apps/beside-cue/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload lint and unit test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-android-reports
-          path: |
-            apps/beside-cue/android/app/build/reports/
-            apps/beside-cue/android/app/build/test-results/
-          if-no-files-found: ignore
-          retention-days: 14
-
-      # Rebuilt without the Test Store flag and with the real store key: the
-      # SDK aborts an app that configures a `test_` key in a release binary.
-      # The debug APK has already been packaged and uploaded by this point.
-      - name: Rebuild web assets for release
-        env:
-          VITE_BESIDE_CUE_DISTRIBUTION: 'store'
-          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'android'
-          VITE_MOCK_PURCHASES: '0'
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
-          VITE_REVENUECAT_ANDROID_KEY: ${{ secrets.VITE_REVENUECAT_ANDROID_KEY }}
-        run: |
-          set -euo pipefail
-          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
-
-      - name: Verify release assets contain the V2 onboarding media
-        run: |
-          test -f apps/beside-cue/dist/onboarding/corky-v2.4/SHA256SUMS
-          test -f apps/beside-cue/dist/onboarding/corky-v2.5/SHA256SUMS
-          test -f apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.4/SHA256SUMS
-          test -f apps/beside-cue/android/app/src/main/assets/public/onboarding/corky-v2.5/SHA256SUMS
-
-      - name: Build release bundle and APK
-        env:
-          BESIDE_CUE_VERSION_CODE: ${{ steps.version.outputs.code }}
-          BESIDE_CUE_VERSION_NAME: ${{ steps.version.outputs.name }}
-          BESIDE_CUE_KEYSTORE_FILE: ${{ env.HAS_UPLOAD_KEY == 'true' && format('{0}/upload.jks', runner.temp) || '' }}
-          BESIDE_CUE_KEYSTORE_PASSWORD: ${{ secrets.BESIDE_CUE_KEYSTORE_PASSWORD }}
-          BESIDE_CUE_KEY_ALIAS: ${{ secrets.BESIDE_CUE_KEY_ALIAS }}
-          BESIDE_CUE_KEY_PASSWORD: ${{ secrets.BESIDE_CUE_KEY_PASSWORD }}
-        working-directory: apps/beside-cue/android
-        run: ./gradlew bundleRelease assembleRelease --no-daemon
-
-      - name: Upload release artifacts
-        if: env.IS_RELEASE == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-android-release
-          path: |
-            apps/beside-cue/android/app/build/outputs/bundle/release/app-release*.aab
-            apps/beside-cue/android/app/build/outputs/apk/release/app-release*.apk
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Report signing state
-        if: always()
-        shell: bash
-        run: |
-          if [[ "$HAS_UPLOAD_KEY" == "true" ]]; then
-            echo "Release artifacts are signed with the upload key." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No BESIDE_CUE_KEYSTORE_BASE64 secret: release artifacts are UNSIGNED and cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-  # A signed release archive on every run, and an upload on the runs that
-  # mean it: main and tags (maff, 2026-09-04 — see the header for why a
-  # pull request stopped uploading). The simulator artifact above cannot
-  # run on hardware, so this upload is still the only way to hold a build
-  # on an iPhone; internal TestFlight testers get it a few minutes after
-  # processing, no UDID registration.
-  #
-  # Signing is cloud-managed: automatic style plus -allowProvisioningUpdates,
-  # authenticated with the App Store Connect API key, so there is no
-  # provisioning profile to keep in sync here. The distribution .p12 is
-  # imported as well; if the cloud path ever needs it locally it is there.
-  #
-  # Build numbers must rise monotonically per marketing version for
-  # TestFlight to accept the upload; github.run_number does exactly that.
-  ios-testflight:
-    name: iOS Release
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: macos-latest
-    timeout-minutes: 60
-    env:
-      HAS_ASC: ${{ secrets.APPLE_ASC_KEY_ID != '' && secrets.APPLE_ASC_ISSUER_ID != '' && secrets.APPLE_ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && secrets.APPLE_APPSTORE_PROFILE_BASE64 != '' }}
-      # Every run archives. Only a run that is not a pull request uploads.
-      UPLOAD: ${{ github.event_name != 'pull_request' }}
-      # Mocks are app-owned, not RevenueCat Test Store. Tags always use StoreKit.
-      PURCHASE_MODE: ${{ startsWith(github.ref, 'refs/tags/') && 'store' || vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
-
-    steps:
-      - name: Checkout
-        if: env.HAS_ASC == 'true'
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        if: env.HAS_ASC == 'true'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.12.0
-
-      - name: Set up Node.js
-        if: env.HAS_ASC == 'true'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Install dependencies
-        if: env.HAS_ASC == 'true'
-        run: pnpm install --frozen-lockfile
-
-      # Main/PR builds default to a clearly labelled, internal-only app mock.
-      # Select `store` for real Apple sandbox testing; release tags force it.
-      - name: Build web assets
-        if: env.HAS_ASC == 'true'
-        env:
-          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.PURCHASE_MODE == 'mock' && 'testflight-internal' || 'store' }}
-          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
-          VITE_MOCK_PURCHASES: ${{ env.PURCHASE_MODE == 'mock' && '1' || '0' }}
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
-          VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
-        run: |
-          set -euo pipefail
-          case "$PURCHASE_MODE" in mock|store) ;; *) echo "Invalid TestFlight purchase mode"; exit 1 ;; esac
-          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
-
-      - name: Import signing certificate
-        if: env.HAS_ASC == 'true'
-        env:
-          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          set -euo pipefail
-          keychain="$RUNNER_TEMP/signing.keychain-db"
-          keychain_password="$(uuidgen)"
-          security create-keychain -p "$keychain_password" "$keychain"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$keychain_password" "$keychain"
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security import "$RUNNER_TEMP/cert.p12" \
-            -P "$CERTIFICATE_PASSWORD" \
-            -A -t cert -f pkcs12 -k "$keychain"
-          security list-keychain -d user -s "$keychain" login.keychain-db
-          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
-          rm -f "$RUNNER_TEMP/cert.p12"
-
-      - name: Write App Store Connect API key
-        if: env.HAS_ASC == 'true'
-        env:
-          ASC_KEY_P8: ${{ secrets.APPLE_ASC_KEY_P8 }}
-          ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
-        run: |
-          set -euo pipefail
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-          chmod 600 "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-
-      # The export signs manually with this profile. Cloud-managed signing
-      # was the first attempt and the archive half of it works, but the
-      # export needs the cloud-managed DISTRIBUTION certificate, and that
-      # is a separate grant the API key's App Manager role does not carry
-      # ("Cloud signing permission error"). A classic App Store profile
-      # against the imported cert needs no special permission at all.
-      - name: Install App Store provisioning profile
-        if: env.HAS_ASC == 'true'
-        env:
-          PROFILE_BASE64: ${{ secrets.APPLE_APPSTORE_PROFILE_BASE64 }}
-        run: |
-          set -euo pipefail
-          profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$profiles"
-          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/besidecue-appstore.mobileprovision"
-
-      - name: Archive, and upload from main and tags
-        if: env.HAS_ASC == 'true'
-        working-directory: apps/beside-cue/ios/App
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
-          PROFILE_NAME: ${{ secrets.APPLE_APPSTORE_PROFILE_NAME }}
-        run: |
-          set -euo pipefail
-
-          # A tag names the version it is releasing; everything else carries
-          # the app's own. The run number tells two uploads of the same
-          # version apart, and rises across all of them.
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#beside-cue-v}"
-          else
-            version="$(node -p "require('../../package.json').version")"
-          fi
-
-          # -clonedSourcePackagesDirPath keeps SwiftPM's checkouts inside
-          # the run instead of ~/Library/Caches/org.swift.swiftpm, whose
-          # shared repository cache has failed resolution mid-flight on a
-          # hosted runner:
-          #
-          #   Git command 'git -C .../purchases-hybrid-common-b6416392
-          #   config --get remote.origin.url' failed: fatal: cannot change
-          #   to '...': No such file or directory
-          #
-          # A cache entry the resolver believed in and then could not read.
-          # A run-local directory starts empty every time, so there is
-          # nothing stale to trust. It costs one clean fetch per run, which
-          # is the right trade against an upload that fails at random.
-          #
-          # Manual signing, with the certificate and profile the two steps
-          # above already installed. Automatic signing asks Apple to mint
-          # what it needs, and on an account that has reached its
-          # certificate limit that is a hard stop:
-          #
-          #   error: Choose a certificate to revoke. Your account has
-          #   reached the maximum number of certificates.
-          #   error: No profiles for 'com.irchiinnuss.besidecue' were
-          #   found ... iOS App Development provisioning profiles
-          #
-          # It was asking for a DEVELOPMENT profile to archive a release,
-          # which nothing here wants, and every build from 163 onward
-          # failed on it. The export step below has always signed
-          # manually with these same materials; the archive now does too,
-          # so a build depends on the secrets it was given and never on
-          # what Apple will let the account create today.
-          #
-          # The signing settings themselves are on the App target in
-          # App.xcodeproj, not here, and that is the whole trick. A build
-          # setting given on the xcodebuild command line applies to EVERY
-          # target in the build, including the SwiftPM frameworks, and
-          # they refuse it:
-          #
-          #   error: RevenueCat_RevenueCatUI does not support
-          #   provisioning profiles, but provisioning profile *** has
-          #   been manually specified.
-          #
-          # So the App target names its own certificate and asks for its
-          # profile through $(BESIDE_CUE_PROFILE), and the only thing
-          # passed here is that variable -- which no other target reads.
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            MARKETING_VERSION="$version" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
-            archive
-
-          if [[ "$UPLOAD" != "true" ]]; then
-            # A pull request stops here. The archive above is the whole
-            # point of the job on this trigger: it proves the app compiles
-            # for a device, that the distribution certificate imported, and
-            # that the profile still matches the bundle id -- which are the
-            # three things that break between releases. Exporting an IPA as
-            # well would prove nothing extra, because an app-store IPA
-            # cannot be installed on a phone without going through
-            # TestFlight anyway.
-            echo "Archived $version (${{ github.run_number }}); no upload from a pull request." >> "$GITHUB_STEP_SUMMARY"
-            echo "TestFlight builds come from main and from beside-cue-v tags." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          # destination=upload makes xcodebuild itself deliver the build to
-          # App Store Connect -- no altool, no Transporter, no IPA artifact.
-          internal_only=false
-          if [[ "$PURCHASE_MODE" == "mock" ]]; then internal_only=true; fi
-          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
-            <key>signingStyle</key><string>manual</string>
-            <key>signingCertificate</key><string>Apple Distribution</string>
-            <key>teamID</key><string>${TEAM_ID}</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
-            </dict>
-            <key>manageAppVersionAndBuildNumber</key><false/>
-            <key>testFlightInternalTestingOnly</key><${internal_only}/>
-          </dict>
-          </plist>
-          PLIST
-
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-
-          echo "Uploaded $version (${{ github.run_number }}) to App Store Connect." >> "$GITHUB_STEP_SUMMARY"
-          echo "TestFlight shows it after processing, usually a few minutes." >> "$GITHUB_STEP_SUMMARY"
-          echo "Purchases: $PURCHASE_MODE. Internal-only distribution: $internal_only." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Report missing secrets
-        if: env.HAS_ASC != 'true'
-        run: |
-          echo "No App Store Connect API secrets: TestFlight upload skipped." >> "$GITHUB_STEP_SUMMARY"
-
-  ios:
-    name: iOS
-    needs: changes
-    # Skipped on a push to main, and only there. This job's product is a
-    # simulator build, which is the compile check the pull request already
-    # ran on the same tree; the TestFlight job above is what makes the
-    # merge commit into something a device can hold. A tag still needs it,
-    # because the release IPA is exported here.
-    if: needs.changes.outputs.app == 'true' && (github.event_name != 'push' || github.ref_type == 'tag')
-    runs-on: macos-latest
-    timeout-minutes: 60
-    env:
-      HAS_SIGNING: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 != '' && secrets.APPLE_PROVISIONING_PROFILE_BASE64 != '' }}
-      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/beside-cue-v') }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.12.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # Same reasoning as the Android job: the simulator build is for testing,
-      # so non-tag builds get Test Store. Tags use the real key throughout.
-      - name: Build web assets for the simulator
-        env:
-          VITE_BESIDE_CUE_DISTRIBUTION: ${{ env.IS_RELEASE == 'true' && 'store' || '' }}
-          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
-          VITE_MOCK_PURCHASES: '0'
-          VITE_REVENUECAT_ALLOW_TEST_STORE: ${{ env.IS_RELEASE == 'true' && '0' || '1' }}
-          VITE_REVENUECAT_IOS_KEY: ${{ env.IS_RELEASE == 'true' && secrets.VITE_REVENUECAT_IOS_KEY || '' }}
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-
-      - name: Synchronize iOS project
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
-
-      # Always runs, with or without signing. This is the check that the app and
-      # the RevenueCat pods actually compile for iOS; the signed archive below
-      # only adds distribution on top of it.
-      - name: Build for simulator
-        working-directory: apps/beside-cue/ios/App
-        run: |
-          set -euo pipefail
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-
-      - name: Upload simulator build
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-ios-simulator
-          path: ${{ runner.temp }}/DerivedData/Build/Products/Debug-iphonesimulator/App.app
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Import signing certificate
-        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
-        env:
-          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          set -euo pipefail
-
-          # A throwaway keychain keeps the runner's login keychain untouched and
-          # dies with the runner, so the private key never outlives the job.
-          keychain="$RUNNER_TEMP/signing.keychain-db"
-          keychain_password="$(uuidgen)"
-
-          security create-keychain -p "$keychain_password" "$keychain"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$keychain_password" "$keychain"
-
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security import "$RUNNER_TEMP/cert.p12" \
-            -P "$CERTIFICATE_PASSWORD" \
-            -A -t cert -f pkcs12 -k "$keychain"
-          security list-keychain -d user -s "$keychain" login.keychain-db
-          # Lets codesign use the key without an interactive prompt.
-          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
-          rm -f "$RUNNER_TEMP/cert.p12"
-
-          profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$profiles"
-          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/beside-cue.mobileprovision"
-
-      # Without this the IPA would carry the Test Store key from the simulator
-      # build, and the SDK aborts a release binary that configures one.
-      - name: Rebuild web assets for release
-        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
-        env:
-          VITE_BESIDE_CUE_DISTRIBUTION: 'store'
-          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios'
-          VITE_MOCK_PURCHASES: '0'
-          VITE_REVENUECAT_ALLOW_TEST_STORE: '0'
-          VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
-        run: |
-          set -euo pipefail
-          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
-          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
-
-      - name: Archive and export IPA
-        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
-        working-directory: apps/beside-cue/ios/App
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          PROFILE_NAME: ${{ secrets.APPLE_PROVISIONING_PROFILE_NAME }}
-          # `release-testing` is Xcode 15+ for what used to be called ad-hoc:
-          # installable on devices registered to the profile. Use
-          # `app-store-connect` once TestFlight is the distribution route.
-          EXPORT_METHOD: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
-          MARKETING_VERSION: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-
-          version="${MARKETING_VERSION#beside-cue-v}"
-
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            MARKETING_VERSION="$version" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            BESIDE_CUE_PROFILE="$PROFILE_NAME" \
-            archive
-
-          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>${EXPORT_METHOD}</string>
-            <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>manual</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
-            </dict>
-          </dict>
-          </plist>
-          PLIST
-
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/export"
-
-      - name: Upload IPA
-        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: beside-cue-ios-release
-          path: ${{ runner.temp }}/export/*.ipa
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Report signing state
-        if: always()
-        shell: bash
-        run: |
-          if [[ "$HAS_SIGNING" == "true" ]]; then
-            echo "iOS signing secrets present." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No Apple signing secrets: simulator build only, no installable IPA." >> "$GITHUB_STEP_SUMMARY"
-          fi
+  build:
+    uses: ./.github/workflows/capacitor-app.yml
+    permissions:
+      contents: read
+    with:
+      app-name: Beside Cue
+      app-slug: beside-cue
+      app-dir: apps/beside-cue
+      package-name: '@irchiinnuss/beside-cue-app'
+      bundle-id: com.irchiinnuss.besidecue
+      tag-prefix: beside-cue-v
+      signing-env-prefix: BESIDE_CUE
+      profile-build-setting: BESIDE_CUE_PROFILE
+      # Kept in step with the pull_request `paths:` filter above.
+      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine)/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      distribution-env-name: VITE_BESIDE_CUE_DISTRIBUTION
+      platform-env-name: VITE_BESIDE_CUE_NATIVE_PLATFORM
+      testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
+      testflight-upload-from: main-and-tags
+      ios-export-method: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
+      # The onboarding media is generated, not checked in, and a build that
+      # silently drops it ships an app whose first screen is blank.
+      verify-assets: |
+        test -f "$DIST_DIR/onboarding/corky-v2.4/SHA256SUMS"
+        test -f "$DIST_DIR/onboarding/corky-v2.5/SHA256SUMS"
+        if [ "$STAGE" = synced ]; then
+          test -f "$ANDROID_ASSETS_DIR/onboarding/corky-v2.4/SHA256SUMS"
+          test -f "$ANDROID_ASSETS_DIR/onboarding/corky-v2.5/SHA256SUMS"
+        fi
+    secrets:
+      keystore-base64: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 }}
+      keystore-password: ${{ secrets.BESIDE_CUE_KEYSTORE_PASSWORD }}
+      key-alias: ${{ secrets.BESIDE_CUE_KEY_ALIAS }}
+      key-password: ${{ secrets.BESIDE_CUE_KEY_PASSWORD }}
+      debug-keystore-base64: ${{ secrets.BESIDE_CUE_DEBUG_KEYSTORE_BASE64 }}
+      # Per-team: one certificate and one App Store Connect key for every app
+      # under XPQ824T444. These four are the only unprefixed names left, and
+      # they are unprefixed because they are genuinely shared.
+      apple-team-id: ${{ secrets.APPLE_TEAM_ID }}
+      apple-asc-key-id: ${{ secrets.APPLE_ASC_KEY_ID }}
+      apple-asc-issuer-id: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+      apple-asc-key-p8: ${{ secrets.APPLE_ASC_KEY_P8 }}
+      apple-certificate-p12-base64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+      apple-certificate-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      # Per-app, and the reason the reusable workflow takes named secrets
+      # rather than inheriting: under the old generic names a second app in
+      # this repository would have signed with these.
+      appstore-profile-base64: ${{ secrets.BESIDE_CUE_APPSTORE_PROFILE_BASE64 }}
+      appstore-profile-name: ${{ secrets.BESIDE_CUE_APPSTORE_PROFILE_NAME }}
+      adhoc-profile-base64: ${{ secrets.BESIDE_CUE_ADHOC_PROFILE_BASE64 }}
+      adhoc-profile-name: ${{ secrets.BESIDE_CUE_ADHOC_PROFILE_NAME }}
+      revenuecat-ios-key: ${{ secrets.BESIDE_CUE_REVENUECAT_IOS_KEY }}
+      revenuecat-android-key: ${{ secrets.BESIDE_CUE_REVENUECAT_ANDROID_KEY }}
