@@ -188,23 +188,6 @@ const HOLLOW_START_MS = 400
  */
 const HOLLOW_GRACE_MS = 2_500
 
-/**
- * How long the platform is left completely alone after a hollow session.
- *
- * The quiet ladder (300 ms doubling) is far too short for this. Measured on a
- * device 2026-09-10: a hollow session replaced after 600 ms came back hollow
- * (`afterMs=61`), and after 1200 ms came back hollow again (`afterMs=4`).
- * The one that finally worked followed a gap of about **four seconds** with
- * nothing running at all, and started in 845 ms — the platform having had
- * time to finish.
- *
- * So the wait is the fix, and it has to be long enough to be felt. Growing,
- * because if three seconds is not enough the answer is more of it, and
- * capped so a stuck platform does not push the pill into a minute of silence.
- */
-const HOLLOW_RESPAWN_MS = 3_000
-const HOLLOW_RESPAWN_MAX_MS = 9_000
-
 const STALE_SESSION_MS = 45_000
 /**
  * The same check where a respawn is visible, which is also where sessions
@@ -398,14 +381,6 @@ export function createWebSpeechListener(
       ? Math.min(RESTART_DELAY_MS * 2 ** quietRollovers, QUIET_RESPAWN_MAX_MS)
       : RESTART_DELAY_MS
 
-  /**
-   * Three seconds after the first hollow session, six after the second, and
-   * so on. Unlike the quiet ladder this is not about politeness — it is the
-   * whole remedy, so it starts where the evidence says it starts.
-   */
-  const hollowRespawnDelay = (): number =>
-    Math.min(HOLLOW_RESPAWN_MS * hollowRollovers, HOLLOW_RESPAWN_MAX_MS)
-
   const scheduleRestart = (delay: number) => {
     clearRestartTimer()
     // A wait the singer would notice is a pause, and is named one. The next
@@ -444,26 +419,10 @@ export function createWebSpeechListener(
     if (!started) return
     if (isEditableTarget(event.target) || isVoiceHudTarget(event.target)) return
     if (recognition === null) {
-      // Every other wait here is a politeness a touch may cut short. This one
-      // is the remedy itself: the platform has to be left alone, and starting
-      // early only earns another hollow session. Measured — 600 ms and
-      // 1200 ms both came back hollow.
-      if (hollowBackoff && restartTimer !== null) {
-        log('gesture-held', { kind: event.type, reason: 'hollow-backoff' })
-        return
-      }
       // The touch is the restart; a timer waiting to do the same is moot,
       // and a start that failed on `InvalidStateError` before gets its retry
       // back, because this attempt is a new one.
       log('gesture-wake', { kind: event.type, pending: restartTimer !== null })
-      // Nothing running and nothing scheduled is the doze, and a touch there
-      // is a fresh intent — so the HOLLOW ladder starts over. Without this
-      // the first hollow session after waking pushes the count straight past
-      // the limit and dozes again with no retry at all: a dead end whose only
-      // exit is turning voice control off and on, which is what the device
-      // record shows someone having to do. The quiet ladder is left alone,
-      // because a silent room still gets one session per touch.
-      if (restartTimer === null) hollowRollovers = 0
       clearRestartTimer()
       invalidStateRetried = false
       spinUp()
@@ -568,20 +527,6 @@ export function createWebSpeechListener(
   let frozenWithSession = false
   /** Set while a suspiciously fast session is on probation. */
   let hollowTimer: ReturnType<typeof setTimeout> | null = null
-  /** True while a respawn is deliberately waiting a hollow start out. */
-  let hollowBackoff = false
-  /**
-   * Hollow sessions in a row, counted apart from `quietRollovers`.
-   *
-   * They are different failures with different remedies. A quiet rollover
-   * means the ROOM said nothing, and the answer is to respawn less eagerly
-   * and eventually wait for a touch. A hollow one means the PLATFORM handed
-   * back a recognizer it never opened, and the answer is to leave it alone
-   * for seconds. Sharing one counter made a touch after a hollow doze reset
-   * the quiet ladder too, which turned "one session per touch in a silent
-   * room" into an endless respawn.
-   */
-  let hollowRollovers = 0
 
   const clearHollowTimer = () => {
     if (hollowTimer === null) return
@@ -668,14 +613,27 @@ export function createWebSpeechListener(
    * instead of being rebuilt forever.
    */
   /**
-   * Give a suspiciously fast session a short window to produce any sound.
+   * Note a session that started implausibly fast. Diagnostic only.
    *
-   * When it does not, this is the shape VC-1 has been reporting all along: a
-   * recognizer that says `start` and `audiostart` and then delivers nothing,
-   * with no `error` and no `end`. Replacing it AT ONCE only produces another
-   * hollow one — the platform is still busy with the last — so the respawn
-   * goes through the same growing backoff a quiet session gets, which is the
-   * gap the healthy sessions in the record all had.
+   * The start time is a real signal — across 90 sessions on a device, a
+   * `start` under `HOLLOW_START_MS` went on to hear nothing 61 times out of
+   * 63 — but it is not something to ACT on, and two runs proved why.
+   *
+   * Acting on it needs a second condition, "and then heard nothing", and
+   * there is no honest deadline for that. Healthy sessions in the same relay
+   * reached `speechstart` anywhere from 1.4 s to 4.9 s, and in a silent room
+   * a perfectly good session produces nothing at all for as long as nobody
+   * speaks. Any window short enough to be useful kills good sessions; any
+   * window long enough to be safe is the stale timer, which already exists.
+   *
+   * And the remedy did not work regardless. Replacing a hollow session after
+   * 600 ms, 1200 ms and a full 3 s all came back hollow again (`afterMs=9`
+   * after the three-second wait). Leaving the platform alone is not what it
+   * wants.
+   *
+   * So this only writes the line down. `hollow-start` in a record means "the
+   * platform handed this one back without opening anything", which is worth
+   * knowing and is not worth a guess.
    */
   const armHollowTimer = (r: SpeechRecognitionLike, afterMs: number) => {
     clearHollowTimer()
@@ -688,15 +646,6 @@ export function createWebSpeechListener(
         if (result !== 'not-probed')
           recordVoiceDiagnostic('mic-probe', hollowSession, { result })
       })
-      hollowRollovers += 1
-      discard()
-      callbacks.onInterim('')
-      if (visibleRespawn && hollowRollovers >= QUIET_ROLLOVER_LIMIT) {
-        doze()
-        return
-      }
-      hollowBackoff = true
-      scheduleRestart(hollowRespawnDelay())
     }, HOLLOW_GRACE_MS)
   }
 
@@ -727,10 +676,7 @@ export function createWebSpeechListener(
           doze()
           return
         }
-        // Through the backoff rather than straight into a new session: a
-        // replacement started the instant the last one was dropped is the
-        // one the platform hands back hollow.
-        scheduleRestart(quietRespawnDelay())
+        spinUp()
       },
       visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
     )
@@ -738,7 +684,6 @@ export function createWebSpeechListener(
 
   const spinUp = () => {
     discard()
-    hollowBackoff = false
     sessionSeq += 1
     log('spin-up', { visibleRespawn, hasBeenLive })
 
@@ -828,7 +773,6 @@ export function createWebSpeechListener(
           log('first-result', { sinceStart: Date.now() - spinUpAt })
         heardResult = true
         quietRollovers = 0
-        hollowRollovers = 0
         invalidStateRetried = false
         ping()
       }
@@ -966,7 +910,6 @@ export function createWebSpeechListener(
       started = true
       fastEnds = 0
       quietRollovers = 0
-      hollowRollovers = 0
       invalidStateRetried = false
       document.addEventListener('visibilitychange', onVisibility)
       window.addEventListener('pageshow', onPageShow)

@@ -810,17 +810,9 @@ describe('a session that goes silent without ending', () => {
     const phantom = phone.latest()
 
     vi.advanceTimersByTime(11_999)
-    expect(phantom.aborted).toBe(false)
-    vi.advanceTimersByTime(1)
-    // Dropped on time, and the replacement comes through the backoff rather
-    // than at once: a session started the instant the last was let go is the
-    // one the platform hands back hollow.
-    expect(phantom.aborted).toBe(true)
-    // Not instantly: a session started the moment the last one was let go is
-    // the one the platform hands back hollow. The exact delay is the quiet
-    // backoff's business; that it is not zero is this test's.
     expect(FakeRecognition.instances).toHaveLength(1)
-    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1)
+    expect(phantom.aborted).toBe(true)
     expect(FakeRecognition.instances).toHaveLength(2)
     phone.listener.stop()
 
@@ -833,119 +825,39 @@ describe('a session that goes silent without ending', () => {
     vi.advanceTimersByTime(12_000)
     expect(FakeRecognition.instances).toHaveLength(1)
     vi.advanceTimersByTime(33_000)
-    // The replacement goes through the same short backoff here, for the same
-    // reason; desktop's is a flat 300 ms rather than a doubling one.
-    expect(FakeRecognition.instances).toHaveLength(1)
-    vi.advanceTimersByTime(1000)
     expect(FakeRecognition.instances).toHaveLength(2)
   })
 })
 
 describe('a session the platform never really opened', () => {
-  it('drops one that starts instantly and then hears nothing', () => {
-    // Measured across 90 sessions on an iPhone: a `start` under 400ms went on
-    // to hear nothing 61 times out of 63, while every session that ever heard
-    // speech took between 321ms and 2.4s to arrive. A fast start is the
-    // platform handing back a recognizer it has not provisioned — it fires
-    // `start` and `audiostart` and delivers no sample, with no error ever.
-    const h = harness({ visibleRespawn: true })
-    h.listener.start()
-    h.latest().confirm()
-    const hollow = h.latest()
-    hollow.onaudiostart?.()
-
-    vi.advanceTimersByTime(2_500)
-
-    // Three seconds, not the thirty-six the stale timer needed to reach the
-    // same conclusion three times over.
-    expect(hollow.aborted).toBe(true)
-  })
-
-  it('leaves it alone the moment it hears anything', () => {
+  it('notes a start that took no time at all, and leaves it running', () => {
+    // The start time is a real signal: across 90 sessions on a device, a
+    // start under 400ms went on to hear nothing 61 times out of 63. It is
+    // still not something to act on. Healthy sessions in the same relay
+    // reached `speechstart` anywhere from 1.4s to 4.9s, and in a silent room
+    // a good session produces nothing for as long as nobody speaks — so any
+    // deadline short enough to be useful kills sessions that were fine.
     const h = harness({ visibleRespawn: true })
     h.listener.start()
     h.latest().confirm()
     const session = h.latest()
 
-    // `audiostart` proves nothing — a hollow session fires it within a few
-    // milliseconds too. Sound is the proof.
-    session.onaudiostart?.()
-    vi.advanceTimersByTime(1_000)
-    session.onsoundstart?.()
     vi.advanceTimersByTime(5_000)
 
     expect(session.aborted).toBe(false)
+    expect(FakeRecognition.instances).toHaveLength(1)
   })
 
-  it('trusts a start that took real time', () => {
+  it('lets a slow speaker finish, having started fast', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
-    confirmForReal(h.latest())
+    h.latest().confirm()
     const session = h.latest()
 
-    vi.advanceTimersByTime(5_000)
-
-    // Over 400ms means the platform actually stood a pipeline up. Silence
-    // after that is the stale timer's business, on its own longer clock.
-    expect(session.aborted).toBe(false)
-  })
-
-  it('leaves the platform properly alone before trying again', () => {
-    const h = harness({ visibleRespawn: true })
-    h.listener.start()
-    h.latest().confirm()
-    vi.advanceTimersByTime(2_500)
-
-    // 600ms and 1200ms were both measured coming back hollow again; the one
-    // that finally worked followed about four seconds of nothing running.
-    vi.advanceTimersByTime(1_200)
-    expect(FakeRecognition.instances).toHaveLength(1)
-    vi.advanceTimersByTime(2_000)
-    expect(FakeRecognition.instances).toHaveLength(2)
-  })
-
-  it('will not let a touch cut that wait short', () => {
-    const h = harness({ visibleRespawn: true })
-    h.listener.start()
-    h.latest().confirm()
-    vi.advanceTimersByTime(2_500)
-
-    window.dispatchEvent(new Event('pointerdown'))
-
-    // Every other wait here is a politeness a touch may end. This one is the
-    // remedy, and starting early only earns another hollow session.
-    expect(FakeRecognition.instances).toHaveLength(1)
-  })
-
-  it('gives a full set of tries to a touch after the doze', () => {
-    const h = harness({ visibleRespawn: true })
-    h.listener.start()
-    // Three hollow sessions, each waited out, ending in the doze.
-    for (let i = 0; i < 3; i++) {
-      h.latest().confirm()
-      vi.advanceTimersByTime(2_500)
-      vi.advanceTimersByTime(10_000)
-    }
-    const dozed = FakeRecognition.instances.length
-
-    window.dispatchEvent(new Event('pointerdown'))
-    h.latest().confirm()
-    vi.advanceTimersByTime(2_500)
-
-    // Without the reset the first hollow session after waking pushes the
-    // count past the limit and dozes again at once — a dead end whose only
-    // exit is turning voice control off and on.
-    vi.advanceTimersByTime(4_000)
-    expect(FakeRecognition.instances.length).toBeGreaterThan(dozed + 1)
-  })
-
-  it('leaves desktop out of it, where a fast start is a healthy one', () => {
-    const desktop = harness({ visibleRespawn: false })
-    desktop.listener.start()
-    desktop.latest().confirm()
-    const session = desktop.latest()
-
-    vi.advanceTimersByTime(5_000)
+    // Nearly five seconds to the first word is a real measurement, not a
+    // hypothetical: 4938ms, from the same device.
+    vi.advanceTimersByTime(4_938)
+    session.onspeechstart?.()
 
     expect(session.aborted).toBe(false)
   })
