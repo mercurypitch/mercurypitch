@@ -7,7 +7,7 @@
 // across a page load, bounded, and never carrying the singer's words.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearVoiceDiagnostics, formatVoiceDiagnostics, initVoiceDiagnostics, onVoiceDiagnostic, probeMicrophone, recordVoiceDiagnostic, resetVoiceDiagnosticsForTests, setVoiceDiagnosticsEnabled, voiceDiagnosticEntries, voiceDiagnosticsEnabled, } from './voice-diagnostics'
+import { announceVoiceDiagnostics, clearVoiceDiagnostics, formatVoiceDiagnostics, initVoiceDiagnostics, onVoiceDiagnostic, probeMicrophone, recordVoiceDiagnostic, resetVoiceDiagnosticsForTests, setVoiceDiagnosticsEnabled, voiceDiagnosticEntries, voiceDiagnosticsEnabled, } from './voice-diagnostics'
 
 let info: ReturnType<typeof spyOnInfo>
 
@@ -260,5 +260,36 @@ describe('asking who is holding the microphone', () => {
     initVoiceDiagnostics('?voicelog=1')
 
     await expect(probeMicrophone()).resolves.toBe('unsupported')
+  })
+})
+
+describe('announcing to a console that installed late', () => {
+  it('says every line recorded so far, not just how the document opened', () => {
+    // Through the real door, so `document-open` is in the record the way it
+    // is on a device.
+    initVoiceDiagnostics('?voicelog=1')
+    recordVoiceDiagnostic('warm-up', 0)
+    recordVoiceDiagnostic('warm-up-over', 0, { afterMs: 1770 })
+    recordVoiceDiagnostic('spin-up', 1)
+    info.mockClear()
+
+    announceVoiceDiagnostics()
+
+    // The portable console is a dynamic import, so in a standalone room —
+    // where voice control starts during boot rather than on a tap — every
+    // one of these was written before anything was capturing. A pasted log
+    // from a phone showed a deaf session with no warm-up above it, which is
+    // the one thing the experiment needed to read.
+    const said = info.mock.calls.map((call) => String(call[0])).join('\n')
+    for (const event of ['document-open', 'warm-up', 'warm-up-over', 'spin-up'])
+      expect(said, `announce dropped ${event}`).toContain(event)
+    expect(said).toContain('afterMs=1770')
+  })
+
+  it('stays quiet when the recording is off', () => {
+    info.mockClear()
+    announceVoiceDiagnostics()
+
+    expect(info).not.toHaveBeenCalled()
   })
 })

@@ -3648,7 +3648,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   return (
     <div
-      class={styles.shell}
+      /* The dark-stage contract, opted into at this room's own root the way
+         Piano and Guitar Night do. Drum Night's local palette names its own
+         colours and nothing else, so every SHARED component that landed here
+         — the voice commands overlay first — read `var(--bg-card)` with
+         nothing behind it. An undefined custom property does not fall back,
+         it kills the whole declaration: the overlay rendered as unreadable
+         text on the photograph. */
+      class={`${styles.shell} mp-dark-stage`}
       style={background.resolvedStyle()}
       data-testid="drum-night-shell"
       data-take-rail={takeRailShown() ? 'true' : 'false'}

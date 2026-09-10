@@ -134,7 +134,10 @@
 
 .list {
   overflow-y: auto;
-  padding: 0.25rem 0.6rem 0.75rem;
+  /* No padding at the top: a sticky child pins to the SCROLLPORT, so any
+     top padding here is a strip the rows scroll through before the title
+     reaches it. The rows carry the inset instead. */
+  padding: 0 0.6rem 0.75rem;
   overscroll-behavior: contain;
 }
 
@@ -144,13 +147,18 @@
 }
 
 /* Sticky is safe here: one scroller. The solid backdrop keeps rows from
-   ghosting through the title as they pass under it. */
+   ghosting through the title as they pass under it — but only where the
+   backdrop actually reaches. The list's 0.6rem gutters left the title's
+   background short of both edges, so on a phone the rows were visible
+   travelling up either side of it and through the strip above. Negative
+   margins put the background across the whole scroller and the padding
+   puts the text back where the rows start. */
 .groupTitle {
   position: sticky;
   top: 0;
   z-index: 1;
-  margin: 0;
-  padding: 0.7rem 0.65rem 0.3rem;
+  margin: 0 -0.6rem;
+  padding: 0.7rem 1.25rem 0.3rem;
   background: var(--bg-card);
   color: var(--accent);
   font-size: 0.66rem;

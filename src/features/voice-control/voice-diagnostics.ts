@@ -256,16 +256,27 @@ export function clearVoiceDiagnostics(): void {
  * Re-print the opening lines for a console that started listening late.
  *
  * The portable console arrives a tick after the entry runs — it is a dynamic
- * import, so that a normal build can drop it — and the first lines of a
- * recording are written before that. They are the two that matter most on a
- * pasted log: which device this is, and how the document was reached. The
- * recording itself is unaffected; this only says them again out loud.
+ * import, so that a normal build can drop it — and everything the listener
+ * does before that is written to a console nobody is capturing. The
+ * recording itself is unaffected; this says the missing lines out loud so
+ * they reach a pasted log.
+ *
+ * It replays the WHOLE record so far, and it did not always. Replaying only
+ * the banner and `document-open` looked like enough, because in the app
+ * shell voice control is started by a tap that lands long after the console
+ * is up. In a standalone room it starts during boot — so the pasted log from
+ * a phone on 2026-09-10 showed a deaf session with no `warm-up`, no
+ * `warm-up-over` and no `spin-up` above it, and there was no way to tell
+ * whether the microphone had been woken at all. Exactly the lines the
+ * experiment turned on.
+ *
+ * Called once, from the entry, so there is nothing to double-print: every
+ * line after this one is printed live by `recordVoiceDiagnostic`.
  */
 export function announceVoiceDiagnostics(): void {
   if (!enabled) return
   console.info(`[voice] diagnostics on — ${navigator.userAgent}`)
-  const opened = entries.find((entry) => entry.event === 'document-open')
-  if (opened !== undefined) console.info(`[voice] ${formatEntry(opened)}`)
+  for (const entry of entries) console.info(`[voice] ${formatEntry(entry)}`)
 }
 
 export function formatEntry(entry: VoiceDiagnosticEntry): string {
