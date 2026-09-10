@@ -119,6 +119,7 @@ These are the rules that break things when ignored.
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 250 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
+| `instrument-room` | [InstrumentRoomDoor.tsx](../../src/features/instrument-room/InstrumentRoomDoor.tsx) | 200 | The instrument room door Shown once, the first time somebody presses the Piano or Guitar tab, because each of those now opens two differe... |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
@@ -343,7 +344,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.2k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.3k |
-| [src/App.tsx](../../src/App.tsx) | 4.5k |
+| [src/App.tsx](../../src/App.tsx) | 4.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.4k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
