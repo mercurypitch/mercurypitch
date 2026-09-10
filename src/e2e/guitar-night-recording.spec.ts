@@ -86,9 +86,7 @@ test('records and keeps a dry melody without playback, then practices its accept
   await page.route('https://**/*', (route) => route.abort())
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Free play', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Free play', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Free form', exact: true }),
   ).toBeVisible()
@@ -444,9 +442,7 @@ test('recording borrows live monitoring without muting, adding an output context
   await page.route('https://**/*', (route) => route.abort())
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Free play', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Free play', exact: true }).click()
   await page
     .getByRole('button', { name: 'Session controls', exact: true })
     .click()

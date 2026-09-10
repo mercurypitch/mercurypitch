@@ -10,9 +10,7 @@ async function enterLive(page: Page) {
   await page.route('https://**/*', (route) => route.abort())
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Free play', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Free play', exact: true }).click()
   await page
     .getByRole('button', { name: 'Session controls', exact: true })
     .click()

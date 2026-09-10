@@ -8,9 +8,7 @@ test('keeps the empty free-form recorder centered at desktop and phone widths @s
   await page.route('https://**/*', (route) => route.abort())
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Free play', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Free play', exact: true }).click()
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 850 })
     const button = page.getByRole('button', {
