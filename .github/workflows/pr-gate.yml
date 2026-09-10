@@ -41,6 +41,7 @@ jobs:
       beside: ${{ steps.scope.outputs.beside }}
       db: ${{ steps.scope.outputs.db }}
       jam: ${{ steps.scope.outputs.jam }}
+      mercurypitch: ${{ steps.scope.outputs.mercurypitch }}
       install: ${{ steps.scope.outputs.install }}
       diff_base: ${{ steps.scope.outputs.diff_base }}
     steps:
@@ -69,6 +70,7 @@ jobs:
           beside=false
           db=false
           jam=false
+          mercurypitch=false
           diff_base=""
 
           # A release tag and a manual audit validate every shipped surface.
@@ -78,6 +80,7 @@ jobs:
             beside=true
             db=true
             jam=true
+            mercurypitch=true
           else
             if [[ "$EVENT_NAME" == "pull_request" ]]; then
               base_sha="$PR_BASE_SHA"
@@ -90,6 +93,7 @@ jobs:
               beside=true
               db=true
               jam=true
+              mercurypitch=true
             else
               diff_base="$base_sha"
               git diff --check "$base_sha" "$GITHUB_SHA"
@@ -103,6 +107,7 @@ jobs:
                     beside=true
                     db=true
                     jam=true
+                    mercurypitch=true
                     ;;
                   scripts/*beside-cue*)
                     # A Beside Cue media/prep script cannot affect the
@@ -114,15 +119,31 @@ jobs:
                     # typecheck, 921 unit files and 120 e2e tests, ~11 min.
                     beside=true
                     ;;
-                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*|packages/pitch-engine/*)
+                  apps/mercurypitch/*|gradle/signing.gradle)
+                    # The native shell alone. It aliases `@` to the root `src`
+                    # but adds no source of its own that MercuryPitch compiles,
+                    # so a change here cannot break the web build.
+                    mercurypitch=true
+                    ;;
+                  apps/beside-cue/*|packages/beside-cue-core/*)
                     beside=true
+                    ;;
+                  packages/audio-io/*|packages/mobile-runtime/*|packages/pitch-engine/*)
+                    # Shared by both apps.
+                    beside=true
+                    mercurypitch=true
                     ;;
                   src/*)
                     # The DB Worker imports shared catalogs and validators from
                     # the root application, so root source changes must validate
-                    # both consumers.
+                    # both consumers. And `apps/mercurypitch` aliases `@` to
+                    # this directory: the native app IS this source tree, built
+                    # through a different config, so it can break here alone --
+                    # an import that only resolves under the web build, or an
+                    # API a WKWebView does not have.
                     root=true
                     db=true
+                    mercurypitch=true
                     ;;
                   workers/db-worker/*)
                     db=true
@@ -143,7 +164,7 @@ jobs:
           fi
 
           install=false
-          if [[ "$root" == true || "$beside" == true || "$db" == true || "$jam" == true ]]; then
+          if [[ "$root" == true || "$beside" == true || "$db" == true || "$jam" == true || "$mercurypitch" == true ]]; then
             install=true
           fi
 
@@ -152,6 +173,7 @@ jobs:
             echo "beside=$beside"
             echo "db=$db"
             echo "jam=$jam"
+            echo "mercurypitch=$mercurypitch"
             echo "install=$install"
             echo "diff_base=$diff_base"
           } >> "$GITHUB_OUTPUT"
@@ -165,6 +187,7 @@ jobs:
             echo "| Beside Cue | $beside |"
             echo "| DB Worker | $db |"
             echo "| Jam Worker | $jam |"
+            echo "| Mercury Pitch (native) | $mercurypitch |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   validate:
@@ -351,12 +374,52 @@ jobs:
       # runs the same Gradle gate and additionally publishes an installable APK
       # per pull request. Keeping them here too would build Android twice.
 
+  mercurypitch:
+    name: Mercury Pitch
+    needs: scope
+    if: needs.scope.outputs.mercurypitch == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - name: Check Mercury Pitch
+        run: pnpm mercurypitch:check
+
+      - name: Build Mercury Pitch
+        # The build is the check that matters here and it is not the same one
+        # `root` runs: this bundle resolves `@` to ../../src through a
+        # different Vite config, with different entry points and no service
+        # worker. A `@/...` import the web build resolves can be missing from
+        # this graph, and the failure would otherwise appear first in a
+        # macOS CI job ten minutes into a native run.
+        #
+        # mercurypitch:check has already run tsc, so invoke Vite directly.
+        run: pnpm --filter @irchiinnuss/mercury-pitch-app exec vite build
+
+      - name: Verify the vendored engine assets are in the bundle
+        # scripts/sync-ort-assets.mjs runs as a prebuild hook. If it ever
+        # silently no-ops, the app's first microphone tap would fall back to
+        # fetching the wasm runtime from a CDN -- inside an app whose whole
+        # promise is that it works with the network off.
+        run: |
+          set -euo pipefail
+          test -f apps/mercurypitch/dist/ort/ort-wasm-simd-threaded.wasm
+          test -f apps/mercurypitch/dist/ort/ort-wasm-simd-threaded.mjs
+          test -f apps/mercurypitch/dist/models/swiftf0.onnx
+
+      # The Android and iOS native builds live in mercurypitch-mobile.yml,
+      # which additionally publishes an installable APK per pull request.
+      # Keeping them here too would build Android twice.
+
   gate:
     name: PR Gate
     # The single required status check. Branch protection cannot name a
     # matrix's individual jobs stably, and a job skipped by `scope` reports
     # `skipped` rather than `success`, so neither can be required directly.
-    needs: [scope, validate, lint, units, e2e, workers, beside-cue]
+    needs:
+      [scope, validate, lint, units, e2e, workers, beside-cue, mercurypitch]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
