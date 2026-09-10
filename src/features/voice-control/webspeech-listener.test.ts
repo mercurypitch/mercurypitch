@@ -890,6 +890,55 @@ describe('a session the platform never really opened', () => {
     expect(session.aborted).toBe(false)
   })
 
+  it('leaves the platform properly alone before trying again', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    vi.advanceTimersByTime(2_500)
+
+    // 600ms and 1200ms were both measured coming back hollow again; the one
+    // that finally worked followed about four seconds of nothing running.
+    vi.advanceTimersByTime(1_200)
+    expect(FakeRecognition.instances).toHaveLength(1)
+    vi.advanceTimersByTime(2_000)
+    expect(FakeRecognition.instances).toHaveLength(2)
+  })
+
+  it('will not let a touch cut that wait short', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    vi.advanceTimersByTime(2_500)
+
+    window.dispatchEvent(new Event('pointerdown'))
+
+    // Every other wait here is a politeness a touch may end. This one is the
+    // remedy, and starting early only earns another hollow session.
+    expect(FakeRecognition.instances).toHaveLength(1)
+  })
+
+  it('gives a full set of tries to a touch after the doze', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    // Three hollow sessions, each waited out, ending in the doze.
+    for (let i = 0; i < 3; i++) {
+      h.latest().confirm()
+      vi.advanceTimersByTime(2_500)
+      vi.advanceTimersByTime(10_000)
+    }
+    const dozed = FakeRecognition.instances.length
+
+    window.dispatchEvent(new Event('pointerdown'))
+    h.latest().confirm()
+    vi.advanceTimersByTime(2_500)
+
+    // Without the reset the first hollow session after waking pushes the
+    // count past the limit and dozes again at once — a dead end whose only
+    // exit is turning voice control off and on.
+    vi.advanceTimersByTime(4_000)
+    expect(FakeRecognition.instances.length).toBeGreaterThan(dozed + 1)
+  })
+
   it('leaves desktop out of it, where a fast start is a healthy one', () => {
     const desktop = harness({ visibleRespawn: false })
     desktop.listener.start()
