@@ -28,6 +28,11 @@ quietly did the wrong thing now do the right one.
 - **A link you share now shows a picture made for the page you shared.** Six
   pages were showing the same generic one, and a few described artwork that was
   not in it.
+- **The room gallery only fetches the artwork you can actually see.** Opening
+  it used to pull every room at once, which is what made it stall partway
+  through on a big collection.
+- **Landing pages stopped downloading a picture nothing ever showed.** About
+  170 KB, on every visit.
 
 ## [0.9.6] - 2026-09-09
 

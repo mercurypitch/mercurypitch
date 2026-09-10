@@ -110,6 +110,26 @@ are specified to do.
 - **`/vocal-remover` and five siblings promised artwork they did not have
   (#762).** `imageAlt` described a card that was never generated.
 
+- **The room gallery spent seventeen protected requests to paint four cards
+  (#760).** The panel scrolls — 760px over a two-column grid — so most cards are
+  below the fold when it opens, and each one is a PROTECTED request for a
+  full-size plate against a 120-a-minute budget, which is how the picker
+  started answering 429. Each card now waits for an `IntersectionObserver`
+  before it asks for anything; the selected room still paints at once because
+  it comes from the controller's already-decoded URL. Where the API is missing
+  every card counts as visible, which is the old behaviour: correct, just
+  eager.
+
+- **Entry documents preloaded 173 KB that nothing painted (#760).** Measured
+  serving the real build at `/vocal-range-test`: `first-light-wide.webp`
+  fetched in full, `.entry-prelude` computed `display: none`, and the app's
+  opening curtain — the only thing that paints that plate — never rendered on
+  those pages at all. The preload sat ahead of all 36 module scripts at high
+  priority, so the art was competing with the very bundle whose arrival ends
+  the prelude. `index.html` keeps its preload, because there the curtain really
+  does paint it, and `entry-prelude.css` still carries the plate so a slow boot
+  still gets the art while the prelude is up.
+
 ### Changed
 
 - **`practise` -> `practice` throughout (#762)**, except the two British-spelling
