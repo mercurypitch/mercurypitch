@@ -32,7 +32,22 @@ const seed = async (
     { version: pkg.version, rooms },
   )
   await page.goto('/')
-  await page.waitForSelector('#app-tabs', { timeout: 10000 })
+  // #app-tabs is the DESKTOP nav and never renders on a phone, where the
+  // bottom bar takes its place. Waiting for whichever one this viewport has.
+  await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+    timeout: 15000,
+  })
+  await dismissOverlays(page)
+}
+
+const guitarPanel = '#guitar-practice-panel'
+
+/** Reload and get back to a state where the nav can be pressed again. */
+const restart = async (page: import('@playwright/test').Page) => {
+  await page.reload()
+  await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+    timeout: 15000,
+  })
   await dismissOverlays(page)
 }
 
@@ -49,8 +64,12 @@ test.describe('the instrument room door', () => {
 
     await expect(door(page)).toBeVisible()
     await expect(door(page)).toHaveAttribute('data-instrument', 'guitar')
-    // The tab itself has NOT changed: the question is the navigation.
-    await expect(page.locator('#tab-guitar')).not.toHaveClass(/active/)
+    // The tab itself has NOT changed: the question IS the navigation. Asserted
+    // on the destination rather than on #tab-guitar's class, because the nav
+    // button can live in an overflow menu that closes when the door opens —
+    // then the locator matches nothing and even a negated class assertion
+    // errors on the missing element.
+    await expect(page.locator(guitarPanel)).not.toBeVisible()
   })
 
   test('a remembered answer sends the next press straight through', async ({
@@ -63,14 +82,12 @@ test.describe('the instrument room door', () => {
     // Remember is ticked by default, so this is the one-press path.
     await page.getByTestId('room-door-workspace').click()
     await expect(door(page)).toHaveCount(0)
-    await expect(page.locator('#tab-guitar')).toHaveClass(/active/)
+    await expect(page.locator(guitarPanel)).toBeVisible()
 
-    await page.reload()
-    await page.waitForSelector('#app-tabs', { timeout: 10000 })
-    await dismissOverlays(page)
+    await restart(page)
     await openNavTab(page, 'tab-guitar')
 
-    await expect(page.locator('#tab-guitar')).toHaveClass(/active/)
+    await expect(page.locator(guitarPanel)).toBeVisible()
     await expect(door(page)).toHaveCount(0)
   })
 
@@ -78,13 +95,11 @@ test.describe('the instrument room door', () => {
     await seed(page)
     await openNavTab(page, 'tab-guitar')
 
-    await page.getByLabel(/Remember this/).click()
+    await page.locator('label').filter({ hasText: 'Remember this' }).click()
     await page.getByTestId('room-door-workspace').click()
-    await expect(page.locator('#tab-guitar')).toHaveClass(/active/)
+    await expect(page.locator(guitarPanel)).toBeVisible()
 
-    await page.reload()
-    await page.waitForSelector('#app-tabs', { timeout: 10000 })
-    await dismissOverlays(page)
+    await restart(page)
     await openNavTab(page, 'tab-guitar')
 
     await expect(door(page)).toBeVisible()
