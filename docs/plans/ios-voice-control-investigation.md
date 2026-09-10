@@ -1,8 +1,12 @@
 # iOS voice control — VC-1, VC-2, VC-3
 
-Status: **investigation planned, nothing built.** This document exists because
+Status: **Step 0 is ready to run on a device.** This document exists because
 the obvious next step — instrument the listener and take it to a device lab —
 is probably the wrong one, and it would cost days to find that out.
+
+The instrumentation described under "If it is not the doze" is now built, so
+Step 0 comes back with a record rather than an impression. Turn it on with
+`?voicelog=1`; see [Reading it off the device](#reading-it-off-the-device).
 
 The reports are in the backlog (`TASKS.md`, third device pass, 2026-09-07/08).
 Repeated here so this reads on its own:
@@ -143,18 +147,60 @@ rather than trust the recognizer — that is a real finding and worth the trip.
 
 **How to read it off an iPhone from Arch Linux.** Safari Web Inspector needs
 macOS, which we do not have, so the Android `adb forward` recipe has no direct
-equivalent. Two routes:
+equivalent. Route 2 was built; `ios-webkit-debug-proxy` over `libimobiledevice`
+remains the fallback if a CDP endpoint is ever genuinely needed, with the
+caveat that iOS 27 is a beta and it is fiddly across releases.
 
-1. **`ios-webkit-debug-proxy`** over `libimobiledevice` — the closest analogue,
-   exposes a CDP-ish endpoint on Linux. Fiddly across iOS releases, and iOS 27
-   is a beta, so budget for it not working.
-2. **An on-screen diagnostic panel** — render the ring buffer in the app and
-   screenshot it. No cable, no host tooling, works on any device including a
-   borrowed one. `GuitarNightScoreDebug.tsx` is the precedent for a
-   debug-only surface in this codebase.
+## Reading it off the device
 
-Route 2 first. It is less satisfying and far more likely to produce an answer
-this week.
+`?voicelog=1` turns the recording on and remembers it — which matters, because
+Karaoke Night is a separate document and walking into it is a fresh page load.
+`?voicelog=0` turns it off, as does **Stop** in the panel. Off for everyone
+else, always.
+
+Three ways to read the same record:
+
+1. **On the device.** A bar appears at the bottom showing the last thing the
+   ear did; tapping it opens the whole log, with **Copy** for pasting it back.
+   It passes taps through everywhere except its own controls, and **Move up**
+   flips it to the other edge — the pill it is used to watch lives in the
+   header on a phone and in the bottom HUD elsewhere, so it will sometimes be
+   in the way wherever it starts.
+2. **On the dev server.** `MP_DEV_LOGS=1 pnpm run dev:host` relays every line
+   to `.dev-logs/<date>.log`, which is the LAN case and needs nothing on the
+   phone. Note the dev server is HTTPS with a self-signed certificate, and
+   Web Speech needs a secure context, so the phone has to accept the warning
+   once.
+3. **`voiceDiagnosticEntries()`** from a console or a test.
+
+What a line looks like:
+
+```
+0.00s s1 spin-up visibleRespawn=true hasBeenLive=false [visible mic:idle]
+0.01s s1 error code=not-allowed live=false [visible mic:idle]
+```
+
+Elapsed seconds, the session number, the event, its detail, then the document
+visibility and what the APP's microphone was doing. Session numbers matter: a
+phantom and the session that replaced it are different numbers, and reading
+them as one session is how this gets misread.
+
+**What to look for**, in the order the outcomes above are written:
+
+- `doze quiet=3 limit=3` — the doze. VC-1 is a presentation problem.
+- `spin-up` with no `start` after it, then `stillborn` — the session never
+  existed. Look at what `mic:` says on that line.
+- `stale-replace` — a confirmed session went silent and was replaced.
+- `gesture-wake` — the touch that brought it back, which is the VC-3 answer.
+- Nothing at all after a healthy `start` — a shape none of the current
+  watchdogs catch, and the one case that would justify the device lab.
+
+**One correction to the list above.** It asks for `MediaStreamTrack.readyState`
+and `.muted`. For the Web Speech path there is no such track to read: capture
+happens inside the browser's recognizer and never through MicManager. The
+`mic:` field reports the microphone the APP holds instead, which is the other
+half of the same question — one documented failure shape is another consumer
+taking the microphone.
 
 **Get a second iOS device on a shipping OS.** The one device runs iOS 27 beta,
 so "iOS is broken" and "this beta is broken" are currently the same

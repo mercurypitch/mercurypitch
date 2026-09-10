@@ -24,6 +24,7 @@ import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/service
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
+import { initVoiceDiagnostics } from '@/features/voice-control/voice-diagnostics'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
@@ -38,6 +39,9 @@ initTheme()
 initDeviceTier()
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
+// Before anything can create a listener, so `?voicelog=1` catches the very
+// first session — the one VC-1 says is the only one that works.
+initVoiceDiagnostics()
 // `beforeinstallprompt` can fire before the first render and is never
 // replayed, so the listener has to exist before anything else runs.
 installPwaInstallListeners()

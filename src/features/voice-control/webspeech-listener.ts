@@ -66,6 +66,7 @@
 
 import { deviceClass } from '@/lib/device-tier'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
+import { recordVoiceDiagnostic } from './voice-diagnostics'
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean
@@ -277,6 +278,16 @@ export function createWebSpeechListener(
   let lastEventAt = 0
   /** The one `InvalidStateError` retry this start attempt gets has been spent. */
   let invalidStateRetried = false
+  /**
+   * Which session each record belongs to. A phantom and the session that
+   * replaced it are different numbers; reading a log that conflates them is
+   * how "it stopped hearing me" gets mistaken for "it never started".
+   */
+  let sessionSeq = 0
+  /** Records one transition against the session that is running now. */
+  const log = (event: string, detail: Record<string, unknown> = {}) => {
+    recordVoiceDiagnostic(event, sessionSeq, detail)
+  }
 
   const clearRestartTimer = () => {
     if (restartTimer !== null) {
@@ -348,6 +359,12 @@ export function createWebSpeechListener(
     if (visibleRespawn && delay >= QUIET_ANNOUNCE_MS) {
       callbacks.onStateChange('dozing')
     }
+    log('restart-scheduled', {
+      delay,
+      announced: visibleRespawn && delay >= QUIET_ANNOUNCE_MS,
+      quiet: quietRollovers,
+      fastEnds,
+    })
     restartTimer = setTimeout(() => {
       restartTimer = null
       if (started) spinUp()
@@ -372,6 +389,7 @@ export function createWebSpeechListener(
       // The touch is the restart; a timer waiting to do the same is moot,
       // and a start that failed on `InvalidStateError` before gets its retry
       // back, because this attempt is a new one.
+      log('gesture-wake', { kind: event.type, pending: restartTimer !== null })
       clearRestartTimer()
       invalidStateRetried = false
       spinUp()
@@ -380,7 +398,10 @@ export function createWebSpeechListener(
     // A silent desktop session is not a phantom worth an abort-and-start on
     // every click; the stale timer covers it there.
     if (!visibleRespawn) return
-    if (live && Date.now() - lastEventAt > GESTURE_STALE_MS) spinUp()
+    if (live && Date.now() - lastEventAt > GESTURE_STALE_MS) {
+      log('gesture-replace', { sinceLastEvent: Date.now() - lastEventAt })
+      spinUp()
+    }
   }
 
   const listenForGesture = () => {
@@ -406,6 +427,7 @@ export function createWebSpeechListener(
    * armed; this only says so.
    */
   const failToGesture = (detail: string) => {
+    log('needs-gesture', { detail })
     hasBeenLive = false
     callbacks.onStateChange('error', detail)
   }
@@ -417,6 +439,9 @@ export function createWebSpeechListener(
    * nothing either — the HUD shows a mic at rest, not a fault.
    */
   const doze = () => {
+    // The leading hypothesis for VC-1 is that this is what the singer sees
+    // and reads as a death. If that is right, this line is the whole answer.
+    log('doze', { quiet: quietRollovers, limit: QUIET_ROLLOVER_LIMIT })
     callbacks.onStateChange('dozing')
   }
 
@@ -436,6 +461,7 @@ export function createWebSpeechListener(
   /** Give up until start() is called again, and say why. The exit for
    *  errors only the user can fix. */
   const standDown = (detail: string) => {
+    log('stand-down', { detail })
     letGoOfPage()
     discard()
     callbacks.onInterim('')
@@ -458,6 +484,7 @@ export function createWebSpeechListener(
   // reloaded.
 
   const onVisibility = () => {
+    log('visibilitychange', { to: document.visibilityState, started })
     // `visibilitychange` only fires on a transition, so arriving here at
     // `visible` means the document was hidden until a moment ago.
     if (!started || document.visibilityState !== 'visible') return
@@ -476,6 +503,7 @@ export function createWebSpeechListener(
     // `visibilitychange` for it, so it is listened for separately.
     if (!started) return
     if ((event as { persisted?: boolean }).persisted !== true) return
+    log('pageshow-restored')
     if (recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
@@ -495,6 +523,12 @@ export function createWebSpeechListener(
       () => {
         staleTimer = null
         if (!started || recognition !== r || !live) return
+        // A confirmed session that has said nothing at all. This is the
+        // "live over nothing" shape; the count says how often it happens.
+        log('stale-replace', {
+          after: visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
+          sinceLastEvent: Date.now() - lastEventAt,
+        })
         quietRollovers += 1
         discard()
         callbacks.onInterim('')
@@ -510,6 +544,8 @@ export function createWebSpeechListener(
 
   const spinUp = () => {
     discard()
+    sessionSeq += 1
+    log('spin-up', { visibleRespawn, hasBeenLive })
 
     const r = new RecognitionCtor()
     r.continuous = true
@@ -532,6 +568,7 @@ export function createWebSpeechListener(
 
     r.onstart = () => {
       if (recognition !== r) return
+      log('start', { afterMs: Date.now() - spinUpAt })
       live = true
       hasBeenLive = true
       fastEnds = 0
@@ -552,6 +589,10 @@ export function createWebSpeechListener(
           callbacks.onStateChange('listening')
         }
         // A word, even a half-formed interim one, ends the quiet stretch.
+        // Logged by shape, never by content: the point is "did it hear
+        // anything", and the transcript is the singer's own speech.
+        if (!heardResult)
+          log('first-result', { sinceStart: Date.now() - spinUpAt })
         heardResult = true
         quietRollovers = 0
         invalidStateRetried = false
@@ -577,6 +618,7 @@ export function createWebSpeechListener(
     }
 
     r.onerror = (event) => {
+      log('error', { code: event.error, live })
       // A session we have already replaced may still complain on its way
       // out, and announcing that would paint an error over the state its
       // replacement is in.
@@ -611,6 +653,7 @@ export function createWebSpeechListener(
       callbacks.onInterim('')
       if (!started) return
       const lifetime = Date.now() - spinUpAt
+      log('end', { lifetime, wasLive, wasQuiet, quiet: quietRollovers })
       fastEnds = lifetime < FAST_END_THRESHOLD_MS ? fastEnds + 1 : 0
       // A session that never got going is not worth respawning on a timer —
       // on iOS that is the gesture refusal, and every timed retry is refused
@@ -645,6 +688,10 @@ export function createWebSpeechListener(
       r.start()
     } catch (err) {
       const name = (err as { name?: string } | null)?.name
+      log('start-threw', {
+        name: name ?? 'unknown',
+        retried: invalidStateRetried,
+      })
       discard()
       if (name === ALREADY_RUNNING && !invalidStateRetried) {
         // Something still holds the recognizer — as a rule the session this
@@ -668,7 +715,9 @@ export function createWebSpeechListener(
       confirmTimer = null
       if (!started || recognition !== r || live) return
       // Stillborn: no start, no error, no end. Another consumer holding the
-      // mic looks exactly like this on iOS.
+      // mic looks exactly like this on iOS — which is why the record carries
+      // what the app's own microphone was doing at the time.
+      log('stillborn', { after: CONFIRM_START_MS })
       discard()
       callbacks.onInterim('')
       failToGesture('needs-gesture')
@@ -679,6 +728,7 @@ export function createWebSpeechListener(
     isSupported: true,
     start: () => {
       if (started) return
+      log('start-requested')
       started = true
       fastEnds = 0
       quietRollovers = 0
@@ -689,6 +739,7 @@ export function createWebSpeechListener(
       spinUp()
     },
     stop: () => {
+      log('stop-requested')
       letGoOfPage()
       discard()
       callbacks.onInterim('')

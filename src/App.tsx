@@ -30,6 +30,7 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
+import { VoiceDiagnosticsPanel } from '@/features/voice-control/VoiceDiagnosticsPanel'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -4443,6 +4444,9 @@ const AppShell: Component<AppProps> = (props) => {
         <LocalProgressNotice />
 
         <Notifications />
+        {/* Only when `?voicelog=1` asked for it. The device with the bug is
+            the one that cannot open an inspector, so the log goes on it. */}
+        <VoiceDiagnosticsPanel />
         {/* The sync dialog and its corner chip outlive any tab — a
             transfer must survive the panel that started it
             (REQ-SYNC-030), so they mount in the shell. */}

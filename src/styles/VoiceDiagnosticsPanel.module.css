@@ -1,0 +1,173 @@
+/* VoiceDiagnosticsPanel — a debug surface, deliberately plain.
+
+   Neither screen edge is safe. The pill moves: on a phone it lives in the
+   HEADER (hud-placement.ts — "a phone puts the pill in the header"), and on
+   a desktop or in focus mode it is the bottom HUD. The first draft ran along
+   the bottom and covered the pill outright at y 669-708; moving it to the top
+   covered the header pill instead (both measured 2026-09-10).
+
+   So: the bar does not eat taps it does not need — only its own controls do,
+   and the summary is only as wide as its text — and it flips to the other
+   edge in one tap when it is still in the way. A debug overlay that blocks
+   the subject is worse than no overlay. */
+
+.panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 2147483002; /* above the consent banner and the lifecycle notice */
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  color: #d8dee9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+
+  /* The bar spans the width so the log can, but the empty part of it must
+     pass taps through to whatever the tester is actually trying to press. */
+  pointer-events: none;
+}
+
+.bottom {
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.top {
+  top: 0;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Only the parts that are pressed take presses. */
+.summary,
+.log,
+.actions {
+  pointer-events: auto;
+  background: rgba(10, 12, 18, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Only as wide as its own text, so the rest of the row stays clickable —
+     the bottom HUD pill sits in that row and was being swallowed by it. */
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0 0 0.4rem 0;
+
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.count {
+  flex: none;
+  min-width: 2.2em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line, clipped rather than wrapped: collapsed height must not change as
+   entries arrive, or the app under it jumps while being tested. */
+.latest {
+  flex: 0 1 auto;
+  max-width: 60vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.chevron {
+  flex: none;
+  display: inline-flex;
+  opacity: 0.7;
+}
+
+.log {
+  width: 100%;
+  max-height: 45vh;
+  overflow: auto;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  -webkit-overflow-scrolling: touch;
+  /* Selectable on purpose: it is the fallback when the clipboard is refused. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.05rem 0;
+}
+
+/* The three that answer the question get picked out of the wall of text. */
+.line[data-event='doze'] {
+  color: #f0a530;
+  font-weight: 600;
+}
+
+.line[data-event='stale-replace'],
+.line[data-event='stillborn'],
+.line[data-event='needs-gesture'] {
+  color: #ff8080;
+}
+
+.line[data-event='first-result'],
+.line[data-event='start'] {
+  color: #7ee2a8;
+}
+
+.line[data-event='gesture-wake'],
+.line[data-event='gesture-replace'] {
+  color: #8ab4ff;
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  /* A comfortable target on a phone, without growing the collapsed bar. */
+  min-height: 32px;
+}
+
+.action:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.action svg {
+  width: 14px;
+  height: 14px;
+}
