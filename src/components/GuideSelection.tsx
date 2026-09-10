@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, For, onCleanup, Show } from 'solid-js'
 import { startMixerTourIfReady } from '@/features/tours/startMixerTour'
+import { startVoiceTour } from '@/stores/app-store'
 import { getIncompleteGuideSections, GUIDE_SECTIONS, hasPageTour, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, } from '@/stores/app-store'
 import type { ActiveTab } from '@/types'
 import styles from './GuideSelection.module.css'
@@ -57,6 +58,11 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   const handleStartMixerTour = () => {
     startMixerTourIfReady()
+    props.onClose()
+  }
+
+  const handleStartVoiceTour = () => {
+    startVoiceTour()
     props.onClose()
   }
 
@@ -201,6 +207,24 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                 <span class={styles.guideSectionDesc}>
                   Stems, lyrics & LRC tools, pitch scoring, playlists — shown
                   once a song is loaded
+                </span>
+              </span>
+            </button>
+            {/* Voice belongs to no tab — the pill is in every view — so it
+                cannot be in the tab catalogue above, which is why it had no
+                tour at all until now. */}
+            <button
+              class={styles.guideSectionItem}
+              onClick={handleStartVoiceTour}
+            >
+              <span class={styles.guideSectionIcon}>
+                <TourIcon />
+              </span>
+              <span class={styles.guideSectionText}>
+                <span class={styles.guideSectionName}>Voice control</span>
+                <span class={styles.guideSectionDesc}>
+                  The mic pill, the commands worth knowing, and singing a song
+                  you cannot name
                 </span>
               </span>
             </button>

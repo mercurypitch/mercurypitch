@@ -17,7 +17,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { WalkthroughStep } from '@/stores/app-store'
-import { PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
+import { PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, VOICE_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
 /** Everything a step can name, as one flat list of selectors. */
 function selectorsOf(step: WalkthroughStep): string[] {
@@ -97,6 +97,7 @@ const ALL_TOURS: Record<string, readonly WalkthroughStep[]> = {
   walkthrough: WALKTHROUGH_STEPS,
   'stem-mixer': STEM_MIXER_TOUR_STEPS,
   'practice-modes': PRACTICE_MODES_TOUR_STEPS,
+  voice: VOICE_TOUR_STEPS,
   ...Object.fromEntries(
     Object.entries(PAGE_TOURS).map(([tab, steps]) => [`page:${tab}`, steps]),
   ),
