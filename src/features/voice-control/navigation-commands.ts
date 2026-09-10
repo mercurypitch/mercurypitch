@@ -43,6 +43,78 @@ export interface NavigationVoiceDeps {
   isNarrow?: Accessor<boolean>
   /** Leaves the app for a standalone page. Injected for the same reason. */
   leaveForPage?: (path: string) => void
+  /**
+   * The path of the document this is running in, used only to leave the
+   * current room out of the room list. Injected so it can be tested.
+   */
+  currentPath?: () => string
+}
+
+/**
+ * The standalone rooms — the "nights".
+ *
+ * Each is a separate document with its own app, reached by leaving this one.
+ * Listed here rather than derived from the SEO entry model: that model also
+ * holds landing pages, and a command that walks someone onto a marketing page
+ * is worse than no command.
+ *
+ * Only Karaoke Night had one of these. "Go to guitar night" simply did
+ * nothing, which reads as voice control being broken rather than as a phrase
+ * nobody wrote down.
+ *
+ * Ambiguity against the tab set is not a risk: a phrase has to consume the
+ * whole utterance, so "go to guitar" reaches the guitar TAB and "go to guitar
+ * night" reaches the room, with no overlap to arbitrate.
+ */
+const NIGHT_ROOMS: Array<{
+  id: string
+  label: string
+  path: string
+  /** Spoken names, most canonical first. */
+  names: string[]
+}> = [
+  {
+    id: 'nav.karaokeNight',
+    label: 'Karaoke Night',
+    path: '/karaoke-night',
+    names: ['karaoke night', 'the karaoke stage', 'karaoke stage'],
+  },
+  {
+    id: 'nav.guitarNight',
+    label: 'Guitar Night',
+    path: '/guitar-night',
+    names: ['guitar night', 'the guitar room', 'guitar room'],
+  },
+  {
+    id: 'nav.pianoNight',
+    label: 'Piano Night',
+    path: '/piano-night',
+    names: ['piano night', 'the piano room', 'piano room'],
+  },
+  {
+    id: 'nav.drumNight',
+    label: 'Drum Night',
+    path: '/drum-night',
+    names: ['drum night', 'the drum room', 'drum room', 'drums night'],
+  },
+]
+
+/**
+ * Ways to ask for a room. Deliberately more than the tab set gets: these are
+ * spoken at a phone from across the room, and "start guitar night" is at
+ * least as natural as "go to" — a room is something you begin, not only
+ * somewhere you go.
+ */
+function roomPhrases(names: readonly string[]): string[] {
+  return names.flatMap((name) => [
+    name,
+    `go to ${name}`,
+    `open ${name}`,
+    `start ${name}`,
+    `show ${name}`,
+    `switch to ${name}`,
+    `take me to ${name}`,
+  ])
 }
 
 const TAB_SPOKEN_NAMES: Array<{
@@ -166,33 +238,57 @@ export function createLeaveForStudioVoiceCommands(
 ): VoiceCommand[] {
   const notSuspended = () => deps.suspended?.() !== true
   const leaveForPage = resolveLeaveForPage(deps)
+  const currentPath = () =>
+    deps.currentPath?.() ?? window.location.pathname.replace(/\/$/, '')
 
-  return TAB_SPOKEN_NAMES.filter(({ tab }) =>
-    LEAVE_FOR_STUDIO_TABS.has(tab),
-  ).map(({ tab, names, extra }) => ({
-    // Distinct from the tab set's `nav.<tab>`: a page could in principle
-    // hold both, and two commands must never share an id.
-    id: `nav.leave.${tab}`,
-    label: `Go to ${tabLabel(tab)}`,
-    phrases: [
-      ...names.flatMap((name) => [
-        `go to ${name}`,
-        `open ${name}`,
-        `show ${name}`,
-        `switch to ${name}`,
-      ]),
-      ...(extra ?? []),
-      ...(tab === TAB_HOME ? BACK_TO_STUDIO_PHRASES : []),
-    ],
-    available: () =>
-      notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
+  // A room can be left for another room, not only for the studio. Without
+  // this, walking from Guitar Night to Karaoke Night by voice meant going
+  // home first and asking again.
+  //
+  // The room you are standing in is left out: it would be a full page load
+  // that lands you exactly where you already are, which on a phone reads as
+  // the app throwing the session away for nothing.
+  const roomCommands: VoiceCommand[] = NIGHT_ROOMS.filter(
+    (room) => room.path !== currentPath(),
+  ).map((room) => ({
+    id: room.id,
+    label: room.label,
+    phrases: roomPhrases(room.names),
+    available: notSuspended,
     run: () => {
-      // Built by the router rather than spelled out here, so the tab route
-      // format stays in one place.
-      leaveForPage(`/#${buildHash({ type: 'tab', tab })}`)
-      return `Go to ${tabLabel(tab)}`
+      leaveForPage(room.path)
+      return room.label
     },
   }))
+
+  return TAB_SPOKEN_NAMES.filter(({ tab }) => LEAVE_FOR_STUDIO_TABS.has(tab))
+    .map(
+      ({ tab, names, extra }): VoiceCommand => ({
+        // Distinct from the tab set's `nav.<tab>`: a page could in principle
+        // hold both, and two commands must never share an id.
+        id: `nav.leave.${tab}`,
+        label: `Go to ${tabLabel(tab)}`,
+        phrases: [
+          ...names.flatMap((name) => [
+            `go to ${name}`,
+            `open ${name}`,
+            `show ${name}`,
+            `switch to ${name}`,
+          ]),
+          ...(extra ?? []),
+          ...(tab === TAB_HOME ? BACK_TO_STUDIO_PHRASES : []),
+        ],
+        available: () =>
+          notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
+        run: () => {
+          // Built by the router rather than spelled out here, so the tab route
+          // format stays in one place.
+          leaveForPage(`/#${buildHash({ type: 'tab', tab })}`)
+          return `Go to ${tabLabel(tab)}`
+        },
+      }),
+    )
+    .concat(roomCommands)
 }
 
 export function createNavigationVoiceCommands(
@@ -246,23 +342,18 @@ export function createNavigationVoiceCommands(
   )
 
   commands.push(
-    {
-      id: 'nav.karaokeNight',
-      label: 'Karaoke Night',
-      // Distinct wording from "go to karaoke" (the tab): this leaves the
-      // app for the standalone stage, same tab per the owner's call.
-      phrases: [
-        'open karaoke night',
-        'karaoke night',
-        'start karaoke night',
-        'go to karaoke night',
-      ],
+    // Distinct wording from the tabs ("go to karaoke"): these leave the app
+    // for a standalone room, same tab per the owner's call.
+    ...NIGHT_ROOMS.map((room) => ({
+      id: room.id,
+      label: room.label,
+      phrases: roomPhrases(room.names),
       available: notSuspended,
       run: () => {
-        leaveForPage('/karaoke-night')
-        return 'Karaoke Night'
+        leaveForPage(room.path)
+        return room.label
       },
-    },
+    })),
     {
       id: 'nav.randomSong',
       label: 'Random song',
