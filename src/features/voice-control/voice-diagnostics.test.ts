@@ -134,12 +134,11 @@ describe('what it records', () => {
       vi.advanceTimersByTime(4200)
       recordVoiceDiagnostic('doze', 1)
 
-      const first = find('spin-up')
-      const second = find('doze')
-      expect(first.at).toBe(0)
+      // The recording starts at zero, whatever its first line happens to be.
+      expect(voiceDiagnosticEntries()[0].at).toBe(0)
       // "How long until it went quiet" is the question; epochs do not answer
       // it at a glance on a phone screen.
-      expect(second.at).toBe(4200)
+      expect(find('doze').at - find('spin-up').at).toBe(4200)
     } finally {
       vi.useRealTimers()
     }

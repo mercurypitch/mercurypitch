@@ -14,14 +14,21 @@
 // ── It must never reach production ──
 //
 // The gate is a BUILD flag, not a runtime one: `VITE_PORTABLE_CONSOLE=true`.
-// `PORTABLE_CONSOLE` is a compile-time constant, so every entry can write
+// Vite substitutes the literal at build time, so every entry can write
 //
-//     if (PORTABLE_CONSOLE) void import('...').then((m) => m.setup())
+//     if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')
+//       void import('...').then((m) => m.setup())
 //
 // and a normal build folds that to `if (false)` and drops the import — the
 // module never enters the graph, so there is nothing to leak. Nothing here
 // is guarded at runtime alone, because a runtime guard still ships the code
 // and the wrapped console with it.
+//
+// Read inline at each entry, never through a shared constant. A `defaults.ts`
+// export looks tidier and costs a room its first paint: that module is pinned
+// into the `pitch-core` chunk, so importing one boolean from it puts the whole
+// chunk — the notifications store included — into every standalone entry's
+// static graph. `assert-piano-night-bundle.mjs` caught exactly that.
 //
 // `scripts/assert-no-portable-console.mjs` fails the build if it ever does.
 

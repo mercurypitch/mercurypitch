@@ -35,8 +35,6 @@
 // shape is another consumer taking the microphone — so that is what
 // `mic` reports here.
 
-import { micManager } from '@/lib/mic-manager'
-
 /** Newest kept; older ones fall off. Bounded so a long session cannot grow
  *  without limit on a phone. */
 const MAX_ENTRIES = 500
@@ -158,10 +156,35 @@ function sampleEnv(): VoiceDiagnosticEnv {
   return { visibility, mic: sampleMic() }
 }
 
+/**
+ * Just enough of MicManager to describe it, structurally.
+ *
+ * The real one is NOT imported here, and that is load-bearing. `mic-manager`
+ * is pinned into the `pitch-core` chunk, and this module is wired into every
+ * entry — including the standalone rooms, which is the whole point, since the
+ * walk between two documents is what needs recording. One import would put
+ * pitch-core, notifications store and all, into each room's first paint;
+ * `assert-piano-night-bundle.mjs` fails on exactly that.
+ *
+ * So the mic introduces itself instead. Whoever owns capture registers it,
+ * and until someone does, the answer is an honest `unknown`.
+ */
+interface MicSource {
+  isActive: () => boolean
+  getStream: () => MediaStream | null
+}
+
+let micSource: MicSource | null = null
+
+export function registerVoiceDiagnosticsMic(source: MicSource): void {
+  micSource = source
+}
+
 function sampleMic(): string {
   try {
-    if (!micManager.isActive()) return 'idle'
-    const stream = micManager.getStream()
+    if (micSource === null) return 'unknown'
+    if (!micSource.isActive()) return 'idle'
+    const stream = micSource.getStream()
     if (stream === null) return 'active,no-stream'
     const tracks = stream.getAudioTracks()
     if (tracks.length === 0) return 'active,no-track'

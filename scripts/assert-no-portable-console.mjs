@@ -2,15 +2,15 @@
 // assert-no-portable-console — the debug console must not ship
 // ============================================================
 //
-// `PORTABLE_CONSOLE` wraps every `console.*` call in the app and renders the
+// The portable console wraps every `console.*` call in the app and renders the
 // result on screen with a Copy button. It exists for a device that cannot be
 // plugged into an inspector, and it has no business in front of anybody else.
 //
 // The gate is a build constant, so a normal build folds
-// `if (PORTABLE_CONSOLE)` to `if (false)` and drops the dynamic import — the
+// the flag check to `if (false)` and drops the dynamic import — the
 // module never enters the graph. That is the design; this is the proof, and
 // it runs on every `pnpm run build`. A guard nobody checks is a guard that
-// stops holding the moment someone writes `if (PORTABLE_CONSOLE || debug)`.
+// stops holding the moment someone writes `if (FLAG || debug)`.
 //
 // Usage: node scripts/assert-no-portable-console.mjs <dist-dir>
 
@@ -49,7 +49,8 @@ if (offenders.length > 0) {
       offenders.map((line) => `  ${line}`).join('\n') +
       '\n\nBuilt with VITE_PORTABLE_CONSOLE set? That flag is for `pnpm run\n' +
       'dev:portable` only. If a call site stopped being a plain\n' +
-      '`if (PORTABLE_CONSOLE)`, the bundler can no longer drop it.',
+      "`if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')`, the bundler\n" +
+      'can no longer prove the branch is dead and drop it.',
   )
   process.exit(1)
 }
