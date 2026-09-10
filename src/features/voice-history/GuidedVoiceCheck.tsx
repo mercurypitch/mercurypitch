@@ -746,7 +746,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     }
   }
 
-  async function keepAndPractise(): Promise<void> {
+  async function keepAndPractice(): Promise<void> {
     if (saving()) return
     const result = assessment()
     if (result?.reading === null || result?.reading === undefined) return
@@ -897,10 +897,10 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               {reinforce
                 ? 'These notes repeatedly found the centre. Give that pathway a little more familiar time.'
                 : fraction.numerator === 0
-                  ? 'None of the three notes stayed near the target long enough. Practise meeting one clear centre without pushing.'
+                  ? 'None of the three notes stayed near the target long enough. Practice meeting one clear centre without pushing.'
                   : fraction.numerator === fraction.denominator
-                    ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Practise one clear centre without pushing.'
-                    : 'Some notes did not stay near the target long enough. Practise meeting one clear centre without pushing.'}
+                    ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Practice one clear centre without pushing.'
+                    : 'Some notes did not stay near the target long enough. Practice meeting one clear centre without pushing.'}
             </p>
           </div>
           <div class={styles.practiceRoute}>
@@ -916,9 +916,9 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               type="button"
               class={styles.primaryButton}
               disabled={saving()}
-              onClick={() => void keepAndPractise()}
+              onClick={() => void keepAndPractice()}
             >
-              {keptTakeId() === null ? 'Keep & practise' : 'Practise this'}
+              {keptTakeId() === null ? 'Keep & practice' : 'Practice this'}
             </button>
           </div>
           <div class={styles.resultActions}>

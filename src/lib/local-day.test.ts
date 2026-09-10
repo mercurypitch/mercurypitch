@@ -51,7 +51,7 @@ describe('localDayString', () => {
   it('gives two sessions on the same local day the same key', async () => {
     // THE REGRESSION. At UTC+2 a Monday 20:00 and a Tuesday 01:00 session both
     // produced the UTC day 'Monday', so Tuesday earned no credit and the streak
-    // broke after practising two days running.
+    // broke after practicing two days running.
     const { localDayString } = await withTimezone('Europe/Zagreb')
     const mondayEvening = new Date('2026-03-02T19:00:00Z') // 20:00 Mon local
     const tuesdayNight = new Date('2026-03-02T23:00:00Z') // 00:00 Tue local

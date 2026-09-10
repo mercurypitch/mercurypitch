@@ -11,7 +11,7 @@
 //
 // One armed take counts. Ending early scores what was sung (the drill's
 // "Stop & Score" semantic), then the canvas freezes under the app-level
-// result card. The singer can review that contour, practise the same line
+// result card. The singer can review that contour, practice the same line
 // without posting another attempt, or explicitly arm a scored retake.
 
 import type { Accessor } from 'solid-js'
@@ -632,14 +632,14 @@ export function ChallengeStage(props: ChallengeStageProps) {
                         <Play />
                         {practiceLoopOn()
                           ? 'Start looping'
-                          : 'Practise the line'}
+                          : 'Practice the line'}
                       </button>
                       <span class={styles.footerHint}>
                         {captureFinalizing()
                           ? 'Preparing your score and replay'
                           : outcome()?.kind === 'practice'
                             ? 'Practice run — not added to the board'
-                            : 'Take recorded — review or practise the line'}
+                            : 'Take recorded — review or practice the line'}
                       </span>
                     </div>
                   </Show>
@@ -727,7 +727,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
             </p>
             <Show when={launch.mode === 'practice'}>
               <p class={styles.practiceNotice}>
-                This week has ended. Practise as often as you like — these runs
+                This week has ended. Practice as often as you like — these runs
                 stay off the weekly board.
               </p>
             </Show>

@@ -31,7 +31,7 @@ afterEach(() => {
 const utcDayKey = (d: Date): string => d.toISOString().slice(0, 10)
 
 describe('streaks use the singer’s calendar day', () => {
-  // A singer in Zagreb (UTC+2 in summer) practising Monday evening and again
+  // A singer in Zagreb (UTC+2 in summer) practicing Monday evening and again
   // just after midnight on Tuesday.
   const mondayEvening = new Date('2026-07-06T19:00:00Z') // 21:00 Mon local
   const tuesdayJustAfterMidnight = new Date('2026-07-06T22:30:00Z') // 00:30 Tue
@@ -47,7 +47,7 @@ describe('streaks use the singer’s calendar day', () => {
 
     fields = advanceStreak(fields, localDayString(tuesdayJustAfterMidnight))
 
-    // Two days practised, two days of streak.
+    // Two days practiced, two days of streak.
     expect(fields.currentStreak).toBe(2)
   })
 
@@ -60,7 +60,7 @@ describe('streaks use the singer’s calendar day', () => {
     expect(fields.currentStreak).toBe(1)
 
     // Both instants fall on the same UTC day, so the second session was read
-    // as "already practised today" and Tuesday earned nothing.
+    // as "already practiced today" and Tuesday earned nothing.
     expect(utcDayKey(mondayEvening)).toBe(utcDayKey(tuesdayJustAfterMidnight))
     fields = advanceStreak(fields, utcDayKey(tuesdayJustAfterMidnight))
 

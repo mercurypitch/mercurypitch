@@ -63,7 +63,7 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
     void refreshGuidedContent()
   })
 
-  function practiseToday(): void {
+  function practiceToday(): void {
     const template = routine.startOrResume()
     const current = routine.currentSegment()
     if (current !== null) {
@@ -161,7 +161,7 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
                 type="button"
                 class={styles.chip}
                 onClick={() => startExercise(exercise)}
-                title={`Practise ${exercise} now`}
+                title={`Practice ${exercise} now`}
               >
                 {exercise}
               </button>
@@ -220,9 +220,9 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
           <button
             type="button"
             class={`${styles.cta} path-cta`}
-            onClick={practiseToday}
+            onClick={practiceToday}
           >
-            {routine.isComplete() ? 'Practise again · ~' : 'Practise today · ~'}
+            {routine.isComplete() ? 'Practice again · ~' : 'Practice today · ~'}
             {Math.max(1, Math.round(routine.totalDurationSec() / 60) || 8)} min
           </button>
         </Show>

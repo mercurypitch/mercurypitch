@@ -1583,7 +1583,7 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Keep your streak',
     description:
-      'Practise ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free. This week’s drills, average score and best streak read out on the same card.',
+      'Practice ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free. This week’s drills, average score and best streak read out on the same card.',
     targetSelector: '.home-streak-card',
     placement: 'bottom',
     requiredTab: TAB_HOME,
@@ -1657,7 +1657,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_PATH,
   },
   {
-    title: 'Practise today',
+    title: 'Practice today',
     description:
       'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
     targetSelector: '.path-cta',
@@ -1830,7 +1830,7 @@ export const PAGE_TOUR_CATALOG: {
     tab: TAB_PATH,
     title: 'Path',
     description:
-      'The Ascent — the guided seven-week path whose orbs fill as you practise',
+      'The Ascent — the guided seven-week path whose orbs fill as you practice',
   },
   {
     tab: TAB_EAR_LAB,

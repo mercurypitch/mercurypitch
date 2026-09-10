@@ -228,7 +228,7 @@ test.describe('the taller phone', () => {
     await expect(page.getByTestId('ear-stage')).toBeVisible()
 
     // "Begin", not "Practice run": an identification drill has no calibration
-    // to practise against, it just plays a chord.
+    // to practice against, it just plays a chord.
     await page.getByText('Begin').click()
     // The pads are disabled while the chord sounds; the run reaches the answer
     // phase when the first one takes a tap.

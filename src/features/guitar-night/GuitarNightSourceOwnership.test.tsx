@@ -57,7 +57,7 @@ it('reads App backing and Room stage props after await without creating orphan m
   })
   render(() => <GuitarNightApp loadSongPort={loadSongPort} />)
   fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Play free form' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Free play' }))
   await waitFor(() => expect(captured.stage).not.toBeNull())
   await Promise.resolve()
   expect(getOwner()).toBeNull()

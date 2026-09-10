@@ -193,7 +193,7 @@ describe('the frozen podium', () => {
     // the melody as practice — the point of the archive — with no result.
     await show([challenge('c1', null)])
     expect(screen.queryByTestId('podium-c1')).toBeNull()
-    expect(screen.getByLabelText('Practise Challenge c1')).toBeTruthy()
+    expect(screen.getByLabelText('Practice Challenge c1')).toBeTruthy()
   })
 
   it('shows no podium when nobody consented to be named', async () => {

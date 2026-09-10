@@ -87,7 +87,7 @@ const MERGE_ON_PULL: Record<
  * and a union is irreversible, so their Ascent would permanently absorb
  * practice days they never did. Unset means the local copy was made
  * signed-out: that IS the person now signing in, and merging is exactly
- * what they want (this is the "I practised before making an account" path).
+ * what they want (this is the "I practiced before making an account" path).
  *
  * Account, emphatically — an anonymous identity is not one. It is lazily
  * provisioned on the first write and holds a real token, so the sync runs

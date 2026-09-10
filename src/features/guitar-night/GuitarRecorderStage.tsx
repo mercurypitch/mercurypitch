@@ -157,7 +157,7 @@ export function GuitarRecorderStage(props: {
           {
             key: 'review',
             label: 'Review take',
-            note: 'Keep, correct, practise or export your melody',
+            note: 'Keep, correct, practice or export your melody',
             icon: () => <Headphones />,
             disabled:
               props.disabled ||

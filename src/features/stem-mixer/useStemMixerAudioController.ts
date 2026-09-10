@@ -1009,7 +1009,7 @@ export const useStemMixerAudioController = (
         // Say so: the vocal loaded, so the "could not be loaded" error never
         // fired, and the singer got an empty, silent mixer with no reason.
         const msg =
-          'This device streams the song to stay within memory, and the MIDI practice track needs the vocal decoded. Open this song on a computer to practise with MIDI.'
+          'This device streams the song to stay within memory, and the MIDI practice track needs the vocal decoded. Open this song on a computer to practice with MIDI.'
         // Terminal: a Retry would stream both stems again and land here.
         setLoadErrorRetryable(false)
         setLoadErrorLocal(msg)

@@ -13,7 +13,7 @@
 // Every progress surface used to read the first one, which is how somebody
 // with forty recorded runs was shown "0 sessions": their work was in the
 // store nothing looked at, on a domain whose localStorage they had never
-// practised on.
+// practiced on.
 //
 // So: the account's history when there is an account, the device's when
 // there is not. Signed out is not a degraded case — it is somebody who has

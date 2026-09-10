@@ -208,7 +208,7 @@ export function accountFirstSeenAt(
  *
  * Rows carry `completedAt` in epoch milliseconds and Ascent days are
  * `YYYY-MM-DD`, so both compare directly against the cutoff. The Ascent's
- * seeded `ENDOWED_DAY` is not a date and is not a day anybody practised, so it
+ * seeded `ENDOWED_DAY` is not a date and is not a day anybody practiced, so it
  * counts as nothing here — otherwise merely opening The Ascent after signing
  * in would raise a notice about practice that never happened.
  */

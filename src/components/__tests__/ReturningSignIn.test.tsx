@@ -176,7 +176,7 @@ describe('when it stays out of the way', () => {
 describe('when it offers a way back in', () => {
   it('offers the passkey, and never names the person', async () => {
     // Privacy: the strip knows only the method. A shared laptop must not
-    // announce who practises on it.
+    // announce who practices on it.
     render(() => <ReturningSignIn />)
 
     const strip = await screen.findByTestId('returning-signin')

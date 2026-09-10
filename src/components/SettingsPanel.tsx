@@ -467,7 +467,7 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Guided Path</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              The Ascent normally opens one week at a time as you practise. Turn
+              The Ascent normally opens one week at a time as you practice. Turn
               this on to unlock every week now — jump ahead to preview a week or
               try its drills. Your rings and streak are unaffected.
             </p>

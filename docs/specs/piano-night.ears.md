@@ -770,7 +770,7 @@ aggregate multi-pass analytics, custom soundbanks, or a second transport.
   loop shall represent its boundary as `[startBeat, endBeat)`, shall treat beat
   zero as a valid A point, and shall reject a span shorter than one quarter
   beat.
-- **REQ-PN-LOOP-002 — Section authoring:** WHEN the player chooses Practise
+- **REQ-PN-LOOP-002 — Section authoring:** WHEN the player chooses Practice
   this phrase or section, Piano Night shall set that authored or factual
   section as A/B, enable repeat, park at A, and reset measured results to notes
   whose onsets fall inside that range.

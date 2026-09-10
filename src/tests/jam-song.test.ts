@@ -150,7 +150,7 @@ describe('songPlayableInRoom', () => {
   })
 
   it('lets you sing your own song when you are alone', () => {
-    // Practising alone with your own material is the obvious thing to
+    // Practicing alone with your own material is the obvious thing to
     // want; blocking it to protect a case that is not happening is just
     // unhelpful.
     const verdict = songPlayableInRoom(song({ origin: 'local' }), 0)

@@ -256,7 +256,7 @@ const HomePage: Component = () => {
                   currencies and the card now shows one at a time. */}
               <InfoPopover label="How the streak works">
                 Sing for {DAILY_GOAL_MIN} minutes and the day counts. Anything
-                you practise counts — sessions, exercises and challenges alike.
+                you practice counts — sessions, exercises and challenges alike.
                 <br />
                 <br />
                 Miss a day and a banked freeze covers it automatically, the next
@@ -525,7 +525,7 @@ const HomePage: Component = () => {
                         launchRoutineSegment(first)
                       }}
                     >
-                      Practise again
+                      Practice again
                     </button>
                     <button
                       class={styles.doneBtn}

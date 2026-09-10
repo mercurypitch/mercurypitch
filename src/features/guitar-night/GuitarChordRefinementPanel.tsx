@@ -138,7 +138,7 @@ export function GuitarChordRefinementPanel(props: {
       </Show>
       <Show when={!props.hasAudio}>
         <p>
-          Audio is no longer on this device. You can still edit and practise the
+          Audio is no longer on this device. You can still edit and practice the
           existing notes.
         </p>
       </Show>

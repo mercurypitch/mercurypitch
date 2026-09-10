@@ -8,7 +8,7 @@ web
 
 ## Users
 
-MercuryPitch serves singers who want immediate visual feedback while practising
+MercuryPitch serves singers who want immediate visual feedback while practicing
 pitch, songs, and vocal exercises in a browser. Returning singers also need a
 trustworthy way to hear how their voice changes across practice sessions. The
 product also serves vocal coaches and administrators who author guided
@@ -18,7 +18,7 @@ exercises and multi-week practice journeys.
 
 MercuryPitch helps people understand and improve their singing through
 real-time pitch visualisation, configurable targets, scored practice, and
-reviewable attempts. Success means a singer can begin practising quickly,
+reviewable attempts. Success means a singer can begin practicing quickly,
 understand what to sing, see how their voice moved, and compare useful past
 attempts. Pitch-only practice remains useful without retaining audio; when a
 singer explicitly keeps a voice take, they can also hear an Earlier/Later
@@ -34,7 +34,7 @@ hear in their own recordings.
 
 ## Operating Context
 
-- Singers practise with a microphone on desktop or mobile, often in short repeated phrases.
+- Singers practice with a microphone on desktop or mobile, often in short repeated phrases.
 - Free practice may have no target melody; guided practice loads an authored exercise specification.
 - Exercises can be opened independently or launched from an Ascent journey step.
 - Administrators author reusable exercises and attach them to challenges or journey steps.

@@ -54,7 +54,7 @@ be forged.
 true. `practice-minutes.ts:19` keys today's accumulated practice as
 `mp_practice_ms_<userId>_<date>`, and the "streak already counted today" marker
 the same way. Both are local, and both become unreachable when the id changes:
-the daily-goal ring resets to zero mid-day and the singer has to practise the
+the daily-goal ring resets to zero mid-day and the singer has to practice the
 day's minutes again for it to count. The pruning at `:60-80` only sweeps the
 current owner's prefix, so the old keys are orphaned in localStorage rather than
 cleaned up.

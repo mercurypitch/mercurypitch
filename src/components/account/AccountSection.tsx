@@ -506,7 +506,7 @@ export const AccountSection: Component = () => {
             </label>
             <p class={styles.fieldHint}>
               Off by default. Exercise and challenge results rank once you've
-              practised a few days running; free practice and your streak are
+              practiced a few days running; free practice and your streak are
               never published. Friends you add see more.
             </p>
           </div>
@@ -633,7 +633,7 @@ export const AccountSection: Component = () => {
       <ConfirmDialog
         open={confirmingSignOut()}
         title="Sign out?"
-        message="Your practice stays on this device. While signed out you keep practising with the device's own history; sign in again any time to see your account's history and sync."
+        message="Your practice stays on this device. While signed out you keep practicing with the device's own history; sign in again any time to see your account's history and sync."
         confirmLabel="Sign out"
         onConfirm={handleLogout}
         onCancel={() => setConfirmingSignOut(false)}

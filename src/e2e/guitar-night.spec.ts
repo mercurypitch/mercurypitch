@@ -449,11 +449,13 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
 
   const actions = page.getByTestId('guitar-night-entry-actions')
   const buttons = actions.getByRole('button')
-  // Two entries, not three: the way to the Guitar workspace is a return
-  // control on the eyebrow rather than a third choice of equal weight.
-  await expect(buttons).toHaveCount(2)
+  // Three destinations, and the workspace is still not one of them: that is a
+  // return control on the eyebrow. Free play earns its place because playing
+  // with nothing loaded used to mean opening the song picker first.
+  await expect(buttons).toHaveCount(3)
   await expect(buttons.nth(0)).toHaveAccessibleName('Start')
   await expect(buttons.nth(1)).toHaveAccessibleName('Load a song')
+  await expect(buttons.nth(2)).toHaveAccessibleName('Free play')
   await expect(
     page.getByRole('button', { name: 'Open the Guitar workspace' }),
   ).toBeVisible()
@@ -468,7 +470,9 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   expect(focusStyle.outline).not.toBe('none')
   expect(focusStyle.width).not.toBe('0px')
   await page.keyboard.press('Tab')
-  // Tune guitar sits outside the pair, so the third stop leaves the group.
+  await expect(buttons.nth(2)).toBeFocused()
+  await page.keyboard.press('Tab')
+  // Tune guitar sits outside the group, so the stop after it leaves them.
   await expect(page.getByRole('button', { name: /Tune guitar/ })).toBeFocused()
 
   const accountTrigger = page.getByRole('button', {
@@ -1220,8 +1224,8 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     const buttons = page
       .getByTestId('guitar-night-entry-actions')
       .getByRole('button')
-    await expect(buttons).toHaveCount(2)
-    for (let index = 0; index < 2; index += 1) {
+    await expect(buttons).toHaveCount(3)
+    for (let index = 0; index < 3; index += 1) {
       const box = await buttons.nth(index).boundingBox()
       expect(box).not.toBeNull()
       expect(box?.width).toBeGreaterThanOrEqual(44)

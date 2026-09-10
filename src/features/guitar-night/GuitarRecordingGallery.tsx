@@ -387,7 +387,7 @@ export function GuitarRecordingGallery(props: {
           </Show>
           <p class={styles.footnote}>
             The shape of what you played, in its original timing. Open a take to
-            listen, keep, correct, or practise it.
+            listen, keep, correct, or practice it.
           </p>
         </Show>
       </GuitarNightMixerDialog>

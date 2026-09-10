@@ -4,7 +4,7 @@
 //
 // The activity calendar and heatmap read `sessionResults`, a local signal
 // that ONLY session mode appends to. Exercises and challenges write
-// SessionRecords and nothing else, so a singer could practise every day
+// SessionRecords and nothing else, so a singer could practice every day
 // through the drills and the tracker stayed blank — which is what the
 // owner reported. These pin the union.
 
@@ -116,7 +116,7 @@ describe('localDayKey', () => {
 })
 
 describe('describeDay', () => {
-  it('names what was practised and how it went', () => {
+  it('names what was practiced and how it went', () => {
     const map = activityByDay([
       record({ id: '1', source: 'exercise', score: 70 }),
       record({ id: '2', source: 'challenge', score: 88 }),

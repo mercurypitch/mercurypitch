@@ -403,7 +403,7 @@ function scoreOf(record: SessionRecord): number | null {
  * Every evidence field on a session record is nullable in D1 — they were added
  * by `0025_sessionRecords_progress.sql` to a table that already had rows — and
  * the server adapter passes JSON through without normalising. So a record from
- * any account that practised before this release carries a literal `null`, and
+ * any account that practiced before this release carries a literal `null`, and
  * `x !== undefined` is not the same question as "is there a value here".
  * Everything in this file that reads one goes through here or through `??`.
  */

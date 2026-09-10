@@ -2,7 +2,7 @@
 // useSingingBacking — karaoke-style backing playback for the Singing
 // page. The playback runtime plays only the scored melody (reference
 // tone); this schedules the song's OTHER (heard) tracks as audio so the
-// singer can practise over the band while still being scored on the
+// singer can practice over the band while still being scored on the
 // vocal line — matching the Piano/Guitar play-along experience.
 //
 // It rides the runtime's per-frame `beat` event: as the playhead crosses

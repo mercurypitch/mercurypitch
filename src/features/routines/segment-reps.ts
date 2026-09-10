@@ -14,7 +14,7 @@
 //
 // Reps make the plan binding: a segment asks for as many runs as its budget
 // holds, worked out from what one run of that drill actually takes. Five
-// five-second long notes is what practising long notes looks like; one is a
+// five-second long notes is what practicing long notes looks like; one is a
 // demonstration.
 
 import type { ExerciseType } from '@/features/exercises/types'
@@ -23,7 +23,7 @@ import type { RoutineSegment } from './types'
 
 /**
  * What one honest run of a drill costs the singer, in seconds — the sung part
- * plus the breath and the reset before it, which is time spent practising
+ * plus the breath and the reset before it, which is time spent practicing
  * whether or not the meter is running.
  *
  * These are deliberately conservative. Over-estimating gives fewer reps and a
@@ -79,7 +79,7 @@ export const MAX_REPS_FLOOR = 8
  * Not an arbitrary round number: it is DAILY_GOAL_MS from practice-minutes.ts,
  * the five scored minutes that earn the day's streak. The shortest routine on
  * offer calls itself "~5 min", so a singer who does exactly what the app
- * prescribes has to end the session having practised enough for the streak
+ * prescribes has to end the session having practiced enough for the streak
  * the same app is asking them to keep. Before this, short materialized to
  * about four and three-quarter minutes of plan — and, one run per segment, to
  * two and a half minutes of singing.

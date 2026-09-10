@@ -261,7 +261,7 @@ export const TrendsCard: Component<{
           detail={
             props.streak?.practicedToday === true
               ? 'safe today'
-              : 'practise today to keep it'
+              : 'practice today to keep it'
           }
           tone={props.streak?.practicedToday === true ? 'good' : undefined}
         />

@@ -129,10 +129,14 @@ const html = /* html */ `<!doctype html>
   }
 
   .brand { display: flex; align-items: center; gap: 14px; }
+  /* Floor under the gap to the headline. margin-top:auto on the headline only
+     distributes LEFTOVER space, and a full card leaves almost none, so the
+     lockup and the headline ended up nearly touching. */
+  .brand { margin-bottom: 46px; }
   .brand .globe { width: 46px; height: 46px; border-radius: 50%; box-shadow: 0 4px 18px rgba(181,138,80,0.32); flex: none; display: block; }
   .brand .globe svg { display: block; width: 100%; height: 100%; }
   .wordmark { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 27px; letter-spacing: -0.01em; }
-  .wordmark .p { color: var(--brass-soft); }
+  .wordmark .p { background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .divider { width: 1px; height: 26px; background: rgba(238,231,218,0.28); }
   .kicker {
     font-family: 'Outfit', sans-serif; font-weight: 700;
@@ -234,7 +238,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Shape every phrase</h1>
-      <p class="sub">A focused piano room for practising and performing. <b>Slow a phrase down</b>, loop the bar that will not sit, and play it back up to tempo.</p>
+      <p class="sub">A focused piano room for practicing and performing. <b>Slow a phrase down</b>, loop the bar that will not sit, and play it back up to tempo.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot">${check}</span>Phrase practice</span>

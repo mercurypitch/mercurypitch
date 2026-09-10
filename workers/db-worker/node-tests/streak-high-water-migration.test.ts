@@ -25,7 +25,7 @@ const SEED: Array<[string, number, number]> = [
   // A record that outlives its run — the row this must NOT touch.
   ['record-holder', 1, 7],
   // Already consistent, in both the zero and the non-zero form.
-  ['never-practised', 0, 0],
+  ['never-practiced', 0, 0],
   ['consistent', 4, 4],
 ]
 
@@ -68,7 +68,7 @@ describe('0030_streak_high_water', () => {
 
     expect(streaks()).toEqual([
       { id: 'consistent', currentStreak: 4, longestStreak: 4 },
-      { id: 'never-practised', currentStreak: 0, longestStreak: 0 },
+      { id: 'never-practiced', currentStreak: 0, longestStreak: 0 },
       { id: 'ran-once', currentStreak: 1, longestStreak: 1 },
       { id: 'ran-twice', currentStreak: 2, longestStreak: 2 },
       { id: 'record-holder', currentStreak: 1, longestStreak: 7 },

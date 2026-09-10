@@ -178,7 +178,7 @@ const PathPage: Component = () => {
           </h1>
           <p class={styles.tagline}>
             Seven weeks through the craft of singing — one luminous week at a
-            time. Practise ~5 minutes a day and watch each orb fill.
+            time. Practice ~5 minutes a day and watch each orb fill.
           </p>
           <Show when={started() && !finished()}>
             <p class={styles.progressLine}>

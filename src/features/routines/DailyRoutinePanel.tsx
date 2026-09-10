@@ -180,7 +180,7 @@ export const DailyRoutinePanel: Component = () => {
                         )}
                       </Show>
                       {/* Runs, not just minutes: "5 x" is the difference
-                          between practising long notes and demonstrating one,
+                          between practicing long notes and demonstrating one,
                           and the row is where the singer agrees to it. The
                           one they are on says so — a segment that refuses to
                           tick off after a good run is otherwise a bug. */}

@@ -141,7 +141,7 @@ export interface SessionRecord extends DbEntity {
   // decoration. `0025_sessionRecords_progress.sql` adds them to a table that
   // already had rows, so they are nullable in D1 by design — and the server
   // adapter hands JSON straight through without normalising, so a record read
-  // back for any account that practised before this release carries a literal
+  // back for any account that practiced before this release carries a literal
   // `null` here, not a missing key. Declaring them `?: string` alone made the
   // type lie: `record.sourceRef !== undefined` type-checked, passed at runtime
   // on `null`, and `.trim()` threw. Keep the `| null` so the compiler makes
@@ -337,7 +337,7 @@ export interface UserBadge extends DbEntity {
  * Which shelf an achievement sits on.
  *
  * - `beginnings` — first-time acts. A new singer clears several in week one.
- * - `building` — the weekly rhythm, for someone already practising.
+ * - `building` — the weekly rhythm, for someone already practicing.
  * - `mastery` — the long haul, months rather than weeks.
  *
  * The point of the split is that there is always one within reach while

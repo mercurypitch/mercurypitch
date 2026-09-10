@@ -9,7 +9,7 @@
 // done without singing a note, and the streak, the calendar and the
 // badge engine all count a run that never happened.
 //
-// Not removed, because two honest cases remain: practising away from the
+// Not removed, because two honest cases remain: practicing away from the
 // app, and a drill that failed to record. Both are real, and blocking
 // them would push people into faking progress some other way. So the
 // tick stays and asks first, and only for segments that would otherwise

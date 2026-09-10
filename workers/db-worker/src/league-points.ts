@@ -54,7 +54,7 @@ export interface LeaguePointsConfig {
 /**
  * Default weights, matching the `leaguePointsConfig` seed row in migration 0005.
  * Consistency-weighted: goalMetBonus (+25/day) is the dominant lever, so a
- * daily practiser out-earns a one-session grinder.
+ * daily practicer out-earns a one-session grinder.
  */
 export const DEFAULT_LEAGUE_POINTS_CONFIG: LeaguePointsConfig = {
   exerciseBase: 10,
@@ -78,7 +78,11 @@ export const DEFAULT_LEAGUE_POINTS_CONFIG: LeaguePointsConfig = {
  * (Once this branch gains the `SessionSource` union in src/db/entities.ts,
  * these should be reconciled with it — it does not exist here yet.)
  */
-export type LeaguePointsSource = 'practice' | 'challenge' | 'weekly' | 'exercise'
+export type LeaguePointsSource =
+  | 'practice'
+  | 'challenge'
+  | 'weekly'
+  | 'exercise'
 
 export interface LeaguePointsInput {
   source: LeaguePointsSource

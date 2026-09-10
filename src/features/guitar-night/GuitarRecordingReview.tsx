@@ -1,6 +1,6 @@
 // Recorder review reuses Jam Doctor's focus-managed sheet and keeps audio saving explicit.
 /*
-THESIS: Keep a played idea, then practise an explicitly accepted melody.
+THESIS: Keep a played idea, then practice an explicitly accepted melody.
 OWN-WORLD: Inherit Velvet Rehearsal's dark faceplates, amber actions and warm type.
 STORY: Replay input or transcribed notes with a reversible tone, then Keep or Practice explicitly.
 FIRST VIEWPORT: Source, tone and title lead; Keep and Practice stay pinned below the scrolling corrections.

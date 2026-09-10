@@ -109,7 +109,7 @@ export function PianoNightTrackAssignmentEditor(
         Arrange {props.project.name}
       </h2>
       <p class={styles.intro}>
-        Choose one part to practise. Pitched Hear tracks play as fallback
+        Choose one part to practice. Pitched Hear tracks play as fallback
         accompaniment; drum lanes stay preserved for a future drum-kit engine.
       </p>
 

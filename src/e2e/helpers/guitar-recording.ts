@@ -15,9 +15,7 @@ export async function enterRecording(
   await page.route('https://**/*', (route) => route.abort())
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
-  await page
-    .getByRole('button', { name: 'Play free form', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Free play', exact: true }).click()
   await expect(page.getByTestId('guitar-night-deck')).toBeVisible()
   // Seed only the persistence boundary after the app initializes its schema.
   // Actual PCM decoding, transcribed-note scheduling and UI state stay real.

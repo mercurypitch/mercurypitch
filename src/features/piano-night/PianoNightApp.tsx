@@ -262,7 +262,7 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
           onClick={() => props.onPractice()}
         >
           <Repeat />
-          Practise this {props.hasAuthoredCoach() ? 'phrase' : 'section'}
+          Practice this {props.hasAuthoredCoach() ? 'phrase' : 'section'}
         </button>
       </div>
     </>
@@ -1002,7 +1002,7 @@ export function PianoNightApp(): JSX.Element {
                 controller.practiceLoop().enabled
                   ? 'Turn practice repeat off'
                   : controller.practiceLoop().range === null
-                    ? `Practise the current ${
+                    ? `Practice the current ${
                         controller.source().hasAuthoredCoach
                           ? 'phrase'
                           : 'section'
@@ -1451,7 +1451,7 @@ export function PianoNightApp(): JSX.Element {
                   onClick={practiceCurrentSection}
                 >
                   <Repeat />
-                  Practise this{' '}
+                  Practice this{' '}
                   {controller.source().hasAuthoredCoach ? 'phrase' : 'section'}
                 </button>
                 <button
