@@ -213,6 +213,10 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
+import { InstrumentRoomDoor } from '@/features/instrument-room/InstrumentRoomDoor'
+import type { RoomInstrument } from '@/features/instrument-room/room-preference'
+import { roomChoice, setRoomChoice, } from '@/features/instrument-room/room-preference'
 import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
@@ -224,6 +228,7 @@ import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
@@ -1152,10 +1157,64 @@ const AppShell: Component<AppProps> = (props) => {
     onResolved(true)
   }
 
+  const [roomDoorFor, setRoomDoorFor] = createSignal<RoomInstrument | null>(
+    null,
+  )
+
+  const instrumentOfTab = (tab: ActiveTab): RoomInstrument | null => {
+    if (tab === TAB_PIANO) return 'piano'
+    if (tab === TAB_GUITAR) return 'guitar'
+    return null
+  }
+
+  const nightPathOf = (instrument: RoomInstrument): string =>
+    instrument === 'piano' ? PIANO_NIGHT_PATH : GUITAR_NIGHT_PATH
+
+  /**
+   * Piano and Guitar each open two rooms, so the tab asks once which one.
+   *
+   * Answered here rather than in the tab bar because there are several ways
+   * to reach a tab — the top nav, the keyboard's next/prev, a call from
+   * another surface — and the question belongs to the destination, not to
+   * whichever control happened to ask for it. Hash routing goes through
+   * requestActiveTabChange directly and is deliberately NOT intercepted: a
+   * deep link to #/piano is already a statement about where to land.
+   *
+   * Returns true when it has taken over the navigation.
+   */
+  function roomDoorIntercepts(
+    newTab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ): boolean {
+    const instrument = instrumentOfTab(newTab)
+    if (instrument === null) return false
+    // A phone has one answer — the Night room IS the mobile experience and the
+    // workspace is a desktop surface — so it never asks. BottomTabBar routes
+    // there directly; this covers every other way a narrow viewport gets here.
+    if (isNarrow()) {
+      window.location.assign(nightPathOf(instrument))
+      onResolved?.(false)
+      return true
+    }
+    const choice = roomChoice(instrument)
+    if (choice === 'night') {
+      window.location.assign(nightPathOf(instrument))
+      onResolved?.(false)
+      return true
+    }
+    if (choice === 'ask') {
+      setRoomDoorFor(instrument)
+      onResolved?.(false)
+      return true
+    }
+    return false
+  }
+
   function handleTabChange(
     newTab: ActiveTab,
     onResolved?: (accepted: boolean) => void,
   ): void {
+    if (roomDoorIntercepts(newTab, onResolved)) return
     requestActiveTabChange(newTab, (accepted) => {
       if (accepted) {
         setActiveTab(newTab)
@@ -4405,6 +4464,34 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
         <Show when={showVoiceHelp()}>
           <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+        </Show>
+        <Show when={roomDoorFor()} keyed>
+          {(instrument) => (
+            <InstrumentRoomDoor
+              instrument={instrument}
+              onDismiss={() => setRoomDoorFor(null)}
+              onChoose={(choice, remember) => {
+                setRoomDoorFor(null)
+                // Unticked leaves 'ask' in place, so the door opens again next
+                // time. That is the whole meaning of the tick, and the reason
+                // the stored value is a third state rather than a flag.
+                if (remember) setRoomChoice(instrument, choice)
+                if (choice === 'night') {
+                  window.location.assign(nightPathOf(instrument))
+                  return
+                }
+                requestActiveTabChange(
+                  instrument === 'piano' ? TAB_PIANO : TAB_GUITAR,
+                  (accepted) => {
+                    if (accepted)
+                      setActiveTab(
+                        instrument === 'piano' ? TAB_PIANO : TAB_GUITAR,
+                      )
+                  },
+                )
+              }}
+            />
+          )}
         </Show>
         {/* Mounting IS opening: the stage's engine spins up with the
             component and releases the mic on unmount. */}

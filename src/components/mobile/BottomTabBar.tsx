@@ -29,7 +29,9 @@ import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { BusyLink } from '@/components/shared/BusyLink'
 import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
-import { mobileBarTabs, TAB_EXERCISES, TAB_KARAOKE, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
+import { mobileBarTabs, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -97,6 +99,36 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
     </li>
   )
 
+  /**
+   * Piano and Guitar leave the app on a phone, exactly as Drum Night does, so
+   * in the sheet they read as doors rather than tabs. A row that looks like
+   * every other row but navigates away is the thing worth signalling.
+   */
+  const instrumentDoor = (tab: ActiveTab) => {
+    const piano = tab === TAB_PIANO
+    return (
+      <li>
+        <BusyLink
+          id={TAB_META[tab]?.id}
+          href={piano ? PIANO_NIGHT_PATH : GUITAR_NIGHT_PATH}
+          class={styles.moreRoomLink}
+          data-testid={piano ? 'nav-piano-night' : 'nav-guitar-night'}
+          aria-label={`${piano ? 'Piano' : 'Guitar'} Night — open standalone room`}
+          busyLabel={`Opening ${piano ? 'Piano' : 'Guitar'} Night…`}
+          onClick={() => setMoreOpen(false)}
+        >
+          <span class={styles.moreIcon} aria-hidden="true">
+            {renderIcon(TAB_META[tab])}
+          </span>
+          <span class={styles.moreRoomCopy}>
+            <strong>{piano ? 'Piano Night' : 'Guitar Night'}</strong>
+            <small>Open the standalone room</small>
+          </span>
+        </BusyLink>
+      </li>
+    )
+  }
+
   const pick = (tab: ActiveTab): void => {
     haptics.tapLight()
     setMoreOpen(false)
@@ -107,6 +139,18 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
     // in-app Karaoke tab via the top nav.
     if (tab === TAB_KARAOKE) {
       window.location.assign('/karaoke')
+      return
+    }
+    // Same rule for the two instruments that now have two rooms: on a phone
+    // the Night room IS the mobile experience and the workspace is a desktop
+    // surface, so there is no question worth asking here. The desktop door
+    // (features/instrument-room) never renders on this viewport.
+    if (tab === TAB_PIANO) {
+      window.location.assign(PIANO_NIGHT_PATH)
+      return
+    }
+    if (tab === TAB_GUITAR) {
+      window.location.assign(GUITAR_NIGHT_PATH)
       return
     }
     props.handleTabChange(tab)
@@ -167,31 +211,38 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
                 <Show when={tab === drumNightBeforeTab()}>
                   {drumNightDoor()}
                 </Show>
-                <li>
-                  {/* Same `#tab-*` id the bar buttons carry. A tab is either in
+                <Show
+                  when={tab !== TAB_PIANO && tab !== TAB_GUITAR}
+                  fallback={instrumentDoor(tab)}
+                >
+                  <li>
+                    {/* Same `#tab-*` id the bar buttons carry. A tab is either in
                     the bar or in this sheet, never both, so the ids stay
                     unique — and a tour or audit script that looks for
                     `#tab-exercises` now resolves it once the sheet is open
                     instead of finding nothing on a phone at all. */}
-                  <button
-                    id={TAB_META[tab]?.id}
-                    classList={{
-                      [styles.moreRow]: true,
-                      [styles.moreRowActive]: props.activeTab() === tab,
-                      active: props.activeTab() === tab,
-                    }}
-                    onClick={() => pick(tab)}
-                    aria-current={
-                      props.activeTab() === tab ? 'page' : undefined
-                    }
-                    aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
-                  >
-                    <span class={styles.moreIcon}>
-                      {renderIcon(TAB_META[tab])}
-                    </span>
-                    {props.tabLabel(tab)}
-                  </button>
-                </li>
+                    <button
+                      id={TAB_META[tab]?.id}
+                      classList={{
+                        [styles.moreRow]: true,
+                        [styles.moreRowActive]: props.activeTab() === tab,
+                        active: props.activeTab() === tab,
+                      }}
+                      onClick={() => pick(tab)}
+                      aria-current={
+                        props.activeTab() === tab ? 'page' : undefined
+                      }
+                      aria-label={
+                        TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)
+                      }
+                    >
+                      <span class={styles.moreIcon}>
+                        {renderIcon(TAB_META[tab])}
+                      </span>
+                      {props.tabLabel(tab)}
+                    </button>
+                  </li>
+                </Show>
                 <Show when={tab === drumNightAnchorTab()}>
                   {drumNightDoor()}
                 </Show>
