@@ -90,6 +90,19 @@ describe('Settings voice-control help', () => {
     expect(container.textContent).not.toContain('Hands-free transport')
   })
 
+  it("sizes both buttons' icons the same", () => {
+    // They sit side by side in one row. The icon set defaults to 24 and only
+    // some of it takes a `size`, so a new button next to an old one is
+    // exactly where a mismatch appears — this one shipped at 24 beside 16.
+    const container = openSingingTab()
+    const sizes = ['settings-voice-commands', 'settings-voice-tour'].map((id) =>
+      container
+        .querySelector(`[data-testid="${id}"] svg`)
+        ?.getAttribute('width'),
+    )
+    expect(sizes[0]).toBe(sizes[1])
+  })
+
   it('starts the voice tour from the same section', () => {
     // The button is the whole point of Settings being a second door into the
     // tour: someone who is already reading about voice control should not
