@@ -130,6 +130,83 @@ const MAX_VALUE_BYTES = 8 * 1024
 
 const PUSH_DEBOUNCE_MS = 1500
 
+/**
+ * Local writes whose push has not landed on the account yet.
+ *
+ * In localStorage rather than memory, because the whole failure is a page
+ * that goes away before its own debounced push fires: an in-memory ledger
+ * dies with the tab that was about to upload it, which is precisely the
+ * moment the record is needed.
+ *
+ * What it fixes: change the theme and reload inside PUSH_DEBOUNCE_MS and the
+ * upload never happened, so the next pull found the account still holding the
+ * OLD theme and `applyPersistedValue` wrote it back over the new one. The
+ * visitor saw their choice revert for no stated reason. Reported 2026-09-10.
+ *
+ * Speed was never the fix. A shorter debounce only narrows the window, and
+ * the same loss happens on a crash, a closed laptop, or an offline push —
+ * so the pull has to know a local value is newer, not merely be raced to it.
+ */
+const PENDING_KEY = 'mp_sync_pending'
+
+/**
+ * Stamped with the identity that made the writes, and ignored under any
+ * other. Logout does not clear localStorage (auth-service `logout`), so on a
+ * shared computer one singer's unsent theme would otherwise be waiting when
+ * the next one signs in — and the guard below would then defend it against
+ * THEIR account and upload it there. Same hazard MERGE_OWNER_KEY guards for
+ * progress, and answered the same conservative way.
+ */
+interface PendingLedger {
+  owner: string
+  values: Record<string, string>
+}
+
+function readPending(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY)
+    if (raw === null) return {}
+    const parsed = JSON.parse(raw) as PendingLedger | null
+    if (parsed === null || typeof parsed !== 'object') return {}
+    if (parsed.owner !== getUserId()) return {}
+    return parsed.values ?? {}
+  } catch {
+    return {}
+  }
+}
+
+function writePending(values: Record<string, string>): void {
+  try {
+    if (Object.keys(values).length === 0) localStorage.removeItem(PENDING_KEY)
+    else {
+      const ledger: PendingLedger = { owner: getUserId(), values }
+      localStorage.setItem(PENDING_KEY, JSON.stringify(ledger))
+    }
+  } catch {
+    /* private mode — the push still runs, it just cannot survive a reload */
+  }
+}
+
+function markPending(key: string, value: string): void {
+  const values = readPending()
+  values[key] = value
+  writePending(values)
+}
+
+/**
+ * Forget a pending write, but only if it is still the one that was pushed.
+ *
+ * A second change while the first is in flight leaves a NEWER value in the
+ * ledger; clearing on the older push's success would strand it exactly the
+ * way the original bug stranded the first.
+ */
+function clearPendingIfUnchanged(key: string, pushed: string): void {
+  const map = readPending()
+  if (map[key] !== pushed) return
+  delete map[key]
+  writePending(map)
+}
+
 function isSyncedKey(key: string): boolean {
   if (INCLUDED_KEYS.has(key)) return true
   return key.startsWith(SYNCED_PREFIX) && !EXCLUDED_KEYS.has(key)
@@ -152,6 +229,7 @@ async function pushSetting(key: string, value: string): Promise<void> {
     const existingId = cloudRowIds.get(key)
     if (existingId != null) {
       await repo.update(existingId, { value })
+      clearPendingIfUnchanged(key, value)
       return
     }
     // First write for this key this session — resolve or create the row.
@@ -163,8 +241,31 @@ async function pushSetting(key: string, value: string): Promise<void> {
       const created = await repo.create({ userId: '', key, value })
       cloudRowIds.set(key, created.id)
     }
+    clearPendingIfUnchanged(key, value)
   } catch (err) {
+    // Deliberately leaves the ledger entry in place: a failed push is the
+    // case the ledger exists for, and the next pull uploads it instead of
+    // overwriting it.
     console.warn(`[settings-sync] push failed for "${key}":`, err)
+  }
+}
+
+/**
+ * Send every outstanding local write now, without waiting out its debounce.
+ *
+ * Called when the page is going away, and again after each pull. On the way
+ * out the request usually will NOT finish — that is fine and not what this
+ * is for. Correctness lives in the ledger, which survives the reload; this
+ * only means the account is usually current before the tab closes, so a
+ * second device does not have to wait for the next visit.
+ */
+function flushPendingPushes(): void {
+  for (const timer of pushTimers.values()) clearTimeout(timer)
+  pushTimers.clear()
+  if (!cloudActive()) return
+  for (const [key, value] of Object.entries(readPending())) {
+    if (!isSyncedKey(key)) continue
+    void pushSetting(key, value)
   }
 }
 
@@ -183,11 +284,24 @@ export async function pullCloudSettings(): Promise<void> {
     const me = getUserId()
     const owner = localMergeOwner()
     const mayMerge = owner === null || owner === me
+    const pending = readPending()
     for (const row of rows) {
       if (!isSyncedKey(row.key)) continue
       cloudRowIds.set(row.key, row.id)
       const local = localStorage.getItem(row.key)
       const merge = mayMerge ? MERGE_ON_PULL[row.key] : undefined
+      // A write this device made that never reached the account. The row in
+      // hand is the OLDER value, so applying it would undo a choice the
+      // visitor already made and watched take effect. Send ours up instead.
+      // Merge keys are exempt: reconciling already keeps the local side.
+      if (merge === undefined && pending[row.key] !== undefined) {
+        // The account already caught up; stop defending the key.
+        if (pending[row.key] === row.value)
+          clearPendingIfUnchanged(row.key, row.value)
+        // Otherwise leave it in the ledger — the flush after this pull
+        // uploads it, so there is no second push racing the loop.
+        continue
+      }
       const next = merge === undefined ? row.value : merge(local, row.value)
       if (local !== next) applyPersistedValue(row.key, next)
       // A merge can leave the account behind the device (local-only days).
@@ -224,6 +338,9 @@ export async function pullCloudSettings(): Promise<void> {
       // the pull returns early with no token at all.
       forgetMergeOwner()
     }
+    // Anything still unsent goes up now: the loop above deliberately did not
+    // push, and a key the account has no row for at all was never in it.
+    flushPendingPushes()
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
   }
@@ -240,6 +357,9 @@ export function initSettingsSync(): void {
     if (!isSyncedKey(key)) return
     if (serialized.length > MAX_VALUE_BYTES) return
     if (!cloudActive()) return
+    // Recorded BEFORE the debounce, synchronously, so the value is already
+    // durable if the page never survives to run the timer.
+    markPending(key, serialized)
     clearTimeout(pushTimers.get(key))
     pushTimers.set(
       key,
@@ -249,6 +369,17 @@ export function initSettingsSync(): void {
       }, PUSH_DEBOUNCE_MS),
     )
   })
+
+  // pagehide fires on a reload, a close and a bfcache suspend alike, which is
+  // every way this tab can stop running its own timers. visibilitychange is
+  // the companion iOS actually delivers when an app is backgrounded and then
+  // killed without ever firing pagehide.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flushPendingPushes)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushPendingPushes()
+    })
+  }
 
   // Pull now and on every sign-in/sign-out (token change).
   createEffect(() => {
