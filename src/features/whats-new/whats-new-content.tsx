@@ -21,15 +21,12 @@
 import type { JSX } from 'solid-js'
 import { Cloud, DeviceSync, Drum, Ear, Guitar, Headphones, MercuryPlanet, Mic, PianoKeys, Trophy, } from '@/components/icons'
 import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
 import { openMercurySing } from '@/features/mercury-sing/mercury-sing-store'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { TAB_EAR_LAB, TAB_PROGRESS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
 import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
-
-/** The standalone Guitar Night room. No constant of its own yet; the two
- *  in-app doors to it (GuitarPage) hard-code the same path. */
-const GUITAR_NIGHT_PATH = '/guitar-night'
 
 /**
  * The night rooms are their own pages, not tabs, so reaching one is a real
