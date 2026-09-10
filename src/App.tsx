@@ -1180,6 +1180,13 @@ const AppShell: Component<AppProps> = (props) => {
    * requestActiveTabChange directly and is deliberately NOT intercepted: a
    * deep link to #/piano is already a statement about where to land.
    *
+   * Only ever called once requestActiveTabChange has ACCEPTED the move. The
+   * guard it runs is not about tabs: it blocks navigation while a take is
+   * still saving to this device, and lets Voice History ask before it is
+   * left. Taking over ahead of it would have skipped both — and the Night
+   * answer is a full page navigation, so a take mid-save would have been
+   * abandoned rather than merely interrupted.
+   *
    * Returns true when it has taken over the navigation.
    */
   function roomDoorIntercepts(
@@ -1214,9 +1221,11 @@ const AppShell: Component<AppProps> = (props) => {
     newTab: ActiveTab,
     onResolved?: (accepted: boolean) => void,
   ): void {
-    if (roomDoorIntercepts(newTab, onResolved)) return
     requestActiveTabChange(newTab, (accepted) => {
       if (accepted) {
+        // Inside the callback, not before it: the current surface has to
+        // release us first. See roomDoorIntercepts.
+        if (roomDoorIntercepts(newTab, onResolved)) return
         setActiveTab(newTab)
       } else {
         const route = parseHash(window.location.hash)
@@ -4476,19 +4485,19 @@ const AppShell: Component<AppProps> = (props) => {
                 // time. That is the whole meaning of the tick, and the reason
                 // the stored value is a third state rather than a flag.
                 if (remember) setRoomChoice(instrument, choice)
-                if (choice === 'night') {
-                  window.location.assign(nightPathOf(instrument))
-                  return
-                }
-                requestActiveTabChange(
-                  instrument === 'piano' ? TAB_PIANO : TAB_GUITAR,
-                  (accepted) => {
-                    if (accepted)
-                      setActiveTab(
-                        instrument === 'piano' ? TAB_PIANO : TAB_GUITAR,
-                      )
-                  },
-                )
+                const tab = instrument === 'piano' ? TAB_PIANO : TAB_GUITAR
+                // Re-asked here, not just before the door opened: answering it
+                // takes as long as it takes, and a take can start saving in
+                // that time. Night is a full page navigation, so it is the
+                // answer that most needs the veto.
+                requestActiveTabChange(tab, (accepted) => {
+                  if (!accepted) return
+                  if (choice === 'night') {
+                    window.location.assign(nightPathOf(instrument))
+                    return
+                  }
+                  setActiveTab(tab)
+                })
               }}
             />
           )}
