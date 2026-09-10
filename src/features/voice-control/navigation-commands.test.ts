@@ -367,6 +367,29 @@ describe('the standalone rooms', () => {
     }
   })
 
+  it('takes a bare name, which is how people actually speak', () => {
+    const commands = createNavigationVoiceCommands({ isNarrow: () => false })
+
+    expect(matchVoiceCommand('singing', commands)?.command.id).toBe(
+      'nav.singing',
+    )
+    expect(matchVoiceCommand('karaoke', commands)?.command.id).toBe(
+      'nav.karaoke',
+    )
+    expect(matchVoiceCommand('guitar night', commands)?.command.id).toBe(
+      'nav.guitarNight',
+    )
+  })
+
+  it('will not answer to a bare "home"', () => {
+    const commands = createNavigationVoiceCommands({})
+
+    // Voice control listens while music plays and the wake word is only
+    // required in some modes. "Home" is in half the choruses ever written.
+    expect(matchVoiceCommand('home', commands)).toBeNull()
+    expect(matchVoiceCommand('go home', commands)?.command.id).toBe('nav.home')
+  })
+
   it('keeps the room and the tab apart', () => {
     const leaves: string[] = []
     const commands = createNavigationVoiceCommands({
