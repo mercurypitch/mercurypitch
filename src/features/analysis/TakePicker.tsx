@@ -50,7 +50,7 @@ export interface TakePickerProps {
 }
 
 export const TakePicker: Component<TakePickerProps> = (props) => {
-  // Only the synthetic live take → nothing has been recorded or practised yet.
+  // Only the synthetic live take → nothing has been recorded or practiced yet.
   const hasRealTakes = () => props.takes.some((t) => t.source !== 'live')
 
   return (

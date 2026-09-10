@@ -23,7 +23,7 @@ related_targets:
   voice or receiving a medical/composite score. They should hear an authored
   target, complete three comfortable exact-register landings, report effort,
   inspect the specific moments behind one positive observation and one focus,
-  keep explicitly, practise a short reviewed dose, and return to the same
+  keep explicitly, practice a short reviewed dose, and return to the same
   saved reading before deciding whether to check again.
 - Primary task and proof: the guided route produces a local, denominator-visible
   reading only after comfort and signal gates pass. Evidence markers seek

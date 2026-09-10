@@ -421,7 +421,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             </button>
           </Show>
         </p>
-        <h3>Add a song you own</h3>
+        <h3>Add a song</h3>
         <Show
           when={effectiveMode() === 'server'}
           fallback={

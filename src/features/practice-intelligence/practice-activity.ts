@@ -1,5 +1,5 @@
 // ============================================================
-// Practice activity — one source for "did I practise that day"
+// Practice activity — one source for "did I practice that day"
 // ============================================================
 //
 // Four things count as practice, and all four write a SessionRecord:

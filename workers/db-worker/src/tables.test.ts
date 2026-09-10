@@ -27,7 +27,7 @@ describe('blockedForAnonymous', () => {
   })
 
   it('leaves private tables alone for everyone', () => {
-    // Practising without an account has to keep working — the gate is
+    // Practicing without an account has to keep working — the gate is
     // about publishing, not about tracking your own singing.
     expect(blockedForAnonymous(TABLES.sessionRecords, anon)).toBe(false)
     expect(blockedForAnonymous(TABLES.userBadges, anon)).toBe(false)

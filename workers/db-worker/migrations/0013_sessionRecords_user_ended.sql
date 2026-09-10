@@ -15,7 +15,7 @@
 --
 -- A composite in the query's own order lets the index supply the ordering,
 -- so the scan stops at the LIMIT: ~430 rows read per pass no matter how long
--- somebody has been practising.
+-- somebody has been practicing.
 --
 -- The single-column idx_sessionRecords_userId is left in place deliberately.
 -- SQLite can use this composite for a bare userId lookup too, but dropping

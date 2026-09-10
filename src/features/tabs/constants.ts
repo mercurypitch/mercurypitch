@@ -86,7 +86,7 @@ export const MAX_INLINE_GROUP_TABS = 3
 
 export const TAB_GROUPS: readonly TabGroupDef[] = [
   {
-    // Where you are, not what you practise: the daily hub, guided path,
+    // Where you are, not what you practice: the daily hub, guided path,
     // Progress, and the personal records you return to. Individual records
     // may still be scoped to one instrument.
     id: 'you',

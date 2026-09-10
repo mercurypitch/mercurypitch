@@ -46,7 +46,7 @@ design constraint, not a limitation to be fixed later.
 2. **Nothing counts.** `jamExerciseHistory` is sessionStorage and dies with
    the tab. It never reaches `recordExerciseResult`, so a jam feeds no streak,
    no Ascent progress, no weakness analysis, no badge, no leaderboard.
-   Practising with a friend is worth _less_ than practising alone.
+   Practicing with a friend is worth _less_ than practicing alone.
 3. **The scoreboard is not the same for everyone.** Each client scores every
    peer from its own `jamPitchHistory`, mapping samples to beats by wall-clock
    age (`Date.now() - s.timestamp`). Different jitter, different scoreboard.

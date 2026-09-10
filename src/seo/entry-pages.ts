@@ -159,7 +159,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     boot: '/src/features/karaoke-night/main.tsx',
     title: 'Karaoke Night — Turn Your Songs Into Karaoke | MercuryPitch',
     description:
-      'Upload a song you own, the vocals lift away, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the example song free.',
+      'Upload any song, the vocals lift away, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the example song free.',
     keywords:
       'karaoke maker, remove vocals from song, vocal remover, karaoke with scoring, sing along with lyrics, karaoke night at home',
     og: {
@@ -168,19 +168,19 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'The vocals lift away and you sing with synced lyrics and live pitch scoring. In your browser — try the example song free.',
       image: 'https://mercurypitch.com/karaoke-og.png',
       imageAlt:
-        'MercuryPitch Karaoke Night — turn any song you own into karaoke on a theatre stage, with the demo song Goodbye to Spring ready to sing.',
+        'MercuryPitch Karaoke Night — turn any song into karaoke on a theatre stage, with the demo song Goodbye to Spring ready to sing.',
     },
     twitter: {
       title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
       description:
         'Vocal removal + synced lyrics + live pitch scoring, in your browser. Try the example song free.',
     },
-    h1: 'Karaoke Night — turn any song you own into karaoke',
-    lede: 'Bring a song you own. The vocals lift away, the lyrics arrive in time, and every note you sing is drawn against the one you were aiming for. Loop the bar you keep missing, slow it down, and hear your own take back. The example song is free.',
+    h1: 'Karaoke Night — turn any song into karaoke',
+    lede: 'Bring any song. The vocals lift away, the lyrics arrive in time, and every note you sing is drawn against the one you were aiming for. Loop the bar you keep missing, slow it down, and hear your own take back. The example song is free.',
     faq: [
       {
         q: 'How do I make a karaoke version of a song?',
-        a: 'Upload a song you own and MercuryPitch separates the vocals from the instruments. You get a karaoke-ready mix with adjustable vocal level, synced lyrics and live pitch scoring, all in your browser.',
+        a: 'Upload any song and MercuryPitch separates the vocals from the instruments. You get a karaoke-ready mix with adjustable vocal level, synced lyrics and live pitch scoring, all in your browser.',
       },
       {
         q: 'Does it work with any song?',
@@ -246,7 +246,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/piano-night'],
     navLabel: 'Piano Night',
     boot: '/src/features/piano-night/main.tsx',
-    title: 'Piano Night — Practise Piano Phrase by Phrase | MercuryPitch',
+    title: 'Piano Night — Practice Piano Phrase by Phrase | MercuryPitch',
     description:
       'Slow a phrase down, loop the bar that will not sit, and play it back up to tempo — in your browser, with your own MIDI keyboard or the keys on screen.',
     keywords:
@@ -254,7 +254,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Piano Night — shape every phrase',
       description:
-        'A focused piano room for practising and performing. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo.',
+        'A focused piano room for practicing and performing. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo.',
       image: 'https://mercurypitch.com/piano-night-og.png',
       imageAlt:
         'MercuryPitch Piano Night — a low-lit studio with a grand piano at dusk, and the panel offering the rooms to play in.',
@@ -262,9 +262,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Piano Night — shape every phrase',
       description:
-        'A focused piano room for practising and performing. Loop the bar that will not sit, and play it back up to tempo.',
+        'A focused piano room for practicing and performing. Loop the bar that will not sit, and play it back up to tempo.',
     },
-    h1: 'Piano Night — practise piano, phrase by phrase',
+    h1: 'Piano Night — practice piano, phrase by phrase',
     lede: 'A focused room for the keyboard. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo, reading it as falling notes, as a staff or as hands on the keys. Works with a MIDI keyboard or the keys on screen.',
     app: {
       name: 'Piano Night',
@@ -348,13 +348,13 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     bootHash: '#/ear-lab',
     title: 'Ear Lab — Ear Training Measured in Real Units | MercuryPitch',
     description:
-      'An ear-training bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practise whichever faculty is neediest.',
+      'An ear-training bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice whichever faculty is neediest.',
     keywords:
       'ear training online, ear training app, relative pitch practice, interval ear training, pitch discrimination test, rhythm ear training, ear training in browser',
     og: {
       title: 'Ear Lab — an ear you can measure',
       description:
-        'Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does. Calibrate, then practise where the reading says.',
+        'Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does. Calibrate, then practice where the reading says.',
       image: 'https://mercurypitch.com/ear-lab-og.png',
       imageAlt:
         'MercuryPitch Ear Lab — a chronometer workshop at night, the Mercury Column standing at 618, and three readings: Hairline 6.4 cents, the Grid 18 ms, Mercury Index 618.',
@@ -365,7 +365,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does.',
     },
     h1: 'Ear Lab — ear training measured in real units',
-    lede: 'A bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practise at whichever faculty is neediest: pitch resolution, harmony, melody, timbre and time. Everything is measured, nothing is guessed.',
+    lede: 'A bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice at whichever faculty is neediest: pitch resolution, harmony, melody, timbre and time. Everything is measured, nothing is guessed.',
     app: {
       name: 'Ear Lab',
       category: 'MusicApplication',
@@ -425,7 +425,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title:
       'Vocal Pitch Practice — Free Pitch Training with Live Feedback | MercuryPitch',
     description:
-      'Practise singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every attempt in cents.',
+      'Practice singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every attempt in cents.',
     keywords:
       'vocal pitch practice, pitch training, pitch trainer, sing on pitch, pitch accuracy, vocal pitch monitor, pitch matching',
     og: {
@@ -439,9 +439,9 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
-        'Practise on pitch with live feedback measured in cents. Free, in your browser, audio stays on your device.',
+        'Practice on pitch with live feedback measured in cents. Free, in your browser, audio stays on your device.',
     },
-    h1: 'Practise singing on pitch, and see the proof',
+    h1: 'Practice singing on pitch, and see the proof',
     lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant, measuring the gap in cents rather than telling you it was close.',
     app: {
       name: 'MercuryPitch Pitch Training',
@@ -451,7 +451,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     faq: [
       {
-        q: 'How do I practise singing on pitch?',
+        q: 'How do I practice singing on pitch?',
         a: 'Start with one sustained note and hold it steady, because everything else is built on that. MercuryPitch shows your pitch as a live line against the target, so you can hear and see the correction at the same time. From there the exercises move on to sirens and slides, intervals, scales, staccato attacks and vibrato control.',
       },
       {
@@ -537,7 +537,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Free Vocal Remover — Vocals and Instrumental, Split Apart',
       description:
-        'Split a song you own into vocal and instrumental, then sing over the backing track with live scoring.',
+        'Split any song into vocal and instrumental, then sing over the backing track with live scoring.',
     },
     h1: 'Vocal remover — take the voice out, keep the song',
     lede: 'Drop in a song you already own and MercuryPitch separates it into a vocal track and an instrumental one. Keep the instrumental as a backing track, or keep the vocal on its own to study how the line is actually sung. Then sing over it, with your pitch scored live against the original melody.',

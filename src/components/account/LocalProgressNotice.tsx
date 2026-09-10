@@ -35,7 +35,7 @@ export const LocalProgressNotice: Component = () => {
   }
 
   // Counted as of the sign-in, not as of now: the local stores keep growing
-  // while the singer practises, and a notice about what was left behind must
+  // while the singer practices, and a notice about what was left behind must
   // not grow with them. See local-progress-notice.ts.
   const progress = (): ReturnType<typeof localProgressAtSignIn> => {
     authVersion()

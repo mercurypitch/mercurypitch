@@ -2511,7 +2511,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                             startSavedGuidedPractice(focus)
                                           }
                                         >
-                                          Practise Pitch Hold
+                                          Practice Pitch Hold
                                         </button>
                                       </div>
                                     </div>

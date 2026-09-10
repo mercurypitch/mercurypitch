@@ -55,7 +55,7 @@ function featLabel(featType: string): string {
 }
 
 /** Launch a frozen weekly melody as practice, never as a board attempt. */
-export function practisePastChallenge(challenge: WeeklyChallenge): void {
+export function practicePastChallenge(challenge: WeeklyChallenge): void {
   clearWeeklyAttempt()
   openChallengeStage({
     challengeId: challenge.id,
@@ -84,7 +84,7 @@ export const PastWeeklyChallenges: Component = () => {
           <h3 id="past-weekly-challenges-title">Past Legends</h3>
           <p>
             How each one finished, and who finished first. Missed one? Its
-            melody is still here to practise; practice runs never touch a board.
+            melody is still here to practice; practice runs never touch a board.
           </p>
         </div>
       </div>
@@ -188,11 +188,11 @@ export const PastWeeklyChallenges: Component = () => {
                   <button
                     type="button"
                     class={styles.practiceButton}
-                    onClick={() => practisePastChallenge(challenge)}
-                    aria-label={`Practise ${challenge.title}`}
+                    onClick={() => practicePastChallenge(challenge)}
+                    aria-label={`Practice ${challenge.title}`}
                   >
                     <Play />
-                    Practise
+                    Practice
                   </button>
                 </article>
               )}

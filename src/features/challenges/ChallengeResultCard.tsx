@@ -224,7 +224,7 @@ export const ChallengeResultCard: Component = () => {
     })
   }
 
-  const practiseInZen = (): void => {
+  const practiceInZen = (): void => {
     if (voiceSaveInFlight()) return
     const result = lastChallengeResult()
     if (result?.targetItems === undefined) return
@@ -391,9 +391,9 @@ export const ChallengeResultCard: Component = () => {
                           type="button"
                           class={styles.secondary}
                           disabled={voiceSaveInFlight()}
-                          onClick={practiseInZen}
+                          onClick={practiceInZen}
                         >
-                          Practise in Zen
+                          Practice in Zen
                         </button>
                       </Show>
                       <button

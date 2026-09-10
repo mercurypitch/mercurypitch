@@ -263,7 +263,7 @@ describe('localProgressNoticeDue — the wiring', () => {
 // ── The cutoff ───────────────────────────────────────────────────
 //
 // The local stores are one device-wide list each and keep growing while the
-// singer practises, signed in or not. So the notice counted runs finished
+// singer practices, signed in or not. So the notice counted runs finished
 // AFTER the sign-in, became due mid-session, and — at 390x844 — opened over
 // the auto-continue row, covering the "Stay here" button its own sentence
 // tells you to press. "Earlier practice" has to mean earlier.
@@ -331,7 +331,7 @@ describe('the cutoff — what "earlier" means', () => {
     expect(localProgressNoticeDue()).toBe(true)
   })
 
-  // Merely opening The Ascent seeds a granted day that nobody practised.
+  // Merely opening The Ascent seeds a granted day that nobody practiced.
   // Counting it would raise the notice for a device with no practice on it.
   it('does not count the Ascent day the app grants for free', () => {
     startAscent()
@@ -339,7 +339,7 @@ describe('the cutoff — what "earlier" means', () => {
     expect(localProgressNoticeDue()).toBe(false)
   })
 
-  it('counts an Ascent day practised before the account arrived', () => {
+  it('counts an Ascent day practiced before the account arrived', () => {
     startAscent()
     recordPathPracticeDay('2026-08-15')
     expect(localProgressAtSignIn('account-b').ascentDays).toBe(1)

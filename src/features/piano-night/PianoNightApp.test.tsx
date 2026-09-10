@@ -511,7 +511,7 @@ describe('PianoNightApp', () => {
     render(() => <PianoNightApp />)
 
     const repeat = screen.getByTestId('piano-night-repeat')
-    expect(repeat).toHaveAccessibleName('Practise the current phrase')
+    expect(repeat).toHaveAccessibleName('Practice the current phrase')
     expect(repeat).toHaveAttribute('aria-pressed', 'false')
 
     fireEvent.click(repeat)

@@ -175,7 +175,7 @@ export const RELEASE_0_9: Release = {
       id: 'piano-night',
       title: 'Piano Night',
       icon: () => <PianoKeys />,
-      body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practised against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
+      body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practiced against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
       tryIt:
         'Connect a MIDI keyboard first if you have one — it is offered on arrival. There is a door to the room in the Piano tab too.',
       go: {

@@ -40,7 +40,7 @@ const mark = readFileSync(resolve(REPO, 'public/favicon.svg'), 'utf8')
 const WAYS = [
   { name: 'Start', note: 'Read your first bar on one open string', lead: true },
   { name: 'Load a song', note: 'A prepared song, or your own audio' },
-  { name: 'Free play', note: 'Record what you play, practise it back' },
+  { name: 'Free play', note: 'See what you play, record it, practice' },
 ]
 
 const wayRows = WAYS.map(

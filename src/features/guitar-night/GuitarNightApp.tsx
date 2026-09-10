@@ -1626,7 +1626,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 >
                   <strong>Free play</strong>
                   <span id="guitar-night-free-play-description">
-                    See what you play, record it, practise it back
+                    See what you play, record it, practice
                   </span>
                 </button>
               </div>

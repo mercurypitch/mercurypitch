@@ -1161,7 +1161,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           }
         >
           <p class={styles.sheetEmpty}>
-            Nothing else on this device yet — go back to add a song you own.
+            Nothing else here yet — go back to add a song.
           </p>
         </Show>
       </Sheet>

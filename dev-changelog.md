@@ -1841,7 +1841,7 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   points at. A per-account first-seen stamp
   (`mercurypitch.localProgressNotice.firstSeen.v1`) now divides the history:
   `summarizeLocalProgress(before)` counts rows by `completedAt` and Ascent
-  days by date, excluding the seeded `ENDOWED_DAY` that nobody practised, and
+  days by date, excluding the seeded `ENDOWED_DAY` that nobody practiced, and
   the component reads `localProgressAtSignIn()`. The stamp is only written for
   an account that differs from the device id, so being signed out never dates
   the line.
@@ -2514,7 +2514,7 @@ none` so iOS never answers the hold with the selection magnifier.
   `applyRepair`, so any read or write brings the balance current. It needs
   its own anchor — `userProfiles.lastFreezeEarnedDate`, added by 0017 —
   because a date derived from practice would only advance for people who
-  practise, and an idle month is exactly the case that must accrue. The
+  practice, and an idle month is exactly the case that must accrue. The
   anchor advances by whole `periods * FREEZE_ACCRUAL_DAYS`, never to
   `today`, so partial periods are not silently forfeited. `applyRepair` now
   returns a typed `RepairResult` instead of a bare boolean, and repair is
@@ -3532,7 +3532,7 @@ sinceGlideStart)` is extracted and unit-tested — the guide dot was phased off
 - Siren note generation: `generateSirens` previously used spans up to 32 semitones with one-sided clamps (`Math.max(36,start)` / `Math.min(84,end)`), so wide descending glides produced sub-audible/negative MIDI (the "G0"). Now exported + parameterized by `[rangeMin, rangeMax]` (from `getComfortableMidiRange`), with singable spans (≤12, ≤range) shifted into range as a pair without distortion. `SirenExercise` shows the end note as a target line + a triangle-wave glide guide (`movingTarget`) and labels start→end. Added a range-safety regression test.
 - `PitchOverTimeCanvas`: the latest-dot note label now falls back to deriving the name from the dot's frequency (exercise samples carry no `noteName`), and `drawYAxisLabels` draws per-note gridlines/labels when zoomed to ≤ ~2.6 octaves (every semitone ≤1.4 oct, else every 2nd) instead of only octave Cs.
 - `.exercise-card-grade` is now `inline-flex` + `align-items: center` so the grade icon centers with its label.
-- Exercise difficulty badge + filter (`ExerciseMenu.tsx`): added a curated intrinsic `EXERCISE_DIFFICULTY: Record<ExerciseType, 'easy'|'medium'|'hard'>` shown as a badge on every card, plus All/Easy/Medium/Hard filter pills (`visibleCards` memo). Replaced the per-card adaptive `DifficultyIndicator` (which hid itself at the default level 5, so it only appeared on practised exercises and read as a fixed rating) — the adaptive level still drives scoring via `launchDifficulty`/`difficulty-store`, it's just no longer the card badge. `DifficultyIndicator.tsx` is now unused.
+- Exercise difficulty badge + filter (`ExerciseMenu.tsx`): added a curated intrinsic `EXERCISE_DIFFICULTY: Record<ExerciseType, 'easy'|'medium'|'hard'>` shown as a badge on every card, plus All/Easy/Medium/Hard filter pills (`visibleCards` memo). Replaced the per-card adaptive `DifficultyIndicator` (which hid itself at the default level 5, so it only appeared on practiced exercises and read as a fixed rating) — the adaptive level still drives scoring via `launchDifficulty`/`difficulty-store`, it's just no longer the card badge. `DifficultyIndicator.tsx` is now unused.
 - Sight-Singing rewrite (`use-sight-singing-controller.ts` + `SightSingingExercise.tsx`): `setScale(scale, rangeMin, rangeMax)` generates notes only within `getComfortableMidiRange(preset)` (pitch-classes from the current scale), preferring stepwise motion. Replaced the fixed 2s `setInterval` auto-advance with a pitch-driven poll (`HOLD_TO_PASS_MS` in-tolerance hold, `MAX_NOTE_MS` timeout fallback) that scores each note at advance and emits live metrics (`holdPct`, `detectedMidi`, `centsOff`, `matched`). Staff now maps by diatonic step (lines E4-G4-B4-D5-F5), draws ledger lines + ♯ accidentals + a real treble clef glyph, and highlights the active note; added a hold bar and a DEV-only (`import.meta.env.DEV`) detected/target/hold readout.
 - Interval Trainer & Dynamic Swell scored ~0 regardless of performance: `evaluateRound()` set its window start (`matchStartTime`/`holdStartTime`) and bound from absolute `performance.now()`, but pitch samples store `time` as exercise-relative (`elapsed/1000`). The predicate `p.time*1000 >= start-100` was therefore always false → the window selected zero samples → score 0. Both now use `base._getElapsed()` (same relative epoch) for the window start and the upper bound. Added driven happy-path regression tests for both (the interval-trainer happy path was previously un-assertable for this exact reason).
 - Routine Runner score could exceed 100: `fatigueScore = fatigued ? max(0, 100 + hnrTrend*2) : 100` was unclamped, so a positive `hnrTrend` pushed the 30%-weighted term past 100. Now `min(100, max(0, …))`.

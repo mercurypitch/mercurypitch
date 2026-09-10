@@ -238,7 +238,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Shape every phrase</h1>
-      <p class="sub">A focused piano room for practising and performing. <b>Slow a phrase down</b>, loop the bar that will not sit, and play it back up to tempo.</p>
+      <p class="sub">A focused piano room for practicing and performing. <b>Slow a phrase down</b>, loop the bar that will not sit, and play it back up to tempo.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot">${check}</span>Phrase practice</span>

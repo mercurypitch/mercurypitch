@@ -141,7 +141,7 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
   await savedEvidence.first().click()
   await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Practise Pitch Hold' }).click()
+  await page.getByRole('button', { name: 'Practice Pitch Hold' }).click()
   await expect(page.getByRole('heading', { name: 'Pitch Hold' })).toBeVisible()
   await expect(page.getByText('1 set · 3 holds · 5s each')).toBeVisible()
   await expect(page.getByText('0 of 3 holds complete')).toBeVisible()
@@ -162,7 +162,7 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
   await expect(page.getByTestId('saved-guided-focus')).toBeVisible()
   await expect(checkAgain).toBeVisible()
 
-  await page.getByRole('button', { name: 'Practise Pitch Hold' }).click()
+  await page.getByRole('button', { name: 'Practice Pitch Hold' }).click()
   await expect(page.getByRole('heading', { name: 'Pitch Hold' })).toBeVisible()
   await openNavTab(page, 'tab-home')
   await expect(page.locator('#tab-home')).toHaveAttribute(

@@ -80,7 +80,7 @@ const CARDS = {
   },
   'pitch-training': {
     backdrop: 'pitch-training.png',
-    headline: 'Practise on pitch, and see the proof',
+    headline: 'Practice on pitch, and see the proof',
     pills: ['Live feedback', 'Hold, scale or chase', 'No sign-up'],
     accent: '#2dd4bf',
   },

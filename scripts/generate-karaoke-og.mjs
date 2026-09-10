@@ -207,7 +207,7 @@ const html = /* html */ `<!doctype html>
         <span class="kicker">Karaoke Night</span>
       </div>
 
-      <h1 class="headline">Turn any song you own into karaoke</h1>
+      <h1 class="headline">Turn any song into karaoke</h1>
       <p class="sub">The vocals lift away, the lyrics light up line by line, and <b>every note you sing is scored live</b> — right in your browser.</p>
 
       <div class="pills">

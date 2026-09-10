@@ -70,9 +70,9 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 - **Guitar Night records what you play.** A melody take, with Studio amp
   tones and monitoring while you are playing it, alongside percussion parts
   from an imported file.
-- **Play your take back, or practise against it.** A recorded melody becomes
+- **Play your take back, or practice against it.** A recorded melody becomes
   something you can replay — original audio or the notes it heard, clean or
-  through your amp — or practise against, scored the way a rehearsal is, with
+  through your amp — or practice against, scored the way a rehearsal is, with
   the loop, the tempo and the count-in you already know.
 - **Take a melody with you.** A recorded take exports as MIDI or as a Guitar
   Pro file that opens as readable notation.
@@ -209,7 +209,7 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 
 - **Piano Night.** A room for the keyboard, the way Guitar Night is one for
   the guitar. It plays the music already on your device, and a connected MIDI
-  keyboard can be mapped and practised against.
+  keyboard can be mapped and practiced against.
 - **A Progress tab.** Practice used to end when you closed the tab. This is
   the record it leaves: one honest moment out of your history, the evidence
   behind it, and a way back to the practice that carries it forward.
@@ -729,7 +729,7 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 
 ### Changed
 
-- **A tidier view while you practise on your phone.** During a run the Stop button is now a compact button tucked in the corner so it never covers your live metrics, and the pitch tracker is a little shorter so each drill has more room to breathe.
+- **A tidier view while you practice on your phone.** During a run the Stop button is now a compact button tucked in the corner so it never covers your live metrics, and the pitch tracker is a little shorter so each drill has more room to breathe.
 
 ## [0.7.8] - 2026-07-14
 
@@ -847,7 +847,7 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 
 ### Fixed
 
-- **Switching tracks keeps your place.** Changing which track you practise in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
+- **Switching tracks keeps your place.** Changing which track you practice in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
 - **On-device separations retry cleanly.** Retrying a browser (WebGPU) vocal separation while Cloud mode was selected could fail with a technical error instead of running. It now re-initialises and processes, and any unexpected error shows a readable message.
 - **Switching songs on the Singing tab refreshes properly.** Loading a different melody or an imported MIDI now updates the notes and the timeline right away (and starts the new song from the beginning), instead of leaving the previous song on screen when you switched during playback or a loop.
 - **Focus mode fits long songs.** The full-screen focus view now scrolls a readable window of notes for long imported songs, instead of squeezing the whole song on screen at once.
@@ -986,7 +986,7 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 
 - **Reworked Singing practice screen**: the pitch view, score, and live mic monitor now float as glass cards over a full-bleed canvas, like the 3D guitar view. A floating control bar replaces the old toolbar — drag it to the top or bottom, or hide it for more room. A top-left chip shows the current scale/melody, tempo and position, and session scores sit in a top-right scoreboard. The pitch view auto-fits to your melody with clear note-name labels, and the overlays fade back during playback so the notes stay front and centre.
 - **Consistent controls across tabs**: Piano, Guitar and Compose now use the same sleek glass control bar as Singing, so transport, tempo, volume and the rest behave the same everywhere.
-- **Practice context in the header**: Singing, Piano and Guitar show a small pill with what you're practising, plus the loaded melody and character.
+- **Practice context in the header**: Singing, Piano and Guitar show a small pill with what you're practicing, plus the loaded melody and character.
 - **Tidier Compose editor**: the Piano Roll / Session Editor switch is now a clean tab strip, with the playback controls tucked into the same row.
 - **Karaoke playlists tidy-up**: friendlier empty states, and deleting a playlist now asks for confirmation first so you can't remove one by accident.
 - **Tabbed Settings**: settings are grouped into General, Practice, and Display & Controls tabs, alongside a polished account card.
@@ -1074,7 +1074,7 @@ Two new rooms, takes you can hear back, and a sign-in worth having.
 - **Siren / Range Explorer**: glides are now generated within your comfortable range (no more sub-audible targets like "G0"), and the start/end notes plus a guide dot are shown so you know exactly where to glide.
 - The grade badge on exercise cards ("Good", "Great"…) now has its icon properly centered with the text.
 - **Sight-Singing reworked**: notes are kept within your vocal range (no more unreachable highs), the cursor now advances when you actually sing each note (instead of marching on a fixed timer), the staff renders properly (real clef, ledger lines, accidentals), and a "hold to continue" bar plus a DEV-only pitch readout make practice and testing clearer.
-- **Exercise difficulty + filter**: every exercise card now shows a fixed Easy/Medium/Hard difficulty, and a pill filter at the top lets you show just the exercises at a level. (This replaces the old badge, which was your personal adapting level and only appeared once you'd practised an exercise.)
+- **Exercise difficulty + filter**: every exercise card now shows a fixed Easy/Medium/Hard difficulty, and a pill filter at the top lets you show just the exercises at a level. (This replaces the old badge, which was your personal adapting level and only appeared once you'd practiced an exercise.)
 - **Interval Trainer, Dynamic Swell and Call & Response now score correctly**: a timing bug made them measure an empty slice of your take, so they almost always scored 0 no matter how well you sang. They now score the notes you actually sang.
 - **Routine Runner score capped at 100**: a fatigue bonus could push the total above 100; the score is now bounded correctly.
 

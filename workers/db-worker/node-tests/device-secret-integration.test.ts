@@ -116,7 +116,7 @@ function anonymous(deviceId: string, deviceSecret?: string): Promise<Response> {
 describe('an id off the leaderboard is not a credential', () => {
   beforeEach(async () => {
     freshDatabase()
-    // The victim is a singer who has practised and appears on the board.
+    // The victim is a singer who has practiced and appears on the board.
     const created = await anonymous(VICTIM_DEVICE, VICTIM_SECRET)
     expect(created.status).toBe(200)
     seedSession('victim-run', VICTIM_DEVICE, 88)

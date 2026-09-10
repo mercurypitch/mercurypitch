@@ -57,7 +57,7 @@ interface GrantStats {
   immaculateRuns: number
   /** Runs scoring 70 or better — the first "that worked" moment. */
   decentRuns: number
-  /** Distinct melody/drill names practised. */
+  /** Distinct melody/drill names practiced. */
   distinctMelodies: number
   /** How many runs came from each surface (practice/exercise/challenge/weekly). */
   bySource: Record<string, number>
@@ -335,11 +335,11 @@ function buildMeasures(stats: GrantStats): Record<string, number> {
  */
 /**
  * The badges "All Star" waits on: every bronze badge a singer can earn by
- * practising.
+ * practicing.
  *
  * The podium badges are bronze/silver/gold too, but the worker grants them
  * at close time to whoever finishes on a Legend board -- nobody earns Third
- * Voice by practising, only by placing exactly third. Rolling it into the
+ * Voice by practicing, only by placing exactly third. Rolling it into the
  * bronze set made All Star unreachable for anyone who never landed a podium
  * (and for anyone who won: a First Voice is not a Third Voice). Server-
  * granted categories stay out of the roll-up.

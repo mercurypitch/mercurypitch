@@ -112,7 +112,7 @@ describe('leaderboard flows', () => {
   // Free practice is a self-chosen melody at a self-chosen difficulty, so a
   // perfect score on an easy tune must not outrank a hard challenge run.
   it('excludes free practice, ranking only fixed tasks', async () => {
-    await seedSession('practiser', 100, 100, nowIso(), 'practice')
+    await seedSession('practicer', 100, 100, nowIso(), 'practice')
     await seedSession('challenger', 60, 60, nowIso(), 'challenge')
 
     const users = await loadLeaderboard('overall', 'all-time')

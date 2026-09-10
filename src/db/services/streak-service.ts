@@ -59,7 +59,7 @@ export interface StreakFields {
    * When the accrual clock last ticked — NOT when a freeze was last spent.
    * Its own field precisely because accrual has to survive an idle month: a
    * count derived from practice dates would only ever grow for people who
-   * practise, which is the bias this replaced.
+   * practice, which is the bias this replaced.
    */
   lastFreezeEarnedDate: string | null
 }
@@ -81,7 +81,7 @@ export interface StreakState {
 
 export function todayDateString(): string {
   // Local, not UTC. A streak is a run of the singer's own days; keying it in
-  // UTC broke it for anyone practising near their local midnight. daysBetween
+  // UTC broke it for anyone practicing near their local midnight. daysBetween
   // and addDays below stay UTC-based on purpose — they do calendar-string
   // arithmetic, which is correct once every anchor is a local calendar day.
   return localDayString()
@@ -277,7 +277,7 @@ export function computeStreakState(
   today: string,
 ): StreakState {
   // The card must show what the singer HAS, and an accrual that came due
-  // while they were away is theirs before they next practise. Pure: this
+  // while they were away is theirs before they next practice. Pure: this
   // reports the number, `advanceStreak` is what persists it.
   const f = accrueFreezes(fields, today)
   const last = f.lastPracticeDate
@@ -313,7 +313,7 @@ export function computeStreakState(
   // reset branch no longer snapshots 1-day runs or out-of-window breaks,
   // but rows written before that guard existed can still carry a stale
   // `previousStreak: 1`, and a "repair" of those counts a day that was
-  // never practised.
+  // never practiced.
   const hasRecordedReset =
     f.previousStreak >= 2 &&
     f.streakResetDate !== null &&

@@ -830,7 +830,7 @@ describe('Progress data loader', () => {
  * `0025_sessionRecords_progress.sql` adds the five evidence columns to a table
  * that already had rows, so they are nullable in D1 — and the server adapter
  * hands JSON straight through without normalising. Every record belonging to an
- * account that practised before the Progress tab shipped therefore arrives with
+ * account that practiced before the Progress tab shipped therefore arrives with
  * literal `null` in those fields, not a missing key.
  *
  * That is not hypothetical: it took the Atlas down on a real signed-in account

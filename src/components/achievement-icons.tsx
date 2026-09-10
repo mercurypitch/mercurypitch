@@ -184,7 +184,7 @@ const IconShareNodes: Component = () => (
   </Glyph>
 )
 
-/** A shelf of things practised — the repertoire. */
+/** A shelf of things practiced — the repertoire. */
 const IconShelf: Component = () => (
   <Glyph>
     <path d="M3 20.5h18" />
@@ -210,7 +210,7 @@ const IconSun: Component = () => (
   </Glyph>
 )
 
-/** A sun over the horizon — practising before the day starts. */
+/** A sun over the horizon — practicing before the day starts. */
 const IconSunrise: Component = () => (
   <Glyph>
     <path d="M2.5 19.5h19" />

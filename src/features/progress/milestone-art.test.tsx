@@ -148,7 +148,7 @@ describe('a milestone that does have a medallion', () => {
       title: 'Steady Return',
       kindLabel: 'Badge',
       earnedAtLabel: 'Earned August 7',
-      detail: 'Practised in four consecutive weeks.',
+      detail: 'Practiced in four consecutive weeks.',
       icon: 'leaf',
       artUrl: '/badges/leaf.webp',
     })

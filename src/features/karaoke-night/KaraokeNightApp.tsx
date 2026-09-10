@@ -546,7 +546,7 @@ export function KaraokeNightApp() {
                 </button>
                 <button
                   class="kn-rail-icon"
-                  title="Add a song you own"
+                  title="Add a song"
                   onClick={() => updateRail(false)}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">

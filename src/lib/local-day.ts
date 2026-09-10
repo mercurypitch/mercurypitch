@@ -8,7 +8,7 @@
 // UTC, which is wrong east and west of Greenwich:
 //
 //   at UTC+2, a session at 01:00 local banks to the PREVIOUS UTC day, so a
-//   singer who practised Monday evening and Tuesday after midnight has both
+//   singer who practiced Monday evening and Tuesday after midnight has both
 //   sessions land on Monday and their streak breaks.
 //
 // The heatmap already got this right (see practice-activity.ts:localDayKey);
