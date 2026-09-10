@@ -358,7 +358,53 @@ second condition nobody can bound.
 - **A full page reload always recovers it.** That is the only intervention in
   six runs with a perfect record.
 
-### The two experiments left, and neither is a guess
+### Replan: stop reasoning from first principles, start from what WebKit is known to need
+
+Six runs of my own hypotheses produced four cures and no fix. The reason is
+visible in hindsight: every one was reasoned from our own logs outwards,
+when the failure is a documented platform quirk with documented workarounds.
+Reading what other people have already learned about the Web Speech API on
+iOS turns up **four concrete things this listener does that WebKit is known
+to dislike** — and none of them is a guess about mechanism, they are just
+things to stop doing.
+
+| What we do now                                 | What the platform wants                                                                                                                                              | Where            |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `new SpeechRecognition()` on **every** respawn | **One instance, reused.** Repeated construction is the specific thing reported to break iOS recognition                                                              | `spinUp()`       |
+| `continuous = true`                            | `continuous = false` plus a restart on `onend`, unless push-to-talk. Continuous is reported to clog the buffer                                                       | `spinUp()`       |
+| Nothing until the recognizer is started        | A `getUserMedia({audio:true})` **warm-up**, stopped immediately, on the first interaction — reported to fix exactly "the first recognition fails"                    | first gesture    |
+| Keep the session while hidden                  | **Stop on `visibilitychange` to hidden.** Recognition dies when backgrounded, and our own record shows `error code=audio-capture` arriving the moment the page hides | `onVisibility()` |
+
+The AudioContext unlock the same sources recommend is already in place
+(`installAudioUnlock` at every entry).
+
+The respawn count makes the first row the most suspicious by far. A quiet
+room here can build dozens of `SpeechRecognition` objects in a minute —
+every stale-replace, every quiet rollover, every gesture-wake — and the runs
+where it worked are the ones where the FIRST object of a fresh document was
+used. That is also why a reload always recovers: a reload is the only thing
+that guarantees a first object.
+
+**Order to try them, cheapest and most likely first:**
+
+1. **Reuse one instance per listener.** Keep the object, call `start()` and
+   `abort()` on it, and rebuild only when the platform actually rejects it.
+   This is a real change to `spinUp`/`discard` and needs care around the
+   handler nulling, which currently doubles as the identity check.
+2. **Stop on hidden.** Small, obviously correct, and removes the
+   `audio-capture` error our own record already shows.
+3. **Warm the microphone once** on the first gesture, then release it.
+4. **`continuous = false` with a restart on `onend`** — the largest behaviour
+   change, and the one most likely to cost responsiveness, so last.
+
+Each is independently testable on the device with the record we now have:
+`start afterMs` back over 400 ms, followed by `speechstart`, is the pass.
+
+**What NOT to do again.** No more remedies invented from our own logs alone.
+The four above come from outside; if all four fail, the next step is a second
+device on a different iOS version, not a fifth theory.
+
+### Two structural experiments, if the four above fail
 
 1. **Destroy the previous document instead of freezing it.** Every deaf run
    followed `pagehide persisted=true`; every clean start followed a reload,
