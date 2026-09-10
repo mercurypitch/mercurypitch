@@ -254,6 +254,16 @@ const isVoiceHudTarget = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest(VOICE_HUD_SELECTOR) !== null
 
 /**
+ * How long the first session waits for the microphone to wake.
+ *
+ * There has to be a ceiling. The permission is normally already granted, so
+ * this resolves in a few milliseconds; but a prompt nobody answers would
+ * otherwise mean voice control never starts at all, which is a worse bug
+ * than the one being chased.
+ */
+const WARM_UP_TIMEOUT_MS = 1_500
+
+/**
  * Open the microphone once and give it straight back, before the first
  * session.
  *
@@ -266,17 +276,24 @@ const isVoiceHudTarget = (target: EventTarget | null): boolean =>
  * Never allowed to fail loudly: a refusal here is not a reason to keep voice
  * control from starting, because the recognizer does its own capture and may
  * well succeed anyway.
+ *
+ * Returns `null` — not a resolved promise — when the platform has no
+ * `getUserMedia` at all, so the caller can tell "nothing to wait for" from
+ * "waiting". There is no microphone to wake on such a platform, and making
+ * the first session queue behind a microtask for it would be a behaviour
+ * change dressed up as a no-op.
  */
-async function warmMicrophone(): Promise<void> {
-  try {
-    const media = navigator.mediaDevices
-    if (media?.getUserMedia === undefined) return
-    const stream = await media.getUserMedia({ audio: true })
-    for (const track of stream.getTracks()) track.stop()
-  } catch {
-    // Refused, unsupported, or held elsewhere. The recognizer gets its turn
-    // regardless.
-  }
+function warmMicrophone(): Promise<void> | null {
+  const media = navigator.mediaDevices
+  if (media?.getUserMedia === undefined) return null
+  return media
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      for (const track of stream.getTracks()) track.stop()
+    })
+    .catch(() => {
+      // Refused, or held elsewhere. The recognizer gets its turn regardless.
+    })
 }
 
 export interface WebSpeechListenerOptions {
@@ -290,6 +307,17 @@ export interface WebSpeechListenerOptions {
    * whose user may have both hands on an instrument.
    */
   visibleRespawn?: boolean
+  /**
+   * Whether the first session waits for `getUserMedia` to hand the
+   * microphone back. On by default wherever `visibleRespawn` is.
+   *
+   * Turned off by most of the unit tests, and not to save time: jsdom
+   * supplies a `getUserMedia` that REJECTS, so leaving it on would make
+   * every test of the respawn backoff run the wake-up's failure path first
+   * and assert one microtask later than it reads. The tests that are about
+   * the wake-up turn it back on.
+   */
+  warmUpMicrophone?: boolean
 }
 
 export function createWebSpeechListener(
@@ -297,6 +325,7 @@ export function createWebSpeechListener(
   options: WebSpeechListenerOptions = {},
 ): VoiceListener {
   const visibleRespawn = options.visibleRespawn ?? deviceClass() !== 'desktop'
+  const warmUp = options.warmUpMicrophone ?? visibleRespawn
   const w = window as unknown as Record<string, unknown>
   const RecognitionCtor = (w.SpeechRecognition ?? w.webkitSpeechRecognition) as
     | (new () => SpeechRecognitionLike)
@@ -978,19 +1007,44 @@ export function createWebSpeechListener(
       window.addEventListener('pageshow', onPageShow)
       window.addEventListener('pagehide', onPageHide)
       listenForGesture()
-      // Wake the microphone once, then hand it straight back.
+      // Wake the microphone once, then hand it straight back, and only THEN
+      // ask the recognizer for a session.
       //
       // A documented iOS mitigation for exactly this symptom — the FIRST
       // recognition of a document failing while later ones are fine — on the
       // reading that the hardware wants waking before the recognizer asks
-      // for it. Started here and not awaited: the recognizer is what matters
-      // and must not queue behind a permission prompt nobody answers. The
-      // same open-and-release is what `mic-probe` has been doing on the
-      // failure path all along without disturbing anything.
-      if (visibleRespawn && !warmedUp) {
+      // for it.
+      //
+      // The waiting is the whole mitigation. A first cut started the wake-up
+      // and did not await it, which read as a safer change and was in fact a
+      // pointless one: the device log came back with `warm-up` and `spin-up`
+      // on the same millisecond, so the recognizer had still gone first and
+      // the experiment had measured nothing. `WARM_UP_TIMEOUT_MS` is what
+      // keeps an unanswered prompt from becoming a hang.
+      if (warmUp && !warmedUp) {
         warmedUp = true
-        log('warm-up')
-        void warmMicrophone()
+        const warming = warmMicrophone()
+        if (warming !== null) {
+          const askedAt = Date.now()
+          log('warm-up')
+          let spun = false
+          const proceed = (): void => {
+            if (spun) return
+            spun = true
+            clearTimeout(deadline)
+            // Stopped while the microphone was waking. Spinning up now would
+            // start a session nobody asked for.
+            if (!started) return
+            log('warm-up-over', { afterMs: Date.now() - askedAt })
+            spinUp()
+          }
+          // A timer, not a `Promise.race` against one: the loser of a race
+          // stays in the queue, and a stray 1.5 s timeout is exactly the kind
+          // of thing that fires in the middle of a respawn backoff.
+          const deadline = setTimeout(proceed, WARM_UP_TIMEOUT_MS)
+          void warming.then(proceed)
+          return
+        }
       }
       spinUp()
     },

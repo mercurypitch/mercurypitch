@@ -539,6 +539,50 @@ export default defineConfig(({ command, mode }) => {
             // vocal surfaces. Keep them out of `advanced`, whose StemMixer
             // importer otherwise makes Drum Night preload stores and media.
             if (id.includes('/src/lib/voice-capture.')) return 'voice-capture'
+            // Voice control is an ambient overlay in five surfaces, and its
+            // controller reads three Solid-and-localStorage stores plus the
+            // mic sentinel. Left organic, Rollup files those under `library`
+            // and `advanced` — chunks that carry Dexie — so a room asking
+            // "is the wake word on?" downloaded the app's whole persistence
+            // layer. None of the four depends on a database; they need only
+            // `runtime-storage` and the already-pinned mic manager.
+            if (
+              id.includes('/src/stores/settings-store.') ||
+              id.includes('/src/stores/mic-store.') ||
+              id.includes('/src/stores/practice-timer-store.') ||
+              id.includes('/src/lib/mic-sentinel.')
+            ) {
+              return 'app-preferences'
+            }
+            // The route vocabulary: the tab id list (a pure data leaf) and
+            // the hash builder every surface navigates through. Rollup files
+            // them under `library` and `community`, so a standalone room
+            // whose only spoken command is "go home" inherited the app's
+            // persistence and social graphs to build one URL.
+            if (
+              id.includes('/src/features/tabs/constants.') ||
+              id.includes('/src/lib/hash-router.') ||
+              id.includes('/src/lib/pending-friend-code.') ||
+              id.includes('/src/lib/room-code.') ||
+              id.includes('/src/lib/share-codec.') ||
+              id.includes('/src/lib/scale-data.')
+            ) {
+              return 'hash-routing'
+            }
+            // The voice-command vocabulary: a Solid-only registry, the
+            // command type, and the phrase lists. The app shell imports all
+            // three, so left organic Rollup files them under `advanced` —
+            // and `advanced` holds the karaoke playlist store, which opens
+            // Dexie. Drum Night's lazy-asset audit caught that the moment
+            // its voice control was wired: the room asked for five phrases
+            // and got a database.
+            if (
+              id.includes('/src/features/voice-control/voice-command-registry.') ||
+              id.includes('/src/features/voice-control/shared-phrases.') ||
+              id.includes('/src/features/voice-control/types.')
+            ) {
+              return 'voice-vocabulary'
+            }
             // Persisted standalone-room preferences need only Solid and
             // localStorage. Keeping this primitive inside the broad
             // pitch-core chunk makes any standalone setting inherit the main

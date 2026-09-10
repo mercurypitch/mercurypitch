@@ -24,7 +24,7 @@
 // its top bar rather than floating it.
 
 import { createSignal, onCleanup, Show } from 'solid-js'
-import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from './navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from './room-navigation-commands'
 import { useVoiceControlController } from './useVoiceControlController'
 import { useVoiceToggleKey } from './useVoiceToggleKey'
 import { registerVoiceCommands } from './voice-command-registry'

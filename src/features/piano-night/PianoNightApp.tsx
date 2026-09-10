@@ -10,6 +10,7 @@ import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { DeferredRoomVoiceControl } from '@/features/voice-control/DeferredRoomVoiceControl'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
@@ -346,18 +347,6 @@ function formatClock(elapsedSeconds: number): string {
 export function PianoNightApp(): JSX.Element {
   const controller = usePianoNightController()
   useBeforeUnloadGuard(isLocalSaveNavigationLocked)
-  // Voice control, the same shape Karaoke and Guitar Night use: this shell
-  // owns the listener, the pill and the V shortcut, and the room registers
-  // what can be said here.
-  //
-  // This room had none at all. Voice could bring somebody to Piano Night and
-  // then had nothing that left it — "go home" and "go to singing" belong to
-  // the shell's tab set, which a standalone document never loads — so the
-  // phone across the room was a dead end.
-  const RoomVoiceControl = lazy(
-    () => import('@/features/voice-control/RoomVoiceControl'),
-  )
-
   // Owned here so the keybed and the fall stage cannot disagree about which
   // keys are on screen — the bug that put every falling note a key to the
   // left of its own key on a phone.
@@ -1923,9 +1912,16 @@ export function PianoNightApp(): JSX.Element {
         {announcement() || controller.statusMessage()}
       </p>
 
-      <Suspense>
-        <RoomVoiceControl />
-      </Suspense>
+      {/* Voice control, the same shape Karaoke and Guitar Night use: the
+          wrapper owns the listener, the pill and the V shortcut, and the
+          room registers what can be said here.
+
+          This room had none at all. Voice could bring somebody to Piano
+          Night and then had nothing that left it — "go home" and "go to
+          singing" belong to the shell's tab set, which a standalone
+          document never loads — so the phone across the room was a dead
+          end. */}
+      <DeferredRoomVoiceControl />
     </div>
   )
 }

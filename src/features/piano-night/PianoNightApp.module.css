@@ -75,6 +75,10 @@
   --coral: #eb8587;
   --line: rgb(224 207 180 / 18%);
   --rail-width: 72px;
+  /* The floating voice pill lives in the bottom-left corner, which in this
+     room belongs to the rail. Push it clear. Collapses with the rail on a
+     phone, where `--rail-width` becomes 0. */
+  --voice-pill-inset-left: var(--rail-width);
   --coach-width: 258px;
   --keybed-height: clamp(124px, 15.2vh, 154px);
   --fallboard-height: 74px;
