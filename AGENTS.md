@@ -70,9 +70,28 @@ rules (`memory`).
    and build gate; fix a failure with its targeted command instead of
    rerunning every local check.
 
-Use `gh` for issues and PRs, not WebFetch. Merge with `--rebase`, never squash,
-unless told otherwise. Each task gets its own PR targeting
+Use `gh` for issues and PRs, not WebFetch. Each task gets its own PR targeting
 `mercurypitch/mercurypitch:main`; leave reviewer assignment to the owner.
+
+### Squash or rebase, when merging
+
+**Never merge without an explicit go-ahead** (guardrail 4) — the strategy
+question only arises once the owner has approved the merge.
+
+Then look at what the branch's commits actually are:
+
+- **`--squash`** when they are one piece of work and its iterations: polish on
+  polish, review fixes, a typo, a CI green-up, four passes at the same
+  component. Nobody will ever want those separately, and `main` reads better
+  with one honest commit than with twelve saying "fix the fix".
+- **`--rebase`** when they are genuinely distinct — separate features, or
+  unrelated bugfixes that happened to travel together. Squashing those buries
+  changes a future reader would want to find, revert, or bisect on their own.
+
+The test is not the number of commits, it is whether any of them would be
+worth reading alone a year from now. When both apply — real features plus a
+tail of polish — say so and ask, rather than flattening the features to be rid
+of the noise.
 
 ## Build and verify
 
