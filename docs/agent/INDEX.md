@@ -119,6 +119,7 @@ These are the rules that break things when ignored.
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 250 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
+| `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 250 | The room contract. |
 | `instrument-room` | [InstrumentRoomDoor.tsx](../../src/features/instrument-room/InstrumentRoomDoor.tsx) | 200 | The instrument room door Shown once, the first time somebody presses the Piano or Guitar tab, because each of those now opens two differe... |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
@@ -504,6 +505,11 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
 | `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
+| `pnpm mercurypitch:dev` | `pnpm --filter @irchiinnuss/mercury-pitch-app dev` |
+| `pnpm mercurypitch:build` | `pnpm --filter @irchiinnuss/mercury-pitch-app build` |
+| `pnpm mercurypitch:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/mercury-pitch-app check` |
+| `pnpm mercurypitch:android` | `pnpm --filter @irchiinnuss/mercury-pitch-app cap:run:android` |
+| `pnpm mercurypitch:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/mercury-pitch-app exec tsc --noEmit` |
 | `pnpm deploy:dev` | `pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |
 | `pnpm deploy:jam:dev` | `cd workers/jam-worker && pnpm exec wrangler deploy --env dev` |
