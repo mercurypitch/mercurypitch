@@ -741,6 +741,79 @@ If you're signed in, your data is also synced to the cloud — a factory reset o
   ],
   study: [
     {
+      id: 'voice-commands',
+      tab: 'study',
+      title: 'Talking to MercuryPitch',
+      description: 'Run the app without letting go of your instrument',
+      content: `
+Voice control is the mic pill in the corner. It listens for **commands**, not
+for your singing — the two never get confused, because a command has to be the
+whole sentence.
+
+## Turning it on
+
+- **Click the pill** — bottom-left on a desktop, in the header on a phone — or press **V**.
+- **Dimmed is normal.** It rests between phrases and wakes on the next one.
+- **Shift+V**, or asking _"what can I say"_, lists every phrase the view you are on answers to. Every row in that list is also a button, for a room too loud to talk in.
+
+## While something is playing
+
+- _"play"_, _"pause"_, _"stop"_
+- _"from the top"_ — back to the beginning
+- _"loop on"_, _"loop off"_, _"set A"_, _"set B"_
+- _"faster tempo"_, _"tempo down"_, _"set tempo to 90"_
+- _"forward 8 beats"_, _"back 4 beats"_
+
+## Getting around
+
+- _"go to karaoke"_, _"go to exercises"_, _"go home"_
+- _"start guitar night"_, _"go to drum night"_ — the standalone rooms, which are a separate page
+- _"back to the studio"_ — the way out of one
+
+## Name a song you are humming
+
+Mercury Sing has no button at all. Saying it is the only way in.
+
+1. Say _"what song is this"_ — or _"mercury sing"_, or _"find my song"_.
+2. Sing or hum a few bars.
+3. It matches what you sang against your library and lists what it found.
+4. Pick one out loud: _"sing number two"_.
+
+_"cancel"_ or _"never mind"_ stops it listening.
+
+## Once the music starts
+
+- Commands begin with **"Mercury"** — _"Mercury, from the top"_.
+- **Why:** a backing track singing the word "stop" through your speakers must not stop your take.
+- Practising on headphones? Turn it off in **Settings → Voice Control**.
+
+> **Tip:** if a phrase is not landing, say it as the whole sentence and nothing
+> else. "Play" works; "okay let's play now" does not — the app would rather
+> ignore you than guess.
+      `,
+      steps: [
+        {
+          title: 'Wake the pill',
+          description: 'Click it or press V, and watch it start listening',
+          action: 'Turn voice control on',
+          target: '[data-voice-control-hud]',
+        },
+        {
+          title: 'See the list',
+          description: 'Shift+V shows every phrase this view answers to',
+          action: 'Open the command list',
+          target: '[data-testid="settings-voice-commands"]',
+        },
+        {
+          title: 'Try Mercury Sing',
+          description: 'Say "what song is this" and sing a few bars',
+          action: 'Name a song',
+          target: '[data-tour="voice.sing"]',
+        },
+      ],
+      thumbnail: 'sparkle',
+    },
+    {
       id: 'study-pitch-basics',
       tab: 'study',
       title: 'Understanding Pitch',
