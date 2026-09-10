@@ -315,6 +315,64 @@ What to look for next: `hollow-start` followed by a `restart-scheduled
 delay=3000`, and then a `start afterMs` back **over 400 ms**. That is the
 platform having caught up, and it is the whole hypothesis in one line.
 
+### Sixth run: waiting is not the cure either, and the detector had a bug
+
+The experiment the last section set up returned a clean **no**:
+
+```
+document-open how=navigate path=/guitar-night
+  s1 hollow-start afterMs=220        ->  restart-scheduled delay=3000
+  gesture-held (the touch was correctly held for the full wait)
+  s2 start afterMs=9                 ->  hollow again
+```
+
+Three seconds of nothing running, and the next session still opened in nine
+milliseconds. Leaving the platform alone is not what it wants, so that thread
+is closed: 600 ms, 1200 ms and 3000 ms all fail the same way.
+
+**The detector also had a false positive, and it was mine.** Killing a
+session after 2.5 s of silence assumed a healthy one speaks sooner. In the
+same day's relay healthy sessions reached `speechstart` at 1428, 1478, 2341,
+2413, 2429, 2747, 3326, 3831, 3849, 3958, 4200 and **4938** ms — half of them
+past the deadline. In a silent room there is no deadline at all: a good
+session produces nothing for as long as nobody speaks. Any window short
+enough to be useful kills sessions that were fine, which is what the phone
+was showing — "paused, tap to enable" a second after entering a room, on a
+session that had done nothing wrong. The invited tap was then held by the
+backoff guard, so it did nothing either.
+
+So the remedy is gone and `hollow-start` is **diagnostic only**. It writes
+the line down and leaves the session alone; the stale timer keeps its old
+job. The start-time signal is still real and still worth recording — 61 of 63
+fast starts heard nothing — it is simply not something to act on without a
+second condition nobody can bound.
+
+### What is actually known, after six runs
+
+- **Not the doze**, not another tab holding the microphone (`mic-probe` says
+  `free`, every time), not a missing user gesture, not the frozen previous
+  document on its own, and not a too-short wait.
+- **`audiostart` fires on deaf sessions**, so the browser believes audio is
+  flowing while none arrives.
+- **Start time predicts it**: under 400 ms is hollow 97% of the time.
+- **A full page reload always recovers it.** That is the only intervention in
+  six runs with a perfect record.
+
+### The two experiments left, and neither is a guess
+
+1. **Destroy the previous document instead of freezing it.** Every deaf run
+   followed `pagehide persisted=true`; every clean start followed a reload,
+   which destroys. If the frozen document cannot finish tearing its
+   recognizer down — it is not running, so its teardown callbacks never fire
+   — that is consistent with everything above, including why waiting in the
+   NEW document does nothing. Opt a document holding a live recognizer out of
+   the back/forward cache and see. Costs back-navigation performance, so it
+   is worth measuring before it is worth keeping.
+2. **Offer the reload as the recovery.** When the deaf state is reached, the
+   pill could offer to reload rather than pretend another session will help.
+   Heavy-handed, and it loses whatever is in flight, so it needs the owner's
+   call — but it is the one thing known to work.
+
 ### What is now worth doing, in order
 
 1. **Reproduce with `mic-probe` in the record**, on the same device, with
