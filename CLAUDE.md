@@ -17,6 +17,7 @@ and CI keeps it from going stale.
 | [docs/agent/CODE-HEALTH.md](docs/agent/CODE-HEALTH.md)           | Deciding what to work on — measured state and hotspots            |
 | [docs/agent/TESTING.md](docs/agent/TESTING.md)                   | Writing or reviewing a test                                       |
 | [docs/agent/DEVICE-DEBUGGING.md](docs/agent/DEVICE-DEBUGGING.md) | Chasing a bug that only reproduces on a phone                     |
+| [docs/agent/VOICE-COMMANDS.md](docs/agent/VOICE-COMMANDS.md)     | Adding or changing what voice control answers to                  |
 | [docs/agent/METRICS.md](docs/agent/METRICS.md)                   | Reading a metric, or adding a quality gate                        |
 | [docs/agent/BUGS.md](docs/agent/BUGS.md)                         | Checking whether a defect is already known                        |
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md)             | Before trusting `docs/plans/` — many "pending" plans have shipped |

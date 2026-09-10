@@ -100,6 +100,25 @@ const NIGHT_ROOMS: Array<{
 ]
 
 /**
+ * Ways to ask for a tab.
+ *
+ * The bare name counts. "Singing" on its own is how a person actually speaks
+ * to a phone across the room, and having to say "go to" first made voice
+ * control feel like it was refusing perfectly clear speech. Nothing becomes
+ * ambiguous by adding it: a phrase has to consume the whole utterance, so a
+ * bare name only ever wins when it WAS the whole utterance.
+ */
+function tabPhrases(names: readonly string[]): string[] {
+  return names.flatMap((name) => [
+    ...(NOT_ON_THEIR_OWN.has(name) ? [] : [name]),
+    `go to ${name}`,
+    `open ${name}`,
+    `show ${name}`,
+    `switch to ${name}`,
+  ])
+}
+
+/**
  * Ways to ask for a room. Deliberately more than the tab set gets: these are
  * spoken at a phone from across the room, and "start guitar night" is at
  * least as natural as "go to" — a room is something you begin, not only
@@ -116,6 +135,16 @@ function roomPhrases(names: readonly string[]): string[] {
     `take me to ${name}`,
   ])
 }
+
+/**
+ * Names too common in a lyric to be a command on their own.
+ *
+ * Voice control is listening while music plays, and the wake word is only
+ * required in some modes, so a bare name has to be a word nobody sings by
+ * accident. "Home" is in half the choruses ever written, and "go home" and
+ * "take me home" already carry the intent without the risk.
+ */
+const NOT_ON_THEIR_OWN = new Set(['home'])
 
 const TAB_SPOKEN_NAMES: Array<{
   tab: ActiveTab
@@ -269,12 +298,7 @@ export function createLeaveForStudioVoiceCommands(
         id: `nav.leave.${tab}`,
         label: `Go to ${tabLabel(tab)}`,
         phrases: [
-          ...names.flatMap((name) => [
-            `go to ${name}`,
-            `open ${name}`,
-            `show ${name}`,
-            `switch to ${name}`,
-          ]),
+          ...tabPhrases(names),
           ...(extra ?? []),
           ...(tab === TAB_HOME ? BACK_TO_STUDIO_PHRASES : []),
         ],
@@ -313,15 +337,7 @@ export function createNavigationVoiceCommands(
     ({ tab, names, extra }) => ({
       id: `nav.${tab}`,
       label: `Go to ${tabLabel(tab)}`,
-      phrases: [
-        ...names.flatMap((name) => [
-          `go to ${name}`,
-          `open ${name}`,
-          `show ${name}`,
-          `switch to ${name}`,
-        ]),
-        ...(extra ?? []),
-      ],
+      phrases: [...tabPhrases(names), ...(extra ?? [])],
       available: () =>
         notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
       run: () => {
