@@ -938,7 +938,8 @@ export const SettingsPanel: Component = () => {
               Control playback with your voice: turn on the mic pill
               (bottom-left, or press V), then speak a command — "play", "pause",
               "from the top", "loop off". Navigation works too: "go to karaoke",
-              "go to guitar night", "go home".
+              "go to guitar night", "go home". To see every phrase, press
+              Shift+V or ask aloud: "what can I say".
             </p>
             <p class={styles.settingsDesc} data-tour="voice.sing">
               Forgotten what a song is called? Say "what song is this" and sing
