@@ -15,6 +15,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceListenerState } from './types'
+import { initVoiceDiagnostics, resetVoiceDiagnosticsForTests, voiceDiagnosticEntries, } from './voice-diagnostics'
 import type { WebSpeechListenerOptions } from './webspeech-listener'
 import { createWebSpeechListener } from './webspeech-listener'
 
@@ -898,5 +899,144 @@ describe('what counts as a touch', () => {
     vi.advanceTimersByTime(11_000)
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     expect(FakeRecognition.instances).toHaveLength(1)
+  })
+})
+
+// ── The record the device sends back ────────────────────────────
+//
+// The plan for VC-1 turns on one question: when the pill dimmed on that
+// iPhone, was the recognizer dead, or was it the doze — the deliberate stop
+// added the day before the retest? Nothing in the app could tell those apart
+// from outside, which is why this recording exists. These tests are the
+// promise that the log answers it, because a log that does not is worse than
+// none: it looks like evidence.
+
+describe('what the diagnostics record says happened', () => {
+  const events = () => voiceDiagnosticEntries().map((entry) => entry.event)
+
+  beforeEach(() => {
+    resetVoiceDiagnosticsForTests()
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    initVoiceDiagnostics('?voicelog=1')
+  })
+
+  afterEach(() => {
+    resetVoiceDiagnosticsForTests()
+  })
+
+  const quietSession = (h: ReturnType<typeof harness>) => {
+    h.latest().confirm()
+    h.latest().onend?.()
+    vi.advanceTimersToNextTimer()
+  }
+
+  it('names the doze, with the count that caused it', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 3; i++) quietSession(h)
+
+    // The single line that would settle VC-1 on a device. Without it the log
+    // just stops, which is indistinguishable from the recognizer dying.
+    expect(events()).toContain('doze')
+    const doze = voiceDiagnosticEntries().find((e) => e.event === 'doze')
+    expect(doze?.detail).toEqual({ quiet: 3, limit: 3 })
+  })
+
+  it('shows the ear alive and hearing nothing, rather than simply stopping', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 3; i++) quietSession(h)
+
+    // Three healthy sessions that each confirmed and ended without a word.
+    // "Alive and quiet" reads straight off this; a dead recognizer would
+    // show a spin-up with no start after it.
+    expect(events().filter((e) => e === 'start')).toHaveLength(3)
+    const ends = voiceDiagnosticEntries().filter((e) => e.event === 'end')
+    expect(ends).toHaveLength(3)
+    expect(ends.every((e) => e.detail.wasLive === true)).toBe(true)
+    expect(ends.every((e) => e.detail.wasQuiet === true)).toBe(true)
+  })
+
+  it('separates a session from the one that replaced it', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    quietSession(h)
+
+    // A phantom and its replacement being the same number is how a log like
+    // this gets misread as one long healthy session, so every spin-up gets
+    // its own, in order. (`start-requested` is session 0: it happens before
+    // there is a session at all.)
+    const spinUps = voiceDiagnosticEntries()
+      .filter((entry) => entry.event === 'spin-up')
+      .map((entry) => entry.session)
+    expect(spinUps).toEqual([1, 2])
+    expect(voiceDiagnosticEntries()[0]).toMatchObject({
+      event: 'start-requested',
+      session: 0,
+    })
+  })
+
+  it('records the touch that woke it, so a recovery is not a mystery', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 3; i++) quietSession(h)
+
+    window.dispatchEvent(new Event('pointerdown'))
+
+    // VC-3 — "it sometimes comes back on its own" — is this line, or it is
+    // something we have never seen. Either answer is progress.
+    expect(events()).toContain('gesture-wake')
+  })
+
+  it('records a refused start as a refusal, not as silence', () => {
+    FakeRecognition.startThrows = { name: 'NotAllowedError' }
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+
+    const threw = voiceDiagnosticEntries().find(
+      (entry) => entry.event === 'start-threw',
+    )
+    expect(threw?.detail.name).toBe('NotAllowedError')
+    expect(events()).toContain('needs-gesture')
+  })
+
+  it('records a stillborn session, which is what a stolen mic looks like', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    // No confirm: the session never announces itself.
+    vi.advanceTimersByTime(5000)
+
+    expect(events()).toContain('stillborn')
+    // And the app's own microphone at that moment, which is the other
+    // consumer this failure shape blames.
+    const stillborn = voiceDiagnosticEntries().find(
+      (entry) => entry.event === 'stillborn',
+    )
+    expect(typeof stillborn?.env.mic).toBe('string')
+  })
+
+  it('never carries what the singer said', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    h.latest().final('take me to the piano room')
+
+    const text = JSON.stringify(voiceDiagnosticEntries())
+    // The shape of a result is diagnostic. Its content is the user's speech,
+    // and this log gets pasted into chat messages.
+    expect(text).not.toContain('piano room')
+    expect(events()).toContain('first-result')
+  })
+
+  it('costs nothing when nobody turned it on', () => {
+    resetVoiceDiagnosticsForTests()
+    // Explicitly off: the stored preference from this suite's beforeEach
+    // outlives a reset, which is the whole point of remembering it.
+    initVoiceDiagnostics('?voicelog=0')
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 3; i++) quietSession(h)
+
+    expect(voiceDiagnosticEntries()).toHaveLength(0)
   })
 })
