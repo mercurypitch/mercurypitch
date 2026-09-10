@@ -1000,6 +1000,56 @@ describe('what the diagnostics record says happened', () => {
     expect(events()).not.toContain('audiostart')
   })
 
+  it('hands the recognizer back when the document is frozen', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    const abandoned = h.latest()
+
+    window.dispatchEvent(
+      Object.assign(new Event('pagehide'), { persisted: true }),
+    )
+
+    // A frozen document keeps its JavaScript state, and on iOS a recognizer
+    // left running in one goes on owning the platform's speech recognition
+    // while the NEXT document runs. Measured on a device: every later session
+    // started in 40ms, reported audiostart, and heard nothing ever again.
+    expect(abandoned.aborted).toBe(true)
+  })
+
+  it('brings it back when the frozen document is thawed', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    h.latest().confirm()
+    window.dispatchEvent(
+      Object.assign(new Event('pagehide'), { persisted: true }),
+    )
+    const before = FakeRecognition.instances.length
+
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true }),
+    )
+
+    // Giving it back on the way out only works if coming back starts a new
+    // one — otherwise the fix trades a deaf listener for an absent one.
+    expect(FakeRecognition.instances.length).toBe(before + 1)
+  })
+
+  it('leaves a dozing page dozing when it is thawed', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    for (let i = 0; i < 3; i++) quietSession(h)
+    const before = FakeRecognition.instances.length
+
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true }),
+    )
+
+    // Dozing also leaves nothing running, and means the opposite: stay quiet
+    // until a touch. A restore must not be read as a reason to wake.
+    expect(FakeRecognition.instances.length).toBe(before)
+  })
+
   it('records whether the page was frozen or thrown away', () => {
     const h = harness({ visibleRespawn: true })
     h.listener.start()
