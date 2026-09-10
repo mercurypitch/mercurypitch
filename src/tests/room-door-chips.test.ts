@@ -30,7 +30,7 @@ const DOORS = [
     room: 'Guitar Night',
     page: 'src/pages/GuitarPage.tsx',
     testId: 'guitar-room-chip',
-    href: 'href="/guitar-night"',
+    href: 'href={GUITAR_NIGHT_PATH}',
     busyLabel: 'busyLabel="Opening Guitar Night…"',
     drawerLabel: '<OptionRow label="Guitar Night">',
   },

@@ -1,6 +1,7 @@
 // Kept guitar recordings reopen their local melody review without requesting an input.
 import { createMemo, Show } from 'solid-js'
 import type { VoiceTakeRecord } from '@/db/entities'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
 
 export function recordedGuitarId(
   take: Pick<VoiceTakeRecord, 'source' | 'contextJson'>,
@@ -27,7 +28,7 @@ export function GuitarRecordedTakeLink(props: { take: VoiceTakeRecord }) {
       {(recordingId) => (
         <p>
           <a
-            href={`/guitar-night?recording=${encodeURIComponent(recordingId())}`}
+            href={`${GUITAR_NIGHT_PATH}?recording=${encodeURIComponent(recordingId())}`}
           >
             Open melody notes
           </a>

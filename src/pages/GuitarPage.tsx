@@ -23,6 +23,7 @@ import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
 import { createLegacyGuitarPerformanceAdapter } from '@/features/guitar/legacy/createLegacyGuitarPerformanceAdapter'
 import { Guitar3DStage } from '@/features/guitar/ui/Guitar3DStage'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { TAB_GUITAR } from '@/features/tabs/constants'
@@ -370,7 +371,7 @@ export function GuitarPage(props: GuitarPageProps) {
                     bar has one row to give. */}
                 <BusyLink
                   class={barStyles.chipBtn}
-                  href="/guitar-night"
+                  href={GUITAR_NIGHT_PATH}
                   title="Open Guitar Night — the Velvet Rehearsal play-along room"
                   aria-label="Open Guitar Night"
                   data-testid="guitar-room-chip"
@@ -436,7 +437,7 @@ export function GuitarPage(props: GuitarPageProps) {
             />
             <BusyLink
               class={barStyles.chipBtn}
-              href="/guitar-night"
+              href={GUITAR_NIGHT_PATH}
               title="Open Guitar Night — the Velvet Rehearsal play-along room"
               busyLabel="Opening Guitar Night…"
             >
@@ -508,7 +509,7 @@ export function GuitarPage(props: GuitarPageProps) {
             <OptionRow label="Guitar Night">
               <BusyLink
                 class={barStyles.chipBtn}
-                href="/guitar-night"
+                href={GUITAR_NIGHT_PATH}
                 busyLabel="Opening Guitar Night…"
               >
                 Open
