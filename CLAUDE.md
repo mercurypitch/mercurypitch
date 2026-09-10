@@ -24,8 +24,20 @@ The guardrails in full are in [AGENTS.md](AGENTS.md). The ones that must not
 wait for that read:
 
 - **Never test against production** — local or dev only.
-- **Never push to `main`, never force-push.** Branches use a `feat/` prefix,
-  never `claude/`.
+- **Never push to `main`.** Branches use a `feat/` prefix, never `claude/`.
+- **Bring a branch up to date by REBASING onto `main`, never by merging `main`
+  into it.** A merge commit on a feature branch buries the change under
+  someone else's work and makes the PR unreadable. Rebasing rewrites your own
+  commits, so the push that follows needs a force — and
+  **`git push --force-with-lease` is the expected way to do it.** Plain
+  `--force` is not: the lease is what refuses to overwrite work that arrived
+  while you were rebasing. Never rewrite a branch you do not own.
+
+  ```bash
+  git fetch origin main && git rebase origin/main
+  git push --force-with-lease origin <your-branch>
+  ```
+
 - **Do not commit, push, open a PR, or merge unless asked.**
 - **No Claude attribution** in commits, PR bodies, or any artifact.
 - **No emojis** anywhere. Use an SVG icon component.
