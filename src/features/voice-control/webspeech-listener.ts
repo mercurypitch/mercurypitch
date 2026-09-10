@@ -253,6 +253,32 @@ const isEditableTarget = (target: EventTarget | null): boolean =>
 const isVoiceHudTarget = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest(VOICE_HUD_SELECTOR) !== null
 
+/**
+ * Open the microphone once and give it straight back, before the first
+ * session.
+ *
+ * A documented iOS mitigation for exactly the symptom here — the FIRST
+ * recognition of a document failing while later ones are fine — on the
+ * reading that the platform needs the audio hardware woken before the
+ * recognizer asks for it. It costs one `getUserMedia` on a permission the
+ * page already holds, and the stream is stopped in the same breath.
+ *
+ * Never allowed to fail loudly: a refusal here is not a reason to keep voice
+ * control from starting, because the recognizer does its own capture and may
+ * well succeed anyway.
+ */
+async function warmMicrophone(): Promise<void> {
+  try {
+    const media = navigator.mediaDevices
+    if (media?.getUserMedia === undefined) return
+    const stream = await media.getUserMedia({ audio: true })
+    for (const track of stream.getTracks()) track.stop()
+  } catch {
+    // Refused, unsupported, or held elsewhere. The recognizer gets its turn
+    // regardless.
+  }
+}
+
 export interface WebSpeechListenerOptions {
   /**
    * Every `start()` is something the user notices — the permission bubble on
@@ -484,6 +510,7 @@ export function createWebSpeechListener(
     started = false
     hasBeenLive = false
     frozenWithSession = false
+    stoppedForHidden = false
     clearRestartTimer()
     clearConfirmTimer()
     clearStaleTimer()
@@ -525,8 +552,16 @@ export function createWebSpeechListener(
    * nothing running but means the opposite: stay quiet until a touch.
    */
   let frozenWithSession = false
+  /** The microphone has been woken once for this listener. */
+  let warmedUp = false
   /** Set while a suspiciously fast session is on probation. */
   let hollowTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * The session was let go because the page went off screen, so coming back
+   * should bring it up again. Distinct from dozing, which also leaves
+   * nothing running and means the opposite: stay quiet until a touch.
+   */
+  let stoppedForHidden = false
 
   const clearHollowTimer = () => {
     if (hollowTimer === null) return
@@ -536,9 +571,37 @@ export function createWebSpeechListener(
 
   const onVisibility = () => {
     log('visibilitychange', { to: document.visibilityState, started })
-    // `visibilitychange` only fires on a transition, so arriving here at
-    // `visible` means the document was hidden until a moment ago.
-    if (!started || document.visibilityState !== 'visible') return
+    if (!started) return
+    if (document.visibilityState !== 'visible') {
+      // Let go while the page is off screen.
+      //
+      // Recognition does not survive being backgrounded on iOS, and our own
+      // record shows exactly how it fails: `error code=audio-capture`
+      // arriving in the same millisecond as the switch to hidden, then
+      // `aborted`, then a stillborn respawn that the platform refuses with
+      // `not-allowed`. Holding a session through that gains nothing and
+      // leaves the listener arguing with a platform that has already taken
+      // the microphone away.
+      //
+      // Only where respawns are visible: desktop backgrounds a tab without
+      // taking anything, and a pianist who alt-tabs mid-practice should not
+      // lose the ear.
+      if (!visibleRespawn || recognition === null) return
+      log('stand-by', { reason: 'hidden' })
+      stoppedForHidden = true
+      clearRestartTimer()
+      discard()
+      callbacks.onInterim('')
+      return
+    }
+    // Arriving here at `visible` means the document was hidden until a
+    // moment ago.
+    if (stoppedForHidden) {
+      stoppedForHidden = false
+      log('stand-by-over')
+      spinUp()
+      return
+    }
     // Dozing — nothing running and nothing scheduled — stays dozing: a
     // gesture-less `start()` here is one iOS refuses, and the refusal would
     // expand the pill over the header. The next touch wakes it.
@@ -915,6 +978,20 @@ export function createWebSpeechListener(
       window.addEventListener('pageshow', onPageShow)
       window.addEventListener('pagehide', onPageHide)
       listenForGesture()
+      // Wake the microphone once, then hand it straight back.
+      //
+      // A documented iOS mitigation for exactly this symptom — the FIRST
+      // recognition of a document failing while later ones are fine — on the
+      // reading that the hardware wants waking before the recognizer asks
+      // for it. Started here and not awaited: the recognizer is what matters
+      // and must not queue behind a permission prompt nobody answers. The
+      // same open-and-release is what `mic-probe` has been doing on the
+      // failure path all along without disturbing anything.
+      if (visibleRespawn && !warmedUp) {
+        warmedUp = true
+        log('warm-up')
+        void warmMicrophone()
+      }
       spinUp()
     },
     stop: () => {

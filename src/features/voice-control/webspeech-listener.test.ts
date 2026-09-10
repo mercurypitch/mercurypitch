@@ -863,6 +863,120 @@ describe('a session the platform never really opened', () => {
   })
 })
 
+describe('a page that goes off screen', () => {
+  it('lets the session go, rather than argue with a platform that took it', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    confirmForReal(h.latest())
+    const session = h.latest()
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    // The device record shows what holding on looks like: `audio-capture` in
+    // the same millisecond as the switch to hidden, then `aborted`, then a
+    // respawn the platform refuses outright with `not-allowed`.
+    expect(session.aborted).toBe(true)
+  })
+
+  it('brings it back when the page returns', () => {
+    const h = harness({ visibleRespawn: true })
+    h.listener.start()
+    confirmForReal(h.latest())
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    const whileHidden = FakeRecognition.instances.length
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    // Standing by is not dozing: dozing waits for a touch, this waits for
+    // the page, and coming back IS the event it was waiting for.
+    expect(FakeRecognition.instances).toHaveLength(whileHidden + 1)
+  })
+
+  it('leaves desktop holding its session', () => {
+    const desktop = harness({ visibleRespawn: false })
+    desktop.listener.start()
+    confirmForReal(desktop.latest())
+    const session = desktop.latest()
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    // A tab in the background keeps its microphone there, and a pianist who
+    // alt-tabs mid-practice should not lose the ear.
+    expect(session.aborted).toBe(false)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+  })
+})
+
+describe('waking the microphone before the first session', () => {
+  it('opens it once and gives it straight back', async () => {
+    const stop = vi.fn()
+    const getUserMedia = vi.fn(async () => ({ getTracks: () => [{ stop }] }))
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    })
+    const h = harness({ visibleRespawn: true })
+
+    h.listener.start()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // A documented iOS mitigation for the first recognition of a document
+    // failing while later ones are fine.
+    expect(getUserMedia).toHaveBeenCalledTimes(1)
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not make the recognizer wait for it', () => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: async () => new Promise(() => undefined) },
+    })
+    const h = harness({ visibleRespawn: true })
+
+    h.listener.start()
+
+    // A permission prompt nobody answers must not mean voice control never
+    // starts, so the wake-up is begun and not waited on.
+    expect(FakeRecognition.instances).toHaveLength(1)
+  })
+
+  it('wakes it once per listener, not once per session', async () => {
+    const getUserMedia = vi.fn(async () => ({ getTracks: () => [] }))
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    })
+    const h = harness({ visibleRespawn: true })
+
+    h.listener.start()
+    h.listener.stop()
+    h.listener.start()
+    await Promise.resolve()
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('what counts as a touch', () => {
   /** `QUIET_ROLLOVER_LIMIT` in the listener. */
   const QUIET_SESSIONS_BEFORE_DOZE = 3
