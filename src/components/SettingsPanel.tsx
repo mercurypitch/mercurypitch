@@ -964,7 +964,7 @@ export const SettingsPanel: Component = () => {
                 data-testid="settings-voice-tour"
                 onClick={() => startVoiceTour()}
               >
-                <Sparkles />
+                <Sparkles size={16} />
                 Take the tour
               </button>
             </div>
