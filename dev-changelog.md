@@ -9,6 +9,131 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] - 2026-09-10
+
+Two rooms per instrument needed a door, a debounce needed a ledger, and three
+defects turned out to be CSS and framework defaults doing exactly what they
+are specified to do.
+
+### Added
+
+- **The instrument room door (#763).** Piano and Guitar each open two rooms
+  now — the standalone Night page and the in-app workspace — so the tab asks
+  once, the first time it is pressed, and then remembers. Answered at
+  `handleTabChange`, not in the tab bar: several paths reach a tab (top nav,
+  the keyboard's next/prev, a call from another surface) and the question
+  belongs to the destination. Hash routing is deliberately NOT intercepted —
+  a deep link to `#/piano` is already a statement about where to land.
+
+  Stored as `'ask' | 'night' | 'workspace'`, not a choice plus a remembered
+  flag: unticking "remember this" has to leave _nothing_ behind, and a nullable
+  choice makes "asked and declined to commit" indistinguishable from "never
+  asked". The key is prefixed, so it rides the settings sync — which room
+  someone wants is not a per-device fact. A phone is never asked: Night is the
+  mobile experience and the workspace is a desktop surface, so both tabs go
+  straight there, and in the More sheet they render as doors beside Drum Night
+  rather than as tab rows. Settings > Display & Controls changes any of it,
+  including back to being asked.
+
+- **`MercuryCheckbox`, and a rebuilt settings switch (#763).** Both use brand
+  colours rather than the active theme's accent — eight themes each define
+  their own `--accent`, and these are meant to be the same object in all of
+  them — and two stops of the spectrum (`#58a6ff` -> `#2dd4bf`), never all
+  three, because the full stroke is rationed to one per screen and Settings
+  carries twenty-three toggles. The bead is a mirrored sphere: chrome is one
+  hard value break at the reflected horizon plus a bright bounce off the ground
+  below it, and the environment map is an ellipse anchored _above_ the ball so
+  its edge crosses the silhouette in a shallow smile.
+
+- **A card of its own for every entry page (#762).** Six of thirteen entries
+  shared the generic `og-image.png`, including `/mirror`, and several described
+  artwork that did not exist. Five new cards, one visual language: the page's
+  measurement as a flat graphic in the right third, over obsidian, no baked-in
+  text. `scripts/generate-entry-og.mjs` is one model-driven generator reading
+  `src/seo/entry-pages.ts` rather than a seventh copy of the same composition.
+
+- **Guitar Night's third entry: Free play (#762).** Straight into the room
+  without the load-a-song step, with the small link kept on the song screen.
+
+### Fixed
+
+- **A theme you chose reverted on reload (#763).** Two defects, and only fixing
+  both closed it. The push is debounced 1500 ms, so a reload inside that window
+  killed the timer and the upload never happened; then the pull applied the
+  account's row unconditionally, and that row was the _stale_ one. Being faster
+  was the obvious fix and the wrong one — the same loss happens on a crash, a
+  closed laptop, or a push that fails offline — so the pull has to be able to
+  tell that the local value is newer.
+
+  A local write is now recorded in a localStorage ledger **synchronously,
+  before the debounce**; localStorage because the page that owes the upload is
+  the page going away. A pull that finds a key there sends it up instead of
+  overwriting it, and a failed push keeps its entry for the next pull to retry.
+  The ledger is stamped with the identity that wrote it: logout does not clear
+  localStorage, so on a shared computer one singer's unsent theme would
+  otherwise have been defended against the NEXT singer's account and uploaded
+  there — the same hazard `MERGE_OWNER_KEY` already guards for progress.
+
+- **Every settings switch was 160px wide instead of 46 (#763).**
+  `.settingsRow label` sets `min-width: 160px` for the text label at the left
+  of a row, and `.settingsToggle` is a `<label>` too. The existing
+  `width: 46px !important` could never win: `!important` settles a cascade
+  fight between the SAME property, and `min-width` clamps the used width
+  afterwards whatever `width` said.
+
+- **Dropdowns closed the instant you picked anything (#763).** Binding `value`
+  on a `<select>` compiles to an effect that assigns `el.value` on every change
+  of the signal — including the change the user just made, writing back a value
+  the element already had. Chrome on Linux fires `change` while the popup is
+  still open, and assigning `.value` then closes it; the only way through was
+  press-drag-release, which fires a single change at the end. `SafeSelect` now
+  applies `value` only when it differs. Fixed there rather than at the call
+  site: every select in the app was built this way.
+
+- **A gradient under a border painted a flat band at the edges (#763).**
+  `background-origin` defaults to `padding-box` while `background-clip`
+  defaults to `border-box`, so the gradient is _sized_ to the padding box but
+  _painted_ out to the border box; the 1px overhang gets the first stop's flat
+  colour along the top and left and the last stop's along the bottom and right,
+  on a corner radius a pixel larger than the fill's. It has to be restated
+  after every `background` shorthand, which resets it — a declaration in the
+  base rule alone is a silent no-op once `:checked` sets `background:` again.
+
+- **The room door outranked the local-save veto (#763).**
+  `requestActiveTabChange` is not about tabs: it blocks navigation while a take
+  is still saving to this device, and lets Voice History ask before it is left.
+  The door intercepted ahead of it, and because the Night answer is a full page
+  navigation the in-flight save was abandoned rather than interrupted. The door
+  now runs inside the accepted callback, and its own answer re-asks before
+  navigating.
+
+- **`/vocal-remover` and five siblings promised artwork they did not have
+  (#762).** `imageAlt` described a card that was never generated.
+
+### Changed
+
+- **`practise` -> `practice` throughout (#762)**, except the two British-spelling
+  SEO keywords in `src/seo/entry-pages.ts`, which are deliberate. No stored key,
+  column, badge id or matcher changed — `condition` in `seed-data.json` is
+  display copy the grant engine never reads.
+
+- **Karaoke's card drops "you own" (#762).** The ownership framing belongs in
+  the privacy notice and terms, not on a share card.
+
+- **"Pitch" wears the brand spectrum on every card (#762).** The generators set
+  a flat `#58a6ff` while the app renders
+  `linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%)` clipped to
+  the text, in both `App.module.css` and `entry-prelude.css`. A card is the
+  first frame of the page it links to, so a flat blue "Pitch" read as a
+  different brand the moment the page painted.
+
+- **AGENTS.md and CLAUDE.md say rebase, not merge (#763).** The guardrail
+  already allowed `--force-with-lease` for rebases, but only in AGENTS.md;
+  CLAUDE.md summarised it as "never force-push" with no qualifier, and an agent
+  reading the summary concludes a rebase is off the table and merges `main`
+  into the branch instead. Squash-vs-rebase is now stated as a judgement about
+  what the commits are, not a default.
+
 ## [0.9.6] - 2026-09-09
 
 The crawlable entries become a data model, four search intents get a page of

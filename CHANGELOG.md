@@ -5,6 +5,30 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.7] - 2026-09-10
+
+Piano and Guitar let you pick which room they open, and several things that
+quietly did the wrong thing now do the right one.
+
+### Added
+
+- **Piano and Guitar ask which room you want the first time you open them.**
+  The lit Night room, or the full workspace with all the tools. It remembers
+  your answer, and you can untick that if you would rather be asked each time.
+  Settings changes it later either way. On a phone both always open Night.
+- **Guitar Night has a third way in: Free play.** See what you play, record it,
+  practice it — no file to load first.
+
+### Fixed
+
+- **A theme you chose no longer turns back.** Picking one and reloading soon
+  after used to lose it.
+- **Switches in Settings stretched across the row**, and dropdowns closed the
+  moment you picked anything unless you held the mouse down.
+- **A link you share now shows a picture made for the page you shared.** Six
+  pages were showing the same generic one, and a few described artwork that was
+  not in it.
+
 ## [0.9.6] - 2026-09-09
 
 Four new front doors, one for each thing people arrive looking for.
