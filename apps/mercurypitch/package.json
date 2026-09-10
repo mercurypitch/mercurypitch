@@ -16,7 +16,8 @@
     "cap:sync:android": "pnpm build && cap sync android",
     "cap:open:ios": "pnpm cap:sync:ios && cap open ios",
     "cap:open:android": "pnpm cap:sync:android && cap open android",
-    "cap:run:android": "pnpm cap:sync:android && cap run android"
+    "cap:run:android": "pnpm cap:sync:android && cap run android",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
@@ -26,6 +27,7 @@
     "@irchiinnuss/audio-io": "workspace:*",
     "@irchiinnuss/mobile-runtime": "workspace:*",
     "@irchiinnuss/pitch-engine": "workspace:*",
+    "@irchiinnuss/purchase-kit": "workspace:*",
     "solid-js": "^1.9.12"
   },
   "devDependencies": {
@@ -35,6 +37,7 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
-    "vite-plugin-solid": "^2.10.0"
+    "vite-plugin-solid": "^2.10.0",
+    "vitest": "^4.1.5"
   }
 }

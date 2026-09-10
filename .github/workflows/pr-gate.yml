@@ -128,7 +128,7 @@ jobs:
                   apps/beside-cue/*|packages/beside-cue-core/*)
                     beside=true
                     ;;
-                  packages/audio-io/*|packages/mobile-runtime/*|packages/pitch-engine/*)
+                  packages/audio-io/*|packages/mobile-runtime/*|packages/pitch-engine/*|packages/purchase-kit/*)
                     # Shared by both apps.
                     beside=true
                     mercurypitch=true
@@ -386,6 +386,9 @@ jobs:
 
       - name: Check Mercury Pitch
         run: pnpm mercurypitch:check
+
+      - name: Test Mercury Pitch
+        run: pnpm mercurypitch:test
 
       - name: Build Mercury Pitch
         # The build is the check that matters here and it is not the same one
