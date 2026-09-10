@@ -456,6 +456,7 @@ export function createWebSpeechListener(
   const letGoOfPage = () => {
     started = false
     hasBeenLive = false
+    frozenWithSession = false
     clearRestartTimer()
     clearConfirmTimer()
     clearStaleTimer()
@@ -490,6 +491,13 @@ export function createWebSpeechListener(
   // `hasBeenLive`) — against a mic that is otherwise deaf until the tab is
   // reloaded.
 
+  /**
+   * A session was given back because the document was being frozen, and a
+   * restore should bring it back. Distinct from dozing, which also leaves
+   * nothing running but means the opposite: stay quiet until a touch.
+   */
+  let frozenWithSession = false
+
   const onVisibility = () => {
     log('visibilitychange', { to: document.visibilityState, started })
     // `visibilitychange` only fires on a transition, so arriving here at
@@ -505,17 +513,27 @@ export function createWebSpeechListener(
 
   const onPageHide = (event: Event) => {
     if (!started) return
-    // `persisted` here means the document is being FROZEN, not destroyed: it
-    // keeps its JavaScript state, and whatever it was holding it goes on
-    // holding while the next page runs. Walking into Karaoke Night — a
-    // separate document — and back is exactly this, and a frozen document
-    // that still owns the microphone would explain the shape on the far
-    // side: a recognizer that starts in 40ms and never hears a thing.
-    log('pagehide', {
-      persisted: (event as { persisted?: boolean }).persisted === true,
-      live,
-      hadSession: recognition !== null,
-    })
+    const persisted = (event as { persisted?: boolean }).persisted === true
+    const hadSession = recognition !== null || restartTimer !== null
+    log('pagehide', { persisted, live, hadSession: recognition !== null })
+    if (!hadSession) return
+    // Hand the recognizer back before the document is put away.
+    //
+    // `persisted` means FROZEN, not destroyed: the document keeps its
+    // JavaScript state, a running recognizer included, and on iOS that
+    // session goes on owning the platform's speech recognition while the
+    // NEXT document runs. Measured on a device 2026-09-10, walking from here
+    // into Karaoke Night: this page froze with `live=true`, and from then on
+    // every session in every later document started in 40ms, reported
+    // `audiostart`, and received nothing at all — while `getUserMedia`
+    // probed the microphone itself as `free`. The rooms here are separate
+    // documents, so this is not an edge case; it is every navigation.
+    //
+    // A destroyed document would let go on its own, but only eventually, and
+    // letting go twice costs nothing.
+    frozenWithSession = true
+    clearRestartTimer()
+    discard()
   }
 
   const onPageShow = (event: Event) => {
@@ -530,7 +548,13 @@ export function createWebSpeechListener(
     // logging only the second left the first looking like no event at all.
     log(persisted ? 'pageshow-restored' : 'pageshow-fresh')
     if (!persisted) return
-    if (recognition === null && restartTimer === null) return
+    // Whatever was running was handed back on the way out, so `recognition`
+    // is null by design here. The flag is what remembers there was something
+    // to bring back; without it the check below would read a thawed document
+    // as one that had been dozing and leave it silent.
+    const wasFrozen = frozenWithSession
+    frozenWithSession = false
+    if (!wasFrozen && recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
   }

@@ -252,6 +252,22 @@ export function clearVoiceDiagnostics(): void {
 }
 
 /** One line per entry: elapsed, session, event, detail, environment. */
+/**
+ * Re-print the opening lines for a console that started listening late.
+ *
+ * The portable console arrives a tick after the entry runs — it is a dynamic
+ * import, so that a normal build can drop it — and the first lines of a
+ * recording are written before that. They are the two that matter most on a
+ * pasted log: which device this is, and how the document was reached. The
+ * recording itself is unaffected; this only says them again out loud.
+ */
+export function announceVoiceDiagnostics(): void {
+  if (!enabled) return
+  console.info(`[voice] diagnostics on — ${navigator.userAgent}`)
+  const opened = entries.find((entry) => entry.event === 'document-open')
+  if (opened !== undefined) console.info(formatEntry(opened))
+}
+
 export function formatEntry(entry: VoiceDiagnosticEntry): string {
   const seconds = (entry.at / 1000).toFixed(2).padStart(8, ' ')
   const detail = Object.entries(entry.detail)
