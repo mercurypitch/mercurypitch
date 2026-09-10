@@ -160,6 +160,47 @@ the culprit outright; `free` means the microphone was available and the
 recognizer refused to use it, which is a genuine WebKit bug and _then_ worth a
 device lab.
 
+### The retest, and the actual cause
+
+A second device run on 2026-09-10, with every entry instrumented and
+`audiostart` logged, contradicts the section above and settles it.
+
+`mic-probe` came back **`free` every single time**. The microphone was never
+held by anyone, so contention is out and the "used in another tab" message
+was a red herring. `audiostart` **fired on every deaf session**, so the
+browser claimed audio was flowing while none was.
+
+What separates the sessions that worked from the ones that did not is neither
+timing nor the microphone. It is **who started them**:
+
+| `start-requested` at   | what started it                   | outcome                                    |
+| ---------------------- | --------------------------------- | ------------------------------------------ |
+| 3.63s, 11.28s          | a person tapping                  | `speechstart`, `first-result`, command ran |
+| 0.00-0.03s (six loads) | the saved preference, during boot | `audiostart`, then nothing, ever           |
+
+iOS hands a recognizer to a page the visitor has not touched, reports `start`
+and `audiostart`, and then delivers no audio for the life of that session —
+no `error`, no `end`. Voice control is a **remembered** preference and every
+room here is its own document, so from the second page onward every session
+was of the second kind. That is VC-1.
+
+The fix is to decline to start into a document nobody has touched yet. The
+gesture seam was already armed for other reasons, so with nothing running the
+first touch takes the `recognition === null` path and starts a session the
+platform will actually feed. Desktop keeps starting immediately: activation
+is not a requirement there.
+
+A second change landed with it, from the same record: the listener was
+leaving a **live recognizer inside a frozen document**
+(`pagehide persisted=true live=true`). It hands it back now and a thawed page
+brings it up again. That one is not proven to matter on its own — the
+activation gate may be the whole story — but a session running in a document
+that is not on screen is wrong regardless.
+
+Both are candidates until a device says otherwise. What to look for:
+`awaiting-activation` on load, then `gesture-wake` on the first touch, then a
+`start` followed by `speechstart` and `first-result`.
+
 ### What is now worth doing, in order
 
 1. **Reproduce with `mic-probe` in the record**, on the same device, with

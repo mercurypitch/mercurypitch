@@ -227,6 +227,27 @@ const isEditableTarget = (target: EventTarget | null): boolean =>
 const isVoiceHudTarget = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest(VOICE_HUD_SELECTOR) !== null
 
+/**
+ * Has the visitor interacted with THIS document yet?
+ *
+ * User activation is per document, so a room reached by tapping a link in
+ * another one begins at `false` — which is exactly the case that matters,
+ * because every room here is a separate document.
+ *
+ * A browser that does not report activation is one where starting without it
+ * has never been a problem, so it is treated as activated and nothing about
+ * its behaviour changes.
+ */
+function hasBeenActivated(): boolean {
+  const activation = (
+    navigator as Navigator & {
+      userActivation?: { hasBeenActive?: boolean }
+    }
+  ).userActivation
+  if (typeof activation?.hasBeenActive !== 'boolean') return true
+  return activation.hasBeenActive
+}
+
 export interface WebSpeechListenerOptions {
   /**
    * Every `start()` is something the user notices — the permission bubble on
@@ -827,6 +848,31 @@ export function createWebSpeechListener(
       window.addEventListener('pageshow', onPageShow)
       window.addEventListener('pagehide', onPageHide)
       listenForGesture()
+      // Do not start into a document nobody has touched yet.
+      //
+      // iOS hands over a recognizer for the asking, reports `start` and then
+      // `audiostart`, and delivers no audio at all — deaf for the life of the
+      // session, with no `error` and no `end` to say so. Measured on a device
+      // 2026-09-10 across six page loads: every session started from the saved
+      // preference during boot was deaf; both sessions a person started by
+      // tapping heard speech within three seconds. Voice control is a
+      // REMEMBERED preference and every room here is its own document, so
+      // after the first page that was the only kind of session there was —
+      // which is what VC-1 has been describing all along.
+      //
+      // Nothing more is needed than declining to start: the gesture seam is
+      // already armed, and with no session running the first touch takes the
+      // `recognition === null` path and starts one the platform will feed.
+      //
+      // Desktop is left alone. Activation is not a requirement there, so the
+      // wait would buy nothing and cost the visitor a click.
+      if (visibleRespawn && !hasBeenActivated()) {
+        log('awaiting-activation')
+        // Not a fault, and not a doze either — the same resting mic, because
+        // one touch anywhere is all it is waiting for.
+        callbacks.onStateChange('dozing')
+        return
+      }
       spinUp()
     },
     stop: () => {
