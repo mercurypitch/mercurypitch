@@ -22,12 +22,16 @@ import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, Box
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
 import type { ChamberLevel } from '../levels/chambers'
+import type { LoadMark } from '../runtime/perf'
+import { NO_MARK, timed } from '../runtime/perf'
 import { groundIn, standingAmplitude } from '../sim/chamber3d'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
 import { FLOOR_STRIPS } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
+import type { Lens } from './fov'
+import { holdHorizontalFov } from './fov'
 import { PANE } from './Hallway3D'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
@@ -38,10 +42,8 @@ const PAPER = 0xfff4e2
 
 /** The lens the rooms were composed through, and the screen shape they
  * were composed on. Same correction as the Hallway: hold the HORIZONTAL
- * angle, because that is the axis the room runs along. */
-const DESIGN_FOV_DEG = 42
-const DESIGN_ASPECT = 1.5
-const MAX_FOV_DEG = 64
+ * angle, because that is the axis the room runs along (render/fov.ts). */
+const LENS: Lens = { designFovDeg: 42, designAspect: 1.5, maxFovDeg: 64 }
 
 /** How many strips the floor pattern is cut into.
  *
@@ -86,7 +88,8 @@ export interface ChamberView {
 }
 
 export interface Chamber3D {
-  init(): Promise<void>
+  /** `mark` hears each load phase as it finishes, for the chip. */
+  init(mark?: LoadMark): Promise<void>
   /**
    * Put a different room in front of Merc, keeping everything that is
    * not the room.
@@ -119,7 +122,7 @@ export const createChamber3D = (
   renderer.toneMappingExposure = 1.2
 
   const scene = new Scene()
-  const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 40)
+  const camera = new PerspectiveCamera(LENS.designFovDeg, 1, 0.05, 40)
   camera.position.set(1.5, 1.0, 2.6)
 
   // Radius 13, not 11. It is a BackSide sphere on the world ORIGIN, so
@@ -451,13 +454,22 @@ export const createChamber3D = (
   }
 
   return {
-    async init(): Promise<void> {
-      await renderer.init()
+    async init(mark = NO_MARK): Promise<void> {
+      await timed(
+        () => renderer.init(),
+        (ms) => mark('gpu', ms),
+      )
       if (disposed) return
 
       const [actor, shards] = await Promise.all([
-        createMerc(0.55, environment),
-        loadPaneShards(),
+        timed(
+          () => createMerc(0.55, environment),
+          (ms) => mark('merc', ms),
+        ),
+        timed(
+          () => loadPaneShards(),
+          (ms) => mark('glass', ms),
+        ),
       ])
       if (disposed) {
         actor.dispose()
@@ -493,7 +505,10 @@ export const createChamber3D = (
       // out: three compiles on first draw, and first draw would
       // otherwise be the first frame of a break.
       batch.visible = true
-      await renderer.compileAsync(batch, camera, scene)
+      await timed(
+        () => renderer.compileAsync(batch, camera, scene),
+        (ms) => mark('compile', ms),
+      )
       batch.visible = false
       if (disposed) return
       paintPattern(null, 0, current.startAt * current.length)
@@ -603,10 +618,7 @@ export const createChamber3D = (
       // three's fov is VERTICAL, so a portrait screen keeps the vertical
       // angle and throws the horizontal away -- and the horizontal is
       // the axis the room runs along. Widen to hold it, never narrow.
-      const designHalfH = (DESIGN_FOV_DEG * Math.PI) / 360
-      const halfW = Math.atan(Math.tan(designHalfH) * DESIGN_ASPECT)
-      const wanted = (2 * Math.atan(Math.tan(halfW) / aspect) * 180) / Math.PI
-      camera.fov = Math.min(MAX_FOV_DEG, Math.max(DESIGN_FOV_DEG, wanted))
+      camera.fov = holdHorizontalFov(aspect, LENS)
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)

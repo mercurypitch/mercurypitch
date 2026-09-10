@@ -138,6 +138,90 @@ Each step is its own PR, rebase-merged, fix-ups squashed.
 
 (Filled by 5e.)
 
+### 2.4 What 5a landed
+
+**The chip, on every stage.** One line for the frame -- backend, frames
+drawn a second, main-thread milliseconds per drawn frame (mean and worst
+over the last second), the share of that second the loop kept the main
+thread busy, and detector frames a second -- then where the wait between
+tapping a card and the first frame went, then, once the gate is tapped,
+the microphone's own wait. The phases, in the order they happen:
+`scene` (building the scene; the environment map is painted on a canvas
+inside it), `gpu` (`renderer.init()`), `merc`, `glass` (the Cabinet's
+bowl and shards, a pane's shards), `compile` (the shard program, linked
+before the break needs it), `draw` (the first frame's own cost), `first`
+(mount to first frame: the card tap), `mic` (the tap to a live stream,
+the permission prompt included the first time) and `f0` (a live stream
+to the first detector frame). There is no ORT phase because no ONNX
+session is made on the way into a 3D world: the stream is YIN in a
+worker (`pitch-f0-stream.ts` says so), so `f0` is the pitch engine's
+share of the wait.
+
+A development build shows the chip; a production build only with `?perf`
+in the address, so no player sees it -- the Cabinet's old chip, which
+they did see, included. Its f0 rate is now counted by change of the
+detector's level: the Cabinet counted changes of `tAudio`, which is the
+audio clock read at the poll rather than a stamp on the frame.
+
+**Calm (P3), as a rate.** Three seconds with no touch, key, voiced frame
+or motion, and the stage draws 30 frames a second by the clock: half a
+60 Hz screen, a quarter of a 120 Hz one, and nothing at all off a phone
+that Low Power Mode already holds at 30, which halved would draw a
+breathing Merc at 15. Only the drawing slows. The loop still runs every
+frame, so the fixed-step simulation is fed the same wall time and a
+touch is answered on the frame it arrives in. What counts as motion is
+each world's own -- shards in the air, a fall, a room handing over, Merc
+walking or in the air -- because half rate on those is a stutter rather
+than a saving; the plan named only input and voice. The renderer is
+handed the time since the last DRAWN frame, so Merc's clip and the chase
+camera keep their speed. `runtime/calm.ts` is the rule, tested at 30,
+60, 90 and 120 Hz with jitter; both numbers are dials.
+
+**What it measured.** Production build, headless Chromium, 390 × 844 at
+DPR 3 (so the 1.5 cap applies), read off the chip the way maff reads it.
+On a desktop GPU (Radeon RX 9070 XT through ANGLE; WebGPU is not offered
+headless, so WebGL2): 60 fps active and 30 calm in every world. A drawn
+frame costs the main thread 0.3-0.6 ms on average and under 1 ms at
+worst, calm or not, and the loop's share of the main thread falls from
+2-4% to 1%. Calm draws fewer frames, not cheaper ones; half the frames
+through the GPU is the thermal saving. In software (SwiftShader) the
+worlds draw 7-11 fps, below the calm rate, so calm correctly changes
+nothing there. Neither machine is a phone: these numbers say the
+mechanism works, and the gate's are the chip's on the devices (§2.3).
+
+**Where the wait goes**, on the same desktop GPU, in milliseconds:
+
+| World    | scene | gpu | merc | glass | compile | draw | first | mic | f0  |
+| -------- | ----- | --- | ---- | ----- | ------- | ---- | ----- | --- | --- |
+| Cabinet  | 44    | 28  | --   | 12    | 127     | 35   | 250   | 17  | 548 |
+| Hallway  | 43    | 18  | 19   | 23    | 3       | 103  | 200   | 18  | 531 |
+| Chambers | 46    | 25  | 21   | 10    | 2       | 121  | 220   | 18  | 548 |
+| Line     | 46    | 20  | 19   | --    | --      | 143  | 231   | 18  | 547 |
+
+The files are the small part: Merc and the glass load side by side in
+about 20 ms. The first draw is the large one, 100-140 ms in the Merc
+worlds (in the Cabinet the shader work shows under `compile` instead),
+then building the scene at about 45. The largest wait on the list comes
+after the gate: half a second from a live stream to the first detector
+frame, on a machine where the stream itself took 18 ms (a fake device,
+so no prompt). That, not Merc's glb, is where 5d looks first.
+
+**The Cabinet's lens (P8).** `render/fov.ts` holds a composition's
+horizontal angle on a narrower screen, only ever widening, and capped.
+The Hallway, the chambers and the Line each carried that rule inline;
+they share one copy now, pinned by a test to the arithmetic they shipped
+with. The Cabinet was composed at 36 degrees on a 3:2 screen and had no
+rule at all, so on a 390 × 844 phone it kept its 36 vertical degrees and
+17 of width. It opens to the Hallway's cap now, 62, which gives 31
+degrees of width.
+
+**The production build, on the phone.** `pnpm --filter
+@irchiinnuss/beside-cue-app preview:lan` builds, then serves `dist` on
+`https://<lan-ip>:4173` with the dev server's certificate
+(`preview.https` falls back to `server.https`). If `.dev-cert/` is
+missing, `bash apps/beside-cue/scripts/dev-cert.sh` first, so the
+certificate names the LAN address. Open `/?perf`.
+
 ---
 
 ## 3. Slice 6 — the Top Shelf
@@ -218,4 +302,12 @@ are gated by nothing; Beside Cue Deluxe stays support-only. No decision.
 
 ## 5. Answers
 
-(Recorded here as they arrive, beside the question they answer.)
+**P1, answered by maff on 2026-09-11.** A Samsung Galaxy S22 or S23
+would be the benchmark phone, and none is to hand. The gate is
+therefore the Android tablet standing in for a mid Android, the iPhone
+13 as the older iPhone (also measured in Low Power Mode), and the iPhone
+15 as the ceiling. §2.3 marks every Android number as the tablet's.
+
+**Everything else, answered by maff on 2026-09-11.** Proceed on the
+defaults; ask only for big decisions the plan does not cover, or
+blockers.
