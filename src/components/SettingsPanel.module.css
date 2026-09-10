@@ -282,13 +282,7 @@
   border-radius: 26px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, #161b22 0%, #0f141b 100%);
-  /* background-origin defaults to padding-box while background-clip defaults
-     to border-box, so a gradient under a border is SIZED to the padding box
-     but PAINTED out to the border box. The 1px overhang gets no continuation
-     of the gradient -- it gets the first stop's flat colour along the top and
-     left and the last stop's along the bottom and right, on a corner radius
-     one pixel larger than the fill's. That reads as a second rectangle laid
-     over the rounded corners. Sizing to the border box removes it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   /* Recessed: the bead sits IN the track, so the track is lit from below. */
   box-shadow:
@@ -353,8 +347,7 @@
 
 input:checked + .settingsSlider {
   background: linear-gradient(90deg, #58a6ff 0%, #2dd4bf 100%);
-  /* Must be restated after every `background` shorthand: the shorthand resets
-     background-origin to its initial padding-box, silently undoing it. */
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
   background-origin: border-box;
   border-color: rgb(45 212 191 / 30%);
   box-shadow:
