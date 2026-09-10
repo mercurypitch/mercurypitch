@@ -11,8 +11,17 @@
 //   - the onnxruntime-web wasm pair, out of the engine's own module graph
 //   - the SwiftF0 model, out of the web app's public/ tree
 //
-// Runs before dev and before build. public/ort and public/models stay
-// gitignored — they are build inputs, not sources.
+// Exported as `syncOrtAssets()` and called from a Vite plugin in
+// vite.config.ts, NOT from an npm lifecycle hook. A `prebuild` hook is
+// bypassed by `pnpm exec vite build` -- which is exactly how CI builds, to
+// avoid repeating tsc -- so the hook version of this shipped a bundle with no
+// vendored assets at all and the CI asset check caught it on the first run.
+// A plugin cannot be bypassed: every build that loads this config runs it.
+//
+// Still runnable directly (`node scripts/sync-ort-assets.mjs`) for a one-off.
+//
+// public/ort and public/models stay gitignored -- they are build inputs, not
+// sources.
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -20,39 +29,55 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
-// onnxruntime-web is a dependency of the pitch engine, not of this app, so it
-// is resolved from the engine's own module graph — pnpm keeps graphs strict
-// and a bare resolve from here would miss.
-const appRequire = createRequire(import.meta.url)
-const engineRequire = createRequire(appRequire.resolve('@irchiinnuss/pitch-engine'))
-const ortDist = join(dirname(dirname(engineRequire.resolve('onnxruntime-web'))), 'dist')
+export function syncOrtAssets() {
+  // onnxruntime-web is a dependency of the pitch engine, not of this app, so it
+  // is resolved from the engine's own module graph — pnpm keeps graphs strict
+  // and a bare resolve from here would miss.
+  const appRequire = createRequire(import.meta.url)
+  const engineRequire = createRequire(
+    appRequire.resolve('@irchiinnuss/pitch-engine'),
+  )
+  const ortDist = join(
+    dirname(dirname(engineRequire.resolve('onnxruntime-web'))),
+    'dist',
+  )
 
-const ortOut = join(here, '../public/ort')
-mkdirSync(ortOut, { recursive: true })
-for (const file of ['ort-wasm-simd-threaded.mjs', 'ort-wasm-simd-threaded.wasm']) {
-  const from = join(ortDist, file)
-  if (!existsSync(from)) {
+  const ortOut = join(here, '../public/ort')
+  mkdirSync(ortOut, { recursive: true })
+  for (const file of [
+    'ort-wasm-simd-threaded.mjs',
+    'ort-wasm-simd-threaded.wasm',
+  ]) {
+    const from = join(ortDist, file)
+    if (!existsSync(from)) {
+      throw new Error(
+        `[sync-ort-assets] ${file} not found at ${from}. onnxruntime-web's dist layout changed; ` +
+          `fix this script rather than letting the build fall back to the CDN.`,
+      )
+    }
+    copyFileSync(from, join(ortOut, file))
+  }
+
+  // The model lives in the web app's public tree, which this app deliberately
+  // does NOT copy wholesale — it also holds legends, room art and the night-app
+  // bundles, none of which belong in a voice-only V1-1 binary.
+  const modelSrc = join(here, '../../../public/models/swiftf0.onnx')
+  const modelOut = join(here, '../public/models')
+  if (!existsSync(modelSrc)) {
     throw new Error(
-      `[sync-ort-assets] ${file} not found at ${from}. onnxruntime-web's dist layout changed; ` +
-        `fix this script rather than letting the build fall back to the CDN.`,
+      `[sync-ort-assets] SwiftF0 model not found at ${modelSrc}. Without it the engine ` +
+        `requests /models/swiftf0.onnx at runtime and a cold offline start has no pitch detection.`,
     )
   }
-  copyFileSync(from, join(ortOut, file))
+  mkdirSync(modelOut, { recursive: true })
+  copyFileSync(modelSrc, join(modelOut, 'swiftf0.onnx'))
+
+  return { ortOut, modelOut }
 }
 
-// The model lives in the web app's public tree, which this app deliberately
-// does NOT copy wholesale — it also holds legends, room art and the night-app
-// bundles, none of which belong in a voice-only V1-1 binary.
-const modelSrc = join(here, '../../../public/models/swiftf0.onnx')
-const modelOut = join(here, '../public/models')
-if (!existsSync(modelSrc)) {
-  throw new Error(
-    `[sync-ort-assets] SwiftF0 model not found at ${modelSrc}. Without it the engine ` +
-      `requests /models/swiftf0.onnx at runtime and a cold offline start has no pitch detection.`,
-  )
+// Direct invocation stays supported.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const { ortOut, modelOut } = syncOrtAssets()
+  console.log(`[sync-ort-assets] wasm -> ${ortOut}`)
+  console.log(`[sync-ort-assets] model -> ${modelOut}`)
 }
-mkdirSync(modelOut, { recursive: true })
-copyFileSync(modelSrc, join(modelOut, 'swiftf0.onnx'))
-
-console.log(`[sync-ort-assets] wasm -> ${ortOut}`)
-console.log(`[sync-ort-assets] model -> ${modelOut}`)

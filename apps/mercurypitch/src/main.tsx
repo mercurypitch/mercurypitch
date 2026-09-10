@@ -59,8 +59,8 @@ import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 // whose whole promise is that it works without the network. Relative paths,
 // because the WebView serves this bundle from its own origin root.
 configurePitchEngineAssets({
-  wasmBase: './ort/',
-  modelPath: './models/swiftf0.onnx',
+  wasmBase: '/ort/',
+  modelPath: '/models/swiftf0.onnx',
 })
 
 // A chunk that fails to load in a WebView is likelier than in a tab — an
