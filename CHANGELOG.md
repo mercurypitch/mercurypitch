@@ -5,6 +5,66 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.7] - 2026-09-10
+
+Piano and Guitar let you pick which room they open, voice control reaches the
+last two rooms, and a long list of things that quietly did the wrong thing now
+do the right one.
+
+### Added
+
+- **Piano and Guitar ask which room you want the first time you open them.**
+  The lit Night room, or the full workspace with all the tools. It remembers
+  your answer, and you can untick that if you would rather be asked each time.
+  Settings changes it later either way. On a phone both always open Night.
+- **Guitar Night has a third way in: Free play.** See what you play, record it,
+  practice it — no file to load first.
+- **Voice control works in Piano Night and Drum Night.** Neither room had any,
+  so voice could carry you in and then had nothing that got you out.
+- **Every Night room has something you can say to reach it.** "Go to guitar
+  night", "take me to drum night", and from inside one room you can ask for
+  another. Only Karaoke Night had ever been given a phrase.
+- **"What can I say" works everywhere voice control does.** The one command
+  whose whole job is to list the others was missing from the rooms.
+- **A developer console you can open on the page the bug is on.** Switch it on
+  in Settings' danger zone and it follows you as a small button — open it, copy
+  the log, clear it. On a phone there is otherwise no way to see what the app
+  is saying.
+- **Voice control has a tour, and a Learn chapter to go with it.** Where the
+  pill is, what to say, and how to name a song you are humming — the one
+  feature in the app with no button, where saying it is the only way in. Start
+  it from the Guide, or from Settings under Voice Control.
+
+### Fixed
+
+- **A theme you chose no longer turns back.** Picking one and reloading soon
+  after used to lose it.
+- **Switches in Settings stretched across the row**, and dropdowns closed the
+  moment you picked anything unless you held the mouse down.
+- **A hairline of the wrong colour ran just inside the border** of buttons,
+  cards, pills and panels across the app — forty-one of them.
+- **An expired sign-in no longer looks like an empty library.** When your
+  session had quietly run out, pages loaded with nothing in them and never said
+  why. The app now says so and asks you to sign in again.
+- **A recording no longer ends after a note or two when saving is slow.** It
+  can ride out about thirty seconds of stalled writes instead of one and a half.
+- **A tab another tab has replaced explains itself on every screen**, not only
+  in the two rooms that happened to say so.
+- **Turning on the on-device voice engine can no longer close the tab twice.**
+  On a phone that download can take the whole tab with it; the app now comes
+  back on the browser engine and asks before letting you try again.
+- **Voice control stands down while the page is off screen** and picks up when
+  you come back, instead of arguing with a phone that already took the
+  microphone.
+- **A link you share now shows a picture made for the page you shared.** Six
+  pages were showing the same generic one, and a few described artwork that was
+  not in it.
+- **The room gallery only fetches the artwork you can actually see.** Opening
+  it used to pull every room at once, which is what made it stall partway
+  through on a big collection.
+- **Landing pages stopped downloading a picture nothing ever showed.** About
+  170 KB, on every visit.
+
 ## [0.9.6] - 2026-09-09
 
 Four new front doors, one for each thing people arrive looking for.
