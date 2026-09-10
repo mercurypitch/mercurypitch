@@ -201,6 +201,45 @@ Both are candidates until a device says otherwise. What to look for:
 `awaiting-activation` on load, then `gesture-wake` on the first touch, then a
 `start` followed by `speechstart` and `first-result`.
 
+### Third run: the discriminator is the previous document
+
+A longer device run on 2026-09-10 (179 lines, several rooms, both directions)
+separates the sessions cleanly, and it is neither timing, nor the microphone,
+nor who started the session:
+
+| the document before this one                   | how this one opened | outcome            |
+| ---------------------------------------------- | ------------------- | ------------------ |
+| destroyed (`pagehide persisted=false`) or none | `how=reload`        | **worked, 3 of 3** |
+| frozen (`pagehide persisted=true`)             | `how=navigate`      | **deaf, 5 of 5**   |
+
+Two of the three that worked were started automatically at boot, from the
+saved preference, with no user gesture at all. So **the activation hypothesis
+is dead too** — it was tried, shipped, and the same run disproves it. A
+`gesture-wake` session after a navigation was equally deaf, which is the same
+point from the other side.
+
+`mic-probe` said `free` on every single deaf session, so nothing else holds
+the microphone. `audiostart` fired on every deaf session, so the browser
+believed audio was flowing.
+
+That leaves one story standing: **a frozen document goes on owning the
+platform's speech recognition.** Every room here is a separate document, so a
+navigation always leaves one behind; a reload destroys it and the next
+document is fine.
+
+The listener already hands the recognizer back on `pagehide` — that shipped
+before this run and did not help. `abort()` at freeze time is evidently not
+enough: the document stops executing before the platform finishes tearing the
+session down.
+
+**The next experiment, and it is one experiment, not a third guess.** Release
+the recognizer _before_ the navigation starts rather than as the document
+freezes, so the teardown has time to complete. Voice commands navigate through
+`leaveForPage`, which is a single choke point. If the far side then hears
+speech, the mechanism is confirmed and the remaining work is to cover
+navigations we do not initiate. If it is still deaf, the frozen document is
+innocent and the next suspect is the navigation itself.
+
 ### What is now worth doing, in order
 
 1. **Reproduce with `mic-probe` in the record**, on the same device, with
