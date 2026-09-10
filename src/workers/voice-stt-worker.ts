@@ -25,6 +25,15 @@ let transcribeQueue: Promise<void> = Promise.resolve()
  *  English-only models reject them — pick per loaded model. */
 let generateKwargs: Record<string, unknown> = {}
 
+/** One line per failure, short enough to survive a log relay intact. ONNX
+ *  Runtime messages carry the useful part first, so the tail is what goes. */
+function describeError(err: unknown): string {
+  const text =
+    err instanceof Error ? err.message : String(err as { toString(): string })
+  const collapsed = text.replace(/\s+/g, ' ').trim()
+  return collapsed.length > 300 ? `${collapsed.slice(0, 300)}...` : collapsed
+}
+
 async function loadModel(modelId: string): Promise<void> {
   if (asrPipeline != null) return
   if (loadingPromise != null) return loadingPromise
@@ -48,7 +57,17 @@ async function loadModel(modelId: string): Promise<void> {
         })
       } catch (wasmErr) {
         console.error('[voice-stt] WASM load failed', wasmErr)
-        self.postMessage({ type: 'status', status: 'error' })
+        // Both reasons travel with the status, because this worker's own
+        // console goes nowhere a phone can read. Everything the device log
+        // showed was "Voice model failed to load" — the sentence that says
+        // WHY (a missing GPU adapter, a backend that never registered, an
+        // ONNX Runtime session that refused the weights) died in here, and
+        // an afternoon went on guessing which of them it had been.
+        self.postMessage({
+          type: 'status',
+          status: 'error',
+          detail: `webgpu: ${describeError(err)} | wasm: ${describeError(wasmErr)}`,
+        })
         loadingPromise = null
         return
       }

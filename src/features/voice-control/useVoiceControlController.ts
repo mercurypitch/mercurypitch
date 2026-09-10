@@ -15,7 +15,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { singingCaptureActive } from '@/stores/mic-store'
-import { showNotification } from '@/stores/notifications-store'
+import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
 import { setVoiceControlEngine, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
@@ -368,6 +368,18 @@ export function useVoiceControlController(
     },
   }
 
+  /**
+   * This document already watched an on-device model take the tab down.
+   *
+   * The guard at mount hands over to the browser engine once, and picking the
+   * on-device engine again is a deliberate retry — but a silent one walks
+   * straight back into the same kill, which is what happened on the iPhone 13
+   * the moment the toast was dismissed. So the retry gets asked for rather
+   * than obeyed, and the preference is not left claiming an engine that never
+   * started.
+   */
+  let killedThisDocument = false
+
   let webspeechListener: VoiceListener | null = null
   let localListener: VoiceListener | null = null
   let moonshineListener: VoiceListener | null = null
@@ -552,6 +564,25 @@ export function useVoiceControlController(
     console.log('[voice] engine switched to:', engine)
     stopListening()
     setLastLatencyMs(null)
+    if (engine !== 'webspeech' && killedThisDocument) {
+      // Put the preference back before asking, so nothing on screen claims an
+      // engine that is not running. Accepting sets it again, which re-enters
+      // this effect with the flag cleared.
+      setVoiceControlEngine('webspeech')
+      showActionNotification(
+        'Loading the on-device model is what closed this tab a moment ago. Trying again may close it once more.',
+        'warning',
+        {
+          label: 'Try anyway',
+          onClick: () => {
+            killedThisDocument = false
+            setVoiceControlEngine(engine)
+          },
+        },
+        { channel: 'voice-control-engine-fallback' },
+      )
+      return
+    }
     // toggle() checks support before starting; a switch must too, or an
     // unsupported engine (browser engine on Firefox, picked from the pill
     // menu) "runs" as a silent no-op stub under a Listening label.
@@ -573,6 +604,7 @@ export function useVoiceControlController(
     // same load again is what turns one reload into a dead tab, so this is
     // the one place the preference is overruled without the user asking.
     if (voiceControlEngine() !== 'webspeech' && localModelKilledTheDocument()) {
+      killedThisDocument = true
       fallBackToBrowserEngine('exhausted-the-device')
       return
     }
