@@ -109,6 +109,7 @@ const DARK_SURFACE_ROOTS = [
   ['Singing Zen', 'src/features/zen/ZenPitchStage.tsx'],
   ['Guitar Night', 'src/features/guitar-night/GuitarNightApp.tsx'],
   ['Piano Night', 'src/features/piano-night/PianoNightApp.tsx'],
+  ['Drum Night', 'src/features/drum-night/DrumNightApp.tsx'],
   ['Progress', 'src/features/progress/ProgressPage.tsx'],
   ['Progress share studio', 'src/features/progress/ProgressShareStudio.tsx'],
   ['Path', 'src/pages/PathPage.tsx'],

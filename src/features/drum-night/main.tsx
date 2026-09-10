@@ -3,6 +3,7 @@
 // ============================================================
 
 import { render } from 'solid-js/web'
+import '@/styles/dark-stage.css'
 import '@/styles/mobile-kit.css'
 import '@/styles/performance-mode.css'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
