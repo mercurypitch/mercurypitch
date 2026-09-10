@@ -281,11 +281,39 @@ only: on desktop a fast start is a healthy one.
 Detection goes from thirty-six seconds to under three, and the respawn stops
 hammering a platform that is still busy.
 
-**Still a candidate, not a cure.** The backoff may need to be longer than the
-quiet ladder's 300 ms – 3 s. What to look for in the next record:
-`hollow-start` lines appearing at all (the detector working), and then
-whether the session after the backoff starts slowly — a `start afterMs` back
-over 400 ms is the platform having caught up.
+**Fifth run: the detector works, the backoff was too short.** The record came
+back with `hollow-start afterMs=81`, then `61`, then `4` — the detector firing
+exactly as intended, in under three seconds each time instead of twelve. But
+the replacements were hollow too:
+
+```
+hollow  ->  wait  600 ms  ->  start afterMs=61   ->  hollow
+hollow  ->  wait 1200 ms  ->  start afterMs=4    ->  hollow
+doze    ->  (about 4 s of nothing, then voice toggled off and on by hand)
+                          ->  start afterMs=845  ->  speechstart, worked
+```
+
+So the wait is the remedy and it has to be measured in seconds, not
+milliseconds. The quiet ladder (300 ms doubling) is far too short for this.
+Hollow respawns now start at **3 s** and grow to a **9 s** cap, and a touch
+does **not** cut that wait short — every other wait here is a politeness a
+touch may end, this one is the fix itself.
+
+Two more things the same record forced:
+
+- **Hollow rollovers are counted apart from quiet ones.** They are different
+  failures: a quiet rollover means the room said nothing, a hollow one means
+  the platform never opened the microphone. Sharing a counter meant a touch
+  after a hollow doze reset the quiet ladder too, turning "one session per
+  touch in a silent room" into an endless respawn.
+- **A touch after the doze restarts the hollow ladder.** Otherwise the first
+  hollow session after waking pushes the count straight past the limit and
+  dozes again with no retry — a dead end whose only exit is turning voice
+  control off and on, which is precisely what the record shows someone doing.
+
+What to look for next: `hollow-start` followed by a `restart-scheduled
+delay=3000`, and then a `start afterMs` back **over 400 ms**. That is the
+platform having caught up, and it is the whole hypothesis in one line.
 
 ### What is now worth doing, in order
 
