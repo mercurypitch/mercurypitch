@@ -1,14 +1,10 @@
-/* VoiceDiagnosticsPanel — a debug surface, deliberately plain.
+/* PortableConsole — a debug surface, deliberately plain.
 
-   Neither screen edge is safe. The pill moves: on a phone it lives in the
-   HEADER (hud-placement.ts — "a phone puts the pill in the header"), and on
-   a desktop or in focus mode it is the bottom HUD. The first draft ran along
-   the bottom and covered the pill outright at y 669-708; moving it to the top
-   covered the header pill instead (both measured 2026-09-10).
-
-   So: the bar does not eat taps it does not need — only its own controls do,
-   and the summary is only as wide as its text — and it flips to the other
-   edge in one tap when it is still in the way. A debug overlay that blocks
+   Neither screen edge is safe. The pill this was first built to watch moves:
+   a phone carries it in the HEADER, a desktop in the bottom HUD. Both edges
+   were measured covering it (2026-09-10), so the bar passes taps through
+   everywhere except its own controls, the summary is only as wide as its
+   text, and one tap flips it to the other edge. A debug overlay that blocks
    the subject is worse than no overlay. */
 
 .panel {
@@ -26,8 +22,6 @@
   font-size: 11px;
   line-height: 1.4;
 
-  /* The bar spans the width so the log can, but the empty part of it must
-     pass taps through to whatever the tester is actually trying to press. */
   pointer-events: none;
 }
 
@@ -116,28 +110,6 @@
   padding: 0.05rem 0;
 }
 
-/* The three that answer the question get picked out of the wall of text. */
-.line[data-event='doze'] {
-  color: #f0a530;
-  font-weight: 600;
-}
-
-.line[data-event='stale-replace'],
-.line[data-event='stillborn'],
-.line[data-event='needs-gesture'] {
-  color: #ff8080;
-}
-
-.line[data-event='first-result'],
-.line[data-event='start'] {
-  color: #7ee2a8;
-}
-
-.line[data-event='gesture-wake'],
-.line[data-event='gesture-replace'] {
-  color: #8ab4ff;
-}
-
 .actions {
   width: 100%;
   display: flex;
@@ -170,4 +142,33 @@
 .action svg {
   width: 14px;
   height: 14px;
+}
+
+.line[data-level='error'],
+.line[data-level='onerror'],
+.line[data-level='unhandled'] {
+  color: #ff8080;
+}
+
+.line[data-level='warn'] {
+  color: #f0a530;
+}
+
+.line[data-level='info'] {
+  color: #8ab4ff;
+}
+
+.line[data-level='debug'] {
+  opacity: 0.65;
+}
+
+.filter {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
 }
