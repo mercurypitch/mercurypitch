@@ -165,7 +165,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Learn & Guide',
     targetSelector: '[data-tour="singing.guides"]',
     description:
-      'Come back any time: Learn opens read-along tutorials, Guide restarts these spotlight tours, and Tour appears on pages that have their own quick tour.',
+      'Come back any time: Learn opens read-along tutorials, Guide restarts these spotlight tours — including the one for voice control — and Tour appears on pages that have their own quick tour.',
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
@@ -1235,6 +1235,72 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+// Voice control tour. Not tab-keyed: voice belongs to no single tab, which is
+// exactly why it had no tour at all — the pill sits in every view and every
+// catalogue here is a list of tabs. Offered from the Guide modal and from
+// Settings, and deliberately short: five steps, and the last three are the
+// only three facts a person cannot work out by opening the command list.
+export const VOICE_TOUR_STEPS: WalkthroughStep[] = [
+  // The pill lives in two places (`bottomHudVisible`): bottom-left with room
+  // above it on desktop, docked into the header on a phone. One step each,
+  // because a tooltip placed above a header pill opens off the top.
+  {
+    title: 'The mic pill',
+    description:
+      'Voice control lives here, and it starts off. Click the pill — or press V — and it listens; click it again and it stops. Dimmed means it is resting between phrases, not broken.',
+    targetSelector: '[data-voice-control-hud]',
+    placement: 'top',
+    viewport: 'desktop',
+  },
+  {
+    title: 'The mic pill',
+    description:
+      'Voice control lives here, and it starts off. Tap the pill to make it listen, and tap it again to stop. Dimmed means it is resting between phrases, not broken.',
+    targetSelector: '[data-voice-control-hud]',
+    placement: 'bottom',
+    viewport: 'mobile',
+  },
+  {
+    title: 'What to say',
+    description:
+      '"Play", "pause", "from the top" and "loop off" drive whatever is playing. "Go to karaoke", "go to guitar night" and "go home" move you around — including into the standalone rooms, which are a different page.',
+    targetSelector: '[data-tour="voice.what"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    // Settings' own tabs are a switch, not a scroll: without this the step
+    // points into a panel that is not rendered. The release walk caught all
+    // four of these as `no-highlight` on the first run.
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Name the song you are humming',
+    description:
+      'Say "what song is this" and sing a few bars. Mercury Sing listens, matches what you sang against your library, and you choose from the results out loud: "sing number two".',
+    targetSelector: '[data-tour="voice.sing"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'The whole list, any time',
+    description:
+      'Shift+V anywhere opens every phrase this view answers to, and so does asking "what can I say". Every row in that list is also a button, for a room too loud to talk in.',
+    targetSelector: '[data-tour="voice.list"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Mercury, once the music starts',
+    description:
+      'While a track is playing, commands begin with "Mercury" — "Mercury, from the top" — so a backing track singing the word "stop" cannot stop your take. Turn it off here if you practice on headphones.',
+    targetSelector: '[data-tour="voice.wake-word"]',
+    placement: 'top',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+]
+
 // Karaoke stem-mixer tour. Contextual (not tab-keyed): the targets only exist
 // while a session is loaded in the mixer, so it is offered from StemMixer itself
 // (auto-once on mount + a manual "Tour" button) rather than via PAGE_TOURS.
@@ -1257,7 +1323,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & seek',
     description:
-      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too.',
+      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
     targetSelector: '[data-tour="mixer.transport"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1903,6 +1969,18 @@ export function startPageTour(tab: ActiveTab): void {
   const forView = forThisViewport(steps)
   if (forView.length === 0) return
   startTour(forView)
+}
+
+/**
+ * Start the voice-control tour.
+ *
+ * Its own starter rather than a bare `startTour(VOICE_TOUR_STEPS)`: the pill
+ * step exists twice, once per viewport, and only `forThisViewport` knows to
+ * drop the wrong one. Called that way it would spotlight a header pill that
+ * is not there and then the same pill again.
+ */
+export function startVoiceTour(): void {
+  startTour(forThisViewport(VOICE_TOUR_STEPS))
 }
 
 export function nextWalkthroughStep(): void {

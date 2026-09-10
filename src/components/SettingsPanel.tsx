@@ -9,7 +9,7 @@ import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
-import { FileText } from '@/components/icons'
+import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { BusyButton, BusyLink } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -35,7 +35,7 @@ import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, gridLinesVisible, playbackSpeed, reverbConfig, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
-import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
+import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, startVoiceTour, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
@@ -934,21 +934,37 @@ export const SettingsPanel: Component = () => {
           >
             <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
             <div class={styles.settingsDivider} />
-            <p class={styles.settingsDesc}>
+            <p class={styles.settingsDesc} data-tour="voice.what">
               Control playback with your voice: turn on the mic pill
               (bottom-left, or press V), then speak a command — "play", "pause",
-              "from the top", "loop off". To see every phrase, press Shift+V or
-              ask aloud: "what can I say".
+              "from the top", "loop off". Navigation works too: "go to karaoke",
+              "go to guitar night", "go home".
+            </p>
+            <p class={styles.settingsDesc} data-tour="voice.sing">
+              Forgotten what a song is called? Say "what song is this" and sing
+              a few bars — Mercury Sing listens, matches it against your
+              library, and you pick from the results by saying "sing number
+              two".
             </p>
             <div class={styles.settingsActionRow}>
               <button
                 type="button"
                 class={styles.settingsActionBtn}
                 data-testid="settings-voice-commands"
+                data-tour="voice.list"
                 onClick={openVoiceCommandList}
               >
                 <FileText size={16} />
                 Command list
+              </button>
+              <button
+                type="button"
+                class={styles.settingsActionBtn}
+                data-testid="settings-voice-tour"
+                onClick={() => startVoiceTour()}
+              >
+                <Sparkles />
+                Take the tour
               </button>
             </div>
 
@@ -978,7 +994,7 @@ export const SettingsPanel: Component = () => {
               </small>
             </div>
 
-            <div class={styles.settingsRow}>
+            <div class={styles.settingsRow} data-tour="voice.wake-word">
               <label for="voice-wake-word">
                 Require "Mercury" While Playing
               </label>
