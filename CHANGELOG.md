@@ -7,8 +7,9 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ## [0.9.7] - 2026-09-10
 
-Piano and Guitar let you pick which room they open, and several things that
-quietly did the wrong thing now do the right one.
+Piano and Guitar let you pick which room they open, voice control reaches the
+last two rooms, and a long list of things that quietly did the wrong thing now
+do the right one.
 
 ### Added
 
@@ -18,6 +19,17 @@ quietly did the wrong thing now do the right one.
   Settings changes it later either way. On a phone both always open Night.
 - **Guitar Night has a third way in: Free play.** See what you play, record it,
   practice it — no file to load first.
+- **Voice control works in Piano Night and Drum Night.** Neither room had any,
+  so voice could carry you in and then had nothing that got you out.
+- **Every Night room has something you can say to reach it.** "Go to guitar
+  night", "take me to drum night", and from inside one room you can ask for
+  another. Only Karaoke Night had ever been given a phrase.
+- **"What can I say" works everywhere voice control does.** The one command
+  whose whole job is to list the others was missing from the rooms.
+- **A developer console you can open on the page the bug is on.** Switch it on
+  in Settings' danger zone and it follows you as a small button — open it, copy
+  the log, clear it. On a phone there is otherwise no way to see what the app
+  is saying.
 
 ### Fixed
 
@@ -25,6 +37,21 @@ quietly did the wrong thing now do the right one.
   after used to lose it.
 - **Switches in Settings stretched across the row**, and dropdowns closed the
   moment you picked anything unless you held the mouse down.
+- **A hairline of the wrong colour ran just inside the border** of buttons,
+  cards, pills and panels across the app — forty-one of them.
+- **An expired sign-in no longer looks like an empty library.** When your
+  session had quietly run out, pages loaded with nothing in them and never said
+  why. The app now says so and asks you to sign in again.
+- **A recording no longer ends after a note or two when saving is slow.** It
+  can ride out about thirty seconds of stalled writes instead of one and a half.
+- **A tab another tab has replaced explains itself on every screen**, not only
+  in the two rooms that happened to say so.
+- **Turning on the on-device voice engine can no longer close the tab twice.**
+  On a phone that download can take the whole tab with it; the app now comes
+  back on the browser engine and asks before letting you try again.
+- **Voice control stands down while the page is off screen** and picks up when
+  you come back, instead of arguing with a phone that already took the
+  microphone.
 - **A link you share now shows a picture made for the page you shared.** Six
   pages were showing the same generic one, and a few described artwork that was
   not in it.

@@ -55,6 +55,56 @@ are specified to do.
 - **Guitar Night's third entry: Free play (#762).** Straight into the room
   without the load-a-song step, with the small link kept on the song screen.
 
+- **Voice diagnostics, readable on the device (#761).** VC-1 says voice control
+  dies on iOS after a stretch of silence with no `error` and no `end`, and the
+  listener already handles several shapes of that — so the question was never
+  "add a watchdog" but "which of the things it already does actually happened".
+  A dead recognizer and a live one hearing silence look identical from outside.
+  Every transition is now recorded with the few facts that separate them, off
+  unless `?voicelog=1` asks for it (remembered, because walking into Karaoke
+  Night is a fresh document that would otherwise drop the recording halfway
+  through the thing being measured), bounded at 500 entries, and readable three
+  ways: `console.info('[voice] …')` which `MP_DEV_LOGS=1` relays to `.dev-logs/`,
+  the portable console on the device itself, and `voiceDiagnosticEntries()`.
+  No transcript text is ever recorded. The plan asked for
+  `MediaStreamTrack.readyState`; for the Web Speech path there is no such track
+  to read, so `mic` reports the microphone the APP holds instead — the other
+  half of the same question.
+
+- **A command for every night, from one list (#761).** `heard: "Go to guitar
+night" -> none`, straight off the device: only Karaoke Night had ever been
+  given a phrase. All four rooms have one now, seven ways of asking each, and
+  the room you are standing in is left out of its own list.
+
+- **Voice control in Piano Night and Drum Night (#769).** Both registered no
+  commands at all, so voice could carry somebody into either room and then had
+  nothing that got them out. Added through `DeferredRoomVoiceControl`, which
+  renders nothing until the person using the room does something — a pointer
+  move, a touch, a key, a scroll, any of them once. `lazy()` alone does not keep
+  the rooms' first-paint promise, because Solid starts the import the moment the
+  component renders, which is first paint; `assert-piano-night-bundle.mjs` and
+  its drum twin fail the build rather than let a room drag the speech stack in.
+  The keypress that wakes it is replayed once the child has mounted, so a
+  visitor who reaches for V — the one most likely to know the shortcut — does
+  not have to press it twice. Room navigation lives in its own module because
+  the studio command set opens Dexie, and a room that wanted only "go home" was
+  pulling `vendor-db` into its first paint.
+
+- **A developer console on whatever page the bug is on (#770).** The danger-zone
+  toggle revealed a log that only existed inside the Settings panel, which is
+  never the screen the bug is on, and on a phone there is no second window to
+  leave it in. Same buffer, mounted per DOCUMENT — Karaoke Night, the Mirror and
+  each Night entry are separate documents with no shared shell — collapsed to a
+  small button until asked for, because a debug overlay that opens across the
+  screen hides the control you turned it on to watch. Copy says "No clipboard"
+  rather than pretending: an insecure origin refuses it outright, and a LAN dev
+  server on a phone is exactly that. The host is appended to `<body>` because
+  `position: fixed` is captured by any transformed ancestor, which parked an
+  earlier overlay 37px above the viewport while `getComputedStyle` still read
+  `bottom: 0`. Deliberately NOT the portable console: this wraps nothing
+  (`initGlobalErrorHandlers` fills the buffer either way), and
+  `scripts/assert-no-portable-console.mjs` still passes on all five builds.
+
 ### Fixed
 
 - **A theme you chose reverted on reload (#763).** Two defects, and only fixing
@@ -130,6 +180,102 @@ are specified to do.
   does paint it, and `entry-prelude.css` still carries the plate so a slow boot
   still gets the art while the prelude is up.
 
+- **Forty-one gradients painted a seam of the wrong colour under their border
+  (#764).** The same defect the settings switch turned up, swept across the
+  codebase. `background-origin` defaults to `padding-box` and `background-clip`
+  to `border-box`, so a gradient under a translucent border is SIZED to the
+  padding box but PAINTED to the border box: the 1px overhang gets the first
+  stop's flat colour along the top and left, the last stop's along the bottom
+  and right, at a corner radius 1px larger than the fill. Invisible under an
+  opaque border, which is why it survived this long. Every rule restates
+  `background-origin: border-box` AFTER its `background` shorthand — the
+  shorthand resets it, which is how the first attempt at this fix silently did
+  nothing.
+
+- **A 401 on a data read looked like an empty library (#759).** In `request()`,
+  `if (res.status === 401) throw new NoIdentityError()` sat above the `!res.ok`
+  block that calls `onErrorResponse`, so `handleAuthErrorResponse` never saw the
+  one status that means "your auth is the problem". Reads degrade to empty so
+  the app still loads, and `getUserId()` mints an anonymous id unconditionally,
+  so nothing downstream could tell an expired session from a visitor who had
+  never written anything. A new `ServerAdapterConfig.onUnauthorized` seam runs
+  before the 401 is swallowed, wired to `handleCloudSessionRejected()`.
+  Deliberately not folded into `handleAuthErrorResponse`: on the auth endpoints
+  a 401 means "wrong password", and signing someone out for mistyping one would
+  be worse than the bug. Gated on `hasUpgradedAccount()`, so an anonymous
+  visitor is never signed out, and naturally idempotent — a page-load's worth of
+  simultaneous 401s produces one message.
+
+- **A stalled write killed the take after one or two notes (#759).** A capture
+  buffer only returns to the worklet once its chunk is durable, so the pool
+  doubles as the budget for how long storage may stall. Fixed at 32 x 2048
+  frames, that budget was about 1.4 s at 48 kHz — which is what ended recordings
+  while the schema deadlock had every write pending. The pool now grows on
+  demand to `max(32, ceil(30 * sampleRate / 2048))`, roughly 704 buffers or
+  5.8 MB at 48 kHz, and warns once at the ceiling. It does not shrink back; past
+  the growth point it recirculates.
+
+- **A superseded or blocked database only explained itself in two rooms
+  (#759).** It breaks every surface at once, and a superseded tab has no working
+  surface left to read the explanation on. One `DatabaseLifecycleNotice` in the
+  shell: superseded is `role="alert"`, never auto-dismisses and carries Reload;
+  blocked is `role="status"` with no button, because it clears itself when the
+  other tabs go and closing them is not something this page can do.
+
+- **One reload was a stumble, two was a dead tab (#767, #768).** Loading whisper
+  on a phone can take the whole content process with it; WebKit reloads the
+  document at the same URL, the engine preference and the enable flag are both
+  persisted, so the fresh document starts the same load and the SECOND kill is
+  the one the user sees. A marker in `sessionStorage` is armed just before the
+  load and cleared however it settles, so a document that starts while it is
+  still set is a document that came back from a kill. `pagehide` clears it too,
+  which is what keeps a deliberate navigation mid-download from looking like a
+  crash — a jetsammed process fires no `pagehide`, and that is the line between
+  them. The bias is deliberate: a missed marker costs one more attempt, a
+  spurious one would refuse an engine that works. Counted rather than flagged,
+  because whisper and Moonshine are two listeners over one shared worker and
+  whichever load settled first was clearing the marker out from under the other.
+  Coming back, the app hands over to the browser engine; picking the on-device
+  one again asks first, once, and "Try anyway" is the retry.
+
+- **The worker's reason for a failed load never left the worker (#768).** A
+  worker's console reaches no device log, so `Voice model failed to load` was
+  the whole of what a phone could report. The detail now rides along in the
+  message, and a main-thread `console.info` announces the load before it starts
+  — a log that ends there means the device died loading the model, a log that
+  reaches the failure means it merely refused. On an iPhone 13 those two were
+  indistinguishable until this line existed.
+
+- **Recognition argued with a backgrounded page (#769).** iOS does not let it
+  survive being backgrounded, and our own record shows the shape:
+  `error code=audio-capture live=true [hidden]` then `visibilitychange`,
+  `audioend`, `aborted`, respawn, `not-allowed`, stand-down. The listener now
+  stands by on hidden and comes back on visible — a different state from dozing,
+  with its own flag, because dozing means the opposite (stay quiet until a
+  touch) and sharing one would leave a returning page silent. Desktop keeps its
+  session: a background tab there keeps its microphone, and a pianist who
+  alt-tabs mid-practice should not lose the ear.
+
+- **The microphone was cold for the first session of a document (#769).** A
+  documented WebKit mitigation for precisely the symptom here — the FIRST
+  recognition failing while later ones are fine. One `getUserMedia`, stopped in
+  the same breath, once per listener, begun rather than awaited so a permission
+  prompt nobody answers cannot mean voice control never starts. Neither this nor
+  the stand-by above is claimed as the fix for VC-1; both write a line in the
+  record so a device run can say which fired.
+
+- **A stutter matched nothing (#761).** "sing sing" is one `sing` said twice —
+  how a person speaks when the first attempt did not seem to land, and what a
+  recognizer produces from a hesitant start. Runs of the same token collapse,
+  but only as a FALLBACK after the tokens as spoken have been tried, so a
+  command that legitimately repeats a word keeps working. Numbers are left
+  alone: "back two two" may be twenty-two misheard or two separate values, and
+  quietly rewriting it would change what happens rather than fail honestly.
+
+- **The command list lost the panel on a phone, and Drum Night's overlay was
+  unreadable (#761, #769).** Along with the room log dropping the lines the
+  experiment had turned on.
+
 ### Changed
 
 - **`practise` -> `practice` throughout (#762)**, except the two British-spelling
@@ -153,6 +299,10 @@ are specified to do.
   reading the summary concludes a rebase is off the table and merges `main`
   into the branch instead. Squash-vs-rebase is now stated as a judgement about
   what the commits are, not a default.
+
+- **One `GUITAR_NIGHT_PATH`, not five copies of the string (#766).** The literal
+  `'/guitar-night'` appeared in five places, one of them the legacy path it
+  redirects from. A constant, and the redirect reads as a redirect.
 
 ## [0.9.6] - 2026-09-09
 
