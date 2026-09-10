@@ -577,7 +577,9 @@ export default defineConfig(({ command, mode }) => {
             // its voice control was wired: the room asked for five phrases
             // and got a database.
             if (
-              id.includes('/src/features/voice-control/voice-command-registry.') ||
+              id.includes(
+                '/src/features/voice-control/voice-command-registry.',
+              ) ||
               id.includes('/src/features/voice-control/shared-phrases.') ||
               id.includes('/src/features/voice-control/types.')
             ) {
