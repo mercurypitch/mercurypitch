@@ -172,3 +172,33 @@
   color: inherit;
   font: inherit;
 }
+
+/* Minimised. Deliberately tiny and deliberately still there — see the note in
+   the component about overlays that cannot be brought back. */
+.handle {
+  position: fixed;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  z-index: 2147483002;
+
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.35rem;
+  border: none;
+  border-radius: 0.8rem;
+
+  background: rgba(10, 12, 18, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #8fbcbb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.6rem;
+  text-align: center;
+
+  opacity: 0.55;
+  cursor: pointer;
+}
+.handle:active {
+  opacity: 1;
+}

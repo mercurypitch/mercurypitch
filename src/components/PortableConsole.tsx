@@ -31,6 +31,25 @@ import styles from '@/styles/PortableConsole.module.css'
 
 const HOST_ID = 'mp-portable-console'
 
+/** What is left when the panel is out of the way: a dot, and a way back. */
+const MinimisedConsole: Component<{
+  onShow: () => void
+  count: number
+}> = (props) => (
+  <button
+    type="button"
+    class={styles.handle}
+    aria-label="Show the portable console"
+    data-testid="portable-console-handle"
+    onClick={() => {
+      setPortableConsoleVisible(true)
+      props.onShow()
+    }}
+  >
+    {props.count}
+  </button>
+)
+
 export const PortableConsole: Component = () => {
   // Seeded, not defaulted: the interesting lines land during startup, well
   // before this mounts, and an empty panel over a live capture would read as
@@ -90,8 +109,20 @@ export const PortableConsole: Component = () => {
     }
   }
 
+  // Hidden is not gone. A debug overlay you cannot get back is a trap: the
+  // only way out used to be a query parameter nobody remembers under a phone
+  // in one hand, and it is remembered across page loads, so one tap ended the
+  // session's logging for good. `?console=0` is still the real off switch.
   return (
-    <Show when={shown()}>
+    <Show
+      when={shown()}
+      fallback={
+        <MinimisedConsole
+          onShow={() => setShown(true)}
+          count={matching().length}
+        />
+      }
+    >
       <section
         class={styles.panel}
         classList={{
@@ -166,7 +197,7 @@ export const PortableConsole: Component = () => {
                 setShown(false)
               }}
             >
-              Hide
+              Minimise
             </button>
           </div>
         </Show>

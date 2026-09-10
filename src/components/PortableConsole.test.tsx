@@ -167,11 +167,11 @@ describe('PortableConsole', () => {
     expect(screen.getByRole('button', { name: 'Move down' })).toBeTruthy()
   })
 
-  it('goes away for good when hidden, and stays away next page', () => {
+  it('gets out of the way, and stays out of it next page', () => {
     render(() => <PortableConsole />)
     open()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hide' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Minimise' }))
 
     expect(screen.queryByTestId('portable-console')).toBeNull()
     // Karaoke Night is a separate document; an overlay that came back on every
@@ -179,11 +179,26 @@ describe('PortableConsole', () => {
     expect(portableConsoleVisible()).toBe(false)
   })
 
-  it('is not there for anyone who turned it off', () => {
+  it('leaves a way back, because it is remembered across page loads', () => {
+    render(() => <PortableConsole />)
+    open()
+    fireEvent.click(screen.getByRole('button', { name: 'Minimise' }))
+
+    fireEvent.click(screen.getByTestId('portable-console-handle'))
+
+    // One tap on a phone used to end the session's logging for good: the only
+    // way back was a query parameter, on a device held in one hand, during the
+    // reproduction someone spent ten minutes setting up.
+    expect(screen.queryByTestId('portable-console')).not.toBeNull()
+    expect(portableConsoleVisible()).toBe(true)
+  })
+
+  it('offers the way back to anyone who turned it off', () => {
     initPortableConsoleVisibility('?console=0')
 
     render(() => <PortableConsole />)
 
     expect(screen.queryByTestId('portable-console')).toBeNull()
+    expect(screen.queryByTestId('portable-console-handle')).not.toBeNull()
   })
 })

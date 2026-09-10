@@ -265,7 +265,7 @@ export function announceVoiceDiagnostics(): void {
   if (!enabled) return
   console.info(`[voice] diagnostics on — ${navigator.userAgent}`)
   const opened = entries.find((entry) => entry.event === 'document-open')
-  if (opened !== undefined) console.info(formatEntry(opened))
+  if (opened !== undefined) console.info(`[voice] ${formatEntry(opened)}`)
 }
 
 export function formatEntry(entry: VoiceDiagnosticEntry): string {
