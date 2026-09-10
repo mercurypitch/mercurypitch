@@ -8,7 +8,7 @@ import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
-import { ConsoleLog } from '@/components/ConsoleLog'
+import { ConsoleLog, setupDeveloperConsole } from '@/components/ConsoleLog'
 import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { BusyButton, BusyLink } from '@/components/shared'
@@ -2147,7 +2147,15 @@ export const SettingsPanel: Component = () => {
                   <input
                     type="checkbox"
                     checked={showConsoleLog()}
-                    onChange={() => toggleConsoleLog()}
+                    onChange={() => {
+                      toggleConsoleLog()
+                      // Mount the floating panel on the press that turns it
+                      // on, rather than at the next page load. The entries
+                      // only read the flag at boot (see lib/developer-console
+                      // — a room cannot reach this switch), and `ConsoleLog`
+                      // is already imported here for the inline log below.
+                      if (showConsoleLog()) setupDeveloperConsole()
+                    }}
                   />
                   <span class={styles.settingsSlider}></span>
                 </label>
