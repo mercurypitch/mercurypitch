@@ -63,12 +63,26 @@ function resolve(options: LocalModelGuardOptions): {
 let releaseOnPageHide: (() => void) | null = null
 
 /**
+ * How many loads are in flight right now.
+ *
+ * Counted rather than flagged because whisper and Moonshine are two separate
+ * listeners over one shared worker, and switching between them does not wait
+ * for the first download to finish. With a flag, whichever load settled first
+ * cleared the marker out from under the one still running, and a kill during
+ * THAT load went unnoticed. The marker belongs to the set, not to a caller.
+ */
+let attemptsInFlight = 0
+
+/**
  * Mark a local-model load as in flight. Call immediately before the load;
- * every path out of it must call {@link disarmLocalModelAttempt}.
+ * every path out of it must call {@link disarmLocalModelAttempt} exactly once.
  */
 export function armLocalModelAttempt(
   options: LocalModelGuardOptions = {},
 ): void {
+  attemptsInFlight += 1
+  if (attemptsInFlight > 1) return
+
   const { storage, target } = resolve(options)
   if (storage === undefined) return
   try {
@@ -80,7 +94,10 @@ export function armLocalModelAttempt(
   if (target === undefined) return
   releaseOnPageHide?.()
   const onPageHide = (): void => {
-    disarmLocalModelAttempt(options)
+    // A navigation ends every attempt at once — there is no document left for
+    // them to finish in.
+    attemptsInFlight = 0
+    clearMarker(options)
   }
   target.addEventListener('pagehide', onPageHide)
   releaseOnPageHide = () => {
@@ -89,11 +106,18 @@ export function armLocalModelAttempt(
   }
 }
 
-/** The attempt settled — loaded, failed, or was abandoned. Either outcome
- *  means the document survived, which is the only thing the marker tracks. */
+/** One attempt settled — loaded, failed, or was abandoned. Any outcome proves
+ *  the document survived it, which is the only thing the marker claims. The
+ *  marker lifts when the LAST one settles. */
 export function disarmLocalModelAttempt(
   options: LocalModelGuardOptions = {},
 ): void {
+  if (attemptsInFlight > 0) attemptsInFlight -= 1
+  if (attemptsInFlight > 0) return
+  clearMarker(options)
+}
+
+function clearMarker(options: LocalModelGuardOptions): void {
   const { storage } = resolve(options)
   releaseOnPageHide?.()
   if (storage === undefined) return

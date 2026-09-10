@@ -127,6 +127,10 @@ describe('local engine fallback', () => {
     expect(voiceControlEngine()).toBe('webspeech')
     expect(controller.enabled()).toBe(true)
     expect(notified.calls.join(' ')).toContain('more memory')
+    // The whole point of switching rather than turning off: voice control
+    // says it is on, so it had better be listening. A guard that stopped at
+    // the preference would leave the pill lit over a deaf recognizer.
+    expect(listeners.webspeech.start).toHaveBeenCalled()
   })
 
   it('starts normally when the last load merely failed', () => {

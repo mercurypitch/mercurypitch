@@ -55,8 +55,11 @@ describe('local model crash guard', () => {
   beforeEach(() => {
     storage = makeStorage()
     target = makeTarget()
-    // Leave no marker armed from a previous case's window listener.
-    disarmLocalModelAttempt({ storage, target })
+    // The in-flight count is module state, mirroring the single guard the app
+    // actually has. Drain it so one case cannot start owing another's arms.
+    for (let i = 0; i < 8; i += 1) {
+      disarmLocalModelAttempt({ storage, target })
+    }
   })
 
   it('reports a kill when a load was in flight and never settled', () => {
@@ -102,9 +105,47 @@ describe('local model crash guard', () => {
     armLocalModelAttempt({ storage, target })
     armLocalModelAttempt({ storage, target })
 
-    // One listener, not two: a stale one would clear the marker belonging to
-    // a run that is still in flight.
+    // One listener, not two: a second would clear the marker twice on a
+    // single navigation.
     expect(target.handlers.get('pagehide')?.size ?? 0).toBe(1)
+  })
+
+  // ── Two engines, one shared worker ───────────────────────────
+  //
+  // Switching whisper -> Moonshine does not wait for the first download to
+  // finish, so two loads overlap. The marker belongs to the set of them: it
+  // must survive the first settling and lift only on the last.
+
+  it('keeps the marker while a second overlapping load is still running', () => {
+    armLocalModelAttempt({ storage, target })
+    armLocalModelAttempt({ storage, target })
+
+    disarmLocalModelAttempt({ storage, target })
+
+    expect(localModelKilledTheDocument({ storage, target })).toBe(true)
+  })
+
+  it('lifts the marker when the last overlapping load settles', () => {
+    armLocalModelAttempt({ storage, target })
+    armLocalModelAttempt({ storage, target })
+
+    disarmLocalModelAttempt({ storage, target })
+    disarmLocalModelAttempt({ storage, target })
+
+    expect(localModelKilledTheDocument({ storage, target })).toBe(false)
+  })
+
+  it('ends every overlapping attempt on a navigation, not just one', () => {
+    armLocalModelAttempt({ storage, target })
+    armLocalModelAttempt({ storage, target })
+
+    target.fire('pagehide')
+
+    expect(localModelKilledTheDocument({ storage, target })).toBe(false)
+    // And the count came back to zero, so the NEXT load arms a real marker
+    // rather than being swallowed as a third overlapping attempt.
+    armLocalModelAttempt({ storage, target })
+    expect(localModelKilledTheDocument({ storage, target })).toBe(true)
   })
 
   it('degrades to the old behaviour when storage refuses to write', () => {
