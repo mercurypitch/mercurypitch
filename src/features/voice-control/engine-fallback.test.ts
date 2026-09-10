@@ -51,6 +51,7 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 
 import { setVoiceControlEngine, voiceControlEngine, } from '@/stores/settings-store'
+import { armLocalModelAttempt, disarmLocalModelAttempt, } from './local-model-crash-guard'
 import { useVoiceControlController } from './useVoiceControlController'
 
 describe('local engine fallback', () => {
@@ -58,6 +59,8 @@ describe('local engine fallback', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
+    disarmLocalModelAttempt()
     notified.calls = []
     listeners.callbacks = null
     listeners.webspeech.isSupported = true
@@ -106,5 +109,49 @@ describe('local engine fallback', () => {
     expect(controller.enabled()).toBe(false)
     expect(listeners.webspeech.start).not.toHaveBeenCalled()
     expect(notified.calls.join(' ')).toContain('no speech engine')
+  })
+  // ── Coming back from a content-process kill ──────────────────
+  //
+  // The reload after a jetsam is not an error the listener can report: the
+  // document that saw it is gone. All the new one has is a marker left armed
+  // by the load that died, and starting the same load again is what turned
+  // one reload into a dead tab on maff's iPhone 13.
+
+  it('refuses the on-device engine when the last load killed the document', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+
+    const controller = mount()
+
+    expect(listeners.local.start).not.toHaveBeenCalled()
+    expect(voiceControlEngine()).toBe('webspeech')
+    expect(controller.enabled()).toBe(true)
+    expect(notified.calls.join(' ')).toContain('more memory')
+  })
+
+  it('starts normally when the last load merely failed', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+    disarmLocalModelAttempt()
+
+    mount()
+
+    expect(listeners.local.start).toHaveBeenCalled()
+    expect(voiceControlEngine()).toBe('local')
+  })
+
+  it('lets the next mount try again, so Settings can offer a retry', () => {
+    localStorage.setItem('pitchperfect_voice_control_enabled', 'true')
+    armLocalModelAttempt()
+
+    mount()
+    dispose?.()
+    dispose = null
+    setVoiceControlEngine('local')
+    listeners.local.start.mockClear()
+
+    mount()
+
+    expect(listeners.local.start).toHaveBeenCalled()
   })
 })

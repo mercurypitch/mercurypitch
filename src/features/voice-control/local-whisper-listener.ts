@@ -19,6 +19,7 @@
 
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
+import { armLocalModelAttempt, disarmLocalModelAttempt, } from './local-model-crash-guard'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
 import { sharedVoiceSttService } from './voice-stt-service'
 
@@ -295,11 +296,21 @@ export function createLocalWhisperListener(
     const generation = ++runGeneration
     callbacks.onStateChange('starting')
     try {
+      // Armed across the load and cleared however it settles: on a phone
+      // this is the step that can take the whole content process with it,
+      // and the marker is what stops the reloaded document from doing it a
+      // second time. See local-model-crash-guard.ts.
+      armLocalModelAttempt()
       const modelReady = service().init()
       // The result is awaited further down — this handler only keeps an
       // ABANDONED download (mic denied, run gone stale) from surfacing as
-      // an unhandled rejection when it eventually fails.
-      void modelReady.catch(() => undefined)
+      // an unhandled rejection when it eventually fails. Disarming from both
+      // arms is the point: a load that FAILED still proves the document
+      // survived it, which is the only thing the marker claims.
+      const settle = (): void => {
+        disarmLocalModelAttempt()
+      }
+      void modelReady.then(settle, settle)
       const consumerId = `${MIC_CONSUMER_ID}#${String(++micConsumerSerial)}`
       const stream = await micManager.acquire(consumerId)
       micHeld = true

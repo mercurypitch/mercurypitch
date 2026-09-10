@@ -20,6 +20,7 @@ import type { VoiceControlEngine } from '@/stores/settings-store'
 import { setVoiceControlEngine, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
 import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
+import { localModelKilledTheDocument } from './local-model-crash-guard'
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
 import { activeVoiceCommands, anyRegisteredMusicPlaying, reportHeardSpeech, wakeWordHoldActive, } from './voice-command-registry'
@@ -29,6 +30,21 @@ import { createWebSpeechListener } from './webspeech-listener'
 /** Experimental on-device alternative, selectable in Settings for latency
  *  comparison against whisper-tiny. */
 const MOONSHINE_MODEL_ID = 'onnx-community/moonshine-tiny-ONNX'
+
+/**
+ * Why voice control gave up on an on-device engine. The two cases need
+ * different words: a model that failed to load left the page standing, while
+ * one that exhausted the content process took the page with it and the user
+ * watched it reload. Telling them "it would not load" after that describes
+ * something they did not see.
+ */
+type EngineFallbackReason = 'would-not-load' | 'exhausted-the-device'
+
+const ENGINE_FALLBACK_LEAD: Record<EngineFallbackReason, string> = {
+  'would-not-load': 'The on-device voice model would not load',
+  'exhausted-the-device':
+    'The on-device voice model needed more memory than this device would give it, and the page reloaded',
+}
 
 export interface VoiceFeedback {
   /**
@@ -421,13 +437,16 @@ export function useVoiceControlController(
    * failed, so a browser with no speech engine is answered here and the
    * preference is left alone.
    */
-  const fallBackToBrowserEngine = (): void => {
+  const fallBackToBrowserEngine = (
+    reason: EngineFallbackReason = 'would-not-load',
+  ): void => {
     if (voiceControlEngine() === 'webspeech') return
+    const lead = ENGINE_FALLBACK_LEAD[reason]
     if (!listenerFor('webspeech').isSupported) {
       stopListening()
       setEnabled(false)
       showNotification(
-        'The on-device voice model would not load, and this browser has no speech engine to fall back to. Voice control is off.',
+        `${lead}, and this browser has no speech engine to fall back to. Voice control is off.`,
         'warning',
         { channel: 'voice-control-engine-fallback' },
       )
@@ -435,7 +454,7 @@ export function useVoiceControlController(
     }
     setErrorDetail(null)
     showNotification(
-      'The on-device voice model would not load, so voice control switched to the browser engine. Pick the on-device one again in Settings to retry the download.',
+      `${lead}, so voice control switched to the browser engine. Pick the on-device one again in Settings to try it once more.`,
       'warning',
       { channel: 'voice-control-engine-fallback' },
     )
@@ -549,6 +568,14 @@ export function useVoiceControlController(
 
   onMount(() => {
     if (!enabled()) return
+    // A document that starts while a model load is still marked in flight is
+    // a document that came back from a content-process kill. Starting the
+    // same load again is what turns one reload into a dead tab, so this is
+    // the one place the preference is overruled without the user asking.
+    if (voiceControlEngine() !== 'webspeech' && localModelKilledTheDocument()) {
+      fallBackToBrowserEngine('exhausted-the-device')
+      return
+    }
     const listener = listenerFor(voiceControlEngine())
     if (listener.isSupported) {
       // Mounting mid-song (the zen stage remounts on a playlist advance)
