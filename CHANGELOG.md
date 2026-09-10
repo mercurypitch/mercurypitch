@@ -30,6 +30,10 @@ do the right one.
   in Settings' danger zone and it follows you as a small button — open it, copy
   the log, clear it. On a phone there is otherwise no way to see what the app
   is saying.
+- **Voice control has a tour, and a Learn chapter to go with it.** Where the
+  pill is, what to say, and how to name a song you are humming — the one
+  feature in the app with no button, where saying it is the only way in. Start
+  it from the Guide, or from Settings under Voice Control.
 
 ### Fixed
 

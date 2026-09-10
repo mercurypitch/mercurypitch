@@ -105,6 +105,50 @@ night" -> none`, straight off the device: only Karaoke Night had ever been
   (`initGlobalErrorHandlers` fills the buffer either way), and
   `scripts/assert-no-portable-console.mjs` still passes on all five builds.
 
+  Two defects in it, both caught reviewing this release and fixed in #772
+  before either reached a tag. The key matches `SYNCED_PREFIX`, so switching
+  the console on to read what a phone was saying switched it on across every
+  signed-in device and wrote a cloud `userSettings` row for a debugging
+  affordance; it is device-local by nature and now sits in `EXCLUDED_KEYS`
+  beside the usage counters. And the import was not lazy: it ran
+  unconditionally in all seven entries, so each of the six standalone
+  documents fetched the panel, its stylesheet and its icons and appended a
+  host to `<body>` for a control that defaults to off — in rooms that spend
+  real effort keeping their first paint empty. `armDeveloperConsole()` reads
+  the flag first and loads nothing when it is off; all six are clean of it in
+  the built `dist`, and the studio carries it as it always did, through
+  Settings' inline log.
+
+  It lives in `src/lib`, not beside the store it reads, because the room
+  bundle audits forbid `src/stores/` in a room — the first attempt put it in
+  `console-store.ts` and failed all four browser shards at `build:e2e`,
+  exactly as designed. So it reads localStorage directly, in the shape
+  `createPersistedSignal` writes a boolean, and a test pins that shape because
+  a mismatch is the whole feature silently never arming. Reading once is
+  enough in a room, which has no Settings panel; in the studio the switch
+  mounts the panel itself on the press that turns it on. The audits are
+  denylists, which is why CI had nothing to say about the original.
+
+- **A tour, and a Learn chapter, for voice control (#771).** It had neither,
+  and the reason was structural: every catalogue in the Guide modal is a list
+  of tabs, and voice belongs to no tab — the pill is in every view. So the
+  feature that most needs teaching, because using it means knowing what to
+  say, was the one nothing taught. Five steps: where the pill is and that
+  dimmed means resting rather than broken; the transport and navigation words;
+  Mercury Sing, which is the only feature with no button at all, so a tour
+  that skipped it would leave it undiscoverable; the command list on Shift+V,
+  every row of which is also a button for a room too loud to talk in; and why
+  commands start with "Mercury" once a track is playing. Two existing tours
+  gained a clause rather than a step.
+
+  The release walk caught four of the five spotlighting nothing on the first
+  run: Settings' tabs are a switch, not a scroll, so a step pointing into the
+  panel needs `navigate` to open its tab first. `walk-tours.mjs` walks this
+  tour now — its targets, unlike the Karaoke mixer's, exist on a cold start —
+  and both conditions are pinned in a unit test that needs no browser: every
+  Settings step opens its tab, and the pill is spotlighted once per viewport,
+  never twice on one. Desktop 136 steps, phone 119, no misses on either.
+
 ### Fixed
 
 - **A theme you chose reverted on reload (#763).** Two defects, and only fixing
