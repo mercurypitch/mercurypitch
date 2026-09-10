@@ -3939,6 +3939,8 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.1), transparent 62%),
     rgba(244, 234, 219, 0.035);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   text-align: left;
   cursor: pointer;
 }
@@ -3948,6 +3950,8 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.15), transparent 62%),
     rgba(244, 234, 219, 0.05);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
 }
 
 .scoreAssessmentAction:focus-visible {
@@ -5945,6 +5949,8 @@
   background:
     linear-gradient(135deg, rgba(106, 202, 189, 0.045), transparent 52%),
     rgba(10, 8, 7, 0.8);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);
@@ -5973,6 +5979,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.16), transparent 58%),
     rgba(10, 8, 7, 0.86);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0 1rem rgba(224, 164, 93, 0.13),
     inset 0 1px rgba(255, 255, 255, 0.05);
@@ -6002,6 +6010,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.075), transparent 48%),
     rgba(10, 8, 7, 0.8);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);

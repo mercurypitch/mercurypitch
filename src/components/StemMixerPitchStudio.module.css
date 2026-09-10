@@ -64,6 +64,8 @@
     color-mix(in srgb, var(--pitch-reference) 24%, transparent),
     rgba(255, 255, 255, 0.025)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow: 0 9px 24px rgba(94, 54, 6, 0.28);
 }
 

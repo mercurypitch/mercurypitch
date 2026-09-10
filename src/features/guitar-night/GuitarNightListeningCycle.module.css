@@ -16,6 +16,8 @@
     rgba(244, 234, 219, 0.055),
     rgba(244, 234, 219, 0.026)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow: inset 0 1px rgba(255, 248, 236, 0.04);
   font: inherit;
   text-align: left;
@@ -44,6 +46,8 @@
       transparent 58%
     ),
     rgba(38, 27, 20, 0.86);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     inset 0 1px rgba(255, 242, 221, 0.07),
     0 0.45rem 1.25rem rgba(224, 164, 93, 0.14);

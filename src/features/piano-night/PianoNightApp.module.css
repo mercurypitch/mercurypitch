@@ -614,6 +614,8 @@
     rgb(105 196 220 / 76%),
     rgb(105 196 220 / 97%)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow: 0 14px 24px rgb(68 184 216 / 17%);
 }
 
@@ -625,6 +627,8 @@
     rgb(235 133 135 / 80%),
     rgb(235 133 135 / 98%)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow: 0 14px 24px rgb(235 133 135 / 17%);
 }
 

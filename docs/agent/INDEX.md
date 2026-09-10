@@ -466,6 +466,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |
 | `pnpm audit:mobile` | `node scripts/audit-exercises-mobile.mjs` |
 | `pnpm audit:ear-lab` | `node scripts/audit-ear-lab-mobile.mjs` |
+| `pnpm audit:background-origin` | `node scripts/audit-background-origin.mjs` |
 | `pnpm verify:opening` | `node scripts/verify-opening.mjs` |
 | `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |

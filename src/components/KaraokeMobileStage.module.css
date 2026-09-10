@@ -859,6 +859,8 @@
 .stateActionPrimary {
   border-color: transparent;
   background: linear-gradient(90deg, #ffd9a0, #ff9ad5);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   color: #23122f;
 }
 
