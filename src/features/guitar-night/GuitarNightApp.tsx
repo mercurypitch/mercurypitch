@@ -1583,8 +1583,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               </p>
               <h1>Guitar Night</h1>
               <p class={styles.lede}>
-                Your room is ready. Begin with one string, bring a song, or step
-                straight into the full Guitar workspace.
+                Your room is ready. Begin with one string, bring a song, or just
+                play and let the room listen.
               </p>
 
               <div
@@ -1614,6 +1614,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   <strong>Load a song</strong>
                   <span id="guitar-night-song-description">
                     Open a prepared song or choose local audio
+                  </span>
+                </button>
+                <button
+                  class={styles.secondaryAction}
+                  type="button"
+                  aria-label="Free play"
+                  aria-describedby="guitar-night-free-play-description"
+                  data-entry="free-play"
+                  onClick={enterFreeRoom}
+                >
+                  <strong>Free play</strong>
+                  <span id="guitar-night-free-play-description">
+                    See what you play, record it, practise it back
                   </span>
                 </button>
               </div>
@@ -1831,7 +1844,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 class={styles.stageInvitationAction}
                 onClick={enterFreeRoom}
               >
-                Play free form
+                Free play
               </button>
 
               <section

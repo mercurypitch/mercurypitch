@@ -67,7 +67,7 @@ test('live chord switches preserve monitoring and Stop prepares a reversible pro
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Play free form', exact: true })
+    .getByRole('button', { name: 'Free play', exact: true })
     .click()
   await page
     .getByRole('button', { name: 'Session controls', exact: true })

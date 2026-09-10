@@ -24,7 +24,7 @@ async function enterLive(page: Page): Promise<void> {
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Play free form', exact: true })
+    .getByRole('button', { name: 'Free play', exact: true })
     .click()
   await expect(page.getByTestId('guitar-night-deck')).toBeVisible()
 }

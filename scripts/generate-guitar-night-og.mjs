@@ -40,7 +40,7 @@ const mark = readFileSync(resolve(REPO, 'public/favicon.svg'), 'utf8')
 const WAYS = [
   { name: 'Start', note: 'Read your first bar on one open string', lead: true },
   { name: 'Load a song', note: 'A prepared song, or your own audio' },
-  { name: 'I know my way around', note: 'Straight to the Guitar workspace' },
+  { name: 'Free play', note: 'Record what you play, practise it back' },
 ]
 
 const wayRows = WAYS.map(
@@ -226,7 +226,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Your room is ready</h1>
-      <p class="sub">Begin with one string, bring a song, or step straight into the full workspace. <b>The room listens</b> and reads the bar back to you.</p>
+      <p class="sub">Begin with one string, bring a song, or just play. <b>The room listens</b> and reads the bar back to you.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>One string to start</span>

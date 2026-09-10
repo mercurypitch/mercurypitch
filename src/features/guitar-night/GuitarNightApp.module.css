@@ -1529,8 +1529,7 @@
 }
 
 .primaryAction,
-.secondaryAction,
-.expertAction {
+.secondaryAction {
   display: grid;
   grid-template-columns: minmax(7.5rem, 0.72fr) 1fr;
   align-items: center;
@@ -1546,14 +1545,12 @@
 }
 
 .primaryAction strong,
-.secondaryAction strong,
-.expertAction strong {
+.secondaryAction strong {
   font-size: 0.95rem;
 }
 
 .primaryAction span,
-.secondaryAction span,
-.expertAction span {
+.secondaryAction span {
   font-size: 0.78rem;
   line-height: 1.35;
 }
@@ -1574,20 +1571,12 @@
   background: rgba(244, 234, 219, 0.055);
 }
 
-.secondaryAction span,
-.expertAction span {
+.secondaryAction span {
   color: var(--muted);
 }
 
-.expertAction {
-  padding-block: 0.7rem;
-  color: #ddd0bd;
-  background: transparent;
-}
-
 .primaryAction:hover,
-.secondaryAction:hover,
-.expertAction:hover {
+.secondaryAction:hover {
   transform: translateY(-1px);
 }
 
@@ -1598,10 +1587,6 @@
 .secondaryAction:hover {
   border-color: rgba(224, 164, 93, 0.52) !important;
   background: rgba(244, 234, 219, 0.085);
-}
-
-.expertAction:hover {
-  background: rgba(244, 234, 219, 0.04);
 }
 
 .tunerEntryAction {
@@ -7589,16 +7574,11 @@
   }
 
   .primaryAction,
-  .secondaryAction,
-  .expertAction {
+  .secondaryAction {
     grid-template-columns: 1fr;
     gap: 0.15rem;
     min-height: 3.65rem;
     padding: 0.72rem 0.85rem;
-  }
-
-  .expertAction {
-    min-height: var(--touch-target);
   }
 
   .lessonControls {
@@ -8501,7 +8481,6 @@
 
   .primaryAction,
   .secondaryAction,
-  .expertAction,
   .beatRow span,
   .learnShelf {
     transition: none;

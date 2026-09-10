@@ -165,7 +165,7 @@ async function seedRecording(page: Page): Promise<void> {
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Play free form', exact: true })
+    .getByRole('button', { name: 'Free play', exact: true })
     .click()
   await expect(
     page.getByRole('heading', { name: 'Free form', exact: true }),
