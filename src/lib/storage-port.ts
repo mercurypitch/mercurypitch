@@ -43,6 +43,25 @@
 // rather than an unpersistable secret, because a secret that differs on the
 // next launch is worse than none: the worker still admits an account that
 // never bound one, but it will refuse to rebind a changed one.
+//
+// ── The window between install and hydrate ──
+//
+// `installStoragePort()` drops the synchronous web fast path, and nothing can
+// be answered until `hydrateStoragePort()` has read the port. Answering
+// `null` in that window LOOKS harmless and is the exact failure the port
+// exists to prevent: `getUserId()` reads null, decides the device is new,
+// mints a fresh UUID — and the write that follows queues it over a perfectly
+// good durable identity, orphaning the account this whole file is about.
+//
+// So the window throws instead. `readStored`, `writeStored` and
+// `removeStored` all raise `storage port not hydrated`: a boot-order mistake
+// fails in a test, or on the first launch of a debug build, rather than
+// silently costing somebody their account on a phone. `storageDurable()`
+// answers false there for the same reason, so the one caller that asks before
+// it mints (`getDeviceSecret`) gets a correct no rather than an exception.
+//
+// The web is untouched by all of this. Its backend is synchronous and always
+// installed, so it is never in the window at all.
 
 /** The identity store, as anything above it sees it. */
 export interface StoragePort {
@@ -120,6 +139,20 @@ let readable = true
 let writable = true
 let queue: Promise<void> = Promise.resolve()
 
+/**
+ * True in the window between `installStoragePort()` and the hydration that
+ * follows it: a port is installed, and nothing has been read out of it yet.
+ * Only a native boot is ever here, and only for one await.
+ */
+function unhydrated(): boolean {
+  return cache === null && syncBackend === null
+}
+
+/** What that window answers with, rather than a plausible `null`. */
+function notHydrated(): Error {
+  return new Error('storage port not hydrated')
+}
+
 /** Every port write, in order, with its failure already handled — a
  *  fire-and-forget tail that outlives its caller is how an unhandled
  *  rejection fails an otherwise green test run. */
@@ -140,9 +173,10 @@ function enqueue(work: () => Promise<void>): void {
  *
  * Call before `hydrateStoragePort()` and before anything reads an identity —
  * in practice, the first statement of the native entry point. Installing a
- * port drops the synchronous web fast path, so reads answer `null` until
- * hydration finishes; that is deliberate, because a stale answer from the
- * wrong store is how one device ends up wearing another's id.
+ * port drops the synchronous web fast path, and until hydration finishes
+ * every read and write THROWS rather than answering from the store the port
+ * replaced: a stale answer is how one device ends up wearing another's id,
+ * and a plausible `null` is how it mints a third over the top of both.
  */
 export function installStoragePort(next: StoragePort): void {
   port = next
@@ -202,10 +236,16 @@ function readLocalStorageDirectly(key: string): string | null {
   }
 }
 
-/** The stored value, synchronously. `null` when absent OR unreadable. */
+/**
+ * The stored value, synchronously. `null` when absent OR unreadable.
+ *
+ * Throws in the install-to-hydrate window — see the header. That is a
+ * boot-order bug in the caller, and the alternative answer is `null`, which
+ * reads as "new device" and mints over a durable identity.
+ */
 export function readStored(key: string): string | null {
   if (cache !== null) return cache.get(key) ?? null
-  if (syncBackend === null) return null
+  if (syncBackend === null) throw notHydrated()
   try {
     const value = syncBackend.get(key)
     readable = true
@@ -222,8 +262,13 @@ export function readStored(key: string): string | null {
  * On the web the answer is exact. Behind an installed port it is the state of
  * the last completed write — a queued write that has not run yet cannot be
  * reported on, and pretending otherwise would be worse than the optimism.
+ *
+ * Throws in the install-to-hydrate window: a write there bypasses the cache
+ * that does not exist yet and races the hydration read, so the value that
+ * survives is whichever landed last.
  */
 export function writeStored(key: string, value: string): boolean {
+  if (unhydrated()) throw notHydrated()
   cache?.set(key, value)
   if (syncBackend !== null) {
     try {
@@ -239,8 +284,15 @@ export function writeStored(key: string, value: string): boolean {
   return writable
 }
 
-/** Forget a value. Returns whether the removal is believed to have landed. */
+/**
+ * Forget a value. Returns whether the removal is believed to have landed.
+ *
+ * Throws in the window for the same reason a write does, and it matters more
+ * here: a removal that races hydration deletes a key hydration is about to
+ * read back, and the factory reset is exactly the caller that would do it.
+ */
 export function removeStored(key: string): boolean {
+  if (unhydrated()) throw notHydrated()
   cache?.delete(key)
   if (syncBackend !== null) {
     try {
@@ -263,8 +315,12 @@ export function removeStored(key: string): boolean {
  * has been refused. A caller that is about to MINT something — an id, a
  * credential — must ask first: minting into a store that forgets is how a
  * device ends up presenting a different secret on every launch.
+ *
+ * False in the install-to-hydrate window too, so that the asking is safe
+ * there rather than the one call in the mint path that throws.
  */
 export function storageDurable(): boolean {
+  if (unhydrated()) return false
   return readable && writable
 }
 

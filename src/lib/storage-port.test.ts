@@ -52,6 +52,16 @@ describe('the web backend', () => {
     expect(readStored(USER_ID_KEY)).toBe('u-1')
   })
 
+  it('never enters the hydration window at all', () => {
+    // Nothing is installed and nothing is awaited on the web: the browser's
+    // own store IS the synchronous cache. This is the assertion that the
+    // native boot-order guard did not leak into a tab.
+    expect(() => readStored(USER_ID_KEY)).not.toThrow()
+    expect(() => writeStored(USER_ID_KEY, 'u-1')).not.toThrow()
+    expect(() => removeStored(USER_ID_KEY)).not.toThrow()
+    expect(storageDurable()).toBe(true)
+  })
+
   it('sees a value another part of the app wrote directly', () => {
     // The browser's own store IS the cache here, so there is no second copy
     // to go stale. Several tests and both e2e suites seed identity this way.
@@ -80,15 +90,60 @@ describe('the web backend', () => {
 })
 
 describe('an installed port', () => {
-  it('answers nothing until it has been hydrated', () => {
+  it('refuses to answer a read until it has been hydrated', () => {
     localStorage.setItem(USER_ID_KEY, 'from-localstorage')
     const { port } = fakePort({ [USER_ID_KEY]: 'from-the-port' })
 
     installStoragePort(port)
 
-    // Not 'from-localstorage'. Answering from the store the port replaced is
-    // the failure this returns null to avoid.
-    expect(readStored(USER_ID_KEY)).toBeNull()
+    // Not 'from-localstorage', and not null either. Answering from the store
+    // the port replaced is one failure; answering null is the worse one,
+    // because `getUserId()` reads that as a new device and mints a third
+    // identity straight over a durable one. A boot-order bug has to be loud.
+    expect(() => readStored(USER_ID_KEY)).toThrow('storage port not hydrated')
+  })
+
+  it('refuses a write in that same window', () => {
+    const { port, store } = fakePort({ [USER_ID_KEY]: 'u-durable' })
+
+    installStoragePort(port)
+
+    expect(() => writeStored(USER_ID_KEY, 'u-minted')).toThrow(
+      'storage port not hydrated',
+    )
+    // And nothing was queued against the port on the way out.
+    expect(store.get(USER_ID_KEY)).toBe('u-durable')
+  })
+
+  it('refuses a removal in that same window', () => {
+    const { port, store } = fakePort({ [DEVICE_SECRET_KEY]: 's-durable' })
+
+    installStoragePort(port)
+
+    expect(() => removeStored(DEVICE_SECRET_KEY)).toThrow(
+      'storage port not hydrated',
+    )
+    expect(store.get(DEVICE_SECRET_KEY)).toBe('s-durable')
+  })
+
+  it('is not durable in that window, so the mint path asks and gets no', () => {
+    const { port } = fakePort()
+
+    installStoragePort(port)
+
+    // `getDeviceSecret()` asks this before it mints. A `true` here would send
+    // it straight into the write that throws.
+    expect(storageDurable()).toBe(false)
+  })
+
+  it('is readable and durable again the moment hydration has run', async () => {
+    const { port } = fakePort()
+    installStoragePort(port)
+
+    await hydrateStoragePort()
+
+    expect(storageDurable()).toBe(true)
+    expect(() => readStored(USER_ID_KEY)).not.toThrow()
   })
 
   it('answers every later read from the cache, synchronously', async () => {
