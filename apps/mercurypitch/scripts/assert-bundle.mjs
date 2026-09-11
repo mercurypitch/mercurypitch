@@ -20,13 +20,26 @@
 //            one moment an offline-first app must not need a network. Both CI
 //            jobs were green on that build.
 //
-//   UNSOLD   No file in dist/assets mentions ko-fi.com. The web app sells
-//            credit packs through Stripe and links out to Ko-fi, and `@`
-//            aliases to that same source tree; App Store guideline 3.1.1 and
-//            Play's billing policy each reject a binary carrying either. The
-//            guard is a build constant (src/lib/native-build.ts) and this is
-//            what proves the constant did its job in the bundle rather than
-//            only in the UI.
+//   UNSOLD   No built file offers a way to pay. The web app sells credit
+//            packs through Stripe and links out to Ko-fi and Sponsors, and
+//            `@` aliases to that same source tree; App Store guideline 3.1.1
+//            and Play's billing policy each reject a binary carrying any of
+//            it. The guard is a build constant (src/lib/native-build.ts) and
+//            this is what proves the constant did its job in the bundle
+//            rather than only in the UI.
+//
+//            One literal was not enough. `ko-fi.com` alone passed a bundle
+//            whose Settings -> About still read "Buy credit packs (€5 / €10 /
+//            €20 / €40) through Stripe's secure checkout" -- the changelog
+//            is imported as raw markdown, so the prose describing the panels
+//            outlived the guard on the panels. A check that names one string
+//            asserts one string, not the property in its header.
+//
+// Every check runs against every bundle root it is given, `--android-assets`
+// included. Those are the bytes that reach the APK, `cap sync` copies webDir
+// wholesale, and a sync that did not overwrite the previous build leaves a
+// tree that is stale rather than absent -- which the PRESENT checks alone
+// cannot tell apart from a good one.
 //
 // Dependency-free on purpose: it runs on a bare runner before any workspace
 // install has necessarily happened, and inside the reusable Capacitor
@@ -45,8 +58,21 @@ const VENDORED = [
 /** Must appear in the bundle: the wasm base the engine really reads. */
 const WASM_BASE = '/ort/'
 
-/** Must NOT appear in the bundle: the donation link-out. */
-const FORBIDDEN = 'ko-fi.com'
+/**
+ * Must NOT appear in the bundle, each with what it is when it does.
+ *
+ * `Stripe` is capitalised on purpose: the brand in prose is the thing that
+ * sells, while a lowercase `stripe` is as likely to be a CSS comment about a
+ * progress bar. `stripe.com` catches every host -- checkout, buy links, the
+ * SDK -- whatever case they are written in.
+ */
+const FORBIDDEN = [
+  ['ko-fi.com', 'the Ko-fi donation link-out that DonatePanel renders'],
+  ['github.com/sponsors', 'the GitHub Sponsors link-out from the same panel'],
+  ['stripe.com', 'a Stripe host: checkout, a buy link, or their SDK'],
+  ['Stripe', 'Stripe named in prose, which is how the changelog sold packs'],
+  ['credit packs', 'the credit-pack copy'],
+]
 
 const failures = []
 
@@ -105,45 +131,58 @@ function main(argv) {
 
   console.log(`assert-bundle: ${distDir}`)
 
-  // PRESENT -- in the web bundle, and in the Android copy once cap sync has
-  // run. A file missing from only the second one means cap sync did not copy
-  // it, which is a different fix from the build not producing it.
-  for (const [label, root] of [
+  // Every root gets every check. The Android copy is what `cap sync` left
+  // behind, and a sync that did not overwrite the previous build leaves the
+  // last bundle sitting there -- present, complete, and wrong.
+  const roots = [
     ['dist', distDir],
     ...(androidAssetsDir === undefined
       ? []
       : [['android assets', androidAssetsDir]]),
-  ]) {
+  ]
+
+  for (const [label, root] of roots) {
+    const synced = label !== 'dist'
+
+    // PRESENT -- a file missing from only the Android copy means cap sync
+    // did not copy it, which is a different fix from the build not
+    // producing it.
     for (const file of VENDORED) {
       record(
         existsSync(join(root, file)),
         `${label}: ${file} is present`,
-        `Run scripts/sync-ort-assets.mjs (the vite.config.ts plugin runs it for every build) and rebuild${label === 'dist' ? '' : ', then cap sync'}.`,
+        `Run scripts/sync-ort-assets.mjs (the vite.config.ts plugin runs it for every build) and rebuild${synced ? ', then cap sync' : ''}.`,
       )
     }
+
+    const assets = walk(join(root, 'assets'))
+    record(
+      assets.length > 0,
+      `${label}: ${join(root, 'assets')} holds built files`,
+      `${synced ? 'cap sync copied no bundle here' : 'The build produced no assets directory'}. Nothing below this line means anything until it does.`,
+    )
+
+    // USED
+    record(
+      assets.some((file) => contains(file, WASM_BASE)),
+      `${label}: a built chunk names ${WASM_BASE}`,
+      `No chunk references ${WASM_BASE}, so the engine will resolve its wasm base to the CDN fallback at runtime. Check that VITE_ONNX_WASM_BASE_URL is set in apps/mercurypitch/.env and that the build read it.`,
+    )
+
+    // UNSOLD
+    const selling = []
+    for (const file of assets) {
+      for (const [needle, what] of FORBIDDEN) {
+        if (contains(file, needle))
+          selling.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      selling.length === 0,
+      `${label}: no built file offers a way to pay`,
+      `Found ${selling.join('; ')}. Something reaches a paid surface from a path CAN_TAKE_PAYMENT does not guard (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. A store binary that carries a payment page, its link or its prose is rejected, not warned.`,
+    )
   }
-
-  const assets = walk(join(distDir, 'assets'))
-  record(
-    assets.length > 0,
-    `dist: ${join(distDir, 'assets')} holds built files`,
-    'The build produced no assets directory. Nothing below this line means anything until it does.',
-  )
-
-  // USED
-  record(
-    assets.some((file) => contains(file, WASM_BASE)),
-    `dist: a built chunk names ${WASM_BASE}`,
-    `No chunk references ${WASM_BASE}, so the engine will resolve its wasm base to the CDN fallback at runtime. Check that VITE_ONNX_WASM_BASE_URL is set in apps/mercurypitch/.env and that the build read it.`,
-  )
-
-  // UNSOLD
-  const selling = assets.filter((file) => contains(file, FORBIDDEN))
-  record(
-    selling.length === 0,
-    `dist: no built file mentions ${FORBIDDEN}`,
-    `${FORBIDDEN} is in ${selling.join(', ')}. Something now reaches the billing panels from a path IS_NATIVE_BUILD does not guard (src/lib/native-build.ts). A store binary that links out to a payment page is rejected, not warned.`,
-  )
 
   if (failures.length > 0) {
     console.error(`\nassert-bundle: ${failures.length} check(s) failed.`)
