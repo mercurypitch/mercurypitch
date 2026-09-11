@@ -36,6 +36,7 @@ import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, roomIndex, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
 import { CHAMBERS } from '../levels/chambers'
+import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
@@ -49,6 +50,7 @@ import { createChamber3D } from './Chamber3D'
 import { ChamberGuide, guideSeen } from './ChamberGuide'
 import { ModeLadder } from './ModeLadder'
 import { createStageFrame } from './stage-frame'
+import { createStageImpact } from './stage-impact'
 import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 
@@ -277,11 +279,15 @@ export const ChamberStage = (props: ChamberStageProps) => {
     pace.mark('scene', performance.now() - sceneFrom)
     const unbindKeys = bindKeyboard(input, window)
 
+    // The break's timeline, played (render/stage-impact.ts): its taps,
+    // and the pixel ratio it drops for the burst.
+    const impact = createStageImpact(() => cfg.impact)
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
-      r.resize(rect.width, rect.height, Math.min(window.devicePixelRatio, 1.5))
+      r.resize(rect.width, rect.height, impact.pixelRatio())
     }
+    impact.onBurst(fit)
     const observer = new ResizeObserver(fit)
     observer.observe(canvas)
 
@@ -373,6 +379,9 @@ export const ChamberStage = (props: ChamberStageProps) => {
       let fallUntil = 0
       let elapsed = 0
       let wallSeconds = 0
+      /** Wall time of the last break. The ring's rearm counts from it;
+       * the shards do not, they play on the break's own clock
+       * (render/stage-impact.ts). */
       let breakAtWall = 0
       let breaking: {
         pane: number
@@ -537,6 +546,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           ),
         }
         breakAtWall = wallSeconds
+        impact.start(wallSeconds)
         tone.shatter(acc)
         setBroken(targets.filter((t) => t.broken).length)
       }
@@ -553,6 +563,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
         breaking: null,
         resonance: 0,
         exitOpen: false,
+        shake: NO_SHAKE,
+        timeScale: 1,
       }
 
       const loopState = createLoopState()
@@ -730,14 +742,18 @@ export const ChamberStage = (props: ChamberStageProps) => {
         view.paneBroken = targets.map((t) => t.broken)
         view.resonance = charge
         view.exitOpen = targets.every((t) => t.broken)
+        // Every frame, drawn or not, so a tap lands on its moment.
+        const hit = impact.frame(wallSeconds)
         view.breaking =
           breaking === null
             ? null
             : {
                 pane: breaking.pane,
-                seconds: wallSeconds - breakAtWall,
+                seconds: hit?.shardSeconds ?? 0,
                 launches: breaking.launches,
               }
+        view.shake = hit?.shake ?? NO_SHAKE
+        view.timeScale = hit?.timeScale ?? 1
 
         // Calm (P3): full rate while he walks or falls, while glass is in
         // the air and while one room hands over to the next.
@@ -746,9 +762,9 @@ export const ChamberStage = (props: ChamberStageProps) => {
           input: intent.move !== 0 || intent.jump,
           voiced: (driver?.latestPitch() ?? null) !== null,
           moving:
-            (breaking !== null &&
-              wallSeconds - breakAtWall <
-                shatterDuration(breaking.launches, cfg.shatter)) ||
+            (view.breaking !== null &&
+              view.breaking.seconds <
+                shatterDuration(view.breaking.launches, cfg.shatter)) ||
             phaseNow === 'falling' ||
             phaseNow === 'cleared' ||
             !loco.grounded ||
