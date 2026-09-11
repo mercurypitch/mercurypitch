@@ -81,14 +81,30 @@ export interface ContentPack {
 
 const ART = `${import.meta.env.BASE_URL}art`
 
-export const CORKY_V023_REST_ART: AssetSlot = {
-  still: `${ART}/corky/corky-home-rest-v0_23-1024.webp`,
-  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
-}
+// The approved Corky: the Higgsfield reference look, the same character the
+// onboarding shows. Source: the transparent 1024 px stills
+// `packages/showcase-gallery/gallery-viewer/cues/corky/transparent/
+// corky-dark-still-{rest,notice,quiet}.png` in the disjoint-colliders repo
+// (committed there 2026-09-11), converted to lossless webp with the alpha
+// kept, so every visible pixel is the source's. The Blender and Meshy renders
+// of Corky are banned everywhere; nothing in this file may point at one.
+//
+// The `alt` strings double as interface-copy keys, so a screen localizes one
+// with `copy.t(CORKY_REST_ART.alt)`.
+export const CORKY_REST_ART = {
+  still: `${ART}/corky/corky-rest-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.',
+} as const satisfies AssetSlot
 
-function corkyState(state: CharacterStateId, alt: string): AssetSlot {
-  return { still: `${ART}/corky/corky-${state}-1024.webp`, alt }
-}
+export const CORKY_NOTICE_ART = {
+  still: `${ART}/corky/corky-notice-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.',
+} as const satisfies AssetSlot
+
+export const CORKY_QUIET_ART = {
+  still: `${ART}/corky/corky-quiet-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
+} as const satisfies AssetSlot
 
 function pullToken(filename: string, alt: string): AssetSlot {
   return {
@@ -125,22 +141,15 @@ const corky: Character = {
   id: 'corky',
   name: 'Corky',
   states: {
-    rest: corkyState(
-      'rest',
-      'Corky, a rose-plum cork-topped character, upright and looking straight ahead.',
-    ),
-    notice: corkyState(
-      'notice',
-      'Corky leaning toward a small turquoise cue that has just arrived, eyes wide.',
-    ),
-    turn: corkyState(
-      'turn',
-      'Corky turned away from the cue, calm, looking toward something he chose.',
-    ),
-    quiet: corkyState(
-      'quiet',
-      'Corky settled with lowered lids, eyes softly down.',
-    ),
+    rest: CORKY_REST_ART,
+    notice: CORKY_NOTICE_ART,
+    // No approved still shows the turn itself yet. The rest still stands in;
+    // it is also what the Side B quiet screen shows once the turn is made.
+    turn: {
+      still: CORKY_REST_ART.still,
+      alt: 'Corky turned away from the cue, calm, looking toward something he chose.',
+    },
+    quiet: CORKY_QUIET_ART,
   },
 }
 

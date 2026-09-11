@@ -1,6 +1,6 @@
 import { createMemo, createSignal, Match, onCleanup, onMount, Switch, } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
-import { CORKY_V023_REST_ART } from '@/content'
+import { CORKY_QUIET_ART, CORKY_REST_ART } from '@/content'
 import type { Copy } from '@/i18n/ui-copy'
 import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
@@ -57,12 +57,13 @@ export function QuietScreen(props: QuietScreenProps) {
   const [announcement, setAnnouncement] = createSignal('')
   const durationMinutes = () => wholeDurationMinutes(props.starter)
   const instruction = () => props.starter?.instruction ?? props.message
-  const corkyArt = createMemo(() => ({
-    ...CORKY_V023_REST_ART,
-    alt: copy.t(
-      'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
-    ),
-  }))
+  // Side B shows Corky at rest, the turn already made; Not now settles on the
+  // quiet still.
+  const corkyArt = createMemo(() =>
+    props.choseBSide
+      ? { ...CORKY_REST_ART, alt: copy.t(CORKY_REST_ART.alt) }
+      : { ...CORKY_QUIET_ART, alt: copy.t(CORKY_QUIET_ART.alt) },
+  )
 
   let deadlineMs = 0
   let timerHandle: ReturnType<typeof setInterval> | undefined

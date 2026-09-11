@@ -16,10 +16,10 @@ import { NonCopyableArt } from '@/interaction/selection'
 // buffers, and a decode failure degrades to the still with no error path of
 // its own.
 //
-// Frames matter more than they look: a Blender pass can bake a pose run
-// cheaply, so a sequence is the tier most subjects reach before they ever get
-// a video, and a non-looping sequence is how a character animates into a state
-// and then holds there.
+// Frames matter more than they look: a pose run is cheap to produce from the
+// approved reference art, so a sequence is the tier most subjects reach before
+// they ever get a video, and a non-looping sequence is how a character animates
+// into a state and then holds there.
 
 interface AssetStageProps {
   slot: AssetSlot

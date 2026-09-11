@@ -23,7 +23,7 @@ describe('mascot stage', () => {
       <MascotStage
         state="quiet"
         artOverride={{
-          still: '/art/corky/corky-home-rest-v0_23-1024.webp',
+          still: '/art/corky/surface-specific-1024.webp',
           alt: 'Corky settled beside the current plan.',
         }}
       />
@@ -34,7 +34,7 @@ describe('mascot stage', () => {
       'quiet',
     )
     expect(sources(container)).toEqual([
-      expect.stringMatching(/corky-home-rest-v0_23/u) as unknown as string,
+      expect.stringMatching(/surface-specific/u) as unknown as string,
     ])
   })
 

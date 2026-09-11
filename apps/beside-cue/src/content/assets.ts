@@ -2,11 +2,11 @@
 // Asset tiers — one slot per subject, filled in as art arrives
 // ============================================================
 //
-// Corky is authored in Blender, and the only thing the app can rely on today
-// is a baked still. Richer art lands at different times for different subjects:
-// a frame sequence before a video, a video for one moment and not another. So
-// every subject declares a slot rather than a file, and the renderer picks the
-// richest tier that slot actually has.
+// Corky ships as approved reference stills, and a still is the only thing the
+// app can rely on today. Richer art lands at different times for different
+// subjects: a frame sequence before a video, a video for one moment and not
+// another. So every subject declares a slot rather than a file, and the
+// renderer picks the richest tier that slot actually has.
 //
 // The `model` tier is declared and deliberately never selected. The decision
 // was to ship pre-rendered art and keep a named place for a runtime GLB, so

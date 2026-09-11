@@ -174,8 +174,12 @@ const english = {
   'Your words': 'Your words',
   'For example, opening the feed again': 'For example, opening the feed again',
   'Confirm {pull}': 'Confirm {pull}',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
   '{count} minute': '{count} minute',
   '{count} minutes': '{count} minutes',
   '{count} second': '{count} second',
@@ -495,8 +499,12 @@ const spanish = {
   'Your words': 'Tus palabras',
   'For example, opening the feed again': 'Por ejemplo, volver a abrir el feed',
   'Confirm {pull}': 'Confirmar {pull}',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, descansa junto al plan actual.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, erguido y mirando al frente.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, mira hacia arriba al impulso que acaba de llegar.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, en reposo con los párpados bajos.',
   '{count} minute': '{count} minuto',
   '{count} minutes': '{count} minutos',
   '{count} second': '{count} segundo',
@@ -816,8 +824,12 @@ const german = {
   'For example, opening the feed again':
     'Zum Beispiel den Feed noch einmal öffnen',
   'Confirm {pull}': '{pull} bestätigen',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, ruht neben dem aktuellen Plan.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, aufrecht und mit Blick nach vorn.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, blickt nach oben zu dem Impuls, der gerade angekommen ist.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, ruht mit gesenkten Lidern.',
   '{count} minute': '{count} Minute',
   '{count} minutes': '{count} Minuten',
   '{count} second': '{count} Sekunde',
