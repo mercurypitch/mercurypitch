@@ -4,7 +4,9 @@
 //
 // A Pull may ship one beat at a time. Resolution refuses incomplete moving
 // beats instead of inventing an unsafe fallback, while a complete Pull maps
-// directly onto the presenter's deterministic recovery chain.
+// directly onto the presenter's deterministic recovery chain. A Pull whose
+// clips are defective can be held: they stay packaged, but its moving beats
+// resolve to their authored stills (see V2_ONBOARDING_PULL_MOTION_HOLDS).
 
 import { PREMIUM_PULL_IDS } from '@/content/premium-pulls'
 import type { V2OnboardingBrandResource, V2OnboardingLoadableResource, V2OnboardingMediaPresentationRequest, V2OnboardingStillResource, } from './v2-onboarding-media-presenter'
@@ -19,11 +21,25 @@ export interface V2OnboardingSceneMedia {
   readonly poster: V2OnboardingStillResource
 }
 
+export interface V2OnboardingPullMotionHold {
+  /** The confirmed defect, so whoever lifts the hold knows what was repaired. */
+  readonly defect: string
+  /** ISO date the defect was confirmed. */
+  readonly since: string
+}
+
 export interface V2OnboardingPullMedia {
   readonly present?: V2OnboardingLoadableResource
   readonly hold?: V2OnboardingLoadableResource
   readonly recede?: V2OnboardingLoadableResource
   readonly end?: V2OnboardingLoadableResource
+  /**
+   * Keeps a defective present and recede clip off every screen. The clips stay
+   * registered and packaged; resolution substitutes the beat's authored still,
+   * exactly as reduced motion already does, so the Director completes the beat
+   * on its dwell and dialogue gates alone and the flow never stalls.
+   */
+  readonly motionHold?: V2OnboardingPullMotionHold
 }
 
 export interface V2OnboardingRecordMedia {
@@ -56,6 +72,37 @@ export interface V2OnboardingMediaTarget {
 const MEDIA_ROOT = '/onboarding/corky-v2.4'
 const V2_5_MEDIA_ROOT = '/onboarding/corky-v2.5'
 const EXPANSION_ROOT = '/onboarding/pull-expansion-v1'
+
+/** Pulls whose enter and recede movies come from the expansion delivery. */
+const EXPANSION_PULL_IDS = [
+  'familiar-ritual',
+  'two-minute-pause',
+  'one-tap-convenience',
+  ...PREMIUM_PULL_IDS,
+] as const
+
+type ExpansionPullId = (typeof EXPANSION_PULL_IDS)[number]
+
+/**
+ * Expansion Pulls whose moving beats must not reach a person's screen. Lift a
+ * hold by deleting its entry once repaired clips are staged under a new
+ * version suffix and the delivery hashes are refreshed; nothing else changes.
+ */
+export const V2_ONBOARDING_PULL_MOTION_HOLDS: Readonly<
+  Partial<Record<ExpansionPullId, V2OnboardingPullMotionHold>>
+> = Object.freeze({
+  // Confirmed 2026-09-07 (pillow-edge-audit): both Pillow clips carry a cutout
+  // defect baked in by keying their magenta-matte sources. A magenta fringe
+  // follows the silhouette, dark fragments trail the moving feet and parts of
+  // the legs are removed. It exists in the lossless composition before
+  // encoding, so no playback setting can hide it. The repair, a tracked
+  // foreground mask or a green-screen re-shoot, is separate work.
+  'the-pillow': Object.freeze({
+    defect:
+      'magenta fringe and missing leg pixels baked into the entrance and recede cutouts',
+    since: '2026-09-07',
+  }),
+})
 
 const EMPTY_SET: V2OnboardingStillResource = Object.freeze({
   kind: 'still',
@@ -134,32 +181,31 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
   }),
   pulls: Object.freeze({
     ...Object.fromEntries(
-      [
-        'familiar-ritual',
-        'two-minute-pause',
-        'one-tap-convenience',
-        ...PREMIUM_PULL_IDS,
-      ].map((id) => [
-        id,
-        Object.freeze({
-          present: Object.freeze({
-            kind: 'video' as const,
-            src: `${EXPANSION_ROOT}/b03-${id}-present-v0_2.mp4`,
-            alt: '',
+      EXPANSION_PULL_IDS.map((id) => {
+        const motionHold = V2_ONBOARDING_PULL_MOTION_HOLDS[id]
+        return [
+          id,
+          Object.freeze({
+            present: Object.freeze({
+              kind: 'video' as const,
+              src: `${EXPANSION_ROOT}/b03-${id}-present-v0_2.mp4`,
+              alt: '',
+            }),
+            hold: Object.freeze({
+              kind: 'still' as const,
+              src: `${EXPANSION_ROOT}/p03-${id}-settled-v0_1.webp`,
+              alt: '',
+            }),
+            recede: Object.freeze({
+              kind: 'video' as const,
+              src: `${EXPANSION_ROOT}/b05-${id}-recede-v0_2.mp4`,
+              alt: '',
+            }),
+            end: TABLE_READY,
+            ...(motionHold === undefined ? {} : { motionHold }),
           }),
-          hold: Object.freeze({
-            kind: 'still' as const,
-            src: `${EXPANSION_ROOT}/p03-${id}-settled-v0_1.webp`,
-            alt: '',
-          }),
-          recede: Object.freeze({
-            kind: 'video' as const,
-            src: `${EXPANSION_ROOT}/b05-${id}-recede-v0_2.mp4`,
-            alt: '',
-          }),
-          end: TABLE_READY,
-        }),
-      ]),
+        ]
+      }),
     ),
     scrolling: Object.freeze({
       present: Object.freeze({
@@ -299,13 +345,15 @@ export function resolveV2OnboardingMediaRequest(
   const poster = pack.poster ?? reducedStill
   if (reducedStill === undefined || poster === undefined) return undefined
 
+  const moving = target.moment === 'present' || target.moment === 'recede'
+  // A held Pull shows its authored still where the clip would have played. The
+  // target stays automatic, so the beat still advances on its own.
+  const held = moving && pull.motionHold !== undefined
+
   return {
     targetId: target.targetId,
-    targetKind:
-      target.moment === 'present' || target.moment === 'recede'
-        ? 'automatic'
-        : 'hold',
-    primary,
+    targetKind: moving ? 'automatic' : 'hold',
+    primary: held ? reducedStill : primary,
     reducedStill,
     poster,
     brand: pack.brand,
