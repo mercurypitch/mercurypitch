@@ -199,3 +199,58 @@ gated on it.
   late. On the phone in 6b; the slide tracker's hold is a dial.
 - **M3.** Whether a 2.4 m room frames in portrait with the camera
   following `y`. In 6c.
+
+## 11. What the steps landed
+
+### What 6b landed
+
+`render/Shelf3D.ts` and `render/ShelfStage.tsx`, forked from the Line's,
+with room 1 playable from the Games list ("The Top Shelf", after the
+Sorting Line), and the rule itself in `sim/shelf-voice.ts`: the Line's
+`slideStep` finds the stop, every stop becomes the reference, and only a
+stop above it sung on the ground leaps. `window.__w3s()` in DEV holds a
+note with `sing(midi)`, which still goes through the slide tracker, so
+the e2e climbs room 1 by the same 150 ms stops a voice makes.
+
+Decided here, where the plan was silent:
+
+- **The camera follows the shelf, not the leap.** It eases to the top of
+  the shelf he last stood on. A chase that rode the leap would rise with
+  him and flatten the height the player is watching; on a landing it
+  arrives at the new shelf at the Line's rate, 3.2 per second.
+- **The carry overrides the thumb.** Airborne from a leap he drifts
+  toward the next shelf at walking pace whatever the pad says; a step
+  off a low edge is not carried. The jump intent is dropped everywhere,
+  keyboard included, not only the button (D7).
+- **The carry goes on across the lip.** The catch takes him by the
+  mitts with most of him still over the drop, and the first headless
+  frames showed him perched on the edge like that. So a leap that lands
+  him on a higher shelf walks him on until all of him is past its lip,
+  0.53 m, about half a second: "he is on" (§3.4) is a step onto it.
+- **The first stop of a room only readies him**, since there is nothing
+  to measure it from, and a new room starts with no reference, so a note
+  held across the handover cannot leap him at the start line.
+- **The crouch is a squash**, 6% wider and 12% shorter through
+  `setShape`, eased in on a stop that only moved the reference and held
+  while that note is; a quarter second of silence or a new slide lets it
+  go. There is no crouch clip, and the squash keeps his feet where they
+  are.
+- **The exit lights when he stands on the top shelf**, where the Line
+  lights it when every gate is passed; there are no gates here.
+- **The HUD names the interval being sung** above the reference, as the
+  apex flash will (`P5 +12¢`), "ready" at or below it, and "hold a note"
+  before there is one.
+
+What the code showed that the plan did not say:
+
+- **A leap that lands is short.** The catch takes him at the apex, so an
+  exact fifth is in the air 0.48 s, against 0.96 s for a leap that comes
+  back down. A note meant to settle mid-air (§3.6) has to start moving
+  within a third of a second of the launch; the e2e's first try at it
+  sang the stop after he had landed and leapt him a third time.
+- **A leap only reaches a riser from close by.** From a standstill the
+  carry covers 0.62 m before a fifth drops out of the catch, and room 1
+  starts him 1.34 m short of where his mitt meets the riser. A fifth
+  sung at the start line is a hop that lands 0.3 m short. The hint does
+  not say "walk to the shelf first"; the room teaches it, or 6f moves
+  `startX`.
