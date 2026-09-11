@@ -201,6 +201,47 @@ describe('how deep in we are, through the real host', () => {
     }
   })
 
+  it('sees an entry the hash router pushed, which fires no event', async () => {
+    // The Rooms gallery navigates with `setActiveTab`, whose sync pushes with
+    // `history.pushState` — no hashchange, no popstate. An index that only
+    // learned from events never moved, so Back after tapping a room cover
+    // minimized the app instead of returning to the gallery.
+    const stop = installHistoryDepth()
+    try {
+      expect(canGoBack()).toBe(false)
+
+      window.history.pushState(null, '', '#/singing')
+
+      expect(canGoBack()).toBe(true)
+      expect(resolveBack(shellBackHost().canGoBack)).toBe('history')
+
+      window.history.back()
+      await until(() => !canGoBack())
+      expect(resolveBack(shellBackHost().canGoBack)).toBe('minimize')
+    } finally {
+      stop()
+    }
+  })
+
+  it('keeps the floor where it is when the document reloads onto a stamped entry', () => {
+    // A reloaded document keeps the history it had: the entries below are the
+    // same document's and `history.back()` still reaches them. Moving the
+    // floor up would throw away a back stack that works — and this app
+    // reloads itself on a failed chunk load.
+    const first = installHistoryDepth()
+    window.history.pushState(null, '', '#/progress')
+    expect(canGoBack()).toBe(true)
+    first()
+
+    // Install again on the same, already-stamped entry: a reload.
+    const second = installHistoryDepth()
+    try {
+      expect(canGoBack()).toBe(true)
+    } finally {
+      second()
+    }
+  })
+
   it('has somewhere to go after a rail tap, and not after coming back', async () => {
     const stop = installHistoryDepth()
     try {

@@ -10,66 +10,98 @@
 // (a no-op), reported the press handled, and the app could never be
 // minimized again.
 //
-// So this tracks POSITION. Every entry the app creates is stamped with an
-// index in `history.state`; the boot entry's index is the floor. A back press
-// has somewhere to go exactly while the current index is above it.
+// So this tracks POSITION: every entry the app visits is stamped with an
+// index, and a back press has somewhere to go while that index is above the
+// first entry's.
 //
-// Stamping on `hashchange` rather than at the push site is deliberate: the
-// shell is not the only thing that navigates (the hash router pushes too, and
-// so does a deep link), and an entry that arrives with no index is a new one
-// however it got here. `replaceHash` preserves `history.state`, so a stamp
-// survives the router's own state→URL sync.
+// STAMPING CANNOT WAIT FOR AN EVENT. The first version learned about entries
+// only through `hashchange` and `popstate`, and the hash router pushes with
+// `history.pushState` (useHashRouter.ts, the tab-sync effect), which fires
+// neither. Tapping a room cover in Rooms therefore left an unstamped entry,
+// the index never moved, and Back minimized the app instead of returning to
+// the gallery. Discovery is now lazy as well as event-driven: every question
+// reconciles the live entry first, and an entry we have not stamped is a new
+// one however it got here.
+//
+// The router stamps its own `routeIndex` on the entries it creates, and that
+// is read as corroboration: an index above zero there is proof of something
+// behind us even where our own numbering cannot see it.
 
 const INDEX_KEY = 'mpShellIndex'
 
-let bootIndex = 0
-let currentIndex = 0
-let highestIndex = 0
+/**
+ * The floor: the document's first entry, which install stamps.
+ *
+ * It does NOT move on a reload. A reloaded document keeps the session
+ * history it had — the entries below are the same document's, still stamped,
+ * and `history.back()` still reaches them — so moving the floor up to the
+ * reloaded entry would throw away a back stack that works. This app reloads
+ * itself on a failed chunk load (`installChunkLoadRecovery`), which is
+ * exactly when a singer has the most to lose.
+ */
+const FLOOR_INDEX = 0
 
-function readIndex(): number | null {
+let currentIndex = FLOOR_INDEX
+let highestIndex = FLOOR_INDEX
+
+function stateObject(): Record<string, unknown> | null {
   const state: unknown = window.history.state
   if (state === null || typeof state !== 'object') return null
-  const value = (state as Record<string, unknown>)[INDEX_KEY]
+  return state as Record<string, unknown>
+}
+
+function readIndex(): number | null {
+  const value = stateObject()?.[INDEX_KEY]
+  return typeof value === 'number' ? value : null
+}
+
+/** The hash router's own position stamp, where it left one. */
+function routerIndex(): number | null {
+  const value = stateObject()?.routeIndex
   return typeof value === 'number' ? value : null
 }
 
 function stamp(index: number): void {
-  const existing: unknown = window.history.state
-  const base =
-    existing !== null && typeof existing === 'object'
-      ? (existing as Record<string, unknown>)
-      : {}
-  window.history.replaceState({ ...base, [INDEX_KEY]: index }, '')
+  window.history.replaceState(
+    { ...(stateObject() ?? {}), [INDEX_KEY]: index },
+    '',
+  )
 }
 
-/** Where a back press stops: the entry the app launched on. */
+/**
+ * Place the entry we are on, stamping it when it is new.
+ *
+ * Called from the events AND from every question, because a `pushState`
+ * navigation announces itself with neither.
+ */
+function sync(): void {
+  const index = readIndex()
+  if (index !== null) {
+    currentIndex = index
+    if (index > highestIndex) highestIndex = index
+    return
+  }
+  highestIndex += 1
+  currentIndex = highestIndex
+  stamp(currentIndex)
+}
+
 export function installHistoryDepth(): () => void {
   const existing = readIndex()
   if (existing === null) {
-    bootIndex = 0
-    currentIndex = 0
-    highestIndex = 0
-    stamp(0)
+    currentIndex = FLOOR_INDEX
+    highestIndex = FLOOR_INDEX
+    stamp(FLOOR_INDEX)
   } else {
-    // A reload keeps `history.state`. Anything below this entry belongs to a
-    // document that is gone, so the floor moves up with it.
-    bootIndex = existing
+    // A reload lands back on a stamped entry. Take its number and keep the
+    // floor where it is, so everything below stays reachable.
     currentIndex = existing
-    highestIndex = existing
+    highestIndex = Math.max(existing, FLOOR_INDEX)
   }
 
   const onChange = (): void => {
-    const index = readIndex()
-    if (index === null) {
-      highestIndex += 1
-      currentIndex = highestIndex
-      stamp(currentIndex)
-      return
-    }
-    currentIndex = index
-    if (index > highestIndex) highestIndex = index
+    sync()
   }
-
   window.addEventListener('hashchange', onChange)
   window.addEventListener('popstate', onChange)
   return () => {
@@ -80,14 +112,17 @@ export function installHistoryDepth(): () => void {
 
 /** True while there is an entry of this app's own to go back to. */
 export function canGoBack(): boolean {
-  return currentIndex > bootIndex
+  sync()
+  if (currentIndex > FLOOR_INDEX) return true
+  const router = routerIndex()
+  return router !== null && router > 0
 }
 
 /** Test seam: the indices, for a suite that drives real navigation. */
 export function historyDepthState(): {
-  boot: number
+  floor: number
   current: number
   highest: number
 } {
-  return { boot: bootIndex, current: currentIndex, highest: highestIndex }
+  return { floor: FLOOR_INDEX, current: currentIndex, highest: highestIndex }
 }
