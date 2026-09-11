@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GroundSampler, LocomotionConfig, LocomotionIntent, } from './locomotion3d'
-import { createLocomotion, hasFallenOut, jumpVelocity, stepLocomotion, } from './locomotion3d'
+import { createLocomotion, hasFallenOut, jumpVelocity, leapVelocity, stepLocomotion, } from './locomotion3d'
 
 const CFG: LocomotionConfig = {
   walkSpeed: 1.2,
@@ -267,5 +267,47 @@ describe('falling', () => {
     expect(s.x).toBeLessThan(1)
     expect(s.y).toBeCloseTo(0.3, 5)
     expect(s.grounded).toBe(true)
+  })
+})
+
+// The Top Shelf's leap is as high as the interval sung, and a fifth
+// flat by more than half a semitone must miss by 5 cm of catch
+// (docs/games/top-shelf.md §3.4), so the arc is checked stepped, at the
+// loop's own rate, and not on paper.
+describe('leaping', () => {
+  /** The highest his feet get after a launch at `vy`, standing still. */
+  const peakOf = (vy: number): number => {
+    const s = createLocomotion(0)
+    s.vy = vy
+    let peak = 0
+    for (let i = 0; i < 360; i++) {
+      stepLocomotion(s, STILL, flat, STEP, CFG)
+      peak = Math.max(peak, s.y)
+    }
+    return peak
+  }
+
+  it('peaks within a centimetre of the height asked, at every height a room asks', () => {
+    for (const height of [0.3, 0.4, 0.5, 0.7, 0.9]) {
+      expect(
+        Math.abs(peakOf(leapVelocity(height, CFG, STEP)) - height),
+      ).toBeLessThan(0.01)
+    }
+  })
+
+  it('needs the step to do it: the continuous launch speed tops out short', () => {
+    // Half a step of travel, which on a fifth is more than a centimetre.
+    // This is the whole reason `leapVelocity` asks for the step.
+    expect(peakOf(leapVelocity(0.7, CFG))).toBeLessThan(0.7 - 0.01)
+  })
+
+  it("is the jump's own launch speed for the jump's own height", () => {
+    expect(leapVelocity(CFG.jumpHeight, CFG)).toBeCloseTo(jumpVelocity(CFG), 9)
+  })
+
+  it('does not leap for no height, or for nonsense', () => {
+    expect(leapVelocity(0, CFG, STEP)).toBe(0)
+    expect(leapVelocity(-0.3, CFG, STEP)).toBe(0)
+    expect(leapVelocity(Number.NaN, CFG, STEP)).toBe(0)
   })
 })
