@@ -439,6 +439,19 @@ say the warm works and where the rest of the wait sits; the number that
 counts is `first` on the chip on the phones, with and without `?cold`,
 and it goes in §2.3 with the gate.
 
+**Review fixes.** The review of 5a-5d found four small things:
+
+- The games list warms the detector again when the Range Finder
+  closes, because the finder's stream takes the spare and ends it.
+- A tap that a frame reaches more than 100 ms late is dropped, so a
+  break left mid-way (phone locked, app switched) does not fire every
+  missed tap on the first frame back.
+- A break's shards fly by the reduced-motion setting it started under,
+  so switching it mid-break changes their speed from the next break,
+  not where they are.
+- Merc's relax on the Sorting Line runs calm, at 1.3 mm a frame at
+  most (P3), so it needed no code.
+
 ---
 
 ## 3. Slice 6 — the Top Shelf
