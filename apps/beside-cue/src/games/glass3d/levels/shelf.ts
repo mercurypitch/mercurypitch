@@ -43,6 +43,7 @@
 // brings his front to it at the apex (`leapCarry`), and the catch
 // judges the height alone, wherever he stood. Further out it is a hop.
 
+import { SLIDE_SEMIS } from '../sim/line-grade'
 import type { GroundSampler } from '../sim/locomotion3d'
 
 /** Metres of height per semitone sung (T1): a fifth is 0.7 m, and the
@@ -52,6 +53,14 @@ export const RISE_PER_SEMI = 0.1
 /** The highest leap, in metres: nine semitones, his spring (D2). Above
  * every ask in rooms 1 and 2, and below the octave room 3 is built on. */
 export const MAX_LEAP = 0.9
+
+/** The least leap, in semitones: the slide tracker's own half semitone
+ * (`SLIDE_SEMIS`), the leaving a new stop needs. A stop can still settle
+ * nearer the reference than that -- a tail that flicks up and settles a
+ * few cents sharp, a re-attack scooped in from below -- and that is the
+ * note held again: it moves the reference and readies him, as a stop
+ * below it does (§3.3). The HUD's "ready" reads the same number. */
+export const MIN_LEAP_SEMIS = SLIDE_SEMIS
 
 /** How far below a lip his mitts still catch it, in metres (D3): half a
  * semitone flat at this scale. */
@@ -298,11 +307,11 @@ export const leapCarry = (
 /**
  * How high a stop leaps him, in metres, measured from the reference --
  * the last note held (§3.1) -- and capped at his spring. Null when it is
- * not a leap: a stop on the reference or below it only moves the
- * reference, which is what lets every leap be sung from a comfortable
- * note (§3.3, D1).
+ * not a leap: a stop less than `MIN_LEAP_SEMIS` above the reference, on
+ * it or below it only moves the reference, which is what lets every leap
+ * be sung from a comfortable note (§3.3, D1).
  */
 export const leapHeight = (reference: number, stop: number): number | null =>
-  stop > reference
+  stop - reference >= MIN_LEAP_SEMIS
     ? Math.min(MAX_LEAP, (stop - reference) * RISE_PER_SEMI)
     : null

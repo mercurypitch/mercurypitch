@@ -9,7 +9,7 @@ import { workingRange } from '../sim/tension3d'
 import { VOICE_PRESETS } from '../voice-range'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import type { ShelfLevel } from './shelf'
-import { CATCH, groundFor, LEAP_CARRY_MAX, LEAP_REACH, leapCarry, leapHeight, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, SHELF_1, SHELF_2, SHELF_3, SHELVES, topsOf, } from './shelf'
+import { CATCH, groundFor, LEAP_CARRY_MAX, LEAP_REACH, leapCarry, leapHeight, MAX_LEAP, MIN_LEAP_SEMIS, MITT_SPAN, RISE_PER_SEMI, riserWallAt, SHELF_1, SHELF_2, SHELF_3, SHELVES, topsOf, } from './shelf'
 
 // The game's own body and loop, not a test's: the catch is 5 cm, and a
 // different gravity or step would be testing some other game.
@@ -426,6 +426,14 @@ describe('the leap rule', () => {
     expect(leapHeight(57, 57)).toBeNull()
     expect(leapHeight(57, 50)).toBeNull()
     expect(leapHeight(57, Number.NaN)).toBeNull()
+  })
+
+  // A stop needs half a semitone of leaving, not of arriving: the same
+  // note held again a few cents sharp only readies him.
+  it('does not leap for less than half a semitone, the slide tracker own', () => {
+    expect(leapHeight(57, 57.05)).toBeNull()
+    expect(leapHeight(57, 57.45)).toBeNull()
+    expect(leapHeight(57, 57.5)).toBeCloseTo(MIN_LEAP_SEMIS * RISE_PER_SEMI, 9)
   })
 })
 
