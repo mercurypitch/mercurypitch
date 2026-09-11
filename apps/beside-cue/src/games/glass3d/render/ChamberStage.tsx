@@ -30,12 +30,14 @@ import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
+import { createReducedMotion } from '@/platform/reduced-motion'
 import { createGlassTone } from '../audio/glass-tone'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { currentRoom, isCleared, isFinished, progressLabel, readTrack, recordClear, roomAfter, roomIndex, walkGrade, writeTrack, } from '../levels/chamber-track'
 import type { ChamberLevel } from '../levels/chambers'
 import { CHAMBERS } from '../levels/chambers'
+import type { ImpactFrame } from '../runtime/impact'
 import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmplitude, tuneChamber, } from '../sim/chamber3d'
@@ -230,6 +232,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
     calm: () => cfg.calm,
     backend: () => backend(),
   })
+  // Read live: the setting can change with a world open (P6).
+  const reduced = createReducedMotion()
   /**
    * Set while a room is being re-walked from the end card.
    *
@@ -281,7 +285,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
     // The break's timeline, played (render/stage-impact.ts): its taps,
     // and the pixel ratio it drops for the burst.
-    const impact = createStageImpact(() => cfg.impact)
+    const impact = createStageImpact(() => cfg.impact, { reduced })
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
@@ -383,6 +387,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
        * the shards do not, they play on the break's own clock
        * (render/stage-impact.ts). */
       let breakAtWall = 0
+      /** The break's latest frame, for the probe below. */
+      let lastHit: ImpactFrame | null = null
       let breaking: {
         pane: number
         launches: readonly ShardLaunch[]
@@ -413,9 +419,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
 
       let pose = ''
       const setPose = (name: string, loop = true): void => {
-        if (pose === name) return
-        pose = name
-        r.merc()?.play(name, { loop })
+        // His idle breathing holds still under reduced motion (P6), as in
+        // the Hallway; walking, singing and the fall still play.
+        const still = name === 'listen' && reduced()
+        const key = still ? `${name}:still` : name
+        if (pose === key) return
+        pose = key
+        r.merc()?.play(name, { loop, still })
       }
       const poseNow = (): void => {
         if (phaseNow === 'falling') setPose('fall', false)
@@ -744,6 +754,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         view.exitOpen = targets.every((t) => t.broken)
         // Every frame, drawn or not, so a tap lands on its moment.
         const hit = impact.frame(wallSeconds)
+        lastHit = hit
         view.breaking =
           breaking === null
             ? null
@@ -822,6 +833,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           broken: targets.map((t) => t.broken),
           charges: targets.map((t) => t.ring.res),
           perf: pace.stats(),
+          hit: lastHit,
           move: (m: number) => input.setMove(m),
           jump: () => input.pulseJump(performance.now()),
           warpTo: (x: number) => {

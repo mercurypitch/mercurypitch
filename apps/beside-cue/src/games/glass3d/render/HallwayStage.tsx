@@ -28,8 +28,10 @@ import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
+import { createReducedMotion } from '@/platform/reduced-motion'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
+import type { ImpactFrame } from '../runtime/impact'
 import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import type { GroundSampler, LocomotionConfig } from '../sim/locomotion3d'
@@ -128,6 +130,8 @@ export const HallwayStage = (props: HallwayStageProps) => {
     calm: () => cfg.calm,
     backend: () => backend(),
   })
+  // Read live: the setting can change with a world open (P6).
+  const reduced = createReducedMotion()
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
@@ -159,7 +163,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
 
     // The break's timeline, played (render/stage-impact.ts): its taps,
     // and the pixel ratio it drops for the burst.
-    const impact = createStageImpact(() => cfg.impact)
+    const impact = createStageImpact(() => cfg.impact, { reduced })
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
@@ -192,6 +196,8 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // beside them. Two clocks in one shot is what "slow, and it
       // stutters, and it looks wrong" is made of.
       let wallSeconds = 0
+      /** The break's latest frame, for the probe below. */
+      let lastHit: ImpactFrame | null = null
       const loco = createLocomotion(START_X)
       // The pane is the far wall until it is not. `minX` never moves:
       // there is nothing behind him worth walking back to.
@@ -225,9 +231,13 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // back should see him obey rather than finish his little dance.
       let pose = ''
       const setPose = (name: string, loop = true): void => {
-        if (pose === name) return
-        pose = name
-        r.merc()?.play(name, { loop })
+        // His idle breathing holds still under reduced motion (P6). He
+        // still walks, sings and celebrates: those are the game.
+        const still = name === 'listen' && reduced()
+        const key = still ? `${name}:still` : name
+        if (pose === key) return
+        pose = key
+        r.merc()?.play(name, { loop, still })
       }
       const poseNow = (): void => {
         if (!loco.grounded || Math.abs(loco.vx) > WALKING_VX) setPose('move')
@@ -349,6 +359,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
         view.launches = launches
         // Every frame, drawn or not, so a tap lands on its moment.
         const hit = impact.frame(wallSeconds)
+        lastHit = hit
         view.shatterSeconds = hit?.shardSeconds ?? 0
         view.shake = hit?.shake ?? NO_SHAKE
         view.timeScale = hit?.timeScale ?? 1
@@ -383,6 +394,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           shards: r.centroids().length,
           backend: backend(),
           perf: pace.stats(),
+          hit: lastHit,
           break: (acc = 1) => {
             if (launches === null && phaseNow === 'sing') doBreak(acc)
           },

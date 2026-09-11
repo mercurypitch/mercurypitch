@@ -4,7 +4,9 @@ import { WORLD3D_CONFIG } from '../world3d-config'
 import { createStageImpact } from './stage-impact'
 
 /** A stage on a phone reporting DPR 3, whose taps and refits are kept. */
-const stage = (): {
+const stage = (
+  reduced = false,
+): {
   impact: ReturnType<typeof createStageImpact>
   felt: Tap[]
   refits: { at: number; ratio: number }[]
@@ -12,11 +14,11 @@ const stage = (): {
 } => {
   const felt: Tap[] = []
   const refits: { at: number; ratio: number }[] = []
-  const impact = createStageImpact(
-    () => WORLD3D_CONFIG.impact,
-    (t) => felt.push(t),
-    () => 3,
-  )
+  const impact = createStageImpact(() => WORLD3D_CONFIG.impact, {
+    reduced: () => reduced,
+    haptic: (t) => felt.push(t),
+    screenRatio: () => 3,
+  })
   let now = 0
   impact.onBurst(() => refits.push({ at: now, ratio: impact.pixelRatio() }))
   return {
@@ -66,5 +68,56 @@ describe('a stage playing the break', () => {
     s.play(5, 2, 60)
     expect(s.felt.filter((t) => t === 'heavy')).toHaveLength(2)
     expect(s.refits.map((r) => r.ratio)).toEqual([1, 1.5, 1, 1.5])
+  })
+})
+
+describe('under prefers-reduced-motion (P6)', () => {
+  it('keeps every tap, at the same moments', () => {
+    const full = stage()
+    const calm = stage(true)
+    full.impact.start(10)
+    calm.impact.start(10)
+    for (let k = 0; k <= 120; k++) {
+      full.impact.frame(10 + k / 60)
+      calm.impact.frame(10 + k / 60)
+      expect(calm.felt).toEqual(full.felt)
+    }
+    expect(calm.felt).toEqual(['heavy', 'light', 'light', 'light'])
+  })
+
+  it('never steps the pixel ratio', () => {
+    const s = stage(true)
+    s.impact.start(10)
+    s.play(10, 2, 60)
+    expect(s.refits).toEqual([])
+    expect(s.impact.pixelRatio()).toBe(1.5)
+  })
+
+  it('holds nothing still, shakes nothing, and flies the shards in half the time', () => {
+    const s = stage(true)
+    s.impact.start(10)
+    const f = s.impact.frame(10.05)!
+    // Inside what would have been the hitstop, and the shake's peak.
+    expect(f.timeScale).toBe(1)
+    expect(f.shake).toEqual({ yaw: 0, pitch: 0, roll: 0 })
+    expect(f.shardSeconds).toBeCloseTo(0.1, 10)
+  })
+
+  // The setting can change with a world open; the break follows it on
+  // the next frame, and a burst already begun is ended rather than kept.
+  it('follows the setting when it changes mid-break', () => {
+    let reduced = false
+    const refits: number[] = []
+    const impact = createStageImpact(() => WORLD3D_CONFIG.impact, {
+      reduced: () => reduced,
+      haptic: () => {},
+      screenRatio: () => 3,
+    })
+    impact.onBurst(() => refits.push(impact.pixelRatio()))
+    impact.start(0)
+    expect(impact.frame(0.05)!.timeScale).toBe(0)
+    reduced = true
+    expect(impact.frame(0.06)!.timeScale).toBe(1)
+    expect(refits).toEqual([1, 1.5])
   })
 })

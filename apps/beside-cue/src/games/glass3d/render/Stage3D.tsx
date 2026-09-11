@@ -21,7 +21,9 @@ import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
+import { createReducedMotion } from '@/platform/reduced-motion'
 import { createGlassTone } from '../audio/glass-tone'
+import type { ImpactFrame } from '../runtime/impact'
 import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
@@ -108,7 +110,9 @@ export const Stage3D = (props: Stage3DProps) => {
   })
   /** The break's timeline, played (render/stage-impact.ts): its taps,
    * and the pixel ratio it drops for the burst. */
-  const impact = createStageImpact(() => cfg.impact)
+  // Read live: the setting can change with the Cabinet open (P6).
+  const reduced = createReducedMotion()
+  const impact = createStageImpact(() => cfg.impact, { reduced })
 
   onMount(() => {
     // Timed apart from the loads: it is synchronous, and it runs before
@@ -185,6 +189,8 @@ export const Stage3D = (props: Stage3DProps) => {
     // no simulation time of its own for anything else, so the accumulator
     // that fed it is gone with it.
     let wallSeconds = 0
+    /** The break's latest frame, for the probe below. */
+    let lastHit: ImpactFrame | null = null
 
     const view: StageView = {
       shatterSeconds: 0,
@@ -281,6 +287,7 @@ export const Stage3D = (props: Stage3DProps) => {
       view.launches = launches
       // Every frame, drawn or not, so a tap lands on its moment.
       const hit = impact.frame(wallSeconds)
+      lastHit = hit
       view.shatterSeconds = hit?.shardSeconds ?? 0
       view.shake = hit?.shake ?? NO_SHAKE
 
@@ -312,6 +319,7 @@ export const Stage3D = (props: Stage3DProps) => {
         fps: pace.stats().window?.fps ?? 0,
         pitchHz: pace.stats().window?.f0Hz ?? 0,
         perf: pace.stats(),
+        hit: lastHit,
         broken: launches !== null,
         shards: renderer?.centroids().length ?? 0,
         backend: backend(),

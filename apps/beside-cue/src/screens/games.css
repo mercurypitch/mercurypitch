@@ -1374,6 +1374,14 @@
   will-change: transform;
 }
 
+/* P6: the column still moves -- it is the reading -- but it jumps to
+   where the voice puts it instead of sliding there. */
+@media (prefers-reduced-motion: reduce) {
+  .shape-gauge__column {
+    transition: none;
+  }
+}
+
 .shape-gauge__meniscus {
   fill: var(--custard, #f2c84b);
   transition: fill 160ms linear;
