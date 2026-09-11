@@ -454,6 +454,10 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.code }}
           VERSION_NAME: ${{ steps.version.outputs.name }}
           KEYSTORE_FILE: ${{ env.HAS_UPLOAD_KEY == 'true' && format('{0}/upload.jks', runner.temp) || '' }}
+          # Not used by a release build; exported so gradle/signing.gradle's one
+          # log line reports the same debug-signing state as the debug build did,
+          # instead of "toolchain default", which reads as a warning and is not one.
+          DEBUG_KEYSTORE_FILE: ${{ env.HAS_DEBUG_KEY == 'true' && format('{0}/debug.jks', runner.temp) || '' }}
           KEYSTORE_PASSWORD: ${{ secrets.keystore-password }}
           KEY_ALIAS: ${{ secrets.key-alias }}
           KEY_PASSWORD: ${{ secrets.key-password }}
@@ -462,6 +466,7 @@ jobs:
           export "${PREFIX}_VERSION_CODE=$VERSION_CODE"
           export "${PREFIX}_VERSION_NAME=$VERSION_NAME"
           export "${PREFIX}_KEYSTORE_FILE=$KEYSTORE_FILE"
+          export "${PREFIX}_DEBUG_KEYSTORE_FILE=$DEBUG_KEYSTORE_FILE"
           export "${PREFIX}_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
           export "${PREFIX}_KEY_ALIAS=$KEY_ALIAS"
           export "${PREFIX}_KEY_PASSWORD=$KEY_PASSWORD"

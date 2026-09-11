@@ -1,9 +1,18 @@
-//  Route Beside Cue's sound to the speaker without fighting WebKit.
+//  AudioSessionKit -- shared by every Capacitor app in this repository.
 //  ============================================================
 //
-//  Beside Cue had no audio on iOS at all while Android played fine. The
-//  web layer was never the reason: `audio/shared-audio-context.ts` lifts
-//  the AudioContext inside the tap gesture, handles iOS's 'interrupted'
+//  This file used to exist once per app, as a verbatim copy, because a
+//  local Swift package needs Xcode-level validation that only the macOS CI
+//  job provides and the first Mercury Pitch build could not wait for that
+//  loop. Now it exists once. Each app's AppDelegate is an import and one
+//  call: `AudioSession.configure()` before the web layer exists.
+//
+//  Route the app's sound to the speaker without fighting WebKit.
+//  ============================================================
+//
+//  Beside Cue, the first app here, had no audio on iOS at all while
+//  Android played fine. The web layer was never the reason: its
+//  `audio/shared-audio-context.ts` lifts the AudioContext inside the tap gesture, handles iOS's 'interrupted'
 //  state, and `drivers/sing.ts` reaches the context before the mic await
 //  precisely because only the synchronous part of a gesture can resume a
 //  suspended context. All of that was already right. What was missing
@@ -20,7 +29,7 @@
 //  A WEB PAGE THAT OPENS THE MIC GETS `playAndRecord`, whose default
 //  output port is the receiver -- the earpiece -- not the speaker.
 //  WebKit sets that category itself when getUserMedia starts and does
-//  not ask for `.defaultToSpeaker`. Beside Cue is a singing game: the
+//  not ask for `.defaultToSpeaker`. Both apps here sing: the
 //  mic is open for most of every session, so playback spends most of its
 //  life coming out of a speaker held nowhere near the player's ear. That
 //  reads as "no audio", not as "quiet audio".
@@ -46,7 +55,7 @@
 import AVFoundation
 import Foundation
 
-enum AudioSession {
+public enum AudioSession {
     private static let desiredOptions: AVAudioSession.CategoryOptions = [
         .defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers,
     ]
@@ -130,7 +139,7 @@ enum AudioSession {
     }
 
     /// Called once from `AppDelegate`.
-    static func configure() {
+    public static func configure() {
         let session = AVAudioSession.sharedInstance()
         applyIfNeeded(session)
         do {
@@ -180,7 +189,7 @@ enum AudioSession {
     }
 
     /// What the session actually is right now, for the dev readout.
-    static func describe() -> String {
+    public static func describe() -> String {
         let session = AVAudioSession.sharedInstance()
         let outputs = session.currentRoute.outputs.map(\.portType.rawValue).joined(separator: ",")
         return "category=\(session.category.rawValue) mode=\(session.mode.rawValue) out=\(outputs.isEmpty ? "none" : outputs)"

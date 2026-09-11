@@ -1,4 +1,5 @@
 import UIKit
+import AudioSessionKit
 import Capacitor
 
 @UIApplicationMain
@@ -8,7 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Before the web layer exists, because WKWebView inherits
-        // whatever session it finds. See AudioSession.swift for why an
+        // whatever session it finds. See packages/ios-audio-session for why an
         // app with no category at all is an app with no sound.
         AudioSession.configure()
         NSLog("[AudioSession] at launch: \(AudioSession.describe())")
