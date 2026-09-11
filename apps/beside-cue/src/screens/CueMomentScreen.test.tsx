@@ -20,29 +20,50 @@ const base = {
   onClose: noop,
 }
 
+/** Each free Pull and the approved cast render the cue moment must show. */
+const FREE_PULL_RENDERS = [
+  ['scrolling', 'pull-the-scroll-nanobanana-v0_1-512.webp'],
+  ['snacking', 'pull-sugarlump-nanobanana-v0_1-512.webp'],
+  ['familiar-ritual', 'pull-the-usual-nanobanana-v0_1-512.webp'],
+  ['two-minute-pause', 'pull-ember-nanobanana-v0_1-512.webp'],
+  ['one-tap-convenience', 'pull-dinger-nanobanana-v0_1-512.webp'],
+  ['avoidance', 'pull-the-fog-nanobanana-v0_1-512.webp'],
+] as const
+
 describe('cue moment screen', () => {
-  it('uses the approved notice Corky with the pull-specific creature, not the generic token', () => {
-    // The notice render deliberately carries no cue, and MascotStage only draws
-    // one when it is told which pull the beat is about. This screen is the only
-    // place in the app that knows, so if it stops passing the id the seven
-    // registered overlays go quietly unused and every cue looks the same.
+  it.each(FREE_PULL_RENDERS)(
+    'shows the %s Pull as its approved render beside the notice Corky',
+    (pullId, file) => {
+      // The notice render deliberately carries no Pull, and MascotStage only
+      // draws one when it is told which Pull the beat is about. This screen is
+      // the only place in the app that knows, so if it stops passing the id
+      // every cue looks the same.
+      const { container } = render(() => (
+        <CueMomentScreen {...base} pullId={pullId} />
+      ))
+
+      expect(sources(container)).toEqual([
+        expect.stringMatching(/corky-notice-approved/u) as unknown as string,
+        expect.stringMatching(
+          new RegExp(`/art/pulls/${file.replace(/[.]/gu, '[.]')}$`, 'u'),
+        ) as unknown as string,
+      ])
+    },
+  )
+
+  it('shows no creature for a self-named Pull, only the neutral mark', () => {
+    // A custom Pull has no authored character and is not lent one. The old
+    // placeholder marks are gone for good, so nothing may point at them.
     const { container } = render(() => (
-      <CueMomentScreen {...base} pullId="snacking" />
+      <CueMomentScreen {...base} pullText="Checking the news again" />
     ))
 
     expect(sources(container)).toEqual([
       expect.stringMatching(/corky-notice-approved/u) as unknown as string,
-      expect.stringMatching(/notice-cue-snacking/u) as unknown as string,
     ])
-  })
-
-  it('falls back to the canon cue when the pull is self-named', () => {
-    const { container } = render(() => <CueMomentScreen {...base} />)
-
-    expect(sources(container)).toEqual([
-      expect.stringMatching(/corky-notice-approved/u) as unknown as string,
-      expect.stringMatching(/notice-cue-generic/u) as unknown as string,
-    ])
+    expect(container.querySelector('.mascot-stage__pull--mark')).not.toBeNull()
+    expect(sources(container).join('\n')).not.toMatch(/notice-cue|cue-generic/u)
+    expect(screen.getByText('Checking the news again')).toBeInTheDocument()
   })
 
   it('keeps an optional named cue visible without implying detection', () => {

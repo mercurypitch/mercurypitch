@@ -20,7 +20,6 @@ describe('localized content pack', () => {
       const generic = getLocalizedGenericPullCharacter(locale)
       expect(generic.id).toBe('generic')
       expect(generic.token.still).toBe(english.token.still)
-      expect(generic.noticeOverlay).toBe(english.noticeOverlay)
       expect(generic.name).not.toBe(english.name)
       expect(generic.token.alt).not.toBe(english.token.alt)
       expect(
@@ -160,7 +159,6 @@ describe('localized content pack', () => {
         )!
         expect(character.name).toBe(original.name)
         expect(character.token.still).toBe(original.token.still)
-        expect(character.noticeOverlay).toBe(original.noticeOverlay)
       }
       for (const state of CHARACTER_STATES) {
         const localized = pack.characters[0]!.states[state]

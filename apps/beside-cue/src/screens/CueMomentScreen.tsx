@@ -15,8 +15,8 @@ interface CueMomentScreenProps {
   pending: boolean
   /**
    * The pull category this cue is about, so the mascot shows that pull's own
-   * creature rather than the generic token. Absent for a self-named pull,
-   * which the content pack answers with the canon turquoise cue.
+   * approved render. Absent for a self-named pull, which shows no creature:
+   * the stage draws its neutral record-label mark in that spot instead.
    */
   pullId?: string
   onChooseBSide: () => void

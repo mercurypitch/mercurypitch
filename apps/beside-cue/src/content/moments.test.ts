@@ -45,6 +45,7 @@ describe('moment engine', () => {
       id: 'corky.cue-open.01',
       text: 'Needle’s hovering. No rush.',
     })
+    expect(shown.showsPull).toBe(true)
     expect(shown.pullCharacter?.name).toBe('Sugarlump')
     expect(shown.entity).toBe(shown.pullCharacter)
   })
@@ -102,19 +103,22 @@ describe('moment engine', () => {
     ).not.toThrow()
   })
 
-  it('falls back to the plain cue when a pull has no creature', () => {
-    // Someone who named their own moment still needs something to look at.
+  it('keeps the Pull slot open, and lends no creature, for a self-named Pull', () => {
+    // Someone who named their own moment gets no face borrowed from the cast.
+    // The beat still has its Pull slot, so the stage can draw a neutral mark
+    // where Corky is looking instead of leaving a blank.
     const shown = resolveMoment(pack, 'cue.open', { pullId: 'custom' })
 
-    expect(shown.pullCharacter?.id).toBe('generic')
-    expect(shown.pullCharacter?.noticeOverlay.still).toMatch(
-      /notice-cue-generic/u,
-    )
-    expect(shown.entity).toBe(shown.pullCharacter)
+    expect(shown.showsPull).toBe(true)
+    expect(shown.pullCharacter).toBeUndefined()
+    expect(shown.entity).toBeUndefined()
   })
 
-  it('shows no cue at a beat that is not about one', () => {
-    expect(resolveMoment(pack, 'turn.b-side').entity).toBeUndefined()
+  it('shows no Pull at a beat that is not about one', () => {
+    const turn = resolveMoment(pack, 'turn.b-side', { pullId: 'snacking' })
+
+    expect(turn.showsPull).toBe(false)
+    expect(turn.entity).toBeUndefined()
     expect(resolveMoment(pack, 'reminder.set').entity).toBeUndefined()
   })
 

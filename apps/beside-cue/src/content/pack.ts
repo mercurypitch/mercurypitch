@@ -58,16 +58,12 @@ export interface PullCharacter {
   /** Matches a `PullOption` id, so a pull can find its own creature. */
   readonly id: string
   readonly name: string
-  /** Tight cutout, for a list row or a card. */
-  readonly token: AssetSlot
   /**
-   * Full-frame, rendered through the same camera and cropped with the same box
-   * as the character states, so it composites over one with no positioning
-   * code. That is how a single `notice` render personalises to every pull: the
-   * character looks at a fixed point, and the Pull character lands there.
+   * The approved render of the creature: a tight transparent cutout, drawn in
+   * the Pull picker and beside Corky at the cue moment. One file per Pull, so
+   * no screen can show a rendition the picker did not.
    */
-  readonly noticeOverlay: AssetSlot
-  readonly noticeLayout?: 'token'
+  readonly token: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
   readonly voiceNote: string
 }
@@ -112,19 +108,15 @@ export const CORKY_QUIET_ART = {
   alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
 } as const satisfies AssetSlot
 
+// The six free Pulls are the approved cast renders, byte for byte the art the
+// landing shows (`packages/beside-cue/src/assets/cast/*.png` in the
+// disjoint-colliders repo is a tight crop of these files). Sugarlump is the
+// white, blocky one; the earlier Sugarlump rendition is not approved and must
+// not come back through any path.
 function pullToken(filename: string, alt: string): AssetSlot {
   return {
     still: `${ART}/pulls/${filename}`,
     alt,
-  }
-}
-
-function cueOverlay(id: string): AssetSlot {
-  return {
-    still: `${ART}/notice-cues/notice-cue-${id}-1024.webp`,
-    // The character underneath already describes the scene; a second
-    // description of the same moment would only repeat itself aloud.
-    alt: '',
   }
 }
 
@@ -138,7 +130,6 @@ function pullCharacter(
     id,
     name,
     token,
-    noticeOverlay: cueOverlay(id),
     voiceNote,
   }
 }
@@ -165,16 +156,11 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
   ...PREMIUM_PULL_DEFINITIONS.map((definition) => ({
     id: definition.id,
     name: definition.name,
+    // The same cutout the premium shelf shows in the picker.
     token: {
       still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
       alt: definition.name,
     },
-    // Standalone cutouts need placement; they are not the legacy camera's overlays.
-    noticeOverlay: {
-      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
-      alt: '',
-    },
-    noticeLayout: 'token' as const,
     voiceNote:
       'Use this character’s selected voice and preserve the canonical captions.',
   })),
@@ -235,9 +221,11 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
 ]
 
 /**
- * Shown when a beat needs a Pull character but a custom Pull has none of its
- * own. The generic turquoise shape keeps that path complete without pretending
- * the custom words belong to one of the built-in cast.
+ * The picker's art for a custom Pull, which has no authored character. The
+ * generic turquoise shape keeps that list complete without pretending the
+ * custom words belong to one of the built-in cast. The cue moment does not
+ * use it: there a custom Pull shows no creature at all, and the stage draws
+ * its own neutral record-label mark where the creature would stand.
  */
 export const GENERIC_PULL_CHARACTER: PullCharacter = pullCharacter(
   'generic',
@@ -257,7 +245,7 @@ export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.6.0',
+  version: '0.7.0',
   leadCharacterId: corky.id,
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,

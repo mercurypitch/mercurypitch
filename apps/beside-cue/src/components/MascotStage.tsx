@@ -13,7 +13,7 @@ interface MascotStageProps {
   moment?: MomentId
   /** Direct state, for surfaces that are not a beat of their own. */
   state?: MascotState
-  /** Which pull the beat is about, so its cue token can appear. */
+  /** Which pull the beat is about, so its own creature can appear. */
   pullId?: string
   /** Rotates the spoken line deterministically. */
   rotation?: number
@@ -28,6 +28,33 @@ const STATE_MOMENTS: Readonly<Record<MascotState, MomentId>> = {
   notice: 'cue.open',
   turn: 'turn.b-side',
   quiet: 'turn.a-side',
+}
+
+/**
+ * Stands in for the creature of a self-named Pull: the plan's own Side A
+ * label, as the Home pressing draws it, without its words. It is plainly the
+ * app's record mark and not a character, so the person's own words are never
+ * handed a face from the cast.
+ */
+function CustomPullMark() {
+  return (
+    <svg
+      class="mascot-stage__pull mascot-stage__pull--mark"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      <circle cx="50" cy="50" r="46" fill="#efc13b" />
+      <circle
+        cx="50"
+        cy="50"
+        r="40"
+        fill="none"
+        stroke="#241913"
+        stroke-opacity=".3"
+      />
+      <circle cx="50" cy="50" r="4.5" fill="#fff5dd" />
+    </svg>
+  )
 }
 
 export function MascotStage(props: MascotStageProps) {
@@ -52,20 +79,23 @@ export function MascotStage(props: MascotStageProps) {
           slot={props.artOverride ?? presentation().art}
           size={1024}
         />
-        <Show when={presentation().entity}>
-          {(entity) => (
-            // Rendered through the same camera and crop as the character, so
-            // it lands exactly where he is looking with no positioning here.
-            <AssetStage
-              class={
-                entity().noticeLayout === 'token'
-                  ? 'mascot-stage__cue mascot-stage__cue--token'
-                  : 'mascot-stage__cue'
-              }
-              slot={entity().noticeOverlay}
-              size={1024}
-            />
-          )}
+        <Show when={presentation().showsPull}>
+          <Show
+            when={presentation().pullCharacter}
+            fallback={<CustomPullMark />}
+          >
+            {(pull) => (
+              // The Pull's approved cutout, placed by the stylesheet where
+              // the notice pose looks. Decorative: the screen already names
+              // the Pull in words, and Corky's own description says a Pull
+              // has arrived, so a second description would only repeat it.
+              <AssetStage
+                class="mascot-stage__pull"
+                slot={{ still: pull().token.still, alt: '' }}
+                size={512}
+              />
+            )}
+          </Show>
         </Show>
         <span class="mascot-stage__wash" aria-hidden="true" />
       </div>

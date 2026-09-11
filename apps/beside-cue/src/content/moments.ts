@@ -12,7 +12,7 @@
 
 import type { AssetSlot } from './assets'
 import type { Character, CharacterStateId, ContentPack, Line, PullCharacter, } from './pack'
-import { findCharacter, findPullCharacter, GENERIC_PULL_CHARACTER, } from './pack'
+import { findCharacter, findPullCharacter } from './pack'
 
 export type MomentId =
   | 'cue.open'
@@ -87,7 +87,13 @@ export interface MomentPresentation {
   readonly characterState: CharacterStateId
   readonly art: AssetSlot
   readonly line: Line
-  /** Present only when the beat brings a Pull character into view. */
+  /**
+   * Whether this beat has a place for the plan's Pull. When it has and
+   * `pullCharacter` is absent, the Pull is self-named: the stage draws a
+   * neutral mark there rather than a creature.
+   */
+  readonly showsPull: boolean
+  /** Present only when the beat brings an authored Pull character into view. */
   readonly pullCharacter?: PullCharacter
   /** @deprecated Use `pullCharacter`; retained for V1 stage components. */
   readonly entity?: PullCharacter
@@ -132,11 +138,12 @@ export function resolveMoment(
     )
   }
 
-  // A cue-arrival beat can bring the matching Pull character into focus.
-  // Someone who named their own Pull has no authored creature, and a blank
-  // space where Corky is plainly looking would read as a missing image.
+  // A cue-arrival beat brings the plan's own Pull character into focus.
+  // Someone who named their own Pull has no authored creature, and the cast
+  // must not lend one: the beat keeps its Pull slot and the stage fills it
+  // with a neutral mark, so the spot Corky is looking at is never blank.
   const pullCharacter = definition.showsEntity
-    ? (findPullCharacter(pack, context.pullId) ?? GENERIC_PULL_CHARACTER)
+    ? findPullCharacter(pack, context.pullId)
     : undefined
 
   return {
@@ -146,6 +153,7 @@ export function resolveMoment(
     characterState: definition.characterState,
     art: character.states[definition.characterState],
     line,
+    showsPull: definition.showsEntity,
     ...(pullCharacter === undefined
       ? {}
       : { pullCharacter, entity: pullCharacter }),
