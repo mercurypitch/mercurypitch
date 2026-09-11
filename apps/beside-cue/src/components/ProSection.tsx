@@ -66,7 +66,7 @@ export function ProSection(props: ProSectionProps) {
     <section class="settings-group" aria-labelledby="pro-settings-title">
       <div class="settings-group__heading">
         <div>
-          <p class="screen-kicker">{copy.t('Support')}</p>
+          <p class="screen-kicker">{copy.t('Support the work')}</p>
           <h2 id="pro-settings-title">{props.name}</h2>
         </div>
         <Show when={props.isPro}>

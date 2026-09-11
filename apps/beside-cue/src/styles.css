@@ -1828,6 +1828,18 @@ svg {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+/* The help and privacy rows are links dressed as the buttons around them. */
+a.settings-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.settings-row:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 5px;
+  box-shadow: 0 0 0 3px var(--paper-light);
+}
+
 .settings-row span {
   display: grid;
   min-width: 0;

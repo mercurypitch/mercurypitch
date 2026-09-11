@@ -8,6 +8,13 @@ import { useCopy } from '@/i18n/ui-copy'
 import type { DeviceSupport } from '@/platform/device-support'
 import { probeDeviceSupport } from '@/platform/device-support'
 
+// Public pages on the marketing site. The app carries no browser plugin: a
+// plain anchor is how it already opens the Google Play redemption page, and
+// the Capacitor shells hand a new-window link to the system browser. In a
+// browser build the same markup opens a new tab without a window.opener.
+const SUPPORT_URL = 'https://about.besidecue.com/support/'
+const PRIVACY_NOTICE_URL = 'https://about.besidecue.com/privacy/'
+
 interface SettingsScreenProps {
   /** Purchase surface, supplied by the shell so this screen stays store-free. */
   proSection?: JSX.Element
@@ -247,6 +254,43 @@ export function SettingsScreen(props: SettingsScreenProps) {
             )}
           </p>
         ) : null}
+      </section>
+      <section class="settings-group" aria-labelledby="help-settings-title">
+        <h2 id="help-settings-title">{copy.t('Help and privacy')}</h2>
+        <a
+          class="settings-row"
+          href={SUPPORT_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>
+            <strong>{copy.t('Support')}</strong>
+            <small>
+              {copy.t('Help, feedback, and contact. Opens in your browser.')}
+            </small>
+          </span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 4h6v6M20 4l-9 9M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" />
+          </svg>
+        </a>
+        <a
+          class="settings-row"
+          href={PRIVACY_NOTICE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>
+            <strong>{copy.t('Privacy notice')}</strong>
+            <small>
+              {copy.t(
+                'How Beside Cue handles your data. Opens in your browser.',
+              )}
+            </small>
+          </span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 4h6v6M20 4l-9 9M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" />
+          </svg>
+        </a>
       </section>
       {/* The version line has always doubled as the way in to what the
           device reports about itself, and nothing said so -- maff went

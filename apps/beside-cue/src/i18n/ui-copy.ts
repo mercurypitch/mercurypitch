@@ -39,7 +39,14 @@ const english = {
   'Yours for good.': 'Yours for good.',
   'Renews {date}.': 'Renews {date}.',
   'Active until {date}.': 'Active until {date}.',
+  'Support the work': 'Support the work',
   Support: 'Support',
+  'Privacy notice': 'Privacy notice',
+  'Help and privacy': 'Help and privacy',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Help, feedback, and contact. Opens in your browser.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'How Beside Cue handles your data. Opens in your browser.',
   Active: 'Active',
   'Purchases need the Android or iOS app.':
     'Purchases need the Android or iOS app.',
@@ -363,7 +370,14 @@ const spanish = {
   'Yours for good.': 'Tuyo para siempre.',
   'Renews {date}.': 'Se renueva el {date}.',
   'Active until {date}.': 'Activo hasta el {date}.',
-  Support: 'Apoyo',
+  'Support the work': 'Apoya el proyecto',
+  Support: 'Ayuda',
+  'Privacy notice': 'Aviso de privacidad',
+  'Help and privacy': 'Ayuda y privacidad',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Ayuda, comentarios y contacto. Se abre en tu navegador.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'Cómo trata Beside Cue tus datos. Se abre en tu navegador.',
   Active: 'Activo',
   'Purchases need the Android or iOS app.':
     'Las compras requieren la app para Android o iOS.',
@@ -686,7 +700,14 @@ const german = {
   'Yours for good.': 'Für immer deins.',
   'Renews {date}.': 'Verlängert sich am {date}.',
   'Active until {date}.': 'Aktiv bis {date}.',
-  Support: 'Unterstützen',
+  'Support the work': 'Unterstütze das Projekt',
+  Support: 'Hilfe',
+  'Privacy notice': 'Datenschutzhinweis',
+  'Help and privacy': 'Hilfe und Datenschutz',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Hilfe, Feedback und Kontakt. Wird im Browser geöffnet.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'Wie Beside Cue mit deinen Daten umgeht. Wird im Browser geöffnet.',
   Active: 'Aktiv',
   'Purchases need the Android or iOS app.':
     'Käufe benötigen die Android- oder iOS-App.',
