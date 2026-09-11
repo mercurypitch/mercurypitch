@@ -120,4 +120,36 @@ describe('under prefers-reduced-motion (P6)', () => {
     expect(impact.frame(0.06)!.timeScale).toBe(1)
     expect(refits).toEqual([1, 1.5])
   })
+
+  // But not the shards. Their clock is the whole elapsed break played on
+  // one config, so answering a switch with the other config would replay
+  // the flight so far on it and move every shard in one frame. The break
+  // they are in keeps the clock it started on; the next one flies by the
+  // new setting.
+  it('keeps the shards on the clock their break started on', () => {
+    let reduced = false
+    const impact = createStageImpact(() => WORLD3D_CONFIG.impact, {
+      reduced: () => reduced,
+      haptic: () => {},
+      screenRatio: () => 3,
+    })
+    const frame = 1 / 60
+    // Switched on half a second after the crack: 0.17 s of flight so far,
+    // which the reduced clock would call a whole second.
+    impact.start(0)
+    const on = impact.frame(0.5)!.shardSeconds
+    reduced = true
+    const onNext = impact.frame(0.5 + frame)!.shardSeconds
+    expect(onNext - on).toBeGreaterThanOrEqual(0)
+    expect(onNext - on).toBeLessThanOrEqual(frame)
+    // A reduced break switched off 3 s in: 6 s of flight, which the full
+    // clock would call 2.7, and debris already settled would move again.
+    impact.start(10)
+    const off = impact.frame(13)!.shardSeconds
+    expect(off).toBeCloseTo(6, 10)
+    reduced = false
+    const offNext = impact.frame(13 + frame)!.shardSeconds
+    expect(offNext - off).toBeGreaterThanOrEqual(0)
+    expect(offNext - off).toBeLessThanOrEqual(2 * frame + 1e-9)
+  })
 })
