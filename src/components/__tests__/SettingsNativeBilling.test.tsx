@@ -12,12 +12,16 @@
 // it after the fact: each case resets the module registry and imports the
 // panel afresh. The Credits tab itself stays either way — only what it can
 // mount changes.
+//
+// The changelog is the same problem one step away: nothing in it takes money,
+// but the release notes it inlines from CHANGELOG.md tell the reader to buy
+// credit packs through Stripe's checkout, and a reviewer reads the binary.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-/** Mount Settings on the Credits tab with the native constant forced. */
-async function renderCreditsTab(isNative: boolean): Promise<void> {
+/** Mount Settings with the native constant forced, on the tab it opens on. */
+async function renderSettings(isNative: boolean): Promise<void> {
   vi.resetModules()
   vi.doMock('@/lib/native-build', () => ({ IS_NATIVE_BUILD: isNative }))
   // Nothing reaches the network from a test process. Both panels fetch
@@ -44,6 +48,11 @@ async function renderCreditsTab(isNative: boolean): Promise<void> {
 
   const { SettingsPanel } = await import('@/components/SettingsPanel')
   render(() => <SettingsPanel />)
+}
+
+/** Mount Settings on the Credits tab with the native constant forced. */
+async function renderCreditsTab(isNative: boolean): Promise<void> {
+  await renderSettings(isNative)
   fireEvent.click(screen.getByTestId('settings-tab-credits'))
 }
 
@@ -87,5 +96,28 @@ describe('SettingsPanel billing surfaces in a native build', () => {
     expect(await screen.findByTestId('donate-panel')).toBeInTheDocument()
     expect(screen.getByTestId('donate-kofi')).toBeInTheDocument()
     expect(hrefs().some((href) => href.includes('ko-fi.com'))).toBe(true)
+  })
+})
+
+describe('SettingsPanel release notes in a native build', () => {
+  it('offers no changelog, so its purchase prose is out of the bundle', async () => {
+    await renderSettings(true)
+
+    // About is on the tab Settings opens on, and everything else about it is
+    // untouched: only the control that mounts the modal is gone.
+    expect(screen.getByTestId('about-version')).toBeInTheDocument()
+    expect(screen.queryByTestId('whats-new-btn')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('changelog-version')).not.toBeInTheDocument()
+  })
+
+  it('opens it on the web, so only the native build loses it', async () => {
+    await renderSettings(false)
+
+    fireEvent.click(screen.getByTestId('whats-new-btn'))
+
+    // The modal is a lazy chunk now, so it arrives a microtask after the
+    // click rather than with it.
+    const versions = await screen.findAllByTestId('changelog-version')
+    expect(versions.length).toBeGreaterThan(0)
   })
 })

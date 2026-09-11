@@ -6,7 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { ChangelogModal } from '@/components/ChangelogModal'
+import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
 import { APP_VERSION, COMMIT_SHA } from '@/lib/defaults'
 import styles from './SupportBadge.module.css'
 
@@ -19,17 +19,33 @@ export const SupportBadge: Component = () => {
   const [showChangelog, setShowChangelog] = createSignal(false)
   return (
     <div class={styles.badge}>
-      <button
-        type="button"
-        class={styles.version}
-        title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA}) — what's new`}
-        aria-label="Show the changelog"
-        onClick={() => setShowChangelog(true)}
+      {/* The store binary has no changelog to open (ChangelogModalSlot says
+          why), so the version reads as a label there rather than as a
+          control that does nothing. */}
+      <Show
+        when={HAS_CHANGELOG}
+        fallback={
+          <span
+            class={styles.version}
+            style="cursor: default;"
+            title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA})`}
+          >
+            v{APP_VERSION}
+          </span>
+        }
       >
-        v{APP_VERSION}
-      </button>
+        <button
+          type="button"
+          class={styles.version}
+          title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA}) — what's new`}
+          aria-label="Show the changelog"
+          onClick={() => setShowChangelog(true)}
+        >
+          v{APP_VERSION}
+        </button>
+      </Show>
       <Show when={showChangelog()}>
-        <ChangelogModal
+        <ChangelogModalSlot
           open={showChangelog()}
           onClose={() => setShowChangelog(false)}
         />

@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
-import { ChangelogModal } from '@/components/ChangelogModal'
+import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { FileText } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
@@ -2217,19 +2217,23 @@ export const SettingsPanel: Component = () => {
                   </span>
                 </Show>
               </div>
-              <button
-                class={styles.whatsNewBtn}
-                data-testid="whats-new-btn"
-                onClick={() => setShowChangelog(true)}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-                  />
-                </svg>
-                What's New
-              </button>
+              {/* No release notes in the store binary -- the store listing
+                  says what changed there. See ChangelogModalSlot. */}
+              <Show when={HAS_CHANGELOG}>
+                <button
+                  class={styles.whatsNewBtn}
+                  data-testid="whats-new-btn"
+                  onClick={() => setShowChangelog(true)}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path
+                      fill="currentColor"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                    />
+                  </svg>
+                  What's New
+                </button>
+              </Show>
               <p
                 class={styles.aboutDesc}
                 data-testid="about-desc"
@@ -2299,7 +2303,7 @@ export const SettingsPanel: Component = () => {
                   Vocal Analysis
                 </span>
               </div>
-              <ChangelogModal
+              <ChangelogModalSlot
                 open={showChangelog()}
                 onClose={() => setShowChangelog(false)}
               />
