@@ -2,6 +2,7 @@ import { Show } from 'solid-js'
 import { AssetStage } from '@/components/AssetStage'
 import type { AssetSlot, CharacterStateId, ContentPack, MomentId, } from '@/content'
 import { DEFAULT_CONTENT_PACK, MOMENTS, resolveMoment } from '@/content'
+import { PREMIUM_PULL_IDS } from '@/content/premium-pulls'
 
 // Kept as the app's name for the mascot's four presentation states. The art,
 // the caption and the spoken line now come from the content pack, so an art or
@@ -31,10 +32,23 @@ const STATE_MOMENTS: Readonly<Record<MascotState, MomentId>> = {
 }
 
 /**
+ * The premium cast's cutouts are cropped to the silhouette, with none of the
+ * transparent margin the free renders keep, so the stage gives them a box of
+ * their own (see `.mascot-stage__pull--token`).
+ */
+function isPremiumPullId(id: string): boolean {
+  return (PREMIUM_PULL_IDS as readonly string[]).includes(id)
+}
+
+/**
  * Stands in for the creature of a self-named Pull: the plan's own Side A
  * label, as the Home pressing draws it, without its words. It is plainly the
  * app's record mark and not a character, so the person's own words are never
  * handed a face from the cast.
+ *
+ * Drawn as a ring, never a disc: the label is a gold annulus with its spindle
+ * hole punched through to the sleeve, rimmed in ink the way the record icon
+ * draws its ring, so at two dozen pixels it reads as a label and not a sun.
  */
 function CustomPullMark() {
   return (
@@ -43,16 +57,32 @@ function CustomPullMark() {
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
-      <circle cx="50" cy="50" r="46" fill="#efc13b" />
       <circle
         cx="50"
         cy="50"
-        r="40"
+        r="30"
+        fill="none"
+        stroke="#efc13b"
+        stroke-width="32"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="44"
         fill="none"
         stroke="#241913"
-        stroke-opacity=".3"
+        stroke-opacity=".45"
+        stroke-width="4"
       />
-      <circle cx="50" cy="50" r="4.5" fill="#fff5dd" />
+      <circle
+        cx="50"
+        cy="50"
+        r="16"
+        fill="none"
+        stroke="#241913"
+        stroke-opacity=".45"
+        stroke-width="4"
+      />
     </svg>
   )
 }
@@ -90,7 +120,11 @@ export function MascotStage(props: MascotStageProps) {
               // the Pull in words, and Corky's own description says a Pull
               // has arrived, so a second description would only repeat it.
               <AssetStage
-                class="mascot-stage__pull"
+                class={
+                  isPremiumPullId(pull().id)
+                    ? 'mascot-stage__pull mascot-stage__pull--token'
+                    : 'mascot-stage__pull'
+                }
                 slot={{ still: pull().token.still, alt: '' }}
                 size={512}
               />

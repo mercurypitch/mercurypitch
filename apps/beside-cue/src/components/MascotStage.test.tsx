@@ -78,9 +78,27 @@ describe('mascot stage', () => {
     expect(sources(container)).toEqual([
       expect.stringMatching(/corky-notice/u) as unknown as string,
       expect.stringMatching(
-        /[/]pull-expansion-v1[/]the-thimble-token-v0_1[.]webp$/u,
+        /[/]art[/]pulls[/]pull-the-thimble-nanobanana-v0_1-512[.]webp$/u,
       ) as unknown as string,
     ])
+  })
+
+  it('insets a premium cutout, which has no margin of its own, and no free render', () => {
+    // A premium still is cropped to the silhouette; in the free cast's box it
+    // stood a third taller and lost its head to the sleeve's top edge.
+    const premium = render(() => (
+      <MascotStage moment="cue.open" pullId="the-thimble" />
+    ))
+    const free = render(() => (
+      <MascotStage moment="cue.open" pullId="scrolling" />
+    ))
+
+    expect(premium.container.querySelector('.mascot-stage__pull')).toHaveClass(
+      'mascot-stage__pull--token',
+    )
+    expect(free.container.querySelector('.mascot-stage__pull')).not.toHaveClass(
+      'mascot-stage__pull--token',
+    )
   })
 
   it('draws the neutral mark, and no creature, for a self-named Pull', () => {
@@ -94,6 +112,26 @@ describe('mascot stage', () => {
       expect.stringMatching(/corky-notice/u) as unknown as string,
     ])
     expect(customMark(container)).not.toBeNull()
+  })
+
+  it('draws the mark as a punched ring the sleeve shows through, not a disc', () => {
+    // At two dozen pixels a filled gold disc read as a dot or a small sun. The
+    // label is an annulus with a real hole, rimmed in ink like the record
+    // icon, and it stays decorative.
+    const { container } = render(() => (
+      <MascotStage moment="cue.open" pullId="custom" />
+    ))
+    const mark = customMark(container)
+    const circles = [...(mark?.querySelectorAll('circle') ?? [])]
+
+    expect(mark).toHaveAttribute('aria-hidden', 'true')
+    expect(circles.length).toBeGreaterThan(0)
+    for (const circle of circles) {
+      expect(circle).toHaveAttribute('fill', 'none')
+    }
+    expect(
+      circles.some((circle) => circle.getAttribute('stroke') === '#efc13b'),
+    ).toBe(true)
   })
 
   it('treats a notice beat with no pull id like a self-named Pull', () => {

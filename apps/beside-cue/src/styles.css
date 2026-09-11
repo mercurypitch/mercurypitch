@@ -443,16 +443,34 @@ svg {
   width: 30%;
 }
 
+/* The still stays inside its box. `.mascot-stage__sleeve img` lets Corky's
+   still set its own height, and a cutout taller than it is wide would grow
+   this bottom-anchored box upward, past the sleeve's top edge, and lose its
+   head to the sleeve's overflow. */
 .mascot-stage__pull .asset-stage__still {
+  height: 100%;
   object-position: 50% 100%;
 }
 
+/* A premium cutout is cropped to the silhouette, with none of the transparent
+   margin the free renders keep, so in the 30% box it would stand a third
+   taller than the free cast and hard against the sleeve's top edge. Its box
+   is the slot the free Pulls actually fill, about 44 by 56 px on a 243 px
+   sleeve, on the same baseline and centre, with at least 8 px to the top
+   edge: both casts stand at one height in one spot. */
+.mascot-stage__pull--token {
+  right: 8.5%;
+  bottom: 73%;
+  width: 18%;
+  aspect-ratio: 7 / 9;
+}
+
 /* A self-named Pull gets the plan's Side A label instead of a creature:
-   smaller, set into the same spot. */
+   small, set into the same spot. */
 .mascot-stage__pull--mark {
-  right: 11.5%;
-  bottom: 75.5%;
-  width: 15%;
+  right: 13%;
+  bottom: 77%;
+  width: 12%;
 }
 
 .mascot-stage__wash {

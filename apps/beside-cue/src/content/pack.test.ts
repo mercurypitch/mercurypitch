@@ -228,7 +228,7 @@ describe('content pack', () => {
     for (const pullCharacter of DEFAULT_CONTENT_PACK.pullCharacters) {
       expect(pullCharacter.token.still).toMatch(
         (PREMIUM_PULL_IDS as readonly string[]).includes(pullCharacter.id)
-          ? /[/]onboarding[/]pull-expansion-v1[/]the-.+-token-v0_1[.]webp$/u
+          ? /[/]art[/]pulls[/]pull-the-.+-nanobanana-v0_1-512[.]webp$/u
           : /[/]art[/]pulls[/]pull-.+-nanobanana-v0_1-512[.]webp$/u,
       )
       expect(pullCharacter.token.alt).toMatch(

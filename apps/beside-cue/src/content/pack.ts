@@ -59,9 +59,11 @@ export interface PullCharacter {
   readonly id: string
   readonly name: string
   /**
-   * The approved render of the creature: a tight transparent cutout, drawn in
-   * the Pull picker and beside Corky at the cue moment. One file per Pull, so
-   * no screen can show a rendition the picker did not.
+   * The approved render of the creature: a transparent cutout, drawn in the
+   * Pull picker and beside Corky at the cue moment. One file per Pull, so no
+   * screen can show a rendition the picker did not. The free cast keeps the
+   * render's transparent margin; the premium cast is cropped to the
+   * silhouette, which the cue-moment stage insets for.
    */
   readonly token: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
@@ -156,11 +158,19 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
   ...PREMIUM_PULL_DEFINITIONS.map((definition) => ({
     id: definition.id,
     name: definition.name,
-    // The same cutout the premium shelf shows in the picker.
-    token: {
-      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
-      alt: definition.name,
-    },
+    // The premium shelf and the cue moment share this one cutout. It is the
+    // character's approved Nano Banana three-quarter still, the same source
+    // the free cast's files come from: <user-dotfiles>/besidecue/assets/
+    // nano_banana_gemini_outputs/new_characters/<id>/transparent/
+    // <id>-still-threequarter.png, cropped to the pixels with alpha above 8
+    // (nothing visible lies outside), fitted to 512 px, saved lossless with
+    // alpha. It replaced the chroma-keyed Flow-frame tokens under
+    // public/onboarding/pull-expansion-v1/, which carried magenta spill and
+    // a soft edge that showed once they stood beside Corky.
+    token: pullToken(
+      `pull-${definition.id}-nanobanana-v0_1-512.webp`,
+      definition.name,
+    ),
     voiceNote:
       'Use this character’s selected voice and preserve the canonical captions.',
   })),
