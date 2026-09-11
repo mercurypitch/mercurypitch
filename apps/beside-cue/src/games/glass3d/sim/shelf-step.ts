@@ -293,11 +293,17 @@ export const stepShelf = (
   }
 }
 
-/** The room is climbed: what its leaps came to, in §7's units. */
-export const finishRoom = (climb: ShelfClimb): ShelfStats =>
-  statsOf(climb.grades)
+/** The room is climbed: what its leaps came to, in §7's units. He
+ * stands up out of any crouch as it is: readying only changes inside a
+ * step, the stage steps no more after this, and `easeCrouch` goes on. */
+export const finishRoom = (climb: ShelfClimb): ShelfStats => {
+  climb.readying = false
+  return statsOf(climb.grades)
+}
 
-/** The crouch, eased toward readying over a frame of `seconds`. */
+/** The crouch, eased toward readying over a frame of `seconds`. A frame,
+ * not a step: the stage eases it between rooms and after the last, when
+ * no step runs. */
 export const easeCrouch = (climb: ShelfClimb, seconds: number): void => {
   climb.crouch +=
     ((climb.readying ? 1 : 0) - climb.crouch) *

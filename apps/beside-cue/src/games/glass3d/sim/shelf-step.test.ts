@@ -11,7 +11,7 @@ import { LEAP_CARRY_MAX, MITT_SPAN, SHELF_1, SHELF_3, topsOf, } from '../levels/
 import { WORLD3D_CONFIG } from '../world3d-config'
 import { NO_LEAPS } from './shelf-grade'
 import type { ShelfClimb, ShelfStep } from './shelf-step'
-import { closeWalls, createClimb, stepShelf } from './shelf-step'
+import { closeWalls, createClimb, easeCrouch, finishRoom, stepShelf, } from './shelf-step'
 
 const CFG = WORLD3D_CONFIG.locomotion
 const DT = WORLD3D_CONFIG.loop.stepSeconds
@@ -158,5 +158,30 @@ describe('the flash at the apex', () => {
     expect(flashes).toHaveLength(1)
     expect(flashes[0]!.label).toBe('P5')
     expect(flashes[0]!.y).toBeCloseTo(topsOf(SHELF_1)[1]!, 3)
+  })
+})
+
+// The crouch eases toward readying on every frame, but readying only
+// changes inside a step, and the stage steps no more once a room is
+// climbed: finishing the room has to let it go.
+describe('a crouch held to the exit', () => {
+  it('lets go when the room is climbed, though no step follows', () => {
+    const top = SHELF_3.shelves.length - 1
+    const climb = standAt(SHELF_3, top, SHELF_3.shelves[top]!.from + HALF)
+    sing(climb, 64, 0.3)
+    // Down to a comfortable note: he readies, and walks out holding it.
+    sing(climb, 57, 0.3)
+    expect(climb.readying).toBe(true)
+    let arrived = false
+    for (let i = 0; i < Math.round(5 / DT) && !arrived; i++) {
+      arrived = stepShelf(climb, 57, 1, DT).arrived
+      easeCrouch(climb, DT)
+    }
+    expect(arrived).toBe(true)
+    expect(climb.crouch).toBeGreaterThan(0.9)
+    // The stage finishes the room and stops stepping; its frames go on.
+    finishRoom(climb)
+    for (let i = 0; i < 60; i++) easeCrouch(climb, 1 / 60)
+    expect(climb.crouch).toBeLessThan(0.01)
   })
 })
