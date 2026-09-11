@@ -28,6 +28,20 @@ const APPLE_REVOKE_URL = 'https://appleid.apple.com/auth/revoke'
 /** Apple rotates signing keys rarely and publishes several at once. */
 const JWKS_TTL_MS = 24 * 60 * 60 * 1000
 
+/**
+ * How long a `kid` Apple has not published stays remembered as unknown. Long
+ * enough that a flood of bogus tokens costs one fetch, short enough that a
+ * key genuinely minted during the window is picked up within ten minutes.
+ */
+const UNKNOWN_KID_TTL_MS = 10 * 60 * 1000
+
+/**
+ * Cap on that memory. The keys are strings an unauthenticated caller chose,
+ * so the map is bounded and evicts oldest-first rather than growing with
+ * whatever a script feeds it.
+ */
+const UNKNOWN_KID_MAX = 64
+
 /** Clock slack on `exp`, matching the tolerance Apple's own samples use. */
 const CLOCK_SKEW_SECONDS = 60
 
@@ -98,9 +112,26 @@ interface JwksCache {
  */
 let jwksCache: JwksCache | null = null
 
+/**
+ * Kids Apple did not publish, and when we learned that. Insertion-ordered,
+ * so the entry evicted at the cap is the oldest one.
+ */
+const unknownKids = new Map<string, number>()
+
 /** Exported for tests — module state outlives a single `it`. */
 export function resetAppleJwksCache(): void {
   jwksCache = null
+  unknownKids.clear()
+}
+
+function rememberUnknownKid(kid: string): void {
+  unknownKids.delete(kid)
+  unknownKids.set(kid, Date.now())
+  while (unknownKids.size > UNKNOWN_KID_MAX) {
+    const oldest = unknownKids.keys().next()
+    if (oldest.done === true) break
+    unknownKids.delete(oldest.value)
+  }
 }
 
 async function fetchAppleJwks(): Promise<AppleJwk[]> {
@@ -121,9 +152,15 @@ async function fetchAppleJwks(): Promise<AppleJwk[]> {
  * The key a token names, refetching at most once.
  *
  * An unknown `kid` is the signal that Apple has rotated, so it forces one
- * refetch even while the cache is fresh — and only one, because a token
- * naming a key that does not exist is otherwise a free way to make every
- * request fan out to Apple.
+ * refetch even while the cache is fresh. Once. A `kid` that comes back
+ * unknown after that refetch is remembered as unknown for
+ * UNKNOWN_KID_TTL_MS, because otherwise a stream of tokens naming a bogus
+ * one is a free way for an unauthenticated caller to make every request fan
+ * out to appleid.apple.com — and the throttling that would follow lands on
+ * real sign-ins, not on the flood.
+ *
+ * A negative entry is only ever written immediately after a fetch, so it can
+ * never be staler than the key set it contradicts.
  */
 async function appleSigningKey(kid: string): Promise<AppleJwk | null> {
   const cached = jwksCache
@@ -131,8 +168,15 @@ async function appleSigningKey(kid: string): Promise<AppleJwk | null> {
     const hit = cached.keys.find((key) => key.kid === kid)
     if (hit !== undefined) return hit
   }
+  const deniedAt = unknownKids.get(kid)
+  if (deniedAt !== undefined && Date.now() - deniedAt < UNKNOWN_KID_TTL_MS) {
+    return null
+  }
   const keys = await fetchAppleJwks()
-  return keys.find((key) => key.kid === kid) ?? null
+  const rotated = keys.find((key) => key.kid === kid) ?? null
+  if (rotated === null) rememberUnknownKid(kid)
+  else unknownKids.delete(kid)
+  return rotated
 }
 
 // ── Token verification ───────────────────────────────────────────────

@@ -303,6 +303,41 @@ describe('the JWKS cache', () => {
     expect(rotated).not.toBeNull()
   })
 
+  it('refetches once for a flood of tokens naming a key that does not exist', async () => {
+    // Without the negative cache this is a free amplifier: an unauthenticated
+    // caller sends tokens naming a bogus kid and every single one forces its
+    // own round trip to appleid.apple.com, whose throttling then lands on
+    // real sign-ins rather than on the flood.
+    const fetchMock = stubJwks()
+    const bogus = await signToken(identityClaims(), { kid: 'NOSUCHKID' })
+    expect(await verifyAppleIdentityToken(bogus, [CLIENT_ID])).toBeNull()
+    expect(await verifyAppleIdentityToken(bogus, [CLIENT_ID])).toBeNull()
+    expect(await verifyAppleIdentityToken(bogus, [CLIENT_ID])).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks about a refused kid again once the refusal has aged out', async () => {
+    stubJwks()
+    const token = await signToken(
+      identityClaims({ exp: Math.floor(Date.now() / 1000) + 3600 }),
+      { kid: 'LATERKID' },
+    )
+    expect(await verifyAppleIdentityToken(token, [CLIENT_ID])).toBeNull()
+
+    // Apple publishes the key. Nothing changes while the refusal is fresh,
+    // which is the whole point of remembering it...
+    const rotated = stubJwks('LATERKID')
+    expect(await verifyAppleIdentityToken(token, [CLIENT_ID])).toBeNull()
+    expect(rotated).not.toHaveBeenCalled()
+
+    // ...and eleven minutes on the key is picked up, so a refusal is never
+    // permanent: a real rotation costs at most one TTL of 401s.
+    const elevenMinutesOn = Date.now() + 11 * 60 * 1000
+    vi.spyOn(Date, 'now').mockReturnValue(elevenMinutesOn)
+    expect(await verifyAppleIdentityToken(token, [CLIENT_ID])).not.toBeNull()
+    expect(rotated).toHaveBeenCalledTimes(1)
+  })
+
   it('refuses rather than throwing when Apple cannot be reached', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.stubGlobal(
