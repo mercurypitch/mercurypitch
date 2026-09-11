@@ -77,6 +77,8 @@ let accumulatedMs = 0
 let clockTimer: ReturnType<typeof setInterval> | null = null
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 let announcedThisRun = false
+/** What a parked run is, for as long as its room is not mounted. See liveRun. */
+let parkedLatch: 'paused' | null = null
 
 function stopClockTimer(): void {
   if (clockTimer !== null) clearInterval(clockTimer)
@@ -149,6 +151,18 @@ const liveRun = createMemo<'active' | 'paused' | 'idle'>(() => {
     if (controls.isPaused()) return 'paused'
     return 'idle'
   }
+
+  // NOBODY REGISTERED IS NOT THE SAME AS NOBODY RUNNING. Leaving a room
+  // unmounts it, so a parked run has no controls to read — and reading the
+  // global store there answers 'stopped', which the machine settles as an
+  // ended run. Measured: the pill appeared on the first tab after parking and
+  // was gone by the second, while the room's own controller sat paused
+  // mid-run. Brief §6: the pill sits in the dock on every other tab.
+  //
+  // So parking latches. The latch is only ever consulted while no room is
+  // registered, and it is dropped the moment the run's owner is let go of.
+  if (parkedLatch !== null && untrack(runOwner) !== null) return parkedLatch
+
   const state = playbackState()
   if (state === 'playing') return 'active'
   if (state === 'paused') return 'paused'
@@ -269,6 +283,9 @@ export function parkRun(): void {
   // that never led anywhere cannot silence an unrelated leave later.
   if (owner !== null) markRunParked(owner)
   nativeRunControls()?.park()
+  // What the run is once the room that owns it unmounts. Held until the
+  // singer comes back to it, or until the owner is let go of.
+  parkedLatch = 'paused'
 }
 
 export function pauseRun(): void {
@@ -329,6 +346,7 @@ export function resetRunShell(): void {
   stopClockTimer()
   settled = 'idle'
   idlePending = false
+  parkedLatch = null
   startedAt = null
   accumulatedMs = 0
   announcedThisRun = false
@@ -377,6 +395,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
       setLocked(false)
     }
     setTakeOnScreen(false)
+    parkedLatch = null
     if (untrack(runOwner) === null) {
       const controls = nativeRunControls()
       setRunOwner(controls?.tab ?? untrack(activeTab))
@@ -398,6 +417,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
   // Settled idle: the run is over. The owner is NOT cleared here — `ended`
   // means the take is still on screen, in the room it happened in, and the
   // effect below lets go of it when the singer leaves.
+  parkedLatch = null
   holdClock()
   if (previous === 'active' || previous === 'paused') setTakeOnScreen(true)
   setLocked(false)
@@ -442,6 +462,7 @@ createRoot(() => {
       setTakeOnScreen(false)
       setRunOwner(null)
       setRunLabel('')
+      parkedLatch = null
     }),
   )
 })

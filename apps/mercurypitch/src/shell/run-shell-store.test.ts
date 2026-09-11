@@ -14,7 +14,7 @@
 
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TAB_EAR_LAB, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_EAR_LAB, TAB_HOME, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
@@ -250,6 +250,21 @@ describe('parking', () => {
     expect(consumeRunParked(TAB_SINGING)).toBe(false)
   })
 
+  it('does not leave its mark lying about for a later, unrelated leave', () => {
+    // The mark is read unconditionally at the top of the tab transition, so a
+    // park that never led anywhere is spent by the next leave of any tab
+    // rather than silencing the next leave of Sing.
+    const room = mount()
+    room.play()
+
+    parkRun()
+
+    // The transition that follows is about another tab entirely.
+    expect(consumeRunParked(TAB_PROGRESS)).toBe(false)
+    // ...and the mark is gone with it.
+    expect(consumeRunParked(TAB_SINGING)).toBe(false)
+  })
+
   it('does not silence the cleanup for a tab it did not park', () => {
     const room = mount()
     room.play()
@@ -257,6 +272,50 @@ describe('parking', () => {
     parkRun()
 
     expect(consumeRunParked(TAB_PROGRESS)).toBe(false)
+  })
+
+  it('keeps the pill for every tab, not just the first one after leaving', async () => {
+    // The room unmounts when the singer leaves it, so a parked run has no
+    // controls to read. Answering from the global store there settled the run
+    // as ended, and the pill was gone by the second tab — while the room's own
+    // controller sat paused mid-run.
+    const room = mount()
+    room.play()
+    parkRun()
+    await settled()
+
+    // Leaving unmounts the room, which takes its registration with it.
+    unregister?.()
+    unregister = null
+
+    for (const tab of [TAB_PROGRESS, TAB_EAR_LAB, TAB_HOME]) {
+      setActiveTab(tab)
+      await settled()
+      expect(runState()).toBe('paused')
+      expect(parked()).toBe(true)
+      expect(runOwner()).toBe(TAB_SINGING)
+      expect(runLabel()).toBe('Sing')
+    }
+
+    // And the way back still works: the room remounts, still paused.
+    setActiveTab(TAB_SINGING)
+    unregister = registerRunControls(room.controls)
+    await settled()
+    expect(runState()).toBe('paused')
+    expect(parked()).toBe(false)
+    expect(transportVisible()).toBe(true)
+  })
+
+  it('lets go of the latch when the run finally ends', async () => {
+    const room = mount()
+    room.play()
+    parkRun()
+    await settled()
+
+    room.controls.stop()
+    await settled()
+
+    expect(runState()).toBe('ended')
   })
 
   it('has nothing to park when no run is going', () => {
