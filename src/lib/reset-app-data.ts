@@ -31,6 +31,7 @@
 
 import { MERCURY_PITCH_DB_NAME } from '@/db/adapters/dexie-adapter'
 import { MODEL_CACHE_DB_NAME } from './model-cache'
+import { flushStoragePort, PORTED_KEYS, removeStored } from './storage-port'
 
 export type ResetScope = 'settings' | 'database' | 'factory'
 
@@ -110,6 +111,17 @@ export interface ResetEnv {
   sessionStorage: Pick<Storage, 'clear'>
   caches?: Pick<CacheStorage, 'keys' | 'delete'>
   swContainer?: Pick<ServiceWorkerContainer, 'getRegistrations'>
+  /**
+   * Forget the identity keys wherever they really live.
+   *
+   * `localStorage.clear()` is the whole story on the web and only half of it
+   * inside an app shell, where `mp:userId`, `mp:deviceSecret` and
+   * `mp:authToken` are held by `@capacitor/preferences` — which a
+   * localStorage clear does not touch. Without this, a factory reset on a
+   * phone would leave the device wearing the same account it was asked to
+   * forget.
+   */
+  clearIdentity: () => Promise<void>
 }
 
 /** Close every database connection this page holds. */
@@ -145,6 +157,10 @@ function defaultEnv(): ResetEnv {
     deleteIdb: deleteIdbByName,
     localStorage,
     sessionStorage,
+    clearIdentity: async () => {
+      for (const key of PORTED_KEYS) removeStored(key)
+      await flushStoragePort()
+    },
     caches: typeof caches === 'undefined' ? undefined : caches,
     swContainer:
       typeof navigator !== 'undefined' && 'serviceWorker' in navigator
@@ -214,6 +230,10 @@ export async function resetAppData(
         env.sessionStorage.clear()
         break
       case 'storage':
+        // The port first: it is the one that can fail, and a half-cleared
+        // reset should stop before it has already thrown the local copies
+        // away.
+        await env.clearIdentity()
         env.localStorage.clear()
         env.sessionStorage.clear()
         break

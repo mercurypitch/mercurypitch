@@ -696,6 +696,21 @@ describe('login and register', () => {
       deviceSecret: expect.stringMatching(/^[A-Za-z0-9_-]{22,128}$/),
     })
   })
+
+  it('hands a Google second factor back as a challenge, not as an error', async () => {
+    // This route CAN be challenged, so it must not go through `postAuth`,
+    // which turns a challenge into a synthetic 409. Native Google sign-in is
+    // the only caller, and it maps an unrecognised numeric status to
+    // `network` — so the singer with 2FA on was told their phone was
+    // offline, on every attempt, with no code pane to finish in.
+    mockFetchOnce(200, { twofaRequired: true, ceremony: 'ceremony-token' })
+
+    const res = await loginWithGoogle('google-id-token')
+
+    expect(isTwofaChallenge(res)).toBe(true)
+    // The token was right and that alone buys nothing, same as password.
+    expect(getAuthToken()).toBeNull()
+  })
 })
 
 describe('authenticated account endpoints', () => {

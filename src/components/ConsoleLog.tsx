@@ -27,6 +27,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import { Copy, Trash2, X } from '@/components/icons'
+import { developerSections } from '@/lib/developer-sections'
 import { clearConsoleLogs, consoleLogs, formatConsoleLogs, showConsoleLog, } from '@/stores/console-store'
 import styles from '@/styles/ConsoleLog.module.css'
 
@@ -102,6 +103,28 @@ const Controls: Component<{ onHide?: () => void }> = (props) => (
   </div>
 )
 
+/**
+ * Whatever this build registered above the log.
+ *
+ * Renders nothing when nothing registered, which is every web page load —
+ * sections exist for a signed binary with no devtools behind it. See
+ * `src/lib/developer-sections.ts`.
+ */
+const Sections: Component = () => (
+  <Show when={developerSections().length > 0}>
+    <div class={styles.consoleLogSections} data-testid="console-log-sections">
+      <For each={developerSections()}>
+        {(section) => (
+          <section class={styles.consoleLogSection}>
+            <h5 class={styles.consoleLogSectionTitle}>{section.title}</h5>
+            {section.render()}
+          </section>
+        )}
+      </For>
+    </div>
+  </Show>
+)
+
 const Messages: Component = () => {
   let scroller: HTMLDivElement | undefined
 
@@ -148,6 +171,7 @@ export const ConsoleLog: Component = () => (
       <h4 class={styles.consoleLogTitle}>Developer Console</h4>
       <Controls />
     </div>
+    <Sections />
     <Messages />
   </div>
 )
@@ -190,6 +214,7 @@ export const FloatingConsole: Component = () => {
               <h4 class={styles.consoleLogTitle}>Developer Console</h4>
               <Controls onHide={() => setOpen(false)} />
             </div>
+            <Sections />
             <Messages />
           </div>
         </Show>

@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   showNotification: vi.fn(),
   returningPromptDismissed: vi.fn(() => false),
   dismissReturningPrompt: vi.fn(),
+  passkeysSupported: vi.fn(() => true),
 }))
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
@@ -64,6 +65,9 @@ vi.mock('@/stores/notifications-store', () => ({
 vi.mock('@/lib/webauthn', () => ({
   describeWebAuthnError: (err: unknown) =>
     err instanceof Error ? err.message : '',
+  // True here, because these specs are the web surface. The shells answer
+  // false and the strip drops the passkey offer — covered below.
+  passkeysSupported: () => mocks.passkeysSupported(),
 }))
 
 import { ReturningSignIn } from '@/components/account/ReturningSignIn'
@@ -78,6 +82,7 @@ beforeEach(() => {
   mocks.lastSignInMethod.mockReturnValue('passkey')
   mocks.isFirstRun.mockReturnValue(false)
   mocks.returningPromptDismissed.mockReturnValue(false)
+  mocks.passkeysSupported.mockReturnValue(true)
 })
 
 afterEach(() => {
@@ -174,6 +179,21 @@ describe('when it stays out of the way', () => {
 })
 
 describe('when it offers a way back in', () => {
+  it('drops the passkey offer where passkeys are not supported', async () => {
+    // Both app shells answer false. `PublicKeyCredential` is declared in each
+    // WebView and the ceremony still fails at the system dialog, so the one
+    // button this strip exists to show would open a dialog saying no. The way
+    // out stays: "Another way" opens the modal, where the native providers are.
+    mocks.passkeysSupported.mockReturnValue(false)
+    render(() => <ReturningSignIn />)
+
+    const strip = await screen.findByTestId('returning-signin')
+    expect(screen.queryByTestId('returning-signin-action')).toBeNull()
+    expect(
+      strip.querySelector('[data-testid="returning-signin-other"]'),
+    ).toBeTruthy()
+  })
+
   it('offers the passkey, and never names the person', async () => {
     // Privacy: the strip knows only the method. A shared laptop must not
     // announce who practices on it.

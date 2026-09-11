@@ -162,3 +162,37 @@
   color: var(--text-muted, #8b98a5);
   text-align: center;
 }
+
+/* ── Registered sections ─────────────────────────────────────
+
+   Extra panels a build adds above the log (src/lib/developer-sections.ts).
+   Absent on every web page load, so they cost nothing there; inside an app
+   shell they are the only way to reach a switch, because a signed binary on
+   somebody else's phone has no devtools behind it.
+
+   Scrollable in their own right: the panel's height is already the smaller of
+   60vh and 24rem, and a section that pushed the log off the bottom would take
+   away the thing the console is for. */
+.consoleLogSections {
+  flex: 0 1 auto;
+  overflow-y: auto;
+  max-height: 55%;
+  border-bottom: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogSection {
+  padding: 0.5rem 0.75rem 0.65rem;
+}
+
+.consoleLogSection + .consoleLogSection {
+  border-top: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogSectionTitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b98a5);
+}
