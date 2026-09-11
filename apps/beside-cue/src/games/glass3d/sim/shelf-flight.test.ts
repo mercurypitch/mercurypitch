@@ -8,7 +8,8 @@
 // steps him: the voice launches him, then the wall, then the step.
 
 import { describe, expect, it } from 'vitest'
-import { groundFor, leapHeight, MITT_SPAN, riserWallAt, SHELF_1, topsOf, } from '../levels/shelf'
+import type { ShelfLevel } from '../levels/shelf'
+import { groundFor, leapHeight, MITT_SPAN, riserWallAt, SHELF_1, SHELF_2, topsOf, } from '../levels/shelf'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import { createLocomotion, leapVelocity, stepLocomotion } from './locomotion3d'
 
@@ -20,25 +21,44 @@ const RISER = SHELF_1.shelves[1]!.from
 const AT_RISER = RISER - HALF
 const LIP = topsOf(SHELF_1)[1]!
 
-/** A leap of `semis` from a standstill at `x` on room 1's floor, carried
- * toward the shelf at walking pace. Where and when he comes down. */
-const fly = (x: number, semis: number) => {
+/** A leap of `semis` from a standstill at `x`, on the shelf whose top is
+ * `y`, carried toward the next at walking pace. Where and when he comes
+ * down. Room 1's floor unless told otherwise. */
+const fly = (x: number, semis: number, room = SHELF_1, y = 0) => {
   const s = createLocomotion(x)
+  s.y = y
   s.vy = leapVelocity(leapHeight(0, semis)!, CFG, DT)
   s.grounded = false
-  const ground = groundFor(SHELF_1, HALF)
+  const ground = groundFor(room, HALF)
   let t = 0
   do {
-    const wall = riserWallAt(SHELF_1, s.x, s.y, HALF)
+    const wall = riserWallAt(room, s.x, s.y, HALF)
     const walls = {
       ...CFG,
       minX: HALF,
-      maxX: Math.min(SHELF_1.length - HALF, wall),
+      maxX: Math.min(room.length - HALF, wall),
     }
     stepLocomotion(s, { move: 1, jump: false }, ground, DT, walls)
     t += DT
   } while (!s.grounded && t < 3)
   return { t, x: s.x, y: s.y }
+}
+
+/** Room 1 with its riser swapped for one of `semis`, so every ask can
+ * be flown at the same riser. */
+const stairOf = (semis: number): ShelfLevel => ({
+  ...SHELF_1,
+  shelves: [SHELF_1.shelves[0]!, { ...SHELF_1.shelves[1]!, rise: semis }],
+})
+
+/** The furthest short of the riser a leap of exactly its rise can be
+ * sung, to the centimetre, and still land on it. */
+const reach = (semis: number): number => {
+  const room = stairOf(semis)
+  const lip = topsOf(room)[1]!
+  let d = 0
+  while (fly(AT_RISER - (d + 0.01), semis, room).y === lip) d += 0.01
+  return d
 }
 
 describe('a leap in the air', () => {
@@ -56,16 +76,30 @@ describe('a leap in the air', () => {
 })
 
 describe('the carry', () => {
-  /** The furthest a fifth can be sung from the riser, to the centimetre,
-   * and still land on the shelf. */
-  const reach = (): number => {
-    let d = 0
-    while (fly(AT_RISER - (d + 0.01), 7).y === LIP) d += 0.01
-    return d
-  }
-
   it('takes a fifth to the shelf from 0.62 m short of the riser, and no further', () => {
-    expect(reach()).toBeCloseTo(0.62, 2)
+    expect(reach(7)).toBeCloseTo(0.62, 2)
+  })
+
+  it('takes a smaller leap less far: it is in the air for less', () => {
+    const cm = (m: number): number => Math.round(m * 100)
+    expect([3, 4, 5, 7].map((semis) => cm(reach(semis)))).toEqual([
+      43, 48, 53, 62,
+    ])
+  })
+
+  it('so the minor third of room 2, sung where the last leap left him, falls short (§11, 6c)', () => {
+    // The carry walks him on until all of him is past the lip (6b); on
+    // a shelf 1.0 m deep that leaves his mitt 0.47 m short of the next
+    // riser, and a minor third carries 0.43.
+    const tops = topsOf(SHELF_2)
+    const riser = SHELF_2.shelves[3]!
+    expect(riser.rise).toBe(3)
+    const boarded = SHELF_2.shelves[2]!.from + HALF
+    expect(riser.from - HALF - boarded).toBeCloseTo(0.47, 9)
+    const hop = fly(boarded, 3, SHELF_2, tops[2])
+    expect(hop.y).toBe(tops[2])
+    // Walked to the riser first, the same third lands.
+    expect(fly(riser.from - HALF, 3, SHELF_2, tops[2]).y).toBe(tops[3])
   })
 
   it('so a fifth sung at room 1 start line is a hop that lands 0.3 m short', () => {
