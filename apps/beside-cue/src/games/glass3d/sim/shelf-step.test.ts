@@ -126,3 +126,37 @@ describe('an aimed leap past its apex', () => {
     expect(climb.loco.vx).toBeLessThan(0)
   })
 })
+
+// §6: at each leap's apex a line flashes at the height reached. The
+// catch lifts a flat leap onto the lip on the step it tops out, and the
+// lip is not a height he reached: the gap is what the ruler shows.
+describe('the flash at the apex', () => {
+  /** At room 1's riser with 57 held, sing `midi`: the flashes, and
+   * where he came down. */
+  const flashesFor = (midi: number) => {
+    const climb = standAt(SHELF_1, 0, SHELF_1.shelves[1]!.from - HALF)
+    sing(climb, 57, 0.3)
+    const flashes = sing(climb, midi, 0.8).flatMap((s) =>
+      s.flash === null ? [] : [s.flash],
+    )
+    return { climb, flashes }
+  }
+
+  it('is at the height reached, not the lip the catch lifts him onto: a fifth 40 cents flat', () => {
+    const { climb, flashes } = flashesFor(63.6)
+    expect(climb.standingOn).toBe(1)
+    expect(flashes).toHaveLength(1)
+    expect(flashes[0]!.label).toBe('P5 -40¢')
+    expect(flashes[0]!.x).toBe(SHELF_1.shelves[1]!.from)
+    expect(flashes[0]!.y).toBeCloseTo(0.66, 3)
+    expect(climb.apex).toBeCloseTo(0.66, 3)
+  })
+
+  it('is at the lip for an exact fifth, which tops out there', () => {
+    const { climb, flashes } = flashesFor(64)
+    expect(climb.standingOn).toBe(1)
+    expect(flashes).toHaveLength(1)
+    expect(flashes[0]!.label).toBe('P5')
+    expect(flashes[0]!.y).toBeCloseTo(topsOf(SHELF_1)[1]!, 3)
+  })
+})
