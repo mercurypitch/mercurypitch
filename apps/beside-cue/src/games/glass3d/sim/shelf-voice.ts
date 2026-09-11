@@ -10,6 +10,11 @@
 //   at or below it, on the ground        the reference moves; he readies
 //   anything, in the air                 the reference moves; nothing else
 //
+// Above is by at least `MIN_LEAP_SEMIS`, the tracker's own half
+// semitone. A stop nearer the reference than that is the note held
+// again -- a tail that flicked up and settled a few cents sharp, a
+// re-attack scooped in from below -- and counts as at it.
+//
 // EVERY STOP BECOMES THE REFERENCE, whichever case it is. That is what
 // makes down free (D1): the next leap is measured from the last note
 // held, wherever it was held, so each is sung from somewhere comfortable
@@ -38,7 +43,8 @@ export const emptyVoice = (): ShelfVoice => ({
 })
 
 export type VoiceStop =
-  /** A stop above the reference, sung on the ground: he leaps. */
+  /** A stop at least `MIN_LEAP_SEMIS` above the reference, sung on the
+   * ground: he leaps. */
   | {
       readonly kind: 'leap'
       readonly stop: number
@@ -48,8 +54,9 @@ export type VoiceStop =
       /** Metres, capped at `MAX_LEAP`. */
       readonly height: number
     }
-  /** A stop on the ground at or below the reference, or the first stop
-   * of all: the reference moves, and he crouches a little, readying. */
+  /** A stop on the ground less than `MIN_LEAP_SEMIS` above the
+   * reference, on it or below it, or the first stop of all: the
+   * reference moves, and he crouches a little, readying. */
   | { readonly kind: 'ready'; readonly stop: number }
   /** A stop in the air: the reference moves, and that is all. */
   | { readonly kind: 'held'; readonly stop: number }

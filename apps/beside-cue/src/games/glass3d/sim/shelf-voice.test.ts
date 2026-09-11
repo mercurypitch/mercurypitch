@@ -2,9 +2,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { MAX_LEAP, RISE_PER_SEMI } from '../levels/shelf'
+import { MAX_LEAP, MIN_LEAP_SEMIS, RISE_PER_SEMI } from '../levels/shelf'
 import { WORLD3D_CONFIG } from '../world3d-config'
-import { STOP_HOLD_SECONDS } from './line-grade'
+import { SLIDE_SEMIS, STOP_HOLD_SECONDS } from './line-grade'
 import type { ShelfVoice, VoiceStop } from './shelf-voice'
 import { emptyVoice, intervalLabel, intervalName, voiceStep, } from './shelf-voice'
 
@@ -101,6 +101,57 @@ describe('a leap', () => {
     const [leap] = hold(v, 67, 0.3)
     if (leap?.kind !== 'leap') throw new Error('a minor third up is a leap')
     expect(leap.interval).toBe(3)
+  })
+})
+
+// A new stop needs the tracker's half semitone of leaving, but not of
+// arriving: a note's tail can flick up and settle a few cents from where
+// it was, and a re-attack can scoop in from below. That is the same note
+// held again, and it only readies him.
+describe('a stop less than half a semitone above the reference', () => {
+  it('is the tracker own half semitone, the least leap', () => {
+    expect(MIN_LEAP_SEMIS).toBe(SLIDE_SEMIS)
+  })
+
+  it('readies him when a tail flicks up 0.6 for 30 ms and settles 20 cents sharp', () => {
+    const v = emptyVoice()
+    hold(v, 57, 0.3)
+    hold(v, 64, 0.3)
+    expect(hold(v, 64.6, 0.03)).toEqual([])
+    expect(hold(v, 64.2, 0.3)).toEqual([{ kind: 'ready', stop: 64.2 }])
+    // Still the reference, as a stop below it would be.
+    expect(v.reference).toBe(64.2)
+  })
+
+  it('readies him when a re-attack scoops up from below and settles 25 cents sharp', () => {
+    const v = emptyVoice()
+    hold(v, 55, 0.3)
+    hold(v, null, 0.3)
+    hold(v, 54, 0.02)
+    hold(v, 54.6, 0.02)
+    expect(hold(v, 55.25, 0.3)).toEqual([{ kind: 'ready', stop: 55.25 }])
+  })
+
+  it('readies him when it re-settles 5 cents sharp', () => {
+    const v = emptyVoice()
+    hold(v, 57, 0.3)
+    hold(v, 57.7, 0.03)
+    expect(hold(v, 57.05, 0.3)).toEqual([{ kind: 'ready', stop: 57.05 }])
+  })
+
+  it('leaps from half a semitone, and not from 45 cents', () => {
+    const under = emptyVoice()
+    hold(under, 57, 0.3)
+    hold(under, 58, 0.03)
+    expect(hold(under, 57.45, 0.3)).toEqual([{ kind: 'ready', stop: 57.45 }])
+
+    const least = emptyVoice()
+    hold(least, 57, 0.3)
+    hold(least, 58, 0.03)
+    const [leap] = hold(least, 57.5, 0.3)
+    if (leap?.kind !== 'leap') throw new Error('half a semitone up is a leap')
+    expect(leap.interval).toBe(0.5)
+    expect(leap.height).toBeCloseTo(0.5 * RISE_PER_SEMI, 10)
   })
 })
 

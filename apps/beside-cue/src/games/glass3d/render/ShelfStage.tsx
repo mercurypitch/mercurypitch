@@ -27,7 +27,7 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
-import { CATCH, MAX_LEAP, RISE_PER_SEMI } from '../levels/shelf'
+import { CATCH, MAX_LEAP, MIN_LEAP_SEMIS, RISE_PER_SEMI } from '../levels/shelf'
 import { keepBest, readStats, writeStats } from '../levels/shelf-stats'
 import { shelfTrack } from '../levels/shelf-track'
 import { createLoopState, runLoop } from '../runtime/loop'
@@ -434,11 +434,12 @@ export const ShelfStage = (props: ShelfStageProps) => {
   }
 
   /** What the voice is doing, in the room's own words: a leap is an
-   * interval, so the HUD names the one being sung. */
+   * interval, so the HUD names the one being sung -- from the least
+   * leap up; under it a stop would only ready him, and it says so. */
   const voiceWord = (): string => {
     const a = above()
     if (a === null) return 'hold a note'
-    if (a <= 0.5) return 'ready'
+    if (a < MIN_LEAP_SEMIS) return 'ready'
     return intervalLabel(a)
   }
 

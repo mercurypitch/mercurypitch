@@ -39,7 +39,8 @@ slide tracker (`sim/line-grade.ts`: held within a tenth of a semitone
 for 150 ms, and a new stop only after leaving the last one by more than
 half a semitone). The last stop is the reference.
 
-**3.2 The leap.** A stop ABOVE the reference is a leap. Its apex is
+**3.2 The leap.** A stop ABOVE the reference is a leap, from half a
+semitone up (`MIN_LEAP_SEMIS`, the slide tracker's own). Its apex is
 `(stop - reference) * RISE_PER_SEMI` -- 0.1 m per semitone (T1) --
 capped at `MAX_LEAP`, 0.9 m. He leaves the ground with the velocity
 that reaches that apex under the locomotion's own gravity, and is
@@ -54,8 +55,9 @@ at walking pace. The stop fires it. There is no button: the jump
 button is hidden in this world (`jump: false`), and walking alone never
 climbs.
 
-**3.3 Down is free.** A stop BELOW the reference, or on it, only moves
-the reference: he crouches a little, visibly readying, and stays put.
+**3.3 Down is free.** A stop BELOW the reference, or on it, or less than
+half a semitone above it, only moves the reference: he crouches a
+little, visibly readying, and stays put.
 This is what keeps every room inside every voice. Five leaps stacked up
 the range would need two octaves and more, and a working range is 22
 semitones; with down free, each leap is sung from wherever is
