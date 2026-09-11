@@ -3,10 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
-import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { FileText } from '@/components/icons'
@@ -31,6 +30,7 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
@@ -52,6 +52,29 @@ import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, 
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import { MicSensitivitySlider } from './MicSensitivitySlider'
 import styles from './SettingsPanel.module.css'
+
+/**
+ * Credit packs and the supporter tiers, ABSENT from the store binary.
+ *
+ * `PricingPanel` sells credit packs through Stripe checkout and mounts
+ * `DonatePanel`, which links out to Ko-fi. Both are digital goods sold
+ * outside in-app purchase: App Store guideline 3.1.1 and Play's billing
+ * policy each reject a binary that carries them. Hiding the UI is not enough
+ * when the link is still in the bundle, so the guard is a build constant, not
+ * a runtime flag: `IS_NATIVE_BUILD` folds to a literal, the dynamic import
+ * sits in a dead branch, and Rollup emits no chunk for it at all.
+ *
+ * On the web this is now a lazy chunk fetched when Settings opens rather than
+ * part of the main bundle -- an accepted timing change, not a regression.
+ * Real native billing arrives later through RevenueCat.
+ */
+const PricingPanel = IS_NATIVE_BUILD
+  ? null
+  : lazy(async () =>
+      import('@/components/billing/PricingPanel').then((m) => ({
+        default: m.PricingPanel,
+      })),
+    )
 
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
  *  ResetScope actions run through resetAppData and reload. */
@@ -513,7 +536,15 @@ export const SettingsPanel: Component = () => {
             {/* The processing-default picker (tier cards + quality chips)
                 lives inside PricingPanel — the Karaoke page toggles use the
                 same persisted signals and stay in sync. */}
-            <PricingPanel />
+            <Show when={PricingPanel} keyed>
+              {(Panel) => (
+                <Suspense
+                  fallback={<p class={styles.settingsDesc}>Loading…</p>}
+                >
+                  <Panel />
+                </Suspense>
+              )}
+            </Show>
           </div>
         </Show>
 

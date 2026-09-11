@@ -743,6 +743,10 @@ export default defineConfig(({ command, mode }) => {
       // register it. Keyed on the command rather than the mode because
       // `build:dev` is a real deploy that should carry the worker.
       __SW_ENABLED__: JSON.stringify(command === 'build'),
+      // False here, true in apps/mercurypitch. Both builds compile this same
+      // `src/` tree, so the constant has to exist in both or the one that
+      // omits it evaluates a bare identifier and throws.
+      __NATIVE_BUILD__: JSON.stringify(false),
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],
