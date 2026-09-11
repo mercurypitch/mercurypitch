@@ -39,16 +39,25 @@ slide tracker (`sim/line-grade.ts`: held within a tenth of a semitone
 for 150 ms, and a new stop only after leaving the last one by more than
 half a semitone). The last stop is the reference.
 
-**3.2 The leap.** A stop ABOVE the reference is a leap. Its apex is
+**3.2 The leap.** A stop ABOVE the reference is a leap, from half a
+semitone up (`MIN_LEAP_SEMIS`, the slide tracker's own). Its apex is
 `(stop - reference) * RISE_PER_SEMI` -- 0.1 m per semitone (T1) --
-capped at `MAX_LEAP`, 0.9 m. He jumps straight up with the velocity
-that reaches that apex under the locomotion's own gravity, and drifts
-forward at walking pace while airborne, toward the next shelf. The stop
-fires it. There is no button: the jump button is hidden in this world
-(`jump: false`), and walking alone never climbs.
+capped at `MAX_LEAP`, 0.9 m. He leaves the ground with the velocity
+that reaches that apex under the locomotion's own gravity, and is
+carried forward while airborne, toward the next shelf, whatever the
+thumb says. The leap is AIMED: when his front is within `LEAP_REACH`,
+1.0 m, of the next riser, he is carried at the speed that brings his
+front to it exactly at the apex -- the distance over the time to the
+apex, never more than `LEAP_CARRY_MAX`, 3.5 m/s -- and at walking pace
+after it. So where he stands does not decide whether a leap lands; its
+height does, at the catch (§3.4). Further out, a leap is a hop, carried
+at walking pace. The stop fires it. There is no button: the jump
+button is hidden in this world (`jump: false`), and walking alone never
+climbs.
 
-**3.3 Down is free.** A stop BELOW the reference, or on it, only moves
-the reference: he crouches a little, visibly readying, and stays put.
+**3.3 Down is free.** A stop BELOW the reference, or on it, or less than
+half a semitone above it, only moves the reference: he crouches a
+little, visibly readying, and stays put.
 This is what keeps every room inside every voice. Five leaps stacked up
 the range would need two octaves and more, and a working range is 22
 semitones; with down free, each leap is sung from wherever is
@@ -317,3 +326,81 @@ What the code showed:
   the screen's edge; its line, run across the labels, struck through
   "P5". Nothing in this world can be put beside him in portrait, only
   above or below.
+
+### What 6d landed
+
+The grade, in the Line's units and through the Line's own functions:
+first-try per riser, cents past the ask, `qualityFromCents` at
+`LINE_SCORE`, the mean per room, and `medalFor` at the same thresholds,
+with nothing gated on it (`sim/shelf-grade.ts`). The track
+(`levels/shelf-track.ts`, `createTrack`) and its stats twin
+(`levels/shelf-stats.ts`) keep each room's best. The room card and the
+walk card read like the Line's, and the Games card counts the rooms
+climbed as the Line's does, where it already stands in the list; the V1
+order is a later pass.
+
+Decided here, where the plan was silent:
+
+- **A leap is aimed at a shelf when his mitt reaches its riser**, or
+  when it lands him on the shelf, which needs the same. A hop in the
+  open is aimed at nothing and is not graded. A fifth carries 0.62 m
+  and room 1 starts him 1.34 m out, so grading every leap would mark
+  the first fifth most players sing a failed first try for where he
+  stood, not for what they sang.
+- **"Past the shelf" is the landing leap's**, as §3.5 has it: "the grade
+  records how far past". A flat miss costs the first try and nothing in
+  cents; §7's overshoot only counts up.
+- **A riser climbed with no graded leap is a first try**, the Line's
+  `NO_STOPS`: nothing was missed. Only the dev hook can do it.
+- **The rooms have names**, for §7's card, each for what is sung in it:
+  The Fifth, Thirds and Fifths, The Octave. The room card is the name,
+  a dash, and the Line's two units.
+
+What the code showed:
+
+- **First-try counts landings, so the octave room grades a one-leap
+  octave as a first try.** An octave sung at room 3's first riser tops
+  out at his spring and lands on the ledge (D5), 500¢ past the fifth it
+  asked for. The room reads "125¢ past the shelf · 4 of 4 first time",
+  75%, and a walk with it in is still gold, 92. The lesson is in the
+  cents, not in the count. If 6f wants the count to carry it too, first
+  try would have to mean "landed within a semitone", which D6 chose
+  against.
+
+### The aimed leap
+
+A leap's reach was the interval's (6c): carried at walking pace from a
+standstill, it met its riser only from 0.43 m for a minor third, 0.48 m
+for a major third, 0.53 m for a fourth and 0.62 m for a fifth. A
+landing left him 0.47 m from room 2's minor third, so the right third
+hopped back 4 cm short, and room 1 started him 1.34 m out: a player who
+sings the right note and sees him fail blames the game. So a leap is
+aimed (§3.2). Within 1.0 m of the next riser he is carried at the speed
+that puts his front on it at the apex, never faster than 3.5 m/s;
+beyond that it is the hop it was. Room 1 now starts his front 0.9 m
+from its riser, so the first fifth sung from the start line lands. From
+every centimetre in reach of every riser, a leap of the ask lands, half
+a semitone flat lands and 0.6 flat hops back, as they did at the riser,
+and the grade is unchanged. The cap binds only at the full metre, on a
+half-flat minor third, which still lands on the half step the stepped
+arc adds. Beyond the metre a hop of the ask never lands, but a sharp
+one flies longer: from 4.7 semitones over room 2's major third to his
+spring, walking pace still carries him onto it from up to 1.035 m, and
+that floor is 1.07 m deep.
+
+### Review fixes
+
+Five fixes from the review of 6a to 6d. The stage's step moved to
+`sim/shelf-step.ts` first, so each one is tested where the game runs it.
+
+- A stop less than half a semitone up (`MIN_LEAP_SEMIS`, the slide
+  tracker's own) readies him instead of leaping, and the HUD's "ready"
+  reads the same number.
+- A leap is aimed at a shelf, and graded, only if his mitt reaches its
+  riser before the apex.
+- Past the apex an aimed leap carries him at walking pace, so he no
+  longer slides on past the landing against the thumb.
+- The apex flash marks the height he reached, not the lip the catch
+  lifted him onto.
+- Clearing a room lets his crouch go, so he no longer stays squashed
+  behind the room card.
