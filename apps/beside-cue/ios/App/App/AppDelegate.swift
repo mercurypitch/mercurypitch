@@ -13,6 +13,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // app with no category at all is an app with no sound.
         AudioSession.configure()
         NSLog("[AudioSession] at launch: \(AudioSession.describe())")
+        // Also before the web layer exists, so the directory carries the flag
+        // before WebKit writes the first byte into it.
+        LocalDataBackupPolicy.apply()
         return true
     }
 
@@ -45,5 +48,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+}
+
+/// Keeps what the app stores out of iCloud and Finder/iTunes backups, the iOS
+/// counterpart of android/app/src/main/res/xml/backup_rules.xml, so the Settings
+/// wording "on this device only" holds on both platforms.
+///
+/// Everything the web layer persists lives under Library/WebKit in the app's
+/// container: the IndexedDB snapshot with the plan, choice history and settings
+/// (src/infrastructure/indexed-db-repository.ts) and the localStorage onboarding
+/// marker and game preferences. Flagging that directory excludes everything
+/// beneath it. It is created here because a fresh install has none yet, and
+/// WebKit adopts an existing one. Re-applied on every launch; the flag is
+/// idempotent, and the read-back line is what a device log check looks for.
+enum LocalDataBackupPolicy {
+    static func apply() {
+        let fileManager = FileManager.default
+        guard let library = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first else {
+            NSLog("[BackupPolicy] no Library directory; website data stays backup-eligible")
+            return
+        }
+        var websiteData = library.appendingPathComponent("WebKit", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: websiteData, withIntermediateDirectories: true)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try websiteData.setResourceValues(values)
+            let excluded = try websiteData.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup ?? false
+            NSLog("[BackupPolicy] Library/WebKit excluded from backup: \(excluded)")
+        } catch {
+            NSLog("[BackupPolicy] could not exclude Library/WebKit from backup: \(error)")
+        }
     }
 }
