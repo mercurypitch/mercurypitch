@@ -3,7 +3,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LocomotionState } from '../sim/locomotion3d'
-import { createLocomotion, leapVelocity, stepLocomotion, } from '../sim/locomotion3d'
+import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
+import { closeWalls, createClimb, launch, stepShelf } from '../sim/shelf-step'
 import { workingRange } from '../sim/tension3d'
 import { VOICE_PRESETS } from '../voice-range'
 import { WORLD3D_CONFIG } from '../world3d-config'
@@ -60,8 +61,8 @@ interface Landing {
 /**
  * Stand him on the shelf below riser `k` with his front `short` of it,
  * sing `semis` above the reference, and return where he comes to rest.
- * Carried as the stage carries him, forward throughout (§3.2): at
- * `leapCarry` while an aimed leap rises, else at walking pace.
+ * Launched and stepped by the stage's own step (`sim/shelf-step`), so
+ * carried as the stage carries him, forward throughout (§3.2).
  */
 const leapFrom = (
   room: ShelfLevel,
@@ -69,15 +70,19 @@ const leapFrom = (
   short: number,
   semis: number,
 ): Landing => {
-  const s = stand(room.shelves[k]!.from - HALF - short, topsOf(room)[k - 1]!)
+  const climb = createClimb(room, CFG)
+  const s = climb.loco
+  s.x = room.shelves[k]!.from - HALF - short
+  s.y = topsOf(room)[k - 1]!
+  climb.standingOn = k - 1
+  closeWalls(climb)
   const height = leapHeight(REFERENCE, REFERENCE + semis)
   if (height === null) return { y: s.y, carry: null, fastest: 0 }
-  const carry = leapCarry(room, s.x, s.y, height, CFG.gravity, HALF)
-  s.vy = leapVelocity(height, CFG, DT)
-  if (carry !== null) s.vx = carry
+  launch(climb, { height, interval: semis }, DT)
+  const carry = climb.flight!.carry
   let fastest = Math.abs(s.vx)
   for (let i = 0; i < Math.round(3 / DT); i++) {
-    stepIn(room, s, 1, carry !== null && s.vy > 0 ? carry : CFG.walkSpeed)
+    stepShelf(climb, null, 0, DT)
     fastest = Math.max(fastest, Math.abs(s.vx))
     if (s.grounded) break
   }
