@@ -1,5 +1,5 @@
-// Vendors everything the pitch engine loads at runtime into public/, so the
-// microphone works on a plane.
+// Vendors everything the pitch engine loads at runtime into the staged
+// publicDir, so the microphone works on a plane.
 //
 // Without this the engine falls back to jsDelivr for the wasm runtime
 // (packages/pitch-engine/src/assets.ts:10-11) and to /models/swiftf0.onnx for
@@ -11,17 +11,21 @@
 //   - the onnxruntime-web wasm pair, out of the engine's own module graph
 //   - the SwiftF0 model, out of the web app's public/ tree
 //
-// Exported as `syncOrtAssets()` and called from a Vite plugin in
-// vite.config.ts, NOT from an npm lifecycle hook. A `prebuild` hook is
+// Exported as `syncOrtAssets()` and called from `sync-native-assets.mjs`,
+// which a Vite plugin in vite.config.ts runs -- NOT from an npm lifecycle
+// hook. A `prebuild` hook is
 // bypassed by `pnpm exec vite build` -- which is exactly how CI builds, to
 // avoid repeating tsc -- so the hook version of this shipped a bundle with no
 // vendored assets at all and the CI asset check caught it on the first run.
 // A plugin cannot be bypassed: every build that loads this config runs it.
 //
-// Still runnable directly (`node scripts/sync-ort-assets.mjs`) for a one-off.
+// Still runnable directly (`node scripts/sync-ort-assets.mjs`) for a one-off;
+// with no argument it fills the same staged directory the build uses.
 //
-// public/ort and public/models stay gitignored -- they are build inputs, not
-// sources.
+// The output root is .native-public/, which is gitignored in full: everything
+// in it is copied there by a build, and one copy of the wasm runtime and the
+// SwiftF0 model in the repository (the web app's public/ tree) is better than
+// two that can drift.
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -29,7 +33,12 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
-export function syncOrtAssets() {
+/**
+ * @param {string} [outRoot] Where to vendor into. Defaults to the staged
+ *   publicDir, which is what every build and dev server wants; a caller passes
+ *   its own only to stage somewhere else.
+ */
+export function syncOrtAssets(outRoot = join(here, '../.native-public')) {
   // onnxruntime-web is a dependency of the pitch engine, not of this app, so it
   // is resolved from the engine's own module graph — pnpm keeps graphs strict
   // and a bare resolve from here would miss.
@@ -42,7 +51,7 @@ export function syncOrtAssets() {
     'dist',
   )
 
-  const ortOut = join(here, '../public/ort')
+  const ortOut = join(outRoot, 'ort')
   mkdirSync(ortOut, { recursive: true })
   for (const file of [
     'ort-wasm-simd-threaded.mjs',
@@ -59,10 +68,12 @@ export function syncOrtAssets() {
   }
 
   // The model lives in the web app's public tree, which this app deliberately
-  // does NOT copy wholesale — it also holds legends, room art and the night-app
-  // bundles, none of which belong in a voice-only V1-1 binary.
+  // does NOT copy wholesale — it also holds the night-app packs and the drum
+  // kits, none of which belong in a V1-1 binary. The pictures the V1-1 surfaces
+  // DO need are named one at a time in ../native-assets.mjs and staged beside
+  // this model by sync-native-assets.mjs.
   const modelSrc = join(here, '../../../public/models/swiftf0.onnx')
-  const modelOut = join(here, '../public/models')
+  const modelOut = join(outRoot, 'models')
   if (!existsSync(modelSrc)) {
     throw new Error(
       `[sync-ort-assets] SwiftF0 model not found at ${modelSrc}. Without it the engine ` +
