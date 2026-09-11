@@ -90,6 +90,9 @@ export interface Shelf {
 
 export interface ShelfLevel {
   readonly id: string
+  /** What the room card calls it (§7): "The Octave -- 18¢ past the
+   * shelf". Named for what is sung in it, like the sentence below. */
+  readonly name: string
   /** The one sentence this room exists to teach (§4). */
   readonly teaches: string
   /** Two sentences on how, on the gate card, in the Line's pattern. */
@@ -110,6 +113,7 @@ export interface ShelfLevel {
  */
 export const SHELF_1: ShelfLevel = {
   id: 'shelf-1',
+  name: 'The Fifth',
   teaches: 'Sing a note, then a fifth above it.',
   hint: 'Hold any note, then sing a higher one: the gap between them is how high he leaps. A fifth gets him onto the shelf.',
   length: 4.4,
@@ -128,6 +132,7 @@ export const SHELF_1: ShelfLevel = {
  */
 export const SHELF_2: ShelfLevel = {
   id: 'shelf-2',
+  name: 'Thirds and Fifths',
   teaches: 'Thirds and fifths, each from where you are.',
   hint: 'Each leap is measured from the note you last held. Come back down to a comfortable note before the next one; going down never moves him.',
   length: 6.2,
@@ -150,6 +155,7 @@ export const SHELF_2: ShelfLevel = {
  */
 export const SHELF_3: ShelfLevel = {
   id: 'shelf-3',
+  name: 'The Octave',
   teaches: 'An octave is two leaps.',
   hint: 'The top shelf is an octave up, and no leap is that big. Stop on the ledge a fifth up, then leap the rest.',
   length: 5.6,
