@@ -5,15 +5,15 @@
 // trustworthy pitch. No discrete intents: a voice is continuous.
 //
 // The context comes from the app's one shared clock (audio/
-// shared-audio-context.ts), so pitch samples are stamped with the same
+// @irchiinnuss/audio-io), so pitch samples are stamped with the same
 // currentTime the stage schedules its hums and notes against. It is
 // reached BEFORE the mic await, because on iOS only the synchronous part
 // of the tap handler can lift a suspended context, and the permission
 // prompt in front of getUserMedia can take seconds.
 
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { F0Stream } from '@irchiinnuss/pitch-engine'
 import { CONF_MIN, createF0Stream, hzToCents, micManager, } from '@irchiinnuss/pitch-engine'
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import type { DiscreteIntent, InteractionDriver, PitchSample } from './types'
 
 /** Shaped like a MicError so micErrorLine() prints this sentence verbatim. */

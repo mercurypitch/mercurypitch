@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },

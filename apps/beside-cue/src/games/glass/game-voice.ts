@@ -33,8 +33,8 @@
 // download, and it shares the app's one AudioContext like everything
 // else.
 
-import type { SharedAudioLease } from '@/audio/shared-audio-context'
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
+import type { SharedAudioLease } from '@irchiinnuss/audio-io'
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 
 /**
  * The timbre, as partials of the fundamental.

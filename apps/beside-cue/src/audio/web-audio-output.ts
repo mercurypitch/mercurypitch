@@ -2,15 +2,15 @@
 // Web Audio output — lazy, pop-free decoded asset playback
 // ============================================================
 //
-// Playback rides the app's one shared AudioContext (shared-audio-context.ts),
+// Playback rides the app's one shared AudioContext (@irchiinnuss/audio-io),
 // so a cue and a game note are scheduled against the same clock. Each playback
 // gets separate envelope and live-mix gains so release tails cannot be
 // reopened by ducking.
 
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { AudioSourceVariant } from '../content/audio-manifest'
 import { fetchAssetBytes } from './asset-fetch'
 import type { AudioOutputFinishResult, AudioOutputPlayback, AudioOutputPlayRequest, AudioOutputStartResult, AudioSessionOutput, } from './audio-session'
-import { acquireSharedAudioContext } from './shared-audio-context'
 
 const ENVELOPE_FLOOR = 0.0001
 const ATTACK_SECONDS = 0.09

@@ -1,8 +1,8 @@
 // ============================================================
-// Shared audio context — one clock for every Beside Cue lane
+// Shared audio context — one clock for every lane in an app
 // ============================================================
 //
-// An AudioContext is the app's scarcest audio resource: older Chrome capped
+// An AudioContext is an app's scarcest audio resource: older Chrome capped
 // a tab at six, each one costs its own output stream, and — the reason that
 // actually bites — each one runs its own clock. A tap stamped by the tap
 // driver's context cannot be judged against a note scheduled on the asset
@@ -11,7 +11,15 @@
 // Beside Cue used to construct five (asset output, the onboarding cinematic,
 // the tap tuner, and both glass drivers) and the 3D glass world would have
 // made six. This module is the one owner; everything else takes a named
-// lease. See docs/games/glass-3d.md §7.
+// lease. See `apps/beside-cue/docs/games/glass-3d.md` §7.
+//
+// It lives here, in `packages/audio-io`, because Beside Cue is no longer the
+// only app with the problem: the root MercuryPitch tree constructs around
+// thirty-five unmanaged contexts, none of which handle the iOS
+// `'interrupted'` state below (hazard 2 in the native plan). Those rooms
+// adopt this module one at a time rather than in a sweep, so the state below
+// is module-global per BUNDLE — each app gets its own clock, which is what
+// "one per app" has always meant.
 //
 // Lifetime rules, all of them platform-forced:
 //   - CREATE AND RESUME INSIDE THE USER GESTURE. iOS WKWebView hands back a
@@ -192,6 +200,31 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
         // Already suspended, interrupted or closed. Nothing to park.
       }
     },
+  }
+}
+
+/**
+ * Parks the clock without holding a lease, and without arming the automatic
+ * resume that following the page installs.
+ *
+ * For the one event a browser does not have: the OS moving the whole app to
+ * the background. A WebView's `visibilitychange` and the platform's own
+ * app-state event disagree exactly where it matters — a call arriving, the
+ * app switcher, a screen lock — and a context left running through that keeps
+ * an output stream open behind an app nobody can see.
+ *
+ * Coming back is deliberately NOT handled here. iOS lifts a suspended context
+ * only from inside a user gesture, so the next `unlock()` is what returns the
+ * sound; waking it on the way in would be a resume the platform refuses and a
+ * silence nobody can explain.
+ */
+export function suspendSharedAudioContext(): void {
+  const audioContext = context
+  if (audioContext === undefined || audioContext.state !== 'running') return
+  try {
+    void Promise.resolve(audioContext.suspend()).catch(() => undefined)
+  } catch {
+    // Already suspended, interrupted or closed. Nothing to park.
   }
 }
 
