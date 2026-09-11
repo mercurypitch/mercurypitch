@@ -10,6 +10,17 @@
 // the screen and never behind a tap (S1b brief §4, the rules that do not
 // vary). Lock dims Stop and the primary and refuses their taps while the
 // clock keeps running; it says so with `aria-pressed`.
+//
+// A locked control is `aria-disabled`, never `disabled`. `disabled` takes the
+// button out of the accessibility tree entirely, so a screen-reader user
+// sweeping the transport would find Stop simply gone with nothing to say why.
+// This way it is still there, still named, and still announced as unavailable
+// — and the refusal is enforced in the handler as well as in the CSS, because
+// pointer-events stops a finger and not a keyboard.
+//
+// The count-in takes the primary's face while it runs: the beat is the only
+// thing worth showing on the one button the singer is already looking at, and
+// there is nowhere else on a 44 pt row to put it.
 
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
@@ -21,12 +32,17 @@ export interface TransportProps {
   elapsedMs: () => number
   playing: () => boolean
   locked: () => boolean
+  /** The bars before the first note, counted by the room. */
+  countingIn?: () => boolean
+  countInBeat?: () => number
   onStop: () => void
   onToggle: () => void
   onToggleLock: () => void
 }
 
 export const Transport: Component<TransportProps> = (props) => {
+  const counting = (): boolean => props.countingIn?.() === true
+
   return (
     <div
       class="mp-transport"
@@ -40,8 +56,9 @@ export const Transport: Component<TransportProps> = (props) => {
         type="button"
         class="mp-transport__btn"
         aria-label="Stop"
-        disabled={props.locked()}
+        aria-disabled={props.locked()}
         onClick={() => {
+          if (props.locked()) return
           void hapticTap()
           props.onStop()
         }}
@@ -51,16 +68,32 @@ export const Transport: Component<TransportProps> = (props) => {
       <button
         type="button"
         class="mp-transport__btn mp-transport__btn--primary"
-        aria-label={props.playing() ? 'Pause' : 'Play'}
-        disabled={props.locked()}
+        aria-label={
+          counting()
+            ? `Counting in, beat ${props.countInBeat?.() ?? 0}`
+            : props.playing()
+              ? 'Pause'
+              : 'Play'
+        }
+        aria-disabled={props.locked()}
         onClick={() => {
+          if (props.locked()) return
           void hapticTap()
           props.onToggle()
         }}
       >
         <span class="mp-transport__glyph">
-          <Show when={props.playing()} fallback={<PlayIcon />}>
-            <PauseIcon />
+          <Show
+            when={counting()}
+            fallback={
+              <Show when={props.playing()} fallback={<PlayIcon />}>
+                <PauseIcon />
+              </Show>
+            }
+          >
+            <span class="mp-transport__count" data-testid="shell-count-in">
+              {props.countInBeat?.() ?? 0}
+            </span>
           </Show>
         </span>
       </button>

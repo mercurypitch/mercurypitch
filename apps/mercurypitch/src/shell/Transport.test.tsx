@@ -21,7 +21,14 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-function mount(options: { playing?: boolean; locked?: boolean } = {}) {
+function mount(
+  options: {
+    playing?: boolean
+    locked?: boolean
+    counting?: boolean
+    beat?: number
+  } = {},
+) {
   const onStop = vi.fn()
   const onToggle = vi.fn()
   const onToggleLock = vi.fn()
@@ -30,6 +37,8 @@ function mount(options: { playing?: boolean; locked?: boolean } = {}) {
       elapsedMs={() => 65_000}
       playing={() => options.playing ?? true}
       locked={() => options.locked ?? false}
+      countingIn={() => options.counting ?? false}
+      countInBeat={() => options.beat ?? 0}
       onStop={onStop}
       onToggle={onToggle}
       onToggleLock={onToggleLock}
@@ -85,5 +94,25 @@ describe('Transport', () => {
     // The lock itself is the one control a locked transport still answers.
     button('Lock controls')?.click()
     expect(onToggleLock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a locked Stop in the accessibility tree, named and unavailable', () => {
+    // `disabled` would take it out of the tree entirely, so a screen-reader
+    // user sweeping the transport would find Stop simply gone.
+    const { button } = mount({ locked: true })
+
+    const stop = button('Stop')
+    expect(stop).not.toBeNull()
+    expect(stop?.hasAttribute('disabled')).toBe(false)
+    expect(stop?.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('shows the count-in on the primary, and says which beat', () => {
+    const { container, button } = mount({ counting: true, beat: 3 })
+
+    expect(
+      container.querySelector('[data-testid="shell-count-in"]')?.textContent,
+    ).toBe('3')
+    expect(button('Counting in, beat 3')).not.toBeNull()
   })
 })
