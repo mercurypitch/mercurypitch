@@ -111,6 +111,14 @@ export default defineConfig(({ mode, command }) => {
     },
 
     define: {
+      // Vite replaces a bare `process` with nothing at all, so a dependency
+      // that reads `process.env.NODE_ENV` at module scope throws on the phone
+      // -- the same class of failure as an unreplaced `__SW_ENABLED__`, and
+      // just as invisible until the module happens to be evaluated. The root
+      // config has defined this since before the native app existed; parity
+      // is the fix, and `src/define-parity.test.ts` is what keeps it.
+      'process.env': {},
+
       // Every constant the ROOT config defines must be defined here too. `@`
       // aliases to that same source tree, so any module reachable from this
       // entry can read one; Vite replaces only what it is told about, and an
