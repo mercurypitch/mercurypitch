@@ -6,6 +6,7 @@
 //   POST /api/auth/register  { email, password, displayName?, deviceId? }
 //   POST /api/auth/login     { email, password }
 //   POST /api/auth/google    { idToken, deviceId? }
+//   POST /api/auth/refresh   (Bearer token — a later token for a live session)
 //   GET  /api/auth/google/start?deviceId=&returnTo=   (redirect flow)
 //   GET  /api/auth/google/callback?code=&state=       (Google redirect URI)
 //   GET  /api/auth/verify-email?token=&returnTo=      (email confirm link)
@@ -15,10 +16,14 @@
 //   POST /api/auth/reset-password { token, password } (sets the new password)
 //   GET  /api/auth/me        (Bearer token)
 //
+// Sign in with Apple lives in apple-routes.ts, dispatched from index.ts so
+// that file can import this one without a cycle.
+//
 // `deviceId` is the client's persisted anonymous UUID. Passing it to
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
+import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
@@ -29,7 +34,7 @@ import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
-import { verifyTurnstile } from './turnstile'
+import { captchaFailureBody, verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
 
 export interface Env {
@@ -72,8 +77,36 @@ export interface Env {
   TOTP_KEK?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
   GOOGLE_CLIENT_ID?: string
+  /**
+   * Every client id an id token may be issued to, comma-separated — the web
+   * client plus the iOS and Android clients, which are DIFFERENT ids for the
+   * same project. Falls back to GOOGLE_CLIENT_ID when unset, so an
+   * environment nobody has widened keeps working unchanged. A native token's
+   * `aud` is that platform's own client id, so without this every native
+   * Google sign-in 401s with a message that reads like a plugin bug.
+   */
+  GOOGLE_CLIENT_IDS?: string
   /** OAuth client secret — required for the redirect code flow. */
   GOOGLE_CLIENT_SECRET?: string
+  /**
+   * Every client id a Sign in with Apple identity token may carry,
+   * comma-separated. For a native app that is the bundle id
+   * (com.irchiinnuss.mercurypitch); a web Services ID would be a second
+   * entry. Unset means POST /api/auth/apple answers 501.
+   */
+  APPLE_CLIENT_IDS?: string
+  /**
+   * The Sign in with Apple key as downloaded (`AuthKey_<id>.p8`, a PKCS#8
+   * PEM), with its key id and the team id. The three together mint the
+   * client secret Apple's token and revoke endpoints ask for. Absent is a
+   * supported state, not a misconfiguration: sign-in works, the
+   * authorization code is simply not exchanged, and there is then no grant
+   * to revoke at deletion. `wrangler secret put APPLE_SIGNIN_PRIVATE_KEY
+   * --env dev` (prod at tag time).
+   */
+  APPLE_SIGNIN_PRIVATE_KEY?: string
+  APPLE_SIGNIN_KEY_ID?: string
+  APPLE_TEAM_ID?: string
   /** Cloudflare Turnstile secret key for server-side verification. */
   TURNSTILE_SECRET?: string
   /** "true" only on immutable pull-request preview versions. Preview auth
@@ -473,10 +506,32 @@ interface GoogleClaims {
   picture?: string
 }
 
+/**
+ * Every client id we accept a token for, in order.
+ *
+ * One project, several clients: the web client, an iOS client and an Android
+ * client each mint tokens with their OWN id in `aud`. GOOGLE_CLIENT_ID
+ * remains the single value the redirect flow starts with, and the fallback
+ * for an environment that has not been widened yet.
+ */
+export function googleClientIds(env: Env): string[] {
+  const list = splitIds(env.GOOGLE_CLIENT_IDS)
+  if (list.length > 0) return list
+  return env.GOOGLE_CLIENT_ID ? [env.GOOGLE_CLIENT_ID] : []
+}
+
+function splitIds(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '')
+}
+
 async function verifyGoogleIdToken(
   idToken: string,
-  clientId: string,
+  clientIds: string[],
 ): Promise<GoogleClaims | null> {
+  if (clientIds.length === 0) return null
   // Use the v3 tokeninfo endpoint (POST body, not query param — avoids
   // token leakage in intermediate proxy/server logs).
   const res = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo', {
@@ -486,7 +541,7 @@ async function verifyGoogleIdToken(
   })
   if (!res.ok) return null
   const claims = await res.json<GoogleClaims>()
-  if (claims.aud !== clientId) return null
+  if (!clientIds.includes(claims.aud)) return null
   return claims
 }
 
@@ -617,6 +672,17 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // what stops a named account being guessed at from rotating addresses.
   'login-email': { max: 10, windowMs: 900_000 }, // 10/15min per address
   google: { max: 30, windowMs: 60_000 }, // 30/min
+  // Sign in with Apple, budgeted like Google: one verified token per attempt,
+  // and the verification itself is what stands in front of the account.
+  apple: { max: 30, windowMs: 60_000 }, // 30/min
+  // Apple's server-to-server notifications. Signed by Apple and keyed by IP
+  // like everything else here, so the cap only bounds a flood from something
+  // pretending to be their notification service.
+  'apple/notifications': { max: 60, windowMs: 60_000 }, // 60/min
+  // Trading a live session for a fresh token. Budgeted like login because it
+  // is reached with the same kind of credential and does the same work —
+  // though it proves a token first, so nothing unauthenticated gets this far.
+  refresh: { max: 10, windowMs: 300_000 }, // 10/5min
   // The OAuth callback creates a user on first sign-in, so it needs its own
   // bucket: it is reached before the generic auth limiter and a real Google
   // code exchange is the only thing standing in front of it.
@@ -961,7 +1027,7 @@ export async function authorizeDeviceSecret(
  * entry points want the same recovery: sign in anyway, into a fresh account,
  * instead of absorbing a device the caller cannot show is theirs.
  */
-async function claimedDevice(
+export async function claimedDevice(
   env: Env,
   deviceId: string | undefined,
   deviceSecret: string | undefined,
@@ -1754,10 +1820,11 @@ export async function issueSessionFor(
   provider: string,
   respond: Respond,
   origin: SessionOrigin = {},
+  isNew = false,
 ): Promise<Response> {
   const row = await findUserById(env.DB, userId)
   if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
-  return issueSession(env, row, respond, false, origin, provider)
+  return issueSession(env, row, respond, isNew, origin, provider)
 }
 
 /**
@@ -1794,43 +1861,79 @@ export async function reissueLegacySession(
   }
 }
 
-/** Find-or-create the user for verified Google claims (shared by the
- * POST endpoint and the redirect code flow). */
 /**
- * Find-or-create the user for verified Google claims.
+ * A verified identity from an external provider, normalised.
+ *
+ * `provider` is a literal from our own code — it is interpolated into SQL
+ * below, because keeping the value inline is what lets the statement text
+ * stay legible in logs and in the fakes that match on it. It must never
+ * become a value a caller can choose.
+ */
+export interface FederatedIdentity {
+  provider: 'google' | 'apple'
+  /** The provider's stable subject id — `users.providerId`. */
+  sub: string
+  email?: string | null
+  emailVerified: boolean
+  /**
+   * Whether an existing local account may be adopted on the strength of this
+   * address alone. False for an Apple private-relay address: the relay is
+   * per-app and per-Apple-ID, so it proves nothing about who owns a mailbox
+   * somebody signed up with, and adopting on it would hand over an account.
+   */
+  linkableByEmail: boolean
+  name?: string | null
+  picture?: string | null
+}
+
+/**
+ * Find-or-create the user for a verified federated identity (Google's POST
+ * endpoint, Google's redirect code flow, and Sign in with Apple).
  *
  * `deviceId`, when given, MUST already have been through `claimedDevice` —
- * step 3 hands that account's entire history to this Google identity for
- * good, and the id itself is public.
+ * step 3 hands that account's entire history to this identity for good, and
+ * the id itself is public.
+ *
+ * Exported for apple-routes.ts, which is dispatched from index.ts so the
+ * import runs one way. Every provider resolves through this one function on
+ * purpose: a second copy of these four steps is how two providers end up
+ * with subtly different ideas of which account a person owns.
  */
-async function resolveGoogleUser(
-  claims: GoogleClaims,
+export async function resolveFederatedUser(
+  identity: FederatedIdentity,
   deviceId: string | undefined,
   env: Env,
 ): Promise<{ row: UserRow; isNew: boolean }> {
-  // 1. Returning Google user
+  const provider = identity.provider
+  // 1. Returning user of THIS provider. The filter matters: the unique index
+  // is (authProvider, providerId), so a bare `providerId = ?` asks a
+  // different question from the one the schema answers, and the day a second
+  // provider mints a `sub` that collides with a first provider's, it hands
+  // over somebody else's account. An account that adopted a provider through
+  // step 2 keeps authProvider 'password' and is found there instead.
   const linked = await env.DB.prepare(
-    'SELECT * FROM users WHERE providerId = ?',
+    'SELECT * FROM users WHERE authProvider = ? AND providerId = ?',
   )
-    .bind(claims.sub)
+    .bind(provider, identity.sub)
     .first<UserRow>()
   if (linked) {
     assertAccountActive(linked)
     return { row: linked, isNew: false }
   }
 
-  const email = claims.email?.toLowerCase()
-  const emailVerified = claims.email_verified === 'true'
+  const email = identity.email?.toLowerCase() || undefined
+  const emailVerified = identity.emailVerified
 
-  // 2. Auto-link to an existing password account with the same verified email
-  if (email && emailVerified) {
+  // 2. Auto-link to an existing account with the same verified email
+  const linkable = Boolean(email) && emailVerified && identity.linkableByEmail
+  if (email && linkable) {
     const byEmail = await findUserByEmail(env.DB, email)
     if (byEmail) {
       assertAccountActive(byEmail)
       await env.DB.prepare(
         'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
       )
-        .bind(claims.sub, nowIso(), byEmail.id)
+        .bind(identity.sub, nowIso(), byEmail.id)
         .run()
       return {
         row: (await findUserById(env.DB, byEmail.id)) as UserRow,
@@ -1838,6 +1941,25 @@ async function resolveGoogleUser(
       }
     }
   }
+
+  // Everything below CREATES, and `users.email` is UNIQUE. The address can
+  // already belong to somebody else here — an Apple private-relay address a
+  // password account was registered under, or any address we declined to link
+  // on — and carrying it into the INSERT or the UPDATE turns a sign-in into a
+  // 500 that nothing the person does will clear. The identity still gets its
+  // account; only the address is dropped. Step 2 proves the address free when
+  // it runs, which is why this asks only when it did not.
+  const emailFree =
+    email === undefined ||
+    linkable ||
+    (await findUserByEmail(env.DB, email)) === null
+  if (!emailFree) {
+    console.info(
+      `[auth] a ${provider} identity arrived with an address another account already holds; storing it without one`,
+    )
+  }
+  const storedEmail = emailFree ? email : undefined
+  const storedEmailVerified = emailFree && emailVerified
 
   // 3. Upgrade the claimed anonymous user in place. No shape check here:
   // claimedDevice already validated and resolved this id, and a second
@@ -1847,42 +1969,64 @@ async function resolveGoogleUser(
     if (anon && anon.authProvider === 'anonymous') {
       assertAccountActive(anon)
       await env.DB.prepare(
-        `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
+        `UPDATE users SET authProvider = '${provider}', providerId = ?, email = ?, emailVerified = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
       )
         .bind(
-          claims.sub,
-          email ?? null,
-          emailVerified ? 1 : 0,
+          identity.sub,
+          storedEmail ?? null,
+          storedEmailVerified ? 1 : 0,
           nowIso(),
           anon.id,
         )
         .run()
-      await sendWelcomeEmail(env, email, claims.name)
+      await sendWelcomeEmail(env, storedEmail, identity.name)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
-        // First-time Google over an anonymous device is account creation.
+        // First-time federated sign-in over an anonymous device is account
+        // creation.
         isNew: true,
       }
     }
   }
 
-  // 4. Brand-new Google user
+  // 4. Brand-new account for this identity
   const id = crypto.randomUUID()
   await createUser(env.DB, {
     id,
-    authProvider: 'google',
-    providerId: claims.sub,
-    email,
-    emailVerified,
+    authProvider: provider,
+    providerId: identity.sub,
+    email: storedEmail,
+    emailVerified: storedEmailVerified,
   })
   await ensureProfile(
     env.DB,
     id,
-    claims.name || defaultDisplayName(id),
-    claims.picture,
+    identity.name || defaultDisplayName(id),
+    identity.picture ?? undefined,
   )
-  await sendWelcomeEmail(env, email, claims.name)
+  await sendWelcomeEmail(env, storedEmail, identity.name)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
+}
+
+/** Find-or-create the user behind verified Google claims. */
+async function resolveGoogleUser(
+  claims: GoogleClaims,
+  deviceId: string | undefined,
+  env: Env,
+): Promise<{ row: UserRow; isNew: boolean }> {
+  return resolveFederatedUser(
+    {
+      provider: 'google',
+      sub: claims.sub,
+      email: claims.email,
+      emailVerified: claims.email_verified === 'true',
+      linkableByEmail: true,
+      name: claims.name,
+      picture: claims.picture,
+    },
+    deviceId,
+    env,
+  )
 }
 
 async function handleGoogle(
@@ -1891,13 +2035,14 @@ async function handleGoogle(
   env: Env,
   respond: Respond,
 ): Promise<Response> {
-  if (!env.GOOGLE_CLIENT_ID) {
+  const clientIds = googleClientIds(env)
+  if (clientIds.length === 0) {
     return respond({ error: 'Google login not configured' }, { status: 501 })
   }
   if (!body.idToken) {
     return respond({ error: 'idToken required' }, { status: 400 })
   }
-  const claims = await verifyGoogleIdToken(body.idToken, env.GOOGLE_CLIENT_ID)
+  const claims = await verifyGoogleIdToken(body.idToken, clientIds)
   if (!claims) {
     return respond({ error: 'Invalid Google token' }, { status: 401 })
   }
@@ -2214,10 +2359,11 @@ async function handleGoogleCallback(
     return redirectWithError(state.returnTo, 'No id_token from Google')
   }
 
-  const claims = await verifyGoogleIdToken(
-    tokenData.id_token,
+  const claims = await verifyGoogleIdToken(tokenData.id_token, [
+    // The redirect flow exchanged its code under the WEB client, so the id
+    // token that comes back can only carry that audience.
     env.GOOGLE_CLIENT_ID as string,
-  )
+  ])
   if (!claims) {
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
@@ -2942,6 +3088,50 @@ async function handleMe(
  * behaviour rather than returning a cheerful `ok` that signs nobody out — the
  * one thing a sign-out must never do.
  */
+/**
+ * POST /api/auth/refresh — a fresh token for a session that is still live.
+ *
+ * A token lasts 30 days and nothing renewed it, so a phone left alone for a
+ * month landed on a sign-in screen with no anonymous fallback: on a device
+ * with no passkey that is a churn event, on exactly the people the native
+ * app exists to keep. Foregrounding the app trades the token it holds for
+ * one dated from now.
+ *
+ * The session id is carried through unchanged. Minting a NEW session here
+ * would add a row per foreground and fill the account's device list with
+ * entries that all describe the same phone.
+ */
+async function handleRefresh(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  // `getAuth` has already proved the signature, the token version, that the
+  // account is active, and — when the token names a session — that the row is
+  // still there. A token with no `sid` predates migration 0038 and names no
+  // session at all, so there is nothing live behind it to extend.
+  if (auth === null || auth.sessionId === undefined) {
+    return respond({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const row = await findUserById(env.DB, auth.userId)
+  if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const now = Math.floor(Date.now() / 1000)
+  const exp = now + TOKEN_TTL_SECONDS
+  const token = await signJwt(
+    {
+      sub: row.id,
+      provider: auth.provider,
+      iat: now,
+      exp,
+      v: row.tokenVersion ?? 1,
+      sid: auth.sessionId,
+    },
+    env.JWT_SECRET as string,
+  )
+  return respond({ token, expiresAt: new Date(exp * 1000).toISOString() })
+}
+
 async function handleLogout(
   request: Request,
   env: Env,
@@ -3163,6 +3353,17 @@ async function handleDeleteMe(
     // The registry deletion below is the guarantee; this was the courtesy.
   }
 
+  // Same shape, different obligation: App Store 5.1.1(v) requires an app
+  // offering Sign in with Apple to call Apple's revoke endpoint when the
+  // account is deleted, and the refresh token that does it lives on the row
+  // this handler is about to erase. Apple's own guidance is that deletion
+  // completes whether or not the call succeeds, so it stays best-effort.
+  try {
+    await revokeAndForgetAppleGrant(env, userId)
+  } catch {
+    // Deleting the row below removes our copy regardless.
+  }
+
   const statements = [
     ...USER_OWNED_TABLES.map(({ table, column }) =>
       env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(
@@ -3375,6 +3576,11 @@ export async function handleAuth(
   if (route === 'logout-all') {
     return handleLogoutAll(request, env, respond)
   }
+  // Listed here, with the bodyless routes, so a client that sends no body at
+  // all is answered rather than 400'd on a JSON parse it never needed.
+  if (route === 'refresh') {
+    return handleRefresh(request, env, respond)
+  }
   if (route === 'resend-verification') {
     return handleResendVerification(request, env, respond)
   }
@@ -3394,16 +3600,13 @@ export async function handleAuth(
     route === 'forgot-password' ||
     route === 'email-code/request'
   ) {
-    const validTurnstile = await verifyTurnstile(
+    const turnstile = await verifyTurnstile(
       request,
       env,
       body.cfTurnstileToken as string | undefined,
     )
-    if (!validTurnstile) {
-      return respond(
-        { error: 'CAPTCHA verification failed. Please try again.' },
-        { status: 400 },
-      )
+    if (!turnstile.ok) {
+      return respond(captchaFailureBody(request, turnstile), { status: 400 })
     }
   }
 
