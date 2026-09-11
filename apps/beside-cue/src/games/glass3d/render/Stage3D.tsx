@@ -22,6 +22,7 @@ import { micErrorLine } from '@/games/glass/mic-error'
 import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
+import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
@@ -30,6 +31,7 @@ import { CABINET_CONFIG } from '../world3d-config'
 import type { StageView } from './Renderer3D'
 import { createRenderer3D } from './Renderer3D'
 import { createStageFrame } from './stage-frame'
+import { createStageImpact } from './stage-impact'
 import { StageCorner } from './StageCorner'
 import { VoiceCoach } from './VoiceCoach'
 
@@ -104,6 +106,9 @@ export const Stage3D = (props: Stage3DProps) => {
     calm: () => cfg.calm,
     backend: () => backend(),
   })
+  /** The break's timeline, played (render/stage-impact.ts): its taps,
+   * and the pixel ratio it drops for the burst. */
+  const impact = createStageImpact(() => cfg.impact)
 
   onMount(() => {
     // Timed apart from the loads: it is synchronous, and it runs before
@@ -117,9 +122,11 @@ export const Stage3D = (props: Stage3DProps) => {
       const rect = canvas.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
       // Capped pixel ratio: fill cost scales with its square, and this is
-      // the single biggest lever on a phone (§5.4).
-      r.resize(rect.width, rect.height, Math.min(window.devicePixelRatio, 1.5))
+      // the single biggest lever on a phone (§5.4). Lower still while the
+      // glass flies (§7.1).
+      r.resize(rect.width, rect.height, impact.pixelRatio())
     }
+    impact.onBurst(fit)
 
     // ResizeObserver rather than a window resize listener, because the
     // canvas can change size without the window doing anything: the
@@ -172,20 +179,19 @@ export const Stage3D = (props: Stage3DProps) => {
     const ring = createResonance(TARGET_MIDI)
     const vib = createVibratoDetector(cfg.vibrato)
     let launches: readonly ShardLaunch[] | null = null
-    // Wall time, and the wall time the pane broke at. The shatter plays
-    // back on these rather than on the fixed-step simulation clock; see
-    // HallwayStage for why that clock is the wrong thing to animate from.
-    // This stage kept no simulation time of its own for anything else, so
-    // the accumulator that fed it is gone with it.
+    // Wall time. The break plays back on it (render/stage-impact.ts)
+    // rather than on the fixed-step simulation clock; see HallwayStage for
+    // why that clock is the wrong thing to animate from. This stage kept
+    // no simulation time of its own for anything else, so the accumulator
+    // that fed it is gone with it.
     let wallSeconds = 0
-    let breakAtWall = 0
 
     const view: StageView = {
-      shatterProgress: 0,
       shatterSeconds: 0,
       resonance: 0,
       ringing: false,
       launches: null,
+      shake: NO_SHAKE,
     }
 
     // runLoop is the fixed-step accumulator, not a scheduler — it is
@@ -247,7 +253,7 @@ export const Stage3D = (props: Stage3DProps) => {
               cfg.shatter,
               7,
             )
-            breakAtWall = wallSeconds
+            impact.start(wallSeconds)
             tone.shatter(acc)
             setGrade(Math.round(acc * 100))
             setBroken(true)
@@ -273,21 +279,18 @@ export const Stage3D = (props: Stage3DProps) => {
       view.resonance = ring.res
       view.ringing = ring.res >= cfg.ring.holdCap && launches === null
       view.launches = launches
-      view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
-      view.shatterProgress =
-        launches === null
-          ? 0
-          : Math.min(
-              1,
-              view.shatterSeconds /
-                Math.max(shatterDuration(launches, cfg.shatter), 0.001),
-            )
+      // Every frame, drawn or not, so a tap lands on its moment.
+      const hit = impact.frame(wallSeconds)
+      view.shatterSeconds = hit?.shardSeconds ?? 0
+      view.shake = hit?.shake ?? NO_SHAKE
 
       // Calm (P3). Nothing in the Cabinet moves on its own but the
       // shards, so a voice or a touch is what wakes it.
       const drawn = pace.draw({
         voiced: lastMidi !== null,
-        moving: launches !== null && view.shatterProgress < 1,
+        moving:
+          launches !== null &&
+          view.shatterSeconds < shatterDuration(launches, cfg.shatter),
       })
       if (drawn !== null) renderer?.render(view)
       pace.end()
@@ -321,7 +324,7 @@ export const Stage3D = (props: Stage3DProps) => {
             cfg.shatter,
             7,
           )
-          breakAtWall = wallSeconds
+          impact.start(wallSeconds)
           tone.shatter(acc)
           setGrade(Math.round(acc * 100))
           setBroken(true)

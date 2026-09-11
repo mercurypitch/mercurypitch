@@ -22,6 +22,7 @@ import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, Box
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
 import type { ChamberLevel } from '../levels/chambers'
+import type { Shake } from '../runtime/impact'
 import type { LoadMark } from '../runtime/perf'
 import { NO_MARK, timed } from '../runtime/perf'
 import { groundIn, standingAmplitude } from '../sim/chamber3d'
@@ -35,6 +36,7 @@ import { holdHorizontalFov } from './fov'
 import { PANE } from './Hallway3D'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
+import { shakeCamera } from './shake'
 
 const CUSTARD = 0xf2c84b
 const TURQUOISE = 0x00777d
@@ -75,7 +77,8 @@ export interface ChamberView {
   strength: number
   /** One flag per pane, in the chamber's own order. */
   paneBroken: readonly boolean[]
-  /** The pane whose glass is in the air, and how long it has been. */
+  /** The pane whose glass is in the air, and how far into its flight,
+   * on the break's clock (runtime/impact.ts). */
   breaking: {
     pane: number
     seconds: number
@@ -85,6 +88,10 @@ export interface ChamberView {
   resonance: number
   /** Whether the way out has been earned. Every pane gone. */
   exitOpen: boolean
+  /** The break's turn of the lens this frame. */
+  shake: Shake
+  /** How fast his clip runs this frame: 0 in the hitstop, 1 otherwise. */
+  timeScale: number
 }
 
 export interface Chamber3D {
@@ -503,7 +510,11 @@ export const createChamber3D = (
 
       // Link the shard program now, for the reason the Hallway spells
       // out: three compiles on first draw, and first draw would
-      // otherwise be the first frame of a break.
+      // otherwise be the first frame of a break. Never culled as a whole,
+      // for the Hallway's reason too: the batch's bounds go stale once
+      // the shards fly, and a batch that can be culled can be skipped by
+      // this very compile.
+      batch.frustumCulled = false
       batch.visible = true
       await timed(
         () => renderer.compileAsync(batch, camera, scene),
@@ -523,7 +534,9 @@ export const createChamber3D = (
         panes[i]!.mesh.visible = view.paneBroken[i] !== true
       }
       if (shardBatch !== null) {
-        const live = breaking !== null && breaking.seconds > 0
+        // From the crack: the hitstop shows the broken pane held still
+        // (runtime/impact.ts).
+        const live = breaking !== null
         shardBatch.visible = live
         if (live) {
           shardBatch.position.x = paneXs[breaking.pane] ?? 0
@@ -536,7 +549,9 @@ export const createChamber3D = (
         actor.root.position.x = view.mercX
         actor.root.position.y = view.mercY
         actor.root.rotation.y = 1.05 * view.mercFacing
-        actor.update(dt)
+        // On the break's clock, as in the Hallway: the hitstop holds his
+        // clip, never where the simulation has him.
+        actor.update(dt * view.timeScale)
       }
       pool.position.x = view.mercX
       poolMaterial.opacity = 0.12 * Math.max(0, 1 - view.mercY * 1.6)
@@ -560,6 +575,7 @@ export const createChamber3D = (
       const k = 1 - Math.exp(-3.2 * dt)
       camera.position.x += (ahead - camera.position.x) * k
       camera.lookAt(camera.position.x - 1.1, 0.45, 0)
+      shakeCamera(camera, view.shake)
 
       // The exit breathes when it is open, and the breath is slower than
       // the pane's ring: one is urgency, the other is an invitation.

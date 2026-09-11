@@ -222,6 +222,78 @@ degrees of width.
 missing, `bash apps/beside-cue/scripts/dev-cert.sh` first, so the
 certificate names the LAN address. Open `/?perf`.
 
+### 2.5 What 5b landed
+
+**The break, as durations.** `runtime/impact.ts` is §7.1 as P4 chose
+it: a heavy tap and the shake at the crack, 100 ms of hitstop, 0.35×
+until 350 ms, eased back to full speed by 550, a 400 ms shake that dies
+as the square of what is left of it, light taps at 100, 300 and 550,
+and the pixel ratio at 1.0 for the 1.2 s burst. Every quantity is a
+function of the wall time since the crack, and the one that
+accumulates -- how far the shards have flown -- is the speed's integral
+in closed form, so a 30 fps clock and a 60 fps one put the same shard in
+the same place at the same moment. The tests pin both: the order of the
+events, read back off the functions a millisecond at a time, and a break
+played at 30 and at 60 fps ending at the same wall time, with its four
+taps felt once each and in order at any rate from 24 to 120.
+
+**What slows is what is seen.** The hitstop and the slow motion scale
+the shards' clock and Merc's clip, never the fixed-step simulation: the
+pad's jump pulse is 80 ms, shorter than the hitstop, and a world that
+stopped stepping would drop a jump pressed inside it. The glass shows
+broken from the crack itself -- a shard at rest sits where it was in the
+pane -- so what the hitstop holds still is the break, not the intact
+pane it would otherwise have held.
+
+**The shake** turns the lens about its own axes after the camera is
+placed for the frame, so the framing holds and nothing accumulates. The
+plan gives it no size: 0.8 degrees of turn, 1.2 of roll and 18 Hz is
+about a centimetre at the Cabinet's bowl and four at the Hallway's pane,
+and reads as a rattle rather than a sway. These, like every number of
+the break, are the plan's first guesses: thirteen dials under "The hit",
+the `impact` branch of `world3d-config.ts`, for maff to drag on the
+phone and paste back.
+
+**The pixel ratio** drops as a scripted step, never a controller: 1.5 to
+1.0 at the crack and back at 1.2 s, and a screen already at or under 1.0
+is left alone. Measured, 585 px of canvas became 390 and came back 1203
+to 1215 ms after the crack, in every world.
+
+**Haptics (P5)** go through the app's own haptics port
+(`@irchiinnuss/mobile-runtime`): `@capacitor/haptics` in the app,
+`navigator.vibrate` in a browser -- Android Chrome buzzes, iOS Safari has
+no vibration and stays silent -- loaded the first time glass breaks. The
+Cabinet has the chamber's pattern, and there is no switch of the games'
+own. An e2e records what reaches `navigator.vibrate`: 35, 10, 10 and 10
+ms, in that order.
+
+**Not built:** chromatic aberration and the dust (P4), and §7.1's white
+flash for two frames, which P4's list does not include and which the
+reduced-motion path would only have to take out again.
+
+**The crack frame had a stall, and it was not the timeline's.** Before
+any of this, the Hallway's crack frame took 56-63 ms, 40-47 of them on
+the main thread (5a, three breaks). Wrapping three's node builds showed
+why: the shard batch's program was never built at load -- the compile
+there skipped it -- and was built on the crack frame instead, twice
+(back faces, then front). The batch is now never culled as a whole: its
+bounds are the intact pane's and go stale once the shards fly
+(`setMatrixAt` does not move them), each shard is still culled on its
+own, and a batch that could be culled could be skipped by that compile.
+With that, all three worlds build the program at load, and the worst
+frame in the half second after the crack is 19-21 ms (mean 16.7), three
+breaks each. The cost moved to where nothing is waiting: the Hallway's
+`compile` went from 4 ms to 131 and its first frame from 107 to 47, so
+`first` from 222 to 293, and the chambers' `first` from 239 to 320 --
+the load numbers 5d starts from. The same probe found the chamber's
+panes built when they first come into view rather than at load: a stall
+on walking up to a pane, outside the break, and 5d's too.
+
+**Measured where.** Development build (the break hooks exist only
+there), headless Chromium, 390 × 844 at DPR 3, the desktop GPU through
+ANGLE (WebGL2). Not a phone: the numbers say the mechanism works, and
+the gate's are the chip's.
+
 ---
 
 ## 3. Slice 6 — the Top Shelf

@@ -90,6 +90,9 @@ const view: HallwayView = {
   ringing: false,
   shatterSeconds: 0,
   launches: null,
+  // Nothing breaks here: no shake, and his clip at its own speed.
+  shake: { yaw: 0, pitch: 0, roll: 0 },
+  timeScale: 1,
 }
 
 const play = (name: string): void => {

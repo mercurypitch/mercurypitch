@@ -30,6 +30,7 @@ import { createVibratoDetector } from '@/games/glass/vibrato'
 import { micApiBlocker } from '@/platform/device-support'
 import { createGlassTone } from '../audio/glass-tone'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
+import { NO_SHAKE } from '../runtime/impact'
 import { createLoopState, runLoop } from '../runtime/loop'
 import type { GroundSampler, LocomotionConfig } from '../sim/locomotion3d'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
@@ -40,6 +41,7 @@ import { WORLD3D_CONFIG } from '../world3d-config'
 import type { HallwayView } from './Hallway3D'
 import { createHallway3D, PANE } from './Hallway3D'
 import { createStageFrame } from './stage-frame'
+import { createStageImpact } from './stage-impact'
 import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 import { VoiceCoach } from './VoiceCoach'
@@ -155,11 +157,15 @@ export const HallwayStage = (props: HallwayStageProps) => {
     // at a desk, which is where it gets iterated on.
     const unbindKeys = bindKeyboard(input, window)
 
+    // The break's timeline, played (render/stage-impact.ts): its taps,
+    // and the pixel ratio it drops for the burst.
+    const impact = createStageImpact(() => cfg.impact)
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
-      r.resize(rect.width, rect.height, Math.min(window.devicePixelRatio, 1.5))
+      r.resize(rect.width, rect.height, impact.pixelRatio())
     }
+    impact.onBurst(fit)
     const observer = new ResizeObserver(fit)
     observer.observe(canvas)
 
@@ -186,7 +192,6 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // beside them. Two clocks in one shot is what "slow, and it
       // stutters, and it looks wrong" is made of.
       let wallSeconds = 0
-      let breakAtWall = 0
       const loco = createLocomotion(START_X)
       // The pane is the far wall until it is not. `minX` never moves:
       // there is nothing behind him worth walking back to.
@@ -239,7 +244,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
           cfg.shatter,
           11,
         )
-        breakAtWall = wallSeconds
+        impact.start(wallSeconds)
         // The way out was blocked by a fact about the room, so opening
         // it is a fact about the room too.
         walls = { ...walls, maxX: EXIT_X }
@@ -257,6 +262,8 @@ export const HallwayStage = (props: HallwayStageProps) => {
         ringing: false,
         shatterSeconds: 0,
         launches: null,
+        shake: NO_SHAKE,
+        timeScale: 1,
       }
 
       const loopState = createLoopState()
@@ -340,7 +347,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
         view.resonance = ring.res
         view.ringing = ring.res >= cfg.ring.holdCap && launches === null
         view.launches = launches
-        view.shatterSeconds = launches === null ? 0 : wallSeconds - breakAtWall
+        // Every frame, drawn or not, so a tap lands on its moment.
+        const hit = impact.frame(wallSeconds)
+        view.shatterSeconds = hit?.shardSeconds ?? 0
+        view.shake = hit?.shake ?? NO_SHAKE
+        view.timeScale = hit?.timeScale ?? 1
 
         // Calm (P3): full rate while he walks, while the shards are in
         // the air and while he celebrates; half rate once the corridor
