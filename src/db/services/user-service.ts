@@ -6,15 +6,19 @@
 // The user id is a persisted anonymous UUID generated once per
 // browser; logging in (email/password or Google) upgrades the
 // same id server-side, so all local attribution stays valid.
+//
+// None of the three keys touches `localStorage` directly any more. They go
+// through `@/lib/storage-port`, which is `localStorage` on the web and
+// `@capacitor/preferences` inside the native shell — because a mobile OS
+// clears a WebView's `localStorage` on its own schedule, and losing these
+// three does not sign a singer out, it orphans their account for good. The
+// reads below stay synchronous; the port is hydrated once at boot.
 
 import { createSignal } from 'solid-js'
 import type { UserProfile } from '@/db/entities'
 import type { Repository } from '@/db/types'
 import { API_BASE_URL } from '@/lib/defaults'
-
-const USER_ID_KEY = 'mp:userId'
-const DEVICE_SECRET_KEY = 'mp:deviceSecret'
-const AUTH_TOKEN_KEY = 'mp:authToken'
+import { AUTH_TOKEN_KEY, DEVICE_SECRET_KEY, readStored, removeStored, storageDurable, USER_ID_KEY, writeStored, } from '@/lib/storage-port'
 
 const [authVersionSignal, setAuthVersion] = createSignal(0)
 
@@ -56,12 +60,12 @@ export function getUserId(): string {
     if (sub !== null) return sub
   }
 
-  let id = localStorage.getItem(USER_ID_KEY)
+  let id = readStored(USER_ID_KEY)
   if (id == null || id === '') {
     // Reuse the in-memory id if storage was cleared mid-session,
     // so attribution stays consistent until the next full reload.
     id = cachedUserId !== '' ? cachedUserId : window.crypto.randomUUID()
-    localStorage.setItem(USER_ID_KEY, id)
+    writeStored(USER_ID_KEY, id)
   }
   cachedUserId = id
   return id
@@ -77,11 +81,7 @@ export function getUserId(): string {
  * minting one, because asking the question must never create an identity.
  */
 export function getDeviceId(): string {
-  try {
-    return localStorage.getItem(USER_ID_KEY) ?? ''
-  } catch {
-    return ''
-  }
+  return readStored(USER_ID_KEY) ?? ''
 }
 
 // ── The device secret ───────────────────────────────────────────
@@ -106,20 +106,18 @@ export function getDeviceId(): string {
  * visitor is not locked out; they simply get no protection either.
  */
 export function getDeviceSecret(): string {
-  try {
-    let secret = localStorage.getItem(DEVICE_SECRET_KEY)
-    if (secret == null || secret === '') {
-      const bytes = window.crypto.getRandomValues(new Uint8Array(32))
-      secret = btoa(String.fromCharCode(...bytes))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '')
-      localStorage.setItem(DEVICE_SECRET_KEY, secret)
-    }
-    return secret
-  } catch {
-    return ''
-  }
+  const stored = readStored(DEVICE_SECRET_KEY)
+  if (stored != null && stored !== '') return stored
+  // Ask before minting. A secret the store cannot keep is worse than none:
+  // the worker admits an account that never bound one, but it will refuse to
+  // rebind a different one next launch.
+  if (!storageDurable()) return ''
+  const bytes = window.crypto.getRandomValues(new Uint8Array(32))
+  const secret = btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return writeStored(DEVICE_SECRET_KEY, secret) ? secret : ''
 }
 
 /**
@@ -133,26 +131,24 @@ export function getDeviceSecret(): string {
  */
 export function resetUserId(): string {
   const id = window.crypto.randomUUID()
-  localStorage.setItem(USER_ID_KEY, id)
-  try {
-    localStorage.removeItem(DEVICE_SECRET_KEY)
-  } catch {
-    // Nothing to forget if storage is unavailable.
-  }
+  writeStored(USER_ID_KEY, id)
+  // Nothing to forget if storage is unavailable; removeStored says so
+  // rather than throwing.
+  removeStored(DEVICE_SECRET_KEY)
   cachedUserId = id
   return id
 }
 
 /** JWT issued by the db-worker, or null when not authenticated. */
 export function getAuthToken(): string | null {
-  return localStorage.getItem(AUTH_TOKEN_KEY)
+  return readStored(AUTH_TOKEN_KEY)
 }
 
 export function setAuthToken(token: string | null): void {
   if (token === null) {
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    removeStored(AUTH_TOKEN_KEY)
   } else {
-    localStorage.setItem(AUTH_TOKEN_KEY, token)
+    writeStored(AUTH_TOKEN_KEY, token)
   }
   setAuthVersion((v) => v + 1)
 }
