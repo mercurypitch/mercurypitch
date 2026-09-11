@@ -24,19 +24,20 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } fro
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SettingsPanel } from '@/components/SettingsPanel'
-import { nativeRunControls, registerShellApi, } from '@/stores/native-shell-store'
+import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { practiceScope } from '@/stores/settings-store'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
+import { installHistoryDepth } from './history-depth'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
 import { PushedScreen } from './PushedScreen'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
-import { goToTab, performBack, railItems, returnToRun, selectedRailItem, } from './shell-navigation'
+import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
 import { Transport } from './Transport'
 
@@ -63,6 +64,10 @@ export const NativeShell: Component = () => {
 
   onMount(() => {
     document.documentElement.setAttribute('data-native-shell', '')
+
+    // Before the back handler: `canGoBack()` is meaningless until the boot
+    // entry has been stamped.
+    onCleanup(installHistoryDepth())
     onCleanup(() => {
       document.documentElement.removeAttribute('data-native-shell')
       document.documentElement.removeAttribute('data-room-header')
@@ -83,7 +88,9 @@ export const NativeShell: Component = () => {
     // one press with one order. `false` is the press that reached the root,
     // and the wiring in infrastructure/native-shell.ts minimizes on it.
     onCleanup(
-      registerShellBackHandler(() => performBack(backHost()) !== 'minimize'),
+      registerShellBackHandler(
+        () => performBack(shellBackHost()) !== 'minimize',
+      ),
     )
 
     // Escape closes the column, which is the only thing on this surface that
@@ -97,6 +104,23 @@ export const NativeShell: Component = () => {
     window.addEventListener('keydown', onKeyDown)
     onCleanup(() => {
       window.removeEventListener('keydown', onKeyDown)
+    })
+
+    // A tap on the stage closes the column (brief §6). Capture phase and
+    // `pointerdown`, so it answers the touch that starts the gesture rather
+    // than a click the stage may swallow; the corner's own taps are exempt,
+    // because the chip toggles and the column's items navigate.
+    const onPointerDown = (event: PointerEvent): void => {
+      if (!columnOpen()) return
+      const target = event.target
+      if (target instanceof Element && target.closest('.mp-corner') !== null) {
+        return
+      }
+      closeColumn()
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    onCleanup(() => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
     })
 
     // Minimised-on-scroll, driven by `.main-content` — the app's scroller.
@@ -120,26 +144,30 @@ export const NativeShell: Component = () => {
     })
   })
 
-  // The room header is fixed chrome over the top of the room, so the app's
-  // scroller has to start below it. The attribute is how mobile-kit.css knows.
+  // Two pieces of fixed chrome the room's own scroller has to keep clear of:
+  // the header above it, and the corner chip at its right edge while a run is
+  // going — the trace head is the newest pixels and they are on that side.
+  // The attributes are how mobile-kit.css knows.
   createEffect(() => {
-    if (room() !== null) {
-      document.documentElement.setAttribute('data-room-header', 'on')
-    } else {
-      document.documentElement.removeAttribute('data-room-header')
-    }
+    const root = document.documentElement
+    if (room() !== null) root.setAttribute('data-room-header', 'on')
+    else root.removeAttribute('data-room-header')
   })
 
-  const backHost = () => ({
-    historyDepth: window.history.length,
-    back: () => {
-      window.history.back()
-    },
-    minimize: () => {
-      // Nothing to minimise to in a browser. The native back handler in
-      // infrastructure/native-shell.ts owns that half; a keyboard Back that
-      // reaches the root simply stays put.
-    },
+  createEffect(() => {
+    const root = document.documentElement
+    if (chipVisible()) root.setAttribute('data-shell-chip', 'on')
+    else root.removeAttribute('data-shell-chip')
+  })
+
+  // The one question a room asks before drawing a transport of its own.
+  createEffect(() => {
+    setShellOwnsTransport(transportVisible())
+  })
+
+  onCleanup(() => {
+    setShellOwnsTransport(false)
+    document.documentElement.removeAttribute('data-shell-chip')
   })
 
   return (
@@ -151,7 +179,7 @@ export const NativeShell: Component = () => {
               <RoomHeader
                 title={() => controls().roomLabel}
                 onBack={() => {
-                  performBack(backHost())
+                  performBack(shellBackHost())
                 }}
                 onGear={controls().openOptions}
               />
@@ -183,6 +211,8 @@ export const NativeShell: Component = () => {
                 elapsedMs={elapsedMs}
                 playing={() => runState() === 'active'}
                 locked={locked}
+                countingIn={countingIn}
+                countInBeat={countInBeat}
                 onStop={requestEnd}
                 onToggle={togglePlayPause}
                 onToggleLock={toggleLock}
@@ -199,6 +229,7 @@ export const NativeShell: Component = () => {
             stage={stage}
             items={items}
             onToggle={toggleColumn}
+            onTouch={touchColumn}
             onPick={(item) => {
               if (item.tab === null) openMore()
               else goToTab(item.tab)
@@ -216,22 +247,26 @@ export const NativeShell: Component = () => {
               </div>
             </PushedScreen>
           </Show>
+
+          {/* Inside the root, not beside it: the sheet copies the custom
+              properties that resolve on its anchor onto its own portal, and
+              the alert has none of its own — so outside, both would animate
+              at full speed on a phone that asked for reduced motion. */}
+          <MoreSheet
+            open={moreOpen}
+            onClose={closeMore}
+            onPushSettings={() => {
+              pushScreen('settings')
+            }}
+          />
+
+          <KeepAlert
+            open={keepAlertOpen}
+            onDiscard={finishRun}
+            onKeep={finishRun}
+          />
         </ShellRoot>
       </Portal>
-
-      <MoreSheet
-        open={moreOpen}
-        onClose={closeMore}
-        onPushSettings={() => {
-          pushScreen('settings')
-        }}
-      />
-
-      <KeepAlert
-        open={keepAlertOpen}
-        onDiscard={finishRun}
-        onKeep={finishRun}
-      />
     </>
   )
 }

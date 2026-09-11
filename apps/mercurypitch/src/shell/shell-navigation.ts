@@ -20,6 +20,7 @@
 import type { ActiveTab, PracticeScope } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
+import { canGoBack } from './history-depth'
 import { closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
@@ -74,6 +75,9 @@ export function selectedRailItem(
 export function goToTab(tab: ActiveTab): void {
   closeColumn()
   closeMore()
+  // A pushed screen covers the whole viewport. Leaving it up while the hash
+  // and the rail's mark both moved is a tab change nobody can see.
+  popScreen()
   const state = runState()
   const owner = runOwner()
   if ((state === 'active' || state === 'paused') && owner === currentTab()) {
@@ -88,6 +92,7 @@ export function returnToRun(): void {
   if (owner === null) return
   closeColumn()
   closeMore()
+  popScreen()
   navigateTo({ type: 'tab', tab: owner })
 }
 
@@ -107,24 +112,43 @@ export type BackOutcome =
  * (More is reachable while Settings is up); the alert is above both because
  * a modal question has to be answerable.
  */
-export function resolveBack(historyDepth: number): BackOutcome {
+export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
   if (keepAlertOpen()) return 'alert'
   if (moreOpen()) return 'sheet'
   if (pushed() !== null) return 'pushed'
-  if (historyDepth > 1) return 'history'
+  if (hasSomewhereToGo) return 'history'
   return 'minimize'
 }
 
 export interface BackHost {
-  readonly historyDepth: number
+  /** Whether an entry of this app's own is behind us — never `history.length`. */
+  readonly canGoBack: boolean
   back: () => void
   minimize: () => void
 }
 
+/**
+ * The real host: what every Back in the app is answered against. Exported so
+ * a test drives the same thing production does rather than a number it made
+ * up — the bug this replaced was invisible to a suite that injected depths.
+ */
+export function shellBackHost(): BackHost {
+  return {
+    canGoBack: canGoBack(),
+    back: () => {
+      window.history.back()
+    },
+    minimize: () => {
+      // Nothing to minimize to in a browser. `infrastructure/native-shell.ts`
+      // owns that half: a press this declines becomes `minimizeApp()` there.
+    },
+  }
+}
+
 /** Performs `resolveBack`'s answer and reports which one it was. */
 export function performBack(host: BackHost): BackOutcome {
-  const outcome = resolveBack(host.historyDepth)
+  const outcome = resolveBack(host.canGoBack)
   switch (outcome) {
     case 'column':
       closeColumn()

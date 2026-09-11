@@ -27,6 +27,8 @@ export interface CornerTabsProps {
   stage: () => 'sing' | 'guitar' | 'piano'
   items: () => RailItem[]
   onToggle: () => void
+  /** Re-arm the idle timer: four seconds is for a column nobody is using. */
+  onTouch?: () => void
   onPick: (item: RailItem) => void
 }
 
@@ -52,7 +54,13 @@ export const CornerTabs: Component<CornerTabsProps> = (props) => {
       }}
       data-testid="shell-corner"
     >
-      <div class="mp-column" id="shell-tab-column" ref={columnRef}>
+      <div
+        class="mp-column"
+        id="shell-tab-column"
+        ref={columnRef}
+        onPointerDown={() => props.onTouch?.()}
+        onFocusIn={() => props.onTouch?.()}
+      >
         <Show when={props.visible() && props.open()}>
           <For each={others()}>
             {(item) => (

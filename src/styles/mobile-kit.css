@@ -86,6 +86,15 @@
   padding-top: calc(var(--safe-top) + 52px);
 }
 
+/* Its companion at the other corner: while a run is going, the shell's tab
+   chip floats over the room's right edge. The newest pixels of a pitch trace
+   are exactly there, so the room keeps the chip's width plus 8 px clear of
+   them rather than drawing underneath (S1b brief §4, the rules that do not
+   vary). Present only while the chip is. */
+:root[data-native-shell][data-shell-chip='on'] .main-content {
+  padding-right: 64px;
+}
+
 /* Glass surface utility — apply to floating chrome (bars, pills, HUD chips).
    Both prefixes required: Safari still needs -webkit-backdrop-filter. */
 .glass {

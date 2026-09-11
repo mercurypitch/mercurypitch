@@ -291,7 +291,7 @@
 
 /* Locked: Stop, the primary and the chip ignore taps and say so by going
    dim. The elapsed clock keeps running — that is the point of the lock. */
-.mp-transport.is-locked .mp-transport__btn:not(.mp-transport__btn--lock),
+.mp-transport.is-locked .mp-transport__btn[aria-disabled='true'],
 .mp-corner.is-locked .mp-chip {
   opacity: 0.45;
   pointer-events: none;
@@ -302,6 +302,13 @@
   display: grid;
   place-items: center;
   transition: opacity 120ms linear;
+}
+
+/* The count-in takes the primary's face. Tabular, so 1 and 4 are the same
+   width and the glyph does not jump between beats. */
+.mp-transport__count {
+  font: 600 26px/1 var(--font-body, inherit);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- R2: the corner chip and the column above it ---------- */

@@ -7,14 +7,28 @@ import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING
 import { registerRunControls } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { openColumn, openMore, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { goToTab, performBack, railItems, resolveBack, selectedRailItem, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { canGoBack, installHistoryDepth } from './history-depth'
+import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
+import { goToTab, performBack, railItems, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
-const host = (historyDepth: number) => ({
-  historyDepth,
+// Only for the ORDER of the first four outcomes, which never reach history.
+// Everything about leaving the room is driven through the real host below:
+// the bug this file did not catch was invisible to an injected depth.
+const host = (canGo: boolean) => ({
+  canGoBack: canGo,
   back: vi.fn(),
   minimize: vi.fn(),
 })
+
+/** jsdom lands a history traversal a task or two after it is asked for. */
+async function until(condition: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (condition()) return
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
+  }
+}
 
 let unregister: (() => void) | null = null
 
@@ -108,20 +122,31 @@ describe('going somewhere', () => {
 
 describe('the order of Back', () => {
   it('closes the column first, then the alert, the sheet and the screen', () => {
-    setPlaybackState('playing')
+    // A room that has something to lose, so Stop really does raise the alert.
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => true,
+      isPaused: () => false,
+      hasUnsavedTake: () => true,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    })
     pushScreen('settings')
     openMore()
     requestEnd()
     openColumn()
 
-    expect(performBack(host(3))).toBe('column')
-    expect(performBack(host(3))).toBe('alert')
-    expect(performBack(host(3))).toBe('sheet')
-    expect(performBack(host(3))).toBe('pushed')
+    expect(performBack(host(true))).toBe('column')
+    expect(performBack(host(true))).toBe('alert')
+    expect(performBack(host(true))).toBe('sheet')
+    expect(performBack(host(true))).toBe('pushed')
   })
 
   it('leaves the room once nothing is open', () => {
-    const back = host(3)
+    const back = host(true)
 
     expect(performBack(back)).toBe('history')
     expect(back.back).toHaveBeenCalledTimes(1)
@@ -129,7 +154,7 @@ describe('the order of Back', () => {
   })
 
   it('minimizes rather than exiting at the root', () => {
-    const back = host(1)
+    const back = host(false)
 
     expect(performBack(back)).toBe('minimize')
     expect(back.minimize).toHaveBeenCalledTimes(1)
@@ -150,13 +175,56 @@ describe('the order of Back', () => {
     unregister = registerRunControls(controls)
     setPlaybackState('playing')
 
-    performBack(host(3))
+    performBack(host(true))
 
     expect(controls.park).toHaveBeenCalledTimes(1)
   })
 
   it('resolves without doing anything', () => {
-    expect(resolveBack(1)).toBe('minimize')
-    expect(resolveBack(9)).toBe('history')
+    expect(resolveBack(false)).toBe('minimize')
+    expect(resolveBack(true)).toBe('history')
+  })
+})
+
+describe('how deep in we are, through the real host', () => {
+  // `history.length` answered this before, and it never shrinks: after one
+  // navigation Back reported itself handled forever and the app could not be
+  // minimized again. These cases drive `shellBackHost()` itself.
+  it('is at the root on launch', () => {
+    const stop = installHistoryDepth()
+    try {
+      expect(canGoBack()).toBe(false)
+      expect(shellBackHost().canGoBack).toBe(false)
+      expect(resolveBack(shellBackHost().canGoBack)).toBe('minimize')
+    } finally {
+      stop()
+    }
+  })
+
+  it('has somewhere to go after a rail tap, and not after coming back', async () => {
+    const stop = installHistoryDepth()
+    try {
+      goToTab(TAB_PROGRESS)
+      await until(() => canGoBack())
+      expect(canGoBack()).toBe(true)
+      expect(resolveBack(shellBackHost().canGoBack)).toBe('history')
+
+      window.history.back()
+      await until(() => !canGoBack())
+      expect(canGoBack()).toBe(false)
+      expect(resolveBack(shellBackHost().canGoBack)).toBe('minimize')
+    } finally {
+      stop()
+    }
+  })
+})
+
+describe('a pushed screen and a rail tap', () => {
+  it('pops the screen, or the tab changes under a full-screen cover', () => {
+    pushScreen('settings')
+
+    goToTab(TAB_PROGRESS)
+
+    expect(pushed()).toBeNull()
   })
 })
