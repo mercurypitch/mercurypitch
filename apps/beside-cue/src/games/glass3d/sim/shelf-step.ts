@@ -35,8 +35,8 @@ const CROUCH_RATE = 12
 const CROUCH_BREATH = 0.25
 
 /** A leap in the air: what was sung, at which riser, and whether his
- * mitt has reached that riser -- which is what aims it there, for the
- * grade (§7) -- and whether its apex has flashed (§6). */
+ * mitt has reached that riser on the way up -- which is what aims it
+ * there, for the grade (§7) -- and whether its apex has flashed (§6). */
 export interface Flight {
   interval: number
   riser: number
@@ -175,8 +175,8 @@ const shelfAt = (climb: ShelfClimb, y: number): number => {
 }
 
 /** A leap has come down, on shelf `on`. It was aimed at its riser if it
- * reached it or landed past it, and then it is graded (§7); a hop in
- * the open, short of any riser, is aimed at nothing. */
+ * reached it on the way up or landed past it, and then it is graded
+ * (§7); a hop in the open, short of any riser, is aimed at nothing. */
 const grade = (climb: ShelfClimb, f: Flight, on: number): void => {
   const target = climb.room.shelves[f.riser]
   if (target === undefined) return
@@ -236,9 +236,14 @@ export const stepShelf = (
   const { flight } = climb
   if (flight !== null) {
     climb.apex = Math.max(climb.apex, loco.y)
-    // His mitt at the riser: the leap is aimed at that shelf.
+    // His mitt at the riser on the way up: the leap is aimed at that
+    // shelf. A hop that only meets it falling, past its apex, is not.
     const target = room.shelves[flight.riser]
-    if (target !== undefined && loco.x >= target.from - HALF - 1e-3) {
+    if (
+      !flight.flashed &&
+      target !== undefined &&
+      loco.x >= target.from - HALF - 1e-3
+    ) {
       flight.reached = true
     }
     // The apex is the step his climb stopped on -- or the one the catch
