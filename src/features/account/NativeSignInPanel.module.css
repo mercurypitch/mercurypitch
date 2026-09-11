@@ -1,0 +1,62 @@
+/* ============================================================
+   NativeSignInPanel — inside the developer console, on a phone
+   ============================================================
+
+   Sized for the console panel it sits in (min(30rem, 100vw - 1.5rem)) and for
+   a thumb: the buttons wrap rather than shrink, because four labels on one
+   row at 360px would each be three characters wide.
+
+   The output is a real <textarea> rather than a <pre>: on a phone the only
+   way to get a token or a hostname off the device is to select it, and a
+   read-only textarea is the one element every mobile browser lets you
+   select-all inside. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.button {
+  flex: 1 1 auto;
+  min-width: 9rem;
+  padding: 0.35rem 0.6rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--text-primary, #e7e9ea);
+  background: var(--surface-hover, #1d1f23);
+  border: 1px solid var(--border, #2f3336);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button:disabled {
+  color: var(--text-muted, #8b98a5);
+  cursor: default;
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b98a5);
+}
+
+.output {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-primary, #e7e9ea);
+  background: var(--surface, #16181c);
+  border: 1px solid var(--border, #2f3336);
+  border-radius: 4px;
+  resize: vertical;
+}
