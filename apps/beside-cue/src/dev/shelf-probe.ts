@@ -42,10 +42,13 @@ const DESIGN_FOV_DEG = 42
 const DESIGN_ASPECT = 1.5
 const MAX_FOV_DEG = 64
 
-// The Line's chase camera, centred: it looks 1.1 m ahead of where it
-// stands and stands 0.15 m ahead of him. Here it follows his height the
-// way it follows his x (§5), so the eye and what it looks at ride up
-// together and the pitch of the view never changes.
+// The Line's chase camera, MIRRORED: it stands 1.1 m to his LEFT of what
+// it looks at, and looks 0.15 m ahead of him. The Line's stands on his
+// right, and a staircase rises to his right: from there the next step's
+// near corner hid half of him, face included, at every riser, and every
+// riser faced away from the lens, catch and all. Here it also follows
+// his height the way it follows his x (§5), the eye and what it looks at
+// riding up together, so the pitch of the view never changes.
 const CHASE_AHEAD = 1.1
 const CHASE_LEAD = 0.15
 const EYE_ABOVE = 1.0
@@ -56,8 +59,12 @@ const CHASE_RATE = 3.2
 /** Close enough to its mark that a measurement will not move under it. */
 const SETTLED = 0.002
 
-/** How far across the room a shelf runs, toward the camera and away. */
-const SPAN = 1.1
+/** How far a shelf runs across the room toward the camera, and away.
+ * The near face stands just in front of him rather than a corridor's
+ * half-width out: a face 0.55 m nearer the lens than he is reads 1.2
+ * times the rise it is, and the rise beside him is what is judged. */
+const SPAN_NEAR = 0.25
+const SPAN_FAR = 0.6
 /** How far the boxes reach below the floor, so the floor is a box too
  * and every shelf, the floor included, has a top to measure. */
 const SLAB = 0.05
@@ -112,15 +119,15 @@ aimFromRig(glint, RIG.glint, new Vector3(0, 0.6, 0), 2.24)
 const rim = new SpotLight(PAPER, 16, 7, Math.PI / 6, 0.8, 1.5)
 aimFromRig(rim, RIG.back, new Vector3(0, 0.45, 0.4), 2.09)
 rig.add(key, key.target, glint, glint.target, rim, rim.target)
-// Five times the Line's fill. The shelves are the subject here and have
-// to read at every height, not only where the key falls; Merc is chrome
-// and takes his light from the environment, so it barely touches him.
-scene.add(new AmbientLight(0xffffff, 0.35))
+// A little over the Line's fill, so a shelf the key does not reach still
+// has an edge. The shelves are dark on purpose: Merc is chrome, and a
+// pale shelf under him turns him into a white shape on a white shape.
+scene.add(new AmbientLight(0xffffff, 0.12))
 
 const shelfMaterial = new MeshStandardMaterial({
-  color: 0x8f9a97,
-  roughness: 0.7,
-  metalness: 0.05,
+  color: 0x2e3837,
+  roughness: 0.8,
+  metalness: 0,
 })
 // The lip is where his mitts catch, so it is drawn; the band under it is
 // the catch itself, the 5 cm a leap may fall short by and still land --
@@ -151,17 +158,19 @@ const buildRoom = (): void => {
   shelfBoxes = room.shelves.map((shelf, i) => {
     const top = tops[i]!
     const tall = top + SLAB
+    const span = SPAN_NEAR + SPAN_FAR
+    const z = (SPAN_NEAR - SPAN_FAR) / 2
     const box = new Mesh(
-      new BoxGeometry(shelf.to - shelf.from, tall, SPAN),
+      new BoxGeometry(shelf.to - shelf.from, tall, span),
       shelfMaterial,
     )
-    box.position.set((shelf.from + shelf.to) / 2, top - tall / 2, 0)
+    box.position.set((shelf.from + shelf.to) / 2, top - tall / 2, z)
     roomGroup.add(box)
     if (i > 0) {
-      const lip = new Mesh(new BoxGeometry(0.014, 0.014, SPAN), lipMaterial)
-      lip.position.set(shelf.from, top, 0)
-      const band = new Mesh(new BoxGeometry(0.004, CATCH, SPAN), catchMaterial)
-      band.position.set(shelf.from - 0.003, top - CATCH / 2, 0)
+      const lip = new Mesh(new BoxGeometry(0.014, 0.014, span), lipMaterial)
+      lip.position.set(shelf.from, top, z)
+      const band = new Mesh(new BoxGeometry(0.004, CATCH, span), catchMaterial)
+      band.position.set(shelf.from - 0.003, top - CATCH / 2, z)
       roomGroup.add(lip, band)
     }
     return box
@@ -177,7 +186,7 @@ const standX = (): number =>
 const standY = (): number => tops[shelfIndex]!
 
 const cameraMark = (): { x: number; y: number } => ({
-  x: standX() + CHASE_AHEAD + CHASE_LEAD,
+  x: standX() + CHASE_LEAD - CHASE_AHEAD,
   y: standY() + EYE_ABOVE,
 })
 
@@ -213,7 +222,7 @@ const button = (label: string, press: () => void): HTMLButtonElement => {
   b.type = 'button'
   b.textContent = label
   b.style.cssText =
-    'font:14px monospace;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid rgba(207,214,220,0.35);background:rgba(207,214,220,0.08);color:#cfd6dc;touch-action:manipulation'
+    'font:14px monospace;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid rgba(207,214,220,0.35);background:rgba(11,13,16,0.82);color:#cfd6dc;touch-action:manipulation'
   b.addEventListener('click', press)
   bar.append(b)
   return b
@@ -391,7 +400,10 @@ const tick = (now: number): void => {
   const x = standX()
   const y = standY()
   merc.root.position.set(x, y + merc.metrics().feetBelowRoot, 0)
-  merc.root.rotation.y = 1.05
+  // Turned toward the riser, but less than the Line's walking 1.05: that
+  // was set against a lens on his right, and from the left it is a
+  // profile. This keeps his face to the lens he is judged through.
+  merc.root.rotation.y = 0.35
   merc.update(Math.min(dt, 0.1))
   rig.position.set(x, y, 0)
 
@@ -407,7 +419,7 @@ const tick = (now: number): void => {
     camera.position.y += (mark.y - camera.position.y) * k
   }
   camera.lookAt(
-    camera.position.x - CHASE_AHEAD,
+    camera.position.x + CHASE_AHEAD,
     camera.position.y - (EYE_ABOVE - LOOK_ABOVE),
     0,
   )
