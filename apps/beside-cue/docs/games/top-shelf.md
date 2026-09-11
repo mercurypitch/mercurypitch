@@ -387,3 +387,20 @@ arc adds. Beyond the metre a hop of the ask never lands, but a sharp
 one flies longer: from 4.7 semitones over room 2's major third to his
 spring, walking pace still carries him onto it from up to 1.035 m, and
 that floor is 1.07 m deep.
+
+### Review fixes
+
+Five fixes from the review of 6a to 6d. The stage's step moved to
+`sim/shelf-step.ts` first, so each one is tested where the game runs it.
+
+- A stop less than half a semitone up (`MIN_LEAP_SEMIS`, the slide
+  tracker's own) readies him instead of leaping, and the HUD's "ready"
+  reads the same number.
+- A leap is aimed at a shelf, and graded, only if his mitt reaches its
+  riser before the apex.
+- Past the apex an aimed leap carries him at walking pace, so he no
+  longer slides on past the landing against the thumb.
+- The apex flash marks the height he reached, not the lip the catch
+  lifted him onto.
+- Clearing a room lets his crouch go, so he no longer stays squashed
+  behind the room card.
