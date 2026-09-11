@@ -204,7 +204,9 @@ worlds (in the Cabinet the shader work shows under `compile` instead),
 then building the scene at about 45. The largest wait on the list comes
 after the gate: half a second from a live stream to the first detector
 frame, on a machine where the stream itself took 18 ms (a fake device,
-so no prompt). That, not Merc's glb, is where 5d looks first.
+so no prompt). That, not Merc's glb, is where 5d looks first. (5d found
+the half second to be the fake device's own: it is silent but for a
+beep every half second, and `f0` waits for the first beep. §2.7.)
 
 **The Cabinet's lens (P8).** `render/fov.ts` holds a composition's
 horizontal angle on a narrower screen, only ever widening, and capped.
@@ -336,6 +338,101 @@ any machine: with the preference off that frame is held, shaken and
 drawn at 1.0; under `reducedMotion: 'reduce'` it is none of those, the
 canvas never changes size, and the four taps still arrive. The Line's
 drop reaches `navigator.vibrate` as its 20 ms.
+
+### 2.7 What 5d landed
+
+**Measured first, and the half second was the microphone's.** 5a's
+largest wait, `f0` at 530-550 ms in every world, was not the pitch
+engine's. Chromium's fake microphone, which every headless run uses, is
+silent but for a short beep every half second -- sound at 517, 1016 and
+1520 ms after the stream opens -- and `f0` ends at the first detector
+frame with any level in it: the first beep. Fed a continuous sung tone
+instead (`--use-file-for-fake-audio-capture`), the same path takes 48 ms
+in every world, and 43 of those are the first 2048-sample window filling
+at 48 kHz, which nothing done before the microphone can shorten. `mic`
+is 17 ms, a fake device with no prompt.
+
+**Where a card tap's wait went before 5d.** The 5c build, production,
+headless Chromium, 390 × 844 at DPR 3, the desktop GPU through ANGLE
+(WebGL2), the median of three cold starts, each in a fresh browser, in
+milliseconds:
+
+| World    | scene | gpu | merc | glass | compile | draw | first | mic | f0  |
+| -------- | ----- | --- | ---- | ----- | ------- | ---- | ----- | --- | --- |
+| Cabinet  | 45    | 25  | --   | 13    | 123     | 36   | 251   | 17  | 48  |
+| Hallway  | 43    | 25  | 24   | 11    | 124     | 41   | 278   | 17  | 48  |
+| Chambers | 44    | 26  | 23   | 11    | 125     | 58   | 289   | 17  | 48  |
+| Line     | 46    | 26  | 19   | --    | --      | 147  | 244   | 17  | 48  |
+
+Merc's glb is the larger of the two files that load side by side after
+`gpu`, so in every world he is in, he is the one the stage waits for.
+The rest is the renderer's -- building the scene, `renderer.init()` and
+the shader work (`compile`, `draw`) -- and it is 84-91% of `first`,
+which P7 keeps per stage.
+
+**The warm (P7).** When the games list is shown, once its first frame
+has been painted and the page is idle -- `requestIdleCallback` with a
+two-second ceiling, or a quarter of a second after the paint where
+Safari has none (`runtime/warm.ts`) -- the list starts two things:
+Merc's glb, fetched and parsed, and the pitch detector's worker. The
+next `createMerc` takes that load instead of starting its own, and the
+next F0 stream adopts the worker instead of spawning one
+(`preloadF0Detector`, an additive export of the pitch engine). Each is
+taken once: dressing Merc writes to the loaded scene, and a stream
+terminates its worker when it ends, so neither can serve two. The list
+warms again whenever a game hands it back, and lets go of what no game
+took when it is left for Home. Nothing on the way asks for the
+microphone or makes an audio context; the worker is told the sample
+rate later, by message. There is still no ORT session to make -- the
+stream is YIN -- so on this path the pitch model is that worker.
+`?cold` in the address turns the warm off, so one build on one phone
+gives both numbers.
+
+**What it bought.** The 5d build on the same machine, warm and `?cold`
+taken in turn run by run, so that a slow spell lands on both, the median
+of five, in milliseconds:
+
+| World    | merc, warm | merc, cold | first, warm | first, cold |
+| -------- | ---------- | ---------- | ----------- | ----------- |
+| Cabinet  | --         | --         | 255         | 250         |
+| Hallway  | 8          | 26         | 272         | 295         |
+| Chambers | 7          | 23         | 287         | 287         |
+| Line     | 8          | 20         | 228         | 240         |
+
+What remains of `merc` is dressing him: his materials, his size, his
+wrapper. `first` moves by about as much in the Hallway and the Line,
+and in the chambers in two runs of five (271 and 272, against 286-291
+cold). From run to run `first` spreads by up to 60 ms on this machine,
+more than the saving, and the Cabinet, which has no Merc, moves by that
+spread alone. With the GPU in software (SwiftShader, the median of
+three), where drawing holds the main thread, `merc` goes from 33-48 ms
+to 7-10 and `f0` from 750-1030 ms to 450-670, in every world: the worker
+the list started is up before the gate, and one spawned at the gate
+comes up while the renderer has the thread. Neither machine is a phone;
+the second shows what the warm is for when the main thread is the
+bottleneck.
+
+**It never touched the list's first paint.** In every run the list was
+painted 9-17 ms after it mounted, with no long task in between, and the
+warm began just after it, 11-20 ms after the mount: the worker spawned
+and Merc's file was asked for in the first idle moment after the paint.
+Even a tap as quick as Playwright's, the card clicked the moment the
+list existed, found the warm under way (`merc` 7-9). A tap that beats
+it loses nothing: the stage loads what it needs itself, as before.
+
+**What it does not move.** `f0` stays at 47-48 ms, because on a desktop
+the worker is up before the first window has filled; on a phone, where
+a module worker's thread, fetch and parse all cost more, the spare is
+the part that can show. The glass files load in the same slot as Merc
+and could ride the same warm if the phone's `glass` says they are worth
+it. The shader work cannot: it belongs to a WebGL context, and the list
+has none -- a renderer made there would be a second context for the
+page, which P7 ruled out.
+
+**Measured where.** Headless on a desktop is not a phone. These numbers
+say the warm works and where the rest of the wait sits; the number that
+counts is `first` on the chip on the phones, with and without `?cold`,
+and it goes in §2.3 with the gate.
 
 ---
 
