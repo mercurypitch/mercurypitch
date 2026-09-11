@@ -31,6 +31,7 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -1829,7 +1830,14 @@ const AppShell: Component<AppProps> = (props) => {
     // button look active (and react to playback) on the next visit. Mirrors
     // the Piano/Guitar cleanup below.
     if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
-      void resetPlaybackState()
+      // Under the native shell, leaving a room PARKS the run rather than
+      // ending it (S1 build brief §6): the shell has already paused playback
+      // and released the microphone on the way out, and the session pill is
+      // the way back to it. Resetting here would end the very run that pill
+      // exists to return to. The mic stop stays in both builds — it is the
+      // belt to the shell's braces, and a mic left listening under another
+      // tab is the failure this block was written for.
+      if (!IS_NATIVE_BUILD || prevTab === TAB_COMPOSE) void resetPlaybackState()
       if (micActive()) practiceEngine.stopMic()
     }
 
@@ -3200,7 +3208,15 @@ const AppShell: Component<AppProps> = (props) => {
             challengeStageLaunch() === null
           }
         >
-          <Show when={labTab() === null}>
+          {/* The native build draws its own chrome. `apps/mercurypitch`'s
+              shell owns the bottom rail, the room header and the More sheet,
+              so this header (with AppNavTabs inside it) and the web
+              BottomTabBar do not mount there. Gated on the BUILD, never on
+              the viewport: `isNarrow()` is width and pointer, and a native
+              tablet is still the app, not a desktop. The constant folds to a
+              literal, so the web bundle keeps the branch and the native one
+              drops it outright. */}
+          <Show when={labTab() === null && !IS_NATIVE_BUILD}>
             {/* The docked voice pill shares this row with the title, and a
                 phone's row is about three hundred pixels wide. While there
                 are words to show the title steps aside and the transcript
@@ -3356,8 +3372,10 @@ const AppShell: Component<AppProps> = (props) => {
 
           {/* Main layout: sidebar + content */}
           <div class={styles.mainLayout} id="main-layout">
-            {/* Shared sidebar — with mobile open class */}
-            <Show when={labTab() === null}>
+            {/* Shared sidebar — with mobile open class. Absent under the
+                native shell: its only way in is the header's menu button,
+                which does not mount there. */}
+            <Show when={labTab() === null && !IS_NATIVE_BUILD}>
               <AppSidebar
                 class={sidebarOpen() === true ? 'open' : ''}
                 onOctaveShift={handleOctaveShift}

@@ -15,7 +15,7 @@
 // sidebar uses; App-scope playback handlers arrive as props.
 
 import type { Component, JSX } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { MicSparkleIcon, PauseIcon, PlayIcon } from '@/components/mobile/icons'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
@@ -24,12 +24,14 @@ import { TransportBar } from '@/components/mobile/TransportBar'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_SINGING, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { KEY_OFFSETS } from '@/lib/scale-data'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import type { PlaybackMode } from '@/types'
 import styles from './SingingMobileStage.module.css'
@@ -95,6 +97,42 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
   props,
 ) => {
   const [optionsOpen, setOptionsOpen] = createSignal(false)
+
+  /**
+   * Hand the native shell what it needs to drive this room's run.
+   *
+   * The shell lives in `apps/mercurypitch` and cannot be imported from here,
+   * so the handover goes through the bridge store: the stage keeps Start, the
+   * engine and the microphone; the shell's transport asks for pause, resume,
+   * stop, and the park that leaves a run behind without ending it. Registered
+   * on MOUNT rather than on start, because the room header's name and its
+   * gear come from the same registration and exist before any run does.
+   *
+   * Nothing happens on the web: the whole block folds away with the constant.
+   */
+  if (IS_NATIVE_BUILD) {
+    onMount(() => {
+      onCleanup(
+        registerRunControls({
+          tab: TAB_SINGING,
+          roomLabel: 'Sing',
+          isPlaying: () => props.isPlaying(),
+          isPaused: () => props.isPaused(),
+          pause: () => props.onPause(),
+          resume: () => props.onResume(),
+          stop: () => props.onStop(),
+          // One frame, both halves: the sound stops and the microphone is
+          // released together (REQ-NHR-017). Pause, never stop — a parked run
+          // comes back paused, with the singer's place kept.
+          park: () => {
+            if (props.isPlaying()) props.onPause()
+            if (props.micActive()) props.onMicToggle()
+          },
+          openOptions: () => setOptionsOpen(true),
+        }),
+      )
+    })
+  }
 
   const playPauseLabel = (): string =>
     props.isPlaying() ? 'Pause' : props.isPaused() ? 'Resume' : 'Play'
@@ -189,7 +227,11 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       </div>
 
       {/* ── Session cluster (slim pill) ──────────────────── */}
-      <Show when={sessionActive()}>
+      {/* Not under the native shell: the dock's accessory slot is where a
+          session shows itself there, and two pills on one screen saying
+          different things about the same run is the confusion the shell
+          exists to remove. */}
+      <Show when={sessionActive() && !IS_NATIVE_BUILD}>
         <div class={styles.sessionPill}>
           <span class={styles.sessionLabel}>
             {getCurrentSessionItem()?.label ??
@@ -215,83 +257,92 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       </Show>
 
       {/* ── Transport ────────────────────────────────────── */}
-      <TransportBar class={styles.transport}>
-        <button
-          classList={{
-            [styles.roundBtn]: true,
-            [styles.micBtn]: true,
-            [styles.micOn]: props.micActive(),
-          }}
-          onClick={() => {
-            haptics.tapLight()
-            props.onMicToggle()
-          }}
-          title={props.micActive() ? 'Stop the mic' : 'Start the mic'}
-          aria-label={props.micActive() ? 'Stop the mic' : 'Start the mic'}
-          aria-pressed={props.micActive()}
-          data-tour="singing-transport"
-        >
-          <MicSparkleIcon size={19} />
-        </button>
-
-        <button
-          classList={{ [styles.roundBtn]: true, [styles.playBtn]: true }}
-          onClick={onPlayPause}
-          title={playPauseLabel()}
-          aria-label={playPauseLabel()}
-        >
-          <Show when={props.isPlaying()} fallback={<PlayIcon size={26} />}>
-            <PauseIcon size={26} />
-          </Show>
-        </button>
-
-        <Show when={props.isPlaying() || props.isPaused()}>
+      {/* Under the native shell the run's controls are in the dock, in the
+          rail's own slot — the stage keeps this bar only for the affordance
+          that STARTS a run. Once one is going, the band below owns it, and
+          the stacked pair is exactly the two rows of chrome S1b set out to
+          remove. */}
+      <Show
+        when={!IS_NATIVE_BUILD || (!props.isPlaying() && !props.isPaused())}
+      >
+        <TransportBar class={styles.transport}>
           <button
-            classList={{ [styles.roundBtn]: true, [styles.stopBtn]: true }}
-            onClick={() => props.onStop()}
-            title="Stop"
-            aria-label="Stop"
+            classList={{
+              [styles.roundBtn]: true,
+              [styles.micBtn]: true,
+              [styles.micOn]: props.micActive(),
+            }}
+            onClick={() => {
+              haptics.tapLight()
+              props.onMicToggle()
+            }}
+            title={props.micActive() ? 'Stop the mic' : 'Start the mic'}
+            aria-label={props.micActive() ? 'Stop the mic' : 'Start the mic'}
+            aria-pressed={props.micActive()}
+            data-tour="singing-transport"
           >
-            <span class={styles.stopGlyph} />
+            <MicSparkleIcon size={19} />
           </button>
-        </Show>
 
-        <button
-          class={styles.modeBtn}
-          onClick={() => {
-            const order: PlaybackMode[] = [
-              PLAYBACK_MODE_ONCE,
-              PLAYBACK_MODE_REPEAT,
-              PLAYBACK_MODE_SESSION,
-            ]
-            const next =
-              order[(order.indexOf(props.playMode()) + 1) % order.length]
-            props.onPlayModeChange(next)
-          }}
-          title="Play mode"
-          aria-label={`Play mode: ${modeLabel(props.playMode())}. Tap to change`}
-        >
-          {modeLabel(props.playMode())}
-        </button>
+          <button
+            classList={{ [styles.roundBtn]: true, [styles.playBtn]: true }}
+            onClick={onPlayPause}
+            title={playPauseLabel()}
+            aria-label={playPauseLabel()}
+          >
+            <Show when={props.isPlaying()} fallback={<PlayIcon size={26} />}>
+              <PauseIcon size={26} />
+            </Show>
+          </button>
 
-        <button
-          classList={{ [styles.roundBtn]: true, [styles.moreBtn]: true }}
-          onClick={() => setOptionsOpen(true)}
-          title="Practice options"
-          aria-label="Practice options"
-          data-tour="singing-options"
-        >
-          <span class={styles.moreGlyph}>
-            <i />
-            <i />
-            <i />
-          </span>
-        </button>
+          <Show when={props.isPlaying() || props.isPaused()}>
+            <button
+              classList={{ [styles.roundBtn]: true, [styles.stopBtn]: true }}
+              onClick={() => props.onStop()}
+              title="Stop"
+              aria-label="Stop"
+            >
+              <span class={styles.stopGlyph} />
+            </button>
+          </Show>
 
-        <Show when={props.isCountingIn()}>
-          <span class={styles.countBadge}>{props.countInBeat()}</span>
-        </Show>
-      </TransportBar>
+          <button
+            class={styles.modeBtn}
+            onClick={() => {
+              const order: PlaybackMode[] = [
+                PLAYBACK_MODE_ONCE,
+                PLAYBACK_MODE_REPEAT,
+                PLAYBACK_MODE_SESSION,
+              ]
+              const next =
+                order[(order.indexOf(props.playMode()) + 1) % order.length]
+              props.onPlayModeChange(next)
+            }}
+            title="Play mode"
+            aria-label={`Play mode: ${modeLabel(props.playMode())}. Tap to change`}
+          >
+            {modeLabel(props.playMode())}
+          </button>
+
+          <button
+            classList={{ [styles.roundBtn]: true, [styles.moreBtn]: true }}
+            onClick={() => setOptionsOpen(true)}
+            title="Practice options"
+            aria-label="Practice options"
+            data-tour="singing-options"
+          >
+            <span class={styles.moreGlyph}>
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
+
+          <Show when={props.isCountingIn()}>
+            <span class={styles.countBadge}>{props.countInBeat()}</span>
+          </Show>
+        </TransportBar>
+      </Show>
 
       {/* ── The one options sheet (D4) ───────────────────── */}
       <OptionsSheet
@@ -411,6 +462,25 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
         </OptionSection>
 
         <DesktopHint message="A-B loops, session modes, custom scales & more — on desktop." />
+
+        {/* The room's sheet ends where the app's settings begin (S1 gate-1
+            answer: two doors to Settings, this is the room's one). The shell
+            owns the pushed screen, so the row asks it rather than navigating. */}
+        <Show when={IS_NATIVE_BUILD}>
+          <OptionSection label="More">
+            <OptionRow label="All settings">
+              <button
+                class={styles.stepBtn}
+                onClick={() => {
+                  setOptionsOpen(false)
+                  nativeShellApi()?.pushSettings()
+                }}
+              >
+                Open
+              </button>
+            </OptionRow>
+          </OptionSection>
+        </Show>
       </OptionsSheet>
 
       {/* ── Song / track picker modals (same wiring as the desktop
