@@ -70,7 +70,7 @@ export default defineConfig(({ mode, command }) => {
         ...loadEnv(mode, fileURLToPath(new URL('.', import.meta.url))),
         ...process.env,
       },
-      (process.env.GITHUB_REF ?? '').startsWith('refs/tags/mercurypitch-v'),
+      (process.env.GITHUB_REF ?? '').startsWith('refs/tags/mp-v'),
     )
   }
 

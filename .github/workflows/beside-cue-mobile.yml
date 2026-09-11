@@ -34,7 +34,7 @@ on:
   # every tag through.
   push:
     branches: [main]
-    tags: ['beside-cue-v*']
+    tags: ['bc-v*']
   workflow_dispatch:
 
 permissions:
@@ -58,7 +58,7 @@ jobs:
       app-dir: apps/beside-cue
       package-name: '@irchiinnuss/beside-cue-app'
       bundle-id: com.irchiinnuss.besidecue
-      tag-prefix: beside-cue-v
+      tag-prefix: bc-v
       signing-env-prefix: BESIDE_CUE
       profile-build-setting: BESIDE_CUE_PROFILE
       # Kept in step with the pull_request `paths:` filter above.

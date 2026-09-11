@@ -73,7 +73,7 @@ on:
         required: true
         type: string
       tag-prefix:
-        description: 'Release tag prefix, stripped to get the marketing version. e.g. "beside-cue-v"'
+        description: 'Release tag prefix, stripped to get the marketing version. e.g. "bc-v" or "mp-v"'
         required: true
         type: string
       signing-env-prefix:
@@ -306,7 +306,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # `beside-cue-v0.2.1` -> versionName 0.2.1. Play rejects a re-used
+          # `bc-v0.2.1` -> versionName 0.2.1. Play rejects a re-used
           # versionCode, and the run number is the only value here that is
           # guaranteed to increase, so it is the code regardless of the tag.
           if [[ "$IS_RELEASE" == "true" ]]; then

@@ -41,7 +41,7 @@ on:
   # lets every tag through.
   push:
     branches: [main]
-    tags: ['mercurypitch-v*']
+    tags: ['mp-v*']
   workflow_dispatch:
 
 permissions:
@@ -62,7 +62,7 @@ jobs:
       app-dir: apps/mercurypitch
       package-name: '@irchiinnuss/mercury-pitch-app'
       bundle-id: com.irchiinnuss.mercurypitch
-      tag-prefix: mercurypitch-v
+      tag-prefix: mp-v
       signing-env-prefix: MERCURYPITCH
       profile-build-setting: MERCURYPITCH_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
