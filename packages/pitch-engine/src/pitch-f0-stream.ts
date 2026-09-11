@@ -31,6 +31,7 @@
 // ============================================================
 
 import workletUrl from './f0-capture.worklet.ts?worker&url'
+import { spawnDetectorWorker, takePreloadedDetector, } from './f0-detector-preload'
 import type { PitchFrame } from './f0-frames'
 import { createFrameAssembler } from './f0-frames'
 import type { F0CaptureMessage, F0WorkerResult } from './f0-worklet-contract'
@@ -136,10 +137,10 @@ export function createF0Stream(
         channelCountMode: 'explicit',
         channelInterpretation: 'speakers',
       })
-      const detectorWorker = new Worker(
-        new URL('./f0-detector.worker.ts', import.meta.url),
-        { type: 'module' },
-      )
+      // A worker started ahead of the microphone (preloadF0Detector) has
+      // already fetched and parsed its script; without one, the stream
+      // spawns its own here, as it always did.
+      const detectorWorker = takePreloadedDetector() ?? spawnDetectorWorker()
       detectorWorker.postMessage({
         kind: 'configure',
         sampleRate: audioContext.sampleRate,
