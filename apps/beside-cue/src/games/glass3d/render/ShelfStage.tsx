@@ -27,9 +27,14 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
-import { CATCH, groundFor, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, SHELVES, topsOf, } from '../levels/shelf'
+import { CATCH, groundFor, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, topsOf, } from '../levels/shelf'
+import { keepBest, readStats, writeStats } from '../levels/shelf-stats'
+import { shelfTrack } from '../levels/shelf-track'
 import { createLoopState, runLoop } from '../runtime/loop'
+import { medalFor } from '../sim/line-grade'
 import { createLocomotion, leapVelocity, stepLocomotion, } from '../sim/locomotion3d'
+import type { ShelfGrade, ShelfStats } from '../sim/shelf-grade'
+import { NO_LEAPS, roomLine, statsOf, walkLine, withLeap, } from '../sim/shelf-grade'
 import { emptyVoice, intervalLabel, voiceStep } from '../sim/shelf-voice'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import { ShapeGauge } from './ShapeGauge'
@@ -72,15 +77,20 @@ const writeToggle = (key: string, on: boolean): void => {
   }
 }
 
-/** The rooms, in the order they teach (§4). */
-const ROOMS: readonly ShelfLevel[] = SHELVES
-
-const roomAfter = (id: string): ShelfLevel | null => {
-  const i = ROOMS.findIndex((r) => r.id === id)
-  return i < 0 ? null : (ROOMS[i + 1] ?? null)
-}
+/** The rooms, in the order they teach (§4), on their own track. */
+const ROOMS = shelfTrack.rooms
 
 type Phase = 'climbing' | 'cleared' | 'done'
+
+/** A leap in the air: what was sung, at which riser, and whether his
+ * mitt has reached that riser -- which is what aims it there, for the
+ * grade (§7) -- and whether its apex has flashed (§6). */
+interface Flight {
+  interval: number
+  riser: number
+  reached: boolean
+  flashed: boolean
+}
 
 const DevDials = import.meta.env.DEV
   ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
@@ -90,6 +100,14 @@ interface ShelfStageProps {
   onExit: () => void
 }
 
+/** The app's medal, at the Line's thresholds, with nothing gated on it
+ * (§7). Renders nothing below bronze: the units are the grade then. */
+const Medal = (props: { pct: number }) => (
+  <Show when={medalFor(props.pct)}>
+    {(medal) => <i class={`line-medal line-medal--${medal()}`}>{medal()}</i>}
+  </Show>
+)
+
 export const ShelfStage = (props: ShelfStageProps) => {
   let canvas!: HTMLCanvasElement
   // Only locomotion and the loop are read from it, as in the Line; its
@@ -98,18 +116,26 @@ export const ShelfStage = (props: ShelfStageProps) => {
   const input = createIntentSource()
   const noMicApi = micApiBlocker()
 
-  const [room, setRoom] = createSignal<ShelfLevel>(ROOMS[0]!)
+  const [track, setTrack] = createSignal(shelfTrack.readTrack())
+  const [room, setRoom] = createSignal<ShelfLevel>(
+    shelfTrack.currentRoom(shelfTrack.readTrack()),
+  )
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
-  const [phase, setPhase] = createSignal<Phase>('climbing')
+  const [phase, setPhase] = createSignal<Phase>(
+    shelfTrack.isFinished(shelfTrack.readTrack()) ? 'done' : 'climbing',
+  )
   const [ready, setReady] = createSignal(false)
   const [heard, setHeard] = createSignal(false)
   const [level, setLevel] = createSignal(0)
   /** Semitones above the reference the voice is now, or null. */
   const [above, setAbove] = createSignal<number | null>(null)
   const [standing, setStanding] = createSignal(0)
-  const [climbed, setClimbed] = createSignal<readonly string[]>([])
+  /** Every room's best run, in §7's units, for the walk card. */
+  const [stats, setStats] = createSignal(readStats())
+  /** The run just finished, for the room card. */
+  const [lastRun, setLastRun] = createSignal<ShelfStats | null>(null)
   /** The next shelf's rise, in semitones, or null on the top shelf. */
   const [ask, setAsk] = createSignal<number | null>(null)
   const [showGauge, setShowGauge] = createSignal(readToggle(GAUGE_KEY))
@@ -192,10 +218,10 @@ export const ShelfStage = (props: ShelfStageProps) => {
        * for the dev hook: what a test checks a stop did. */
       let leaps = 0
       let apex = 0
-      /** The leap in the air: what was sung, and at which riser, for the
-       * flash at its apex (§6). Null on the ground. */
-      let flight: { interval: number; riser: number; flashed: boolean } | null =
-        null
+      /** The leap in the air, or null on the ground. */
+      let flight: Flight | null = null
+      /** What each riser's leaps came to: riser k's at k - 1 (§7). */
+      let grades: ShelfGrade[] = live.shelves.slice(1).map(() => NO_LEAPS)
       let wallSeconds = 0
       let clearedAtWall = 0
       let lastHeard = false
@@ -265,6 +291,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         ground = groundFor(next, HALF)
         r.load(next)
         resetBody()
+        grades = next.shelves.slice(1).map(() => NO_LEAPS)
         // A new room starts from no reference: a note held across the
         // handover settles as the first stop and readies him.
         voice = emptyVoice()
@@ -291,20 +318,42 @@ export const ShelfStage = (props: ShelfStageProps) => {
         flight = {
           interval: leap.interval,
           riser: standingOn + 1,
+          reached: false,
           flashed: false,
         }
       }
 
-      /** The room is climbed. */
+      /** A leap has come down, on shelf `on`. It was aimed at its riser
+       * if it reached it or landed past it, and then it is graded (§7);
+       * a hop in the open, short of any riser, is aimed at nothing. */
+      const grade = (f: Flight, on: number): void => {
+        const target = live.shelves[f.riser]
+        if (target === undefined) return
+        const up = on >= f.riser
+        if (!up && !f.reached) return
+        const i = f.riser - 1
+        grades[i] = withLeap(grades[i]!, f.interval, target.rise, up)
+      }
+
+      /** The room is climbed. Written the moment it happens, the Line's
+       * way: a player who puts the phone down after room one has climbed
+       * room one. The grade is §7's, kept per room for the best run. */
       const clearRoom = (): void => {
-        setClimbed((ids) => (ids.includes(live.id) ? ids : [...ids, live.id]))
+        const run = statsOf(grades)
+        setLastRun(run)
+        const next = shelfTrack.recordClear(track(), live.id, run.pct)
+        setTrack(next)
+        shelfTrack.writeTrack(next)
+        const kept = keepBest(stats(), live.id, run)
+        setStats(kept)
+        writeStats(kept)
         clearedAtWall = wallSeconds
         if (replaying) {
           replaying = false
           go('done')
           return
         }
-        go(roomAfter(live.id) === null ? 'done' : 'cleared')
+        go(shelfTrack.roomAfter(live.id) === null ? 'done' : 'cleared')
       }
 
       closeWalls()
@@ -331,7 +380,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           if (phaseNow === 'cleared') {
             if (wallSeconds - clearedAtWall >= CLEARED_SECONDS) {
-              const next = roomAfter(live.id)
+              const next = shelfTrack.roomAfter(live.id)
               if (next === null) go('done')
               else enterRoom(next)
             }
@@ -364,6 +413,11 @@ export const ShelfStage = (props: ShelfStageProps) => {
           stepLocomotion(loco, { move, jump: false }, ground, dt, walls)
           if (flight !== null) {
             apex = Math.max(apex, loco.y)
+            // His mitt at the riser: the leap is aimed at that shelf.
+            const target = live.shelves[flight.riser]
+            if (target !== undefined && loco.x >= target.from - HALF - 1e-3) {
+              flight.reached = true
+            }
             // The apex is the step his climb stopped on -- or the one the
             // catch took him on, which for a leap that lands is the same
             // step (§11, 6b).
@@ -379,6 +433,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           }
           if (loco.grounded) {
             const on = shelfAt(loco.y)
+            if (flight !== null) grade(flight, on)
             if (carrying && on > standingOn) {
               boardTo = live.shelves[on]!.from + HALF
             }
@@ -462,6 +517,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           reference: voice.reference,
           leaps,
           apex,
+          grades: grades.map((g) => ({ ...g })),
           mercScreenBox: () => r.mercScreenBox(),
           move: (m: number) => input.setMove(m),
           warpTo: (x: number) => {
@@ -639,7 +695,8 @@ export const ShelfStage = (props: ShelfStageProps) => {
                 standing() === top() ? 'The way out is lit.' : room().teaches
               }
             >
-              Up.
+              {room().name}
+              {lastRun() === null ? '' : ` — ${roomLine(lastRun()!)}`}
             </Show>
           </p>
           <p class="chamber-hud__where">
@@ -701,7 +758,28 @@ export const ShelfStage = (props: ShelfStageProps) => {
 
       <Show when={phase() === 'done'}>
         <div class="stage3d__card chamber-done">
-          <span>The Top Shelf, climbed.</span>
+          <Show
+            when={shelfTrack.isFinished(track())}
+            fallback={
+              <>
+                <span>{room().name}, climbed.</span>
+                <Show when={lastRun()}>
+                  {(run) => (
+                    <span class="stage3d__card-note">
+                      {roomLine(run())}
+                      <Medal pct={run().pct} />
+                    </span>
+                  )}
+                </Show>
+              </>
+            }
+          >
+            <span>The Top Shelf, climbed.</span>
+            <span class="stage3d__card-note">
+              {walkLine(ROOMS.flatMap((l) => stats()[l.id] ?? []))}
+              <Medal pct={shelfTrack.walkGrade(track()) ?? 0} />
+            </span>
+          </Show>
           <ul class="chamber-done__rooms">
             <For each={ROOMS}>
               {(level, i) => (
@@ -709,13 +787,17 @@ export const ShelfStage = (props: ShelfStageProps) => {
                   <button
                     type="button"
                     class="chamber-done__room"
-                    disabled={!ready() || !climbed().includes(level.id)}
+                    disabled={
+                      !ready() || !shelfTrack.isCleared(track(), level.id)
+                    }
                     onClick={() => replayRoom(level)}
                   >
                     <span class="chamber-done__n">{i() + 1}</span>
                     <span class="chamber-done__teaches">{level.teaches}</span>
                     <span class="chamber-done__best">
-                      {climbed().includes(level.id) ? 'up' : 'not yet'}
+                      {shelfTrack.isCleared(track(), level.id)
+                        ? `${String(track().best[level.id] ?? 0)}%`
+                        : 'not yet'}
                     </span>
                   </button>
                 </li>
