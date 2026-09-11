@@ -1,11 +1,15 @@
+// @vitest-environment jsdom
 // ============================================================
 // Shared audio context tests — one clock, leased by name
 // ============================================================
+//
+// jsdom rather than this package's default node environment: the module
+// follows the page, and `document.visibilityState` is half of what it does.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { acquireSharedAudioContext, resetSharedAudioContext, sharedAudioContextOwners, } from './shared-audio-context'
+import { acquireSharedAudioContext, resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
 
 class FakeAudioContext {
   state = 'suspended'
@@ -229,6 +233,33 @@ describe('the shared audio context', () => {
     expect(built[0].state).toBe('running')
   })
 
+  it('parks the clock for a backgrounded app, and leaves it parked', async () => {
+    // The OS taking the whole app away, which the page's own visibility
+    // event does not reliably report from inside a WebView. Coming back is
+    // the next gesture's job, so a later visibilitychange must not wake it.
+    const { built } = useFakeContexts()
+    const lease = acquireSharedAudioContext('sing-driver:glass')
+    await lease.unlock()
+
+    suspendSharedAudioContext()
+    await settle()
+    expect(built[0].state).toBe('suspended')
+
+    setPageHidden(false)
+    await settle()
+    expect(built[0].state).toBe('suspended')
+
+    await lease.unlock()
+    expect(built[0].state).toBe('running')
+  })
+
+  it('has nothing to park when no clock was ever built', () => {
+    useFakeContexts()
+    acquireSharedAudioContext('tap-driver')
+
+    expect(() => suspendSharedAudioContext()).not.toThrow()
+  })
+
   it('ignores a double release', async () => {
     const { built } = useFakeContexts()
     const lease = acquireSharedAudioContext('tap-driver')
@@ -246,12 +277,17 @@ describe('the shared audio context', () => {
 // ============================================================
 // The invariant itself: five call sites became one owner, and the only
 // way that stays true is if nothing else can build a context. A sixth
-// would have hit the cap older Chrome put on a tab (docs/games/glass-3d.md
-// §7), and every extra one is another clock the judging cannot trust.
+// would have hit the cap older Chrome put on a tab
+// (apps/beside-cue/docs/games/glass-3d.md §7), and every extra one is
+// another clock the judging cannot trust.
+//
+// This half guards the PACKAGE. Each consuming app keeps the matching
+// assertion about its own tree — Beside Cue's is in
+// `apps/beside-cue/src/audio/audio-context-owner.test.ts`.
 // ============================================================
 
 const SOURCE_ROOT = resolve(process.cwd(), 'src')
-const CONTEXT_OWNER = join('audio', 'shared-audio-context.ts')
+const CONTEXT_OWNER = 'shared-audio-context.ts'
 
 function productionSources(): string[] {
   return readdirSync(SOURCE_ROOT, { recursive: true, encoding: 'utf8' })
@@ -273,7 +309,7 @@ describe('AudioContext construction', () => {
   it('scans a source tree it can actually see', () => {
     const sources = productionSources()
 
-    expect(sources.length).toBeGreaterThan(20)
+    expect(sources.length).toBeGreaterThan(3)
     expect(sources).toContain(CONTEXT_OWNER)
     expect(relative(SOURCE_ROOT, join(SOURCE_ROOT, CONTEXT_OWNER))).toBe(
       CONTEXT_OWNER,

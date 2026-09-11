@@ -26,6 +26,11 @@
 //
 // Kept, because each one is as true on a phone as in a tab:
 //   installChunkLoadRecovery(), initGlobalErrorHandlers(), initDeviceTier().
+//
+// Added, because neither has a browser equivalent:
+//   installNativeShell()           The OS taking the whole app away, and the
+//                                  Android hardware back button. Both in
+//                                  infrastructure/native-shell.ts.
 
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
@@ -51,6 +56,7 @@ import { App } from '@/App'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
+import { installNativeShell } from './infrastructure/native-shell'
 
 // Point the pitch engine at the copies scripts/sync-ort-assets.mjs vendored
 // into this bundle. Unconfigured it fetches the wasm runtime from jsDelivr
@@ -69,6 +75,10 @@ configurePitchEngineAssets({
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
 initDeviceTier()
+
+// Before the first render, so a back press during boot is answered by this
+// app rather than by Capacitor's default, which is to exit.
+installNativeShell()
 
 const root = document.getElementById('root')
 

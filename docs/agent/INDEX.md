@@ -471,8 +471,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm verify:opening` | `node scripts/verify-opening.mjs` |
 | `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
-| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app check` |
-| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app test:run` |
+| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app check` |
+| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app test:run` |
 | `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
 | `pnpm typecheck` | `tsc --noEmit` |
@@ -503,7 +503,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
-| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
+| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
 | `pnpm mercurypitch:dev` | `pnpm --filter @irchiinnuss/mercury-pitch-app dev` |
 | `pnpm mercurypitch:build` | `pnpm --filter @irchiinnuss/mercury-pitch-app build` |
 | `pnpm mercurypitch:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/mercury-pitch-app test:run` |

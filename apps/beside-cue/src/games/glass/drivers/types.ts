@@ -48,7 +48,7 @@ export interface InteractionDriver {
   latestLevel(): number
   /** Drain queued discrete intents since the last call. */
   drainIntents(): DiscreteIntent[]
-  /** The app's shared audio context (audio/shared-audio-context.ts), so
+  /** The app's shared audio context (@irchiinnuss/audio-io), so
    * the stage hums through the same clock the input is stamped with.
    * Null until the driver has started — it is created inside the gesture. */
   ctx(): AudioContext | null

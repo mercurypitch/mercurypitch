@@ -1,3 +1,4 @@
+import type * as AudioIo from '@irchiinnuss/audio-io'
 // ============================================================
 // The sing driver's lifecycle around a slow permission prompt: a
 // stop() that lands while start() is still waiting must not leave
@@ -6,7 +7,6 @@
 // microphone under its own consumer id, released exactly once, so a
 // late release never touches the driver that replaced it.
 // ============================================================
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
@@ -41,7 +41,11 @@ vi.mock('@irchiinnuss/pitch-engine', () => ({
     release: (id: string) => mocks.release(id),
   },
 }))
-vi.mock('@/audio/shared-audio-context', () => ({
+// Only the clock is faked. `importOriginal` keeps the rest of the
+// package real, so a module in this graph that reaches for an input
+// device still finds one.
+vi.mock('@irchiinnuss/audio-io', async (importOriginal) => ({
+  ...(await importOriginal<typeof AudioIo>()),
   acquireSharedAudioContext: () => mocks.lease,
 }))
 
