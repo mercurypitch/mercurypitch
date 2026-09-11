@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StoragePort } from '@/lib/storage-port'
-import { AUTH_TOKEN_KEY, DEVICE_SECRET_KEY, flushStoragePort, hydrateStoragePort, installStoragePort, readStored, removeStored, resetStoragePort, storageDurable, storagePortSnapshot, USER_ID_KEY, writeStored, } from '@/lib/storage-port'
+import { abandonStoragePort, AUTH_TOKEN_KEY, DEVICE_SECRET_KEY, flushStoragePort, hydrateStoragePort, installStoragePort, readStored, removeStored, resetStoragePort, storageDurable, storagePortSnapshot, USER_ID_KEY, writeStored, } from '@/lib/storage-port'
 
 /** A stand-in for `@capacitor/preferences`: async, and its own store. */
 function fakePort(initial: Record<string, string> = {}) {
@@ -268,5 +268,55 @@ describe('storagePortSnapshot', () => {
       [DEVICE_SECRET_KEY]: null,
       [AUTH_TOKEN_KEY]: null,
     })
+  })
+})
+
+describe('abandonStoragePort', () => {
+  it('falls back to localStorage when hydration cannot finish', () => {
+    localStorage.setItem(USER_ID_KEY, 'web-id')
+    installStoragePort(fakePort().port)
+    expect(() => readStored(USER_ID_KEY)).toThrow('storage port not hydrated')
+
+    abandonStoragePort(new Error('deadline'))
+
+    expect(readStored(USER_ID_KEY)).toBe('web-id')
+    expect(writeStored(AUTH_TOKEN_KEY, 't')).toBe(true)
+    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe('t')
+    expect(storageDurable()).toBe(true)
+  })
+
+  it('ignores a hydration that settles after the fallback', async () => {
+    localStorage.setItem(USER_ID_KEY, 'web-id')
+    let release: (() => void) | null = null
+    const slow: StoragePort = {
+      get: (key) =>
+        new Promise((resolve) => {
+          release = () => resolve(key === USER_ID_KEY ? 'port-id' : null)
+        }),
+      set: () => Promise.resolve(),
+      remove: () => Promise.resolve(),
+    }
+    installStoragePort(slow)
+    const hydration = hydrateStoragePort()
+    abandonStoragePort(new Error('deadline'))
+    expect(readStored(USER_ID_KEY)).toBe('web-id')
+
+    // Every key's read resolves now; the port answers 'port-id' for the id.
+    for (let i = 0; i < 3; i++) {
+      while (release === null) await Promise.resolve()
+      const fn = release as () => void
+      release = null
+      fn()
+    }
+    await hydration
+    expect(readStored(USER_ID_KEY)).toBe('web-id')
+  })
+
+  it('is a no-op once hydrated and on the web', async () => {
+    const { port } = fakePort({ [USER_ID_KEY]: 'port-id' })
+    installStoragePort(port)
+    await hydrateStoragePort()
+    abandonStoragePort(new Error('late'))
+    expect(readStored(USER_ID_KEY)).toBe('port-id')
   })
 })

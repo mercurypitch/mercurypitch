@@ -37,7 +37,23 @@ export function createPreferencesStoragePort(): StoragePort {
   }
   let api: Promise<PreferencesApi> | null = null
   const preferences = (): Promise<PreferencesApi> => {
-    api ??= import('@capacitor/preferences').then((m) => m.Preferences)
+    // The plugin is wrapped in a plain object and NEVER returned as itself.
+    // A Capacitor plugin object is a proxy that answers every property with
+    // a bridge call, `then` included, so handing it to a promise — as this
+    // `.then` callback's return value, or from any async function — makes
+    // the promise treat it as a thenable and call `Preferences.then()`. That
+    // is not a plugin method: the call rejects unhandled and the outer
+    // promise never settles, hydration never finishes and the app never
+    // renders. TestFlight build 29 (mp-v0.2.0, 11 Sep 2026) was that black
+    // screen. The regression test beside this file drives the same proxy.
+    api ??= import('@capacitor/preferences').then((m) => {
+      const plugin = m.Preferences
+      return {
+        get: (options) => plugin.get(options),
+        set: (options) => plugin.set(options),
+        remove: (options) => plugin.remove(options),
+      }
+    })
     return api
   }
 

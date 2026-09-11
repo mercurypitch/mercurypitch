@@ -42,6 +42,55 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      The boot watchdog. Plain script, before the module: if the module graph
+      fails to evaluate, or boot throws, or nothing renders within ten
+      seconds, the reason is painted on the screen instead of a black frame
+      nobody can read (TestFlight build 29, 11 Sep 2026). Tap to dismiss.
+      A6's Content-Security-Policy must carry this script's hash.
+    -->
+    <script>
+      ;(function () {
+        var shown = false
+        function show(kind, text) {
+          if (shown) return
+          shown = true
+          var box = document.createElement('div')
+          box.setAttribute('role', 'alert')
+          box.style.cssText =
+            'position:fixed;left:0;right:0;top:0;z-index:2147483647;' +
+            'padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 16px;' +
+            'background:#3b0d12;color:#ffd9dc;font:13px/1.45 ui-monospace,Menlo,monospace;' +
+            'white-space:pre-wrap;word-break:break-word;max-height:70vh;overflow:auto'
+          box.textContent =
+            'Mercury Pitch did not start (' +
+            kind +
+            ')\n\n' +
+            text +
+            '\n\nTap to dismiss.'
+          box.addEventListener('click', function () {
+            box.remove()
+          })
+          document.body.appendChild(box)
+        }
+        window.addEventListener('error', function (e) {
+          show('error', (e.error && e.error.stack) || e.message || String(e))
+        })
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e.reason
+          show(
+            'unhandled rejection',
+            (r && (r.stack || r.message)) || String(r),
+          )
+        })
+        setTimeout(function () {
+          var root = document.getElementById('root')
+          if (root && !root.classList.contains('loaded')) {
+            show('timeout', 'No frame rendered after 10 s.')
+          }
+        }, 10000)
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

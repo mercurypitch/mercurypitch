@@ -133,6 +133,8 @@ const localStoragePort: StoragePort = {
 let port: StoragePort = localStoragePort
 /** Non-null only while the built-in web backend is the one installed. */
 let syncBackend: SyncBackend | null = localStorageBackend
+/** Set when a boot gave up on the installed port; a late hydration must not undo that. */
+let abandoned = false
 /** Non-null once an installed async port has been hydrated. */
 let cache: Map<string, string> | null = null
 let readable = true
@@ -182,6 +184,31 @@ export function installStoragePort(next: StoragePort): void {
   port = next
   syncBackend = null
   cache = null
+  abandoned = false
+}
+
+/**
+ * Give up on the installed port for this launch and answer from
+ * `localStorage` instead.
+ *
+ * For the boot sequence only, when hydration rejected or missed its
+ * deadline: the alternative is an app whose every identity read throws,
+ * which is a blank screen (TestFlight build 29, 11 Sep 2026). Identity kept
+ * in `localStorage` is not durable, but it is the same store the web app has
+ * always used and the next launch tries the port again. A hydration that
+ * settles after this call is ignored, so the state cannot flip under a
+ * running app. No-op once hydrated, and on the web.
+ */
+export function abandonStoragePort(reason: unknown): void {
+  if (!unhydrated()) return
+  abandoned = true
+  port = localStoragePort
+  syncBackend = localStorageBackend
+  cache = null
+  console.warn(
+    '[storage-port] port abandoned for this launch; identity is read from localStorage',
+    reason,
+  )
 }
 
 /**
@@ -224,6 +251,9 @@ export async function hydrateStoragePort(): Promise<void> {
     }
     if (value !== null && value !== '') next.set(key, value)
   }
+  // A boot that already gave up (`abandonStoragePort`) is running on
+  // localStorage; a hydration landing now would swap the store under it.
+  if (abandoned) return
   cache = next
 }
 
@@ -343,6 +373,7 @@ export function storagePortSnapshot(): Record<string, string | null> {
 
 /** Test seam: back to the built-in web backend with nothing remembered. */
 export function resetStoragePort(): void {
+  abandoned = false
   port = localStoragePort
   syncBackend = localStorageBackend
   cache = null
