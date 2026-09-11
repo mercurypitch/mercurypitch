@@ -148,11 +148,13 @@ export function GamesScreen(props: GamesScreenProps) {
   // file, parsed, and the pitch detector's worker -- once the list is on
   // screen and the page is idle (runtime/warm.ts). Nothing here asks for
   // the microphone or makes an audio context. Every return from a game
-  // warms again, because the game took what was warmed. `?cold` in the
-  // address turns it off, to read a cold open on the same build.
+  // warms again, because the game took what was warmed. So does the
+  // Range Finder closing: it listens through the same detector, and its
+  // stream took the spare and ended it. `?cold` in the address turns it
+  // off, to read a cold open on the same build.
   const warm = isWarmEnabled(window.location.search)
   createEffect(() => {
-    if (!warm || playing() !== null) return
+    if (!warm || playing() !== null || finding()) return
     onCleanup(
       whenIdleAfterPaint(() => {
         warmMerc()
