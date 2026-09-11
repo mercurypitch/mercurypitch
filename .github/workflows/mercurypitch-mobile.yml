@@ -73,18 +73,20 @@ jobs:
       # V1-1 sells nothing. The purchase scaffold is inert and reports itself
       # unavailable, so there is no mock to label and no StoreKit to sandbox.
       testflight-purchase-mode: store
-      # The wasm runtime and the SwiftF0 model are vendored at build time by
-      # scripts/sync-ort-assets.mjs, from the web app's own public/ tree. If
-      # that script ever silently no-ops, the first tap that starts the
-      # microphone would fall back to fetching the runtime from a CDN — inside
-      # an app whose whole promise is that it works with the network off.
+      # What a store binary has to be true of: the wasm runtime and the model
+      # are vendored AND referenced, and nothing sells anything. The checks
+      # live in apps/mercurypitch/scripts/assert-bundle.mjs, which the PR
+      # gate calls as well — they were two copies of a weaker check, and
+      # both were green on a build that fetched the runtime from a CDN.
+      #
+      # --android-assets only after cap sync has run; before that the
+      # directory is last run's leftovers or nothing at all.
       verify-assets: |
-        test -f "$DIST_DIR/ort/ort-wasm-simd-threaded.wasm"
-        test -f "$DIST_DIR/ort/ort-wasm-simd-threaded.mjs"
-        test -f "$DIST_DIR/models/swiftf0.onnx"
         if [ "$STAGE" = synced ]; then
-          test -f "$ANDROID_ASSETS_DIR/ort/ort-wasm-simd-threaded.wasm"
-          test -f "$ANDROID_ASSETS_DIR/models/swiftf0.onnx"
+          node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR" \
+            --android-assets "$ANDROID_ASSETS_DIR"
+        else
+          node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR"
         fi
     secrets:
       keystore-base64: ${{ secrets.MERCURYPITCH_KEYSTORE_BASE64 }}

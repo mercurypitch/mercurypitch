@@ -401,16 +401,12 @@ jobs:
         # mercurypitch:check has already run tsc, so invoke Vite directly.
         run: pnpm --filter @irchiinnuss/mercury-pitch-app exec vite build
 
-      - name: Verify the vendored engine assets are in the bundle
-        # scripts/sync-ort-assets.mjs runs as a prebuild hook. If it ever
-        # silently no-ops, the app's first microphone tap would fall back to
-        # fetching the wasm runtime from a CDN -- inside an app whose whole
-        # promise is that it works with the network off.
-        run: |
-          set -euo pipefail
-          test -f apps/mercurypitch/dist/ort/ort-wasm-simd-threaded.wasm
-          test -f apps/mercurypitch/dist/ort/ort-wasm-simd-threaded.mjs
-          test -f apps/mercurypitch/dist/models/swiftf0.onnx
+      - name: Assert the bundle is a store binary
+        # The same script mercurypitch-mobile.yml runs, for the same reasons:
+        # the engine assets are vendored AND referenced, and nothing in the
+        # bundle sells anything. See the file's header. This job builds but
+        # never runs cap sync, so there is no --android-assets to pass.
+        run: node apps/mercurypitch/scripts/assert-bundle.mjs apps/mercurypitch/dist
 
       # The Android and iOS native builds live in mercurypitch-mobile.yml,
       # which additionally publishes an installable APK per pull request.
