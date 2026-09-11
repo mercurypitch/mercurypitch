@@ -224,8 +224,20 @@ async function handleAppleNotifications(
     return respond({ error: 'invalid_payload' }, { status: 400 })
   }
 
+  // No `authProvider = 'apple'` filter here, and that is deliberate. An
+  // account that adopted this Apple identity through the verified-email link
+  // keeps its ORIGINAL authProvider — 'password', 'google' — with the Apple
+  // `sub` in providerId, so the filtered lookup would walk straight past it
+  // and a singer who withdrew consent would keep every live session.
+  //
+  // Widening is safe on THIS route and nowhere else: `event.sub` arrives
+  // inside a payload Apple signed, checked against our own client id, so a
+  // caller cannot name a subject at all — only Apple can, and only one it
+  // issued to us. What a match buys is a sign-out and a dropped grant. The
+  // sign-in path keeps the tightened (authProvider, providerId) pair, where
+  // the same widening would hand over the account itself.
   const row = await env.DB.prepare(
-    "SELECT id, email FROM users WHERE authProvider = 'apple' AND providerId = ?",
+    'SELECT id, email FROM users WHERE providerId = ?',
   )
     .bind(event.sub)
     .first<AppleProviderRow>()
@@ -240,22 +252,32 @@ async function handleAppleNotifications(
   switch (event.type) {
     case 'consent-revoked':
     case 'account-delete': {
-      // Unlink rather than delete. Erasing an account on an inbound webhook
-      // would destroy a singer's practice history on a message we did not
-      // ask for; what consent actually withdraws is this sign-in method, so
-      // that is what goes. Bumping tokenVersion ends every token the account
-      // holds, which is the sign-out the event implies.
+      // Drop the grant and sign every device out — and KEEP providerId.
+      //
+      // Apple's `sub` is stable across re-authorisation: the same person
+      // coming back finds this same row, with their practice history on it.
+      // Clearing it strands the account instead — an authProvider 'apple'
+      // row with no password and no id to match leaves no sign-in method at
+      // all, and the return visit (very likely under a private-relay
+      // address, which never adopts an existing account) mints a brand-new
+      // one beside the orphan.
+      //
+      // Erasing data is what in-app account deletion is for; this webhook
+      // is not that request. Bumping tokenVersion ends every token the
+      // account holds, which is the sign-out the event does imply.
       try {
         await revokeAndForgetAppleGrant(env, row.id)
       } catch (error) {
         console.warn('[apple] could not release the grant:', String(error))
       }
       await env.DB.prepare(
-        `UPDATE users SET providerId = NULL, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
+        `UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
       )
         .bind(new Date().toISOString(), row.id)
         .run()
-      console.info(`[apple] ${event.type}: unlinked the identity on ${row.id}`)
+      console.info(
+        `[apple] ${event.type}: dropped the grant and signed ${row.id} out`,
+      )
       break
     }
     case 'email-disabled':
@@ -263,17 +285,26 @@ async function handleAppleNotifications(
       // The relay address stops or starts forwarding. Nothing about the
       // account changes except whether mail sent to it will arrive, which is
       // exactly what emailVerified gates elsewhere in this worker.
+      //
+      // Only when Apple names the address this account actually uses. The
+      // lookup above no longer filters by provider, so `row` can be an
+      // account that adopted the identity under its OWN verified address —
+      // and writing a relay over that would move its password reset to a
+      // mailbox Apple can switch off.
+      const named = event.email?.toLowerCase() ?? null
+      const current = row.email?.toLowerCase() ?? null
+      if (named !== null && current !== null && named !== current) {
+        console.info(
+          `[apple] ${event.type} named an address ${row.id} does not use`,
+        )
+        break
+      }
       const verified = event.type === 'email-enabled' ? 1 : 0
       try {
         await env.DB.prepare(
           'UPDATE users SET email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?',
         )
-          .bind(
-            event.email?.toLowerCase() ?? row.email,
-            verified,
-            new Date().toISOString(),
-            row.id,
-          )
+          .bind(named ?? row.email, verified, new Date().toISOString(), row.id)
           .run()
         console.info(`[apple] ${event.type} applied to ${row.id}`)
       } catch (error) {

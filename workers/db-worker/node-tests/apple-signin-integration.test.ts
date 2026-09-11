@@ -229,6 +229,27 @@ afterEach(() => {
   perksSqlite.close()
 })
 
+/**
+ * The three APPLE_SIGNIN_* secrets, with a P-256 key generated here so the
+ * ES256 client secret is really signed. Module-level because both the grant
+ * tests and the notification tests need a grant that actually exists.
+ */
+const signinSecrets: Partial<Env> = {
+  APPLE_SIGNIN_KEY_ID: KEY_ID,
+  APPLE_TEAM_ID: 'TEAM123456',
+}
+
+beforeAll(async () => {
+  const ec = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify'],
+  )
+  const pkcs8 = await crypto.subtle.exportKey('pkcs8', ec.privateKey)
+  const body = Buffer.from(pkcs8).toString('base64')
+  signinSecrets.APPLE_SIGNIN_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`
+})
+
 describe('POST /api/auth/apple', () => {
   beforeEach(() => freshDatabase())
 
@@ -379,24 +400,8 @@ describe('POST /api/auth/apple', () => {
 })
 
 describe('the Apple grant', () => {
-  const secrets: Partial<Env> = {
-    APPLE_SIGNIN_KEY_ID: KEY_ID,
-    APPLE_TEAM_ID: 'TEAM123456',
-  }
-
-  beforeAll(async () => {
-    const ec = await crypto.subtle.generateKey(
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      true,
-      ['sign', 'verify'],
-    )
-    const pkcs8 = await crypto.subtle.exportKey('pkcs8', ec.privateKey)
-    const body = Buffer.from(pkcs8).toString('base64')
-    secrets.APPLE_SIGNIN_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`
-  })
-
   it('exchanges the authorization code and seals the refresh token', async () => {
-    freshDatabase(secrets)
+    freshDatabase(signinSecrets)
     const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
 
     const exchange = appleCalls.find(
@@ -424,7 +429,7 @@ describe('the Apple grant', () => {
   })
 
   it('hands the grant back to Apple when the account is deleted', async () => {
-    freshDatabase(secrets)
+    freshDatabase(signinSecrets)
     const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
 
     const deleted = await request('/api/auth/me', {
@@ -444,7 +449,7 @@ describe('the Apple grant', () => {
   })
 
   it('completes the deletion even when Apple refuses the revocation', async () => {
-    freshDatabase(secrets)
+    freshDatabase(signinSecrets)
     const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'info').mockImplementation(() => {})
@@ -466,7 +471,7 @@ describe('the Apple grant', () => {
 
 describe('POST /api/auth/apple/notifications', () => {
   beforeEach(() => {
-    freshDatabase({ ALLOWED_ORIGINS: PROD_ORIGINS })
+    freshDatabase({ ALLOWED_ORIGINS: PROD_ORIGINS, ...signinSecrets })
     vi.spyOn(console, 'info').mockImplementation(() => {})
   })
 
@@ -488,10 +493,11 @@ describe('POST /api/auth/apple/notifications', () => {
     expect(allowed.status).toBe(200)
   })
 
-  it('unlinks the identity and ends every session on consent-revoked', async () => {
-    const signedIn = await signInWithApple()
+  it('drops the grant and ends every session on consent-revoked', async () => {
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
     const userId = String(signedIn.userId)
-    const before = userById(userId).tokenVersion
+    const before = userById(userId)
+    expect(before.appleRefreshToken).not.toBeNull()
 
     const response = await post('/api/auth/apple/notifications', {
       payload: await notificationToken({
@@ -502,9 +508,19 @@ describe('POST /api/auth/apple/notifications', () => {
     expect(response.status).toBe(200)
 
     const after = userById(userId)
-    expect(after.providerId).toBeNull()
-    expect(after.tokenVersion).toBe(before + 1)
-    // The practice history survives — this is an unlink, not an erasure.
+    // The identity STAYS. Apple's `sub` survives re-authorisation, so this
+    // row is what the singer comes back to; clearing providerId would leave
+    // an 'apple' account with no sign-in method at all and orphan every
+    // session on it. What goes is the grant and every live token.
+    expect(after.providerId).toBe(APPLE_SUB)
+    expect(after.appleRefreshToken).toBeNull()
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(
+      appleCalls.some(
+        (call) => call.url === 'https://appleid.apple.com/auth/revoke',
+      ),
+    ).toBe(true)
+    // The practice history survives — this is a sign-out, not an erasure.
     expect(sqlite.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({
       n: 1,
     })
@@ -513,6 +529,37 @@ describe('POST /api/auth/apple/notifications', () => {
       headers: { Authorization: `Bearer ${String(signedIn.token)}` },
     })
     expect(me.status).toBe(401)
+  })
+
+  it('returns the singer to the same account after account-delete', async () => {
+    // A relay identity on purpose: it is the one that cannot be recovered by
+    // address. `linkableByEmail` is false for a private relay, so the moment
+    // the row stops matching on `sub` the next authorisation builds a SECOND
+    // account beside the first and every take stays on the orphan.
+    const relay = {
+      identityToken: await identityToken({
+        email: 'relay-abc@privaterelay.appleid.com',
+        is_private_email: 'true',
+      }),
+    }
+    const first = await signInWithApple(relay)
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'account-delete',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    // `account-delete` is Apple's word for "this Apple ID no longer uses
+    // your app", not ours for "erase the singer". Authorising again is the
+    // ordinary sequel, and it has to land on the same row — which is exactly
+    // what nulling providerId would have prevented.
+    const again = await signInWithApple(relay)
+    expect(again.userId).toBe(first.userId)
+    expect(sqlite.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({
+      n: 1,
+    })
   })
 
   it('flips the address flag when the relay is disabled and enabled again', async () => {
@@ -555,6 +602,83 @@ describe('POST /api/auth/apple/notifications', () => {
     })
     expect(response.status).toBe(401)
     expect(await response.json()).toEqual({ error: 'invalid_token' })
+  })
+})
+
+describe('an account that adopted the Apple identity by address', () => {
+  beforeEach(() => {
+    freshDatabase(signinSecrets)
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+  })
+
+  it('is still found by a consent-revoked notification', async () => {
+    // The lookup used to filter on `authProvider = 'apple'`. An account that
+    // adopted the identity through the verified-email link keeps authProvider
+    // 'password' with the Apple sub in providerId, so the filtered lookup
+    // walked straight past it: withdrawing consent did nothing at all, and
+    // every session on the account stayed live.
+    const registered = await post('/api/auth/register', {
+      email: 'apple-singer@example.com',
+      password: PASSWORD,
+    })
+    expect(registered.status).toBe(200)
+    const { userId } = (await registered.json()) as { userId: string }
+
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+    expect(signedIn.userId).toBe(userId)
+    const before = userById(userId)
+    expect(before.authProvider).toBe('password')
+    expect(before.providerId).toBe(APPLE_SUB)
+    expect(before.appleRefreshToken).not.toBeNull()
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'consent-revoked',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(after.appleRefreshToken).toBeNull()
+    // Kept, as everywhere else: the password is this account's other way in,
+    // and the Apple identity still names it.
+    expect(after.providerId).toBe(APPLE_SUB)
+    expect(after.authProvider).toBe('password')
+
+    const me = await request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+    })
+    expect(me.status).toBe(401)
+  })
+
+  it('keeps its own address when Apple flags a relay it does not use', async () => {
+    // The other side of widening the lookup: this row is reachable now, and
+    // its address is the one the singer registered with. A relay flag names
+    // a different mailbox entirely, so it has nothing to apply here — and
+    // applying it would send this account's password reset to an address
+    // Apple can switch off.
+    const registered = await post('/api/auth/register', {
+      email: 'apple-singer@example.com',
+      password: PASSWORD,
+    })
+    expect(registered.status).toBe(200)
+    const { userId } = (await registered.json()) as { userId: string }
+    await signInWithApple()
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'email-disabled',
+        sub: APPLE_SUB,
+        email: 'relay-xyz@privaterelay.appleid.com',
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.email).toBe('apple-singer@example.com')
+    expect(after.emailVerified).toBe(1)
   })
 })
 

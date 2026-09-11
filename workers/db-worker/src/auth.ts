@@ -675,10 +675,14 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Sign in with Apple, budgeted like Google: one verified token per attempt,
   // and the verification itself is what stands in front of the account.
   apple: { max: 30, windowMs: 60_000 }, // 30/min
-  // Apple's server-to-server notifications. Signed by Apple and keyed by IP
-  // like everything else here, so the cap only bounds a flood from something
-  // pretending to be their notification service.
-  'apple/notifications': { max: 60, windowMs: 60_000 }, // 60/min
+  // Apple's server-to-server notifications, and the one deliberately roomy
+  // bucket here. Apple sends from a small pool of addresses, so a per-IP cap
+  // is really a cap on their whole fleet, and a 429 does not drop the event
+  // — it makes Apple redeliver it, which is strictly worse than answering.
+  // Nothing is spent on a forgery either: the payload's signature is checked
+  // before any account is touched, and an unsigned one costs a JWKS lookup
+  // against a cache. The cap is here to bound a flood, not to gate.
+  'apple/notifications': { max: 600, windowMs: 60_000 }, // 600/min
   // Trading a live session for a fresh token. Budgeted like login because it
   // is reached with the same kind of credential and does the same work —
   // though it proves a token first, so nothing unauthenticated gets this far.
