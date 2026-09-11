@@ -25,13 +25,17 @@ import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { micApiBlocker } from '@/platform/device-support'
+import { createReducedMotion } from '@/platform/reduced-motion'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import { keepBest, readStats, writeStats } from '../levels/line-stats'
 import { lineTrack } from '../levels/line-track'
 import type { LineGate, LineLevel } from '../levels/lines'
 import { admits, bandAt, bandsFor, crossed, fitFor, furnitureOf, LINES, overGaps, wallAt, } from '../levels/lines'
+import { tap } from '../runtime/haptics'
 import { createLoopState, runLoop } from '../runtime/loop'
+import type { MouthTap } from '../runtime/mouth-tap'
+import { createMouthTap } from '../runtime/mouth-tap'
 import type { GateGrade, RoomStats } from '../sim/line-grade'
 import { emptySlide, medalFor, midiBandFor, NO_STOPS, roomLine, slideStep, statsOf, walkLine, withStop, } from '../sim/line-grade'
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
@@ -141,6 +145,8 @@ export const LineStage = (props: LineStageProps) => {
     calm: () => cfg.calm,
     backend: () => backend(),
   })
+  // Read live: the setting can change with a world open (P6).
+  const reduced = createReducedMotion()
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
@@ -213,6 +219,9 @@ export const LineStage = (props: LineStageProps) => {
           }
         })
       let gates = buildGates()
+      /** One per gate, remade with them: a light tap when the mouth he is
+       * walking at opens (P5; runtime/mouth-tap.ts). */
+      let mouths: MouthTap[] = gates.map(() => createMouthTap())
 
       const refit = (): void => {
         for (const g of gates) {
@@ -270,9 +279,13 @@ export const LineStage = (props: LineStageProps) => {
 
       let pose = ''
       const setPose = (name: string, loop = true): void => {
-        if (pose === name) return
-        pose = name
-        r.merc()?.play(name, { loop })
+        // His idle breathing holds still under reduced motion (P6). The
+        // shape his voice makes is the lesson, and it still plays.
+        const still = name === 'listen' && reduced()
+        const key = still ? `${name}:still` : name
+        if (pose === key) return
+        pose = key
+        r.merc()?.play(name, { loop, still })
       }
       const poseNow = (): void => {
         if (phaseNow === 'falling') return
@@ -290,6 +303,7 @@ export const LineStage = (props: LineStageProps) => {
         live = next
         setRoom(next)
         gates = buildGates()
+        mouths = gates.map(() => createMouthTap())
         rebuildViews?.()
         r.load(
           next,
@@ -320,6 +334,9 @@ export const LineStage = (props: LineStageProps) => {
        * gates already passed stay passed, and his shape is whatever his
        * voice is making it. */
       const drop = (): void => {
+        // P5: a drop is felt, a medium tap. A bump against a shut mouth
+        // is not: he has not lost anything.
+        tap('medium')
         drops += 1
         fellAtWall = wallSeconds
         go('falling')
@@ -472,6 +489,15 @@ export const LineStage = (props: LineStageProps) => {
             if (!g.passed && !falling && crossed(g.spec, loco.x)) {
               g.passed = true
             }
+          }
+          // P5: a light tap when the mouth he is walking at opens, and
+          // none for the ones further on. Fed through the fall so the
+          // tap is not owed on the way back, and never felt during it:
+          // the drop has its own.
+          const aimed = gates.findIndex((g) => !g.passed)
+          if (aimed >= 0) {
+            const opened = mouths[aimed]!(gates[aimed]!.open, wallSeconds)
+            if (opened && !falling) tap('light')
           }
           if (!falling && loco.grounded) {
             for (const g of gates) {

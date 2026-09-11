@@ -294,6 +294,49 @@ there), headless Chromium, 390 × 844 at DPR 3, the desktop GPU through
 ANGLE (WebGL2). Not a phone: the numbers say the mechanism works, and
 the gate's are the chip's.
 
+### 2.6 What 5c landed
+
+**Reduced motion (P6), from one reading of the preference.**
+`platform/reduced-motion.ts` is AssetStage's live `prefers-reduced-motion`
+signal, moved out so the 3D worlds read the same one rather than a
+second copy, and followed while a world is open, on the next frame.
+Under it the worlds still play -- he walks, the voice shapes him, the
+glass breaks -- and the break keeps its taps, at the same moments, and
+loses everything that moves the picture for its own sake: no hitstop, no
+slow motion, no shake, no pixel-ratio step (`reducedImpact`). The shards
+fly for half the time as the same paths on a clock twice the wall's,
+rather than as a flight cut off in mid-air or a smaller burst: nothing
+fades or shrinks that did not before, and the camera, whose movement is
+the one that fills the view, stays still throughout. The other reading,
+a slower and shorter burst, is a change to the solver's launch numbers,
+and it is maff's to ask for if the quicker flight reads as more motion
+rather than less.
+
+**The breathing bob** is Merc's idle clip, `listen`. Under reduced
+motion it fades in and holds its first frame, in the Hallway, the
+chambers and the Line; the clips that are the game -- walking, singing,
+celebrating, the fall -- still play. **The gauge's column** jumps to
+where the voice puts it instead of sliding. The ringing glass's pulse
+and the open exit's breath stay: they are light, not movement.
+
+**Haptics (P5), the rest of them.** The Hallway's, the chambers' and the
+Cabinet's came with the break in 5b. The Sorting Line taps light when
+the mouth he is walking at opens and medium when he drops through a
+grate, and nothing for a bump against a shut mouth or for the gates
+further on. A mouth follows the voice and a voice wavers, so an opening
+is felt only after the mouth has been shut for a quarter of a second
+(`runtime/mouth-tap.ts`): a tap for every flicker buzzes like a fault.
+
+**Tested.** The unit tests pin the reduced break (no hitstop, slow
+motion, shake or burst at any moment, and the same taps), the stage
+under the setting and through a change mid-break, the preference
+reader, and the mouth rule. The e2e breaks the Cabinet on Playwright's
+held clock, so "the first frame after the crack" is one 16 ms step on
+any machine: with the preference off that frame is held, shaken and
+drawn at 1.0; under `reducedMotion: 'reduce'` it is none of those, the
+canvas never changes size, and the four taps still arrive. The Line's
+drop reaches `navigator.vibrate` as its 20 ms.
+
 ---
 
 ## 3. Slice 6 — the Top Shelf
