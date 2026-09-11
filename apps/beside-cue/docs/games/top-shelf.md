@@ -317,3 +317,43 @@ What the code showed:
   the screen's edge; its line, run across the labels, struck through
   "P5". Nothing in this world can be put beside him in portrait, only
   above or below.
+
+### What 6d landed
+
+The grade, in the Line's units and through the Line's own functions:
+first-try per riser, cents past the ask, `qualityFromCents` at
+`LINE_SCORE`, the mean per room, and `medalFor` at the same thresholds,
+with nothing gated on it (`sim/shelf-grade.ts`). The track
+(`levels/shelf-track.ts`, `createTrack`) and its stats twin
+(`levels/shelf-stats.ts`) keep each room's best. The room card and the
+walk card read like the Line's, and the Games card counts the rooms
+climbed as the Line's does, where it already stands in the list; the V1
+order is a later pass.
+
+Decided here, where the plan was silent:
+
+- **A leap is aimed at a shelf when his mitt reaches its riser**, or
+  when it lands him on the shelf, which needs the same. A hop in the
+  open is aimed at nothing and is not graded. A fifth carries 0.62 m
+  and room 1 starts him 1.34 m out, so grading every leap would mark
+  the first fifth most players sing a failed first try for where he
+  stood, not for what they sang.
+- **"Past the shelf" is the landing leap's**, as §3.5 has it: "the grade
+  records how far past". A flat miss costs the first try and nothing in
+  cents; §7's overshoot only counts up.
+- **A riser climbed with no graded leap is a first try**, the Line's
+  `NO_STOPS`: nothing was missed. Only the dev hook can do it.
+- **The rooms have names**, for §7's card, each for what is sung in it:
+  The Fifth, Thirds and Fifths, The Octave. The room card is the name,
+  a dash, and the Line's two units.
+
+What the code showed:
+
+- **First-try counts landings, so the octave room grades a one-leap
+  octave as a first try.** An octave sung at room 3's first riser tops
+  out at his spring and lands on the ledge (D5), 500¢ past the fifth it
+  asked for. The room reads "125¢ past the shelf · 4 of 4 first time",
+  75%, and a walk with it in is still gold, 92. The lesson is in the
+  cents, not in the count. If 6f wants the count to carry it too, first
+  try would have to mean "landed within a semitone", which D6 chose
+  against.
