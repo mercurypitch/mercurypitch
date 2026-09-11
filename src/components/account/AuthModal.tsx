@@ -18,6 +18,8 @@ import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
+import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
+import { appleSignInOffered, nativeGoogleSignInOffered, webGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { isTvDevice } from '@/lib/device-tier'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
@@ -26,6 +28,7 @@ import { conditionalMediationAvailable, describeWebAuthnError, platformAuthentic
 import { showNotification } from '@/stores/notifications-store'
 import { armOnboardingResume } from '@/stores/onboarding-store'
 import { authModalMode, closeAuthModal } from '@/stores/ui-store'
+import { AppleMark } from './AppleMark'
 import styles from './AuthModal.module.css'
 import { GoogleMark } from './GoogleMark'
 import { PasswordRequirements } from './PasswordRequirements'
@@ -319,6 +322,46 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       prepareRedirect: props.prepareGoogleRedirect,
     })
     if (failure !== null) setError(failure)
+  }
+
+  /**
+   * Sign in through the platform's own sheet, inside an app shell.
+   *
+   * Nothing navigates: the ceremony happens over this document and the
+   * session lands before the promise settles. A dismissal is silent — the
+   * singer closed the sheet, which is an answer and not an error worth
+   * printing under the form.
+   */
+  async function onNativeSignIn(provider: 'apple' | 'google'): Promise<void> {
+    if (busy()) return
+    const request = ++requestGeneration
+    setError('')
+    setBusy(true)
+    try {
+      const outcome =
+        provider === 'apple'
+          ? await signInWithApple()
+          : await signInWithGoogle()
+      if (request !== requestGeneration) return
+      if (isTwofaChallenge(outcome)) {
+        setCeremony(outcome.ceremony)
+        switchPane('twofa')
+        return
+      }
+      showNotification('Signed in', 'info')
+      props.onAuthenticated?.()
+      close()
+    } catch (err) {
+      if (request !== requestGeneration) return
+      if (err instanceof NativeSignInError) {
+        if (err.kind === 'cancelled') return
+        setError(err.message)
+        return
+      }
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      if (request === requestGeneration) setBusy(false)
+    }
   }
 
   /**
@@ -654,29 +697,58 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
               </p>
 
               <Show when={!emailOnlyPane()}>
-                <Show
-                  when={googleSignInUnavailableReason === null}
-                  fallback={
-                    <p
-                      class={styles.providerNote}
-                      data-testid="auth-google-unavailable"
-                    >
-                      {googleSignInUnavailableReason}
-                    </p>
-                  }
-                >
+                {/* Apple first on iOS: guideline 4.8 wants the privacy-
+                    preserving option offered at least as prominently as the
+                    third-party one it sits beside. */}
+                <Show when={appleSignInOffered()}>
                   <button
                     type="button"
                     class={styles.googleButton}
-                    onClick={() => void onGoogleSignIn()}
-                    data-testid="auth-google"
-                    disabled={googleSignInPending()}
+                    onClick={() => void onNativeSignIn('apple')}
+                    disabled={busy()}
+                    data-testid="auth-apple-native"
+                  >
+                    <AppleMark />
+                    Continue with Apple
+                  </button>
+                </Show>
+                <Show when={nativeGoogleSignInOffered()}>
+                  <button
+                    type="button"
+                    class={styles.googleButton}
+                    onClick={() => void onNativeSignIn('google')}
+                    disabled={busy()}
+                    data-testid="auth-google-native"
                   >
                     <GoogleMark />
-                    {googleSignInPending()
-                      ? 'Opening Google\u2026'
-                      : 'Continue with Google'}
+                    Continue with Google
                   </button>
+                </Show>
+                <Show when={webGoogleSignInOffered()}>
+                  <Show
+                    when={googleSignInUnavailableReason === null}
+                    fallback={
+                      <p
+                        class={styles.providerNote}
+                        data-testid="auth-google-unavailable"
+                      >
+                        {googleSignInUnavailableReason}
+                      </p>
+                    }
+                  >
+                    <button
+                      type="button"
+                      class={styles.googleButton}
+                      onClick={() => void onGoogleSignIn()}
+                      data-testid="auth-google"
+                      disabled={googleSignInPending()}
+                    >
+                      <GoogleMark />
+                      {googleSignInPending()
+                        ? 'Opening Google\u2026'
+                        : 'Continue with Google'}
+                    </button>
+                  </Show>
                 </Show>
                 <Show when={pane() === 'login' && passkeyReady()}>
                   <button
