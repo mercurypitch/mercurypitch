@@ -385,6 +385,21 @@ async function walkRun(page, { shots, theme }) {
   await shoot(page, shots, `${theme}-run-parked`)
   steps.push('run: parked, with the pill in the dock')
 
+  // On EVERY other tab, not just the first. The room unmounts when the singer
+  // leaves it, and a shell that read the global store there decided the run
+  // had ended: the pill was gone by the second hop.
+  for (const tab of ['ear', 'rooms']) {
+    await page.locator(`[data-rail-item="${tab}"]`).click()
+    await page
+      .locator(`[data-rail-item="${tab}"][aria-current="page"]`)
+      .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+    await expectVisible(
+      page.locator('[data-testid="shell-session-pill"]'),
+      `the session pill on ${tab}`,
+    )
+  }
+  steps.push('run: the pill is on every tab the run is not')
+
   // Return: the room, still paused, nothing sounding, the mic off.
   await page.locator('[data-testid="shell-session-pill"]').click()
   await expectVisible(
@@ -428,6 +443,69 @@ async function walkRun(page, { shots, theme }) {
   steps.push('run: leaving with no run leaves the room usable')
 
   return steps
+}
+
+/**
+ * Back, pressed the way Android presses it.
+ *
+ * The shell's handler is registered with Capacitor and no browser can fire
+ * it, so the bundle exposes it under `window.E2E_TEST_MODE` — which this walk
+ * sets before the first script runs. Without this the back ORDER could only
+ * be asserted by inference, and the bug it hides is exactly that: a press
+ * that reports itself handled while doing nothing.
+ */
+async function pressBack(page) {
+  return page.evaluate(() => {
+    const back = window.mpShellBack
+    if (typeof back !== 'function') throw new Error('no shell back handler')
+    return back()
+  })
+}
+
+async function walkBack(page) {
+  const steps = []
+
+  await page.locator('[data-rail-item="rooms"]').click()
+  await page
+    .locator('[data-rail-item="rooms"][aria-current="page"]')
+    .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  const roomsHash = await page.evaluate(() => window.location.hash)
+
+  // A room cover navigates with `setActiveTab`, whose sync pushes with
+  // `history.pushState` — which fires no hashchange and no popstate. A depth
+  // that only learned from events never moved, so this press minimized the
+  // app instead of returning to the gallery.
+  const cover = page.locator('[data-destination]').first()
+  await cover.waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  await cover.click()
+  await page.waitForFunction((was) => window.location.hash !== was, roomsHash, {
+    timeout: RUN_TIMEOUT_MS,
+  })
+  steps.push('back: a room cover pushed an entry')
+
+  const outcome = await pressBack(page)
+  if (outcome !== 'history') {
+    throw new Error(`Back after a room cover answered '${outcome}'`)
+  }
+  await page.waitForFunction((was) => window.location.hash === was, roomsHash, {
+    timeout: RUN_TIMEOUT_MS,
+  })
+  steps.push('back: it returned to Rooms rather than minimizing')
+
+  return steps
+}
+
+/**
+ * The other end of the same order, and it has to be asked at boot: by the
+ * time a walk has been anywhere there are real entries behind it, and a
+ * press that answers 'history' there is right.
+ */
+async function walkBackRoot(page) {
+  const outcome = await pressBack(page)
+  if (outcome !== 'minimize') {
+    throw new Error(`Back on the launch screen answered '${outcome}'`)
+  }
+  return ['back: on the launch screen it declines, and the app minimizes']
 }
 
 async function main() {
@@ -480,8 +558,12 @@ async function main() {
       timeout: BOOT_TIMEOUT_MS,
     })
     steps.push('boot: #root.loaded')
+    steps = steps.concat(await walkBackRoot(page))
     steps = steps.concat(await walkChrome(page, args))
-    if (!args.chromeOnly) steps = steps.concat(await walkRun(page, args))
+    if (!args.chromeOnly) {
+      steps = steps.concat(await walkRun(page, args))
+      steps = steps.concat(await walkBack(page))
+    }
   } catch (error) {
     failures.push(`walk: ${error.message}`)
   } finally {

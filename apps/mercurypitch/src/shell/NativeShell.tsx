@@ -24,6 +24,7 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } fro
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { practiceScope } from '@/stores/settings-store'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
@@ -92,6 +93,13 @@ export const NativeShell: Component = () => {
         () => performBack(shellBackHost()) !== 'minimize',
       ),
     )
+
+    // The same press, reachable from a headless walk. Android's button is the
+    // only thing that fires the handler above, and no browser has one — so
+    // the probe would otherwise have to assert the back ORDER by inference.
+    // `exposeForE2E` writes nothing unless `window.E2E_TEST_MODE` is set, so
+    // a shipped build carries the call and not the global.
+    exposeForE2E('mpShellBack', () => performBack(shellBackHost()))
 
     // Escape closes the column, which is the only thing on this surface that
     // traps a keyboard user.
