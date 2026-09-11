@@ -368,6 +368,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -9248,7 +9251,7 @@ snapshots:
       flatted: 3.4.2
       pathe: 2.0.3
       sirv: 3.0.2
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vitest: 4.1.6(@types/node@22.19.19)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.6)(jsdom@25.0.1)(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
 
