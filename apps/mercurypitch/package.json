@@ -5,9 +5,9 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "predev": "node scripts/sync-ort-assets.mjs",
+    "predev": "node scripts/sync-native-assets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/sync-ort-assets.mjs",
+    "prebuild": "node scripts/sync-native-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",

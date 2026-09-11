@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { assertPurchaseBuildSafe } from '@irchiinnuss/purchase-kit'
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
-import { syncOrtAssets } from './scripts/sync-ort-assets.mjs'
+import { NATIVE_PUBLIC_DIR, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 
@@ -75,6 +75,12 @@ export default defineConfig(({ mode, command }) => {
   }
 
   return {
+    // Generated, never authored: scripts/sync-native-assets.mjs wipes and
+    // refills it from the repository's public/ tree on every build and every
+    // dev server. Vite's default (`<root>/public`) would be a directory that
+    // looks hand-maintained and is not.
+    publicDir: NATIVE_PUBLIC_DIR,
+
     // NOT './'. Beside Cue uses a relative base, and that was reviewed and
     // rejected here (implementation plan §3.0, decision 8, 2026-09-10):
     // Capacitor serves `webDir` at the origin root on both platforms, so '/'
@@ -84,19 +90,27 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       solid(),
       {
-        // Vendor the wasm runtime and the SwiftF0 model before anything is
-        // bundled. This was an npm `prebuild` hook and that was wrong:
-        // `pnpm exec vite build` -- how CI builds, to avoid repeating tsc --
-        // does not run lifecycle scripts, so the hook silently did nothing
-        // and the bundle shipped without the assets it is supposed to carry.
-        // A plugin runs for every build and every dev server, however each
-        // was started.
-        name: 'mercurypitch:sync-engine-assets',
-        buildStart() {
-          syncOrtAssets()
-        },
-        configureServer() {
-          syncOrtAssets()
+        // Fill the staged publicDir before anything is bundled: the wasm
+        // runtime, the SwiftF0 model, and the manifest tier of public/
+        // pictures (native-assets.mjs). This was an npm `prebuild` hook and
+        // that was wrong: `pnpm exec vite build` -- how CI builds, to avoid
+        // repeating tsc -- does not run lifecycle scripts, so the hook
+        // silently did nothing and the bundle shipped without the assets it
+        // is supposed to carry. A plugin runs for every build and every dev
+        // server, however each was started.
+        //
+        // `configResolved`, NOT `buildStart`/`configureServer`. Measured
+        // 2026-09-11: the dev server takes ONE snapshot of publicDir's file
+        // names before any `configureServer` hook runs, and only serves a
+        // path that is in it (`initPublicFiles`). Filling the directory from
+        // that hook therefore produced a dev server that answered
+        // /legends/mid/adele.webp with index.html -- the SPA fallback, 200,
+        // 2 KB of HTML where a picture should be. `configResolved` runs at
+        // the end of resolveConfig, which is before both the snapshot and the
+        // build, so one hook covers `vite`, `vite build` and `vite preview`.
+        name: 'mercurypitch:sync-native-assets',
+        configResolved() {
+          syncNativeAssets()
         },
       },
     ],

@@ -25,6 +25,10 @@ on:
       - 'gradle/signing.gradle'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      # The size gate's measurement lives in a script, not inline in the
+      # workflow -- a change to it that no native build ran is a gate nobody
+      # checked.
+      - '.github/scripts/**'
       - '.github/workflows/beside-cue-mobile.yml'
       - '.github/workflows/capacitor-app.yml'
   # No `paths:` here on purpose, matching build.yml and pr-gate.yml. A path
@@ -63,12 +67,16 @@ jobs:
       signing-env-prefix: BESIDE_CUE
       profile-build-setting: BESIDE_CUE_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine|ios-audio-session)/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine|ios-audio-session)/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
       distribution-env-name: VITE_BESIDE_CUE_DISTRIBUTION
       platform-env-name: VITE_BESIDE_CUE_NATIVE_PLATFORM
       testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
       testflight-upload-from: main-and-tags
       ios-export-method: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
+      # Beside Cue ships video and audio packs and sits at ~82 MB today; the
+      # owner accepts that, the gate should not warn on every run.
+      size-warn-mb: 90
+      size-fail-mb: 150
       # The onboarding media is generated, not checked in, and a build that
       # silently drops it ships an app whose first screen is blank.
       verify-assets: |

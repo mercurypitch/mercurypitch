@@ -1,5 +1,10 @@
 ext {
-    minSdkVersion = 24
+    // Android 10. Owner decision, Phase 0 (Q-4): the floor buys the modern
+    // AudioManager and WebView behaviour this app's capture path assumes, and
+    // API 29 is where Play's own install base stops being a reason to go
+    // lower. Beside Cue sits at 26 and stays there -- it is a different app
+    // with a different audience, not a copy to keep in step.
+    minSdkVersion = 29
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'
