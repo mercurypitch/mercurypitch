@@ -957,7 +957,7 @@ export const FilePlus: Component = () => (
 )
 
 // Sparkles Icon (magic/fresh-start)
-export const Sparkles: Component = () => (
+export const Sparkles: Component<{ size?: number }> = (p) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -965,8 +965,8 @@ export const Sparkles: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
   >
     <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
     <path d="M18 16l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />

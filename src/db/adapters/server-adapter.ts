@@ -37,6 +37,14 @@ export interface ServerAdapterConfig {
   writeIdentity?: () => string
   /** Observe structured API failures before the adapter consumes their body. */
   onErrorResponse?: (status: number, body: string) => void | Promise<void>
+  /**
+   * A request was rejected as unauthenticated (401).
+   *
+   * Separate from `onErrorResponse` because the 401 is consumed here — it
+   * becomes a `NoIdentityError`, which reads treat as routine — so without
+   * this seam nothing downstream ever learns that a session was refused.
+   */
+  onUnauthorized?: () => void | Promise<void>
 }
 
 // ── Failed cloud reads ──────────────────────────────────────────
@@ -172,7 +180,18 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
           continue
         }
 
-        if (res.status === 401) throw new NoIdentityError()
+        if (res.status === 401) {
+          // Tell auth before swallowing this. The same identity guard as
+          // below: an account switch mid-flight must not sign the NEW
+          // account out on the old one's rejection.
+          if (
+            expectedIdentity === undefined ||
+            this.config.writeIdentity?.() === expectedIdentity
+          ) {
+            await this.config.onUnauthorized?.()
+          }
+          throw new NoIdentityError()
+        }
 
         if (!res.ok) {
           const body = await res.text().catch(() => '')

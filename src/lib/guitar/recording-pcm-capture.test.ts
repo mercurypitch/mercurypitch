@@ -57,7 +57,8 @@ describe('bounded guitar PCM delivery', () => {
       type: 'stopped',
       frames: 65536,
       clockAnomalies: 0,
-      reason: 'Recording processing fell behind. The captured part is safe.',
+      reason:
+        'Saving fell behind, so recording stopped. Everything captured before that is safe.',
     })
     capture.command({ type: 'buffer', buffer: pcm[0].buffer })
     capture.process(new Float32Array(128), 70664)

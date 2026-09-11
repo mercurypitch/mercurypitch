@@ -40,6 +40,11 @@ const EXCLUDED_KEYS = new Set([
   'pitchperfect_session_history',
   'pitchperfect_usage_ms',
   'pitchperfect_activity_count',
+  // The in-app developer console is device-local by nature: it is switched on
+  // to read what THIS device is saying, usually a phone that cannot be
+  // plugged in. Syncing it put a debug panel on every other signed-in device
+  // and wrote a cloud row for a debugging affordance.
+  'pitchperfect_developer_console',
 ])
 
 /**

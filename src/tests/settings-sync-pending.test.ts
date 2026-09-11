@@ -221,3 +221,36 @@ describe('a ledger left by somebody else', () => {
     expect(state.updates).toHaveLength(0)
   })
 })
+
+describe('the in-app developer console is device-local', () => {
+  const CONSOLE_KEY = 'pitchperfect_developer_console'
+
+  it('is not applied from the account, whatever another device stored', async () => {
+    // It shares the synced prefix by accident of naming, not by intent: the
+    // console is switched on to read what THIS device is saying, usually a
+    // phone that cannot be plugged in. Without the exclusion, turning it on
+    // there grew a debug panel on the laptop and the tablet too.
+    state.rows = [
+      { id: 'r1', userId: 'u', key: CONSOLE_KEY, value: 'true' },
+      { id: 'r2', userId: 'u', key: THEME, value: '"midnight"' },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(CONSOLE_KEY)).toBeNull()
+    // The control: an ordinary preference on the same pull still lands, so
+    // this is the exclusion working and not the pull failing.
+    expect(localStorage.getItem(THEME)).toBe('"midnight"')
+  })
+
+  it('is never uploaded, so it writes no row for a debugging affordance', async () => {
+    leaveUnsent('singer-a', { [CONSOLE_KEY]: 'true' })
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(state.creates).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+})

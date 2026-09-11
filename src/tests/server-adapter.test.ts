@@ -498,3 +498,82 @@ describe('a failed cloud read explains itself', () => {
     vi.resetModules()
   })
 })
+
+// ── A refused session must not look like an empty account ───────
+//
+// Reads degrade to empty so the app still loads, and a 401 becomes a
+// NoIdentityError, which is routine — identities mint on the first write. That
+// combination meant nothing downstream ever learned a session had been
+// refused, so an expired one looked exactly like a new visitor: an empty
+// library, no explanation. `onUnauthorized` is the seam that fixes it.
+
+describe('a refused session reaches the auth layer', () => {
+  it('tells the caller before swallowing the 401 as routine', async () => {
+    const onUnauthorized = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+    }).getRepository<Rec>('sessionRecords')
+
+    // Still empty, still silent: offline tolerance is unchanged.
+    await expect(repo.findAll()).resolves.toEqual([])
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports it on every kind of read, since any of them can be the first', async () => {
+    const onUnauthorized = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+    }).getRepository<Rec>('sessionRecords')
+
+    await repo.findById('x')
+    await repo.count()
+    expect(onUnauthorized).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not sign out the account that replaced the one being refused', async () => {
+    const onUnauthorized = vi.fn()
+    let identity = 'account-a'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => {
+        // The switch lands while this request is in flight.
+        identity = 'account-b'
+        return fail(401)
+      }),
+    )
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+      writeIdentity: () => identity,
+    }).getRepository<Rec>('sessionRecords')
+
+    await expect(repo.findAll()).resolves.toEqual([])
+
+    // Account B is signed in and fine; refusing A's stale request must not
+    // take B's session down with it.
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
+
+  it('leaves the 401 as a NoIdentityError, so nothing starts logging it', async () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    try {
+      resetCloudReadWarningsForTests()
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+      const repo = new ServerAdapter({
+        baseUrl: 'http://api.test',
+        onUnauthorized: vi.fn(),
+      }).getRepository<Rec>('sessionRecords')
+
+      await repo.findAll()
+      expect(warnSpy).not.toHaveBeenCalled()
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+})

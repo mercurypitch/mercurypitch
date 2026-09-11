@@ -64,6 +64,10 @@ const PAGE_TOURS = [
   'Challenges',
   'Ear Lab',
 ]
+// Tours that belong to no tab. Unlike the Karaoke mixer's, the voice tour's
+// targets exist on a cold start — the pill is in every view and the rest are
+// Settings rows — so it can and should be walked.
+const CONTEXTUAL_TOURS = ['Voice control']
 
 const launchOpts = {}
 if (process.env.CHROMIUM) launchOpts.executablePath = process.env.CHROMIUM
@@ -218,7 +222,7 @@ async function walkTour(name) {
   await page.waitForTimeout(400)
 }
 
-for (const t of [...SECTION_TOURS, ...PAGE_TOURS]) {
+for (const t of [...SECTION_TOURS, ...PAGE_TOURS, ...CONTEXTUAL_TOURS]) {
   await walkTour(t)
 }
 

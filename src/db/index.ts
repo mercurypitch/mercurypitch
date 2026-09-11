@@ -7,7 +7,7 @@ import { DexieAdapter } from './adapters/dexie-adapter'
 import { HybridAdapter } from './adapters/hybrid-adapter'
 import { ServerAdapter } from './adapters/server-adapter'
 import { seedAll } from './seed'
-import { handleAuthErrorResponse, requireAuth, restoreAuth, } from './services/auth-service'
+import { handleAuthErrorResponse, handleCloudSessionRejected, requireAuth, restoreAuth, } from './services/auth-service'
 import { getAuthHeaders, getUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
@@ -34,6 +34,12 @@ function resolveAdapter(): DatabaseAdapter {
         writeIdentity: getUserId,
         onErrorResponse: (status, body) => {
           handleAuthErrorResponse(status, body)
+        },
+        // A 401 on a data request means the session this browser holds is no
+        // longer good. Without this the read simply resolves empty and the
+        // library looks empty rather than signed out.
+        onUnauthorized: () => {
+          handleCloudSessionRejected()
         },
       }),
       new DexieAdapter(),

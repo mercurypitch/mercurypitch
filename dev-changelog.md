@@ -9,6 +9,345 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] - 2026-09-10
+
+Two rooms per instrument needed a door, a debounce needed a ledger, and three
+defects turned out to be CSS and framework defaults doing exactly what they
+are specified to do.
+
+### Added
+
+- **The instrument room door (#763).** Piano and Guitar each open two rooms
+  now — the standalone Night page and the in-app workspace — so the tab asks
+  once, the first time it is pressed, and then remembers. Answered at
+  `handleTabChange`, not in the tab bar: several paths reach a tab (top nav,
+  the keyboard's next/prev, a call from another surface) and the question
+  belongs to the destination. Hash routing is deliberately NOT intercepted —
+  a deep link to `#/piano` is already a statement about where to land.
+
+  Stored as `'ask' | 'night' | 'workspace'`, not a choice plus a remembered
+  flag: unticking "remember this" has to leave _nothing_ behind, and a nullable
+  choice makes "asked and declined to commit" indistinguishable from "never
+  asked". The key is prefixed, so it rides the settings sync — which room
+  someone wants is not a per-device fact. A phone is never asked: Night is the
+  mobile experience and the workspace is a desktop surface, so both tabs go
+  straight there, and in the More sheet they render as doors beside Drum Night
+  rather than as tab rows. Settings > Display & Controls changes any of it,
+  including back to being asked.
+
+- **`MercuryCheckbox`, and a rebuilt settings switch (#763).** Both use brand
+  colours rather than the active theme's accent — eight themes each define
+  their own `--accent`, and these are meant to be the same object in all of
+  them — and two stops of the spectrum (`#58a6ff` -> `#2dd4bf`), never all
+  three, because the full stroke is rationed to one per screen and Settings
+  carries twenty-three toggles. The bead is a mirrored sphere: chrome is one
+  hard value break at the reflected horizon plus a bright bounce off the ground
+  below it, and the environment map is an ellipse anchored _above_ the ball so
+  its edge crosses the silhouette in a shallow smile.
+
+- **A card of its own for every entry page (#762).** Six of thirteen entries
+  shared the generic `og-image.png`, including `/mirror`, and several described
+  artwork that did not exist. Five new cards, one visual language: the page's
+  measurement as a flat graphic in the right third, over obsidian, no baked-in
+  text. `scripts/generate-entry-og.mjs` is one model-driven generator reading
+  `src/seo/entry-pages.ts` rather than a seventh copy of the same composition.
+
+- **Guitar Night's third entry: Free play (#762).** Straight into the room
+  without the load-a-song step, with the small link kept on the song screen.
+
+- **Voice diagnostics, readable on the device (#761).** VC-1 says voice control
+  dies on iOS after a stretch of silence with no `error` and no `end`, and the
+  listener already handles several shapes of that — so the question was never
+  "add a watchdog" but "which of the things it already does actually happened".
+  A dead recognizer and a live one hearing silence look identical from outside.
+  Every transition is now recorded with the few facts that separate them, off
+  unless `?voicelog=1` asks for it (remembered, because walking into Karaoke
+  Night is a fresh document that would otherwise drop the recording halfway
+  through the thing being measured), bounded at 500 entries, and readable three
+  ways: `console.info('[voice] …')` which `MP_DEV_LOGS=1` relays to `.dev-logs/`,
+  the portable console on the device itself, and `voiceDiagnosticEntries()`.
+  No transcript text is ever recorded. The plan asked for
+  `MediaStreamTrack.readyState`; for the Web Speech path there is no such track
+  to read, so `mic` reports the microphone the APP holds instead — the other
+  half of the same question.
+
+- **A command for every night, from one list (#761).** `heard: "Go to guitar
+night" -> none`, straight off the device: only Karaoke Night had ever been
+  given a phrase. All four rooms have one now, seven ways of asking each, and
+  the room you are standing in is left out of its own list.
+
+- **Voice control in Piano Night and Drum Night (#769).** Both registered no
+  commands at all, so voice could carry somebody into either room and then had
+  nothing that got them out. Added through `DeferredRoomVoiceControl`, which
+  renders nothing until the person using the room does something — a pointer
+  move, a touch, a key, a scroll, any of them once. `lazy()` alone does not keep
+  the rooms' first-paint promise, because Solid starts the import the moment the
+  component renders, which is first paint; `assert-piano-night-bundle.mjs` and
+  its drum twin fail the build rather than let a room drag the speech stack in.
+  The keypress that wakes it is replayed once the child has mounted, so a
+  visitor who reaches for V — the one most likely to know the shortcut — does
+  not have to press it twice. Room navigation lives in its own module because
+  the studio command set opens Dexie, and a room that wanted only "go home" was
+  pulling `vendor-db` into its first paint.
+
+- **A developer console on whatever page the bug is on (#770).** The danger-zone
+  toggle revealed a log that only existed inside the Settings panel, which is
+  never the screen the bug is on, and on a phone there is no second window to
+  leave it in. Same buffer, mounted per DOCUMENT — Karaoke Night, the Mirror and
+  each Night entry are separate documents with no shared shell — collapsed to a
+  small button until asked for, because a debug overlay that opens across the
+  screen hides the control you turned it on to watch. Copy says "No clipboard"
+  rather than pretending: an insecure origin refuses it outright, and a LAN dev
+  server on a phone is exactly that. The host is appended to `<body>` because
+  `position: fixed` is captured by any transformed ancestor, which parked an
+  earlier overlay 37px above the viewport while `getComputedStyle` still read
+  `bottom: 0`. Deliberately NOT the portable console: this wraps nothing
+  (`initGlobalErrorHandlers` fills the buffer either way), and
+  `scripts/assert-no-portable-console.mjs` still passes on all five builds.
+
+  Two defects in it, both caught reviewing this release and fixed in #772
+  before either reached a tag. The key matches `SYNCED_PREFIX`, so switching
+  the console on to read what a phone was saying switched it on across every
+  signed-in device and wrote a cloud `userSettings` row for a debugging
+  affordance; it is device-local by nature and now sits in `EXCLUDED_KEYS`
+  beside the usage counters. And the import was not lazy: it ran
+  unconditionally in all seven entries, so each of the six standalone
+  documents fetched the panel, its stylesheet and its icons and appended a
+  host to `<body>` for a control that defaults to off — in rooms that spend
+  real effort keeping their first paint empty. `armDeveloperConsole()` reads
+  the flag first and loads nothing when it is off; all six are clean of it in
+  the built `dist`, and the studio carries it as it always did, through
+  Settings' inline log.
+
+  It lives in `src/lib`, not beside the store it reads, because the room
+  bundle audits forbid `src/stores/` in a room — the first attempt put it in
+  `console-store.ts` and failed all four browser shards at `build:e2e`,
+  exactly as designed. So it reads localStorage directly, in the shape
+  `createPersistedSignal` writes a boolean, and a test pins that shape because
+  a mismatch is the whole feature silently never arming. Reading once is
+  enough in a room, which has no Settings panel; in the studio the switch
+  mounts the panel itself on the press that turns it on. The audits are
+  denylists, which is why CI had nothing to say about the original.
+
+- **A tour, and a Learn chapter, for voice control (#771).** It had neither,
+  and the reason was structural: every catalogue in the Guide modal is a list
+  of tabs, and voice belongs to no tab — the pill is in every view. So the
+  feature that most needs teaching, because using it means knowing what to
+  say, was the one nothing taught. Five steps: where the pill is and that
+  dimmed means resting rather than broken; the transport and navigation words;
+  Mercury Sing, which is the only feature with no button at all, so a tour
+  that skipped it would leave it undiscoverable; the command list on Shift+V,
+  every row of which is also a button for a room too loud to talk in; and why
+  commands start with "Mercury" once a track is playing. Two existing tours
+  gained a clause rather than a step.
+
+  The release walk caught four of the five spotlighting nothing on the first
+  run: Settings' tabs are a switch, not a scroll, so a step pointing into the
+  panel needs `navigate` to open its tab first. `walk-tours.mjs` walks this
+  tour now — its targets, unlike the Karaoke mixer's, exist on a cold start —
+  and both conditions are pinned in a unit test that needs no browser: every
+  Settings step opens its tab, and the pill is spotlighted once per viewport,
+  never twice on one. Desktop 136 steps, phone 119, no misses on either.
+
+### Fixed
+
+- **A theme you chose reverted on reload (#763).** Two defects, and only fixing
+  both closed it. The push is debounced 1500 ms, so a reload inside that window
+  killed the timer and the upload never happened; then the pull applied the
+  account's row unconditionally, and that row was the _stale_ one. Being faster
+  was the obvious fix and the wrong one — the same loss happens on a crash, a
+  closed laptop, or a push that fails offline — so the pull has to be able to
+  tell that the local value is newer.
+
+  A local write is now recorded in a localStorage ledger **synchronously,
+  before the debounce**; localStorage because the page that owes the upload is
+  the page going away. A pull that finds a key there sends it up instead of
+  overwriting it, and a failed push keeps its entry for the next pull to retry.
+  The ledger is stamped with the identity that wrote it: logout does not clear
+  localStorage, so on a shared computer one singer's unsent theme would
+  otherwise have been defended against the NEXT singer's account and uploaded
+  there — the same hazard `MERGE_OWNER_KEY` already guards for progress.
+
+- **Every settings switch was 160px wide instead of 46 (#763).**
+  `.settingsRow label` sets `min-width: 160px` for the text label at the left
+  of a row, and `.settingsToggle` is a `<label>` too. The existing
+  `width: 46px !important` could never win: `!important` settles a cascade
+  fight between the SAME property, and `min-width` clamps the used width
+  afterwards whatever `width` said.
+
+- **Dropdowns closed the instant you picked anything (#763).** Binding `value`
+  on a `<select>` compiles to an effect that assigns `el.value` on every change
+  of the signal — including the change the user just made, writing back a value
+  the element already had. Chrome on Linux fires `change` while the popup is
+  still open, and assigning `.value` then closes it; the only way through was
+  press-drag-release, which fires a single change at the end. `SafeSelect` now
+  applies `value` only when it differs. Fixed there rather than at the call
+  site: every select in the app was built this way.
+
+- **A gradient under a border painted a flat band at the edges (#763).**
+  `background-origin` defaults to `padding-box` while `background-clip`
+  defaults to `border-box`, so the gradient is _sized_ to the padding box but
+  _painted_ out to the border box; the 1px overhang gets the first stop's flat
+  colour along the top and left and the last stop's along the bottom and right,
+  on a corner radius a pixel larger than the fill's. It has to be restated
+  after every `background` shorthand, which resets it — a declaration in the
+  base rule alone is a silent no-op once `:checked` sets `background:` again.
+
+- **The room door outranked the local-save veto (#763).**
+  `requestActiveTabChange` is not about tabs: it blocks navigation while a take
+  is still saving to this device, and lets Voice History ask before it is left.
+  The door intercepted ahead of it, and because the Night answer is a full page
+  navigation the in-flight save was abandoned rather than interrupted. The door
+  now runs inside the accepted callback, and its own answer re-asks before
+  navigating.
+
+- **`/vocal-remover` and five siblings promised artwork they did not have
+  (#762).** `imageAlt` described a card that was never generated.
+
+- **The room gallery spent seventeen protected requests to paint four cards
+  (#760).** The panel scrolls — 760px over a two-column grid — so most cards are
+  below the fold when it opens, and each one is a PROTECTED request for a
+  full-size plate against a 120-a-minute budget, which is how the picker
+  started answering 429. Each card now waits for an `IntersectionObserver`
+  before it asks for anything; the selected room still paints at once because
+  it comes from the controller's already-decoded URL. Where the API is missing
+  every card counts as visible, which is the old behaviour: correct, just
+  eager.
+
+- **Entry documents preloaded 173 KB that nothing painted (#760).** Measured
+  serving the real build at `/vocal-range-test`: `first-light-wide.webp`
+  fetched in full, `.entry-prelude` computed `display: none`, and the app's
+  opening curtain — the only thing that paints that plate — never rendered on
+  those pages at all. The preload sat ahead of all 36 module scripts at high
+  priority, so the art was competing with the very bundle whose arrival ends
+  the prelude. `index.html` keeps its preload, because there the curtain really
+  does paint it, and `entry-prelude.css` still carries the plate so a slow boot
+  still gets the art while the prelude is up.
+
+- **Forty-one gradients painted a seam of the wrong colour under their border
+  (#764).** The same defect the settings switch turned up, swept across the
+  codebase. `background-origin` defaults to `padding-box` and `background-clip`
+  to `border-box`, so a gradient under a translucent border is SIZED to the
+  padding box but PAINTED to the border box: the 1px overhang gets the first
+  stop's flat colour along the top and left, the last stop's along the bottom
+  and right, at a corner radius 1px larger than the fill. Invisible under an
+  opaque border, which is why it survived this long. Every rule restates
+  `background-origin: border-box` AFTER its `background` shorthand — the
+  shorthand resets it, which is how the first attempt at this fix silently did
+  nothing.
+
+- **A 401 on a data read looked like an empty library (#759).** In `request()`,
+  `if (res.status === 401) throw new NoIdentityError()` sat above the `!res.ok`
+  block that calls `onErrorResponse`, so `handleAuthErrorResponse` never saw the
+  one status that means "your auth is the problem". Reads degrade to empty so
+  the app still loads, and `getUserId()` mints an anonymous id unconditionally,
+  so nothing downstream could tell an expired session from a visitor who had
+  never written anything. A new `ServerAdapterConfig.onUnauthorized` seam runs
+  before the 401 is swallowed, wired to `handleCloudSessionRejected()`.
+  Deliberately not folded into `handleAuthErrorResponse`: on the auth endpoints
+  a 401 means "wrong password", and signing someone out for mistyping one would
+  be worse than the bug. Gated on `hasUpgradedAccount()`, so an anonymous
+  visitor is never signed out, and naturally idempotent — a page-load's worth of
+  simultaneous 401s produces one message.
+
+- **A stalled write killed the take after one or two notes (#759).** A capture
+  buffer only returns to the worklet once its chunk is durable, so the pool
+  doubles as the budget for how long storage may stall. Fixed at 32 x 2048
+  frames, that budget was about 1.4 s at 48 kHz — which is what ended recordings
+  while the schema deadlock had every write pending. The pool now grows on
+  demand to `max(32, ceil(30 * sampleRate / 2048))`, roughly 704 buffers or
+  5.8 MB at 48 kHz, and warns once at the ceiling. It does not shrink back; past
+  the growth point it recirculates.
+
+- **A superseded or blocked database only explained itself in two rooms
+  (#759).** It breaks every surface at once, and a superseded tab has no working
+  surface left to read the explanation on. One `DatabaseLifecycleNotice` in the
+  shell: superseded is `role="alert"`, never auto-dismisses and carries Reload;
+  blocked is `role="status"` with no button, because it clears itself when the
+  other tabs go and closing them is not something this page can do.
+
+- **One reload was a stumble, two was a dead tab (#767, #768).** Loading whisper
+  on a phone can take the whole content process with it; WebKit reloads the
+  document at the same URL, the engine preference and the enable flag are both
+  persisted, so the fresh document starts the same load and the SECOND kill is
+  the one the user sees. A marker in `sessionStorage` is armed just before the
+  load and cleared however it settles, so a document that starts while it is
+  still set is a document that came back from a kill. `pagehide` clears it too,
+  which is what keeps a deliberate navigation mid-download from looking like a
+  crash — a jetsammed process fires no `pagehide`, and that is the line between
+  them. The bias is deliberate: a missed marker costs one more attempt, a
+  spurious one would refuse an engine that works. Counted rather than flagged,
+  because whisper and Moonshine are two listeners over one shared worker and
+  whichever load settled first was clearing the marker out from under the other.
+  Coming back, the app hands over to the browser engine; picking the on-device
+  one again asks first, once, and "Try anyway" is the retry.
+
+- **The worker's reason for a failed load never left the worker (#768).** A
+  worker's console reaches no device log, so `Voice model failed to load` was
+  the whole of what a phone could report. The detail now rides along in the
+  message, and a main-thread `console.info` announces the load before it starts
+  — a log that ends there means the device died loading the model, a log that
+  reaches the failure means it merely refused. On an iPhone 13 those two were
+  indistinguishable until this line existed.
+
+- **Recognition argued with a backgrounded page (#769).** iOS does not let it
+  survive being backgrounded, and our own record shows the shape:
+  `error code=audio-capture live=true [hidden]` then `visibilitychange`,
+  `audioend`, `aborted`, respawn, `not-allowed`, stand-down. The listener now
+  stands by on hidden and comes back on visible — a different state from dozing,
+  with its own flag, because dozing means the opposite (stay quiet until a
+  touch) and sharing one would leave a returning page silent. Desktop keeps its
+  session: a background tab there keeps its microphone, and a pianist who
+  alt-tabs mid-practice should not lose the ear.
+
+- **The microphone was cold for the first session of a document (#769).** A
+  documented WebKit mitigation for precisely the symptom here — the FIRST
+  recognition failing while later ones are fine. One `getUserMedia`, stopped in
+  the same breath, once per listener, begun rather than awaited so a permission
+  prompt nobody answers cannot mean voice control never starts. Neither this nor
+  the stand-by above is claimed as the fix for VC-1; both write a line in the
+  record so a device run can say which fired.
+
+- **A stutter matched nothing (#761).** "sing sing" is one `sing` said twice —
+  how a person speaks when the first attempt did not seem to land, and what a
+  recognizer produces from a hesitant start. Runs of the same token collapse,
+  but only as a FALLBACK after the tokens as spoken have been tried, so a
+  command that legitimately repeats a word keeps working. Numbers are left
+  alone: "back two two" may be twenty-two misheard or two separate values, and
+  quietly rewriting it would change what happens rather than fail honestly.
+
+- **The command list lost the panel on a phone, and Drum Night's overlay was
+  unreadable (#761, #769).** Along with the room log dropping the lines the
+  experiment had turned on.
+
+### Changed
+
+- **`practise` -> `practice` throughout (#762)**, except the two British-spelling
+  SEO keywords in `src/seo/entry-pages.ts`, which are deliberate. No stored key,
+  column, badge id or matcher changed — `condition` in `seed-data.json` is
+  display copy the grant engine never reads.
+
+- **Karaoke's card drops "you own" (#762).** The ownership framing belongs in
+  the privacy notice and terms, not on a share card.
+
+- **"Pitch" wears the brand spectrum on every card (#762).** The generators set
+  a flat `#58a6ff` while the app renders
+  `linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%)` clipped to
+  the text, in both `App.module.css` and `entry-prelude.css`. A card is the
+  first frame of the page it links to, so a flat blue "Pitch" read as a
+  different brand the moment the page painted.
+
+- **AGENTS.md and CLAUDE.md say rebase, not merge (#763).** The guardrail
+  already allowed `--force-with-lease` for rebases, but only in AGENTS.md;
+  CLAUDE.md summarised it as "never force-push" with no qualifier, and an agent
+  reading the summary concludes a rebase is off the table and merges `main`
+  into the branch instead. Squash-vs-rebase is now stated as a judgement about
+  what the commits are, not a default.
+
+- **One `GUITAR_NIGHT_PATH`, not five copies of the string (#766).** The literal
+  `'/guitar-night'` appeared in five places, one of them the legacy path it
+  redirects from. A constant, and the redirect reads as a redirect.
+
 ## [0.9.6] - 2026-09-09
 
 The crawlable entries become a data model, four search intents get a page of

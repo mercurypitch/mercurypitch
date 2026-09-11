@@ -218,6 +218,45 @@ export function handleAuthErrorResponse(
   return true
 }
 
+const SESSION_REJECTED_MESSAGE =
+  'Your session has expired. Sign in again to see everything kept in your account.'
+const SESSION_REJECTED_NOTIFICATION_CHANNEL = 'session-rejected'
+
+/**
+ * A cloud DATA request was rejected as unauthenticated.
+ *
+ * Deliberately not folded into `handleAuthErrorResponse`: on the auth
+ * endpoints a 401 means "wrong password", and signing someone out for
+ * mistyping one would be worse than the bug this fixes.
+ *
+ * Only an upgraded account can have a session to lose. A visitor with no
+ * token, or with a lazily provisioned anonymous one, is in the ordinary
+ * case — identities mint on the first write, so a 401 there means "you
+ * have not written anything yet", which is not a failure and must stay
+ * silent. Returns whether it acted.
+ *
+ * Why it matters: reads degrade to empty results so the app still loads,
+ * and `getUserId()` mints an anonymous id unconditionally, so nothing
+ * downstream could tell an expired session from a new visitor. On a real
+ * device on 2026-09-09 that showed up as a Karaoke library that was simply
+ * empty, with no suggestion that signing in would bring it back.
+ */
+export function handleCloudSessionRejected(notifyUser = true): boolean {
+  if (!hasUpgradedAccount()) return false
+  setAuthToken(null)
+  setRequiresLogin(true)
+  tokenServerVerified = false
+  authChanged()
+  if (notifyUser) {
+    showNotification(SESSION_REJECTED_MESSAGE, 'warning', {
+      channel: SESSION_REJECTED_NOTIFICATION_CHANNEL,
+      durationMs: 15000,
+    })
+  }
+  console.info('[auth] cloud session rejected — sign-in required')
+  return true
+}
+
 async function handleAuthResponse(
   response: Response,
   providerHint?: AuthUserInfo['authProvider'],

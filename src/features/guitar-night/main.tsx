@@ -7,6 +7,7 @@ import '@/styles/mobile-kit.css'
 import '@/styles/performance-mode.css'
 import { consumeGoogleRedirect, restoreAuth } from '@/db/services/auth-service'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
+import { armDeveloperConsole } from '@/lib/developer-console'
 import { initDeviceTier } from '@/lib/device-tier'
 import { GuitarNightApp } from './GuitarNightApp'
 
@@ -37,6 +38,13 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
     announceVoiceDiagnostics()
   })
 }
+
+// The shipping in-app console, on whichever page the bug is on, toggled from
+// Settings' danger zone. Nothing of it loads until somebody turns it on; the
+// buffer behind it is filled by initGlobalErrorHandlers either way. Unrelated
+// to the portable console above, which is dev-only and must never reach a
+// build.
+armDeveloperConsole()
 
 // Consume Google first: the worker returns the session in #gauth, and
 // restoreAuth cannot restore a token that has not been stored yet.
