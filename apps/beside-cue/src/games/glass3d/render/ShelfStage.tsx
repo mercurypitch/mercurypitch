@@ -27,15 +27,15 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
-import { CATCH, groundFor, leapCarry, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, topsOf, } from '../levels/shelf'
+import { CATCH, MAX_LEAP, RISE_PER_SEMI } from '../levels/shelf'
 import { keepBest, readStats, writeStats } from '../levels/shelf-stats'
 import { shelfTrack } from '../levels/shelf-track'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { medalFor } from '../sim/line-grade'
-import { createLocomotion, leapVelocity, stepLocomotion, } from '../sim/locomotion3d'
-import type { ShelfGrade, ShelfStats } from '../sim/shelf-grade'
-import { NO_LEAPS, roomLine, statsOf, walkLine, withLeap, } from '../sim/shelf-grade'
-import { emptyVoice, intervalLabel, voiceStep } from '../sim/shelf-voice'
+import type { ShelfStats } from '../sim/shelf-grade'
+import { roomLine, walkLine } from '../sim/shelf-grade'
+import { closeWalls, createClimb, easeCrouch, finishRoom, stepShelf, } from '../sim/shelf-step'
+import { intervalLabel } from '../sim/shelf-voice'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import { ShapeGauge } from './ShapeGauge'
 import type { ShelfView } from './Shelf3D'
@@ -44,17 +44,8 @@ import { TouchControls } from './TouchControls'
 
 const MIC_ID = 'glass3d-shelf'
 const TEXT_INTERVAL = 0.1
-/** How close to the exit counts as reaching it, in metres. */
-const ARRIVED = 0.02
 /** The beat between rooms. */
 const CLEARED_SECONDS = 1.4
-/** Half of him, mitt to mitt: what the walls and the floor read (6a). */
-const HALF = MITT_SPAN / 2
-/** How fast he crouches into readiness and out of it, per second. */
-const CROUCH_RATE = 12
-/** A silence this long lets the crouch go. Shorter than a breath would
- * flicker him on every consonant; longer reads as not listening. */
-const CROUCH_BREATH = 0.25
 const GAUGE_KEY = 'beside-cue:games:shelf-gauge'
 /** The interval gauge's glass, in semitones: his spring, the most any
  * one leap is (§6, D2). */
@@ -81,19 +72,6 @@ const writeToggle = (key: string, on: boolean): void => {
 const ROOMS = shelfTrack.rooms
 
 type Phase = 'climbing' | 'cleared' | 'done'
-
-/** A leap in the air: what was sung, at which riser, and whether his
- * mitt has reached that riser -- which is what aims it there, for the
- * grade (§7) -- and whether its apex has flashed (§6). */
-interface Flight {
-  interval: number
-  riser: number
-  reached: boolean
-  flashed: boolean
-  /** How fast it carries him while he rises, when it was fired in reach
-   * of that riser (`leapCarry`, §3.2); null for a hop at walking pace. */
-  carry: number | null
-}
 
 const DevDials = import.meta.env.DEV
   ? lazy(async () => ({ default: (await import('../dev/DevDials')).DevDials }))
@@ -177,55 +155,14 @@ export const ShelfStage = (props: ShelfStageProps) => {
 
     const begin = (): void => {
       if (gone) return
-      let live: ShelfLevel = room()
-      let tops = topsOf(live)
-      let ground = groundFor(live, HALF)
-
-      const walls = {
-        ...cfg.locomotion,
-        minX: HALF,
-        maxX: live.length - HALF,
-      }
-      const loco = createLocomotion(live.startX)
-      /** The nearest riser his mitts cannot catch is the wall, and the
-       * room's far end past the last one. Never behind him
-       * (`riserWallAt`). */
-      const closeWalls = (): void => {
-        walls.maxX = Math.min(
-          live.length - HALF,
-          riserWallAt(live, loco.x, loco.y, HALF),
-        )
-      }
-
-      let voice = emptyVoice()
+      /** The room being climbed -- his body, the voice, what the leaps
+       * came to -- as `sim/shelf-step` steps it. A new room is a new
+       * climb. */
+      let climb = createClimb(room(), cfg.locomotion)
       /** A note held from the dev hook, so a room can be climbed without
        * a microphone. Never set outside DEV. */
       let forcedMidi: number | null = null
       let phaseNow: Phase = 'climbing'
-      /** The shelf he last stood on: 0 is the floor. */
-      let standingOn = 0
-      /** Airborne from a leap, and carried toward the next shelf (§3.2):
-       * at the leap's own speed while an aimed one rises, else at walking
-       * pace. A step off a low edge is not carried. */
-      let carrying = false
-      /** Where the carry goes on to after a leap lands him on a higher
-       * shelf: all of him past its lip. The catch takes him by the mitts
-       * with most of him still over the drop, and left there he reads as
-       * perched on the edge; "he is on" (§3.4) is a step onto it. */
-      let boardTo: number | null = null
-      /** The last stop only moved the reference, on the ground: he is
-       * crouched, readying, while the note that did it is held. */
-      let readying = false
-      let crouch = 0
-      let silentFor = 0
-      /** Leaps launched this room, and the highest the last one got him,
-       * for the dev hook: what a test checks a stop did. */
-      let leaps = 0
-      let apex = 0
-      /** The leap in the air, or null on the ground. */
-      let flight: Flight | null = null
-      /** What each riser's leaps came to: riser k's at k - 1 (§7). */
-      let grades: ShelfGrade[] = live.shelves.slice(1).map(() => NO_LEAPS)
       let wallSeconds = 0
       let clearedAtWall = 0
       let lastHeard = false
@@ -245,123 +182,43 @@ export const ShelfStage = (props: ShelfStageProps) => {
         r.merc()?.play(name, { loop })
       }
       const poseNow = (): void => {
+        const { loco } = climb
         if (!loco.grounded || Math.abs(loco.vx) > 0.06) setPose('move')
         else if (lastHeard) setPose('sing')
         else setPose('listen')
       }
 
-      /** Which shelf a height is the top of. Exact: the floor under him
-       * is always one of these very numbers (`groundFor`). */
-      const shelfAt = (y: number): number => {
-        const i = tops.findIndex((t) => Math.abs(t - y) < 1e-6)
-        return i < 0 ? standingOn : i
-      }
-
       /** The top of the shelf under his centre, for the pool of light:
        * the one he is over, or below it while he is under its lip. */
       const surfaceUnder = (x: number, y: number): number => {
+        const { room: live, tops } = climb
         let i = live.shelves.length - 1
         while (i > 0 && live.shelves[i]!.from > x) i--
         while (i > 0 && tops[i]! > y + 1e-6) i--
         return tops[i]!
       }
 
-      const resetBody = (): void => {
-        loco.x = live.startX
-        loco.y = 0
-        loco.vx = 0
-        loco.vy = 0
-        loco.grounded = true
-        loco.facing = 1
-        // The jump buffer only decays inside `stepLocomotion`, which the
-        // 'cleared' branch skips; nothing here presses jump, but a key
-        // held across the handover must not bank one either.
-        loco.bufferLeft = 0
-        loco.jumpWasDown = false
-        standingOn = 0
-        carrying = false
-        boardTo = null
-        readying = false
-        crouch = 0
-        leaps = 0
-        apex = 0
-        flight = null
-      }
-
       const enterRoom = (next: ShelfLevel): void => {
-        live = next
+        // A new room starts from its door, with no reference: a note held
+        // across the handover settles as the first stop and readies him.
+        climb = createClimb(next, cfg.locomotion)
         setRoom(next)
-        tops = topsOf(next)
-        ground = groundFor(next, HALF)
         r.load(next)
-        resetBody()
-        grades = next.shelves.slice(1).map(() => NO_LEAPS)
-        // A new room starts from no reference: a note held across the
-        // handover settles as the first stop and readies him.
-        voice = emptyVoice()
-        closeWalls()
         setStanding(0)
         go('climbing')
       }
       goToRoom = enterRoom
 
-      const launch = (leap: { height: number; interval: number }): void => {
-        // The loop's own step, so the stepped apex is the height the
-        // interval asked for to a twentieth of a millimetre (6a).
-        loco.vy = leapVelocity(
-          leap.height,
-          cfg.locomotion,
-          cfg.loop.stepSeconds,
-        )
-        // Aimed, in reach of the riser ahead: carried at the speed that
-        // brings his front to it at the apex, so where he stood never
-        // decides whether it lands (§3.2). Further out, a hop.
-        const carry = leapCarry(
-          live,
-          loco.x,
-          loco.y,
-          leap.height,
-          cfg.locomotion.gravity,
-          HALF,
-        )
-        if (carry !== null) loco.vx = carry
-        loco.grounded = false
-        carrying = true
-        boardTo = null
-        readying = false
-        leaps += 1
-        apex = loco.y
-        flight = {
-          interval: leap.interval,
-          riser: standingOn + 1,
-          reached: false,
-          flashed: false,
-          carry,
-        }
-      }
-
-      /** A leap has come down, on shelf `on`. It was aimed at its riser
-       * if it reached it or landed past it, and then it is graded (§7);
-       * a hop in the open, short of any riser, is aimed at nothing. */
-      const grade = (f: Flight, on: number): void => {
-        const target = live.shelves[f.riser]
-        if (target === undefined) return
-        const up = on >= f.riser
-        if (!up && !f.reached) return
-        const i = f.riser - 1
-        grades[i] = withLeap(grades[i]!, f.interval, target.rise, up)
-      }
-
       /** The room is climbed. Written the moment it happens, the Line's
        * way: a player who puts the phone down after room one has climbed
        * room one. The grade is §7's, kept per room for the best run. */
       const clearRoom = (): void => {
-        const run = statsOf(grades)
+        const run = finishRoom(climb)
         setLastRun(run)
-        const next = shelfTrack.recordClear(track(), live.id, run.pct)
+        const next = shelfTrack.recordClear(track(), climb.room.id, run.pct)
         setTrack(next)
         shelfTrack.writeTrack(next)
-        const kept = keepBest(stats(), live.id, run)
+        const kept = keepBest(stats(), climb.room.id, run)
         setStats(kept)
         writeStats(kept)
         clearedAtWall = wallSeconds
@@ -370,13 +227,11 @@ export const ShelfStage = (props: ShelfStageProps) => {
           go('done')
           return
         }
-        go(shelfTrack.roomAfter(live.id) === null ? 'done' : 'cleared')
+        go(shelfTrack.roomAfter(climb.room.id) === null ? 'done' : 'cleared')
       }
 
-      closeWalls()
-
       const view: ShelfView = {
-        mercX: loco.x,
+        mercX: climb.loco.x,
         mercY: 0,
         mercFacing: 1,
         shelfY: 0,
@@ -397,7 +252,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           if (phaseNow === 'cleared') {
             if (wallSeconds - clearedAtWall >= CLEARED_SECONDS) {
-              const next = shelfTrack.roomAfter(live.id)
+              const next = shelfTrack.roomAfter(climb.room.id)
               if (next === null) go('done')
               else enterRoom(next)
             }
@@ -405,8 +260,6 @@ export const ShelfStage = (props: ShelfStageProps) => {
           }
           if (phaseNow === 'done') return
 
-          // The voice first: a stop this step launches him this step,
-          // from where he stands.
           const pitch = driver?.latestPitch() ?? null
           lastLevel = driver?.latestLevel() ?? 0
           const sure =
@@ -414,100 +267,39 @@ export const ShelfStage = (props: ShelfStageProps) => {
             (pitch !== null && pitch.conf >= 0.5 ? pitch.midi : null)
           lastHeard = forcedMidi !== null || pitch !== null
           lastMidi = sure
-          const heardStop = voiceStep(voice, sure, dt, loco.grounded)
-          if (heardStop?.kind === 'leap') launch(heardStop)
-          else if (heardStop?.kind === 'ready') readying = true
-          silentFor = sure === null ? silentFor + dt : 0
-          if (voice.slide.moving || silentFor > CROUCH_BREATH) {
-            readying = false
+          const step = stepShelf(climb, sure, input.read(now).move, dt)
+          if (step.flash !== null) {
+            r.flash(step.flash.x, step.flash.y, step.flash.label)
           }
-
-          closeWalls()
-          // The carry: airborne from a leap he drifts toward the next
-          // shelf whatever the thumb is doing (§3.2) -- at the leap's own
-          // speed while an aimed one rises, at walking pace after its
-          // apex and for a hop -- and on across the lip of the one it
-          // lands him on.
-          const aim = flight?.carry ?? null
-          walls.walkSpeed =
-            aim !== null && loco.vy > 0 ? aim : cfg.locomotion.walkSpeed
-          const move = carrying || boardTo !== null ? 1 : input.read(now).move
-          stepLocomotion(loco, { move, jump: false }, ground, dt, walls)
-          if (flight !== null) {
-            apex = Math.max(apex, loco.y)
-            // His mitt at the riser: the leap is aimed at that shelf.
-            const target = live.shelves[flight.riser]
-            if (target !== undefined && loco.x >= target.from - HALF - 1e-3) {
-              flight.reached = true
-            }
-            // The apex is the step his climb stopped on -- or the one the
-            // catch took him on, which for a leap that lands is the same
-            // step (§11, 6b).
-            if (!flight.flashed && loco.vy <= 0) {
-              flight.flashed = true
-              const riser = live.shelves[flight.riser]
-              r.flash(
-                riser === undefined ? loco.x + HALF : riser.from,
-                apex,
-                intervalLabel(flight.interval),
-              )
-            }
-          }
-          if (loco.grounded) {
-            const on = shelfAt(loco.y)
-            if (flight !== null) grade(flight, on)
-            if (carrying && on > standingOn) {
-              boardTo = live.shelves[on]!.from + HALF
-            }
-            carrying = false
-            flight = null
-            standingOn = on
-            if (
-              boardTo !== null &&
-              loco.x >= Math.min(boardTo, walls.maxX) - 1e-6
-            ) {
-              boardTo = null
-            }
-          } else {
-            readying = false
-          }
-
-          if (
-            phaseNow === 'climbing' &&
-            loco.grounded &&
-            standingOn === live.shelves.length - 1 &&
-            loco.x >= live.exitX - ARRIVED
-          ) {
-            clearRoom()
-          }
+          if (phaseNow === 'climbing' && step.arrived) clearRoom()
         })
 
-        crouch +=
-          ((readying ? 1 : 0) - crouch) *
-          (1 - Math.exp(-CROUCH_RATE * frameSeconds))
+        easeCrouch(climb, frameSeconds)
 
         sinceText += frameSeconds
         if (sinceText >= TEXT_INTERVAL) {
           sinceText = 0
           setHeard(lastHeard)
           setLevel(lastLevel)
-          setStanding(standingOn)
-          setAsk(live.shelves[standingOn + 1]?.rise ?? null)
+          setStanding(climb.standingOn)
+          setAsk(climb.room.shelves[climb.standingOn + 1]?.rise ?? null)
+          const { reference } = climb.voice
           setAbove(
-            lastMidi === null || voice.reference === null
+            lastMidi === null || reference === null
               ? null
-              : lastMidi - voice.reference,
+              : lastMidi - reference,
           )
         }
 
         poseNow()
+        const { loco } = climb
         view.mercX = loco.x
         view.mercY = loco.y
         view.mercFacing = loco.facing
-        view.shelfY = tops[standingOn]!
+        view.shelfY = climb.tops[climb.standingOn]!
         view.surfaceY = surfaceUnder(loco.x, loco.y)
-        view.crouch = crouch
-        view.exitOpen = standingOn === live.shelves.length - 1
+        view.crouch = climb.crouch
+        view.exitOpen = climb.standingOn === climb.room.shelves.length - 1
         r.render(view, frameSeconds)
         frame = requestAnimationFrame(tick)
       }
@@ -517,34 +309,35 @@ export const ShelfStage = (props: ShelfStageProps) => {
           { label: 'Hold A3', run: () => (forcedMidi = 57) },
           {
             label: 'Up a fifth',
-            run: () => (forcedMidi = (voice.reference ?? 57) + 7),
+            run: () => (forcedMidi = (climb.voice.reference ?? 57) + 7),
           },
           { label: 'Let go', run: () => (forcedMidi = null) },
           {
             label: 'To the riser',
             run: () => {
-              closeWalls()
-              loco.x = walls.maxX
+              closeWalls(climb)
+              climb.loco.x = climb.walls.maxX
             },
           },
           { label: 'Clear this room', run: () => clearRoom() },
         ]
         ;(window as unknown as Record<string, unknown>).__w3s = () => ({
           phase: phaseNow,
-          room: live.id,
-          x: loco.x,
-          y: loco.y,
-          grounded: loco.grounded,
-          shelf: standingOn,
-          reference: voice.reference,
-          leaps,
-          apex,
-          grades: grades.map((g) => ({ ...g })),
+          room: climb.room.id,
+          x: climb.loco.x,
+          y: climb.loco.y,
+          grounded: climb.loco.grounded,
+          shelf: climb.standingOn,
+          reference: climb.voice.reference,
+          leaps: climb.leaps,
+          apex: climb.apex,
+          grades: climb.grades.map((g) => ({ ...g })),
           mercScreenBox: () => r.mercScreenBox(),
           move: (m: number) => input.setMove(m),
           warpTo: (x: number) => {
-            closeWalls()
-            loco.x = Math.max(walls.minX, Math.min(walls.maxX, x))
+            closeWalls(climb)
+            const { walls } = climb
+            climb.loco.x = Math.max(walls.minX, Math.min(walls.maxX, x))
           },
           sing: (midi: number | null) => {
             forcedMidi = midi
