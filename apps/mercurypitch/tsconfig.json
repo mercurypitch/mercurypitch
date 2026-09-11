@@ -2,7 +2,7 @@
   // Mirrors the root tsconfig on purpose: `@/*` resolves to the SAME source
   // tree, so a stricter or looser setting here would report the web app's own
   // code differently depending on which config saw it, and the two would
-  // argue. Only three things differ, and each is a fact about this package:
+  // argue. Four things differ, and each is a fact about this package:
   //
   //   paths      `@/*` points up two directories, matching the alias in
   //              vite.config.ts. That is the whole thin-alias architecture in
@@ -12,6 +12,16 @@
   //   include    its own entry plus its config files. Everything under the
   //              root `src` arrives by being imported, which is exactly the
   //              check that is wanted: what the NATIVE entry point reaches.
+  //   allowImportingTsExtensions
+  //              vite.config.ts imports @irchiinnuss/purchase-kit, whose
+  //              package exports point "types" at src/index.ts -- a source
+  //              package compiles under its CONSUMER's options, never its
+  //              own -- and that file re-exports `./build-policy.ts` with the
+  //              extension spelled out. The extension is load-bearing: Vite
+  //              externalises a workspace package when it bundles a config
+  //              file, so Node's own ESM loader resolves it and requires one.
+  //              Without this the app's own `check` script fails TS5097 on a
+  //              file it does not own. Legal because `noEmit` is true.
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",
@@ -29,7 +39,8 @@
       "@/*": ["../../src/*"]
     },
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "allowImportingTsExtensions": true
   },
   // "../../src/vite-env.d.ts" is not reachable by import -- an ambient
   // declaration file is never imported by anything -- so it has to be named.
