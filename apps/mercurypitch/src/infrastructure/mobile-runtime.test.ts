@@ -1,29 +1,20 @@
 // ============================================================
-// The native runtime is composed without a store, and stays that way
+// The native runtime is composed from what this app installs
 // ============================================================
+//
+// Every assertion here is against the runtime `createNativeRuntime()` really
+// returns. That is the point: a probe told `purchasesAvailable: false` would
+// report exactly that whatever this app composed, so it can only prove the
+// shared package works — never that this binary asked for nothing.
 
-import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { describe, expect, it } from 'vitest'
-import { MOBILE_RUNTIME_OPTIONS } from './mobile-runtime'
+import { createNativeRuntime } from './mobile-runtime'
 
 describe('this app’s own composition', () => {
-  // The point of asserting on the options object rather than on the runtime:
-  // a probe substitutes inert ports when told `purchasesAvailable: false`, and
-  // would report exactly that whatever this app actually composed. This is the
-  // only assertion that fails if someone adds a store to V1-1.
-  it('names no purchases options at all', () => {
-    expect('purchases' in MOBILE_RUNTIME_OPTIONS).toBe(false)
-  })
-
-  it('is frozen, so nothing can add one at runtime either', () => {
-    expect(Object.isFrozen(MOBILE_RUNTIME_OPTIONS)).toBe(true)
-  })
-})
-
-describe('a runtime composed that way', () => {
-  const { runtime } = createMobileRuntimeProbe({ purchasesAvailable: false })
+  const runtime = createNativeRuntime()
 
   it('reports purchases as unavailable rather than pretending', () => {
+    // The only assertion that fails if someone adds a store to V1-1.
     expect(runtime.purchases.available).toBe(false)
     expect(runtime.paywall.available).toBe(false)
   })
@@ -45,4 +36,31 @@ describe('a runtime composed that way', () => {
       ).rejects.toMatchObject({ reason: 'unavailable' })
     },
   )
+
+  it('admits it cannot schedule a notification', async () => {
+    // `@capacitor/local-notifications` is not a dependency of this app, and
+    // this is what says so from the outside. A product feature-detects the
+    // capability through exactly this answer.
+    await expect(runtime.localNotifications.checkPermission()).resolves.toBe(
+      'unsupported',
+    )
+    await expect(runtime.localNotifications.requestPermission()).resolves.toBe(
+      'unsupported',
+    )
+    await expect(
+      runtime.localNotifications.schedule([]),
+    ).resolves.toBeUndefined()
+  })
+
+  it('keeps the one native capability this app does install', async () => {
+    // The REAL Capacitor adapter, not an inert port — and that is exactly
+    // what this asserts. Off a device the plugin's web shim answers
+    // `UNAVAILABLE` because there is no vibration API; an inert port would
+    // have resolved quietly, so a rejection here is the evidence that the
+    // call reached a plugin at all. The style mapping is tested in the
+    // shared package, where the plugin is mocked.
+    await expect(runtime.haptics.impact('light')).rejects.toMatchObject({
+      code: 'UNAVAILABLE',
+    })
+  })
 })

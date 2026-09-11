@@ -27,6 +27,10 @@
 // Kept, because each one is as true on a phone as in a tab:
 //   installChunkLoadRecovery(), initGlobalErrorHandlers(), initDeviceTier().
 //
+// Added, because neither has a browser equivalent:
+//   installNativeShell()           The OS taking the whole app away, and the
+//                                  Android hardware back button. Both in
+//                                  infrastructure/native-shell.ts.
 // Added here and nowhere else, because each is a fact about a WebView:
 //
 //   installStoragePort()           `mp:userId`, `mp:deviceSecret` and
@@ -75,6 +79,7 @@ import { armDeveloperConsole } from '@/lib/developer-console'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
+import { installNativeShell } from './infrastructure/native-shell'
 import { hydrateStoragePort, installStoragePort } from '@/lib/storage-port'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
@@ -103,6 +108,9 @@ installChunkLoadRecovery()
 initGlobalErrorHandlers()
 initDeviceTier()
 
+// Before the first render, so a back press during boot is answered by this
+// app rather than by Capacitor's default, which is to exit.
+installNativeShell()
 // Lazy: the loader runs on the first sign-in press, so a session that never
 // signs in never pays for the plugin's module graph.
 registerSocialLoginBridge(() => Promise.resolve(createSocialLoginBridge()))

@@ -5,12 +5,12 @@
 // math lives in games/glass/tap-latency.ts (pure, tested); this
 // component only schedules ticks and stamps taps with the audio clock.
 //
-// That clock is the app's shared AudioContext (audio/shared-audio-context.ts):
+// That clock is the app's shared AudioContext (@irchiinnuss/audio-io):
 // the latency measured here is spent judging taps in rhythm play, so both
 // have to be read from the same stopwatch.
 
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { computeTapLatency, tapOffsets } from '@/games/glass/tap-latency'
 import { isNativeInteractionTarget } from '@/interaction/selection'

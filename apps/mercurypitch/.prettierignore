@@ -9,6 +9,8 @@ android
 ios
 dist
 
-# Vendored at build time by scripts/sync-ort-assets.mjs.
-public/ort
-public/models
+# Staged at build time by scripts/sync-native-assets.mjs. It holds the web
+# app's own .svg character art, which prettier formats, so an unformatted
+# master in public/ would fail this app's check for a file it never wrote.
+.native-public
+public

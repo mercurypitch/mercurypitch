@@ -19,8 +19,8 @@
 // the stolen note, that there is a ceiling on the bus -- are all
 // countable without producing samples.
 
+import { resetSharedAudioContext } from '@irchiinnuss/audio-io'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { resetSharedAudioContext } from '@/audio/shared-audio-context'
 import { createGameVoice } from './game-voice'
 
 interface FakeParam {

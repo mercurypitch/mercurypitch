@@ -1,5 +1,5 @@
 // The tap driver: rhythm play with no microphone. It leases the app's
-// shared AudioContext (audio/shared-audio-context.ts) purely as the
+// shared AudioContext (@irchiinnuss/audio-io) purely as the
 // conductor clock — and for game sound output — and queues pointer/key
 // taps as discrete intents stamped with that clock. The runtime drains
 // and judges them; the driver stays dumb hardware.
@@ -8,7 +8,7 @@
 // is compared against a note the stage scheduled, and two contexts would
 // have measured that gap with two different stopwatches.
 
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { isNativeInteractionTarget } from '@/interaction/selection'
 import type { DiscreteIntent, InteractionDriver } from './types'
 

@@ -1,12 +1,16 @@
 # Build output
 dist/
 
-# Vendored at build time by scripts/sync-ort-assets.mjs — inputs, not sources.
-# Keeping them out of git means one copy of the wasm runtime and the SwiftF0
-# model in the repository (the web app's public/ tree) rather than two that
-# can drift.
-public/ort/
-public/models/
+# The staged publicDir. scripts/sync-native-assets.mjs wipes and refills it on
+# every build and every dev server, from the wasm runtime, the SwiftF0 model
+# and the manifest tier in native-assets.mjs. Keeping it out of git means one
+# copy of each of those in the repository (the web app's public/ tree) rather
+# than two that can drift — and nothing in here is ever worth editing.
+.native-public/
+
+# Superseded by .native-public/. Still ignored so a checkout that built this
+# app before the move does not report its leftovers as untracked files.
+public/
 
 # Local TLS for device playtests over the LAN. Machine-specific, and a private key.
 .dev-cert/

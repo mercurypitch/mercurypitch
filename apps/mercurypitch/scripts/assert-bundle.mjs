@@ -20,6 +20,17 @@
 //            one moment an offline-first app must not need a network. Both CI
 //            jobs were green on that build.
 //
+//   MANIFEST Every entry in ../native-assets.mjs resolved to at least one
+//            file in the bundle, and every file it resolved to in the web
+//            app's public/ tree arrived. The native dist is index.html +
+//            assets/ + models/ + ort/ by design, and the pictures the V1-1
+//            surfaces reference by absolute URL live in public/ -- so the
+//            first TestFlight build (mp-v0.1.0) came up with no twin
+//            portrait, no character art and no room covers, and nothing
+//            anywhere said so. A glob that matches nothing is the shape that
+//            failure takes now, and it is a red check rather than a blank
+//            screen on a phone.
+//
 //   UNSOLD   No built file offers a way to pay. The web app sells credit
 //            packs through Stripe and links out to Ko-fi and Sponsors, and
 //            `@` aliases to that same source tree; App Store guideline 3.1.1
@@ -46,7 +57,9 @@
 // workflow, which knows nothing about this app.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { resolveNativeAssets, totalBytes } from '../native-assets.mjs'
 
 /** The files sync-ort-assets.mjs vendors, relative to a bundle root. */
 const VENDORED = [
@@ -54,6 +67,18 @@ const VENDORED = [
   'ort/ort-wasm-simd-threaded.wasm',
   'models/swiftf0.onnx',
 ]
+
+/**
+ * The web app's public/ tree: where the manifest tier is copied FROM.
+ *
+ * Resolved from this file rather than the working directory, because the
+ * reusable Capacitor workflow calls this script from the repository root and
+ * the PR gate calls it from wherever it happens to be.
+ */
+const WEB_PUBLIC = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../public',
+)
 
 /** Must appear in the bundle: the wasm base the engine really reads. */
 const WASM_BASE = '/ort/'
@@ -168,6 +193,49 @@ function main(argv) {
       `${label}: a built chunk names ${WASM_BASE}`,
       `No chunk references ${WASM_BASE}, so the engine will resolve its wasm base to the CDN fallback at runtime. Check that VITE_ONNX_WASM_BASE_URL is set in apps/mercurypitch/.env and that the build read it.`,
     )
+
+    // MANIFEST -- resolve the same globs against this bundle root that
+    // sync-native-assets.mjs resolved against public/ on the way in. An entry
+    // that matched four files there and none here is a publicDir that was not
+    // copied; an entry that matches nothing in either is a rename, and the
+    // staging step has already refused to build.
+    const staged = resolveNativeAssets(WEB_PUBLIC)
+    const bundled = resolveNativeAssets(root)
+
+    for (const entry of bundled.entries) {
+      record(
+        entry.files.length > 0,
+        `${label}: ${entry.glob} resolves (${entry.files.length} file${entry.files.length === 1 ? '' : 's'})`,
+        `Nothing in ${root} matches this manifest entry. ${entry.reason} ${
+          synced
+            ? 'cap sync did not copy the publicDir, or this is a stale bundle.'
+            : 'Check that vite.config.ts still points publicDir at the staged directory scripts/sync-native-assets.mjs fills.'
+        }`,
+      )
+    }
+
+    // Every file the manifest resolves to in public/ has to be here too. The
+    // per-entry check above passes on a partial copy; this one does not.
+    const absent = staged.files.filter((file) => !existsSync(join(root, file)))
+    record(
+      staged.files.length > 0 && absent.length === 0,
+      `${label}: all ${staged.files.length} manifest files were copied`,
+      staged.files.length === 0
+        ? `The manifest resolved to no files at all under ${WEB_PUBLIC}. Either the web app's public/ tree is missing from this checkout or every glob in native-assets.mjs is stale.`
+        : `Missing here: ${absent.slice(0, 8).join(', ')}${absent.length > 8 ? ` (+${absent.length - 8} more)` : ''}. Rebuild${synced ? ', then cap sync' : ''}.`,
+    )
+
+    const manifestBytes = totalBytes(root, bundled.files)
+    console.log(
+      `      manifest tier: ${bundled.files.length} files, ${manifestBytes} bytes (${(manifestBytes / 1024 / 1024).toFixed(2)} MiB)`,
+    )
+    if (!synced) {
+      for (const entry of bundled.entries) {
+        console.log(
+          `        ${String(totalBytes(root, entry.files)).padStart(9)} B  ${entry.glob}`,
+        )
+      }
+    }
 
     // UNSOLD
     const selling = []
