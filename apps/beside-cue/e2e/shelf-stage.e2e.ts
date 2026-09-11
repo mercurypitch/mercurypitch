@@ -120,6 +120,15 @@ test.describe('the Top Shelf, every room', () => {
           expect(octave.shelf, `${label}: the ledge`).toBe(1)
           expect(octave.apex).toBeCloseTo(MAX_LEAP, 3)
           expect(octave.apex).toBeLessThan(tops[2]! - CATCH)
+          // And the grade calls it what it was (§7): a first try on the
+          // ledge, sung 500¢ past the fifth it asked for.
+          const ledge = await page.evaluate(() => window.__w3s!().grades[0])
+          expect(ledge).toMatchObject({
+            leaps: 1,
+            firstTry: true,
+            landed: true,
+          })
+          expect(ledge!.overshootCents).toBeCloseTo(500, 6)
         } else {
           const up = await leapAt(page, room, k, room.shelves[k]!.rise)
           expect(up.shelf, label).toBe(k)
@@ -138,5 +147,30 @@ test.describe('the Top Shelf, every room', () => {
       .poll(async () => (await read(page)).phase, { timeout: 15_000 })
       .toBe('done')
     await expect(page.getByText('The Top Shelf, climbed.')).toBeVisible()
+
+    // The walk card, in cents (§7): every leap exact but the octave, 500¢
+    // over nine shelves; every one a first try; room 3 at 75%, so a walk
+    // of 100, 100 and 75 is gold.
+    await expect(
+      page.getByText('56¢ past the shelf on average · 9 of 9 first time'),
+    ).toBeVisible()
+    await expect(page.locator('.line-medal--gold')).toBeVisible()
+    await shoot(page, info, 'walk-card')
+
+    // Kept: the Games card counts the rooms, and after a reload the stage
+    // opens on the walk card with each room's best.
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    const card = page.getByRole('button', { name: /The Top Shelf/ })
+    await expect(card).toContainText('3 of 3')
+    await page.reload()
+    await page.getByRole('button', { name: /B-side games/ }).click()
+    await expect(card).toContainText('3 of 3')
+    await card.click()
+    await expect(page.getByText('The Top Shelf, climbed.')).toBeVisible()
+    await expect(page.locator('.chamber-done__best')).toHaveText([
+      '100%',
+      '100%',
+      '75%',
+    ])
   })
 })

@@ -36,7 +36,17 @@ export interface ScreenBox {
   settled: boolean
 }
 
+/** What one riser's leaps came to (`sim/shelf-grade`). */
+export interface ShelfGradeState {
+  leaps: number
+  firstTry: boolean
+  overshootCents: number
+  landed: boolean
+}
+
 interface ShelfHook extends ShelfState {
+  /** Riser k's grade at k - 1, this room. */
+  grades: ShelfGradeState[]
   move(m: number): void
   warpTo(x: number): void
   sing(midi: number | null): void
