@@ -13,6 +13,7 @@
 import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, BoxGeometry, CircleGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PerspectiveCamera, Quaternion, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
+import type { Shake } from '../runtime/impact'
 import type { LoadMark } from '../runtime/perf'
 import { NO_MARK, timed } from '../runtime/perf'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
@@ -23,6 +24,7 @@ import type { Lens } from './fov'
 import { holdHorizontalFov } from './fov'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
+import { shakeCamera } from './shake'
 
 const CUSTARD = 0xf2c84b
 const TURQUOISE = 0x00777d
@@ -46,8 +48,14 @@ export interface HallwayView {
   /** 0..1 charge on the pane. */
   resonance: number
   ringing: boolean
+  /** Seconds of shard flight to show: the break's clock, which the
+   * hitstop holds and the slow motion stretches (runtime/impact.ts). */
   shatterSeconds: number
   launches: readonly ShardLaunch[] | null
+  /** The break's turn of the lens this frame. */
+  shake: Shake
+  /** How fast his clip runs this frame: 0 in the hitstop, 1 otherwise. */
+  timeScale: number
 }
 
 export interface Hallway3D {
@@ -278,6 +286,17 @@ export const createHallway3D = (
       // compileAsync takes the object, the camera it will be seen by,
       // and the scene it belongs to. It has to be visible while it
       // happens, for the same reason it was never compiled.
+      //
+      // And never culled as a whole. Its bounds are the intact pane's,
+      // and `setMatrixAt` does not move them, so they are stale the
+      // moment the shards fly; each shard is still culled on its own
+      // (`perObjectFrustumCulled`). It also decides whether this compile
+      // does anything: while the batch could be culled, the shard
+      // program was skipped here and built on the crack frame instead --
+      // two builds, 40-47 ms of main thread on a desktop GPU, inside the
+      // one frame that must not stall (measured in 5b; slice-5 plan
+      // §2.5).
+      batch.frustumCulled = false
       batch.visible = true
       await timed(
         () => renderer.compileAsync(batch, camera, scene),
@@ -291,7 +310,9 @@ export const createHallway3D = (
       if (disposed) return
       clock += Math.min(dt, 0.1)
 
-      const breaking = view.launches !== null && view.shatterSeconds > 0
+      // From the crack: the hitstop shows the broken pane held still, and
+      // a shard at rest sits where it was in the pane (runtime/impact.ts).
+      const breaking = view.launches !== null
       pane.visible = !breaking
       if (shardBatch !== null) shardBatch.visible = breaking
       if (breaking && view.launches !== null) {
@@ -309,7 +330,10 @@ export const createHallway3D = (
         // someone. Mirrored rather than turned through the back, so the
         // cheat stays a cheat whichever way he is walking.
         actor.root.rotation.y = 1.05 * view.mercFacing
-        actor.update(dt)
+        // His clip runs on the break's clock, so the hitstop holds him
+        // with the glass. Where he stands does not: that is the
+        // simulation's, and it never stops (runtime/impact.ts).
+        actor.update(dt * view.timeScale)
       }
       // The pool is his reflection in the floor, so it stays ON the
       // floor when he leaves it. It fades as he climbs, below.
@@ -330,6 +354,7 @@ export const createHallway3D = (
       const k = 1 - Math.exp(-3.2 * dt)
       camera.position.x += (ahead - camera.position.x) * k
       camera.lookAt(camera.position.x - 1.1, 0.45, 0)
+      shakeCamera(camera, view.shake)
 
       // The pane brightens toward the break exactly as the bowl does.
       key.intensity = 55 + view.resonance * 70

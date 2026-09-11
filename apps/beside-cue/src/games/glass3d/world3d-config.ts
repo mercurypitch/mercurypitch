@@ -115,6 +115,24 @@ export interface World3DConfig {
     /** Frames drawn a second while calm. */
     fps: number
   }
+
+  /** The break's timeline, §7.1: every number a duration from the crack
+   * (P4; see runtime/impact.ts). */
+  impact: {
+    hitstopSeconds: number
+    slowScale: number
+    slowUntilSeconds: number
+    rampUntilSeconds: number
+    shakeSeconds: number
+    shakeDegrees: number
+    shakeRollDegrees: number
+    shakeHz: number
+    burstSeconds: number
+    burstPixelRatio: number
+    tap1Seconds: number
+    tap2Seconds: number
+    tap3Seconds: number
+  }
 }
 
 export const WORLD3D_CONFIG: World3DConfig = {
@@ -219,6 +237,30 @@ export const WORLD3D_CONFIG: World3DConfig = {
   calm: {
     afterSeconds: 3,
     fps: 30,
+  },
+
+  // §7.1 as P4 chose it: hitstop 100 ms, 0.35x until 350, back to full
+  // speed by 550, a 400 ms shake, the pixel ratio at 1.0 for the 1.2 s
+  // burst, a heavy tap at the crack and three light ones at 100, 300 and
+  // 550. The plan gives the shake no size: 0.8 degrees of turn and 1.2 of
+  // roll is about a centimetre at the Cabinet's bowl and four at the
+  // Hallway's pane, and 18 Hz reads as a rattle rather than a sway. All of
+  // it is the plan's first guess; 5b is done when maff has dragged these
+  // on the phone and the pasted values land here.
+  impact: {
+    hitstopSeconds: 0.1,
+    slowScale: 0.35,
+    slowUntilSeconds: 0.35,
+    rampUntilSeconds: 0.55,
+    shakeSeconds: 0.4,
+    shakeDegrees: 0.8,
+    shakeRollDegrees: 1.2,
+    shakeHz: 18,
+    burstSeconds: 1.2,
+    burstPixelRatio: 1,
+    tap1Seconds: 0.1,
+    tap2Seconds: 0.3,
+    tap3Seconds: 0.55,
   },
 }
 
@@ -337,5 +379,6 @@ export const resolveConfig = (
     locomotion: { ...base.locomotion, ...override.locomotion },
     loop: { ...base.loop, ...override.loop },
     calm: { ...base.calm, ...override.calm },
+    impact: { ...base.impact, ...override.impact },
   }
 }
