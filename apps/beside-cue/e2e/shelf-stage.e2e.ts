@@ -2,143 +2,15 @@
 // The Top Shelf, climbed without a voice
 // ============================================================
 //
-// Step 6b (docs/games/top-shelf.md §8) is done when room 1 is climbed in
-// the browser by hook, and by voice on the phone. This is the first
-// half: the real stage, loop and sim, entered from the Games list, with
-// the voice replaced by `__w3s().sing(midi)` -- the Line's `sing(t)`
-// seam -- because a headless browser has nobody to hum. Every note
-// below still goes through the Line's slide tracker as a sung one does,
-// the 150 ms hold and all, so what fires a leap here fires it on the
-// phone.
+// Steps 6b and 6c (docs/games/top-shelf.md §8) are done when every room
+// is climbed in the browser by hook, and by voice on the phone. This is
+// the first half: the real stage, loop and sim, entered from the Games
+// list, with the voice replaced by the hook's held note (`shelf-hook`)
+// because a headless browser has nobody to hum.
 
-import type { Page, TestInfo } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { MITT_SPAN, SHELF_1, topsOf } from '../src/games/glass3d/levels/shelf'
-
-interface ShelfState {
-  phase: string
-  room: string
-  x: number
-  y: number
-  grounded: boolean
-  shelf: number
-  reference: number | null
-  leaps: number
-  apex: number
-}
-
-interface ShelfHook extends ShelfState {
-  move(m: number): void
-  warpTo(x: number): void
-  sing(midi: number | null): void
-  clear(): void
-}
-
-declare global {
-  interface Window {
-    __w3s?: () => ShelfHook
-  }
-}
-
-const PHONE = { width: 390, height: 844 }
-const HALF = MITT_SPAN / 2
-/** Poll fast: a leap is in the air for under a second. */
-const FAST = { intervals: [16], timeout: 10_000 }
-
-/** Set SHELF_SHOTS_DIR to also write the frames to disk, for a person
- * to look at; the attachments are for the report. */
-const SHOTS_DIR = process.env.SHELF_SHOTS_DIR
-
-const enter = async (page: Page): Promise<void> => {
-  await page.setViewportSize(PHONE)
-  await page.goto('/?devSeed')
-  await page.getByRole('button', { name: /B-side games/ }).click()
-  await page.getByRole('button', { name: /The Top Shelf/ }).click()
-  await expect
-    .poll(() => page.evaluate(() => window.__w3s !== undefined), {
-      timeout: 20_000,
-    })
-    .toBe(true)
-}
-
-const read = (page: Page): Promise<ShelfState> =>
-  page.evaluate(() => {
-    const s = window.__w3s!()
-    return {
-      phase: s.phase,
-      room: s.room,
-      x: s.x,
-      y: s.y,
-      grounded: s.grounded,
-      shelf: s.shelf,
-      reference: s.reference,
-      leaps: s.leaps,
-      apex: s.apex,
-    }
-  })
-
-const sing = (page: Page, midi: number | null): Promise<void> =>
-  page.evaluate((m) => window.__w3s!().sing(m), midi)
-
-const move = (page: Page, m: number): Promise<void> =>
-  page.evaluate((v) => window.__w3s!().move(v), m)
-
-/** Hold a note until the slide tracker has made it the reference. */
-const holdNote = async (page: Page, midi: number): Promise<void> => {
-  await sing(page, midi)
-  await expect.poll(async () => (await read(page)).reference, FAST).toBe(midi)
-}
-
-/** Walk him until the wall stops him: his mitt against the riser. */
-const walkToRiser = async (page: Page, riserX: number): Promise<void> => {
-  await move(page, 1)
-  await expect
-    .poll(async () => (await read(page)).x, FAST)
-    .toBeGreaterThan(riserX - HALF - 0.002)
-  await move(page, 0)
-}
-
-/**
- * Sing `midi`, and the frame he leaves the ground, change to `inAir`:
- * a note that settles on the way up. Timed in the page a frame at a
- * time, because a leap that lands tops out on the shelf -- the catch
- * takes him at the apex -- and is in the air for under half a second.
- */
-const leapThenHold = (page: Page, midi: number, inAir: number) =>
-  page.evaluate(
-    ([m, a]) =>
-      new Promise<void>((done) => {
-        const before = window.__w3s!().leaps
-        window.__w3s!().sing(m)
-        const wait = (): void => {
-          const s = window.__w3s!()
-          if (s.leaps > before && !s.grounded) {
-            s.sing(a)
-            done()
-          } else requestAnimationFrame(wait)
-        }
-        requestAnimationFrame(wait)
-      }),
-    [midi, inAir] as const,
-  )
-
-/** Wait for leap number `n` to have come down, wherever it came down. */
-const landed = async (page: Page, n: number): Promise<ShelfState> => {
-  await expect
-    .poll(async () => {
-      const s = await read(page)
-      return s.leaps >= n && s.grounded
-    }, FAST)
-    .toBe(true)
-  return read(page)
-}
-
-const shoot = async (page: Page, info: TestInfo, name: string) => {
-  const shot = await page.screenshot(
-    SHOTS_DIR === undefined ? undefined : { path: `${SHOTS_DIR}/${name}.png` },
-  )
-  await info.attach(`${name}.png`, { body: shot, contentType: 'image/png' })
-}
+import { CATCH, MAX_LEAP, SHELF_1, SHELF_3, SHELVES, topsOf, } from '../src/games/glass3d/levels/shelf'
+import { enter, framed, HALF, holdNote, landed, leapAt, leapThenHold, move, read, shoot, sing, walkToRiser, } from './shelf-hook'
 
 const RISER = SHELF_1.shelves[1]!.from
 const LIP = topsOf(SHELF_1)[1]!
@@ -177,14 +49,22 @@ test.describe('the Top Shelf, room 1', () => {
     expect(up.y).toBeCloseTo(LIP, 6)
     expect(up.apex).toBeCloseTo(LIP, 3)
     expect(up.reference).toBe(64)
+    // And the carry walks him on until all of him is past the lip.
+    await expect
+      .poll(async () => (await read(page)).x, { timeout: 5_000 })
+      .toBeGreaterThan(RISER + HALF - 0.01)
     await shoot(page, info, 'shelf-1-on-the-shelf')
 
+    // Out, and on into room 2.
     await move(page, 1)
     await expect
-      .poll(async () => (await read(page)).phase, { timeout: 15_000 })
-      .toBe('done')
-    await expect(page.getByText('The Top Shelf, climbed.')).toBeVisible()
-    await shoot(page, info, 'shelf-1-climbed')
+      .poll(async () => (await read(page)).room, { timeout: 15_000 })
+      .toBe(SHELVES[1]!.id)
+    expect(await read(page)).toMatchObject({
+      phase: 'climbing',
+      shelf: 0,
+      y: 0,
+    })
   })
 
   test('down is free, a flat leap hops back, and a stop in the air leaps nowhere', async ({
@@ -216,5 +96,47 @@ test.describe('the Top Shelf, room 1', () => {
     expect(up).toMatchObject({ shelf: 1, leaps: 2, reference: 66 })
     expect(up.y).toBeCloseTo(LIP, 6)
     expect(up.apex).toBeCloseTo(LIP, 3)
+  })
+})
+
+test.describe('the Top Shelf, every room', () => {
+  test('climbs all three, room 3 octave only by way of its ledge, framed on a phone', async ({
+    page,
+  }, info) => {
+    test.setTimeout(240_000)
+    await enter(page)
+    for (const room of SHELVES) {
+      await expect
+        .poll(async () => (await read(page)).room, { timeout: 15_000 })
+        .toBe(room.id)
+      const tops = topsOf(room)
+      for (let k = 1; k < room.shelves.length; k++) {
+        const label = `${room.id} riser ${String(k)}`
+        if (room.id === SHELF_3.id && k === 1) {
+          // An octave from the floor is more than any leap: he tops out
+          // at his spring and comes down on the ledge, a fifth up --
+          // never on the octave shelf behind it (§4).
+          const octave = await leapAt(page, room, k, 12)
+          expect(octave.shelf, `${label}: the ledge`).toBe(1)
+          expect(octave.apex).toBeCloseTo(MAX_LEAP, 3)
+          expect(octave.apex).toBeLessThan(tops[2]! - CATCH)
+        } else {
+          const up = await leapAt(page, room, k, room.shelves[k]!.rise)
+          expect(up.shelf, label).toBe(k)
+          expect(up.y, label).toBeCloseTo(tops[k]!, 6)
+        }
+        await framed(page, label)
+      }
+      await shoot(page, info, `${room.id}-top`)
+      await move(page, 1)
+      await expect
+        .poll(async () => (await read(page)).phase, { timeout: 15_000 })
+        .not.toBe('climbing')
+      await move(page, 0)
+    }
+    await expect
+      .poll(async () => (await read(page)).phase, { timeout: 15_000 })
+      .toBe('done')
+    await expect(page.getByText('The Top Shelf, climbed.')).toBeVisible()
   })
 })
