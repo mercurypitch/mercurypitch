@@ -79,7 +79,7 @@ import { armDeveloperConsole } from '@/lib/developer-console'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
-import { hydrateStoragePort, installStoragePort } from '@/lib/storage-port'
+import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
@@ -142,11 +142,41 @@ if (!root) {
 // leave the shell on its splash screen with no error and no app. Whatever
 // went wrong, the app renders — signed out, which is recoverable, rather than
 // blank, which is not.
-void hydrateStoragePort()
+//
+// And a deadline, because a rejection is not the only way to never render: a
+// promise that never settles shows exactly the same black screen with no
+// error anywhere (TestFlight build 29, 11 Sep 2026 — a plugin proxy handed
+// to a promise). Past the deadline, or on any failure, the port is abandoned
+// for this launch and identity comes from localStorage, as on the web.
+const HYDRATION_DEADLINE_MS = 5000
+const hydrationDeadline = new Promise<never>((_, reject) => {
+  setTimeout(() => {
+    reject(
+      new Error(
+        `storage port hydration did not settle within ${HYDRATION_DEADLINE_MS} ms`,
+      ),
+    )
+  }, HYDRATION_DEADLINE_MS)
+})
+void Promise.race([hydrateStoragePort(), hydrationDeadline])
   .catch((error: unknown) => {
-    console.error('[mercury-pitch] storage port hydration failed', error)
+    console.error(
+      '[mercury-pitch] storage port hydration failed; identity falls back to localStorage for this launch',
+      error,
+    )
+    abandonStoragePort(error)
   })
   .then(() => {
     installForegroundSessionRefresh()
     render(() => <App onMounted={() => root.classList.add('loaded')} />, root)
   })
+
+// The in-app console, on every page of a test build. Captured from the first
+// line, so a boot that goes wrong on a phone can be read on the phone. The
+// flag is a committed build constant in this package's .env; it is switched
+// off before a store submission (checklist).
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+  void import('@/components/PortableConsole').then((m) => {
+    m.setupPortableConsole()
+  })
+}
