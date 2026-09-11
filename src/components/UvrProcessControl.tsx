@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { openSettingsSection } from '@/stores/ui-store'
 import type { UvrStatus } from '@/types/uvr'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
@@ -16,6 +17,10 @@ function errorActionFor(
 ): { label: string; onClick: () => void } | null {
   if (error === undefined) return null
   if (error.includes('Not enough credits')) {
+    // No shortcut where there is nothing to shortcut to: a build that
+    // cannot take payment has no way to raise the balance, and the error
+    // text on the card already says what happened.
+    if (!CAN_TAKE_PAYMENT) return null
     return {
       label: 'Get credits',
       onClick: () => openSettingsSection('credits'),

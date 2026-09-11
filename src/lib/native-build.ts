@@ -18,3 +18,19 @@
  *  `@/lib/native-build`. */
 export const IS_NATIVE_BUILD: boolean =
   typeof __NATIVE_BUILD__ !== 'undefined' && __NATIVE_BUILD__
+
+/**
+ * Whether this build may offer a way to spend money — credit packs, the
+ * supporter tiers, a donation link, or a button that only leads to one.
+ *
+ * Read this, not `IS_NATIVE_BUILD`, wherever the question is about money.
+ * The two give the same answer today for different reasons, and only one of
+ * them changes: when in-app purchase lands, credits become buyable inside
+ * the store binary and exactly this constant flips. A call site that asked
+ * "am I native?" would then have to be found and re-read one by one.
+ *
+ * A build that answers false must not merely hide the purchase: it must
+ * not carry the link, the price, or the words either. App Store guideline
+ * 3.1.1 and Play's billing policy are read against the binary.
+ */
+export const CAN_TAKE_PAYMENT: boolean = !IS_NATIVE_BUILD

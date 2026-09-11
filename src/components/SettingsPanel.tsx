@@ -30,7 +30,7 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
-import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
@@ -61,20 +61,20 @@ import styles from './SettingsPanel.module.css'
  * outside in-app purchase: App Store guideline 3.1.1 and Play's billing
  * policy each reject a binary that carries them. Hiding the UI is not enough
  * when the link is still in the bundle, so the guard is a build constant, not
- * a runtime flag: `IS_NATIVE_BUILD` folds to a literal, the dynamic import
+ * a runtime flag: `CAN_TAKE_PAYMENT` folds to a literal, the dynamic import
  * sits in a dead branch, and Rollup emits no chunk for it at all.
  *
  * On the web this is now a lazy chunk fetched when Settings opens rather than
  * part of the main bundle -- an accepted timing change, not a regression.
  * Real native billing arrives later through RevenueCat.
  */
-const PricingPanel = IS_NATIVE_BUILD
-  ? null
-  : lazy(async () =>
+const PricingPanel = CAN_TAKE_PAYMENT
+  ? lazy(async () =>
       import('@/components/billing/PricingPanel').then((m) => ({
         default: m.PricingPanel,
       })),
     )
+  : null
 
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
  *  ResetScope actions run through resetAppData and reload. */
@@ -536,7 +536,20 @@ export const SettingsPanel: Component = () => {
             {/* The processing-default picker (tier cards + quality chips)
                 lives inside PricingPanel — the Karaoke page toggles use the
                 same persisted signals and stay in sync. */}
-            <Show when={PricingPanel} keyed>
+            <Show
+              when={PricingPanel}
+              keyed
+              fallback={
+                <p
+                  class={styles.settingsDesc}
+                  data-testid="credits-not-for-sale"
+                >
+                  Credits are not sold in this app. Everything that runs on your
+                  device stays free, and the server option spends credits your
+                  account already holds.
+                </p>
+              }
+            >
               {(Panel) => (
                 <Suspense
                   fallback={<p class={styles.settingsDesc}>Loading…</p>}

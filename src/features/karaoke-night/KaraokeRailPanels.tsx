@@ -9,6 +9,7 @@ import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -449,8 +450,18 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         </Show>
         <Show when={mode() === 'server' && signedIn() && !serverReady()}>
           <p class="kn-progress-warn">
-            You're out of credits. <a href="/#/settings/credits">Get credits</a>{' '}
-            to use studio separation, or switch back to on-device.
+            <Show
+              when={CAN_TAKE_PAYMENT}
+              fallback={
+                <>
+                  You're out of credits. Switch back to on-device to carry on.
+                </>
+              }
+            >
+              You're out of credits.{' '}
+              <a href="/#/settings/credits">Get credits</a> to use studio
+              separation, or switch back to on-device.
+            </Show>
           </p>
         </Show>
         <input

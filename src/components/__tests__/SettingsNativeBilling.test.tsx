@@ -23,7 +23,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 /** Mount Settings with the native constant forced, on the tab it opens on. */
 async function renderSettings(isNative: boolean): Promise<void> {
   vi.resetModules()
-  vi.doMock('@/lib/native-build', () => ({ IS_NATIVE_BUILD: isNative }))
+  vi.doMock('@/lib/native-build', () => ({
+    IS_NATIVE_BUILD: isNative,
+    CAN_TAKE_PAYMENT: !isNative,
+  }))
   // Nothing reaches the network from a test process. Both panels fetch
   // pricing and identity on mount, and an errored resource would only add
   // noise to what is being asserted here.
@@ -86,6 +89,10 @@ describe('SettingsPanel billing surfaces in a native build', () => {
     expect(screen.queryByTestId('donate-kofi')).not.toBeInTheDocument()
 
     expect(hrefs().some((href) => href.includes('ko-fi.com'))).toBe(false)
+
+    // And the tab says why it is empty, rather than being empty. Every
+    // "Get credits" shortcut in the app routes here.
+    expect(screen.getByTestId('credits-not-for-sale')).toBeInTheDocument()
   })
 
   it('mounts both on the web, so only the native build loses them', async () => {
@@ -96,6 +103,7 @@ describe('SettingsPanel billing surfaces in a native build', () => {
     expect(await screen.findByTestId('donate-panel')).toBeInTheDocument()
     expect(screen.getByTestId('donate-kofi')).toBeInTheDocument()
     expect(hrefs().some((href) => href.includes('ko-fi.com'))).toBe(true)
+    expect(screen.queryByTestId('credits-not-for-sale')).not.toBeInTheDocument()
   })
 })
 

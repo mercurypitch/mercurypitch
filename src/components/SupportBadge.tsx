@@ -8,6 +8,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
 import { APP_VERSION, COMMIT_SHA } from '@/lib/defaults'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import styles from './SupportBadge.module.css'
 
 /** Where the heart goes. Settings → Credits is where every support option now
@@ -50,26 +51,31 @@ export const SupportBadge: Component = () => {
           onClose={() => setShowChangelog(false)}
         />
       </Show>
-      <a
-        class={styles.support}
-        href={SUPPORT_HASH}
-        title="Support MercuryPitch"
-        aria-label="Support MercuryPitch"
-        data-testid="support-heart"
-      >
-        <svg
-          class={styles.heart}
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          aria-hidden="true"
+      {/* Settings -> Credits holds no support options in a build that cannot
+          take payment, so the heart would open an explanation of its own
+          absence. */}
+      <Show when={CAN_TAKE_PAYMENT}>
+        <a
+          class={styles.support}
+          href={SUPPORT_HASH}
+          title="Support MercuryPitch"
+          aria-label="Support MercuryPitch"
+          data-testid="support-heart"
         >
-          <path
-            fill="currentColor"
-            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-          />
-        </svg>
-      </a>
+          <svg
+            class={styles.heart}
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            />
+          </svg>
+        </a>
+      </Show>
     </div>
   )
 }
