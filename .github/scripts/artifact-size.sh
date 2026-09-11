@@ -62,12 +62,20 @@ if [ "${#files[@]}" -eq 0 ]; then
 fi
 
 summary="${GITHUB_STEP_SUMMARY:-/dev/null}"
-{
-  echo "### Download size — ${label}"
-  echo
-  echo "| Artifact | Bytes | MB | Gate |"
-  echo "| --- | ---: | ---: | --- |"
-} >>"$summary"
+
+# Every line goes to both places. The job summary is the readable one, but a
+# run that has to be read from the log -- a rerun, a `gh run view --log`, a
+# comparison between two builds -- should not have to open a second page to
+# find out how big the thing was.
+say() {
+  printf '%s\n' "$1"
+  printf '%s\n' "$1" >>"$summary"
+}
+
+say "### Download size — ${label}"
+say ""
+say "| Artifact | Bytes | MB | Gate |"
+say "| --- | ---: | ---: | --- |"
 
 status=0
 for path in "${files[@]}"; do
@@ -87,13 +95,11 @@ for path in "${files[@]}"; do
     gate='ok'
   fi
 
-  echo "| \`${name}\` | ${bytes} | ${mb} | ${gate} |" >>"$summary"
+  say "| \`${name}\` | ${bytes} | ${mb} | ${gate} |"
 done
 
-{
-  echo
-  echo "Warn above ${warn_mb} MB, fail above ${fail_mb} MB (1 MB = 1024 x 1024 bytes)."
-  echo "Measured on the download artifact the store is handed, not the installed size."
-} >>"$summary"
+say ""
+say "Warn above ${warn_mb} MB, fail above ${fail_mb} MB (1 MB = 1024 x 1024 bytes)."
+say "Measured on the download artifact the store is handed, not the installed size."
 
 exit "$status"
