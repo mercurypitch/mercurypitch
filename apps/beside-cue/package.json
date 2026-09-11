@@ -13,6 +13,7 @@
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
     "test": "vitest",
     "test:run": "vitest run",
+    "shots": "playwright test -c playwright.shots.config.ts",
     "cap:sync": "pnpm build && cap sync android",
     "cap:open:android": "pnpm cap:sync && cap open android",
     "cap:run:android": "pnpm cap:sync && cap run android",
