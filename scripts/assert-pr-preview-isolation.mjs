@@ -34,6 +34,16 @@ const PREVIEW_VAR_VALUES = {
   TURNSTILE_SECRET: PREVIEW_TURNSTILE_SECRET,
   GOOGLE_CLIENT_ID:
     '940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com',
+  // Web, iOS, Android — the same three public client ids dev and prod carry,
+  // so a native build can be pointed at a PR preview instead of 401ing on an
+  // `aud` this Worker has never heard of. Pinned by value like everything
+  // else here: a preview may carry these ids and no others.
+  GOOGLE_CLIENT_IDS:
+    '940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com',
+  // The bundle id, so the Apple routes verify tokens rather than answer 501.
+  // The three APPLE_SIGNIN_* values stay unset on a preview, which only
+  // means the authorization code is not exchanged there.
+  APPLE_CLIENT_IDS: 'com.irchiinnuss.mercurypitch',
   ALLOWED_ORIGINS: '*.workers.dev',
   APP_FALLBACK_ORIGIN: 'https://dev.mercurypitch.com',
 }

@@ -20,9 +20,11 @@
     // the deployment; dispatch deploy-db.yml (dev) first to reset that.
     "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
     // Every client id an id token may be issued to (see Env.GOOGLE_CLIENT_IDS).
-    // The iOS and Android OAuth clients are appended here, comma-separated,
-    // once they exist.
-    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+    // All three clients of the one Google project, comma-separated, web
+    // first — ...sb89ek7o is web (and the only one the code flow can use),
+    // ...ja2q9gke is iOS, ...l01gu23d is Android. Client ids are public
+    // identifiers; only GOOGLE_CLIENT_SECRET is a secret.
+    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
     // Sign in with Apple: the bundle id is the client id for a native app.
     // APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID / APPLE_TEAM_ID are
     // secrets, not vars — `.dev.vars` locally, `wrangler secret put` per env.
@@ -129,12 +131,17 @@
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
-        // Every client id an id token may be issued to. The web client is
-        // the only entry today; the iOS and Android OAuth clients (M-D1,
-        // M-D2) are APPENDED here, comma-separated, when they exist — a
-        // native token's `aud` is that platform's own client id, so until
-        // its id is in this list every native Google sign-in 401s.
-        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+        // Every client id an id token may be issued to, comma-separated,
+        // web first. A native token's `aud` is its OWN platform's client
+        // id, so a platform missing from this list 401s every Google
+        // sign-in from it. The three entries, in order:
+        //   ...-sb89ek7ocuoikqpd5llc6ike4fasccdl  web (and the code flow)
+        //   ...-ja2q9gkengndjdc3904j7ijli3hjoi33  iOS      (M-D1)
+        //   ...-l01gu23d08ep7ngg38r2ioi3eh4vivh8  Android  (M-D2)
+        // All three are public identifiers, created 11 Sep 2026; only
+        // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
+        // secret.
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
         // Sign in with Apple. The bundle id IS the client id for a native
         // app; a web Services ID would be a second comma-separated entry.
         // The three APPLE_SIGNIN_* values are secrets:
@@ -234,12 +241,17 @@
         // sign-in on prod is down between that put and the tag deploy —
         // id and secret only work as a pair.
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
-        // Every client id an id token may be issued to. The web client is
-        // the only entry today; the iOS and Android OAuth clients (M-D1,
-        // M-D2) are APPENDED here, comma-separated, when they exist — a
-        // native token's `aud` is that platform's own client id, so until
-        // its id is in this list every native Google sign-in 401s.
-        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+        // Every client id an id token may be issued to, comma-separated,
+        // web first. A native token's `aud` is its OWN platform's client
+        // id, so a platform missing from this list 401s every Google
+        // sign-in from it. The three entries, in order:
+        //   ...-sb89ek7ocuoikqpd5llc6ike4fasccdl  web (and the code flow)
+        //   ...-ja2q9gkengndjdc3904j7ijli3hjoi33  iOS      (M-D1)
+        //   ...-l01gu23d08ep7ngg38r2ioi3eh4vivh8  Android  (M-D2)
+        // All three are public identifiers, created 11 Sep 2026; only
+        // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
+        // secret.
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
         // Sign in with Apple — the same bundle id as dev; one App ID serves
         // both. APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID /
         // APPLE_TEAM_ID go in with `wrangler secret put --env prod` in the
