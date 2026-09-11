@@ -139,6 +139,24 @@ on:
         required: false
         type: string
         default: ''
+      size-warn-mb:
+        description: >-
+          Warn when a download artifact is bigger than this. The gate measures
+          the file a store is handed -- the .ipa, the .aab, the .apk -- and
+          never the installed size, which is a different and larger number the
+          stores compute themselves after slicing per device.
+        required: false
+        type: number
+        default: 60
+      size-fail-mb:
+        description: >-
+          Fail the build when a download artifact is bigger than this. Same
+          measurement as size-warn-mb. A ceiling rather than a target: it is
+          there to catch the commit that accidentally bundles a model or a
+          media pack, not to argue about a megabyte.
+        required: false
+        type: number
+        default: 100
       run-android:
         required: false
         type: boolean
@@ -472,6 +490,24 @@ jobs:
           export "${PREFIX}_KEY_PASSWORD=$KEY_PASSWORD"
           cd "$APP_DIR/android"
           ./gradlew bundleRelease assembleRelease --no-daemon
+
+      # Every run, not only a release: the release bundle is built on pull
+      # requests too, so this is where a size regression is cheapest to see.
+      # .github/scripts/artifact-size.sh says in full what is being measured
+      # -- the DOWNLOAD artifact, never the installed size.
+      - name: Check the release download size
+        shell: bash
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+          WARN_MB: ${{ inputs.size-warn-mb }}
+          FAIL_MB: ${{ inputs.size-fail-mb }}
+          OUTPUTS: ${{ inputs.app-dir }}/android/app/build/outputs
+        run: |
+          set -euo pipefail
+          bash .github/scripts/artifact-size.sh \
+            "Android - ${APP_NAME}" "$WARN_MB" "$FAIL_MB" \
+            "$OUTPUTS/bundle/release/app-release*.aab" \
+            "$OUTPUTS/apk/release/app-release*.apk"
 
       - name: Upload release artifacts
         if: env.IS_RELEASE == 'true'
@@ -934,6 +970,24 @@ jobs:
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$RUNNER_TEMP/export"
+
+      # Only a signed release ref reaches here, because that is the only ref
+      # that exports an IPA at all: a pull request stops at the archive, and
+      # the TestFlight job hands its archive straight to App Store Connect
+      # with destination=upload and never writes one. The Android row above
+      # is what watches size on an ordinary pull request.
+      - name: Check the IPA download size
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
+        shell: bash
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+          WARN_MB: ${{ inputs.size-warn-mb }}
+          FAIL_MB: ${{ inputs.size-fail-mb }}
+        run: |
+          set -euo pipefail
+          bash .github/scripts/artifact-size.sh \
+            "iOS - ${APP_NAME}" "$WARN_MB" "$FAIL_MB" \
+            "$RUNNER_TEMP/export/*.ipa"
 
       - name: Upload IPA
         if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
