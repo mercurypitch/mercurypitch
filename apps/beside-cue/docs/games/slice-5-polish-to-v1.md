@@ -69,7 +69,12 @@ rather than a stop: after three seconds with no input and no voice, the
 stage renders at half rate; any touch, key or voiced frame returns it
 to full rate on that frame. Cheaper than on-demand, keeps the breathing,
 and is the thermal budget's actual ask. Alternative: stop rendering
-entirely when calm, at the cost of a frozen Merc.
+entirely when calm, at the cost of a frozen Merc. On the Sorting Line,
+Merc's relax back to rest after the voice stops runs calm: calm engages
+39% of the way back, where from the tallest shape the Line allows a
+30 fps frame moves the top of his head 1.3 mm (his width at most 0.4 mm,
+from the flat end), and less on every frame after -- under the 2 mm
+that would count as motion.
 
 **P4. The shatter's juice (§7.1).** _Default:_ build hitstop (100 ms),
 the slow-motion ramp (0.35× to 1.0× over 350 → 550 ms), camera shake
