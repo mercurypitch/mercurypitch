@@ -234,7 +234,8 @@ export interface ImpactFrame {
   shake: Shake
   /** Whether the pixel ratio is dropped. */
   burst: boolean
-  /** Haptics that fell due since the last frame, in order. */
+  /** Haptics that fell due since the last frame, in order, less any this
+   * frame reaches more than `LATE_TAP_SECONDS` after their moment. */
   taps: Tap[]
 }
 
@@ -244,6 +245,17 @@ export interface ImpactTrack {
   /** This frame's share of the timeline; null before any break. */
   frame(wallSeconds: number, cfg: ImpactConfig): ImpactFrame | null
 }
+
+/**
+ * How late a tap may still be felt, seconds. A tap is felt on the first
+ * frame at or after its moment, which at 24 fps or more is never 42 ms
+ * late. A frame that comes long after -- the phone locked or the app
+ * switched away mid-break, and back seconds later -- would otherwise fire
+ * every tap it missed at once: stacked into one thud on Capacitor, and on
+ * Android web each `navigator.vibrate` cancels the one before. A tap its
+ * frame reaches later than this is dropped instead.
+ */
+export const LATE_TAP_SECONDS = 0.1
 
 export const createImpactTrack = (): ImpactTrack => {
   let at: number | null = null
@@ -256,7 +268,11 @@ export const createImpactTrack = (): ImpactTrack => {
     frame(wallSeconds, cfg) {
       if (at === null) return null
       const since = Math.max(0, wallSeconds - at)
-      const taps = tapsBetween(last, since, cfg)
+      const taps = tapsBetween(
+        Math.max(last, since - LATE_TAP_SECONDS),
+        since,
+        cfg,
+      )
       last = since
       return {
         since,

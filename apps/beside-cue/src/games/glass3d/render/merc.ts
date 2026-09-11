@@ -36,6 +36,7 @@
 
 import type { AnimationClip, Material, Mesh, Object3D, Texture } from 'three'
 import { AnimationMixer, Box3, Group, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
+import type { MercAsset } from '../assets'
 import { loadMerc } from '../assets'
 import { bodyLiftFor, feetBelowRoot } from './merc-anchor'
 
@@ -116,6 +117,50 @@ export interface MercActor {
 }
 
 /**
+ * His file, fetched and parsed before a stage asks for him.
+ *
+ * P7 (slice-5-polish-to-v1.md §2.1): the games list starts this while it
+ * is read (runtime/warm.ts decides when), and the next `createMerc` takes
+ * it instead of starting a load of its own. Held for ONE actor: dressing
+ * him writes to the loaded scene -- his materials, his scale, the wrapper
+ * he is parented to -- so a second actor built from the same load would
+ * share, and fight over, the first one's body. The list warms again the
+ * next time it is shown.
+ */
+let warmed: Promise<MercAsset> | null = null
+
+/** Start loading him now, for the next `createMerc`. A warm already held
+ * is kept rather than doubled. */
+export const warmMerc = (): void => {
+  if (warmed !== null) return
+  const loading = loadMerc()
+  // It may never be taken -- the Cabinet has no Merc -- and a failure
+  // nobody took must not surface as an unhandled rejection. One that is
+  // taken is retried in `takeMercAsset`, and that load reports its own.
+  loading.catch(() => {})
+  warmed = loading
+}
+
+/** Let go of a warm no stage took: the list was left for Home. */
+export const dropWarmMerc = (): void => {
+  warmed = null
+}
+
+const takeMercAsset = async (): Promise<MercAsset> => {
+  const held = warmed
+  warmed = null
+  if (held !== null) {
+    try {
+      return await held
+    } catch {
+      // A warm that failed on the list is not this stage's answer: it
+      // loads him itself, as every stage did before the warm existed.
+    }
+  }
+  return loadMerc()
+}
+
+/**
  * Load Merc, dress him, and hand back something a stage can direct.
  *
  * `height` is his standing height in metres — the raw asset is ~1.65
@@ -129,7 +174,7 @@ export const createMerc = async (
   height = 0.55,
   envMap: Texture | null = null,
 ): Promise<MercActor> => {
-  const { scene, clips } = await loadMerc()
+  const { scene, clips } = await takeMercAsset()
 
   const bodyMaterial = mercMaterial(envMap)
   // Mercury goes on what the file left bare, and ONLY on that. The body

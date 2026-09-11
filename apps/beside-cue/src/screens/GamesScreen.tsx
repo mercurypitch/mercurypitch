@@ -1,4 +1,5 @@
-import { createSignal, For, Show } from 'solid-js'
+import { preloadF0Detector, releasePreloadedDetector, } from '@irchiinnuss/pitch-engine'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import './games.css'
 import { AppHeader } from '@/components/AppHeader'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
@@ -14,7 +15,9 @@ import { lineTrack } from '@/games/glass3d/levels/line-track'
 import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { LineStage } from '@/games/glass3d/render/LineStage'
+import { dropWarmMerc, warmMerc } from '@/games/glass3d/render/merc'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
+import { isWarmEnabled, whenIdleAfterPaint } from '@/games/glass3d/runtime/warm'
 import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
@@ -139,6 +142,31 @@ export function GamesScreen(props: GamesScreenProps) {
     const p = playing()
     return typeof p === 'object' && p !== null && 'level' in p ? p : null
   }
+
+  // P7 (slice-5-polish-to-v1.md §2.1): while the list is read, start what
+  // a world would otherwise start only after its card is tapped -- Merc's
+  // file, parsed, and the pitch detector's worker -- once the list is on
+  // screen and the page is idle (runtime/warm.ts). Nothing here asks for
+  // the microphone or makes an audio context. Every return from a game
+  // warms again, because the game took what was warmed. So does the
+  // Range Finder closing: it listens through the same detector, and its
+  // stream took the spare and ended it. `?cold` in the address turns it
+  // off, to read a cold open on the same build.
+  const warm = isWarmEnabled(window.location.search)
+  createEffect(() => {
+    if (!warm || playing() !== null || finding()) return
+    onCleanup(
+      whenIdleAfterPaint(() => {
+        warmMerc()
+        preloadF0Detector()
+      }),
+    )
+  })
+  // Left for Home: what no game took is let go.
+  onCleanup(() => {
+    dropWarmMerc()
+    releasePreloadedDetector()
+  })
 
   return (
     <Show

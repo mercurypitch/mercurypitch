@@ -159,8 +159,28 @@ describe('durations, not frames', () => {
     expect(track.frame(0, CFG)!.taps).toEqual(['heavy'])
     expect(track.frame(0, CFG)!.taps).toEqual([])
     expect(track.frame(0.05, CFG)!.taps).toEqual([])
-    // A stalled frame that jumps past two moments feels both, in order.
-    expect(track.frame(0.31, CFG)!.taps).toEqual(['light', 'light'])
+    // A stalled frame feels what fell due in the gap while it is near:
+    // 0.19 comes 90 ms after the first light tap. 0.61 comes 60 ms after
+    // the last and 310 ms after the second, which is dropped (below).
+    expect(track.frame(0.19, CFG)!.taps).toEqual(['light'])
+    expect(track.frame(0.61, CFG)!.taps).toEqual(['light'])
+  })
+
+  // A tap belongs to its moment. The glass breaks, and before its last
+  // light tap the phone is locked or the app switched away; it comes back
+  // 20 s later. The first frame back must not fire every tap it missed:
+  // on Capacitor they stack into one thud, and on Android web each
+  // `navigator.vibrate` cancels the one before.
+  it('drops a tap it reaches more than a tenth of a second late', () => {
+    const track = createImpactTrack()
+    track.start(10)
+    const felt: Tap[] = []
+    for (let k = 0; k <= 12; k++) {
+      felt.push(...track.frame(10 + k / 60, CFG)!.taps)
+    }
+    expect(felt).toEqual(['heavy', 'light'])
+    expect(track.frame(30.2, CFG)!.taps).toEqual([])
+    expect(track.frame(30.25, CFG)!.taps).toEqual([])
   })
 
   it('answers nothing before the glass has broken', () => {

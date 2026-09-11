@@ -12,6 +12,10 @@ export {
 } from './assets'
 export type { PitchEngineAssetConfig } from './assets'
 export { playApproachAndLock, playHoldTone, playTargetHum } from './demo-audio'
+export {
+  preloadF0Detector,
+  releasePreloadedDetector,
+} from './f0-detector-preload'
 export { freqToMidi, freqToNote, midiToFreq, midiToNote } from './freq-note'
 export type { NoteInfo, NoteName } from './freq-note'
 export {
