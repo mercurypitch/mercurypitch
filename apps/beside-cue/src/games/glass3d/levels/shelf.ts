@@ -35,6 +35,13 @@
 // against the quarter second an exact leap spends within the catch. An
 // exact fifth would hop, and half a semitone flat, whose apex is the
 // catch itself, could never land.
+//
+// A LEAP IS AIMED. Carried at walking pace, a leap reached its riser
+// only from 0.43 m for a minor third to 0.62 m for a fifth, and a
+// landing leaves him further than that from the next one (§11). So
+// within `LEAP_REACH` of the next riser he is carried at the speed that
+// brings his front to it at the apex (`leapCarry`), and the catch
+// judges the height alone, wherever he stood. Further out it is a hop.
 
 import type { GroundSampler } from '../sim/locomotion3d'
 
@@ -58,6 +65,15 @@ export const CATCH = 0.05
  * riser, so here the walls and the floor are read across all of him.
  */
 export const MITT_SPAN = 0.53
+
+/** How far ahead of his front the next riser may be for a leap to be
+ * aimed at it, in metres (§3.2): room 2's shelves are this deep, so a
+ * leap sung anywhere on one of them is aimed. */
+export const LEAP_REACH = 1.0
+
+/** The fastest an aimed leap carries him, in metres a second: three
+ * times walking pace. */
+export const LEAP_CARRY_MAX = 3.5
 
 /** A riser exactly at his mitt is a riser he has reached. The wall puts
  * him there by subtraction, and `from - w + w` can come back an ulp
@@ -109,7 +125,9 @@ export interface ShelfLevel {
 
 /**
  * Room 1. A fifth, once, and nothing else in the room: 2 m of floor,
- * then the one shelf 0.7 m up, 2.4 m deep with the exit on it.
+ * then the one shelf 0.7 m up, 2.4 m deep with the exit on it. He comes
+ * in with his front 0.9 m from the riser, inside `LEAP_REACH`, so the
+ * first fifth sung at the start line lands.
  */
 export const SHELF_1: ShelfLevel = {
   id: 'shelf-1',
@@ -117,7 +135,7 @@ export const SHELF_1: ShelfLevel = {
   teaches: 'Sing a note, then a fifth above it.',
   hint: 'Hold any note, then sing a higher one: the gap between them is how high he leaps. A fifth gets him onto the shelf.',
   length: 4.4,
-  startX: 0.4,
+  startX: 0.835,
   exitX: 4.0,
   shelves: [
     { from: 0, to: 2.0, rise: 0 },
@@ -214,6 +232,19 @@ export const groundFor = (
   }
 }
 
+/** The next riser up: the first whose lip is more than `CATCH` above
+ * his feet. None on the top shelf. */
+const riserAbove = (room: ShelfLevel, feetY: number): Shelf | undefined => {
+  const { shelves } = room
+  let semis = 0
+  for (let i = 1; i < shelves.length; i++) {
+    const shelf = shelves[i]!
+    semis += shelf.rise
+    if (!withinCatch(semis * RISE_PER_SEMI, feetY)) return shelf
+  }
+  return undefined
+}
+
 /**
  * The `x` he may not pass: the next riser whose lip is more than `CATCH`
  * above his feet, less his half width, so his mitt stops against it.
@@ -230,16 +261,38 @@ export const riserWallAt = (
   feetY: number,
   halfWidth: number,
 ): number => {
-  const { shelves } = room
-  let semis = 0
-  for (let i = 1; i < shelves.length; i++) {
-    const shelf = shelves[i]!
-    semis += shelf.rise
-    if (!withinCatch(semis * RISE_PER_SEMI, feetY)) {
-      return Math.max(x, shelf.from - halfWidth)
-    }
-  }
-  return Infinity
+  const riser = riserAbove(room, feetY)
+  return riser === undefined ? Infinity : Math.max(x, riser.from - halfWidth)
+}
+
+/**
+ * How fast a leap of `height` carries him while he rises, in metres a
+ * second, launched with his centre at `x` and his feet at `feetY`: the
+ * speed that brings his front to the next riser up, the one the carry
+ * faces him toward, at the apex, and never more than `LEAP_CARRY_MAX`
+ * (§3.2). Null when that riser is more than `LEAP_REACH` ahead of his
+ * front, or there is none: the leap is a hop, carried at walking pace.
+ *
+ * Aimed at the apex `gravity` gives a launch that reaches `height`. The
+ * stepped arc tops out half a step later or more (`leapVelocity`), so
+ * his front is at the riser a moment before the catch can take him,
+ * never after, and the wall holds him there if he is early. A leap too
+ * low for the catch meets the riser at its top and hops back (§3.5).
+ */
+export const leapCarry = (
+  room: ShelfLevel,
+  x: number,
+  feetY: number,
+  height: number,
+  gravity: number,
+  halfWidth = MITT_SPAN / 2,
+): number | null => {
+  const riser = riserAbove(room, feetY)
+  if (riser === undefined || !(height > 0)) return null
+  // Never behind him: a front somehow past the riser leaps straight up.
+  const ahead = Math.max(0, riser.from - (x + halfWidth))
+  if (ahead > LEAP_REACH + TOUCH) return null
+  return Math.min(LEAP_CARRY_MAX, ahead / Math.sqrt((2 * height) / gravity))
 }
 
 /**

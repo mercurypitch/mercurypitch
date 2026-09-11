@@ -27,7 +27,7 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
-import { CATCH, groundFor, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, topsOf, } from '../levels/shelf'
+import { CATCH, groundFor, leapCarry, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, topsOf, } from '../levels/shelf'
 import { keepBest, readStats, writeStats } from '../levels/shelf-stats'
 import { shelfTrack } from '../levels/shelf-track'
 import { createLoopState, runLoop } from '../runtime/loop'
@@ -90,6 +90,9 @@ interface Flight {
   riser: number
   reached: boolean
   flashed: boolean
+  /** How fast it carries him while he rises, when it was fired in reach
+   * of that riser (`leapCarry`, §3.2); null for a hop at walking pace. */
+  carry: number | null
 }
 
 const DevDials = import.meta.env.DEV
@@ -201,8 +204,9 @@ export const ShelfStage = (props: ShelfStageProps) => {
       let phaseNow: Phase = 'climbing'
       /** The shelf he last stood on: 0 is the floor. */
       let standingOn = 0
-      /** Airborne from a leap, and carried toward the next shelf at
-       * walking pace (§3.2). A step off a low edge is not carried. */
+      /** Airborne from a leap, and carried toward the next shelf (§3.2):
+       * at the leap's own speed while an aimed one rises, else at walking
+       * pace. A step off a low edge is not carried. */
       let carrying = false
       /** Where the carry goes on to after a leap lands him on a higher
        * shelf: all of him past its lip. The catch takes him by the mitts
@@ -309,6 +313,18 @@ export const ShelfStage = (props: ShelfStageProps) => {
           cfg.locomotion,
           cfg.loop.stepSeconds,
         )
+        // Aimed, in reach of the riser ahead: carried at the speed that
+        // brings his front to it at the apex, so where he stood never
+        // decides whether it lands (§3.2). Further out, a hop.
+        const carry = leapCarry(
+          live,
+          loco.x,
+          loco.y,
+          leap.height,
+          cfg.locomotion.gravity,
+          HALF,
+        )
+        if (carry !== null) loco.vx = carry
         loco.grounded = false
         carrying = true
         boardTo = null
@@ -320,6 +336,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           riser: standingOn + 1,
           reached: false,
           flashed: false,
+          carry,
         }
       }
 
@@ -407,8 +424,13 @@ export const ShelfStage = (props: ShelfStageProps) => {
 
           closeWalls()
           // The carry: airborne from a leap he drifts toward the next
-          // shelf at walking pace, whatever the thumb is doing (§3.2),
-          // and on across the lip of the one it lands him on.
+          // shelf whatever the thumb is doing (§3.2) -- at the leap's own
+          // speed while an aimed one rises, at walking pace after its
+          // apex and for a hop -- and on across the lip of the one it
+          // lands him on.
+          const aim = flight?.carry ?? null
+          walls.walkSpeed =
+            aim !== null && loco.vy > 0 ? aim : cfg.locomotion.walkSpeed
           const move = carrying || boardTo !== null ? 1 : input.read(now).move
           stepLocomotion(loco, { move, jump: false }, ground, dt, walls)
           if (flight !== null) {

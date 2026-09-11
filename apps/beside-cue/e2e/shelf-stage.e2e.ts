@@ -8,9 +8,10 @@
 // list, with the voice replaced by the hook's held note (`shelf-hook`)
 // because a headless browser has nobody to hum.
 
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { CATCH, MAX_LEAP, SHELF_1, SHELF_3, SHELVES, topsOf, } from '../src/games/glass3d/levels/shelf'
-import { enter, framed, HALF, holdNote, landed, leapAt, leapThenHold, move, read, shoot, sing, walkToRiser, } from './shelf-hook'
+import { CATCH, MAX_LEAP, SHELF_1, SHELF_2, SHELF_3, SHELVES, topsOf, } from '../src/games/glass3d/levels/shelf'
+import { BASE, enter, framed, HALF, holdNote, landed, leapAt, leapThenHold, move, read, shoot, sing, walkToRiser, } from './shelf-hook'
 
 const RISER = SHELF_1.shelves[1]!.from
 const LIP = topsOf(SHELF_1)[1]!
@@ -172,5 +173,58 @@ test.describe('the Top Shelf, every room', () => {
       '100%',
       '75%',
     ])
+  })
+})
+
+/** Until he has come to rest: two reads a tenth of a second apart agree. */
+const still = async (page: Page): Promise<void> => {
+  let last = Number.NaN
+  await expect
+    .poll(
+      async () => {
+        const { x } = await read(page)
+        const same = x === last
+        last = x
+        return same
+      },
+      { intervals: [100], timeout: 5_000 },
+    )
+    .toBe(true)
+}
+
+test.describe('the Top Shelf, aimed', () => {
+  // §3.2: in reach of the riser ahead, a leap is carried to it by its
+  // apex, so it is sung from wherever he stands, with no walk first.
+  test('room 1 from its start line, and room 2 from wherever each landing leaves him', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await enter(page)
+
+    // 0.9 m from the riser, where a fifth carried at walking pace falls
+    // short (§11).
+    await holdNote(page, BASE)
+    expect((await read(page)).x).toBeCloseTo(SHELF_1.startX, 6)
+    await sing(page, BASE + 7)
+    expect(await landed(page, 1)).toMatchObject({ shelf: 1, leaps: 1 })
+
+    await move(page, 1)
+    await expect
+      .poll(async () => (await read(page)).room, { timeout: 15_000 })
+      .toBe(SHELF_2.id)
+    await move(page, 0)
+
+    // Each ask from where he came to rest, the minor third among them.
+    for (let k = 1; k < SHELF_2.shelves.length; k++) {
+      const label = `${SHELF_2.id} riser ${String(k)}`
+      await holdNote(page, BASE)
+      await still(page)
+      const before = await read(page)
+      expect(before.shelf, label).toBe(k - 1)
+      await sing(page, BASE + SHELF_2.shelves[k]!.rise)
+      const up = await landed(page, before.leaps + 1)
+      expect(up.shelf, label).toBe(k)
+      expect(up.leaps, `${label}: one leap`).toBe(before.leaps + 1)
+    }
   })
 })
