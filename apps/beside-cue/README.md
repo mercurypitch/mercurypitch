@@ -160,6 +160,12 @@ English captions, stable line ids, speaker ids and delivery stems live in
 `src/content/voice-lines.ts`; `src/content/audio-manifest.ts` owns optional
 packaged media. Its empty default manifest is a valid, fully usable build.
 
+A Spanish or German interface shows translated captions but plays the English
+recordings for now (decision of 2026-09-11, pending a translation check of the
+es/de takes). `SPOKEN_AUDIO_LOCALES` in `src/content/spoken-locale.ts` is the
+switch; the es/de recordings stay packaged and registered, so adding a locale
+there is the whole re-enable.
+
 To attach an approved recording later:
 
 1. export the selected encode under

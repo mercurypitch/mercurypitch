@@ -12,7 +12,7 @@
 // and must never be described as the cue itself.
 
 import type { AssetSlot } from './assets'
-import type { AudioAssetManifest } from './audio-manifest'
+import type { AudioAssetManifest, DialogueAudioLookup } from './audio-manifest'
 import { validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
 import { PREMIUM_PULL_DEFINITIONS } from './premium-pulls'
 import { canonicalPullId, pullOptions } from './pulls'
@@ -37,6 +37,12 @@ export interface Line {
    * required before a manifest recording can bind to this caption.
    */
   readonly captionSha256?: string
+  /**
+   * Hash of the caption the bound recording was made from, when the pack
+   * speaks another language than it shows (v1 plays English under translated
+   * captions; see `spoken-locale.ts`). Absent when the two agree.
+   */
+  readonly spokenCaptionSha256?: string
   readonly speakerId?: VoiceSpeakerId
   readonly fileStem?: string
   readonly kind?: VoiceLineKind
@@ -291,6 +297,18 @@ export function findLine(pack: ContentPack, id: string): Line | undefined {
 }
 
 /**
+ * The binding a recording has to match for this line: the caption it was
+ * recorded from, which is the displayed caption unless the pack speaks another
+ * language than it shows. Undefined for a legacy line with no hash.
+ */
+export function dialogueLookupFor(line: Line): DialogueAudioLookup | undefined {
+  const captionSha256 = line.spokenCaptionSha256 ?? line.captionSha256
+  return captionSha256 === undefined
+    ? undefined
+    : { lineId: line.id, captionSha256 }
+}
+
+/**
  * Reports everything wrong with a pack instead of throwing on the first fault,
  * so one test run tells a content author the whole story.
  *
@@ -361,16 +379,10 @@ export function validateContentPack(pack: ContentPack): readonly string[] {
   problems.push(
     ...validateAudioDialogueLineBindings(
       pack.audio,
-      pack.lines.flatMap((line) =>
-        line.captionSha256 === undefined
-          ? []
-          : [
-              {
-                lineId: line.id,
-                captionSha256: line.captionSha256,
-              },
-            ],
-      ),
+      pack.lines.flatMap((line) => {
+        const lookup = dialogueLookupFor(line)
+        return lookup === undefined ? [] : [lookup]
+      }),
     ),
   )
 

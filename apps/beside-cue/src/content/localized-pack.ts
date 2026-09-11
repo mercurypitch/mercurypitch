@@ -1,13 +1,21 @@
 // ============================================================
-// Localized content packs — language-bound speech with shared nonverbal assets
+// Localized content packs — translated captions over the spoken language's audio
 // ============================================================
+//
+// A pack shows one language and speaks one language, and they need not agree:
+// v1 shows Spanish or German captions over the English recordings (see
+// `spoken-locale.ts`). Captions keep their own hashes; each line also carries
+// the hash of the caption its recording was made from, so the caption-bound
+// lookup still finds the clip. Nonverbal media is shared by every language.
 
+import type { AudioAssetManifest } from './audio-manifest'
 import { registerCharacterVoiceRecordings } from './character-voice-recordings'
 import { LOCALIZED_CHARACTER_VOICE_RECORDINGS } from './localized-character-voice-recordings'
 import type { ContentLocale } from './localized-voice-lines'
-import { getVoiceLines } from './localized-voice-lines'
-import type { CharacterStateId, ContentPack, PullCharacter } from './pack'
+import { findLocalizedVoiceLine, getVoiceLines } from './localized-voice-lines'
+import type { CharacterStateId, ContentPack, Line, PullCharacter } from './pack'
 import { DEFAULT_CONTENT_PACK, GENERIC_PULL_CHARACTER } from './pack'
+import { resolveSpokenLocale } from './spoken-locale'
 
 const CORKY_ALT: Readonly<
   Record<
@@ -65,12 +73,63 @@ const PULL_ALT: Readonly<
   },
 }
 
-function localizePack(locale: Exclude<ContentLocale, 'en'>): ContentPack {
-  const lines = getVoiceLines(locale)
+/**
+ * The audio of the spoken language: the English manifest verbatim, or the
+ * shared nonverbal media with that language's screened recordings, each bound
+ * to that language's own caption.
+ */
+function spokenAudioManifest(spokenLocale: ContentLocale): AudioAssetManifest {
+  if (spokenLocale === 'en') return DEFAULT_CONTENT_PACK.audio
   const dialogue = registerCharacterVoiceRecordings(
-    LOCALIZED_CHARACTER_VOICE_RECORDINGS[locale],
-    { locale, lines },
+    LOCALIZED_CHARACTER_VOICE_RECORDINGS[spokenLocale],
+    { locale: spokenLocale, lines: getVoiceLines(spokenLocale) },
   )
+  return Object.freeze({
+    ...DEFAULT_CONTENT_PACK.audio,
+    locale: spokenLocale,
+    revision: `beside-cue-selected-voices-${spokenLocale}-v1`,
+    assets: Object.freeze([
+      ...dialogue,
+      ...DEFAULT_CONTENT_PACK.audio.assets.filter(
+        (asset) => asset.lane !== 'dialogue',
+      ),
+    ]),
+  })
+}
+
+/**
+ * Captions in the shown language. When another language is spoken, each line
+ * also names the caption its recording was made from, so the voice player
+ * finds the clip while the screen shows the translation.
+ */
+function captionedLines(
+  locale: ContentLocale,
+  spokenLocale: ContentLocale,
+): readonly Line[] {
+  const lines = getVoiceLines(locale)
+  if (spokenLocale === locale) return lines
+  return lines.map((line) => {
+    const spoken = findLocalizedVoiceLine(spokenLocale, line.id)
+    return spoken === undefined
+      ? line
+      : { ...line, spokenCaptionSha256: spoken.captionSha256 }
+  })
+}
+
+export interface LocalizeContentPackOptions {
+  /**
+   * The language whose recordings play. Defaults to the v1 decision in
+   * `spoken-locale.ts`; a test passes the shown language to exercise the
+   * localized recordings the app is not playing yet.
+   */
+  readonly spokenLocale?: ContentLocale
+}
+
+export function localizeContentPack(
+  locale: Exclude<ContentLocale, 'en'>,
+  options: LocalizeContentPackOptions = {},
+): ContentPack {
+  const spokenLocale = options.spokenLocale ?? resolveSpokenLocale(locale)
   const pullCharacters = DEFAULT_CONTENT_PACK.pullCharacters.map(
     (character) => ({
       ...character,
@@ -83,7 +142,7 @@ function localizePack(locale: Exclude<ContentLocale, 'en'>): ContentPack {
   return Object.freeze({
     ...DEFAULT_CONTENT_PACK,
     id: `${DEFAULT_CONTENT_PACK.id}-${locale}`,
-    lines,
+    lines: captionedLines(locale, spokenLocale),
     characters: DEFAULT_CONTENT_PACK.characters.map((character) => ({
       ...character,
       states: {
@@ -107,24 +166,14 @@ function localizePack(locale: Exclude<ContentLocale, 'en'>): ContentPack {
     })),
     pullCharacters,
     cueEntities: pullCharacters,
-    audio: Object.freeze({
-      ...DEFAULT_CONTENT_PACK.audio,
-      locale,
-      revision: `beside-cue-selected-voices-${locale}-v1`,
-      assets: Object.freeze([
-        ...dialogue,
-        ...DEFAULT_CONTENT_PACK.audio.assets.filter(
-          (asset) => asset.lane !== 'dialogue',
-        ),
-      ]),
-    }),
+    audio: spokenAudioManifest(spokenLocale),
   })
 }
 
 const PACKS: Readonly<Record<ContentLocale, ContentPack>> = {
   en: DEFAULT_CONTENT_PACK,
-  es: localizePack('es'),
-  de: localizePack('de'),
+  es: localizeContentPack('es'),
+  de: localizeContentPack('de'),
 }
 
 const GENERIC_CHARACTERS: Readonly<Record<ContentLocale, PullCharacter>> = {

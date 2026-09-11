@@ -18,6 +18,8 @@ const english = {
   'Choose interface language': 'Choose interface language',
   'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
     'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Corky and the Pulls speak English for now. Captions follow this language.',
   'Go back': 'Go back',
   'Main navigation': 'Main navigation',
   Cue: 'Cue',
@@ -349,6 +351,8 @@ const spanish = {
   'Choose interface language': 'Elegir el idioma de la interfaz',
   'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
     'Corky y los seis impulsos originales hablan en este idioma. Los impulsos Deluxe solo tienen subtítulos traducidos.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Por ahora, Corky y los impulsos hablan en inglés. Los subtítulos siguen este idioma.',
   'Go back': 'Volver',
   'Main navigation': 'Navegación principal',
   Cue: 'Señal',
@@ -679,6 +683,8 @@ const german = {
   'Choose interface language': 'Sprache der Benutzeroberfläche wählen',
   'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
     'Corky und die sechs ursprünglichen Impulse sprechen diese Sprache. Deluxe-Impulse haben nur übersetzte Untertitel.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Corky und die Impulse sprechen vorerst Englisch. Die Untertitel folgen dieser Sprache.',
   'Go back': 'Zurück',
   'Main navigation': 'Hauptnavigation',
   Cue: 'Auslöser',

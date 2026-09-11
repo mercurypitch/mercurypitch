@@ -12,6 +12,7 @@ import { App } from './App'
 import type { BesideCueAppServices } from './app-services'
 import type { AudioSourceVariant } from './content/audio-manifest'
 import { getVoiceLines } from './content/localized-voice-lines'
+import { resolveSpokenLocale } from './content/spoken-locale'
 import type { VoiceAudioPort } from './content/voice'
 import type { AppLocale } from './i18n/locale'
 import { translateUi } from './i18n/ui-copy'
@@ -213,15 +214,20 @@ describe('localized app integration', () => {
       )
 
       await waitFor(() => expect(voice.sources).toHaveLength(1))
-      expect(voice.sources[0]?.src).toContain(`/voice/${locale}/corky/`)
+      // The caption proves the translated pack was hydrated before speech
+      // began; the bytes follow the spoken language (English for v1).
+      const spoken = resolveSpokenLocale(locale)
+      expect(voice.sources[0]?.src).toContain(`/voice/${spoken}/corky/`)
       const firstCue = getVoiceLines(locale).find(
         (line) => line.id === 'corky.cue-open.01',
       )!
       expect(screen.getByText(firstCue.text)).toBeVisible()
       expect(document.documentElement.lang).toBe(locale)
       expect(
-        voice.sources.some((source) => source.src.includes('/voice/en/')),
-      ).toBe(false)
+        voice.sources.every((source) =>
+          source.src.includes(`/voice/${spoken}/`),
+        ),
+      ).toBe(true)
     },
   )
 

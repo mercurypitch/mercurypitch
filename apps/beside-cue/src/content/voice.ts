@@ -5,7 +5,7 @@
 import type { AudioSourceVariant } from './audio-manifest'
 import { findDialogueAudioAssetForLine } from './audio-manifest'
 import type { ContentPack, Line } from './pack'
-import { findLine } from './pack'
+import { dialogueLookupFor, findLine } from './pack'
 
 export type VoiceSilentReason =
   | 'not-recorded'
@@ -123,11 +123,9 @@ function resolvedCue(
 }
 
 function dialogueForLine(pack: ContentPack, line: Line) {
-  if (line.captionSha256 === undefined) return undefined
-  return findDialogueAudioAssetForLine(pack.audio, {
-    lineId: line.id,
-    captionSha256: line.captionSha256,
-  })
+  const lookup = dialogueLookupFor(line)
+  if (lookup === undefined) return undefined
+  return findDialogueAudioAssetForLine(pack.audio, lookup)
 }
 
 export function createVoicePlayer(options: VoicePlayerOptions): VoicePlayer {
