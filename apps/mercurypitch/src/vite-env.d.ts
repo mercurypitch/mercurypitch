@@ -21,9 +21,10 @@ declare const __APP_CHANNEL__: 'dev' | 'ci' | 'release'
 // Vite's `[key: string]: any` index signature, so a typo in the name is a
 // compile error here instead of an empty string on a phone.
 //
-// Both are documented in .env.example and are empty until the owner creates
-// the OAuth clients (checklist M-D1, M-D2). Empty is a supported state: the
-// key is omitted at initialize and the provider reports itself unavailable.
+// Both are set in the committed .env and documented in .env.example: public
+// build constants (checklist M-D1, M-D2), not secrets. Optional here because
+// empty is still a supported state — the key is omitted at initialize and the
+// provider reports itself unavailable rather than failing mid-sheet.
 interface ImportMetaEnv {
   /** iOS OAuth client id — the Google SDK's own audience on that platform. */
   readonly VITE_GOOGLE_IOS_CLIENT_ID?: string
