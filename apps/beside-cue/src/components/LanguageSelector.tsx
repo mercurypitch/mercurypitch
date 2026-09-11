@@ -46,7 +46,7 @@ export function LanguageSelector(props: LanguageSelectorProps) {
       >
         <p class={styles.note}>
           {copy.t(
-            'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.',
+            'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.',
           )}
         </p>
       </Show>

@@ -46,9 +46,11 @@ Purchases run through RevenueCat, behind the `PurchasesPort` and `PaywallPort`
 in `@irchiinnuss/mobile-runtime`. No screen imports the billing SDK, so the
 web build has no store code on any path a browser can reach.
 
-Nothing in the app is gated. `BeSideCue Pro` exists so people who want to
-support the work can, and so a future gate is a `proAccess.isPro()` check
-rather than an integration.
+Nothing in the app is gated. Beside Cue Deluxe (the RevenueCat entitlement is
+still spelled `BeSideCue Pro`) exists so people who want to support the work
+can, and so a future gate is a `proAccess.isPro()` check rather than an
+integration. The name people see lives in `PRO_DISPLAY_NAME`; the entitlement
+id must keep matching the dashboard.
 
 ### Configuration
 
@@ -69,7 +71,8 @@ Identifiers live in one file, `src/purchases/revenuecat-config.ts`.
 
 ### Dashboard setup
 
-1. **Entitlement** — create `BeSideCue Pro`. Renaming it means setting
+1. **Entitlement** — create `BeSideCue Pro`. That is the dashboard id, not
+   what the app shows (Beside Cue Deluxe). Renaming it means setting
    `VITE_REVENUECAT_ENTITLEMENT_ID` to match; nothing else in the code moves.
 2. **Products** — `lifetime`, `yearly` and `monthly`, attached to that
    entitlement. On Play these are one non-consumable and two subscription base
@@ -84,10 +87,10 @@ Identifiers live in one file, `src/purchases/revenuecat-config.ts`.
 5. **Customer Center** — enable it to give subscribers cancellation, plan
    changes and refund requests without leaving the app.
 
-### Checking the Pro loop in a browser
+### Checking the Deluxe loop in a browser
 
 RevenueCat's Capacitor plugin has no web implementation, so a browser build
-normally reduces the Pro surface to "Purchases need the Android or iOS app." A
+normally reduces the Deluxe surface to "Purchases need the Android or iOS app." A
 development build can put a fake store behind the same ports instead:
 
 ```sh
@@ -128,8 +131,8 @@ from a production bundle.
 
 Sideload the `beside-cue-debug-apk` artifact from any pull request. It is built
 against the Test Store, so the whole loop works on a phone with no Play products
-and no Play installation: check that the paywall presents, a purchase flips Pro
-on, Customer Center opens, **Restore purchases** works, and the entitlement
+and no Play installation: check that the paywall presents, a purchase flips
+Deluxe on, Customer Center opens, **Restore purchases** works, and the entitlement
 survives a force-quit.
 
 A **sideloaded build cannot reach Play Billing** — Play only serves an app it

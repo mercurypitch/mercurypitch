@@ -793,7 +793,7 @@ describe('Beside Cue character voice integration', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
     fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
-    fireEvent.click(screen.getByText('Show premium'))
+    fireEvent.click(screen.getByText('Show Deluxe'))
     const tape = await screen.findByRole('radio', {
       name: /another quick fix/iu,
     })
@@ -813,7 +813,7 @@ describe('Beside Cue character voice integration', () => {
       }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Pro is no longer active',
+      'Beside Cue Deluxe is no longer active',
     )
     expect(repository.snapshot()?.cues).toMatchObject([
       { pullCategoryId: 'the-tape', status: 'active' },

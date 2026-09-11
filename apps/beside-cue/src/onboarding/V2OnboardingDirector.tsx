@@ -683,7 +683,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     setSideBKey(undefined)
     setPullAccessNotice(
       copy.t(
-        'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+        'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.',
       ),
     )
     dispatch({ type: 'PULL_ACCESS_REVOKED' })

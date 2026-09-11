@@ -36,9 +36,9 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
         {...NoSelect}
       >
         <summary class={styles.toggle}>
-          <span>{copy.t(expanded() ? 'Hide premium' : 'Show premium')}</span>
+          <span>{copy.t(expanded() ? 'Hide Deluxe' : 'Show Deluxe')}</span>
           <span class={styles.edition}>
-            PRO · {copy.t('{count} Pulls', { count: props.options.length })}
+            DELUXE · {copy.t('{count} Pulls', { count: props.options.length })}
           </span>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
             <path
@@ -53,14 +53,14 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
           <p class={styles.note} id={`${id}-note`}>
             {copy.t(
               props.isPro === true
-                ? 'Your Pro cast. Choose the Pull you want to notice.'
-                : 'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.',
+                ? 'Your Deluxe cast. Choose the Pull you want to notice.'
+                : 'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.',
             )}
           </p>
           <div
             class={styles.grid}
             role="radiogroup"
-            aria-label={copy.t('Premium Pull choices')}
+            aria-label={copy.t('Deluxe Pull choices')}
             aria-describedby={`${id}-note`}
           >
             <For each={props.options}>
@@ -88,7 +88,7 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
                       }}
                     />
                     <span class={styles.badge}>
-                      {allowed() ? 'PRO' : copy.t('PRO · Locked')}
+                      {allowed() ? 'DELUXE' : copy.t('DELUXE · Locked')}
                     </span>
                     <AssetStage
                       slot={props.artFor(option.id)}

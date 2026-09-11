@@ -231,7 +231,7 @@ export function ProSection(props: ProSectionProps) {
               disabled={props.busy}
               onClick={() => props.onCheckAccess?.()}
             >
-              {copy.t('Check premium access')}
+              {copy.t('Check Deluxe access')}
             </button>
           </Show>
           <Show when={props.mock !== true ? props.supportId : undefined}>

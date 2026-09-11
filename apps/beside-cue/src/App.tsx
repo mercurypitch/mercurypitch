@@ -929,7 +929,9 @@ export function App(props: AppProps) {
 
     resetSetup(setupMode())
     setSetupError(
-      notice('Pro is no longer active. Choose a free Pull or your own words.'),
+      notice(
+        'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
+      ),
     )
     setScreen('choose-pull')
   })
@@ -966,7 +968,7 @@ export function App(props: AppProps) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
-          'Choose a free Pull, or restore Pro to use this character.',
+          'Choose a free Pull, or restore Beside Cue Deluxe to use this character.',
         ),
       })
     }
@@ -1101,7 +1103,7 @@ export function App(props: AppProps) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
-          'Choose a free Pull, or restore Pro to use this character.',
+          'Choose a free Pull, or restore Beside Cue Deluxe to use this character.',
         ),
       })
     }
@@ -1207,7 +1209,7 @@ export function App(props: AppProps) {
     if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
       setSetupError(
         notice(
-          'This character needs Pro. Choose a free Pull or your own words.',
+          'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.',
         ),
       )
       return
@@ -1270,7 +1272,9 @@ export function App(props: AppProps) {
         config().pullOptions,
       )
     ) {
-      setSetupError(notice('Choose a free Pull, or restore Pro in Settings.'))
+      setSetupError(
+        notice('Choose a free Pull, or restore Beside Cue Deluxe in Settings.'),
+      )
       return
     }
     try {
@@ -1340,7 +1344,7 @@ export function App(props: AppProps) {
     ) {
       setSetupError(
         notice(
-          'Pro is no longer active. Choose a free Pull or your own words.',
+          'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
         ),
       )
       setScreen('choose-pull')

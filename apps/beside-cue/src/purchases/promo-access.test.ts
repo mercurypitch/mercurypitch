@@ -59,10 +59,10 @@ describe('store offer redemption', () => {
     await probe.emitCustomer(createCustomerSnapshot([entitlementId]))
 
     expect(access.isPro()).toBe(true)
-    expect(access.notice()).toBe('Premium access is confirmed.')
+    expect(access.notice()).toBe('Deluxe access is confirmed.')
     await probe.emitCustomer(createCustomerSnapshot([]))
     expect(access.isPro()).toBe(false)
-    expect(access.notice()).not.toBe('Premium access is confirmed.')
+    expect(access.notice()).not.toBe('Deluxe access is confirmed.')
   })
 
   it.each([true, false])(
@@ -88,9 +88,7 @@ describe('store offer redemption', () => {
 
       expect(access.isPro()).toBe(active)
       expect(access.notice()).toMatch(
-        active
-          ? /^Premium access is confirmed\.$/
-          : /^No active premium access/,
+        active ? /^Deluxe access is confirmed\.$/ : /^No active Deluxe access/,
       )
     },
   )
@@ -106,7 +104,7 @@ describe('store offer redemption', () => {
 
     expect(sync).toHaveBeenCalledOnce()
     expect(access.isPro()).toBe(true)
-    expect(access.notice()).toBe('Premium access is confirmed.')
+    expect(access.notice()).toBe('Deluxe access is confirmed.')
   })
 
   it('keeps premium locked when a redemption sync fails offline', async () => {
@@ -130,7 +128,7 @@ describe('store offer redemption', () => {
     await access.checkPromoAccess()
 
     expect(access.isPro()).toBe(false)
-    expect(access.notice()).toMatch(/No active premium access/)
+    expect(access.notice()).toMatch(/No active Deluxe access/)
   })
 
   it('opens only one redemption sheet for rapid repeated taps', async () => {

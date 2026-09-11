@@ -14,9 +14,9 @@ describe('locale foundation', () => {
     expect(resolveAppLocale('hr-HR')).toBe('en')
     expect(resolveAppLocale('it')).toBe('en')
     expect(resolveAppLocale('bad_locale')).toBe('en')
-    expect(message('premium.show', 'en')).toBe('Show premium')
-    expect(message('premium.show', 'es')).toBe('Ver opciones premium')
-    expect(message('premium.show', 'de')).toBe('Premium anzeigen')
+    expect(message('premium.show', 'en')).toBe('Show Deluxe')
+    expect(message('premium.show', 'es')).toBe('Ver opciones Deluxe')
+    expect(message('premium.show', 'de')).toBe('Deluxe anzeigen')
   })
   it('formats labels without changing HH:mm data or guessing invalid values', () => {
     expect(formatLocalTime('21:05', 'en-US')).toMatch(/9:05.*PM/u)

@@ -66,7 +66,7 @@ function MockPurchaseDialog(props: {
         <p class="mock-store__badge">{copy.t('Test purchases — no charge')}</p>
         <h2 id="mock-store-title">
           {request().kind === 'redeem-code'
-            ? copy.t('Test a premium offer')
+            ? copy.t('Test a Deluxe offer')
             : request().kind === 'paywall'
               ? copy.t('Unlock {name}', { name: props.name })
               : copy.t('Manage subscription')}

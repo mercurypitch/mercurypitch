@@ -16,14 +16,14 @@ export {
 
 const semanticSources = {
   'home.title': 'Your current pressing',
-  'premium.show': 'Show premium',
-  'premium.hide': 'Hide premium',
-  'premium.available': 'Your Pro cast. Choose the Pull you want to notice.',
+  'premium.show': 'Show Deluxe',
+  'premium.hide': 'Hide Deluxe',
+  'premium.available': 'Your Deluxe cast. Choose the Pull you want to notice.',
   'premium.locked':
-    'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.',
-  'premium.choices': 'Premium Pull choices',
+    'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.',
+  'premium.choices': 'Deluxe Pull choices',
   'premium.revoked':
-    'Pro is no longer active. Choose one of the six free Pulls, or name your own.',
+    'Beside Cue Deluxe is no longer active. Choose one of the six free Pulls, or name your own.',
   'audio.mute': 'Mute audio',
   'audio.unmute': 'Unmute audio',
   'purchases.betaNotice':
@@ -31,16 +31,16 @@ const semanticSources = {
   'purchases.redeemApple': 'Redeem App Store code',
   'purchases.redeemGoogle': 'Redeem on Google Play',
   'purchases.redeemMock': 'Test an offer',
-  'purchases.checkAccess': 'Check premium access',
+  'purchases.checkAccess': 'Check Deluxe access',
   'purchases.offerTerms':
     'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
   'purchases.googleHelp':
     'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
-  'purchases.accessConfirmed': 'Premium access is confirmed.',
+  'purchases.accessConfirmed': 'Deluxe access is confirmed.',
   'purchases.accessNotConfirmed':
-    'No active premium access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',
+    'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',
   'purchases.redemptionPending':
-    'Finish redeeming in the App Store. Premium unlocks only when the store confirms it. You can check access here afterward.',
+    'Finish redeeming in the App Store. Deluxe unlocks only when the store confirms it. You can check access here afterward.',
   'purchases.redeemUnavailable':
     'Code redemption needs the supported mobile store. Use the redemption link supplied with your offer.',
   'purchases.support': 'Purchase support',
@@ -48,7 +48,7 @@ const semanticSources = {
   'purchases.supportHelp':
     'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.',
   'purchases.mockBadge': 'Test purchases — no charge',
-  'purchases.mockOfferTitle': 'Test a premium offer',
+  'purchases.mockOfferTitle': 'Test a Deluxe offer',
   'purchases.mockOfferApply': 'Apply a 60-day test offer',
   'purchases.mockOfferHelp':
     'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.',
