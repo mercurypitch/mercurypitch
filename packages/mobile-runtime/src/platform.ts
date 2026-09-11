@@ -35,9 +35,6 @@
 // plan task G1 calls for live in the app's platform seam, where the app knows
 // how many rooms are open. This file only knows how to reach the device.
 
-// Type-only, so it is erased: the module itself is still reached through
-// the dynamic import below, inside the native check.
-import type { AppPlugin } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
@@ -182,6 +179,25 @@ export async function hideKeyboardOnNativeOnly(): Promise<void> {
 // ------------------------------------------------------------
 
 /**
+ * Whether a rejection is a person dismissing the sheet rather than a failure
+ * to present one.
+ *
+ * Both native halves answer a dismissal by REJECTING, and both with the same
+ * words: `SharePlugin.swift` calls `call.reject('Share canceled')` when the
+ * activity controller reports the share was not completed, and
+ * `SharePlugin.java` does the same on `Activity.RESULT_CANCELED`. A
+ * rejection is therefore not evidence of anything on its own — the message
+ * is the only thing separating the two outcomes, so the message is what is
+ * read. Everything else the plugin can reject with (`Unimplemented`, 'Must
+ * provide at least url, text or files', 'Can't share while sharing is in
+ * progress') is a genuine failure and stays one.
+ */
+function readsAsCancellation(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /cancel/i.test(message)
+}
+
+/**
  * Hand a payload to the system share sheet.
  *
  * Returns false when no sheet was presented — on the web, or when the plugin
@@ -189,12 +205,15 @@ export async function hideKeyboardOnNativeOnly(): Promise<void> {
  * nothing is the failure plan task G3 names, so the answer is returned rather
  * than swallowed and the caller keeps its own fallback.
  *
- * A cancelled sheet still counts as presented: dismissing it is the person's
- * decision, and reporting that as a failure would send the caller down a
- * fallback path they just declined.
+ * A cancelled sheet counts as presented and answers TRUE. That is why this
+ * one call cannot go through `attempt()`: a dismissal reaches us as a
+ * rejection like any other, and mapping every rejection to false would send
+ * the caller down the fallback the person just declined.
  */
 export async function sharePayload(payload: SharePayload): Promise<boolean> {
-  return attempt(async () => {
+  if (!isNative()) return false
+
+  try {
     const { Share } = await import('@capacitor/share')
     await Share.share({
       ...(payload.title === undefined ? {} : { title: payload.title }),
@@ -202,7 +221,10 @@ export async function sharePayload(payload: SharePayload): Promise<boolean> {
       ...(payload.url === undefined ? {} : { url: payload.url }),
       ...(payload.files === undefined ? {} : { files: [...payload.files] }),
     })
-  })
+    return true
+  } catch (error) {
+    return readsAsCancellation(error)
+  }
 }
 
 /**
@@ -323,22 +345,19 @@ export function onAppState(handler: AppLifecycleHandler): Unsubscribe {
 /**
  * Put the app in the background, as the back button does from a home screen.
  *
- * Android minimizes. iOS has no such call — an app may not send itself to the
- * background, and Apple rejects builds that try — so `minimizeApp` rejects
- * there and `exitApp` is the documented second attempt on platforms where
- * minimizing is unavailable. Both failing is reported, not thrown: the caller
- * is usually a back handler, which then simply leaves the screen as it is.
+ * One call, with no second attempt behind it, because there is no platform a
+ * second attempt could help. Android's `minimizeApp` is `moveTaskToBack(true)`
+ * and is always available — and Android is the only platform that fires the
+ * back button this exists to answer. iOS has no such call at all: an app may
+ * not send itself to the background, Apple rejects builds that try, and the
+ * plugin's iOS half answers `minimizeApp` with `unimplemented()` — as it does
+ * `exitApp`, so falling through to that would only trade one refusal for
+ * another. A refusal is reported rather than thrown: the caller is usually a
+ * back handler, which then simply leaves the screen as it is.
  */
 export async function minimizeApp(): Promise<boolean> {
-  if (!isNative()) return false
-
-  let app: AppPlugin
-  try {
-    app = (await import('@capacitor/app')).App
-  } catch {
-    return false
-  }
-
-  if (await attempt(() => app.minimizeApp())) return true
-  return attempt(() => app.exitApp())
+  return attempt(async () => {
+    const { App } = await import('@capacitor/app')
+    await App.minimizeApp()
+  })
 }

@@ -227,9 +227,22 @@ describe('on a phone', () => {
     })
   })
 
-  it('reports a share the platform refused, rather than throwing', async () => {
+  it('counts a sheet the person dismissed as one that was presented', async () => {
+    // Both native halves reject a dismissal, with these exact words:
+    // SharePlugin.swift on a share that did not complete, SharePlugin.java on
+    // Activity.RESULT_CANCELED. Reporting that as a failure would send the
+    // caller down the fallback the person just declined.
     const platform = await loadPlatform(true)
     share.share.mockRejectedValueOnce(new Error('Share canceled'))
+
+    await expect(platform.sharePayload({ text: 'a take' })).resolves.toBe(true)
+  })
+
+  it('reports a share the platform refused, rather than throwing', async () => {
+    const platform = await loadPlatform(true)
+    share.share.mockRejectedValueOnce(
+      new Error('Must provide at least url, text or files'),
+    )
 
     await expect(platform.sharePayload({ text: 'a take' })).resolves.toBe(false)
   })
@@ -299,24 +312,22 @@ describe('on a phone', () => {
     expect(handle.remove).toHaveBeenCalledTimes(1)
   })
 
-  it('minimizes, and falls back to exit where minimizing is refused', async () => {
+  it('minimizes, and never reaches for exitApp', async () => {
     const platform = await loadPlatform(true)
 
     await expect(platform.minimizeApp()).resolves.toBe(true)
     expect(appPlugin.minimizeApp).toHaveBeenCalledTimes(1)
     expect(appPlugin.exitApp).not.toHaveBeenCalled()
-
-    // iOS: an app may not send itself to the background.
-    appPlugin.minimizeApp.mockRejectedValueOnce(new Error('Unimplemented'))
-    await expect(platform.minimizeApp()).resolves.toBe(true)
-    expect(appPlugin.exitApp).toHaveBeenCalledTimes(1)
   })
 
-  it('reports when neither leaving the app worked', async () => {
+  it('reports a refused minimize rather than falling through to exit', async () => {
+    // iOS answers both calls with unimplemented(), so a second attempt could
+    // only trade one refusal for another; Android, the only platform that
+    // fires the back button, always has moveTaskToBack.
     const platform = await loadPlatform(true)
     appPlugin.minimizeApp.mockRejectedValue(new Error('Unimplemented'))
-    appPlugin.exitApp.mockRejectedValue(new Error('Unimplemented'))
 
     await expect(platform.minimizeApp()).resolves.toBe(false)
+    expect(appPlugin.exitApp).not.toHaveBeenCalled()
   })
 })
