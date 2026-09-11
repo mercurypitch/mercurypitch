@@ -50,10 +50,14 @@ export function installNativeShell(
   // Owner decision: no background audio in V1, so leaving the foreground
   // stops the sound rather than ducking it.
   //
-  // Coming back is deliberately not handled. iOS lifts a suspended context
-  // only from inside a user gesture, so the next tap's `unlock()` is what
-  // returns the clock; waking it here would be a resume the platform refuses,
-  // and a silence with no explanation.
+  // COMING BACK IS NOT WIRED HERE, and it is not always the next tap either.
+  // `packages/audio-io` follows the page as well: a WebView the OS takes away
+  // usually fires `visibilitychange` too, and where that handler is the one
+  // that parked the clock — or where iOS moved the context to 'interrupted' —
+  // it resumes quietly on the way back in, for as long as a room still holds
+  // a lease. Where it did not, because nobody holds a lease or this line got
+  // there first, the next gesture's `unlock()` returns the sound. That is the
+  // only resume iOS accepts anyway, so there is nothing to add on this side.
   //
   // Today this parks the one context `packages/audio-io` owns, which on this
   // app's side is nobody yet: the root rooms each build their own. They adopt

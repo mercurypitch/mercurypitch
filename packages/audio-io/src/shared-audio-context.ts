@@ -213,10 +213,15 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
  * app switcher, a screen lock — and a context left running through that keeps
  * an output stream open behind an app nobody can see.
  *
- * Coming back is deliberately NOT handled here. iOS lifts a suspended context
- * only from inside a user gesture, so the next `unlock()` is what returns the
- * sound; waking it on the way in would be a resume the platform refuses and a
- * silence nobody can explain.
+ * Coming back is not this call's job, and it is not always left to the next
+ * gesture either. The page handler above stays installed: a WebView the OS
+ * takes away usually fires `visibilitychange` as well, and where that handler
+ * is the one that parked the clock (`suspendedByPage`), or where iOS moved
+ * the context to `'interrupted'`, it resumes quietly on the way back in for
+ * as long as a room still holds a lease. Where it did not — nobody holds a
+ * lease, or this call got there first and so parked the clock without arming
+ * that resume — the next `unlock()` from inside a user gesture is what
+ * returns the sound, which is the only resume iOS accepts anyway.
  */
 export function suspendSharedAudioContext(): void {
   const audioContext = context
