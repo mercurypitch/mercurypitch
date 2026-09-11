@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ShelfLevel } from '../levels/shelf'
-import { MITT_SPAN, SHELF_1, SHELF_3, topsOf } from '../levels/shelf'
+import { LEAP_CARRY_MAX, MITT_SPAN, SHELF_1, SHELF_3, topsOf, } from '../levels/shelf'
 import { WORLD3D_CONFIG } from '../world3d-config'
 import { NO_LEAPS } from './shelf-grade'
 import type { ShelfClimb, ShelfStep } from './shelf-step'
@@ -81,5 +81,48 @@ describe('a hop that meets the riser on the way down', () => {
         expect(climb.grades[0], name).toEqual(NO_LEAPS)
       }
     }
+  })
+})
+
+// §3.2: an aimed leap carries him at its own speed while it rises, and
+// at walking pace after the apex. A small one, aimed from room 1's start
+// line, rises at LEAP_CARRY_MAX and comes down in the open.
+describe('an aimed leap past its apex', () => {
+  /** From room 1's start line with 57 held, sing `semis` up, the thumb
+   * at rest until it fires and held back for a second after. */
+  const leapBack = (semis: number) => {
+    const climb = createClimb(SHELF_1, CFG)
+    sing(climb, 57, 0.3)
+    for (let i = 0; i < Math.round(0.5 / DT) && climb.leaps === 0; i++) {
+      stepShelf(climb, 57 + semis, 0, DT)
+    }
+    const carry = climb.flight?.carry ?? null
+    let pastApex = false
+    let fastest = 0
+    let furthest = climb.loco.x
+    for (let i = 0; i < Math.round(1 / DT); i++) {
+      if (stepShelf(climb, 57 + semis, -1, DT).flash !== null) pastApex = true
+      if (pastApex) fastest = Math.max(fastest, Math.abs(climb.loco.vx))
+      furthest = Math.max(furthest, climb.loco.x)
+    }
+    return { climb, carry, fastest, furthest }
+  }
+
+  it('carries him at walking pace, whatever was sung', () => {
+    for (let tenths = 6; tenths <= 90; tenths++) {
+      const name = `${String(tenths / 10)} semitones`
+      const { climb, carry, fastest } = leapBack(tenths / 10)
+      expect(climb.leaps, name).toBe(1)
+      expect(carry, name).not.toBeNull()
+      expect(fastest, name).toBeLessThanOrEqual(CFG.walkSpeed)
+    }
+  })
+
+  it('so 70 cents up, aimed at LEAP_CARRY_MAX, comes down short of the riser and the thumb has him', () => {
+    const { climb, carry, furthest } = leapBack(0.7)
+    expect(carry).toBe(LEAP_CARRY_MAX)
+    expect(climb.loco.y).toBe(0)
+    expect(furthest).toBeLessThan(SHELF_1.shelves[1]!.from - HALF - 0.02)
+    expect(climb.loco.vx).toBeLessThan(0)
   })
 })
