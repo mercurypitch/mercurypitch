@@ -16,8 +16,10 @@ export type CopyParams = Readonly<Record<string, number | string>>
 const english = {
   Language: 'Language',
   'Choose interface language': 'Choose interface language',
-  'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.':
-    'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.',
+  'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
+    'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Corky and the Pulls speak English for now. Captions follow this language.',
   'Go back': 'Go back',
   'Main navigation': 'Main navigation',
   Cue: 'Cue',
@@ -29,7 +31,7 @@ const english = {
   'Side A · The Pull': 'Side A · The Pull',
   'Side B · My choice': 'Side B · My choice',
   '{count} Pulls': '{count} Pulls',
-  'PRO · Locked': 'PRO · Locked',
+  'DELUXE · Locked': 'DELUXE · Locked',
   'Unlock {name}': 'Unlock {name}',
   'Manage subscription': 'Manage subscription',
   'Turn off renewal': 'Turn off renewal',
@@ -39,7 +41,14 @@ const english = {
   'Yours for good.': 'Yours for good.',
   'Renews {date}.': 'Renews {date}.',
   'Active until {date}.': 'Active until {date}.',
+  'Support the work': 'Support the work',
   Support: 'Support',
+  'Privacy notice': 'Privacy notice',
+  'Help and privacy': 'Help and privacy',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Help, feedback, and contact. Opens in your browser.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'How Beside Cue handles your data. Opens in your browser.',
   Active: 'Active',
   'Purchases need the Android or iOS app.':
     'Purchases need the Android or iOS app.',
@@ -71,7 +80,7 @@ const english = {
     'Turn the record to choose a reminder time',
   'Turning hours': 'Turning hours',
   'Turning minutes': 'Turning minutes',
-  'Sweep sideways': 'Sweep sideways',
+  'Turn in a circle': 'Turn in a circle',
   'Sweep to choose': 'Sweep to choose',
   'Choose dial layer': 'Choose dial layer',
   'Edit hours': 'Edit hours',
@@ -81,8 +90,8 @@ const english = {
   Minutes: 'Minutes',
   'Vinyl edge': 'Vinyl edge',
   'Type exact time': 'Type exact time',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.',
   'One Pull. One chosen turn.': 'One Pull. One chosen turn.',
   'Keep your better choice beside the moment.':
     'Keep your better choice beside the moment.',
@@ -174,8 +183,12 @@ const english = {
   'Your words': 'Your words',
   'For example, opening the feed again': 'For example, opening the feed again',
   'Confirm {pull}': 'Confirm {pull}',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
   '{count} minute': '{count} minute',
   '{count} minutes': '{count} minutes',
   '{count} second': '{count} second',
@@ -266,8 +279,8 @@ const english = {
   'Ready.': 'Ready.',
   'Could not save this plan.': 'Could not save this plan.',
   'Could not set this reminder.': 'Could not set this reminder.',
-  'Pro is no longer active. Choose one of the free Pulls, or use your own words.':
-    'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+  'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.':
+    'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.',
   'Return to settings': 'Return to settings',
   'Onboarding review controls': 'Onboarding review controls',
   'Previous scene': 'Previous scene',
@@ -289,15 +302,15 @@ const english = {
   'Stop and save plan': 'Stop and save plan',
   'Stop the record': 'Stop the record',
   'Your current pressing': 'Your current pressing',
-  'Show premium': 'Show premium',
-  'Hide premium': 'Hide premium',
-  'Your Pro cast. Choose the Pull you want to notice.':
-    'Your Pro cast. Choose the Pull you want to notice.',
-  'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.':
-    'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.',
-  'Premium Pull choices': 'Premium Pull choices',
-  'Pro is no longer active. Choose one of the six free Pulls, or name your own.':
-    'Pro is no longer active. Choose one of the six free Pulls, or name your own.',
+  'Show Deluxe': 'Show Deluxe',
+  'Hide Deluxe': 'Hide Deluxe',
+  'Your Deluxe cast. Choose the Pull you want to notice.':
+    'Your Deluxe cast. Choose the Pull you want to notice.',
+  'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.':
+    'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.',
+  'Deluxe Pull choices': 'Deluxe Pull choices',
+  'Beside Cue Deluxe is no longer active. Choose one of the six free Pulls, or name your own.':
+    'Beside Cue Deluxe is no longer active. Choose one of the six free Pulls, or name your own.',
   'Mute audio': 'Mute audio',
   'Unmute audio': 'Unmute audio',
   'Beta purchase testing. No payment is taken. Test access does not transfer to the store release.':
@@ -305,16 +318,16 @@ const english = {
   'Redeem App Store code': 'Redeem App Store code',
   'Redeem on Google Play': 'Redeem on Google Play',
   'Test an offer': 'Test an offer',
-  'Check premium access': 'Check premium access',
+  'Check Deluxe access': 'Check Deluxe access',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
   'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
     'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
-  'Premium access is confirmed.': 'Premium access is confirmed.',
-  'No active premium access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
-    'No active premium access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',
-  'Finish redeeming in the App Store. Premium unlocks only when the store confirms it. You can check access here afterward.':
-    'Finish redeeming in the App Store. Premium unlocks only when the store confirms it. You can check access here afterward.',
+  'Deluxe access is confirmed.': 'Deluxe access is confirmed.',
+  'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
+    'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',
+  'Finish redeeming in the App Store. Deluxe unlocks only when the store confirms it. You can check access here afterward.':
+    'Finish redeeming in the App Store. Deluxe unlocks only when the store confirms it. You can check access here afterward.',
   'Code redemption needs the supported mobile store. Use the redemption link supplied with your offer.':
     'Code redemption needs the supported mobile store. Use the redemption link supplied with your offer.',
   'Purchase support': 'Purchase support',
@@ -322,7 +335,7 @@ const english = {
   'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.':
     'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.',
   'Test purchases — no charge': 'Test purchases — no charge',
-  'Test a premium offer': 'Test a premium offer',
+  'Test a Deluxe offer': 'Test a Deluxe offer',
   'Apply a 60-day test offer': 'Apply a 60-day test offer',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.',
@@ -336,8 +349,10 @@ type UiCopyCatalog = Readonly<Record<UiCopySource, string>>
 const spanish = {
   Language: 'Idioma',
   'Choose interface language': 'Elegir el idioma de la interfaz',
-  'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.':
-    'Corky y los seis impulsos originales hablan en este idioma. Los impulsos premium solo tienen subtítulos traducidos.',
+  'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
+    'Corky y los seis impulsos originales hablan en este idioma. Los impulsos Deluxe solo tienen subtítulos traducidos.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Por ahora, Corky y los impulsos hablan en inglés. Los subtítulos siguen este idioma.',
   'Go back': 'Volver',
   'Main navigation': 'Navegación principal',
   Cue: 'Señal',
@@ -349,7 +364,7 @@ const spanish = {
   'Side A · The Pull': 'Cara A · El impulso',
   'Side B · My choice': 'Cara B · Mi elección',
   '{count} Pulls': '{count} impulsos',
-  'PRO · Locked': 'PRO · Bloqueado',
+  'DELUXE · Locked': 'DELUXE · Bloqueado',
   'Unlock {name}': 'Desbloquear {name}',
   'Manage subscription': 'Gestionar suscripción',
   'Turn off renewal': 'Desactivar renovación',
@@ -359,7 +374,14 @@ const spanish = {
   'Yours for good.': 'Tuyo para siempre.',
   'Renews {date}.': 'Se renueva el {date}.',
   'Active until {date}.': 'Activo hasta el {date}.',
-  Support: 'Apoyo',
+  'Support the work': 'Apoya el proyecto',
+  Support: 'Ayuda',
+  'Privacy notice': 'Aviso de privacidad',
+  'Help and privacy': 'Ayuda y privacidad',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Ayuda, comentarios y contacto. Se abre en tu navegador.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'Cómo trata Beside Cue tus datos. Se abre en tu navegador.',
   Active: 'Activo',
   'Purchases need the Android or iOS app.':
     'Las compras requieren la app para Android o iOS.',
@@ -390,7 +412,7 @@ const spanish = {
     'Gira el disco para elegir una hora de recordatorio',
   'Turning hours': 'Girando las horas',
   'Turning minutes': 'Girando los minutos',
-  'Sweep sideways': 'Desliza de lado',
+  'Turn in a circle': 'Gira en círculo',
   'Sweep to choose': 'Desliza para elegir',
   'Choose dial layer': 'Elegir la capa del dial',
   'Edit hours': 'Editar horas',
@@ -400,8 +422,8 @@ const spanish = {
   Minutes: 'Minutos',
   'Vinyl edge': 'Borde del vinilo',
   'Type exact time': 'Escribir la hora exacta',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Desliza de lado por arriba o por abajo. El borde exterior ajusta los minutos; el centro dorado, las horas.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Gira el disco en círculo. Borde exterior: minutos. Centro dorado: horas. Desplaza la página junto al disco.',
   'One Pull. One chosen turn.': 'Un impulso. Un cambio elegido.',
   'Keep your better choice beside the moment.':
     'Mantén tu mejor elección junto al momento.',
@@ -495,8 +517,12 @@ const spanish = {
   'Your words': 'Tus palabras',
   'For example, opening the feed again': 'Por ejemplo, volver a abrir el feed',
   'Confirm {pull}': 'Confirmar {pull}',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, descansa junto al plan actual.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, erguido y mirando al frente.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, mira hacia arriba al impulso que acaba de llegar.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, un personaje de corcho color ciruela rosada con ocho extremidades tubulares, en reposo con los párpados bajos.',
   '{count} minute': '{count} minuto',
   '{count} minutes': '{count} minutos',
   '{count} second': '{count} segundo',
@@ -590,8 +616,8 @@ const spanish = {
   'Ready.': 'Listo.',
   'Could not save this plan.': 'No se pudo guardar este plan.',
   'Could not set this reminder.': 'No se pudo configurar este recordatorio.',
-  'Pro is no longer active. Choose one of the free Pulls, or use your own words.':
-    'Pro ya no está activo. Elige uno de los impulsos gratuitos o usa tus propias palabras.',
+  'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.':
+    'Beside Cue Deluxe ya no está activo. Elige uno de los impulsos gratuitos o usa tus propias palabras.',
   'Return to settings': 'Volver a Ajustes',
   'Onboarding review controls': 'Controles de revisión de la introducción',
   'Previous scene': 'Escena anterior',
@@ -613,15 +639,15 @@ const spanish = {
   'Stop and save plan': 'Detener y guardar el plan',
   'Stop the record': 'Detener el disco',
   'Your current pressing': 'Tu disco actual',
-  'Show premium': 'Ver opciones premium',
-  'Hide premium': 'Ocultar opciones premium',
-  'Your Pro cast. Choose the Pull you want to notice.':
-    'Tu elenco Pro. Elige el impulso que quieras notar.',
-  'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.':
-    'Conoce al elenco adicional. Pro permite elegirlo en Ajustes; los seis originales y tu propio impulso siguen siendo gratis.',
-  'Premium Pull choices': 'Opciones premium de impulso',
-  'Pro is no longer active. Choose one of the six free Pulls, or name your own.':
-    'Pro ya no está activo. Elige uno de los seis impulsos gratuitos o escribe el tuyo.',
+  'Show Deluxe': 'Ver opciones Deluxe',
+  'Hide Deluxe': 'Ocultar opciones Deluxe',
+  'Your Deluxe cast. Choose the Pull you want to notice.':
+    'Tu elenco Deluxe. Elige el impulso que quieras notar.',
+  'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.':
+    'Conoce al elenco adicional. Beside Cue Deluxe permite elegirlo en Ajustes; los seis originales y tu propio impulso siguen siendo gratis.',
+  'Deluxe Pull choices': 'Opciones Deluxe de impulso',
+  'Beside Cue Deluxe is no longer active. Choose one of the six free Pulls, or name your own.':
+    'Beside Cue Deluxe ya no está activo. Elige uno de los seis impulsos gratuitos o escribe el tuyo.',
   'Mute audio': 'Silenciar audio',
   'Unmute audio': 'Activar audio',
   'Beta purchase testing. No payment is taken. Test access does not transfer to the store release.':
@@ -629,16 +655,16 @@ const spanish = {
   'Redeem App Store code': 'Canjear código del App Store',
   'Redeem on Google Play': 'Canjear en Google Play',
   'Test an offer': 'Probar una oferta',
-  'Check premium access': 'Comprobar el acceso premium',
+  'Check Deluxe access': 'Comprobar el acceso Deluxe',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'La tienda confirma los requisitos, la duración de la oferta y cualquier precio de renovación antes de que aceptes. Los códigos de Apple y Google son distintos.',
   'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
     'Los códigos de un solo uso se canjean en Google Play. Los códigos de suscripción personalizados se introducen en la hoja de compra. Vuelve después para comprobar el acceso.',
-  'Premium access is confirmed.': 'El acceso premium está confirmado.',
-  'No active premium access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
-    'No se confirmó ningún acceso premium activo. Si acabas de canjear un código, espera un momento y vuelve a comprobarlo, o usa Restaurar compras.',
-  'Finish redeeming in the App Store. Premium unlocks only when the store confirms it. You can check access here afterward.':
-    'Termina el canje en el App Store. Premium solo se desbloquea cuando la tienda lo confirma. Después puedes comprobar el acceso aquí.',
+  'Deluxe access is confirmed.': 'El acceso Deluxe está confirmado.',
+  'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
+    'No se confirmó ningún acceso Deluxe activo. Si acabas de canjear un código, espera un momento y vuelve a comprobarlo, o usa Restaurar compras.',
+  'Finish redeeming in the App Store. Deluxe unlocks only when the store confirms it. You can check access here afterward.':
+    'Termina el canje en el App Store. Deluxe solo se desbloquea cuando la tienda lo confirma. Después puedes comprobar el acceso aquí.',
   'Code redemption needs the supported mobile store. Use the redemption link supplied with your offer.':
     'Para canjear el código necesitas una tienda móvil compatible. Usa el enlace de canje incluido con tu oferta.',
   'Purchase support': 'Ayuda con las compras',
@@ -646,7 +672,7 @@ const spanish = {
   'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.':
     'Comparte este ID en privado con el equipo de ayuda para comprobar un acceso. No es una contraseña y no contiene el texto de tu plan.',
   'Test purchases — no charge': 'Compras de prueba — sin cargo',
-  'Test a premium offer': 'Probar una oferta premium',
+  'Test a Deluxe offer': 'Probar una oferta Deluxe',
   'Apply a 60-day test offer': 'Aplicar una oferta de prueba de 60 días',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'Esto simula un acceso promocional confirmado sin renovación. No canjea un código real de Apple ni de Google.',
@@ -655,8 +681,10 @@ const spanish = {
 const german = {
   Language: 'Sprache',
   'Choose interface language': 'Sprache der Benutzeroberfläche wählen',
-  'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.':
-    'Corky und die sechs ursprünglichen Impulse sprechen diese Sprache. Premium-Impulse haben nur übersetzte Untertitel.',
+  'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.':
+    'Corky und die sechs ursprünglichen Impulse sprechen diese Sprache. Deluxe-Impulse haben nur übersetzte Untertitel.',
+  'Corky and the Pulls speak English for now. Captions follow this language.':
+    'Corky und die Impulse sprechen vorerst Englisch. Die Untertitel folgen dieser Sprache.',
   'Go back': 'Zurück',
   'Main navigation': 'Hauptnavigation',
   Cue: 'Auslöser',
@@ -668,7 +696,7 @@ const german = {
   'Side A · The Pull': 'Seite A · Der Impuls',
   'Side B · My choice': 'Seite B · Meine Wahl',
   '{count} Pulls': '{count} Impulse',
-  'PRO · Locked': 'PRO · Gesperrt',
+  'DELUXE · Locked': 'DELUXE · Gesperrt',
   'Unlock {name}': '{name} freischalten',
   'Manage subscription': 'Abo verwalten',
   'Turn off renewal': 'Verlängerung deaktivieren',
@@ -678,7 +706,14 @@ const german = {
   'Yours for good.': 'Für immer deins.',
   'Renews {date}.': 'Verlängert sich am {date}.',
   'Active until {date}.': 'Aktiv bis {date}.',
-  Support: 'Unterstützen',
+  'Support the work': 'Unterstütze das Projekt',
+  Support: 'Hilfe',
+  'Privacy notice': 'Datenschutzhinweis',
+  'Help and privacy': 'Hilfe und Datenschutz',
+  'Help, feedback, and contact. Opens in your browser.':
+    'Hilfe, Feedback und Kontakt. Wird im Browser geöffnet.',
+  'How Beside Cue handles your data. Opens in your browser.':
+    'Wie Beside Cue mit deinen Daten umgeht. Wird im Browser geöffnet.',
   Active: 'Aktiv',
   'Purchases need the Android or iOS app.':
     'Käufe benötigen die Android- oder iOS-App.',
@@ -710,7 +745,7 @@ const german = {
     'Drehe die Schallplatte, um eine Erinnerungszeit zu wählen',
   'Turning hours': 'Stunden werden gedreht',
   'Turning minutes': 'Minuten werden gedreht',
-  'Sweep sideways': 'Seitwärts wischen',
+  'Turn in a circle': 'Im Kreis drehen',
   'Sweep to choose': 'Zum Auswählen wischen',
   'Choose dial layer': 'Einstellebene wählen',
   'Edit hours': 'Stunden bearbeiten',
@@ -720,8 +755,8 @@ const german = {
   Minutes: 'Minuten',
   'Vinyl edge': 'Schallplattenrand',
   'Type exact time': 'Genaue Uhrzeit eingeben',
-  'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.':
-    'Wische oben oder unten seitwärts. Am äußeren Rand stellst du die Minuten ein, in der goldenen Mitte die Stunden.',
+  'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.':
+    'Drehe die Platte im Kreis. Außenrand: Minuten. Goldene Mitte: Stunden. Scrolle neben der Platte.',
   'One Pull. One chosen turn.': 'Ein Impuls. Eine bewusste Wendung.',
   'Keep your better choice beside the moment.':
     'Halte deine bessere Wahl für den Moment bereit.',
@@ -816,8 +851,12 @@ const german = {
   'For example, opening the feed again':
     'Zum Beispiel den Feed noch einmal öffnen',
   'Confirm {pull}': '{pull} bestätigen',
-  'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.':
-    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, ruht neben dem aktuellen Plan.',
+  'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, aufrecht und mit Blick nach vorn.',
+  'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, blickt nach oben zu dem Impuls, der gerade angekommen ist.',
+  'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.':
+    'Corky, eine rosapflaumenfarbene Korkfigur mit acht röhrenförmigen Gliedmaßen, ruht mit gesenkten Lidern.',
   '{count} minute': '{count} Minute',
   '{count} minutes': '{count} Minuten',
   '{count} second': '{count} Sekunde',
@@ -910,8 +949,8 @@ const german = {
   'Could not save this plan.': 'Dieser Plan konnte nicht gespeichert werden.',
   'Could not set this reminder.':
     'Diese Erinnerung konnte nicht eingestellt werden.',
-  'Pro is no longer active. Choose one of the free Pulls, or use your own words.':
-    'Pro ist nicht mehr aktiv. Wähle einen der kostenlosen Impulse oder verwende deine eigenen Worte.',
+  'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.':
+    'Beside Cue Deluxe ist nicht mehr aktiv. Wähle einen der kostenlosen Impulse oder verwende deine eigenen Worte.',
   'Return to settings': 'Zurück zu den Einstellungen',
   'Onboarding review controls': 'Steuerung der Einführungsprüfung',
   'Previous scene': 'Vorherige Szene',
@@ -933,15 +972,15 @@ const german = {
   'Stop and save plan': 'Anhalten und Plan speichern',
   'Stop the record': 'Schallplatte anhalten',
   'Your current pressing': 'Deine aktuelle Pressung',
-  'Show premium': 'Premium anzeigen',
-  'Hide premium': 'Premium ausblenden',
-  'Your Pro cast. Choose the Pull you want to notice.':
-    'Dein Pro-Ensemble. Wähle den Impuls, den du bemerken möchtest.',
-  'Meet the extra cast. Pro unlocks selection in Settings; the six originals and your own Pull stay free.':
-    'Lerne das zusätzliche Ensemble kennen. Pro schaltet die Auswahl in den Einstellungen frei; die sechs Originale und dein eigener Impuls bleiben kostenlos.',
-  'Premium Pull choices': 'Premium-Impulse',
-  'Pro is no longer active. Choose one of the six free Pulls, or name your own.':
-    'Pro ist nicht mehr aktiv. Wähle einen der sechs kostenlosen Impulse oder benenne deinen eigenen.',
+  'Show Deluxe': 'Deluxe anzeigen',
+  'Hide Deluxe': 'Deluxe ausblenden',
+  'Your Deluxe cast. Choose the Pull you want to notice.':
+    'Dein Deluxe-Ensemble. Wähle den Impuls, den du bemerken möchtest.',
+  'Meet the extra cast. Beside Cue Deluxe unlocks selection in Settings; the six originals and your own Pull stay free.':
+    'Lerne das zusätzliche Ensemble kennen. Beside Cue Deluxe schaltet die Auswahl in den Einstellungen frei; die sechs Originale und dein eigener Impuls bleiben kostenlos.',
+  'Deluxe Pull choices': 'Deluxe-Impulse',
+  'Beside Cue Deluxe is no longer active. Choose one of the six free Pulls, or name your own.':
+    'Beside Cue Deluxe ist nicht mehr aktiv. Wähle einen der sechs kostenlosen Impulse oder benenne deinen eigenen.',
   'Mute audio': 'Audio stummschalten',
   'Unmute audio': 'Audio einschalten',
   'Beta purchase testing. No payment is taken. Test access does not transfer to the store release.':
@@ -949,16 +988,16 @@ const german = {
   'Redeem App Store code': 'App-Store-Code einlösen',
   'Redeem on Google Play': 'Bei Google Play einlösen',
   'Test an offer': 'Ein Angebot testen',
-  'Check premium access': 'Premium-Zugang prüfen',
+  'Check Deluxe access': 'Deluxe-Zugang prüfen',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'Der Store bestätigt Berechtigung, Angebotsdauer und einen möglichen Verlängerungspreis, bevor du zustimmst. Apple- und Google-Codes sind getrennt.',
   'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
     'Einmalcodes können bei Google Play eingelöst werden. Individuelle Abocodes werden im Kaufdialog eingegeben. Kehre danach hierher zurück, um den Zugang zu prüfen.',
-  'Premium access is confirmed.': 'Der Premium-Zugang ist bestätigt.',
-  'No active premium access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
-    'Es wurde kein aktiver Premium-Zugang bestätigt. Wenn du gerade einen Code eingelöst hast, warte kurz und prüfe erneut oder nutze Käufe wiederherstellen.',
-  'Finish redeeming in the App Store. Premium unlocks only when the store confirms it. You can check access here afterward.':
-    'Schließe das Einlösen im App Store ab. Premium wird erst freigeschaltet, wenn der Store es bestätigt. Danach kannst du den Zugang hier prüfen.',
+  'Deluxe access is confirmed.': 'Der Deluxe-Zugang ist bestätigt.',
+  'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
+    'Es wurde kein aktiver Deluxe-Zugang bestätigt. Wenn du gerade einen Code eingelöst hast, warte kurz und prüfe erneut oder nutze Käufe wiederherstellen.',
+  'Finish redeeming in the App Store. Deluxe unlocks only when the store confirms it. You can check access here afterward.':
+    'Schließe das Einlösen im App Store ab. Deluxe wird erst freigeschaltet, wenn der Store es bestätigt. Danach kannst du den Zugang hier prüfen.',
   'Code redemption needs the supported mobile store. Use the redemption link supplied with your offer.':
     'Zum Einlösen des Codes ist ein unterstützter mobiler Store nötig. Nutze den Einlösungslink aus deinem Angebot.',
   'Purchase support': 'Hilfe bei Käufen',
@@ -966,7 +1005,7 @@ const german = {
   'Share this ID privately with support to check an access grant. It is not a password. It does not contain your plan text.':
     'Teile diese ID vertraulich mit dem Support, um eine Zugangsfreigabe zu prüfen. Sie ist kein Passwort und enthält nicht den Text deines Plans.',
   'Test purchases — no charge': 'Testkäufe — keine Kosten',
-  'Test a premium offer': 'Ein Premium-Angebot testen',
+  'Test a Deluxe offer': 'Ein Deluxe-Angebot testen',
   'Apply a 60-day test offer': '60-tägiges Testangebot anwenden',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'Dies simuliert bestätigten Aktionszugang ohne Verlängerung. Es löst keinen echten Apple- oder Google-Code ein.',

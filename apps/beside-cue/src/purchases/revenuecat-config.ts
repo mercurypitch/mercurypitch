@@ -25,8 +25,11 @@ const DEV_FALLBACK_API_KEY = 'test_QQigLtGKqfRKFJNzgOlaVwUQUtP'
 
 const DEFAULT_ENTITLEMENT_ID = 'BeSideCue Pro'
 
-/** What the interface calls the upgrade, independent of the dashboard id. */
-export const PRO_DISPLAY_NAME = 'BeSideCue Pro'
+/**
+ * What the interface calls the upgrade, independent of the dashboard id. The
+ * entitlement above keeps its RevenueCat spelling; only people see this name.
+ */
+export const PRO_DISPLAY_NAME = 'Beside Cue Deluxe'
 
 const TEST_STORE_KEY_PREFIX = 'test_'
 

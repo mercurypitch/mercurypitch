@@ -1,15 +1,16 @@
 // ============================================================
-// Localized pack contract — matched dialogue, translated art, shared ambience
+// Localized pack contract — translated captions, spoken-language audio, shared ambience
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import { findDialogueAudioAssetForLine } from './audio-manifest'
 import { LOCALIZED_CHARACTER_VOICE_RECORDINGS, WITHHELD_LOCALIZED_VOICE_LINE_IDS, } from './localized-character-voice-recordings'
-import { getLocalizedContentPack, getLocalizedGenericPullCharacter, } from './localized-pack'
+import { getLocalizedContentPack, getLocalizedGenericPullCharacter, localizeContentPack, } from './localized-pack'
 import { getRecordedVoiceLines, getVoiceLines } from './localized-voice-lines'
-import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, validateContentPack, } from './pack'
+import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, dialogueLookupFor, validateContentPack, } from './pack'
 import { PREMIUM_PULL_IDS } from './premium-pulls'
 import { FREE_PULL_IDS, pullOptions } from './pulls'
+import { resolveSpokenLocale } from './spoken-locale'
 import { createVoicePlayer } from './voice'
 
 describe('localized content pack', () => {
@@ -19,7 +20,6 @@ describe('localized content pack', () => {
       const generic = getLocalizedGenericPullCharacter(locale)
       expect(generic.id).toBe('generic')
       expect(generic.token.still).toBe(english.token.still)
-      expect(generic.noticeOverlay).toBe(english.noticeOverlay)
       expect(generic.name).not.toBe(english.name)
       expect(generic.token.alt).not.toBe(english.token.alt)
       expect(
@@ -36,14 +36,48 @@ describe('localized content pack', () => {
   })
 
   it.each(['es', 'de'] as const)(
-    'keeps %s captions and registered deliveries together',
+    'shows %s captions over the English recordings while v1 speaks English only',
     (locale) => {
+      expect(resolveSpokenLocale(locale)).toBe('en')
       const pack = getLocalizedContentPack(locale)
       expect(validateContentPack(pack)).toEqual([])
       expect(pack.id).toBe(`${DEFAULT_CONTENT_PACK.id}-${locale}`)
+      expect(pack.audio).toBe(DEFAULT_CONTENT_PACK.audio)
+      expect(pack.lines).toHaveLength(67)
+      const player = createVoicePlayer({ pack })
+      for (const line of pack.lines) {
+        const translated = getVoiceLines(locale).find(
+          (candidate) => candidate.id === line.id,
+        )!
+        const english = getVoiceLines('en').find(
+          (candidate) => candidate.id === line.id,
+        )!
+        expect(line.text).toBe(translated.text)
+        expect(line.captionSha256).toBe(translated.captionSha256)
+        expect(line.spokenCaptionSha256).toBe(english.captionSha256)
+        const asset = findDialogueAudioAssetForLine(
+          pack.audio,
+          dialogueLookupFor(line)!,
+        )
+        expect(asset, line.id).toBeDefined()
+        for (const source of asset!.sources)
+          expect(source.src).toContain('/audio/voice/en/')
+        expect(player.hasRecording(line.id), line.id).toBe(true)
+      }
+      player.dispose()
+    },
+  )
+
+  it.each(['es', 'de'] as const)(
+    'keeps the %s recordings bound to their own captions for the day they are switched on',
+    (locale) => {
+      const pack = localizeContentPack(locale, { spokenLocale: locale })
+      expect(validateContentPack(pack)).toEqual([])
       expect(pack.audio.locale).toBe(locale)
       expect(pack.lines).toBe(getVoiceLines(locale))
-      expect(pack.lines).toHaveLength(67)
+      expect(
+        pack.lines.every((line) => line.spokenCaptionSha256 === undefined),
+      ).toBe(true)
       const dialogue = pack.audio.assets.filter(
         (asset) => asset.lane === 'dialogue',
       )
@@ -78,24 +112,16 @@ describe('localized content pack', () => {
           declarations.has(line.id),
         )
       player.dispose()
-    },
-  )
-
-  it.each(['es', 'de'] as const)(
-    'keeps %s premium captions silent even though English voices exist',
-    (locale) => {
-      const pack = getLocalizedContentPack(locale)
+      // Premium Pulls have translated captions only in that language, and an
+      // English voice must never stand in for a missing translated take.
       for (const id of PREMIUM_PULL_IDS) {
-        const lines = getVoiceLines(locale).filter((line) =>
+        const lines = pack.lines.filter((line) =>
           line.id.startsWith(`pull.${id}.`),
         )
         expect(lines).toHaveLength(3)
         for (const line of lines) {
           expect(
-            findDialogueAudioAssetForLine(pack.audio, {
-              lineId: line.id,
-              captionSha256: line.captionSha256,
-            }),
+            findDialogueAudioAssetForLine(pack.audio, dialogueLookupFor(line)!),
           ).toBeUndefined()
         }
       }
@@ -133,7 +159,6 @@ describe('localized content pack', () => {
         )!
         expect(character.name).toBe(original.name)
         expect(character.token.still).toBe(original.token.still)
-        expect(character.noticeOverlay).toBe(original.noticeOverlay)
       }
       for (const state of CHARACTER_STATES) {
         const localized = pack.characters[0]!.states[state]

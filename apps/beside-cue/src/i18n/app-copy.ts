@@ -21,8 +21,8 @@ const english = {
     'The device reminder could not be removed. Open Settings and try again.',
   'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.':
     'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.',
-  'Choose a free Pull, or restore Pro to use this character.':
-    'Choose a free Pull, or restore Pro to use this character.',
+  'Choose a free Pull, or restore Beside Cue Deluxe to use this character.':
+    'Choose a free Pull, or restore Beside Cue Deluxe to use this character.',
   'This introduction is not available in this build.':
     'This introduction is not available in this build.',
   'Choose one small Side B, then try again.':
@@ -33,18 +33,18 @@ const english = {
     'This V2 introduction is not available in this build.',
   'Choose one clear Side A and Side B, then try again.':
     'Choose one clear Side A and Side B, then try again.',
-  'This character needs Pro. Choose a free Pull or your own words.':
-    'This character needs Pro. Choose a free Pull or your own words.',
-  'Choose a free Pull, or restore Pro in Settings.':
-    'Choose a free Pull, or restore Pro in Settings.',
+  'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.':
+    'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.',
+  'Choose a free Pull, or restore Beside Cue Deluxe in Settings.':
+    'Choose a free Pull, or restore Beside Cue Deluxe in Settings.',
   'Side A': 'Side A',
   'Choose a cue moment, or choose Not sure yet.':
     'Choose a cue moment, or choose Not sure yet.',
   'Choose one of the cue moments shown here.':
     'Choose one of the cue moments shown here.',
   'Your cue': 'Your cue',
-  'Pro is no longer active. Choose a free Pull or your own words.':
-    'Pro is no longer active. Choose a free Pull or your own words.',
+  'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.':
+    'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
   'Your current plan is still active. The new plan could not be saved; try again.':
     'Your current plan is still active. The new plan could not be saved; try again.',
   'Side B': 'Side B',
@@ -115,8 +115,8 @@ const spanish = {
     'No se pudo quitar el recordatorio del dispositivo. Abre Ajustes e inténtalo de nuevo.',
   'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.':
     'La hora está guardada, pero no se pudo actualizar el recordatorio del dispositivo. Abre Ajustes para volver a intentarlo.',
-  'Choose a free Pull, or restore Pro to use this character.':
-    'Elige un impulso gratuito o restaura Pro para usar este personaje.',
+  'Choose a free Pull, or restore Beside Cue Deluxe to use this character.':
+    'Elige un impulso gratuito o restaura Beside Cue Deluxe para usar este personaje.',
   'This introduction is not available in this build.':
     'Esta introducción no está disponible en esta versión.',
   'Choose one small Side B, then try again.':
@@ -127,18 +127,18 @@ const spanish = {
     'La introducción V2 no está disponible en esta versión.',
   'Choose one clear Side A and Side B, then try again.':
     'Elige una cara A y una cara B claras e inténtalo de nuevo.',
-  'This character needs Pro. Choose a free Pull or your own words.':
-    'Este personaje requiere Pro. Elige un impulso gratuito o usa tus propias palabras.',
-  'Choose a free Pull, or restore Pro in Settings.':
-    'Elige un impulso gratuito o restaura Pro en Ajustes.',
+  'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.':
+    'Este personaje requiere Beside Cue Deluxe. Elige un impulso gratuito o usa tus propias palabras.',
+  'Choose a free Pull, or restore Beside Cue Deluxe in Settings.':
+    'Elige un impulso gratuito o restaura Beside Cue Deluxe en Ajustes.',
   'Side A': 'Cara A',
   'Choose a cue moment, or choose Not sure yet.':
     'Elige un momento para la señal o selecciona «Aún no lo sé».',
   'Choose one of the cue moments shown here.':
     'Elige uno de los momentos para la señal que aparecen aquí.',
   'Your cue': 'Tu señal',
-  'Pro is no longer active. Choose a free Pull or your own words.':
-    'Pro ya no está activo. Elige un impulso gratuito o usa tus propias palabras.',
+  'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.':
+    'Beside Cue Deluxe ya no está activo. Elige un impulso gratuito o usa tus propias palabras.',
   'Your current plan is still active. The new plan could not be saved; try again.':
     'Tu plan actual sigue activo. No se pudo guardar el nuevo; inténtalo de nuevo.',
   'Side B': 'Cara B',
@@ -207,8 +207,8 @@ const german = {
     'Die Geräteerinnerung konnte nicht entfernt werden. Öffne die Einstellungen und versuche es erneut.',
   'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.':
     'Deine Uhrzeit ist gespeichert, aber die Geräteerinnerung konnte nicht aktualisiert werden. Versuche es in den Einstellungen erneut.',
-  'Choose a free Pull, or restore Pro to use this character.':
-    'Wähle einen kostenlosen Impuls oder stelle Pro wieder her, um diese Figur zu nutzen.',
+  'Choose a free Pull, or restore Beside Cue Deluxe to use this character.':
+    'Wähle einen kostenlosen Impuls oder stelle Beside Cue Deluxe wieder her, um diese Figur zu nutzen.',
   'This introduction is not available in this build.':
     'Diese Einführung ist in dieser Version nicht verfügbar.',
   'Choose one small Side B, then try again.':
@@ -219,18 +219,18 @@ const german = {
     'Die V2-Einführung ist in dieser Version nicht verfügbar.',
   'Choose one clear Side A and Side B, then try again.':
     'Wähle eine klare Seite A und Seite B und versuche es erneut.',
-  'This character needs Pro. Choose a free Pull or your own words.':
-    'Für diese Figur brauchst du Pro. Wähle einen kostenlosen Impuls oder deine eigenen Worte.',
-  'Choose a free Pull, or restore Pro in Settings.':
-    'Wähle einen kostenlosen Impuls oder stelle Pro in den Einstellungen wieder her.',
+  'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.':
+    'Für diese Figur brauchst du Beside Cue Deluxe. Wähle einen kostenlosen Impuls oder deine eigenen Worte.',
+  'Choose a free Pull, or restore Beside Cue Deluxe in Settings.':
+    'Wähle einen kostenlosen Impuls oder stelle Beside Cue Deluxe in den Einstellungen wieder her.',
   'Side A': 'Seite A',
   'Choose a cue moment, or choose Not sure yet.':
     'Wähle einen Moment für den Hinweis oder «Noch nicht sicher».',
   'Choose one of the cue moments shown here.':
     'Wähle einen der hier gezeigten Hinweismomente.',
   'Your cue': 'Dein Hinweis',
-  'Pro is no longer active. Choose a free Pull or your own words.':
-    'Pro ist nicht mehr aktiv. Wähle einen kostenlosen Impuls oder deine eigenen Worte.',
+  'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.':
+    'Beside Cue Deluxe ist nicht mehr aktiv. Wähle einen kostenlosen Impuls oder deine eigenen Worte.',
   'Your current plan is still active. The new plan could not be saved; try again.':
     'Dein aktueller Plan ist weiterhin aktiv. Der neue Plan konnte nicht gespeichert werden. Versuche es erneut.',
   'Side B': 'Seite B',

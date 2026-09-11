@@ -99,8 +99,9 @@ Journey encounters ARE the Part-1 mechanics — one engine, two frames.
 
 **Deferred meta:** stars, energy/paywall triggers, leaderboards — reattach
 after the fun is proven. Monetization gate (locked earlier, unchanged):
-free = 3 arcade materials + journey chapter 1; Pro = all materials,
-full journey, bosses. Pro fail-states stay (Diamond/bosses can be lost).
+free = 3 arcade materials + journey chapter 1; Beside Cue Deluxe = all
+materials, full journey, bosses. Deluxe fail-states stay (Diamond/bosses can
+be lost).
 
 ## Input modes (Sing / Tap / Listen)
 

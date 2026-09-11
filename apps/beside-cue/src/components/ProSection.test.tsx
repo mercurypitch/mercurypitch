@@ -8,7 +8,7 @@ import { ProSection } from './ProSection'
 
 function props() {
   return {
-    name: 'BeSideCue Pro',
+    name: 'Beside Cue Deluxe',
     available: true,
     status: 'ready' as const,
     isPro: false,

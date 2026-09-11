@@ -1,5 +1,11 @@
 # Spanish and German character preview
 
+> **Status 2026-09-11.** v1 ships English audio only. A Spanish or German
+> interface keeps its translated captions and text but plays the English
+> recordings until the es/de takes have had a translation check. The recordings
+> described below stay packaged and registered; `SPOKEN_AUDIO_LOCALES` in
+> `src/content/spoken-locale.ts` switches them back on.
+
 This phase adds English, Español and Deutsch to the app language control in
 Settings and before the first onboarding tap. The choice is stored on this
 device. Croatian and Italian remain planned, not selectable unfinished locales.

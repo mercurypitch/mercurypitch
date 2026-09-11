@@ -15,7 +15,7 @@ import { LanguageSelector } from '@/components/LanguageSelector'
 import { PremiumPullChoices } from '@/components/PremiumPullChoices'
 import { PunchedTimeDial } from '@/components/PunchedTimeDial'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
-import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
+import { CUSTOM_PULL_ACTIONS, dialogueLookupFor, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, V2_ONBOARDING_AUDIO_ASSET_IDS, } from '@/content'
 import { getLocalizedGenericPullCharacter } from '@/content/localized-pack'
 import { canSelectPull, isPremiumPull } from '@/content/pulls'
 import type { Copy } from '@/i18n/ui-copy'
@@ -201,7 +201,6 @@ function phaseHeading(state: V2OnboardingRuntimeState, copy: Copy): string {
   const pullLabel = state.confirmedPull?.pullLabel ?? copy.t('this Pull')
   switch (state.phase) {
     case 'B00_BRAND_REVEAL':
-      return 'Beside Cue'
     case 'B00_BEGIN_HOLD':
       return copy.t('One Pull. One chosen turn.')
     case 'B01_CORKY_GREETING':
@@ -477,22 +476,18 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   function dialogueAssetId(lineId: string | undefined): string | undefined {
     if (lineId === undefined) return undefined
     const line = findLine(props.contentPack, lineId)
-    if (line?.captionSha256 === undefined) return undefined
-    return findDialogueAudioAssetForLine(props.contentPack.audio, {
-      lineId,
-      captionSha256: line.captionSha256,
-    })?.id
+    const lookup = line === undefined ? undefined : dialogueLookupFor(line)
+    if (lookup === undefined) return undefined
+    return findDialogueAudioAssetForLine(props.contentPack.audio, lookup)?.id
   }
 
   function dialogueSafetyTimeoutMs(snapshot: V2OnboardingRuntimeState): number {
     const lineId = lineIdForState(snapshot)
     if (lineId === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
     const line = findLine(props.contentPack, lineId)
-    if (line?.captionSha256 === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
-    const asset = findDialogueAudioAssetForLine(props.contentPack.audio, {
-      lineId,
-      captionSha256: line.captionSha256,
-    })
+    const lookup = line === undefined ? undefined : dialogueLookupFor(line)
+    if (lookup === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
+    const asset = findDialogueAudioAssetForLine(props.contentPack.audio, lookup)
     if (asset === undefined) return DIALOGUE_SAFETY_TIMEOUT_MS
     const longestDeclaredSourceMs = Math.max(
       0,
@@ -684,7 +679,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     setSideBKey(undefined)
     setPullAccessNotice(
       copy.t(
-        'Pro is no longer active. Choose one of the free Pulls, or use your own words.',
+        'Beside Cue Deluxe is no longer active. Choose one of the free Pulls, or use your own words.',
       ),
     )
     dispatch({ type: 'PULL_ACCESS_REVOKED' })
@@ -1186,6 +1181,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       'COMPLETE',
     ].includes(state().phase),
   )
+  const isOpeningBrandPhase = createMemo(
+    () =>
+      state().phase === 'B00_BRAND_REVEAL' ||
+      state().phase === 'B00_BEGIN_HOLD',
+  )
 
   return (
     <main
@@ -1354,8 +1354,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               <div
                 class={styles.brandReveal}
                 classList={{
-                  [styles.brandRevealOpening]:
-                    state().phase === 'B00_BRAND_REVEAL',
+                  [styles.brandRevealOpening]: isOpeningBrandPhase(),
                 }}
               >
                 <BrandMark />
@@ -1419,6 +1418,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
               }}
               id="v2-onboarding-title"
               tabIndex={-1}
+              aria-label={
+                isOpeningBrandPhase()
+                  ? `Beside Cue. ${copy.t('One Pull. One chosen turn.')}`
+                  : undefined
+              }
             >
               {phaseHeading(state(), copy)}
             </h1>

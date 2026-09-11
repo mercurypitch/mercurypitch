@@ -3,6 +3,7 @@
 // ============================================================
 
 import { For, Show } from 'solid-js'
+import { resolveSpokenLocale } from '@/content/spoken-locale'
 import { useLocale } from '@/i18n/context'
 import type { AppLocale } from '@/i18n/locale'
 import { AVAILABLE_LOCALES, LANGUAGE_NAMES } from '@/i18n/locale'
@@ -46,7 +47,10 @@ export function LanguageSelector(props: LanguageSelectorProps) {
       >
         <p class={styles.note}>
           {copy.t(
-            'Corky and the six original Pulls speak this language. Premium Pulls have translated captions only.',
+            resolveSpokenLocale(localeContext.locale()) ===
+              localeContext.locale()
+              ? 'Corky and the six original Pulls speak this language. Deluxe Pulls have translated captions only.'
+              : 'Corky and the Pulls speak English for now. Captions follow this language.',
           )}
         </p>
       </Show>

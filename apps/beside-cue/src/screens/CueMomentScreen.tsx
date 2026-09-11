@@ -3,7 +3,7 @@
 // ============================================================
 import { createMemo, onMount } from 'solid-js'
 import { MascotStage } from '@/components/MascotStage'
-import { CORKY_V023_REST_ART } from '@/content'
+import { CORKY_NOTICE_ART } from '@/content'
 import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 
@@ -15,8 +15,8 @@ interface CueMomentScreenProps {
   pending: boolean
   /**
    * The pull category this cue is about, so the mascot shows that pull's own
-   * creature rather than the generic token. Absent for a self-named pull,
-   * which the content pack answers with the canon turquoise cue.
+   * approved render. Absent for a self-named pull, which shows no creature:
+   * the stage draws its neutral record-label mark in that spot instead.
    */
   pullId?: string
   onChooseBSide: () => void
@@ -27,10 +27,8 @@ interface CueMomentScreenProps {
 export function CueMomentScreen(props: CueMomentScreenProps) {
   const copy = useCopy()
   const corkyArt = createMemo(() => ({
-    ...CORKY_V023_REST_ART,
-    alt: copy.t(
-      'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
-    ),
+    ...CORKY_NOTICE_ART,
+    alt: copy.t(CORKY_NOTICE_ART.alt),
   }))
   let heading: HTMLHeadingElement | undefined
   onMount(() => {

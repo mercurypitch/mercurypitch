@@ -31,6 +31,8 @@ describe('LanguageSelector', () => {
         name: 'Sprache der Benutzeroberfläche wählen',
       }),
     ).toHaveValue('de')
-    expect(screen.getByText(/übersetzte Untertitel/iu)).toBeInTheDocument()
+    // v1 speaks English under translated captions (content/spoken-locale.ts);
+    // the note says so in the chosen language.
+    expect(screen.getByText(/sprechen vorerst Englisch/iu)).toBeInTheDocument()
   })
 })

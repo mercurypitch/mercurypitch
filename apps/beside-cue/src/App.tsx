@@ -21,7 +21,7 @@ import { getLocalizedCustomPullActions, getLocalizedMoments, } from './content/l
 import { localizeCueForDisplay } from './content/localized-cue'
 import { getLocalizedContentPack, getLocalizedGenericPullCharacter, } from './content/localized-pack'
 import type { MomentContext, MomentId } from './content/moments'
-import { canSelectPull } from './content/pulls'
+import { canonicalPullId, canSelectPull } from './content/pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_IDS } from './content/v2-onboarding-audio-manifest'
 import type { AppCopySource } from './i18n/app-copy'
 import { LocaleProvider } from './i18n/context'
@@ -488,8 +488,10 @@ export function App(props: AppProps) {
       label: suggestion.text,
     })),
   )
-  const bSideChoices = createMemo<readonly BSideChoice[]>(() => {
-    const pull = selectedPull()
+
+  function bSideChoicesFor(
+    pull: PullOption | undefined,
+  ): readonly BSideChoice[] {
     if (pull?.bSideSuggestions !== undefined) {
       return pull.bSideSuggestions.map(actionChoice)
     }
@@ -499,7 +501,11 @@ export function App(props: AppProps) {
     return legacy.length > 0
       ? legacy
       : getLocalizedCustomPullActions(locale()).map(actionChoice)
-  })
+  }
+
+  const bSideChoices = createMemo<readonly BSideChoice[]>(() =>
+    bSideChoicesFor(selectedPull()),
+  )
   const cinematicBSideOptions = createMemo<
     readonly CinematicOnboardingBSideOption[]
   >(() => {
@@ -845,8 +851,63 @@ export function App(props: AppProps) {
     setSetupError(undefined)
   }
 
+  // Replacing starts from the saved plan, so the person changes only what
+  // they want. Every choice is seeded by its stable id and falls back to the
+  // saved words when this build has no matching choice; a custom Pull, cue or
+  // Side B seeds the free-text field it was written in.
+  function seedSetupFromPlan(plan: Cue): void {
+    const savedPullId =
+      plan.pullCategoryId === undefined
+        ? undefined
+        : canonicalPullId(plan.pullCategoryId)
+    const savedPull = config().pullOptions.find(
+      (option) => option.id === savedPullId,
+    )
+    if (savedPull === undefined) {
+      setSelectedPullId('custom')
+      setCustomPullText(plan.pullText)
+    } else {
+      setSelectedPullId(savedPull.id)
+    }
+
+    const savedAnchor = savedPull?.anchorSuggestions?.find(
+      (anchor) => anchor.id === plan.cueContextSuggestionId,
+    )
+    if (savedAnchor !== undefined) {
+      setCueContextSelection({ kind: 'suggested', id: savedAnchor.id })
+    } else if (plan.cueContextText !== undefined) {
+      setCueContextSelection({ kind: 'custom' })
+      setCustomCueContextText(plan.cueContextText)
+    } else {
+      setCueContextSelection({ kind: 'not-sure' })
+    }
+
+    const choices = bSideChoicesFor(savedPull)
+    const savedChoice =
+      plan.bSideSuggestionId === undefined
+        ? choices.find(
+            (choice) =>
+              choice.suggestionId === undefined &&
+              choice.label === plan.bSideText,
+          )
+        : choices.find(
+            (choice) => choice.suggestionId === plan.bSideSuggestionId,
+          )
+    if (savedChoice === undefined) {
+      setCustomBSideSelected(true)
+      setCustomBSideText(plan.bSideText)
+    } else {
+      setSelectedBSideKey(savedChoice.key)
+      setSelectedBSideText(savedChoice.label)
+    }
+  }
+
   function beginSetup(nextMode: SetupMode): void {
     resetSetup(nextMode)
+    if (nextMode === 'replace') {
+      const plan = currentCue(enqueuedState)
+      if (plan !== undefined) seedSetupFromPlan(plan)
+    }
     setScreen('choose-pull')
   }
 
@@ -868,7 +929,9 @@ export function App(props: AppProps) {
 
     resetSetup(setupMode())
     setSetupError(
-      notice('Pro is no longer active. Choose a free Pull or your own words.'),
+      notice(
+        'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
+      ),
     )
     setScreen('choose-pull')
   })
@@ -905,7 +968,7 @@ export function App(props: AppProps) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
-          'Choose a free Pull, or restore Pro to use this character.',
+          'Choose a free Pull, or restore Beside Cue Deluxe to use this character.',
         ),
       })
     }
@@ -1040,7 +1103,7 @@ export function App(props: AppProps) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
-          'Choose a free Pull, or restore Pro to use this character.',
+          'Choose a free Pull, or restore Beside Cue Deluxe to use this character.',
         ),
       })
     }
@@ -1146,7 +1209,7 @@ export function App(props: AppProps) {
     if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
       setSetupError(
         notice(
-          'This character needs Pro. Choose a free Pull or your own words.',
+          'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.',
         ),
       )
       return
@@ -1209,7 +1272,9 @@ export function App(props: AppProps) {
         config().pullOptions,
       )
     ) {
-      setSetupError(notice('Choose a free Pull, or restore Pro in Settings.'))
+      setSetupError(
+        notice('Choose a free Pull, or restore Beside Cue Deluxe in Settings.'),
+      )
       return
     }
     try {
@@ -1279,7 +1344,7 @@ export function App(props: AppProps) {
     ) {
       setSetupError(
         notice(
-          'Pro is no longer active. Choose a free Pull or your own words.',
+          'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
         ),
       )
       setScreen('choose-pull')
@@ -1345,7 +1410,7 @@ export function App(props: AppProps) {
               at: now,
             }).state
           : currentState
-      const nextState =
+      const planState =
         replacing && existingCue !== undefined
           ? replaceCue(setupState, {
               ...cueInput,
@@ -1353,6 +1418,19 @@ export function App(props: AppProps) {
             }).state
           : activateCue(createCue(setupState, cueInput).state, cueInput.id, now)
               .state
+      // The daily reminder belongs to the person, not to the Pull: a replaced
+      // plan keeps its time on a fresh rule for the new cue, and the device
+      // reminder is re-issued for that cue below. The time itself still
+      // changes only in Settings.
+      const nextState =
+        replacing && previousRule !== undefined
+          ? setDailyTargetTimeRule(planState, {
+              id: appServices.createId(),
+              cueId: cueInput.id,
+              localTime: previousRule.localTime,
+              at: now,
+            }).state
+          : planState
 
       setSchedulePending(true)
       setScheduleMessage(undefined)

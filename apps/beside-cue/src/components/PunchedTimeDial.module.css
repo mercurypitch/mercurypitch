@@ -96,6 +96,13 @@
   outline-offset: 5px;
 }
 
+/* Must be active before pointerdown: changing this only while dragging is
+   too late for iOS to stop claiming the vertical parts of a circular turn.
+   Pinch zoom remains native; scroll starts outside the ready record. */
+.stage[data-pointer-ready='true'] {
+  touch-action: pinch-zoom;
+}
+
 .dial[data-dragging='true'] .stage {
   cursor: grabbing;
 }
@@ -149,6 +156,7 @@
   text-transform: uppercase;
   transform: translateX(-50%);
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .dial[data-dragging='true'] .gestureHint {

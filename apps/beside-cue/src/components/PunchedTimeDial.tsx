@@ -1,8 +1,12 @@
+// ============================================================
+// Punched Clock — a ready record owns each complete circular gesture
+// ============================================================
+
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { useCopy } from '@/i18n/ui-copy'
 import { NoSelect } from '@/interaction/selection'
 import type { TimeDialLayer } from './punched-time-dial-math'
-import { applyDialAngularDelta, classifyTimeDialLayer, classifyTimeDialTouchIntent, formatClockTime, normalizeAngularDelta, parseClockTime, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
+import { applyDialAngularDelta, classifyTimeDialLayer, formatClockTime, normalizeAngularDelta, parseClockTime, PUNCHED_DIAL_GEOMETRY, segmentCrossesTimeDialSpindle, snapMinutesToInterval, stepDialTime, wrapDayMinutes, } from './punched-time-dial-math'
 import type { TimeDialPointerReadiness } from './punched-time-dial-readiness'
 import { createTimeDialPointerReadiness } from './punched-time-dial-readiness'
 import styles from './PunchedTimeDial.module.css'
@@ -20,6 +24,13 @@ export interface PunchedTimeDialProps {
   readonly onHaptic?: (strength: 'light' | 'medium') => void
 }
 
+interface DialPoint {
+  readonly x: number
+  readonly y: number
+  readonly angle: number
+  readonly radius: number
+}
+
 interface DialGesture {
   readonly pointerId: number
   readonly layer: TimeDialLayer
@@ -27,22 +38,17 @@ interface DialGesture {
   readonly startMinutes: number
   readonly startMinuteAngle: number
   readonly startHourAngle: number
+  readonly startX: number
+  readonly startY: number
+  readonly bounds: DOMRect
+  moved: boolean
+  crossingSpindle: boolean
+  lastX: number
+  lastY: number
   lastAngle: number
   lastTime: number
   accumulatedAngle: number
   velocity: number
-}
-
-interface DialGestureCandidate {
-  readonly pointerId: number
-  readonly layer: TimeDialLayer
-  readonly startAngle: number
-  readonly startTime: number
-  readonly startX: number
-  readonly startY: number
-  readonly centerX: number
-  readonly centerY: number
-  readonly scrollRevision: number
 }
 
 interface RegistrationMark {
@@ -83,6 +89,8 @@ const MINUTE_COAST_LIMIT_DEGREES = 75
 const HOUR_COAST_LIMIT_DEGREES = 30
 const SETTLE_DURATION_MS = 260
 const HAPTIC_INTERVAL_MS = 45
+const DRAG_SLOP_PX = 4
+const RELEASE_MAX_IDLE_MS = 100
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
@@ -100,6 +108,13 @@ function eventTime(event: PointerEvent): number {
   return event.timeStamp > 0 ? event.timeStamp : performance.now()
 }
 
+function sameDialGeometry(before: DOMRect, after: DOMRect): boolean {
+  return ['left', 'top', 'width', 'height'].every((key) => {
+    const edge = key as 'left' | 'top' | 'width' | 'height'
+    return Math.abs(before[edge] - after[edge]) < 0.5
+  })
+}
+
 export function PunchedTimeDial(props: PunchedTimeDialProps) {
   const copy = useCopy()
   const id = createUniqueId()
@@ -115,6 +130,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
   )
   const [activeLayer, setActiveLayer] = createSignal<TimeDialLayer>('minute')
   const [dragging, setDragging] = createSignal(false)
+  const [pointerReady, setPointerReady] = createSignal(false)
   const [selectionMade, setSelectionMade] = createSignal(initialValue !== null)
   const [reducedMotion, setReducedMotion] = createSignal(false)
   const [announcement, setAnnouncement] = createSignal('')
@@ -124,7 +140,6 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
 
   let dialElement!: HTMLDivElement
   let gesture: DialGesture | undefined
-  let gestureCandidate: DialGestureCandidate | undefined
   let pointerReadiness: TimeDialPointerReadiness | undefined
   let settling = false
   let settleAnimation: number | undefined
@@ -275,15 +290,16 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     settleAnimation = window.requestAnimationFrame(frame)
   }
 
-  function pointOnDial(event: PointerEvent): {
-    readonly angle: number
-    readonly radius: number
-  } {
-    const bounds = dialElement.getBoundingClientRect()
+  function pointOnDial(
+    event: PointerEvent,
+    bounds = dialElement.getBoundingClientRect(),
+  ): DialPoint {
     const size = Math.min(bounds.width, bounds.height)
     const x = ((event.clientX - bounds.left) / size) * 440 - CENTER
     const y = ((event.clientY - bounds.top) / size) * 440 - CENTER
     return {
+      x,
+      y,
       angle: (Math.atan2(y, x) * 180) / Math.PI,
       radius: Math.hypot(x, y),
     }
@@ -318,6 +334,15 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       return
     }
 
+    // Touching a ring chooses its layer, not a reminder time. A short tap
+    // must not silently commit the displayed draft or round an existing time.
+    if (!currentGesture.moved) {
+      gesture = undefined
+      setDragging(false)
+      safelyReleasePointer(pointerId)
+      return
+    }
+
     const coastLimit =
       currentGesture.layer === 'hour'
         ? HOUR_COAST_LIMIT_DEGREES
@@ -325,6 +350,10 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     const coast =
       projectVelocity &&
       currentGesture.scrollRevision === pointerReadiness?.revision() &&
+      sameDialGeometry(
+        currentGesture.bounds,
+        dialElement.getBoundingClientRect(),
+      ) &&
       !reducedMotion()
         ? clamp(
             currentGesture.velocity * RELEASE_PROJECTION_MS,
@@ -353,7 +382,6 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
   }
 
   function cancelActiveGesture(): void {
-    gestureCandidate = undefined
     if (gesture === undefined) return
     finishGesture(gesture.pointerId, false)
   }
@@ -361,7 +389,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
   function beginGesture(
     event: PointerEvent,
     layer: TimeDialLayer,
-    startAngle: number,
+    point: DialPoint,
     startTime: number,
   ): void {
     stopSettle(true)
@@ -377,7 +405,14 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       startMinutes: displayMinutes(),
       startMinuteAngle: minuteAngle(),
       startHourAngle: hourAngle(),
-      lastAngle: startAngle,
+      startX: event.clientX,
+      startY: event.clientY,
+      bounds: dialElement.getBoundingClientRect(),
+      moved: false,
+      crossingSpindle: false,
+      lastX: point.x,
+      lastY: point.y,
+      lastAngle: point.angle,
       lastTime: startTime,
       accumulatedAngle: 0,
       velocity: 0,
@@ -396,7 +431,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       event.button !== 0 ||
       event.isPrimary === false ||
       gesture !== undefined ||
-      gestureCandidate !== undefined ||
+      (event.pointerType !== 'mouse' && !pointerReady()) ||
       !pointerInteractionReady()
     ) {
       return
@@ -406,61 +441,15 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     const layer = classifyTimeDialLayer(point.radius)
     if (layer === null) return
 
-    if (event.pointerType === 'touch') {
-      const bounds = dialElement.getBoundingClientRect()
-      const size = Math.min(bounds.width, bounds.height)
-      gestureCandidate = {
-        pointerId: event.pointerId,
-        layer,
-        startAngle: point.angle,
-        startTime: eventTime(event),
-        startX: event.clientX,
-        startY: event.clientY,
-        centerX: bounds.left + size / 2,
-        centerY: bounds.top + size / 2,
-        scrollRevision: pointerReadiness?.revision() ?? 0,
-      }
-      return
-    }
-
-    event.preventDefault()
-    beginGesture(event, layer, point.angle, eventTime(event))
+    // Readiness sets touch-action BEFORE contact. Once admitted, this ring
+    // owns the entire circular drag, including its vertical parts. Pointer
+    // capture alone cannot override a browser pan that was already allowed.
+    if (event.pointerType !== 'touch') event.preventDefault()
+    dialElement.focus({ preventScroll: true })
+    beginGesture(event, layer, point, eventTime(event))
   }
 
   function handlePointerMove(event: PointerEvent): void {
-    const candidate = gestureCandidate
-    if (candidate !== undefined && event.pointerId === candidate.pointerId) {
-      if (
-        candidate.scrollRevision !== pointerReadiness?.revision() ||
-        !pointerInteractionReady()
-      ) {
-        gestureCandidate = undefined
-        return
-      }
-      const intent = classifyTimeDialTouchIntent({
-        startX: candidate.startX,
-        startY: candidate.startY,
-        currentX: event.clientX,
-        currentY: event.clientY,
-        centerX: candidate.centerX,
-        centerY: candidate.centerY,
-      })
-      if (intent === 'yield') {
-        gestureCandidate = undefined
-        return
-      }
-      if (intent === 'pending') return
-
-      gestureCandidate = undefined
-      event.preventDefault()
-      beginGesture(
-        event,
-        candidate.layer,
-        candidate.startAngle,
-        candidate.startTime,
-      )
-    }
-
     const currentGesture = gesture
     if (
       currentGesture === undefined ||
@@ -469,14 +458,46 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       return
     }
 
-    if (currentGesture.scrollRevision !== pointerReadiness?.revision()) {
+    const bounds = dialElement.getBoundingClientRect()
+    if (
+      currentGesture.scrollRevision !== pointerReadiness?.revision() ||
+      !sameDialGeometry(currentGesture.bounds, bounds)
+    ) {
       finishGesture(event.pointerId, false)
       return
     }
 
     event.preventDefault()
-    const point = pointOnDial(event)
+    if (
+      !currentGesture.moved &&
+      Math.hypot(
+        event.clientX - currentGesture.startX,
+        event.clientY - currentGesture.startY,
+      ) < DRAG_SLOP_PX
+    )
+      return
+    currentGesture.moved = true
+    const point = pointOnDial(event, bounds)
     const now = eventTime(event)
+    const crossedSpindle = segmentCrossesTimeDialSpindle(
+      currentGesture.lastX,
+      currentGesture.lastY,
+      point.x,
+      point.y,
+    )
+    currentGesture.lastX = point.x
+    currentGesture.lastY = point.y
+    // Angle is undefined at the spindle. Rebase on exit instead of turning a
+    // straight pass through the centre into a sudden half-revolution, even
+    // when fast movement delivers no sample inside the dead zone itself.
+    if (crossedSpindle || currentGesture.crossingSpindle) {
+      currentGesture.crossingSpindle =
+        point.radius <= PUNCHED_DIAL_GEOMETRY.spindleDeadZoneRadius
+      currentGesture.lastAngle = point.angle
+      currentGesture.lastTime = now
+      currentGesture.velocity = 0
+      return
+    }
     const delta = normalizeAngularDelta(point.angle - currentGesture.lastAngle)
     const elapsed = Math.max(8, now - currentGesture.lastTime)
     currentGesture.accumulatedAngle += delta
@@ -512,11 +533,12 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     event: PointerEvent,
     projectVelocity: boolean,
   ): void {
-    if (gestureCandidate?.pointerId === event.pointerId) {
-      gestureCandidate = undefined
-      return
-    }
-    finishGesture(event.pointerId, projectVelocity)
+    finishGesture(
+      event.pointerId,
+      projectVelocity &&
+        gesture !== undefined &&
+        eventTime(event) - gesture.lastTime <= RELEASE_MAX_IDLE_MS,
+    )
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
@@ -553,6 +575,16 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       setActiveLayer(activeLayer() === 'hour' ? 'minute' : 'hour')
+    }
+  }
+
+  function handleAdditionalTouch(event: PointerEvent): void {
+    if (
+      event.pointerType === 'touch' &&
+      gesture !== undefined &&
+      event.pointerId !== gesture.pointerId
+    ) {
+      cancelActiveGesture()
     }
   }
 
@@ -602,13 +634,17 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       syncRotors(displayMinutes())
     }
     updateMotionPreference()
-    pointerReadiness = createTimeDialPointerReadiness(dialElement)
+    pointerReadiness = createTimeDialPointerReadiness(dialElement, {
+      onReadyChange: setPointerReady,
+    })
     motionQuery?.addEventListener?.('change', updateMotionPreference)
     window.addEventListener('blur', cancelActiveGesture)
+    window.addEventListener('pointerdown', handleAdditionalTouch, true)
 
     onCleanup(() => {
       motionQuery?.removeEventListener?.('change', updateMotionPreference)
       window.removeEventListener('blur', cancelActiveGesture)
+      window.removeEventListener('pointerdown', handleAdditionalTouch, true)
       pointerReadiness?.dispose()
       pointerReadiness = undefined
     })
@@ -656,6 +692,11 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
           class={styles.stage}
           {...NoSelect}
           data-callout="none"
+          data-pointer-ready={
+            props.disabled !== true && (pointerReady() || dragging())
+              ? 'true'
+              : 'false'
+          }
           role="slider"
           tabIndex={props.disabled === true ? -1 : 0}
           aria-label={
@@ -835,7 +876,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
                 ? copy.t('Turning hours')
                 : copy.t('Turning minutes')
               : selectionMade()
-                ? copy.t('Sweep sideways')
+                ? copy.t('Turn in a circle')
                 : copy.t('Sweep to choose')}
           </span>
           <Show when={pulse()} keyed>
@@ -902,7 +943,7 @@ export function PunchedTimeDial(props: PunchedTimeDialProps) {
       </label>
       <p class={styles.mechanicCaption}>
         {copy.t(
-          'Swipe sideways at the top or bottom. Outer edge sets minutes; gold hub sets hours.',
+          'Turn the record in a circle. Outer edge: minutes. Gold hub: hours. Scroll beside the record.',
         )}
       </p>
       <span class={styles.srOnly} aria-live="polite" aria-atomic="true">

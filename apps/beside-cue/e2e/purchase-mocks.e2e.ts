@@ -16,11 +16,11 @@ for (const viewport of [
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/?devSeed&mockPurchases')
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
-    const pro = page.getByRole('region', { name: 'BeSideCue Pro' })
+    const pro = page.getByRole('region', { name: 'Beside Cue Deluxe' })
     const offer = pro.getByRole('button', { name: /^Test an offer/ })
     await expect(pro.getByText('Active', { exact: true })).toHaveCount(0)
     await offer.click()
-    const dialog = page.getByRole('dialog', { name: 'Test a premium offer' })
+    const dialog = page.getByRole('dialog', { name: 'Test a Deluxe offer' })
     const apply = dialog.getByRole('button', {
       name: 'Apply a 60-day test offer',
     })
@@ -44,7 +44,7 @@ for (const viewport of [
     ).toBeLessThanOrEqual(viewport.width)
     await apply.click()
     await expect(pro.getByText('Active', { exact: true })).toBeVisible()
-    await expect(pro.getByText('Premium access is confirmed.')).toBeVisible()
+    await expect(pro.getByText('Deluxe access is confirmed.')).toBeVisible()
     await pro.screenshot({ path: info.outputPath('premium-active.png') })
     await page.reload()
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
@@ -54,18 +54,20 @@ for (const viewport of [
     await expect(pro.getByText('Active', { exact: true })).toHaveCount(0)
     await pro.getByRole('button', { name: 'Restore purchases' }).click()
     await expect(pro.getByText('Active', { exact: true })).toHaveCount(0)
-    await pro.getByRole('button', { name: 'Unlock BeSideCue Pro' }).click()
+    await pro.getByRole('button', { name: 'Unlock Beside Cue Deluxe' }).click()
     await page
       .getByRole('button', { name: 'Close without changing anything' })
       .click()
     await expect(pro.getByText('Active', { exact: true })).toHaveCount(0)
-    await pro.getByRole('button', { name: 'Unlock BeSideCue Pro' }).click()
+    await pro.getByRole('button', { name: 'Unlock Beside Cue Deluxe' }).click()
     await page
       .getByRole('dialog')
       .getByRole('button', { name: /^Monthly/ })
       .click()
     await expect(pro.getByText('Active', { exact: true })).toBeVisible()
-    await expect(pro.getByText('Thank you. Pro is active.')).toBeVisible()
+    await expect(
+      pro.getByText('Thank you. Beside Cue Deluxe is active.'),
+    ).toBeVisible()
   })
 }
 
@@ -77,7 +79,7 @@ test('beta offer remains usable at 200% text @smoke', async ({
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await page.addStyleTag({ content: 'html { font-size: 200% !important; }' })
   await page.getByRole('button', { name: /^Test an offer/ }).click()
-  const dialog = page.getByRole('dialog', { name: 'Test a premium offer' })
+  const dialog = page.getByRole('dialog', { name: 'Test a Deluxe offer' })
   await dialog
     .getByRole('button', { name: 'Close without changing anything' })
     .scrollIntoViewIfNeeded()

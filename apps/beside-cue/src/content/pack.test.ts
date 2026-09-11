@@ -4,7 +4,8 @@ import { assetUrls } from './assets'
 import type { AudioAssetManifest, AudioSourceVariant } from './audio-manifest'
 import { MOMENTS } from './moments'
 import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, findCharacter, findCueEntity, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, validateContentPack, } from './pack'
-import { pullOptions } from './pulls'
+import { PREMIUM_PULL_IDS } from './premium-pulls'
+import { FREE_PULL_IDS, pullOptions } from './pulls'
 import { V2_ONBOARDING_AUDIO_ASSET_MANIFEST } from './v2-onboarding-audio-manifest'
 import { CANONICAL_VOICE_LINES } from './voice-lines'
 
@@ -44,7 +45,7 @@ function manifestWithRecording(
 
 describe('content pack', () => {
   it('ships the exact canonical V2 registry with its approved audio layer', () => {
-    expect(DEFAULT_CONTENT_PACK.version).toBe('0.6.0')
+    expect(DEFAULT_CONTENT_PACK.version).toBe('0.7.0')
     expect(DEFAULT_CONTENT_PACK.lines).toBe(CANONICAL_VOICE_LINES)
     expect(DEFAULT_CONTENT_PACK.lines).toHaveLength(67)
     expect(
@@ -152,7 +153,6 @@ describe('content pack', () => {
         id: 'not-a-pull',
         name: 'Ghost',
         token: { still: '/x.webp', alt: '' },
-        noticeOverlay: { still: '/y.webp', alt: '' },
         voiceNote: '',
       },
     ]
@@ -188,13 +188,9 @@ describe('content pack', () => {
       ...DEFAULT_CONTENT_PACK.characters.flatMap((character) =>
         CHARACTER_STATES.map((state) => character.states[state]),
       ),
-      ...[
-        ...DEFAULT_CONTENT_PACK.pullCharacters,
-        GENERIC_PULL_CHARACTER,
-      ].flatMap((pullCharacter) => [
-        pullCharacter.token,
-        pullCharacter.noticeOverlay,
-      ]),
+      ...[...DEFAULT_CONTENT_PACK.pullCharacters, GENERIC_PULL_CHARACTER].map(
+        (pullCharacter) => pullCharacter.token,
+      ),
     ]
 
     const missing = slots
@@ -209,11 +205,30 @@ describe('content pack', () => {
     expect(slots.length).toBeGreaterThan(0)
   })
 
-  it('uses the approved versioned Pull studies with literal descriptions', () => {
+  it('gives each free Pull the landing’s approved cast render', () => {
+    // The landing's cast art is a tight crop of these exact files. Sugarlump
+    // in particular must stay the white, blocky render: an earlier rendition
+    // of the character exists and is not approved for the app.
+    const renders: Readonly<Record<(typeof FREE_PULL_IDS)[number], string>> = {
+      scrolling: 'the-scroll',
+      snacking: 'sugarlump',
+      'familiar-ritual': 'the-usual',
+      'two-minute-pause': 'ember',
+      'one-tap-convenience': 'dinger',
+      avoidance: 'the-fog',
+    }
+    for (const id of FREE_PULL_IDS) {
+      expect(findPullCharacter(DEFAULT_CONTENT_PACK, id)?.token.still).toBe(
+        `/art/pulls/pull-${renders[id]}-nanobanana-v0_1-512.webp`,
+      )
+    }
+  })
+
+  it('uses the approved versioned Pull renders with literal descriptions', () => {
     for (const pullCharacter of DEFAULT_CONTENT_PACK.pullCharacters) {
       expect(pullCharacter.token.still).toMatch(
-        pullCharacter.noticeLayout === 'token'
-          ? /[/]onboarding[/]pull-expansion-v1[/]the-.+-token-v0_1[.]webp$/u
+        (PREMIUM_PULL_IDS as readonly string[]).includes(pullCharacter.id)
+          ? /[/]art[/]pulls[/]pull-the-.+-nanobanana-v0_1-512[.]webp$/u
           : /[/]art[/]pulls[/]pull-.+-nanobanana-v0_1-512[.]webp$/u,
       )
       expect(pullCharacter.token.alt).toMatch(

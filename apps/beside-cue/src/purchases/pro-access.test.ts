@@ -159,7 +159,7 @@ describe('purchasing', () => {
     await access.purchase(plan())
 
     expect(access.isPro()).toBe(true)
-    expect(access.notice()).toMatch(/pro is active/iu)
+    expect(access.notice()).toMatch(/deluxe is active/iu)
     dispose()
   })
 
@@ -243,7 +243,7 @@ describe('the paywall', () => {
 
     expect(probe.calls.customerRefreshes).toBe(readsBefore + 1)
     expect(access.isPro()).toBe(true)
-    expect(access.notice()).toMatch(/pro is active/iu)
+    expect(access.notice()).toMatch(/deluxe is active/iu)
     dispose()
   })
 

@@ -3,9 +3,10 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { PREMIUM_PULL_IDS } from '@/content/premium-pulls'
 import { BUILT_IN_PULL_IDS } from '@/content/pulls'
 import type { V2OnboardingMediaPack } from './v2-onboarding-media-pack'
-import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingRecordMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_MEDIA_PACK, } from './v2-onboarding-media-pack'
+import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingRecordMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_MEDIA_PACK, V2_ONBOARDING_PULL_MOTION_HOLDS, } from './v2-onboarding-media-pack'
 
 const BASE_ROOT = '/onboarding/corky-v2.4'
 const V2_5_ROOT = '/onboarding/corky-v2.5'
@@ -217,5 +218,85 @@ describe('V2 onboarding media pack', () => {
         moment: 'present',
       }),
     ).toBeUndefined()
+  })
+})
+
+describe('Pull motion holds', () => {
+  const PILLOW_SETTLED = `${EXPANSION_ROOT}/p03-the-pillow-settled-v0_1.webp`
+  const TABLE_READY = `${BASE_ROOT}/stills/p02-table-ready-v0_17.webp`
+  const MOVING_PREMIUM_BEATS = PREMIUM_PULL_IDS.filter(
+    (id) => id !== 'the-pillow',
+  ).flatMap((id) => [
+    [id, 'present', `${EXPANSION_ROOT}/b03-${id}-present-v0_2.mp4`] as const,
+    [id, 'recede', `${EXPANSION_ROOT}/b05-${id}-recede-v0_2.mp4`] as const,
+  ])
+
+  it('shows Pillow settled where its defective entrance clip would have played', () => {
+    const request = resolveV2OnboardingMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
+      targetId: 'pull:the-pillow:present',
+      pullId: 'the-pillow',
+      moment: 'present',
+    })
+
+    expect(request).toMatchObject({
+      targetKind: 'automatic',
+      primary: { kind: 'still', src: PILLOW_SETTLED },
+      reducedStill: { kind: 'still', src: PILLOW_SETTLED },
+      poster: { kind: 'still', src: TABLE_READY },
+    })
+  })
+
+  it('returns Pillow to the P02 plate where its defective recede clip would have played', () => {
+    const request = resolveV2OnboardingMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
+      targetId: 'pull:the-pillow:recede',
+      pullId: 'the-pillow',
+      moment: 'recede',
+    })
+
+    expect(request).toMatchObject({
+      targetKind: 'automatic',
+      primary: { kind: 'still', src: TABLE_READY },
+      reducedStill: { kind: 'still', src: TABLE_READY },
+    })
+  })
+
+  it('keeps both Pillow clips registered as the repair source while the hold stands', () => {
+    const pillow = V2_ONBOARDING_MEDIA_PACK.pulls['the-pillow']
+
+    expect(V2_ONBOARDING_PULL_MOTION_HOLDS['the-pillow']?.since).toBe(
+      '2026-09-07',
+    )
+    expect(pillow).toMatchObject({
+      present: {
+        kind: 'video',
+        src: `${EXPANSION_ROOT}/b03-the-pillow-present-v0_2.mp4`,
+      },
+      hold: { kind: 'still', src: PILLOW_SETTLED },
+      recede: {
+        kind: 'video',
+        src: `${EXPANSION_ROOT}/b05-the-pillow-recede-v0_2.mp4`,
+      },
+      motionHold: V2_ONBOARDING_PULL_MOTION_HOLDS['the-pillow'],
+    })
+  })
+
+  it.each(MOVING_PREMIUM_BEATS)(
+    'still plays the %s %s clip',
+    (pullId, moment, src) => {
+      const request = resolveV2OnboardingMediaRequest(
+        V2_ONBOARDING_MEDIA_PACK,
+        { targetId: `pull:${pullId}:${moment}`, pullId, moment },
+      )
+
+      expect(request?.primary).toEqual({ kind: 'video', src, alt: '' })
+    },
+  )
+
+  it('holds Pillow and no other built-in Pull', () => {
+    const held = BUILT_IN_PULL_IDS.filter(
+      (id) => V2_ONBOARDING_MEDIA_PACK.pulls[id]?.motionHold !== undefined,
+    )
+
+    expect(held).toEqual(['the-pillow'])
   })
 })

@@ -27,10 +27,10 @@ Beside Cue helps someone notice an unhelpful pull and begin one tiny action they
 - Progress shows today's and the trailing seven days' Side B choices without streaks or failure states.
 - Plan content and history remain on-device. No account, ads, analytics, or cloud sync.
 - The six original Pulls, custom words, and the plan-and-cue loop stay free.
-  **BeSideCue Pro** unlocks eight additional character Pulls. An optional
-  “Show premium” disclosure previews them without allowing free users to select
+  **Beside Cue Deluxe** unlocks eight additional character Pulls. An optional
+  “Show Deluxe” disclosure previews them without allowing free users to select
   them. Purchases and restore remain in Settings; the store owns entitlement
-  truth. Expiry blocks new premium selections, never deletes existing plans.
+  truth. Expiry blocks new Deluxe selections, never deletes existing plans.
 - **B-side games**: small optional sung mini-games (first: Merc's Journey),
   reachable from a discreet Home entry. They are free, unscored, gate nothing,
   and can serve as someone's chosen Side B action. The microphone is used only

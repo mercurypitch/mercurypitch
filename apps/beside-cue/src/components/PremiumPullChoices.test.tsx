@@ -20,7 +20,7 @@ describe('Premium Pull shelf', () => {
       />
     ))
     expect(view.container.querySelectorAll('img')).toHaveLength(0)
-    fireEvent.click(screen.getByText('Show premium'))
+    fireEvent.click(screen.getByText('Show Deluxe'))
     await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(8))
     expect(screen.getAllByRole('img')).toHaveLength(8)
     expect(screen.getByText('The Tape')).toBeVisible()
@@ -29,7 +29,7 @@ describe('Premium Pull shelf', () => {
       fireEvent.change(radio, { target: { checked: true } })
     }
     expect(select).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByText('Hide premium'))
+    fireEvent.click(screen.getByText('Hide Deluxe'))
     await waitFor(() =>
       expect(view.container.querySelectorAll('img')).toHaveLength(0),
     )
@@ -48,7 +48,7 @@ describe('Premium Pull shelf', () => {
         onSelect={setSelected}
       />
     ))
-    fireEvent.click(screen.getByText('Show premium'))
+    fireEvent.click(screen.getByText('Show Deluxe'))
     await waitFor(() =>
       expect(
         screen.getByRole('radio', { name: 'Another quick fix' }),

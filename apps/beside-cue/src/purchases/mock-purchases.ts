@@ -130,7 +130,7 @@ const PLANS: readonly PurchasePlan[] = PLAN_SPECS.map(toPlan)
 
 const OFFERING: PurchaseOffering = {
   id: OFFERING_ID,
-  description: 'Beside Cue Pro',
+  description: 'Beside Cue Deluxe',
   plans: PLANS,
 }
 

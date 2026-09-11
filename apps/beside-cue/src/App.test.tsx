@@ -1,4 +1,4 @@
-import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
+import type { BesideCueStateV1, Cue } from '@irchiinnuss/beside-cue-core'
 import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { notificationId } from '@irchiinnuss/mobile-runtime'
@@ -420,6 +420,31 @@ function stateWithActiveCue(options: {
   }
 }
 
+type SavedPlanFields = Omit<
+  Cue,
+  'id' | 'status' | 'mascotSetId' | 'createdAt' | 'updatedAt'
+>
+
+/** One active plan exactly as a finished setup would have saved it. */
+function stateWithSavedPlan(plan: SavedPlanFields): BesideCueStateV1 {
+  const initial = createInitialState()
+  const at = '2026-08-06T08:00:00.000Z'
+
+  return {
+    ...initial,
+    cues: [
+      {
+        id: 'seed-cue',
+        status: 'active',
+        ...plan,
+        mascotSetId: 'corktop-v1',
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+  }
+}
+
 function withDailyRule(state: BesideCueStateV1): BesideCueStateV1 {
   const at = '2026-08-06T08:00:00.000Z'
 
@@ -768,7 +793,7 @@ describe('Beside Cue character voice integration', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
     fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
-    fireEvent.click(screen.getByText('Show premium'))
+    fireEvent.click(screen.getByText('Show Deluxe'))
     const tape = await screen.findByRole('radio', {
       name: /another quick fix/iu,
     })
@@ -788,7 +813,7 @@ describe('Beside Cue character voice integration', () => {
       }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Pro is no longer active',
+      'Beside Cue Deluxe is no longer active',
     )
     expect(repository.snapshot()?.cues).toMatchObject([
       { pullCategoryId: 'the-tape', status: 'active' },
@@ -2232,6 +2257,226 @@ describe('Beside Cue app', () => {
       },
     ])
     expect(cues.filter((cue) => cue.status === 'archived')).toHaveLength(1)
+  })
+
+  it('opens Change this plan with the saved Pull, cue moment and Side B chosen and keeps everything on cancel', async () => {
+    const repository = createMemoryRepository(
+      withDailyRule(
+        stateWithSavedPlan({
+          pullCategoryId: 'scrolling',
+          pullText: 'Keep scrolling',
+          cueContextSuggestionId: 'anchor.scrolling.in-bed',
+          cueContextText: 'When I get into bed with my phone.',
+          bSideSuggestionId: 'bside.guitar-riff',
+          bSideText: 'Play one guitar riff.',
+        }),
+      ),
+    )
+    const original = structuredClone(repository.snapshot())
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('09:00')
+    fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
+    await screen.findByRole('heading', { name: /choose your pull/iu })
+    expect(
+      screen.getByRole('radio', { name: /endless scrolling/iu }),
+    ).toBeChecked()
+    expect(
+      screen.getByRole('region', { name: /selected pull preview/iu }),
+    ).toHaveTextContent('Endless scrolling')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    expect(
+      screen.getByRole('radio', {
+        name: /when i get into bed with my phone/iu,
+      }),
+    ).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    expect(
+      screen.getByRole('radio', { name: /play one guitar riff/iu }),
+    ).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /put the phone in another room/iu }),
+    ).not.toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /write my own/iu }),
+    ).not.toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: /go back/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /go back/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /go back/iu }))
+    expect(
+      await screen.findByRole('heading', { name: 'Current plan' }),
+    ).toBeInTheDocument()
+    expect(repository.snapshot()).toEqual(original)
+    expect(repository.saveCalls()).toBe(0)
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('09:00')
+  })
+
+  it('saves the one changed choice over the current plan and carries the daily reminder to the new plan', async () => {
+    const repository = createMemoryRepository(
+      withDailyRule(
+        stateWithSavedPlan({
+          pullCategoryId: 'scrolling',
+          pullText: 'Keep scrolling',
+          cueContextSuggestionId: 'anchor.scrolling.in-bed',
+          cueContextText: 'When I get into bed with my phone.',
+          bSideSuggestionId: 'bside.guitar-riff',
+          bSideText: 'Play one guitar riff.',
+        }),
+      ),
+    )
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: probe.runtime,
+        })}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
+    await screen.findByRole('heading', { name: /choose your pull/iu })
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    fireEvent.click(
+      screen.getByRole('radio', { name: /walk to the end of the street/iu }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
+    await screen.findByRole('heading', { name: /your current pressing/iu })
+
+    const snapshot = repository.snapshot()
+    const activeCue = snapshot?.cues.find((cue) => cue.status === 'active')
+    if (activeCue === undefined) throw new Error('Expected an active plan.')
+    expect(activeCue).toMatchObject({
+      pullCategoryId: 'scrolling',
+      pullText: 'Keep scrolling',
+      cueContextSuggestionId: 'anchor.scrolling.in-bed',
+      cueContextText: 'When I get into bed with my phone.',
+      bSideSuggestionId: 'bside.street-walk',
+      bSideText: 'Walk to the end of the street.',
+    })
+    expect(
+      snapshot?.cues.filter((cue) => cue.status === 'archived'),
+    ).toMatchObject([{ id: 'seed-cue' }])
+    expect(snapshot?.scheduleRules).toMatchObject([
+      { id: 'seed-daily-rule', cueId: 'seed-cue', enabled: false },
+      { cueId: activeCue.id, localTime: '09:00', enabled: true },
+    ])
+
+    await waitFor(() =>
+      expect(probe.calls.scheduled.at(-1)?.[0]?.extra).toMatchObject({
+        cueId: activeCue.id,
+      }),
+    )
+    expect(probe.calls.scheduled.at(-1)?.[0]?.schedule).toMatchObject({
+      kind: 'daily',
+      hour: 9,
+      minute: 0,
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(screen.getByLabelText('Type exact time')).toHaveValue('09:00')
+    expect(screen.queryByText('No daily reminder')).not.toBeInTheDocument()
+  })
+
+  it('seeds a custom Pull, cue and Side B into their own-words fields and saves them back unchanged', async () => {
+    const repository = createMemoryRepository(
+      stateWithSavedPlan({
+        pullText: 'Late-night tabs',
+        cueContextText: 'When the house goes quiet.',
+        bSideText: 'Close the laptop and stretch.',
+      }),
+    )
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
+    await screen.findByRole('heading', { name: /choose your pull/iu })
+    expect(
+      screen.getByRole('radio', { name: /something else/iu }),
+    ).toBeChecked()
+    expect(screen.getByLabelText('Your words')).toHaveValue('Late-night tabs')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm something else/iu }),
+    )
+    expect(screen.getByRole('radio', { name: /write my own/iu })).toBeChecked()
+    expect(screen.getByLabelText('Your cue')).toHaveValue(
+      'When the house goes quiet.',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    expect(screen.getByRole('radio', { name: /write my own/iu })).toBeChecked()
+    expect(screen.getByLabelText('Your Side B')).toHaveValue(
+      'Close the laptop and stretch.',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
+    await screen.findByRole('heading', { name: /your current pressing/iu })
+    const cues = repository.snapshot()?.cues ?? []
+    const activeCue = cues.find((cue) => cue.status === 'active')
+    expect(activeCue).toMatchObject({
+      pullText: 'Late-night tabs',
+      cueContextText: 'When the house goes quiet.',
+      bSideText: 'Close the laptop and stretch.',
+    })
+    expect(activeCue).not.toHaveProperty('pullCategoryId')
+    expect(activeCue).not.toHaveProperty('cueContextSuggestionId')
+    expect(activeCue).not.toHaveProperty('bSideSuggestionId')
+    expect(cues.filter((cue) => cue.status === 'archived')).toHaveLength(1)
+    expect(repository.snapshot()?.scheduleRules).toEqual([])
+  })
+
+  it('seeds a legacy string Side B by its visible label', async () => {
+    const repository = createMemoryRepository(
+      stateWithSavedPlan({
+        pullCategoryId: 'scrolling',
+        pullText: 'Keep scrolling',
+        bSideText: 'Look out the window for a moment.',
+      }),
+    )
+    render(() => (
+      <App
+        config={LEGACY_STRING_SETUP_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
+    await screen.findByRole('heading', { name: /choose your pull/iu })
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    expect(screen.getByRole('radio', { name: /not sure yet/iu })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    expect(
+      screen.getByRole('radio', { name: /look out the window for a moment/iu }),
+    ).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /write my own/iu }),
+    ).not.toBeChecked()
   })
 
   it('resets plan, history, reminder, and onboarding preference only after confirmation', async () => {

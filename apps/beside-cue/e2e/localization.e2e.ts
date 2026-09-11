@@ -4,6 +4,8 @@
 
 import { expect, test } from '@playwright/test'
 import { LOCALIZED_CHARACTER_VOICE_RECORDINGS } from '../src/content/localized-character-voice-recordings'
+import { SELECTED_CHARACTER_VOICE_AUDIO_ASSETS } from '../src/content/selected-character-voice-recordings'
+import { resolveSpokenLocale } from '../src/content/spoken-locale'
 
 const LANGUAGES = [
   {
@@ -33,7 +35,7 @@ const LANGUAGES = [
 ] as const
 
 for (const language of LANGUAGES) {
-  test(`${language.id} onboarding plays localized speech and reaches the record at 200% text @smoke`, async ({
+  test(`${language.id} onboarding plays the spoken language and reaches the record at 200% text @smoke`, async ({
     page,
   }, info) => {
     test.setTimeout(150_000)
@@ -73,9 +75,17 @@ for (const language of LANGUAGES) {
     await begin.click()
     await expect(page.getByRole('combobox')).toHaveCount(0)
 
-    const greeting = LOCALIZED_CHARACTER_VOICE_RECORDINGS[language.id].find(
-      (recording) => recording.lineId === 'corky.onboarding.greeting',
-    )!
+    // Captions follow the interface language; the bytes follow the spoken
+    // language, English for v1 (src/content/spoken-locale.ts).
+    const spoken = resolveSpokenLocale(language.id)
+    const greeting =
+      spoken === 'en'
+        ? SELECTED_CHARACTER_VOICE_AUDIO_ASSETS.find(
+            (asset) => asset.dialogue.lineId === 'corky.onboarding.greeting',
+          )!
+        : LOCALIZED_CHARACTER_VOICE_RECORDINGS[spoken].find(
+            (recording) => recording.lineId === 'corky.onboarding.greeting',
+          )!
     await expect
       .poll(() =>
         voiceRequests.some((url) => url.includes(greeting.sources[0].src)),
@@ -147,9 +157,7 @@ for (const language of LANGUAGES) {
     await page.screenshot({ path: info.outputPath('reminder-200.png') })
     expect(voiceRequests.length).toBeGreaterThan(1)
     expect(
-      voiceRequests.every((url) =>
-        url.includes(`/audio/voice/${language.id}/`),
-      ),
+      voiceRequests.every((url) => url.includes(`/audio/voice/${spoken}/`)),
     ).toBe(true)
   })
 

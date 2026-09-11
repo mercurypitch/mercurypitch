@@ -679,16 +679,16 @@
 
 @keyframes cue-turn {
   0% {
-    transform: rotate(0deg);
+    transform: rotate(180deg);
   }
   72% {
-    transform: rotate(187deg);
+    transform: rotate(-7deg);
   }
   88% {
-    transform: rotate(174deg);
+    transform: rotate(6deg);
   }
   100% {
-    transform: rotate(180deg);
+    transform: rotate(0deg);
   }
 }
 

@@ -64,7 +64,7 @@ for (const scenario of [
     )
     await settings.click()
     await expect(
-      page.getByRole('region', { name: 'BeSideCue Pro' }),
+      page.getByRole('region', { name: 'Beside Cue Deluxe' }),
     ).toBeVisible()
   })
 }

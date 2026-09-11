@@ -212,7 +212,7 @@ Line's card. _Default:_ unchanged -- the Top Shelf earns the opening
 keys stay as they are (`beside-cue:games:*`).
 
 **V5. Store and RevenueCat.** Locked already: games gate nothing and
-are gated by nothing; BeSideCue Pro stays support-only. No decision.
+are gated by nothing; Beside Cue Deluxe stays support-only. No decision.
 
 ---
 

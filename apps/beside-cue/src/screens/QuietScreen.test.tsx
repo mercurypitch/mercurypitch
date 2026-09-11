@@ -80,6 +80,28 @@ describe('quiet screen', () => {
     expect(onTimerComplete).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['quiet', false, /corky-quiet-approved/u],
+    ['turn', true, /corky-rest-approved/u],
+  ] as const)(
+    'draws the approved Corky still in the %s state',
+    async (state, choseBSide, still) => {
+      const { container } = renderQuietScreen(undefined, { choseBSide })
+      await settleFocus()
+
+      // Not now settles on the quiet still; Side B shows Corky at rest, the
+      // turn already made. Both are the approved reference Corky.
+      expect(container.querySelector('figure')).toHaveAttribute(
+        'data-state',
+        state,
+      )
+      const drawn = [...container.querySelectorAll('img')].map(
+        (element) => element.getAttribute('src') ?? '',
+      )
+      expect(drawn).toEqual([expect.stringMatching(still) as unknown as string])
+    },
+  )
+
   it('hands off an exact saved instruction without inventing completion work', async () => {
     const instruction = 'Put one clean plate away.'
     renderQuietScreen(instructionStarter(instruction))

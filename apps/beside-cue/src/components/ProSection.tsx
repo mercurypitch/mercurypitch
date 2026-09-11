@@ -66,7 +66,7 @@ export function ProSection(props: ProSectionProps) {
     <section class="settings-group" aria-labelledby="pro-settings-title">
       <div class="settings-group__heading">
         <div>
-          <p class="screen-kicker">{copy.t('Support')}</p>
+          <p class="screen-kicker">{copy.t('Support the work')}</p>
           <h2 id="pro-settings-title">{props.name}</h2>
         </div>
         <Show when={props.isPro}>
@@ -231,7 +231,7 @@ export function ProSection(props: ProSectionProps) {
               disabled={props.busy}
               onClick={() => props.onCheckAccess?.()}
             >
-              {copy.t('Check premium access')}
+              {copy.t('Check Deluxe access')}
             </button>
           </Show>
           <Show when={props.mock !== true ? props.supportId : undefined}>

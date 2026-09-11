@@ -112,8 +112,8 @@ test('all eight premium previews stay locked and clear the sound footer @smoke',
     page.getByRole('heading', { name: 'Choose your Pull' }),
   ).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('radio')).toHaveCount(7)
-  await page.getByText('Show premium', { exact: true }).click()
-  const premium = page.getByRole('radiogroup', { name: 'Premium Pull choices' })
+  await page.getByText('Show Deluxe', { exact: true }).click()
+  const premium = page.getByRole('radiogroup', { name: 'Deluxe Pull choices' })
   await expect(premium.getByRole('radio')).toHaveCount(8)
   for (const radio of await premium.getByRole('radio').all())
     await expect(radio).toBeDisabled()
@@ -132,7 +132,7 @@ test('all eight premium previews stay locked and clear the sound footer @smoke',
   await expect(
     page.getByRole('button', { name: 'Continue', exact: true }),
   ).toBeDisabled()
-  await page.getByText('Hide premium', { exact: true }).click()
+  await page.getByText('Hide Deluxe', { exact: true }).click()
   await expect(page.getByRole('radio')).toHaveCount(7)
   await page
     .getByRole('radio', { name: 'Something else' })

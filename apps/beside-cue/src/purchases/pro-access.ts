@@ -284,7 +284,7 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
           await readCustomer(runtime, true)
           setNotice(
             outcome === 'purchased'
-              ? 'Thank you. Pro is active.'
+              ? 'Thank you. Beside Cue Deluxe is active.'
               : 'Your purchases are restored.',
           )
         } else if (outcome === 'error') {
@@ -301,10 +301,10 @@ export function createProAccess(options: ProAccessOptions): ProAccess {
 
         if (outcome.kind === 'purchased') {
           applyCustomer(outcome.customer)
-          setNotice('Thank you. Pro is active.')
+          setNotice('Thank you. Beside Cue Deluxe is active.')
         } else if (outcome.kind === 'pending') {
           setNotice(
-            'Your payment is still being confirmed. Pro unlocks as soon as it clears.',
+            'Your payment is still being confirmed. Beside Cue Deluxe unlocks as soon as it clears.',
           )
         }
         // A cancelled purchase is the customer's choice, so it says nothing.

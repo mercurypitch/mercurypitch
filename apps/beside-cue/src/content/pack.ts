@@ -12,7 +12,7 @@
 // and must never be described as the cue itself.
 
 import type { AssetSlot } from './assets'
-import type { AudioAssetManifest } from './audio-manifest'
+import type { AudioAssetManifest, DialogueAudioLookup } from './audio-manifest'
 import { validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
 import { PREMIUM_PULL_DEFINITIONS } from './premium-pulls'
 import { canonicalPullId, pullOptions } from './pulls'
@@ -37,6 +37,12 @@ export interface Line {
    * required before a manifest recording can bind to this caption.
    */
   readonly captionSha256?: string
+  /**
+   * Hash of the caption the bound recording was made from, when the pack
+   * speaks another language than it shows (v1 plays English under translated
+   * captions; see `spoken-locale.ts`). Absent when the two agree.
+   */
+  readonly spokenCaptionSha256?: string
   readonly speakerId?: VoiceSpeakerId
   readonly fileStem?: string
   readonly kind?: VoiceLineKind
@@ -52,16 +58,14 @@ export interface PullCharacter {
   /** Matches a `PullOption` id, so a pull can find its own creature. */
   readonly id: string
   readonly name: string
-  /** Tight cutout, for a list row or a card. */
-  readonly token: AssetSlot
   /**
-   * Full-frame, rendered through the same camera and cropped with the same box
-   * as the character states, so it composites over one with no positioning
-   * code. That is how a single `notice` render personalises to every pull: the
-   * character looks at a fixed point, and the Pull character lands there.
+   * The approved render of the creature: a transparent cutout, drawn in the
+   * Pull picker and beside Corky at the cue moment. One file per Pull, so no
+   * screen can show a rendition the picker did not. The free cast keeps the
+   * render's transparent margin; the premium cast is cropped to the
+   * silhouette, which the cue-moment stage insets for.
    */
-  readonly noticeOverlay: AssetSlot
-  readonly noticeLayout?: 'token'
+  readonly token: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
   readonly voiceNote: string
 }
@@ -81,28 +85,40 @@ export interface ContentPack {
 
 const ART = `${import.meta.env.BASE_URL}art`
 
-export const CORKY_V023_REST_ART: AssetSlot = {
-  still: `${ART}/corky/corky-home-rest-v0_23-1024.webp`,
-  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
-}
+// The approved Corky: the Higgsfield reference look, the same character the
+// onboarding shows. Source: the transparent 1024 px stills
+// `packages/showcase-gallery/gallery-viewer/cues/corky/transparent/
+// corky-dark-still-{rest,notice,quiet}.png` in the disjoint-colliders repo
+// (committed there 2026-09-11), converted to lossless webp with the alpha
+// kept, so every visible pixel is the source's. The Blender and Meshy renders
+// of Corky are banned everywhere; nothing in this file may point at one.
+//
+// The `alt` strings double as interface-copy keys, so a screen localizes one
+// with `copy.t(CORKY_REST_ART.alt)`.
+export const CORKY_REST_ART = {
+  still: `${ART}/corky/corky-rest-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, upright and looking straight ahead.',
+} as const satisfies AssetSlot
 
-function corkyState(state: CharacterStateId, alt: string): AssetSlot {
-  return { still: `${ART}/corky/corky-${state}-1024.webp`, alt }
-}
+export const CORKY_NOTICE_ART = {
+  still: `${ART}/corky/corky-notice-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, looking up toward the Pull that has just arrived.',
+} as const satisfies AssetSlot
 
+export const CORKY_QUIET_ART = {
+  still: `${ART}/corky/corky-quiet-approved-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
+} as const satisfies AssetSlot
+
+// The six free Pulls are the approved cast renders, byte for byte the art the
+// landing shows (`packages/beside-cue/src/assets/cast/*.png` in the
+// disjoint-colliders repo is a tight crop of these files). Sugarlump is the
+// white, blocky one; the earlier Sugarlump rendition is not approved and must
+// not come back through any path.
 function pullToken(filename: string, alt: string): AssetSlot {
   return {
     still: `${ART}/pulls/${filename}`,
     alt,
-  }
-}
-
-function cueOverlay(id: string): AssetSlot {
-  return {
-    still: `${ART}/notice-cues/notice-cue-${id}-1024.webp`,
-    // The character underneath already describes the scene; a second
-    // description of the same moment would only repeat itself aloud.
-    alt: '',
   }
 }
 
@@ -116,7 +132,6 @@ function pullCharacter(
     id,
     name,
     token,
-    noticeOverlay: cueOverlay(id),
     voiceNote,
   }
 }
@@ -125,22 +140,15 @@ const corky: Character = {
   id: 'corky',
   name: 'Corky',
   states: {
-    rest: corkyState(
-      'rest',
-      'Corky, a rose-plum cork-topped character, upright and looking straight ahead.',
-    ),
-    notice: corkyState(
-      'notice',
-      'Corky leaning toward a small turquoise cue that has just arrived, eyes wide.',
-    ),
-    turn: corkyState(
-      'turn',
-      'Corky turned away from the cue, calm, looking toward something he chose.',
-    ),
-    quiet: corkyState(
-      'quiet',
-      'Corky settled with lowered lids, eyes softly down.',
-    ),
+    rest: CORKY_REST_ART,
+    notice: CORKY_NOTICE_ART,
+    // No approved still shows the turn itself yet. The rest still stands in;
+    // it is also what the Side B quiet screen shows once the turn is made.
+    turn: {
+      still: CORKY_REST_ART.still,
+      alt: 'Corky turned away from the cue, calm, looking toward something he chose.',
+    },
+    quiet: CORKY_QUIET_ART,
   },
 }
 
@@ -150,16 +158,19 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
   ...PREMIUM_PULL_DEFINITIONS.map((definition) => ({
     id: definition.id,
     name: definition.name,
-    token: {
-      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
-      alt: definition.name,
-    },
-    // Standalone cutouts need placement; they are not the legacy camera's overlays.
-    noticeOverlay: {
-      still: `/onboarding/pull-expansion-v1/${definition.id}-token-v0_1.webp`,
-      alt: '',
-    },
-    noticeLayout: 'token' as const,
+    // The premium shelf and the cue moment share this one cutout. It is the
+    // character's approved Nano Banana three-quarter still, the same source
+    // the free cast's files come from: <user-dotfiles>/besidecue/assets/
+    // nano_banana_gemini_outputs/new_characters/<id>/transparent/
+    // <id>-still-threequarter.png, cropped to the pixels with alpha above 8
+    // (nothing visible lies outside), fitted to 512 px, saved lossless with
+    // alpha. It replaced the chroma-keyed Flow-frame tokens under
+    // public/onboarding/pull-expansion-v1/, which carried magenta spill and
+    // a soft edge that showed once they stood beside Corky.
+    token: pullToken(
+      `pull-${definition.id}-nanobanana-v0_1-512.webp`,
+      definition.name,
+    ),
     voiceNote:
       'Use this character’s selected voice and preserve the canonical captions.',
   })),
@@ -220,9 +231,11 @@ export const PULL_CHARACTERS: readonly PullCharacter[] = [
 ]
 
 /**
- * Shown when a beat needs a Pull character but a custom Pull has none of its
- * own. The generic turquoise shape keeps that path complete without pretending
- * the custom words belong to one of the built-in cast.
+ * The picker's art for a custom Pull, which has no authored character. The
+ * generic turquoise shape keeps that list complete without pretending the
+ * custom words belong to one of the built-in cast. The cue moment does not
+ * use it: there a custom Pull shows no creature at all, and the stage draws
+ * its own neutral record-label mark where the creature would stand.
  */
 export const GENERIC_PULL_CHARACTER: PullCharacter = pullCharacter(
   'generic',
@@ -242,7 +255,7 @@ export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.6.0',
+  version: '0.7.0',
   leadCharacterId: corky.id,
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,
@@ -279,6 +292,18 @@ export function findCueEntity(
 
 export function findLine(pack: ContentPack, id: string): Line | undefined {
   return pack.lines.find((line) => line.id === id)
+}
+
+/**
+ * The binding a recording has to match for this line: the caption it was
+ * recorded from, which is the displayed caption unless the pack speaks another
+ * language than it shows. Undefined for a legacy line with no hash.
+ */
+export function dialogueLookupFor(line: Line): DialogueAudioLookup | undefined {
+  const captionSha256 = line.spokenCaptionSha256 ?? line.captionSha256
+  return captionSha256 === undefined
+    ? undefined
+    : { lineId: line.id, captionSha256 }
 }
 
 /**
@@ -352,16 +377,10 @@ export function validateContentPack(pack: ContentPack): readonly string[] {
   problems.push(
     ...validateAudioDialogueLineBindings(
       pack.audio,
-      pack.lines.flatMap((line) =>
-        line.captionSha256 === undefined
-          ? []
-          : [
-              {
-                lineId: line.id,
-                captionSha256: line.captionSha256,
-              },
-            ],
-      ),
+      pack.lines.flatMap((line) => {
+        const lookup = dialogueLookupFor(line)
+        return lookup === undefined ? [] : [lookup]
+      }),
     ),
   )
 

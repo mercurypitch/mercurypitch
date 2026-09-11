@@ -423,22 +423,54 @@ svg {
   inset: 0;
 }
 
-/* The character render and the cue overlay come out of one camera and one
-   crop box, so they only line up if neither is nudged here. */
+/* The approved stills are already cropped to the sleeve; scaling one here
+   would move the spot the notice pose looks at. */
 .mascot-stage__sleeve .asset-stage__still,
 .mascot-stage__sleeve .asset-stage__motion {
   transform: none;
 }
 
-.mascot-stage__cue {
+/* The plan's Pull stands in the upper right of the sleeve, where the notice
+   pose looks: Corky's gaze goes right and the raised right limb ends at about
+   (78%, 33%) of the frame, so the Pull's baseline sits just above that tip,
+   clear of the face in the middle of the frame. Every render is a cutout
+   that settles on that one baseline, so a tall Scroll and a low Fog read as
+   the same visitor. */
+.mascot-stage__pull {
   position: absolute;
-  inset: 0;
+  right: 2.5%;
+  bottom: 70%;
+  width: 30%;
 }
 
-.mascot-stage__cue--token {
-  inset: auto 7% 8% auto;
-  width: 24%;
-  height: 32%;
+/* The still stays inside its box. `.mascot-stage__sleeve img` lets Corky's
+   still set its own height, and a cutout taller than it is wide would grow
+   this bottom-anchored box upward, past the sleeve's top edge, and lose its
+   head to the sleeve's overflow. */
+.mascot-stage__pull .asset-stage__still {
+  height: 100%;
+  object-position: 50% 100%;
+}
+
+/* A premium cutout is cropped to the silhouette, with none of the transparent
+   margin the free renders keep, so in the 30% box it would stand a third
+   taller than the free cast and hard against the sleeve's top edge. Its box
+   is the slot the free Pulls actually fill, about 44 by 56 px on a 243 px
+   sleeve, on the same baseline and centre, with at least 8 px to the top
+   edge: both casts stand at one height in one spot. */
+.mascot-stage__pull--token {
+  right: 8.5%;
+  bottom: 73%;
+  width: 18%;
+  aspect-ratio: 7 / 9;
+}
+
+/* A self-named Pull gets the plan's Side A label instead of a creature:
+   small, set into the same spot. */
+.mascot-stage__pull--mark {
+  right: 13%;
+  bottom: 77%;
+  width: 12%;
 }
 
 .mascot-stage__wash {
@@ -1826,6 +1858,18 @@ svg {
   cursor: pointer;
   text-align: left;
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* The help and privacy rows are links dressed as the buttons around them. */
+a.settings-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.settings-row:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 5px;
+  box-shadow: 0 0 0 3px var(--paper-light);
 }
 
 .settings-row span {

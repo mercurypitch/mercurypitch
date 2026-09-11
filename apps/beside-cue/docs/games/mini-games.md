@@ -68,7 +68,7 @@ wall, glass-crumble fall and both orientations.
 
 ## Design contract
 
-- Games gate nothing and are gated by nothing; BeSideCue Pro stays
+- Games gate nothing and are gated by nothing; Beside Cue Deluxe stays
   support-only.
 - Silence is rest, not failure — only glass platforms give way, after their
   configured timeout. This holds at the moment of success too: every pane
