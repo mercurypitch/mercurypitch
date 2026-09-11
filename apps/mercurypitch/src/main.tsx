@@ -25,7 +25,11 @@
 //   normalizeAdminEntryRoute()     The Content Studio is not in this bundle.
 //
 // Kept, because each one is as true on a phone as in a tab:
-//   installChunkLoadRecovery(), initGlobalErrorHandlers(), initDeviceTier().
+//   installChunkLoadRecovery(), initGlobalErrorHandlers(), initDeviceTier(),
+//   initTheme() -- which was missing until the shell's bundle probe caught
+//   it: the web entry calls it (src/index.tsx:43) and this one did not, so a
+//   chosen theme applied for the session it was chosen in and the next launch
+//   came up with the :root defaults and no data-theme attribute at all.
 //
 // Added, because neither has a browser equivalent:
 //   installNativeShell()           The OS taking the whole app away, and the
@@ -49,6 +53,15 @@
 //   armDeveloperConsole()          The web entry calls it; this one has more
 //                                  reason to. There are no devtools behind a
 //                                  TestFlight build.
+//   <NativeShell />                The chrome this app wears instead of the
+//                                  web header, sidebar and bottom bar: the
+//                                  rail, the transport that replaces it
+//                                  during a run, the More sheet and Settings
+//                                  as a pushed screen. A SIBLING of <App />,
+//                                  not a wrapper — everything it draws is
+//                                  fixed to the viewport through one portal
+//                                  to <body>, so wrapping would buy nothing
+//                                  and cost a stacking context.
 
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
@@ -80,9 +93,11 @@ import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
+import { initTheme } from '@/stores/theme-store'
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
+import { NativeShell } from './shell/NativeShell'
 
 // Point the pitch engine at the copies scripts/sync-ort-assets.mjs vendored
 // into this bundle. Unconfigured it fetches the wasm runtime from jsDelivr
@@ -107,6 +122,7 @@ installStoragePort(createPreferencesStoragePort())
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
 initDeviceTier()
+initTheme()
 
 // Before the first render, so a back press during boot is answered by this
 // app rather than by Capacitor's default, which is to exit.
@@ -168,7 +184,15 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
   })
   .then(() => {
     installForegroundSessionRefresh()
-    render(() => <App onMounted={() => root.classList.add('loaded')} />, root)
+    render(
+      () => (
+        <>
+          <App onMounted={() => root.classList.add('loaded')} />
+          <NativeShell />
+        </>
+      ),
+      root,
+    )
   })
 
 // The in-app console, on every page of a test build. Captured from the first

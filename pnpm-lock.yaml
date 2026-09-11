@@ -368,6 +368,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
       typescript:
         specifier: ^5.6.0
         version: 5.9.3

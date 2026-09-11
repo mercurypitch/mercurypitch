@@ -30,6 +30,34 @@ export interface NativeShellOptions {
 }
 
 /**
+ * Answers one back press. `true` means it was dealt with; `false` hands the
+ * press back, and the app minimizes.
+ */
+export type ShellBackHandler = () => boolean
+
+let shellBack: ShellBackHandler | null = null
+
+/**
+ * Give the shell first refusal on every back press, and get the way to take
+ * it away again.
+ *
+ * The order the shell applies is its own (`shell/shell-navigation.ts`):
+ * close the tab column, then the alert, then the sheet, then the pushed
+ * screen, then leave the room — and only a press that reaches the root falls
+ * through to here and minimizes. Android's hardware button and the room
+ * header's Back are the same press and must not disagree, which is why there
+ * is one registry rather than a second handler.
+ */
+export function registerShellBackHandler(
+  handler: ShellBackHandler,
+): () => void {
+  shellBack = handler
+  return () => {
+    if (shellBack === handler) shellBack = null
+  }
+}
+
+/**
  * Wires the app's lifecycle and the Android back button, and returns the
  * teardown for both.
  *
@@ -72,11 +100,19 @@ export function installNativeShell(
   // off, and its default is to exit the app — so this has to answer for every
   // press, including the one with nowhere to go.
   //
-  // PHASE 1 REPLACES THIS. The shell being built there owns sheets and a tab
-  // stack, and back has to close the sheet, then leave the room, then exit
-  // (plan task G2). Until those exist there is nothing to ask, so history
-  // depth is the whole of it.
+  // The shell answers first when it is up (`registerShellBackHandler`): it
+  // owns the tab column, the More sheet, the Keep alert and the pushed
+  // Settings screen, and each of those has to close before a press means
+  // "leave the room". A press it declines is one that reached the root, and
+  // the root's answer is to minimize rather than exit — Capacitor's default
+  // would lose whatever was open. Without a shell (a test, or boot before the
+  // first render) history depth is still the whole of it.
   const stopBack = onBackButton(() => {
+    if (shellBack !== null) {
+      if (shellBack()) return
+      void minimizeApp()
+      return
+    }
     if (history !== null && history.length > 1) {
       history.back()
       return

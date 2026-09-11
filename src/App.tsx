@@ -31,6 +31,8 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { consumeRunParked } from '@/stores/native-shell-store'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -1801,6 +1803,13 @@ const AppShell: Component<AppProps> = (props) => {
   // sounding under the piano tab). The listener runs before the signal
   // flips and cannot miss a transition.
   onTabTransition((prevTab, newTab) => {
+    // Read FIRST, and unconditionally: the native shell's park mark is spent
+    // by the very next transition whatever tab it is about. Consuming it
+    // deeper in, inside the branch that uses it, left a mark from a park that
+    // never led anywhere sitting there — and the next, unrelated leave of
+    // Sing then skipped the cleanup it needed.
+    const shellParked = consumeRunParked(prevTab)
+
     closeSingingZen()
     closeChallengeStage()
 
@@ -1829,7 +1838,16 @@ const AppShell: Component<AppProps> = (props) => {
     // button look active (and react to playback) on the next visit. Mirrors
     // the Piano/Guitar cleanup below.
     if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
-      void resetPlaybackState()
+      // The one leave that does NOT end the run: the native shell parking it
+      // on the way out (S1 build brief §6). It has already paused playback and
+      // released the microphone, and the session pill is the way back — a
+      // reset here would end the very run that pill exists to return to.
+      //
+      // Asked of the bridge, and only about THIS tab, rather than assumed
+      // from the build: every other way of leaving Sing on a phone — a deep
+      // link, a voice command, a swipe — still has to end the run, and an
+      // unconditional skip left the room permanently without a transport.
+      if (!shellParked) void resetPlaybackState()
       if (micActive()) practiceEngine.stopMic()
     }
 
@@ -3200,7 +3218,15 @@ const AppShell: Component<AppProps> = (props) => {
             challengeStageLaunch() === null
           }
         >
-          <Show when={labTab() === null}>
+          {/* The native build draws its own chrome. `apps/mercurypitch`'s
+              shell owns the bottom rail, the room header and the More sheet,
+              so this header (with AppNavTabs inside it) and the web
+              BottomTabBar do not mount there. Gated on the BUILD, never on
+              the viewport: `isNarrow()` is width and pointer, and a native
+              tablet is still the app, not a desktop. The constant folds to a
+              literal, so the web bundle keeps the branch and the native one
+              drops it outright. */}
+          <Show when={labTab() === null && !IS_NATIVE_BUILD}>
             {/* The docked voice pill shares this row with the title, and a
                 phone's row is about three hundred pixels wide. While there
                 are words to show the title steps aside and the transcript
@@ -3356,8 +3382,10 @@ const AppShell: Component<AppProps> = (props) => {
 
           {/* Main layout: sidebar + content */}
           <div class={styles.mainLayout} id="main-layout">
-            {/* Shared sidebar — with mobile open class */}
-            <Show when={labTab() === null}>
+            {/* Shared sidebar — with mobile open class. Absent under the
+                native shell: its only way in is the header's menu button,
+                which does not mount there. */}
+            <Show when={labTab() === null && !IS_NATIVE_BUILD}>
               <AppSidebar
                 class={sidebarOpen() === true ? 'open' : ''}
                 onOctaveShift={handleOctaveShift}

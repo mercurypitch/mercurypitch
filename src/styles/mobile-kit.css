@@ -36,6 +36,11 @@
   --z-control-overlay: 30;
   --z-tabbar: 380;
   --z-stage: 450;
+  /* The native shell's rail is portalled to <body> and has to sit ABOVE a
+     stage (450), which portals itself there too, while staying below
+     FocusMode (500) — a deliberate full-screen takeover — and below sheets
+     (600), which the rail's own More sheet is one of. */
+  --z-rail: 470;
   --z-focus: 500;
   --z-sheet: 600;
   --z-modal: 1000;
@@ -50,6 +55,44 @@
     var(--text-primary, #e6edf3) 12%,
     transparent
   );
+}
+
+/* ── The native shell's own metrics ──
+   `data-native-shell` is set on <html> by apps/mercurypitch's shell the
+   moment it mounts, and by nothing else. Two facts follow from it, and
+   neither may be keyed on viewport width: a native tablet is still the app.
+
+   1. The rail is the kit's floating pill — 64 px of bar plus an 8 px gap
+      above the home indicator — not the web bar's 54 px.
+   2. The scroller reserves that height at EVERY width. The web rule that
+      does this lives behind `max-width: 768px` (mobile-polish.css), which
+      is the right answer for a browser and the wrong one for an iPad. */
+:root[data-native-shell] {
+  --tabbar-height: 64px;
+  --tabbar-gap: 8px;
+  --tabbar-total: calc(
+    var(--tabbar-height) + var(--tabbar-gap) + var(--safe-bottom)
+  );
+}
+
+:root[data-native-shell] .main-content {
+  padding-bottom: calc(var(--tabbar-total) + 8px);
+}
+
+/* The room header is fixed chrome the shell draws over the top of a room, so
+   the room's own scroller has to start below it. Only the rooms that get a
+   header carry the attribute. */
+:root[data-native-shell][data-room-header='on'] .main-content {
+  padding-top: calc(var(--safe-top) + 52px);
+}
+
+/* Its companion at the other corner: while a run is going, the shell's tab
+   chip floats over the room's right edge. The newest pixels of a pitch trace
+   are exactly there, so the room keeps the chip's width plus 8 px clear of
+   them rather than drawing underneath (S1b brief §4, the rules that do not
+   vary). Present only while the chip is. */
+:root[data-native-shell][data-shell-chip='on'] .main-content {
+  padding-right: 64px;
 }
 
 /* Glass surface utility — apply to floating chrome (bars, pills, HUD chips).
