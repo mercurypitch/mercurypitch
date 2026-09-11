@@ -145,6 +145,23 @@ async function walk(page, { shots, theme }) {
   }
   steps.push(`shell: ${reserved.padding} reserved, ${reserved.theme} theme`)
 
+  // The web chrome must be absent, not merely hidden: two bottom bars is the
+  // stacked-chrome problem S1b exists to remove, and the header carries the
+  // desktop nav tabs.
+  const webChrome = await page.evaluate(() => ({
+    bar: document.querySelectorAll('[data-tour="mobile-tabbar"]').length,
+    header: document.querySelectorAll('#main-layout ~ header, body header')
+      .length,
+    sidebar: document.querySelectorAll('.sidebar, #app-sidebar').length,
+  }))
+  if (webChrome.bar !== 0) {
+    throw new Error('the web BottomTabBar mounted under the shell')
+  }
+  if (webChrome.header !== 0) {
+    throw new Error('the web header mounted under the shell')
+  }
+  steps.push('shell: no web bar, no web header')
+
   for (const id of RAIL_ITEMS) {
     await page.locator(`[data-rail-item="${id}"]`).click()
     await page
