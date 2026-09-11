@@ -49,6 +49,15 @@
 //   armDeveloperConsole()          The web entry calls it; this one has more
 //                                  reason to. There are no devtools behind a
 //                                  TestFlight build.
+//   <NativeShell />                The chrome this app wears instead of the
+//                                  web header, sidebar and bottom bar: the
+//                                  rail, the transport that replaces it
+//                                  during a run, the More sheet and Settings
+//                                  as a pushed screen. A SIBLING of <App />,
+//                                  not a wrapper — everything it draws is
+//                                  fixed to the viewport through one portal
+//                                  to <body>, so wrapping would buy nothing
+//                                  and cost a stacking context.
 
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
@@ -83,6 +92,7 @@ import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/l
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
+import { NativeShell } from './shell/NativeShell'
 
 // Point the pitch engine at the copies scripts/sync-ort-assets.mjs vendored
 // into this bundle. Unconfigured it fetches the wasm runtime from jsDelivr
@@ -168,7 +178,15 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
   })
   .then(() => {
     installForegroundSessionRefresh()
-    render(() => <App onMounted={() => root.classList.add('loaded')} />, root)
+    render(
+      () => (
+        <>
+          <App onMounted={() => root.classList.add('loaded')} />
+          <NativeShell />
+        </>
+      ),
+      root,
+    )
   })
 
 // The in-app console, on every page of a test build. Captured from the first

@@ -1,0 +1,699 @@
+/* ============================================================
+   The native shell's chrome
+   ============================================================
+
+   One plain stylesheet rather than a module per component, and that is a
+   decision: the dock, the rail, the transport, the corner chip and its column
+   are ONE interlocking band. The motion rules (S1b brief §4) are about how
+   those parts cross inside a fixed slot, so they are written as one set of
+   rules with one specificity, where a reduced-motion override can answer all
+   of them without guessing at generated class names.
+
+   Colours come from the web app's own tokens (app.css) and the glass recipe
+   from mobile-kit.css — the mock's palette IS this palette, so nothing here
+   introduces a second one. Geometry is the kit's, in logical px.
+
+   TRANSFORMS AND OPACITY ONLY. No animated heights anywhere: the band is one
+   fixed slot with two layers stacked in the same grid cell. */
+
+.mp-shell {
+  --mp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mp-out: 220ms;
+  --mp-in: 280ms;
+  --mp-chip-in: 240ms;
+  --mp-gap: 60ms;
+  --mp-lift: 16px;
+  --mp-pop: 0.6;
+  --mp-glass-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Reduced motion: every transition becomes a 120 ms opacity crossfade, from
+   the OS setting or from the shell's own attribute (the latter is what a test
+   can assert without a media query). Nothing moves, so the lift is zero and
+   the chip's pop is none. */
+.mp-shell.mp-reduced,
+.mp-shell[data-reduced='on'] {
+  --mp-ease: linear;
+  --mp-out: 120ms;
+  --mp-in: 120ms;
+  --mp-chip-in: 120ms;
+  --mp-gap: 0ms;
+  --mp-lift: 0px;
+  --mp-pop: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-shell {
+    --mp-ease: linear;
+    --mp-out: 120ms;
+    --mp-in: 120ms;
+    --mp-chip-in: 120ms;
+    --mp-gap: 0ms;
+    --mp-lift: 0px;
+    --mp-pop: 1;
+  }
+}
+
+/* ---------- the dock: the one fixed element at the bottom ---------- */
+
+.mp-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-rail);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 max(16px, var(--safe-left)) calc(var(--safe-bottom) + 8px)
+    max(16px, var(--safe-right));
+  /* The dock is a frame: only its controls take taps, so the stage keeps the
+     pixels between them. */
+  pointer-events: none;
+}
+
+.mp-dock > * {
+  pointer-events: auto;
+}
+
+.mp-dock__accessory {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.mp-band {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: var(--tabbar-height);
+}
+
+.mp-layer {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--mp-lift));
+  transition:
+    opacity var(--mp-out) var(--mp-ease),
+    transform var(--mp-out) var(--mp-ease),
+    visibility 0s linear var(--mp-out);
+}
+
+.mp-layer.is-in {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--mp-in) var(--mp-ease) var(--mp-enter, 0ms),
+    transform var(--mp-in) var(--mp-ease) var(--mp-enter, 0ms),
+    visibility 0s linear var(--mp-enter, 0ms);
+}
+
+/* The transport is above the rail in the z order, and the rail comes back
+   60 ms after the transport leaves so the two never overlap. */
+.mp-layer--transport {
+  z-index: 1;
+}
+
+.mp-layer--rail {
+  z-index: 0;
+  --mp-enter: var(--mp-gap);
+}
+
+/* ---------- the rail ---------- */
+
+.mp-rail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.mp-rail {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--tabbar-height);
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--mp-glass-shadow);
+}
+
+.mp-rail__item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 10px/1 var(--font-body, inherit);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.mp-rail__item svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* The selected mark is never colour alone: the symbol fills in, the tinted
+   plate appears behind it, and aria-current says so out loud. */
+.mp-rail__item[aria-current='page'] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.mp-rail__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-more-aside {
+  flex: 0 0 auto;
+  width: var(--tabbar-height);
+  height: var(--tabbar-height);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--mp-glass-shadow);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mp-more-aside[aria-current='page'] {
+  color: var(--accent);
+}
+
+/* Minimised on scroll (kit §9): only the current tab stays, the pill shrinks
+   to it and sits at the right edge. Driven by the .main-content scroller —
+   never by the document, which does not scroll in this app. */
+.mp-rail-row.is-min {
+  justify-content: flex-end;
+}
+
+.mp-rail-row.is-min .mp-rail {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0;
+}
+
+.mp-rail-row.is-min .mp-rail__item:not([aria-current='page']) {
+  display: none;
+}
+
+.mp-rail-row.is-min .mp-rail__item {
+  width: 64px;
+  padding: 0 6px;
+}
+
+/* ---------- the transport ---------- */
+
+.mp-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 1px 12px;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--mp-glass-shadow);
+}
+
+.mp-transport__time {
+  min-width: 44px;
+  font: 500 15px/1 var(--font-body, inherit);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.mp-transport__btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mp-transport__btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.mp-transport__btn--primary {
+  width: 60px;
+  height: 60px;
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.mp-transport__btn--primary svg {
+  width: 28px;
+  height: 28px;
+}
+
+.mp-transport__btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-tertiary));
+  color: var(--accent);
+}
+
+/* Locked: Stop, the primary and the chip ignore taps and say so by going
+   dim. The elapsed clock keeps running — that is the point of the lock. */
+.mp-transport.is-locked .mp-transport__btn:not(.mp-transport__btn--lock),
+.mp-corner.is-locked .mp-chip {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* The symbol crossfades; the button does not move. */
+.mp-transport__glyph {
+  display: grid;
+  place-items: center;
+  transition: opacity 120ms linear;
+}
+
+/* ---------- R2: the corner chip and the column above it ---------- */
+
+.mp-corner {
+  position: fixed;
+  right: max(16px, var(--safe-right));
+  bottom: calc(
+    var(--safe-bottom) + var(--tabbar-gap, 8px) + var(--tabbar-height) + 8px
+  );
+  z-index: var(--z-rail);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.mp-chip {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--mp-glass-shadow);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(var(--mp-pop));
+  transition:
+    opacity var(--mp-out) var(--mp-ease),
+    transform var(--mp-out) var(--mp-ease),
+    visibility 0s linear var(--mp-out);
+}
+
+.mp-chip svg {
+  width: 26px;
+  height: 26px;
+}
+
+.mp-corner.is-on .mp-chip {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition:
+    opacity var(--mp-chip-in) var(--mp-ease) var(--mp-gap),
+    transform var(--mp-chip-in) var(--mp-ease) var(--mp-gap),
+    visibility 0s linear var(--mp-gap);
+}
+
+/* A session parked somewhere else while this run is going: the pill is gone
+   with the rail, so the chip carries the dot instead. */
+.mp-chip__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 25%, transparent);
+}
+
+.mp-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--mp-lift));
+  transform-origin: 100% 100%;
+  transition:
+    opacity var(--mp-out) var(--mp-ease),
+    transform var(--mp-out) var(--mp-ease),
+    visibility 0s linear var(--mp-out);
+}
+
+.mp-corner.is-open .mp-column {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--mp-chip-in) var(--mp-ease),
+    transform var(--mp-chip-in) var(--mp-ease),
+    visibility 0s;
+}
+
+.mp-column__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  height: 44px;
+  padding: 0 10px 0 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  font: 500 14px/1 var(--font-body, inherit);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mp-column__sym {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.mp-column__sym svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- the session pill ---------- */
+
+.mp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 8px 0 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  font: 500 14px/1 var(--font-body, inherit);
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.mp-pill__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 25%, transparent);
+}
+
+.mp-pill__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-pill__btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.mp-pill__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- the room header ---------- */
+
+.mp-room-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-rail);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-left)) 4px
+    max(12px, var(--safe-right));
+  pointer-events: none;
+}
+
+.mp-room-header > * {
+  pointer-events: auto;
+}
+
+.mp-iconbtn {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mp-room-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--text-primary);
+  font: 500 13px/1 var(--font-body, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-room-chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- a pushed screen (Settings lives in one) ---------- */
+
+.mp-pushed {
+  position: fixed;
+  inset: 0;
+  /* Under the rail, over everything else: a pushed screen is a navigation
+     level, not a modal, so the tabs stay reachable beneath it. */
+  z-index: calc(var(--z-rail) - 1);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+.mp-pushed__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(var(--safe-top) + 4px) 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.mp-pushed__title {
+  font: 600 17px/1.2 var(--font-body, inherit);
+  color: var(--text-primary);
+}
+
+/* Its own scroll container: `.main-content` is the app's scroller and this
+   screen is not inside it. */
+.mp-pushed__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: calc(var(--tabbar-total) + 16px);
+}
+
+/* ---------- the More sheet's tiles ---------- */
+
+.mp-itile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mp-itile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 10px 4px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 500 11px/13px var(--font-body, inherit);
+  text-align: center;
+  cursor: pointer;
+}
+
+.mp-itile svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+}
+
+.mp-itile--settings svg {
+  color: var(--accent);
+}
+
+.mp-sheet-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.mp-sheet-group__title {
+  font: 500 11px/14px var(--font-body, inherit);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- the Keep alert ---------- */
+
+.mp-alert-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.mp-alert {
+  width: min(280px, 100%);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  text-align: center;
+}
+
+.mp-alert__body {
+  padding: 20px 16px 16px;
+}
+
+.mp-alert__title {
+  font: 600 17px/22px var(--font-body, inherit);
+  color: var(--text-primary);
+}
+
+.mp-alert__text {
+  margin-top: 4px;
+  font: 400 13px/18px var(--font-body, inherit);
+  color: var(--text-secondary);
+}
+
+.mp-alert__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--border);
+}
+
+.mp-alert__actions button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 500 17px/1 var(--font-body, inherit);
+  cursor: pointer;
+}
+
+.mp-alert__actions button + button {
+  border-left: 1px solid var(--border);
+  font-weight: 600;
+}
+
+/* ---------- shared ---------- */
+
+.mp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mp-shell :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
