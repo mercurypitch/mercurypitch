@@ -70,11 +70,6 @@ describe('moment engine', () => {
         'corky.not-now.03',
       ],
       return: ['corky.return.01', 'corky.return.02', 'corky.return.03'],
-      'pressing.earned': [
-        'corky.pressing.01',
-        'corky.pressing.02',
-        'corky.pressing.03',
-      ],
       'reminder.set': ['corky.reminder-set.01', 'corky.reminder-set.02'],
     })
   })
@@ -120,7 +115,7 @@ describe('moment engine', () => {
 
   it('shows no cue at a beat that is not about one', () => {
     expect(resolveMoment(pack, 'turn.b-side').entity).toBeUndefined()
-    expect(resolveMoment(pack, 'pressing.earned').entity).toBeUndefined()
+    expect(resolveMoment(pack, 'reminder.set').entity).toBeUndefined()
   })
 
   it('never puts a cue on screen while the character rests neutrally', () => {

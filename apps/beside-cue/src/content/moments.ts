@@ -19,7 +19,6 @@ export type MomentId =
   | 'turn.b-side'
   | 'turn.a-side'
   | 'return'
-  | 'pressing.earned'
   | 'reminder.set'
 
 export interface MomentDefinition {
@@ -61,13 +60,6 @@ export const MOMENTS: Readonly<Record<MomentId, MomentDefinition>> = {
     showsEntity: false,
     caption: 'The turntable kept your place',
     lineIds: ['corky.return.01', 'corky.return.02', 'corky.return.03'],
-  },
-  'pressing.earned': {
-    id: 'pressing.earned',
-    characterState: 'turn',
-    showsEntity: false,
-    caption: 'A pressing, run of one',
-    lineIds: ['corky.pressing.01', 'corky.pressing.02', 'corky.pressing.03'],
   },
   'reminder.set': {
     id: 'reminder.set',
