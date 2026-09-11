@@ -22,6 +22,29 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: false,
   },
+  plugins: {
+    // Sign-in providers, and what each `false` removes from the binary.
+    //
+    // The plugin bundles every provider it supports unless told otherwise,
+    // and two of them carry real SDKs: Facebook pulls FBSDKCoreKit and
+    // FBSDKLoginKit, which is both weight against the installed-size gate
+    // (warn 60 MB, fail 100 MB) and an SDK a privacy scanner will ask about
+    // in an app that never offers Facebook sign-in. Twitter is plain OAuth
+    // and adds nothing, but a provider that can be reached at runtime and
+    // has no button is a surface with no owner.
+    //
+    // Apple stays true and is system APIs only (AuthenticationServices);
+    // `false` would disable Sign in with Apple itself, which is the one
+    // thing App Store guideline 4.8 requires beside Google.
+    SocialLogin: {
+      providers: {
+        google: true,
+        apple: true,
+        facebook: false,
+        twitter: false,
+      },
+    },
+  },
 }
 
 export default config

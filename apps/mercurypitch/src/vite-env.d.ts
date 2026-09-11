@@ -16,3 +16,18 @@
  * here for now because only this build defines it.
  */
 declare const __APP_CHANNEL__: 'dev' | 'ci' | 'release'
+
+// Build-time configuration this shell reads. Declared rather than left to
+// Vite's `[key: string]: any` index signature, so a typo in the name is a
+// compile error here instead of an empty string on a phone.
+//
+// Both are documented in .env.example and are empty until the owner creates
+// the OAuth clients (checklist M-D1, M-D2). Empty is a supported state: the
+// key is omitted at initialize and the provider reports itself unavailable.
+interface ImportMetaEnv {
+  /** iOS OAuth client id — the Google SDK's own audience on that platform. */
+  readonly VITE_GOOGLE_IOS_CLIENT_ID?: string
+  /** Web OAuth client id — Android's Credential Manager, and the audience
+   *  the db-worker verifies every Google token against. */
+  readonly VITE_GOOGLE_WEB_CLIENT_ID?: string
+}
