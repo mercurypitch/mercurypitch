@@ -1803,6 +1803,13 @@ const AppShell: Component<AppProps> = (props) => {
   // sounding under the piano tab). The listener runs before the signal
   // flips and cannot miss a transition.
   onTabTransition((prevTab, newTab) => {
+    // Read FIRST, and unconditionally: the native shell's park mark is spent
+    // by the very next transition whatever tab it is about. Consuming it
+    // deeper in, inside the branch that uses it, left a mark from a park that
+    // never led anywhere sitting there — and the next, unrelated leave of
+    // Sing then skipped the cleanup it needed.
+    const shellParked = consumeRunParked(prevTab)
+
     closeSingingZen()
     closeChallengeStage()
 
@@ -1840,7 +1847,7 @@ const AppShell: Component<AppProps> = (props) => {
       // from the build: every other way of leaving Sing on a phone — a deep
       // link, a voice command, a swipe — still has to end the run, and an
       // unconditional skip left the room permanently without a transport.
-      if (!consumeRunParked(prevTab)) void resetPlaybackState()
+      if (!shellParked) void resetPlaybackState()
       if (micActive()) practiceEngine.stopMic()
     }
 
