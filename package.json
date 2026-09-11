@@ -101,6 +101,7 @@
     "@cloudflare/containers": "^0.3.3",
     "@coderline/alphatab": "^1.8.3",
     "@huggingface/transformers": "^4.2.0",
+    "@irchiinnuss/pitch-engine": "workspace:*",
     "@mediabunny/aac-encoder": "^1.52.2",
     "@simplewebauthn/server": "^13.3.3",
     "dexie": "^4.4.2",
