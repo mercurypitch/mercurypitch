@@ -214,6 +214,7 @@ These are the rules that break things when ignored.
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
+| [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 100 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [background-store.ts](../../src/stores/background-store.ts) | 50 | Premium background store compatibility facade The account-safe catalog store is route-neutral so standalone surfaces can use it without i... |
 | [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |

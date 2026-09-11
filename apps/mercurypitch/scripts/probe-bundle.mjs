@@ -117,7 +117,9 @@ async function walk(page, { shots, theme }) {
   if (box.x < 0 || box.x + box.width > PHONE.width) {
     throw new Error('the rail runs off the side of the screen')
   }
-  steps.push(`rail: on the bottom edge (${Math.round(bottom)} of ${PHONE.height})`)
+  steps.push(
+    `rail: on the bottom edge (${Math.round(bottom)} of ${PHONE.height})`,
+  )
 
   // And that the app's scroller reserves the height, at this width and any
   // other: the web rule is behind a phone-sized media query and the shell's
