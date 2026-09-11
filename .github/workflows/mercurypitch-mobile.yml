@@ -43,6 +43,7 @@ on:
       - 'public/characters/**'
       - 'public/drum-night/pocket-console-landscape.webp'
       - 'public/ear-lab/regulator-room-landscape.webp'
+      - 'public/exercises/examples/**'
       - 'public/guitar-night/velvet-rehearsal.webp'
       - 'public/home/**'
       - 'public/jam/room-stage.webp'
@@ -86,7 +87,7 @@ jobs:
       signing-env-prefix: MERCURYPITCH
       profile-build-setting: MERCURYPITCH_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|home|legends|onboarding|opening)/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-landscape|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|home|legends|onboarding|opening)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-landscape|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
       distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
       platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
       testflight-upload-from: tags

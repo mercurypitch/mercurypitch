@@ -98,11 +98,18 @@ export const NATIVE_ASSETS = [
       'The nine practice guides: the picker (src/components/CharacterIcons.tsx), the practice header avatar (src/App.tsx) and the Jam chat widget.',
   },
 
+  // ── The guided exercise loop ─────────────────────────────────
+  {
+    glob: 'exercises/examples/*.mp3',
+    reason:
+      "The coach's spoken example a guided exercise offers: the catalogue names it by absolute URL (src/features/zen/exercise-catalog.ts) and the example button plays it and draws its waveform (src/features/zen/ZenPitchStage.tsx).",
+  },
+
   // ── Home rail and the onboarding Map ─────────────────────────
   //
   // Only the covers drawn from a photograph are listed. Practice, Exercises,
   // Analysis and the Ascent draw their own vector art inside the bundle, so
-  // they need no file here.
+  // they need no cover here.
   {
     glob: 'karaoke-night-stage.webp',
     reason:
