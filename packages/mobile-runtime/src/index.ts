@@ -44,6 +44,7 @@ export {
 } from './contracts'
 export type { MobileRuntime } from './runtime'
 export { createMobileRuntime } from './runtime'
+export { createUnavailableLocalNotificationsPort } from './unavailable-notifications'
 export type { UnavailablePurchasesOptions } from './unavailable-purchases'
 export {
   createUnavailablePaywallPort,
