@@ -275,6 +275,14 @@ export async function signInWithApple(): Promise<SignInOutcome> {
  * echoes it into the id token's `nonce` claim. The worker verifies the token
  * through Google's tokeninfo endpoint, which returns that claim, so the check
  * is available to it whether or not it makes it today.
+ *
+ * Like the Apple path, this returns the OUTCOME rather than a session: an
+ * account holding a second factor answers with a challenge, and the caller
+ * shows the code pane. What shipped first did not — `loginWithGoogle` went
+ * through `postAuth`, which turns a challenge into a synthetic 409, and
+ * `asServerFailure` maps an unrecognised numeric status to `network`. A
+ * singer with 2FA on was told the phone was offline, every time, with
+ * nowhere to type a code.
  */
 export async function signInWithGoogle(): Promise<SignInOutcome> {
   const plugin = await requireBridge()

@@ -209,3 +209,38 @@ describe('signInWithGoogle', () => {
     await expect(signInWithGoogle()).resolves.toMatchObject({ userId: 'u-1' })
   })
 })
+
+describe('an account that owes a second factor', () => {
+  // Both providers have to reach the code pane, and only one of them did.
+  // `loginWithApple` returned the outcome from the start; `loginWithGoogle`
+  // went through `postAuth`, which turns a challenge into a synthetic 409 —
+  // and 409 is neither 401 nor 400, so `asServerFailure` called it `network`.
+  // A singer with 2FA on was told the phone was offline, forever, and the
+  // panel showed a failure box where a code field belongs.
+  const CHALLENGE = { twofaRequired: true, ceremony: 'ceremony-token' }
+
+  it('returns the Apple challenge rather than throwing', async () => {
+    bridgeReturning({
+      result: { idToken: 'apple-jwt', profile: { user: 'a' } },
+    })
+    mocks.loginWithApple.mockResolvedValue(CHALLENGE)
+
+    await expect(signInWithApple()).resolves.toEqual(CHALLENGE)
+  })
+
+  it('returns the Google challenge the same way', async () => {
+    bridgeReturning({ provider: 'google', result: { idToken: 'google-jwt' } })
+    mocks.loginWithGoogle.mockResolvedValue(CHALLENGE)
+
+    await expect(signInWithGoogle()).resolves.toEqual(CHALLENGE)
+  })
+
+  it('does not turn a challenge into a network failure', async () => {
+    bridgeReturning({ provider: 'google', result: { idToken: 'google-jwt' } })
+    mocks.loginWithGoogle.mockResolvedValue(CHALLENGE)
+
+    const outcome = await signInWithGoogle().catch((e: unknown) => e)
+
+    expect(outcome).not.toBeInstanceOf(NativeSignInError)
+  })
+})

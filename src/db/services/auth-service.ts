@@ -601,9 +601,19 @@ export function adoptSession(auth: AuthResponse): void {
  * web UI (it goes through the redirect flow below — COOP breaks the GIS
  * popup); kept deliberately as the API for native/mobile clients, where
  * the platform sign-in SDK yields an idToken directly.
+ *
+ * Returns the OUTCOME rather than an AuthResponse, for the same reason
+ * `loginWithApple` does, and it is not a stylistic preference: an account
+ * with a second factor answers this route with a challenge, and `postAuth`
+ * turns a challenge into a thrown 409. Native Google sign-in is the caller,
+ * and the native orchestrator maps a numeric status to `network` — so a
+ * singer with 2FA on would have been told their PHONE was offline, on every
+ * attempt, with no code pane anywhere to finish in. The web path never hit
+ * it because its redirect carries the challenge separately; there is no
+ * redirect inside a WebView to carry one.
  */
-export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
-  return postAuth('google', {
+export async function loginWithGoogle(idToken: string): Promise<SignInOutcome> {
+  return postSignIn('google', {
     idToken,
     deviceId: getUserId(),
     deviceSecret: getDeviceSecret(),
