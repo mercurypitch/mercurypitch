@@ -1,0 +1,24 @@
+-- 0043_apple_signin.sql — the grant Sign in with Apple leaves behind.
+--
+-- App Store Review 5.1.1(v) requires an app offering Sign in with Apple to
+-- call Apple's revoke endpoint when an account is deleted. Revoking needs a
+-- refresh token, a refresh token exists only if the one-shot authorization
+-- code from the sign-in was exchanged for one, and by deletion time that
+-- request is months gone. So the token has to be kept, and the account row is
+-- where it belongs: it IS the provider row (authProvider 'apple',
+-- providerId = Apple's `sub`), and deleting the account therefore erases the
+-- credential with no extra line in USER_OWNED_TABLES to remember.
+--
+-- The column holds base64url(iv || AES-GCM ciphertext) of
+-- {"clientId":…,"refreshToken":…}, sealed with a key derived from JWT_SECRET
+-- by HKDF (see apple-auth.ts, the same shape googleDriveTokens uses). A
+-- leaked copy of the database is therefore not a set of working Apple grants.
+-- The client id rides along inside the ciphertext because the revoke call has
+-- to name it, and by then the identity token that carried it is gone.
+--
+-- NULL is the ordinary state: every account that has never signed in with
+-- Apple, plus every Apple sign-in made while the three APPLE_SIGNIN_* secrets
+-- were unset — which is dev until the owner uploads the .p8. Sign-in works
+-- either way; only the revoke-at-deletion courtesy depends on this column.
+
+ALTER TABLE users ADD COLUMN appleRefreshToken TEXT;

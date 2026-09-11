@@ -19,6 +19,16 @@
     // `secret put` is refused while a PR preview version is newer than
     // the deployment; dispatch deploy-db.yml (dev) first to reset that.
     "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+    // Every client id an id token may be issued to (see Env.GOOGLE_CLIENT_IDS).
+    // All three clients of the one Google project, comma-separated, web
+    // first — ...sb89ek7o is web (and the only one the code flow can use),
+    // ...ja2q9gke is iOS, ...l01gu23d is Android. Client ids are public
+    // identifiers; only GOOGLE_CLIENT_SECRET is a secret.
+    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
+    // Sign in with Apple: the bundle id is the client id for a native app.
+    // APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID / APPLE_TEAM_ID are
+    // secrets, not vars — `.dev.vars` locally, `wrangler secret put` per env.
+    "APPLE_CLIENT_IDS": "com.irchiinnuss.mercurypitch",
     // Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Local `wrangler
     // dev` (pnpm dev:db, no --env) accepts only localhost origins.
     // The domain passkeys are minted FOR — never the API host, and never
@@ -121,6 +131,24 @@
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+        // Every client id an id token may be issued to, comma-separated,
+        // web first. A native token's `aud` is its OWN platform's client
+        // id, so a platform missing from this list 401s every Google
+        // sign-in from it. The three entries, in order:
+        //   ...-sb89ek7ocuoikqpd5llc6ike4fasccdl  web (and the code flow)
+        //   ...-ja2q9gkengndjdc3904j7ijli3hjoi33  iOS      (M-D1)
+        //   ...-l01gu23d08ep7ngg38r2ioi3eh4vivh8  Android  (M-D2)
+        // All three are public identifiers, created 11 Sep 2026; only
+        // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
+        // secret.
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
+        // Sign in with Apple. The bundle id IS the client id for a native
+        // app; a web Services ID would be a second comma-separated entry.
+        // The three APPLE_SIGNIN_* values are secrets:
+        // `wrangler secret put APPLE_SIGNIN_PRIVATE_KEY --env dev` (the .p8
+        // PEM), APPLE_SIGNIN_KEY_ID, APPLE_TEAM_ID. Until they are set,
+        // sign-in works and the authorization code is simply not exchanged.
+        "APPLE_CLIENT_IDS": "com.irchiinnuss.mercurypitch",
         // Managed campaign identities exist only in the development database.
         // Set the dedicated TESTING_PROVISION_KEY with:
         // `wrangler secret put TESTING_PROVISION_KEY --env dev`.
@@ -136,7 +164,10 @@
         // (<version>-mercurypitch-preview.<subdomain>.workers.dev), whose
         // hostnames aren't known ahead of time — broad, but scoped to dev
         // (test data, rate-limited). Prod (below) never lists it.
-        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev",
+        // The last two are the Capacitor shell: `capacitor://localhost` is
+        // what iOS sends, `https://localhost` what Android sends. Exact
+        // origins, never the bare `localhost` rule — see the prod block.
+        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev,capacitor://localhost,https://localhost",
         // ACCESS_TEAM_DOMAIN / ACCESS_AUD / ACCESS_ALLOWED_EMAILS /
         // ACCESS_STRICT are NOT here: this repo is public and the first two
         // identify the account. Set them per environment with
@@ -210,6 +241,22 @@
         // sign-in on prod is down between that put and the tag deploy —
         // id and secret only work as a pair.
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
+        // Every client id an id token may be issued to, comma-separated,
+        // web first. A native token's `aud` is its OWN platform's client
+        // id, so a platform missing from this list 401s every Google
+        // sign-in from it. The three entries, in order:
+        //   ...-sb89ek7ocuoikqpd5llc6ike4fasccdl  web (and the code flow)
+        //   ...-ja2q9gkengndjdc3904j7ijli3hjoi33  iOS      (M-D1)
+        //   ...-l01gu23d08ep7ngg38r2ioi3eh4vivh8  Android  (M-D2)
+        // All three are public identifiers, created 11 Sep 2026; only
+        // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
+        // secret.
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
+        // Sign in with Apple — the same bundle id as dev; one App ID serves
+        // both. APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID /
+        // APPLE_TEAM_ID go in with `wrangler secret put --env prod` in the
+        // same sitting as tagging, like GOOGLE_CLIENT_SECRET above.
+        "APPLE_CLIENT_IDS": "com.irchiinnuss.mercurypitch",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
         "PASSKEY_RP_ID": "mercurypitch.com",
         // PROD IS STRICT: only the real app domains. No localhost — a
@@ -217,7 +264,11 @@
         // let tour walks/previews create thousands of junk anonymous
         // users). Requests without an Origin header still pass (Stripe
         // webhooks, OAuth callback navigation, admin curl/seed scripts).
-        "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com",
+        // The last two are the Capacitor shell — `capacitor://localhost`
+        // from iOS, `https://localhost` from Android — as EXACT origins.
+        // Never the bare `localhost` rule: that matches any localhost origin
+        // on any port and scheme, which is every dev build on every laptop.
+        "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com,capacitor://localhost,https://localhost",
         // ACCESS_* are secrets, not vars — see the dev block above, which
         // also documents the staging. `workers_dev: false` means there is
         // no *.workers.dev hostname for this Worker, so the route list

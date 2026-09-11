@@ -27,6 +27,17 @@ GOOGLE_CLIENT_ID=144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleuserco
 # for local `pnpm dev:db`).
 GOOGLE_CLIENT_SECRET=
 
+# Sign in with Apple. APPLE_CLIENT_IDS is public and lives in wrangler.jsonc
+# "vars" (the bundle id, com.irchiinnuss.mercurypitch). These three are the
+# key that mints the client secret for Apple's token and revoke endpoints:
+# the contents of the AuthKey_<id>.p8 download, its key id, and the team id.
+# All three unset is a supported state — sign-in works, the authorization code
+# is simply not exchanged and there is no grant to revoke at deletion.
+#   pnpm exec wrangler secret put APPLE_SIGNIN_PRIVATE_KEY --env dev
+#APPLE_SIGNIN_PRIVATE_KEY=
+#APPLE_SIGNIN_KEY_ID=
+#APPLE_TEAM_ID=
+
 # Optional: extra app origins allowed as returnTo targets (comma-separated).
 # Defaults already cover mercurypitch.com, dev.mercurypitch.com and localhost:3000.
 #APP_ORIGINS=
