@@ -24,7 +24,7 @@
     // first — ...sb89ek7o is web (and the only one the code flow can use),
     // ...ja2q9gke is iOS, ...l01gu23d is Android. Client ids are public
     // identifiers; only GOOGLE_CLIENT_SECRET is a secret.
-    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
     // Sign in with Apple: the bundle id is the client id for a native app.
     // APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID / APPLE_TEAM_ID are
     // secrets, not vars — `.dev.vars` locally, `wrangler secret put` per env.
@@ -141,7 +141,7 @@
         // All three are public identifiers, created 11 Sep 2026; only
         // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
         // secret.
-        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
         // Sign in with Apple. The bundle id IS the client id for a native
         // app; a web Services ID would be a second comma-separated entry.
         // The three APPLE_SIGNIN_* values are secrets:
@@ -251,7 +251,7 @@
         // All three are public identifiers, created 11 Sep 2026; only
         // GOOGLE_CLIENT_SECRET, which belongs to the web client alone, is a
         // secret.
-        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
+        "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
         // Sign in with Apple — the same bundle id as dev; one App ID serves
         // both. APPLE_SIGNIN_PRIVATE_KEY / APPLE_SIGNIN_KEY_ID /
         // APPLE_TEAM_ID go in with `wrangler secret put --env prod` in the

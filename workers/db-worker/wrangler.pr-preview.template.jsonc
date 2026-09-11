@@ -27,7 +27,7 @@
     // The same three public client ids dev and prod carry — web, iOS,
     // Android — so a preview Worker answers a native sign-in instead of
     // 401ing it. Without this the native shell cannot be pointed at a PR.
-    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_IDS": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com,940402390643-ja2q9gkengndjdc3904j7ijli3hjoi33.apps.googleusercontent.com,940402390643-l01gu23d08ep7ngg38r2ioi3eh4vivh8.apps.googleusercontent.com,940402390643-mlumr0ii2v7f0u14j3i3nhlog6pjiikf.apps.googleusercontent.com,940402390643-4hgurjnm4mo6fgbt1plgketheqorcitb.apps.googleusercontent.com",
     // Sign in with Apple: the bundle id is the client id for a native app.
     // Present so the Apple routes verify tokens here rather than answering
     // 501; the three APPLE_SIGNIN_* secrets stay unset, which means the
