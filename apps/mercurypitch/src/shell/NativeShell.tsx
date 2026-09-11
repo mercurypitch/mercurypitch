@@ -37,13 +37,13 @@ import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, } from './shell-navigation'
+import { ShellRoot } from './ShellRoot'
 import { Transport } from './Transport'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
 const MINIMISE_AT = 24
 
 export const NativeShell: Component = () => {
-  const [reducedMotion, setReducedMotion] = createSignal(false)
   const [minimised, setMinimised] = createSignal(false)
 
   const scope = () => practiceScope()
@@ -85,16 +85,6 @@ export const NativeShell: Component = () => {
     onCleanup(
       registerShellBackHandler(() => performBack(backHost()) !== 'minimize'),
     )
-
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReducedMotion(motion.matches)
-    const onMotionChange = (event: MediaQueryListEvent): void => {
-      setReducedMotion(event.matches)
-    }
-    motion.addEventListener('change', onMotionChange)
-    onCleanup(() => {
-      motion.removeEventListener('change', onMotionChange)
-    })
 
     // Escape closes the column, which is the only thing on this surface that
     // traps a keyboard user.
@@ -155,12 +145,7 @@ export const NativeShell: Component = () => {
   return (
     <>
       <Portal>
-        <div
-          class="mp-shell"
-          classList={{ 'mp-reduced': reducedMotion() }}
-          data-reduced={reducedMotion() ? 'on' : 'off'}
-          data-testid="native-shell"
-        >
+        <ShellRoot>
           <Show when={room()}>
             {(controls) => (
               <RoomHeader
@@ -231,7 +216,7 @@ export const NativeShell: Component = () => {
               </div>
             </PushedScreen>
           </Show>
-        </div>
+        </ShellRoot>
       </Portal>
 
       <MoreSheet
