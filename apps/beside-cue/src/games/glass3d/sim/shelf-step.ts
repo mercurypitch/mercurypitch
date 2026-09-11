@@ -235,7 +235,9 @@ export const stepShelf = (
   let flash: ShelfStep['flash'] = null
   const { flight } = climb
   if (flight !== null) {
-    climb.apex = Math.max(climb.apex, loco.y)
+    // The highest he got in the air: never the step the catch takes him
+    // on, which lifts him onto the lip, a height he did not reach.
+    if (!loco.grounded) climb.apex = Math.max(climb.apex, loco.y)
     // His mitt at the riser on the way up: the leap is aimed at that
     // shelf. A hop that only meets it falling, past its apex, is not.
     const target = room.shelves[flight.riser]
@@ -248,7 +250,7 @@ export const stepShelf = (
     }
     // The apex is the step his climb stopped on -- or the one the catch
     // took him on, which for a leap that lands is the same step (§11,
-    // 6b).
+    // 6b). Its line goes at the height reached (§6).
     if (!flight.flashed && loco.vy <= 0) {
       flight.flashed = true
       // Past the apex the carry is walking pace (§3.2). The pace drops
