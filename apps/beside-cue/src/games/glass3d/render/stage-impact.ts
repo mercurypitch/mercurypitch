@@ -16,14 +16,17 @@
 // the same taps at the same moments, no hitstop, slow motion, shake or
 // pixel-ratio step, and the shards' flight in half the time. Asked every
 // frame, so a viewer who changes the setting mid-break is answered on the
-// next one.
+// next one -- except by the shards, which finish the break on the clock
+// it started with: theirs is the whole elapsed flight, and replayed on
+// the other clock it would move every shard in one frame.
 
 import { tap } from '../runtime/haptics'
 import type { ImpactConfig, ImpactFrame, Tap } from '../runtime/impact'
-import { createImpactTrack, pixelRatioFor, REDUCED_FLIGHT_RATE, reducedImpact, } from '../runtime/impact'
+import { createImpactTrack, pixelRatioFor, presentTimeAt, REDUCED_FLIGHT_RATE, reducedImpact, } from '../runtime/impact'
 
 export interface StageImpact {
-  /** The glass broke at this wall time. A second break starts it over. */
+  /** The glass broke at this wall time. A second break starts it over.
+   * Its shards fly by the reduced-motion setting read here, to the end. */
   start(wallSeconds: number): void
   /** This frame's share of the break, with its taps already sent. Null
    * before the first break. */
@@ -54,9 +57,12 @@ export const createStageImpact = (
   const screenRatio = opts.screenRatio ?? (() => window.devicePixelRatio)
   const track = createImpactTrack()
   let burst = false
+  // The setting the break in progress started under: its shards' clock.
+  let flightReduced = false
   let refit = (): void => {}
   return {
     start(wallSeconds) {
+      flightReduced = reduced()
       track.start(wallSeconds)
     },
     frame(wallSeconds) {
@@ -71,9 +77,10 @@ export const createStageImpact = (
         burst = f.burst
         refit()
       }
-      return calmer
-        ? { ...f, shardSeconds: f.shardSeconds * REDUCED_FLIGHT_RATE }
-        : f
+      const shardSeconds = flightReduced
+        ? presentTimeAt(f.since, reducedImpact(config())) * REDUCED_FLIGHT_RATE
+        : presentTimeAt(f.since, config())
+      return { ...f, shardSeconds }
     },
     pixelRatio: () => pixelRatioFor(screenRatio(), burst, config()),
     onBurst(fn) {
