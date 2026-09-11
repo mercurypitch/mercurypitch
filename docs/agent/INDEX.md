@@ -355,8 +355,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.7k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.7k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.5k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |
-| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.4k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
@@ -472,8 +472,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm verify:opening` | `node scripts/verify-opening.mjs` |
 | `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
-| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app check` |
-| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app test:run` |
+| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app check` |
+| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app test:run` |
 | `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
 | `pnpm typecheck` | `tsc --noEmit` |
@@ -504,12 +504,13 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
-| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
+| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
 | `pnpm mercurypitch:dev` | `pnpm --filter @irchiinnuss/mercury-pitch-app dev` |
 | `pnpm mercurypitch:build` | `pnpm --filter @irchiinnuss/mercury-pitch-app build` |
-| `pnpm mercurypitch:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/mercury-pitch-app check` |
+| `pnpm mercurypitch:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/mercury-pitch-app test:run` |
+| `pnpm mercurypitch:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/mercury-pitch-app check` |
 | `pnpm mercurypitch:android` | `pnpm --filter @irchiinnuss/mercury-pitch-app cap:run:android` |
-| `pnpm mercurypitch:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/mercury-pitch-app exec tsc --noEmit` |
+| `pnpm mercurypitch:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/mercury-pitch-app exec tsc --noEmit` |
 | `pnpm deploy:dev` | `pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |
 | `pnpm deploy:jam:dev` | `cd workers/jam-worker && pnpm exec wrangler deploy --env dev` |
