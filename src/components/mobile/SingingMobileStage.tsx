@@ -31,7 +31,7 @@ import { KEY_OFFSETS } from '@/lib/scale-data'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, shellOwnsTransport, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import type { PlaybackMode } from '@/types'
 import styles from './SingingMobileStage.module.css'
@@ -118,6 +118,8 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
           roomLabel: 'Sing',
           isPlaying: () => props.isPlaying(),
           isPaused: () => props.isPaused(),
+          isCountingIn: () => props.isCountingIn(),
+          countInBeat: () => props.countInBeat(),
           pause: () => props.onPause(),
           resume: () => props.onResume(),
           stop: () => props.onStop(),
@@ -195,6 +197,28 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
         >
           Zen
         </button>
+        {/* The one control the shell's band has no room for. While the shell
+            owns the transport the stage's own bar is gone, and the microphone
+            is the thing a singer reaches for mid-run — to hear themselves, or
+            to stop being heard. The gear is already in the room header and
+            the play mode is a pre-run decision, so this is the only survivor. */}
+        <Show when={IS_NATIVE_BUILD && shellOwnsTransport()}>
+          <button
+            classList={{
+              [styles.chip]: true,
+              [styles.chipAccent]: props.micActive(),
+            }}
+            onClick={() => {
+              haptics.tapLight()
+              props.onMicToggle()
+            }}
+            aria-label={props.micActive() ? 'Stop the mic' : 'Start the mic'}
+            aria-pressed={props.micActive()}
+            data-testid="stage-mic-chip"
+          >
+            {props.micActive() ? 'Listening' : 'Mic off'}
+          </button>
+        </Show>
       </div>
 
       {/* ── Progress strip (beats; A-B loops stay on desktop) ── */}
@@ -257,14 +281,15 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       </Show>
 
       {/* ── Transport ────────────────────────────────────── */}
-      {/* Under the native shell the run's controls are in the dock, in the
-          rail's own slot — the stage keeps this bar only for the affordance
-          that STARTS a run. Once one is going, the band below owns it, and
-          the stacked pair is exactly the two rows of chrome S1b set out to
-          remove. */}
-      <Show
-        when={!IS_NATIVE_BUILD || (!props.isPlaying() && !props.isPaused())}
-      >
+      {/* Under the native shell the run's controls move to the dock, in the
+          rail's own slot — the stacked pair is exactly the two rows of chrome
+          S1b set out to remove.
+          The condition is "has the shell TAKEN the band", not "is a run
+          going". They are not the same question, and answering the second one
+          left the room with no Stop, no pause and no mic for the whole of a
+          run in any moment the shell had not taken it — counting in, or a
+          build with no shell mounted at all. */}
+      <Show when={!IS_NATIVE_BUILD || !shellOwnsTransport()}>
         <TransportBar class={styles.transport}>
           <button
             classList={{
@@ -462,6 +487,41 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
         </OptionSection>
 
         <DesktopHint message="A-B loops, session modes, custom scales & more — on desktop." />
+
+        {/* The session cluster above is the web's; under the shell it is gone,
+            and Skip and End went with it — while the play-mode button can
+            still start a session. They belong to the room, so they come back
+            in the room's own sheet. */}
+        <Show when={IS_NATIVE_BUILD && sessionActive()}>
+          <OptionSection label="Session">
+            <OptionRow
+              label={
+                getCurrentSessionItem()?.label ??
+                practiceSession()?.name ??
+                'Session'
+              }
+            >
+              <button
+                class={styles.stepBtn}
+                onClick={() => {
+                  setOptionsOpen(false)
+                  props.onSessionSkip()
+                }}
+              >
+                Skip
+              </button>
+              <button
+                class={styles.stepBtn}
+                onClick={() => {
+                  setOptionsOpen(false)
+                  props.onSessionEnd()
+                }}
+              >
+                End
+              </button>
+            </OptionRow>
+          </OptionSection>
+        </Show>
 
         {/* The room's sheet ends where the app's settings begin (S1 gate-1
             answer: two doors to Settings, this is the room's one). The shell

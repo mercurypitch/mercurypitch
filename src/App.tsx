@@ -32,6 +32,7 @@ import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { consumeRunParked } from '@/stores/native-shell-store'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -1830,14 +1831,16 @@ const AppShell: Component<AppProps> = (props) => {
     // button look active (and react to playback) on the next visit. Mirrors
     // the Piano/Guitar cleanup below.
     if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
-      // Under the native shell, leaving a room PARKS the run rather than
-      // ending it (S1 build brief §6): the shell has already paused playback
-      // and released the microphone on the way out, and the session pill is
-      // the way back to it. Resetting here would end the very run that pill
-      // exists to return to. The mic stop stays in both builds — it is the
-      // belt to the shell's braces, and a mic left listening under another
-      // tab is the failure this block was written for.
-      if (!IS_NATIVE_BUILD || prevTab === TAB_COMPOSE) void resetPlaybackState()
+      // The one leave that does NOT end the run: the native shell parking it
+      // on the way out (S1 build brief §6). It has already paused playback and
+      // released the microphone, and the session pill is the way back — a
+      // reset here would end the very run that pill exists to return to.
+      //
+      // Asked of the bridge, and only about THIS tab, rather than assumed
+      // from the build: every other way of leaving Sing on a phone — a deep
+      // link, a voice command, a swipe — still has to end the run, and an
+      // unconditional skip left the room permanently without a transport.
+      if (!consumeRunParked(prevTab)) void resetPlaybackState()
       if (micActive()) practiceEngine.stopMic()
     }
 
