@@ -254,3 +254,66 @@ What the code showed that the plan did not say:
   sung at the start line is a hop that lands 0.3 m short. The hint does
   not say "walk to the shelf first"; the room teaches it, or 6f moves
   `startX`.
+
+### What 6c landed
+
+Rooms 2 and 3 on the stage, the ruler behind every riser, the flash at
+every apex, and the Line's tube as the interval gauge. The e2e climbs
+all three rooms by hook, room 3's octave only by way of its ledge, and
+holds his torso inside a 390x844 frame, 8 px clear, on every one of the
+nine shelves he lands on. That answers M3 headless: the chase follows
+the shelf he stands on, so it never has to hold the 2.4 m room, only
+one shelf and the leap above it. The camera following `y`, listed here
+in §8, landed in 6b.
+
+Decided here, where the plan was silent:
+
+- **A ruler per riser, zeroed on the shelf below it**, the one he leaps
+  from, so the tick at a lip is that riser's ask. It is furniture, not
+  a readout: one ruler re-zeroed on whatever shelf he stands on would
+  jump under him at every landing. It is also what says "8ve" in room 3
+  (§4): the first riser's ruler reads 8ve at the octave shelf's height,
+  beside the ledge he leaps the fourth from.
+- **It stands 0.25 m behind him, not at the shelf's back edge**, for
+  parallax. From this eye a tick at the back edge, 0.6 m behind him,
+  reads 6 cm low against his feet at a fifth's height, more than the
+  catch; at 0.25 m it is under 3 cm. He hides its lower ticks while he
+  waits at the riser and uncovers them as he leaps.
+- **Ticks every semitone to the octave, and his spring a custard tick
+  at 0.9 m**, with the ticks above it dim: D2's "the ruler shows it".
+- **The flash names what was sung, not how high he went.** A leap
+  capped at the spring still says what the voice did, so an octave from
+  room 3's floor flashes 8ve at 0.9 m. It is the nearest interval and
+  the cents off it (`P5 +12¢`), held 0.7 s and gone by 1.6 s: a short
+  line over the ruler's ticks at the height reached, and the words just
+  under it, left of the labels, which is below his feet at the apex.
+- **The labels are 6.7 cm type on dark pills.** At 5 cm they came out
+  8 px tall on a 390 px screen, and a label at a lip's height sat on the
+  custard lip itself, so "P5" was lost at every fifth.
+- **The gauge is `ShapeGauge` unchanged**, fed in semitones: the column
+  is the voice above the reference over nine, the band the next shelf's
+  ask from half a semitone under it to the ask, ticks every semitone,
+  and no band on the top shelf. Its own toggle key,
+  `beside-cue:games:shelf-gauge`. Its aria-label still reads "Where your
+  voice sits in your range", which is wrong here; the file is the polish
+  slice's.
+- **Rooms follow one another in memory**, within a visit; the track that
+  keeps them arrives in 6d.
+
+What the code showed:
+
+- **A leap's reach is the interval's, not the room's.** From a
+  standstill a leap carries him to its riser from 0.43 m for a minor
+  third, 0.48 m for a major third, 0.53 m for a fourth and 0.62 m for a
+  fifth: a smaller leap is in the air for less. The carry leaves all of
+  him past the lip, which on room 2's 1.0 m shelves is 0.47 m short of
+  the next riser, so room 2's minor third, sung where the last leap left
+  him, falls 4 cm short and hops. Walked to the riser first, it lands.
+  The wall teaches it in one hop; 6f can shorten the gap if the phone
+  says the hop reads as the game's fault.
+- **A portrait screen is about 0.9 m wide at the ruler's depth**, with
+  him in the middle of it. The first flash hung its words 0.9 m to the
+  left of the riser, and a headless phone showed only the last glyph at
+  the screen's edge; its line, run across the labels, struck through
+  "P5". Nothing in this world can be put beside him in portrait, only
+  above or below.
