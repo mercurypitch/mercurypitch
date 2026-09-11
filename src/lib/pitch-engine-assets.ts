@@ -32,3 +32,13 @@ export function configurePitchEngineAssetsFromEnv(): void {
     modelPath: ROOT_MODEL_PATH,
   })
 }
+
+// Runs on import, not only from the boot files: a worker is its own module
+// graph with its own copy of the engine's asset state, and the root fork used
+// to read the env inside every graph that reached it. Both detector shims
+// import this module for the effect, so any graph that can reach
+// SwiftF0Detector.init() through src/lib -- the page, the separator worker,
+// the stem-transcription worker, the next worker someone writes -- is
+// configured before its first init(). The explicit calls in the boot files
+// repeat it; that is harmless and keeps the intent where startup is read.
+configurePitchEngineAssetsFromEnv()
