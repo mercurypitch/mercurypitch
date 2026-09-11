@@ -11,6 +11,7 @@ import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latenc
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
 import { progressLabel, readTrack } from '@/games/glass3d/levels/chamber-track'
 import { lineTrack } from '@/games/glass3d/levels/line-track'
+import { shelfTrack } from '@/games/glass3d/levels/shelf-track'
 import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { LineStage } from '@/games/glass3d/render/LineStage'
@@ -99,6 +100,7 @@ export function GamesScreen(props: GamesScreenProps) {
   // a game is left, because the walk happens inside the stage.
   const [track, setTrack] = createSignal(readTrack())
   const [line, setLine] = createSignal(lineTrack.readTrack())
+  const [shelf, setShelf] = createSignal(shelfTrack.readTrack())
   const [voice, setVoice] = createSignal(voiceCentre())
   const pickVoice = (midi: number): void => {
     setVoice(writeVoiceCentre(midi))
@@ -171,7 +173,12 @@ export function GamesScreen(props: GamesScreenProps) {
             />
           </Show>
           <Show when={playing() === 'shelf'}>
-            <ShelfStage onExit={() => setPlaying(null)} />
+            <ShelfStage
+              onExit={() => {
+                setShelf(shelfTrack.readTrack())
+                setPlaying(null)
+              }}
+            />
           </Show>
           <Show
             when={
@@ -385,6 +392,9 @@ export function GamesScreen(props: GamesScreenProps) {
               Hum a note, hum a higher one, and he leaps exactly that much
               higher. Sing him up a staircase, one interval at a time.
             </span>
+          </span>
+          <span class="game-card__count">
+            {shelfTrack.progressLabel(shelf())}
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 5 7 7-7 7" />
