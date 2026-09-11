@@ -287,11 +287,12 @@ describe('abandonStoragePort', () => {
 
   it('ignores a hydration that settles after the fallback', async () => {
     localStorage.setItem(USER_ID_KEY, 'web-id')
-    let release: (() => void) | null = null
+    // Every read lands on a later macrotask, so the abandon below runs while
+    // hydration is still in flight and hydration settles only afterwards.
     const slow: StoragePort = {
       get: (key) =>
         new Promise((resolve) => {
-          release = () => resolve(key === USER_ID_KEY ? 'port-id' : null)
+          setTimeout(() => resolve(key === USER_ID_KEY ? 'port-id' : null), 0)
         }),
       set: () => Promise.resolve(),
       remove: () => Promise.resolve(),
@@ -301,13 +302,6 @@ describe('abandonStoragePort', () => {
     abandonStoragePort(new Error('deadline'))
     expect(readStored(USER_ID_KEY)).toBe('web-id')
 
-    // Every key's read resolves now; the port answers 'port-id' for the id.
-    for (let i = 0; i < 3; i++) {
-      while (release === null) await Promise.resolve()
-      const fn = release as () => void
-      release = null
-      fn()
-    }
     await hydration
     expect(readStored(USER_ID_KEY)).toBe('web-id')
   })
