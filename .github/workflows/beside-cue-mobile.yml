@@ -73,6 +73,10 @@ jobs:
       testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
       testflight-upload-from: main-and-tags
       ios-export-method: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
+      # Beside Cue ships video and audio packs and sits at ~82 MB today; the
+      # owner accepts that, the gate should not warn on every run.
+      size-warn-mb: 90
+      size-fail-mb: 150
       # The onboarding media is generated, not checked in, and a build that
       # silently drops it ships an app whose first screen is blank.
       verify-assets: |
