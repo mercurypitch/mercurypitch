@@ -5,6 +5,7 @@
 import { z } from 'zod/v4'
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 
 const API_BASE = '/api/uvr'
 
@@ -565,7 +566,12 @@ export async function processAudio(
             : ''
         const have =
           parsed.balance !== undefined ? `, you have ${parsed.balance}` : ''
-        message = `Not enough credits${need}${have}. Get credits in Settings, under Account.`
+        // Where credits can be had, say so. Where they cannot -- the store
+        // binary sells nothing -- naming a place to go and buy them is the
+        // call to action the guidelines reject, so the sentence stops.
+        message = CAN_TAKE_PAYMENT
+          ? `Not enough credits${need}${have}. Get credits in Settings, under Account.`
+          : `Not enough credits${need}${have}.`
       }
     } catch {
       /* non-JSON error body — keep the raw text */

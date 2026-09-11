@@ -1,0 +1,108 @@
+name: Mercury Pitch Mobile
+
+# A caller. See `.github/workflows/capacitor-app.yml` for what it does and
+# why — every lesson in it was paid for by Beside Cue's builds, and this app
+# reuses them rather than re-learning them.
+#
+# What is different here, and deliberately:
+#
+#   The path filter is wide. `apps/mercurypitch` aliases `@` to the web app's
+#   own `src/`, so the native app IS the web app plus a shell — a change under
+#   `src/` really does change what ships to a phone, and a filter that ignored
+#   it would let a regression reach TestFlight untested.
+#
+#   Which is exactly why TestFlight uploads come from TAGS ONLY. main moves
+#   several times a day here; App Store Connect meters uploads per app per day
+#   and refuses the run AFTER the archive is built (error 90382). Every push to
+#   main still archives — the compile, the signature and the profile are all
+#   checked — it simply does not spend an upload.
+#
+# Mercury Pitch's native app versions independently of the web app, so this
+# does not use the `v*` tags that ship mercurypitch.com to production.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mercurypitch/**'
+      - 'packages/audio-io/**'
+      - 'packages/mobile-runtime/**'
+      - 'packages/pitch-engine/**'
+      - 'src/**'
+      - 'public/models/**'
+      - 'gradle/signing.gradle'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mercurypitch-mobile.yml'
+      - '.github/workflows/capacitor-app.yml'
+  # No `paths:` on a trigger that also carries tags — a tag placed on a commit
+  # already on main contains no commits, so the filter would match nothing and
+  # skip the release. The reusable workflow's `changes` job filters pushes and
+  # lets every tag through.
+  push:
+    branches: [main]
+    tags: ['mp-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mercurypitch-mobile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    uses: ./.github/workflows/capacitor-app.yml
+    permissions:
+      contents: read
+    with:
+      app-name: Mercury Pitch
+      app-slug: mercurypitch
+      app-dir: apps/mercurypitch
+      package-name: '@irchiinnuss/mercury-pitch-app'
+      bundle-id: com.irchiinnuss.mercurypitch
+      tag-prefix: mp-v
+      signing-env-prefix: MERCURYPITCH
+      profile-build-setting: MERCURYPITCH_PROFILE
+      # Kept in step with the pull_request `paths:` filter above.
+      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine)/|src/|public/models/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
+      platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
+      testflight-upload-from: tags
+      # V1-1 sells nothing. The purchase scaffold is inert and reports itself
+      # unavailable, so there is no mock to label and no StoreKit to sandbox.
+      testflight-purchase-mode: store
+      # What a store binary has to be true of: the wasm runtime and the model
+      # are vendored AND referenced, and nothing sells anything. The checks
+      # live in apps/mercurypitch/scripts/assert-bundle.mjs, which the PR
+      # gate calls as well — they were two copies of a weaker check, and
+      # both were green on a build that fetched the runtime from a CDN.
+      #
+      # --android-assets only after cap sync has run; before that the
+      # directory is last run's leftovers or nothing at all.
+      verify-assets: |
+        if [ "$STAGE" = synced ]; then
+          node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR" \
+            --android-assets "$ANDROID_ASSETS_DIR"
+        else
+          node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR"
+        fi
+    secrets:
+      keystore-base64: ${{ secrets.MERCURYPITCH_KEYSTORE_BASE64 }}
+      keystore-password: ${{ secrets.MERCURYPITCH_KEYSTORE_PASSWORD }}
+      key-alias: ${{ secrets.MERCURYPITCH_KEY_ALIAS }}
+      key-password: ${{ secrets.MERCURYPITCH_KEY_PASSWORD }}
+      debug-keystore-base64: ${{ secrets.MERCURYPITCH_DEBUG_KEYSTORE_BASE64 }}
+      apple-team-id: ${{ secrets.APPLE_TEAM_ID }}
+      apple-asc-key-id: ${{ secrets.APPLE_ASC_KEY_ID }}
+      apple-asc-issuer-id: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+      apple-asc-key-p8: ${{ secrets.APPLE_ASC_KEY_P8 }}
+      apple-certificate-p12-base64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+      apple-certificate-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      appstore-profile-base64: ${{ secrets.MERCURYPITCH_APPSTORE_PROFILE_BASE64 }}
+      appstore-profile-name: ${{ secrets.MERCURYPITCH_APPSTORE_PROFILE_NAME }}
+      adhoc-profile-base64: ${{ secrets.MERCURYPITCH_ADHOC_PROFILE_BASE64 }}
+      adhoc-profile-name: ${{ secrets.MERCURYPITCH_ADHOC_PROFILE_NAME }}
+      revenuecat-ios-key: ${{ secrets.MERCURYPITCH_REVENUECAT_IOS_KEY }}
+      revenuecat-android-key: ${{ secrets.MERCURYPITCH_REVENUECAT_ANDROID_KEY }}

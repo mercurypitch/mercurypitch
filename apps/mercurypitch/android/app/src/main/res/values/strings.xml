@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mercury Pitch</string>
+    <string name="title_activity_main">Mercury Pitch</string>
+    <string name="package_name">com.irchiinnuss.mercurypitch</string>
+    <string name="custom_url_scheme">com.irchiinnuss.mercurypitch</string>
+</resources>

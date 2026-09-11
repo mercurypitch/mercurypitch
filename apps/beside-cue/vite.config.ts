@@ -98,7 +98,7 @@ export default defineConfig(({ mode, command }) => {
         ...loadEnv(mode, fileURLToPath(new URL('.', import.meta.url))),
         ...process.env,
       },
-      (process.env.GITHUB_REF ?? '').startsWith('refs/tags/beside-cue-v'),
+      (process.env.GITHUB_REF ?? '').startsWith('refs/tags/bc-v'),
     )
   }
   const https = mode === 'https' ? devCert() : undefined

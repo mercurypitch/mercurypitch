@@ -12,6 +12,7 @@ import { getStemBlobEntry } from '@/db/services/uvr-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
 import { uvrLengthFactor } from '@/lib/uvr-api'
@@ -1020,18 +1021,22 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               </button>
               <Show when={splitBlocked()}>
                 {(blocked) => (
-                  <button
-                    class="rv-stem-btn rv-parts-cta"
-                    onClick={() =>
-                      blocked().reason === 'signed-out'
-                        ? openAuthModal('login')
-                        : openSettingsSection('credits')
-                    }
+                  <Show
+                    when={blocked().reason === 'signed-out' || CAN_TAKE_PAYMENT}
                   >
-                    {blocked().reason === 'signed-out'
-                      ? 'Sign in'
-                      : 'Get credits'}
-                  </button>
+                    <button
+                      class="rv-stem-btn rv-parts-cta"
+                      onClick={() =>
+                        blocked().reason === 'signed-out'
+                          ? openAuthModal('login')
+                          : openSettingsSection('credits')
+                      }
+                    >
+                      {blocked().reason === 'signed-out'
+                        ? 'Sign in'
+                        : 'Get credits'}
+                    </button>
+                  </Show>
                 )}
               </Show>
             </Show>

@@ -12,7 +12,7 @@
 // merely do not know. The second is the one worth testing hardest, because
 // getting it wrong turns away paying users.
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cloudSplitBlocker, cloudSplitBlockerHeading, splitCostFor, } from '@/lib/uvr-cloud-preflight'
 
 describe('cloudSplitBlocker', () => {
@@ -138,5 +138,45 @@ describe('splitCostFor', () => {
     expect(splitCostFor({}, 'demucs-6s')).toBeUndefined()
     // A zero from the server is not a free GPU; it is a missing price.
     expect(splitCostFor({ 'demucs-6s': 0 }, 'demucs-6s')).toBeUndefined()
+  })
+})
+
+describe('cloudSplitBlocker in a build that cannot take payment', () => {
+  afterEach(() => {
+    vi.doUnmock('@/lib/native-build')
+    vi.resetModules()
+  })
+
+  /** The module re-imported with the build constant forced: it is read at
+   *  module evaluation, so a test cannot flip it after the fact. */
+  async function guarded(): Promise<typeof cloudSplitBlocker> {
+    vi.resetModules()
+    vi.doMock('@/lib/native-build', () => ({
+      IS_NATIVE_BUILD: true,
+      CAN_TAKE_PAYMENT: false,
+    }))
+    return (await import('@/lib/uvr-cloud-preflight')).cloudSplitBlocker
+  }
+
+  it('quotes the shortfall but offers no errand', async () => {
+    const blocker = (await guarded())({ signedIn: true, balance: 0, cost: 3 })
+
+    expect(blocker?.reason).toBe('insufficient-credits')
+    // The numbers are still said in full. What is gone is the instruction to
+    // go and buy, which guideline 3.1.1 reads as a call to action for a
+    // purchasing mechanism other than in-app purchase.
+    expect(blocker?.message).toContain('3 credits')
+    expect(blocker?.message).toContain('you have 0')
+    expect(blocker?.message).not.toMatch(/add credits/i)
+    expect(blocker?.cta).toBeNull()
+  })
+
+  it('still sends a signed-out singer to sign in', async () => {
+    // Signing in is not a purchase, and the account is what holds whatever
+    // balance there already is.
+    expect((await guarded())({ signedIn: false })?.cta).toEqual({
+      label: 'Sign in',
+      section: 'account',
+    })
   })
 })

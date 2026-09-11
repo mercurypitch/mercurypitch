@@ -3,11 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
-import { PricingPanel } from '@/components/billing/PricingPanel'
-import { ChangelogModal } from '@/components/ChangelogModal'
+import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
 import { ConsoleLog, setupDeveloperConsole } from '@/components/ConsoleLog'
 import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
@@ -31,6 +30,7 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
@@ -52,6 +52,29 @@ import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, 
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import { MicSensitivitySlider } from './MicSensitivitySlider'
 import styles from './SettingsPanel.module.css'
+
+/**
+ * Credit packs and the supporter tiers, ABSENT from the store binary.
+ *
+ * `PricingPanel` sells credit packs through Stripe checkout and mounts
+ * `DonatePanel`, which links out to Ko-fi. Both are digital goods sold
+ * outside in-app purchase: App Store guideline 3.1.1 and Play's billing
+ * policy each reject a binary that carries them. Hiding the UI is not enough
+ * when the link is still in the bundle, so the guard is a build constant, not
+ * a runtime flag: `CAN_TAKE_PAYMENT` folds to a literal, the dynamic import
+ * sits in a dead branch, and Rollup emits no chunk for it at all.
+ *
+ * On the web this is now a lazy chunk fetched when Settings opens rather than
+ * part of the main bundle -- an accepted timing change, not a regression.
+ * Real native billing arrives later through RevenueCat.
+ */
+const PricingPanel = CAN_TAKE_PAYMENT
+  ? lazy(async () =>
+      import('@/components/billing/PricingPanel').then((m) => ({
+        default: m.PricingPanel,
+      })),
+    )
+  : null
 
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
  *  ResetScope actions run through resetAppData and reload. */
@@ -513,7 +536,28 @@ export const SettingsPanel: Component = () => {
             {/* The processing-default picker (tier cards + quality chips)
                 lives inside PricingPanel — the Karaoke page toggles use the
                 same persisted signals and stay in sync. */}
-            <PricingPanel />
+            <Show
+              when={PricingPanel}
+              keyed
+              fallback={
+                <p
+                  class={styles.settingsDesc}
+                  data-testid="credits-not-for-sale"
+                >
+                  Credits are not sold in this app. Everything that runs on your
+                  device stays free, and the server option spends credits your
+                  account already holds.
+                </p>
+              }
+            >
+              {(Panel) => (
+                <Suspense
+                  fallback={<p class={styles.settingsDesc}>Loading…</p>}
+                >
+                  <Panel />
+                </Suspense>
+              )}
+            </Show>
           </div>
         </Show>
 
@@ -2211,19 +2255,23 @@ export const SettingsPanel: Component = () => {
                   </span>
                 </Show>
               </div>
-              <button
-                class={styles.whatsNewBtn}
-                data-testid="whats-new-btn"
-                onClick={() => setShowChangelog(true)}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-                  />
-                </svg>
-                What's New
-              </button>
+              {/* No release notes in the store binary -- the store listing
+                  says what changed there. See ChangelogModalSlot. */}
+              <Show when={HAS_CHANGELOG}>
+                <button
+                  class={styles.whatsNewBtn}
+                  data-testid="whats-new-btn"
+                  onClick={() => setShowChangelog(true)}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path
+                      fill="currentColor"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                    />
+                  </svg>
+                  What's New
+                </button>
+              </Show>
               <p
                 class={styles.aboutDesc}
                 data-testid="about-desc"
@@ -2293,7 +2341,7 @@ export const SettingsPanel: Component = () => {
                   Vocal Analysis
                 </span>
               </div>
-              <ChangelogModal
+              <ChangelogModalSlot
                 open={showChangelog()}
                 onClose={() => setShowChangelog(false)}
               />

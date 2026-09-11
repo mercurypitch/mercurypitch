@@ -34,6 +34,7 @@ import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
@@ -2515,8 +2516,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           Sign in
                         </button>
                       </Match>
+                      {/* Only where there is somewhere to go: a build that
+                          cannot take payment has no Credits surface to send
+                          anyone to, and the blocker message above already
+                          says what is short. */}
                       <Match
                         when={
+                          CAN_TAKE_PAYMENT &&
                           blocked().blocker.reason === 'insufficient-credits'
                         }
                       >

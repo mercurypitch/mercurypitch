@@ -1,2 +1,8 @@
+# Generated, not ours to format. After a `cap sync` both native projects hold
+# a full copy of the built bundle -- ios/App/App/public and
+# android/app/src/main/assets/public -- which is JS, CSS and HTML that
+# prettier will try to check even though --ignore-unknown skips the Swift and
+# Gradle around it.
 android
+ios
 dist

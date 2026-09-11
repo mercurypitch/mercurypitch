@@ -1,0 +1,43 @@
+{
+  "name": "@irchiinnuss/mercury-pitch-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "predev": "node scripts/sync-ort-assets.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/sync-ort-assets.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
+    "cap:sync": "pnpm build && cap sync",
+    "cap:sync:ios": "pnpm build && cap sync ios",
+    "cap:sync:android": "pnpm build && cap sync android",
+    "cap:open:ios": "pnpm cap:sync:ios && cap open ios",
+    "cap:open:android": "pnpm cap:sync:android && cap open android",
+    "cap:run:android": "pnpm cap:sync:android && cap run android",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/outfit": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@irchiinnuss/audio-io": "workspace:*",
+    "@irchiinnuss/mobile-runtime": "workspace:*",
+    "@irchiinnuss/pitch-engine": "workspace:*",
+    "@irchiinnuss/purchase-kit": "workspace:*",
+    "solid-js": "^1.9.12"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "vite-plugin-solid": "^2.10.0",
+    "vitest": "^4.1.5"
+  }
+}

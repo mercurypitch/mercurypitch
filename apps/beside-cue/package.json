@@ -30,6 +30,7 @@
     "@irchiinnuss/beside-cue-core": "workspace:*",
     "@irchiinnuss/mobile-runtime": "workspace:*",
     "@irchiinnuss/pitch-engine": "workspace:*",
+    "@irchiinnuss/purchase-kit": "workspace:*",
     "@revenuecat/purchases-capacitor": "^13.4.0",
     "@revenuecat/purchases-capacitor-ui": "^13.4.0",
     "solid-js": "^1.9.12",

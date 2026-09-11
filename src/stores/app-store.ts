@@ -25,6 +25,7 @@ import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, 
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
@@ -698,8 +699,11 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Credits',
     targetSelector: '[data-tour="settings.credits"]',
-    description:
-      'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.',
+    // "top up here" is only true where there is a top-up to reach; a build
+    // that cannot take payment shows the same tab without the packs.
+    description: CAN_TAKE_PAYMENT
+      ? 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.'
+      : 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song) and check your balance here.',
     placement: 'bottom',
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,

@@ -40,7 +40,7 @@ describe('purchase build safety', () => {
       ),
     ).toThrow(/Test Store/)
   })
-  it.each(['', 'test_placeholder', 'goog_wrong-platform'])(
+  it.each(['', 'goog_wrong-platform'])(
     'refuses an iOS store key of %s',
     (key) => {
       expect(() =>
@@ -55,6 +55,24 @@ describe('purchase build safety', () => {
       ).toThrow(/platform-specific/)
     },
   )
+  // `test_placeholder` used to land in the list above, reported as a missing
+  // platform-specific key -- true, but not the useful half of the truth. The
+  // shared policy now recognises the `test_` prefix and says what it actually
+  // is, because a RevenueCat Test Store key in a store binary is aborted by
+  // the SDK on launch and "requires its platform-specific key" sends whoever
+  // reads it looking in the wrong place. Same refusal, better sentence.
+  it('names a Test Store key for what it is', () => {
+    expect(() =>
+      assertPurchaseBuildSafe(
+        {
+          VITE_BESIDE_CUE_DISTRIBUTION: 'store',
+          VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios',
+          VITE_REVENUECAT_IOS_KEY: 'test_placeholder',
+        },
+        true,
+      ),
+    ).toThrow(/Test Store key/)
+  })
   it('allows the real platform configuration without mocks', () => {
     expect(() =>
       assertPurchaseBuildSafe(

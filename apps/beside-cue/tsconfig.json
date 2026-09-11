@@ -16,7 +16,14 @@
       "@/*": ["./src/*"]
     },
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    // src/purchases/purchase-build-policy.ts imports
+    // @irchiinnuss/purchase-kit, whose exports point "types" at src/index.ts:
+    // a source package compiles under its consumer's options, and the
+    // `./build-policy.ts` it re-exports keeps the extension Node's ESM loader
+    // needs when Vite externalises the package while bundling a config file.
+    // Legal because `noEmit` is true.
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src/**/*.ts",
