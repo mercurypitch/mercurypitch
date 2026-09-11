@@ -16,6 +16,7 @@ import { ChamberStage } from '@/games/glass3d/render/ChamberStage'
 import { HallwayStage } from '@/games/glass3d/render/HallwayStage'
 import { LineStage } from '@/games/glass3d/render/LineStage'
 import { dropWarmMerc, warmMerc } from '@/games/glass3d/render/merc'
+import { ShelfStage } from '@/games/glass3d/render/ShelfStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { isWarmEnabled, whenIdleAfterPaint } from '@/games/glass3d/runtime/warm'
 import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
@@ -37,6 +38,8 @@ type PlayPick =
   | 'chambers'
   /** The Sorting Line: the voice shapes Merc, and the room is inert. */
   | 'line'
+  /** The Top Shelf: the gap between two notes is how high Merc leaps. */
+  | 'shelf'
   | { level: LevelDef; control: LevelControl }
   | null
 
@@ -195,12 +198,16 @@ export function GamesScreen(props: GamesScreenProps) {
               }}
             />
           </Show>
+          <Show when={playing() === 'shelf'}>
+            <ShelfStage onExit={() => setPlaying(null)} />
+          </Show>
           <Show
             when={
               playing() !== 'cabinet3d' &&
               playing() !== 'hallway3d' &&
               playing() !== 'chambers' &&
-              playing() !== 'line'
+              playing() !== 'line' &&
+              playing() !== 'shelf'
             }
           >
             <JourneyPrototype
@@ -376,6 +383,36 @@ export function GamesScreen(props: GamesScreenProps) {
           </span>
           <span class="game-card__count">
             {lineTrack.progressLabel(line())}
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* The third circle, and the last mechanic before V1: the gap
+            between two notes, which nothing else here measures. One card
+            for the reason the Line has one: its rooms teach in order. */}
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('shelf')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              The Top Shelf
+              <span class="game-card__chip">3D</span>
+            </span>
+            <span class="game-card__blurb">
+              Hum a note, hum a higher one, and he leaps exactly that much
+              higher. Sing him up a staircase, one interval at a time.
+            </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 5 7 7-7 7" />
