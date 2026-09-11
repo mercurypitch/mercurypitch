@@ -9,6 +9,767 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] - 2026-09-10
+
+Two rooms per instrument needed a door, a debounce needed a ledger, and three
+defects turned out to be CSS and framework defaults doing exactly what they
+are specified to do.
+
+### Added
+
+- **The instrument room door (#763).** Piano and Guitar each open two rooms
+  now — the standalone Night page and the in-app workspace — so the tab asks
+  once, the first time it is pressed, and then remembers. Answered at
+  `handleTabChange`, not in the tab bar: several paths reach a tab (top nav,
+  the keyboard's next/prev, a call from another surface) and the question
+  belongs to the destination. Hash routing is deliberately NOT intercepted —
+  a deep link to `#/piano` is already a statement about where to land.
+
+  Stored as `'ask' | 'night' | 'workspace'`, not a choice plus a remembered
+  flag: unticking "remember this" has to leave _nothing_ behind, and a nullable
+  choice makes "asked and declined to commit" indistinguishable from "never
+  asked". The key is prefixed, so it rides the settings sync — which room
+  someone wants is not a per-device fact. A phone is never asked: Night is the
+  mobile experience and the workspace is a desktop surface, so both tabs go
+  straight there, and in the More sheet they render as doors beside Drum Night
+  rather than as tab rows. Settings > Display & Controls changes any of it,
+  including back to being asked.
+
+- **`MercuryCheckbox`, and a rebuilt settings switch (#763).** Both use brand
+  colours rather than the active theme's accent — eight themes each define
+  their own `--accent`, and these are meant to be the same object in all of
+  them — and two stops of the spectrum (`#58a6ff` -> `#2dd4bf`), never all
+  three, because the full stroke is rationed to one per screen and Settings
+  carries twenty-three toggles. The bead is a mirrored sphere: chrome is one
+  hard value break at the reflected horizon plus a bright bounce off the ground
+  below it, and the environment map is an ellipse anchored _above_ the ball so
+  its edge crosses the silhouette in a shallow smile.
+
+- **A card of its own for every entry page (#762).** Six of thirteen entries
+  shared the generic `og-image.png`, including `/mirror`, and several described
+  artwork that did not exist. Five new cards, one visual language: the page's
+  measurement as a flat graphic in the right third, over obsidian, no baked-in
+  text. `scripts/generate-entry-og.mjs` is one model-driven generator reading
+  `src/seo/entry-pages.ts` rather than a seventh copy of the same composition.
+
+- **Guitar Night's third entry: Free play (#762).** Straight into the room
+  without the load-a-song step, with the small link kept on the song screen.
+
+- **Voice diagnostics, readable on the device (#761).** VC-1 says voice control
+  dies on iOS after a stretch of silence with no `error` and no `end`, and the
+  listener already handles several shapes of that — so the question was never
+  "add a watchdog" but "which of the things it already does actually happened".
+  A dead recognizer and a live one hearing silence look identical from outside.
+  Every transition is now recorded with the few facts that separate them, off
+  unless `?voicelog=1` asks for it (remembered, because walking into Karaoke
+  Night is a fresh document that would otherwise drop the recording halfway
+  through the thing being measured), bounded at 500 entries, and readable three
+  ways: `console.info('[voice] …')` which `MP_DEV_LOGS=1` relays to `.dev-logs/`,
+  the portable console on the device itself, and `voiceDiagnosticEntries()`.
+  No transcript text is ever recorded. The plan asked for
+  `MediaStreamTrack.readyState`; for the Web Speech path there is no such track
+  to read, so `mic` reports the microphone the APP holds instead — the other
+  half of the same question.
+
+- **A command for every night, from one list (#761).** `heard: "Go to guitar
+night" -> none`, straight off the device: only Karaoke Night had ever been
+  given a phrase. All four rooms have one now, seven ways of asking each, and
+  the room you are standing in is left out of its own list.
+
+- **Voice control in Piano Night and Drum Night (#769).** Both registered no
+  commands at all, so voice could carry somebody into either room and then had
+  nothing that got them out. Added through `DeferredRoomVoiceControl`, which
+  renders nothing until the person using the room does something — a pointer
+  move, a touch, a key, a scroll, any of them once. `lazy()` alone does not keep
+  the rooms' first-paint promise, because Solid starts the import the moment the
+  component renders, which is first paint; `assert-piano-night-bundle.mjs` and
+  its drum twin fail the build rather than let a room drag the speech stack in.
+  The keypress that wakes it is replayed once the child has mounted, so a
+  visitor who reaches for V — the one most likely to know the shortcut — does
+  not have to press it twice. Room navigation lives in its own module because
+  the studio command set opens Dexie, and a room that wanted only "go home" was
+  pulling `vendor-db` into its first paint.
+
+- **A developer console on whatever page the bug is on (#770).** The danger-zone
+  toggle revealed a log that only existed inside the Settings panel, which is
+  never the screen the bug is on, and on a phone there is no second window to
+  leave it in. Same buffer, mounted per DOCUMENT — Karaoke Night, the Mirror and
+  each Night entry are separate documents with no shared shell — collapsed to a
+  small button until asked for, because a debug overlay that opens across the
+  screen hides the control you turned it on to watch. Copy says "No clipboard"
+  rather than pretending: an insecure origin refuses it outright, and a LAN dev
+  server on a phone is exactly that. The host is appended to `<body>` because
+  `position: fixed` is captured by any transformed ancestor, which parked an
+  earlier overlay 37px above the viewport while `getComputedStyle` still read
+  `bottom: 0`. Deliberately NOT the portable console: this wraps nothing
+  (`initGlobalErrorHandlers` fills the buffer either way), and
+  `scripts/assert-no-portable-console.mjs` still passes on all five builds.
+
+  Two defects in it, both caught reviewing this release and fixed in #772
+  before either reached a tag. The key matches `SYNCED_PREFIX`, so switching
+  the console on to read what a phone was saying switched it on across every
+  signed-in device and wrote a cloud `userSettings` row for a debugging
+  affordance; it is device-local by nature and now sits in `EXCLUDED_KEYS`
+  beside the usage counters. And the import was not lazy: it ran
+  unconditionally in all seven entries, so each of the six standalone
+  documents fetched the panel, its stylesheet and its icons and appended a
+  host to `<body>` for a control that defaults to off — in rooms that spend
+  real effort keeping their first paint empty. `armDeveloperConsole()` reads
+  the flag first and loads nothing when it is off; all six are clean of it in
+  the built `dist`, and the studio carries it as it always did, through
+  Settings' inline log.
+
+  It lives in `src/lib`, not beside the store it reads, because the room
+  bundle audits forbid `src/stores/` in a room — the first attempt put it in
+  `console-store.ts` and failed all four browser shards at `build:e2e`,
+  exactly as designed. So it reads localStorage directly, in the shape
+  `createPersistedSignal` writes a boolean, and a test pins that shape because
+  a mismatch is the whole feature silently never arming. Reading once is
+  enough in a room, which has no Settings panel; in the studio the switch
+  mounts the panel itself on the press that turns it on. The audits are
+  denylists, which is why CI had nothing to say about the original.
+
+- **A tour, and a Learn chapter, for voice control (#771).** It had neither,
+  and the reason was structural: every catalogue in the Guide modal is a list
+  of tabs, and voice belongs to no tab — the pill is in every view. So the
+  feature that most needs teaching, because using it means knowing what to
+  say, was the one nothing taught. Five steps: where the pill is and that
+  dimmed means resting rather than broken; the transport and navigation words;
+  Mercury Sing, which is the only feature with no button at all, so a tour
+  that skipped it would leave it undiscoverable; the command list on Shift+V,
+  every row of which is also a button for a room too loud to talk in; and why
+  commands start with "Mercury" once a track is playing. Two existing tours
+  gained a clause rather than a step.
+
+  The release walk caught four of the five spotlighting nothing on the first
+  run: Settings' tabs are a switch, not a scroll, so a step pointing into the
+  panel needs `navigate` to open its tab first. `walk-tours.mjs` walks this
+  tour now — its targets, unlike the Karaoke mixer's, exist on a cold start —
+  and both conditions are pinned in a unit test that needs no browser: every
+  Settings step opens its tab, and the pill is spotlighted once per viewport,
+  never twice on one. Desktop 136 steps, phone 119, no misses on either.
+
+### Fixed
+
+- **A theme you chose reverted on reload (#763).** Two defects, and only fixing
+  both closed it. The push is debounced 1500 ms, so a reload inside that window
+  killed the timer and the upload never happened; then the pull applied the
+  account's row unconditionally, and that row was the _stale_ one. Being faster
+  was the obvious fix and the wrong one — the same loss happens on a crash, a
+  closed laptop, or a push that fails offline — so the pull has to be able to
+  tell that the local value is newer.
+
+  A local write is now recorded in a localStorage ledger **synchronously,
+  before the debounce**; localStorage because the page that owes the upload is
+  the page going away. A pull that finds a key there sends it up instead of
+  overwriting it, and a failed push keeps its entry for the next pull to retry.
+  The ledger is stamped with the identity that wrote it: logout does not clear
+  localStorage, so on a shared computer one singer's unsent theme would
+  otherwise have been defended against the NEXT singer's account and uploaded
+  there — the same hazard `MERGE_OWNER_KEY` already guards for progress.
+
+- **Every settings switch was 160px wide instead of 46 (#763).**
+  `.settingsRow label` sets `min-width: 160px` for the text label at the left
+  of a row, and `.settingsToggle` is a `<label>` too. The existing
+  `width: 46px !important` could never win: `!important` settles a cascade
+  fight between the SAME property, and `min-width` clamps the used width
+  afterwards whatever `width` said.
+
+- **Dropdowns closed the instant you picked anything (#763).** Binding `value`
+  on a `<select>` compiles to an effect that assigns `el.value` on every change
+  of the signal — including the change the user just made, writing back a value
+  the element already had. Chrome on Linux fires `change` while the popup is
+  still open, and assigning `.value` then closes it; the only way through was
+  press-drag-release, which fires a single change at the end. `SafeSelect` now
+  applies `value` only when it differs. Fixed there rather than at the call
+  site: every select in the app was built this way.
+
+- **A gradient under a border painted a flat band at the edges (#763).**
+  `background-origin` defaults to `padding-box` while `background-clip`
+  defaults to `border-box`, so the gradient is _sized_ to the padding box but
+  _painted_ out to the border box; the 1px overhang gets the first stop's flat
+  colour along the top and left and the last stop's along the bottom and right,
+  on a corner radius a pixel larger than the fill's. It has to be restated
+  after every `background` shorthand, which resets it — a declaration in the
+  base rule alone is a silent no-op once `:checked` sets `background:` again.
+
+- **The room door outranked the local-save veto (#763).**
+  `requestActiveTabChange` is not about tabs: it blocks navigation while a take
+  is still saving to this device, and lets Voice History ask before it is left.
+  The door intercepted ahead of it, and because the Night answer is a full page
+  navigation the in-flight save was abandoned rather than interrupted. The door
+  now runs inside the accepted callback, and its own answer re-asks before
+  navigating.
+
+- **`/vocal-remover` and five siblings promised artwork they did not have
+  (#762).** `imageAlt` described a card that was never generated.
+
+- **The room gallery spent seventeen protected requests to paint four cards
+  (#760).** The panel scrolls — 760px over a two-column grid — so most cards are
+  below the fold when it opens, and each one is a PROTECTED request for a
+  full-size plate against a 120-a-minute budget, which is how the picker
+  started answering 429. Each card now waits for an `IntersectionObserver`
+  before it asks for anything; the selected room still paints at once because
+  it comes from the controller's already-decoded URL. Where the API is missing
+  every card counts as visible, which is the old behaviour: correct, just
+  eager.
+
+- **Entry documents preloaded 173 KB that nothing painted (#760).** Measured
+  serving the real build at `/vocal-range-test`: `first-light-wide.webp`
+  fetched in full, `.entry-prelude` computed `display: none`, and the app's
+  opening curtain — the only thing that paints that plate — never rendered on
+  those pages at all. The preload sat ahead of all 36 module scripts at high
+  priority, so the art was competing with the very bundle whose arrival ends
+  the prelude. `index.html` keeps its preload, because there the curtain really
+  does paint it, and `entry-prelude.css` still carries the plate so a slow boot
+  still gets the art while the prelude is up.
+
+- **Forty-one gradients painted a seam of the wrong colour under their border
+  (#764).** The same defect the settings switch turned up, swept across the
+  codebase. `background-origin` defaults to `padding-box` and `background-clip`
+  to `border-box`, so a gradient under a translucent border is SIZED to the
+  padding box but PAINTED to the border box: the 1px overhang gets the first
+  stop's flat colour along the top and left, the last stop's along the bottom
+  and right, at a corner radius 1px larger than the fill. Invisible under an
+  opaque border, which is why it survived this long. Every rule restates
+  `background-origin: border-box` AFTER its `background` shorthand — the
+  shorthand resets it, which is how the first attempt at this fix silently did
+  nothing.
+
+- **A 401 on a data read looked like an empty library (#759).** In `request()`,
+  `if (res.status === 401) throw new NoIdentityError()` sat above the `!res.ok`
+  block that calls `onErrorResponse`, so `handleAuthErrorResponse` never saw the
+  one status that means "your auth is the problem". Reads degrade to empty so
+  the app still loads, and `getUserId()` mints an anonymous id unconditionally,
+  so nothing downstream could tell an expired session from a visitor who had
+  never written anything. A new `ServerAdapterConfig.onUnauthorized` seam runs
+  before the 401 is swallowed, wired to `handleCloudSessionRejected()`.
+  Deliberately not folded into `handleAuthErrorResponse`: on the auth endpoints
+  a 401 means "wrong password", and signing someone out for mistyping one would
+  be worse than the bug. Gated on `hasUpgradedAccount()`, so an anonymous
+  visitor is never signed out, and naturally idempotent — a page-load's worth of
+  simultaneous 401s produces one message.
+
+- **A stalled write killed the take after one or two notes (#759).** A capture
+  buffer only returns to the worklet once its chunk is durable, so the pool
+  doubles as the budget for how long storage may stall. Fixed at 32 x 2048
+  frames, that budget was about 1.4 s at 48 kHz — which is what ended recordings
+  while the schema deadlock had every write pending. The pool now grows on
+  demand to `max(32, ceil(30 * sampleRate / 2048))`, roughly 704 buffers or
+  5.8 MB at 48 kHz, and warns once at the ceiling. It does not shrink back; past
+  the growth point it recirculates.
+
+- **A superseded or blocked database only explained itself in two rooms
+  (#759).** It breaks every surface at once, and a superseded tab has no working
+  surface left to read the explanation on. One `DatabaseLifecycleNotice` in the
+  shell: superseded is `role="alert"`, never auto-dismisses and carries Reload;
+  blocked is `role="status"` with no button, because it clears itself when the
+  other tabs go and closing them is not something this page can do.
+
+- **One reload was a stumble, two was a dead tab (#767, #768).** Loading whisper
+  on a phone can take the whole content process with it; WebKit reloads the
+  document at the same URL, the engine preference and the enable flag are both
+  persisted, so the fresh document starts the same load and the SECOND kill is
+  the one the user sees. A marker in `sessionStorage` is armed just before the
+  load and cleared however it settles, so a document that starts while it is
+  still set is a document that came back from a kill. `pagehide` clears it too,
+  which is what keeps a deliberate navigation mid-download from looking like a
+  crash — a jetsammed process fires no `pagehide`, and that is the line between
+  them. The bias is deliberate: a missed marker costs one more attempt, a
+  spurious one would refuse an engine that works. Counted rather than flagged,
+  because whisper and Moonshine are two listeners over one shared worker and
+  whichever load settled first was clearing the marker out from under the other.
+  Coming back, the app hands over to the browser engine; picking the on-device
+  one again asks first, once, and "Try anyway" is the retry.
+
+- **The worker's reason for a failed load never left the worker (#768).** A
+  worker's console reaches no device log, so `Voice model failed to load` was
+  the whole of what a phone could report. The detail now rides along in the
+  message, and a main-thread `console.info` announces the load before it starts
+  — a log that ends there means the device died loading the model, a log that
+  reaches the failure means it merely refused. On an iPhone 13 those two were
+  indistinguishable until this line existed.
+
+- **Recognition argued with a backgrounded page (#769).** iOS does not let it
+  survive being backgrounded, and our own record shows the shape:
+  `error code=audio-capture live=true [hidden]` then `visibilitychange`,
+  `audioend`, `aborted`, respawn, `not-allowed`, stand-down. The listener now
+  stands by on hidden and comes back on visible — a different state from dozing,
+  with its own flag, because dozing means the opposite (stay quiet until a
+  touch) and sharing one would leave a returning page silent. Desktop keeps its
+  session: a background tab there keeps its microphone, and a pianist who
+  alt-tabs mid-practice should not lose the ear.
+
+- **The microphone was cold for the first session of a document (#769).** A
+  documented WebKit mitigation for precisely the symptom here — the FIRST
+  recognition failing while later ones are fine. One `getUserMedia`, stopped in
+  the same breath, once per listener, begun rather than awaited so a permission
+  prompt nobody answers cannot mean voice control never starts. Neither this nor
+  the stand-by above is claimed as the fix for VC-1; both write a line in the
+  record so a device run can say which fired.
+
+- **A stutter matched nothing (#761).** "sing sing" is one `sing` said twice —
+  how a person speaks when the first attempt did not seem to land, and what a
+  recognizer produces from a hesitant start. Runs of the same token collapse,
+  but only as a FALLBACK after the tokens as spoken have been tried, so a
+  command that legitimately repeats a word keeps working. Numbers are left
+  alone: "back two two" may be twenty-two misheard or two separate values, and
+  quietly rewriting it would change what happens rather than fail honestly.
+
+- **The command list lost the panel on a phone, and Drum Night's overlay was
+  unreadable (#761, #769).** Along with the room log dropping the lines the
+  experiment had turned on.
+
+### Changed
+
+- **`practise` -> `practice` throughout (#762)**, except the two British-spelling
+  SEO keywords in `src/seo/entry-pages.ts`, which are deliberate. No stored key,
+  column, badge id or matcher changed — `condition` in `seed-data.json` is
+  display copy the grant engine never reads.
+
+- **Karaoke's card drops "you own" (#762).** The ownership framing belongs in
+  the privacy notice and terms, not on a share card.
+
+- **"Pitch" wears the brand spectrum on every card (#762).** The generators set
+  a flat `#58a6ff` while the app renders
+  `linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%)` clipped to
+  the text, in both `App.module.css` and `entry-prelude.css`. A card is the
+  first frame of the page it links to, so a flat blue "Pitch" read as a
+  different brand the moment the page painted.
+
+- **AGENTS.md and CLAUDE.md say rebase, not merge (#763).** The guardrail
+  already allowed `--force-with-lease` for rebases, but only in AGENTS.md;
+  CLAUDE.md summarised it as "never force-push" with no qualifier, and an agent
+  reading the summary concludes a rebase is off the table and merges `main`
+  into the branch instead. Squash-vs-rebase is now stated as a judgement about
+  what the commits are, not a default.
+
+- **One `GUITAR_NIGHT_PATH`, not five copies of the string (#766).** The literal
+  `'/guitar-night'` appeared in five places, one of them the legacy path it
+  redirects from. A constant, and the redirect reads as a redirect.
+
+## [0.9.6] - 2026-09-09
+
+The crawlable entries become a data model, four search intents get a page of
+their own, and PR Gate stops failing runs in which nothing failed.
+
+### Added
+
+- **Four new entry pages: `/pitch-training`, `/vocal-remover`,
+  `/voice-type-test` and `/which-singer-has-my-vocal-range`.** Each is a real
+  document at its own URL that hands over to the app in place — no redirect,
+  the address a searcher landed on is the address they can share. Verified on
+  dev: the path never changes, the canonical is self-referential, and the
+  served HTML carries the page's own H1, description and JSON-LD.
+
+### Changed
+
+- **The nine hand-written entry HTML files are one data model.** `src/seo/entry-pages.ts`
+  is now the single source of truth for all thirteen entries, and
+  `src/seo/render-entry-page.ts` renders one to HTML. It drives four things
+  that used to be maintained by hand and drift apart: the document itself, the
+  Vite build input, the dev/preview rewrite table, and the cross-links on every
+  other page. The generated `<slug>.html` files sit at the project root because
+  Cloudflare's asset-layer `html_handling` maps a clean path only to a document
+  beside it at the dist root; they are generated and git-ignored, with a Vitest
+  `globalSetup` writing them before any suite runs.
+
+### Fixed
+
+- **Five entry pages shipped an empty `<noscript>`.** The extractor's regex did
+  not survive Prettier wrapping the closing tag as `</noscript\n>`. The parity
+  check that should have caught it ran the same broken extraction on both sides
+  and compared empty to empty — a reminder that round-tripping a value through
+  the code that produced it cancels the bug out twice.
+
+- **PR Gate failed `main` on a run where 599 files and 7088 tests passed.**
+  Three `ReferenceError: localStorage is not defined` unhandled rejections, all
+  through one stack: `recordExerciseResult` persists in a fire-and-forget tail,
+  and the promise had no owner. In CI the tail outlived the test file that
+  started it, jsdom tore down and took `localStorage` with it. It hides locally
+  because Node 25 carries a global `localStorage` and CI's Node 22 does not.
+
+  The same missing owner was a real hole in the app: a browser that denies
+  storage throws on the first read, and the whole session record went down with
+  an unhandled rejection nobody logged. The tail now catches and says what it
+  lost, and `flushExerciseHistoryWrites` gives the two tests that record runs a
+  way to end where they started.
+
+  Measured under Node 22 with CI's own command: before, `--shard=2/2` failed
+  twice with 3 and 30 rejections (the count swings to 70, which is why it read
+  as a flake); after, four consecutive runs exit 0 with none.
+
+## [0.9.5] - 2026-09-09
+
+One fix, in what a failed cloud read reports.
+
+### Fixed
+
+- **Every failed cloud read claimed the backend was unreachable, once per
+  session, and prescribed dev-only remedies on production.** Found while
+  reading the console from the tablet in 0.9.4: under an empty Karaoke
+  library sat `[db] cloud backend unreachable — ... Start the dev worker
+(pnpm dev:db) or unset VITE_API_BASE_URL`. The connection was fine, and
+  neither remedy exists on `mercurypitch.com`.
+
+  A failed cloud read degrades to an empty result so the app still loads.
+  That is deliberate offline tolerance and is unchanged here. What it costs
+  is evidence: the console line is the only thing distinguishing a library
+  that is empty from one that is broken, so the line has to be true. It was
+  not — `warnCloudUnreachable` printed the same sentence for a 404 on an
+  undeployed route, a 500 that outlived its retries, and a body that would
+  not parse, because the only thing it had was an `Error` carrying the status
+  inside its message string.
+
+  `request()` now throws a `CloudRequestError` with the status as a field
+  (same message, so anything logging it reads the same). `warnCloudReadFailed`
+  classifies on that: `http-<status>` when the backend answered, `offline`
+  only for a `TypeError` the retry loop already gave up on, `unknown`
+  otherwise. It names the entity it was reading, and the dev remedies are
+  behind `IS_DEV`.
+
+  The `offlineWarned` latch was module-level and once-ever, so the second
+  failure — usually the interesting one, and always the one on a different
+  table — never reached the console at all. It is now a set keyed by cause:
+  one line per distinct failure, still no spam when the same one repeats.
+
+  A 401 stays silent. Identities are provisioned on the first write, so a
+  visitor who has not written anything has no rows and no problem;
+  `getUserId()` mints an anonymous id unconditionally, so it cannot
+  discriminate an expired session from a fresh visitor. Telling those apart
+  needs a signed-in signal the adapter does not have, and is left alone.
+
+  Eight tests in `src/tests/server-adapter.test.ts`. Four of them fail
+  against the 0.9.4 behaviour, one per part of the defect: the mislabel, the
+  offline classification, the once-ever latch, and the dev advice on prod.
+  The production-console one re-imports the module under a mocked `IS_DEV`,
+  which is the only honest way to read that branch from a test run whose
+  `import.meta.env.DEV` is true. The spy is restored in `afterEach` rather
+  than at the end of each body — a spy leaked by a failing assertion is
+  adopted by the next `vi.spyOn` along with its recorded calls, which made an
+  earlier draft of these tests pass or fail on their order.
+
+## [0.9.4] - 2026-09-09
+
+One fix, in how the local database behaves when an origin has several tabs.
+
+### Fixed
+
+- **A second tab could deadlock the IndexedDB upgrade indefinitely.** Reported
+  from prod on a Galaxy Tab S9: Guitar Night and Hear Yourself sat on "opening
+  your local library" for over ten minutes, Karaoke showed an empty library,
+  and a take stopped a second after it started. All of it was one cause.
+
+  The device's database was at IndexedDB version 80 (Dexie 8) while 0.9.2
+  shipped Dexie 12 (IndexedDB 120), because that tablet had mostly been used
+  against the dev origin. A versionless open did not return in 15 seconds. Six
+  `mercurypitch.com` tabs were open. Closing them made the app work at once,
+  and the database then opened in **2 ms** — so the blob re-index everyone
+  reaches for as the explanation was never the cost. `uvrStemBlobs` held 45
+  rows.
+
+  The cause is not a missing handler. Dexie registers its own `versionchange`
+  subscriber, and it closes the connection with `disableAutoOpen: false`, which
+  leaves `autoOpen` true. The next query in that tab reopens the database at
+  the old version and blocks the upgrade again, so any tab with a live query
+  starves the upgrading tab forever. Slow would have finished; this could not.
+
+  `src/db/database-lifecycle.ts` now owns both events. `versionchange` closes
+  with `disableAutoOpen: true`, which a reopen cannot undo, and marks the tab
+  superseded. `blocked` marks the state so a waiting room can say the true
+  thing. The two loading surfaces stop asserting "re-indexing" after four
+  seconds regardless of cause, and say either "close the other tabs" or
+  "reload to continue" when that is what is actually happening.
+
+  The Guitar Night take that died after one or two seconds was the same cause
+  seen from another angle, and is documented in `recording-capture.ts` rather
+  than changed: capture buffers return to the pool only once a chunk is durable,
+  and the pool is 32 x 2048 frames — about 1.4 seconds at 48 kHz. With every
+  write pending behind the wedged upgrade, capture starved in about a second
+  and reported "Recording processing fell behind", which reads like a CPU
+  problem and is not. Widening the pool would only lengthen the fuse.
+
+### Testing
+
+- `database-lifecycle.test.ts` pins the rule against a fake connection,
+  including that `superseded` is terminal so the advice never softens back to
+  "close some tabs" when only a reload will do.
+- `database-multi-tab-upgrade.spec.ts` drives the real browser primitives. Its
+  first draft passed against the unfixed build and proved nothing, because an
+  idle tab upgrades fine either way — Dexie's default does close. The spec now
+  keeps the tab querying through a bridge probe while another connection
+  upgrades, which is the condition that produces the deadlock. Two of its three
+  tests fail against the unfixed build.
+- The deadlock itself is timing-dependent, so the deterministic guard is the
+  reported lifecycle state rather than a race the CI could lose.
+
+## [0.9.3] - 2026-09-09
+
+One fix, in the background picker shared by every room.
+
+### Fixed
+
+- **`BackgroundArtwork` re-fetched every thumbnail whenever the resolved room
+  changed.** Its loading effect read `props.controller.resolved()` in order to
+  reuse the surface's already-decoded object URL for the selected card. That
+  read subscribed _every_ card in the gallery to the current selection, so a
+  single pick tore down all of them: `onCleanup` aborted each in-flight request
+  and revoked each object URL, then the effect re-ran and issued a fresh
+  full-size protected fetch per card.
+
+  Measured against the shipped component: a gallery of the ten Piano premium
+  rooms costs 10 requests to open, and three room changes took that to **39**.
+  A seventeen-room gallery went from 17 to **67**. The `background-read` bucket
+  allows 120 a minute, and protected art is served
+  `Cache-Control: private, no-store` by design, so nothing absorbs the repeats.
+  Piano Night reached prod with seventeen rooms in 0.9.2 and was the first
+  surface wide enough to hit the ceiling; it answered `429` after a couple of
+  picks and the gallery stuttered.
+
+  The reuse itself was worth keeping, so it moved to a `createMemo`
+  (`sharedUrl`) that tracks the selection for _display only_. The loading
+  effect now depends on nothing but the option it renders, and runs once per
+  card. The selected card still shows the surface's copy the moment it exists.
+
+  This component is shared: Piano, Guitar, Drum and Karaoke Night, the Karaoke
+  mobile stage, the Ear Lab shell, the Jam panel and the stem mixer all mount
+  it, so every surface carried the same defect and every surface is fixed by
+  the same change.
+
+  Audited alongside it and found correct, so deliberately untouched: the
+  surface controller in `background-surface.ts` loads only the selected room
+  and already guards with a match check, an in-flight target comparison and a
+  generation counter; `useJamRoomBackground` reads `resolved()` in its computed
+  but manages a single background, and both its success and failure paths are
+  guarded so the re-run is a no-op rather than a retry loop.
+
+### Known, not changed here
+
+- Opening the gallery still costs one protected request per unlocked room,
+  because thumbnails are drawn from the `landscape-2k` variant and no smaller
+  tier exists. Object URLs are revoked with the popover by deliberate design
+  (the file says so), so re-opening pays again. Seven opens a minute would
+  still reach the limit. Worth a thumbnail tier or a session cache, but both
+  are design decisions rather than a patch.
+
+## [0.9.2] - 2026-09-08
+
+481 commits on `main` that are not in `v0.9.1`, spanning late July to 8
+September. The 0.9.1 tag was cut off the mainline around #636, so two rooms
+that were built before it — Ear Lab and Drum Night — reach a release for the
+first time here. Grouped by arc rather than by commit; the arcs each carry
+their own plan document under `docs/plans/`.
+
+### Ear Lab: measurement-first ear training (#647, #661, #685, #723)
+
+Thirteen drills, each on its own stage inside the room, built in phases: the
+bench as the Regulator Room, one latency number and the seal as a ritual, the
+report in the room, doors and native readiness, the rhythm seam, then the
+rooms themselves. Pulse, Echo and Span, Beat Hunt and Drift, Gravity and The
+Pull, Cadence and Bassline, Subdivide, The Chart. On top of the catalogue: the
+Ear Path (milestones as a going train on the bench), the Daily Sprint with its
+own page tour, the mixing desk (Colour, Weight and Critique on an offline
+render), and the Field Book, which builds a drill out of a song the user
+brings.
+
+Traps worth keeping:
+
+- The room enters with **no AudioContext by design**, which made every
+  playback path responsible for waking one inside the gesture. `PlayPad`
+  called `unlockAudio` on a context that did not exist yet, and
+  `wild-playback.excerpt()` never activated at all. `playExcerpt` schedules
+  against `ctx.currentTime` but resolves its promise on a wall clock, so a
+  suspended context walks a whole drill in silence with no error. Fixed with
+  `activateAudioPlayback(engine)`, which creates the context synchronously
+  before its first await.
+- A stopped run has to stay stopped, book nothing and go quiet; the first
+  three attempts each left one of those three behind (#723).
+
+### Drum Night: a playable room (#628, #656, #690, #714)
+
+A playable kit and e-kit input, four lazily loaded kit flavours, a
+session-local groove rack, an idiom pattern library to start from, loops
+projected onto the score, the shared song timeline, full-band play-along, and
+imported authored drum sessions. The feel engine is taught from measured
+performances rather than hand-tuned, and sampled hits vary so a repeated note
+stops machine-gunning.
+
+Saved grooves and take history came with the gate that a take summary is
+stamped with the project id, revision and fingerprint — so a take is a
+comparison against a saved groove, and cannot exist without one. The UI stated
+that requirement as a dead end for a long time; it now offers the save that
+unblocks it.
+
+### Guitar Night: percussion, then recording (#632, #634, #646, #678, #690, #739, #741)
+
+Imported percussion support and the percussion song timeline, then the scoring
+work that measures what the player actually played, then the melody recorder:
+Studio amp tones, Studio Lead, live monitoring while recording, and shared song
+controls. The amp runs a Lite tone until the cabinet impulse response has been
+fetched, checksummed and decoded, then crossfades to Studio — which is a trap
+for any test that measures level or tone (#740, and see below).
+
+#741 completed the recorder: Live, Replay and Practice over one stable stage
+and the existing input ownership, with Practice reusing the Rehearse scoring
+engine, A/B, tempo, count-in, results and Keep. Replay chooses original audio
+or synthesized notes, clean or through the current or the saved amp. Exports
+gained compact filenames and native GP7 notation, written by a dedicated
+`recording-gp7.ts` that repairs the two GPIF metadata fields alphaTab 1.8.3
+writes incorrectly. Capture now previews short PCM batches while keeping the
+durable checkpoints bounded, and blocked Practice Play opens an actionable
+input prompt whose cancellation safely rejects a late device or permission
+result. Two ownerless Solid computations were fixed by moving conditional memo
+creation out of JSX getters into component-owned memos.
+
+#746 added chord refinement on top of it, deliberately reversible and off the
+audible path. A pinned, self-hosted Basic Pitch model and single-threaded ONNX
+WASM load lazily into a disposable Worker — about 13 MiB of WASM and a 230 kB
+model on first use, no upload and no second microphone. Two independent Session
+switches: **Live chords** (off initially), which borrows the selected dry input
+through a silent bounded side tap to show simultaneous pitches while playing,
+and **Refine after Stop** (on initially), which prepares a Current/Refined
+comparison a take can accept or reject, with a one-step restore that survives a
+reload. Split, merge, practice, MIDI and GP7 are polyphony-safe without moving
+the original performance timing; the captured evidence and accepted practice
+revisions are never overwritten.
+
+Left standing: capture-driven browser specs measure real-time frames, and
+buffers recycle only after each checkpoint is durable, so they fail under IO
+contention (reproduced locally by moving the browser profile off tmpfs) — the
+same 1.4 s budget that stops a take with "processing fell behind" on slow
+device storage. Chord refinement is a separate follow-up (#746).
+
+### Signing in (#664, #672, #722)
+
+Passkeys, TOTP two-factor with recovery, email-code sign-in, and one row per
+signed-in device. #722 closed the three holes the review found: passkeys verify
+locally, enabling 2FA revokes legacy tokens, and code guesses burn atomically
+so they cannot be raced. #672 makes a returning singer's device offer the way
+it already signed in.
+
+### Challenges, badges and Progress (#698, #703, #708, #709, #710, #718, #719, #735)
+
+A challenge closes cleanly, publishes its podium and awards it; a podium that
+closed before badges existed can still be awarded after the fact; a closed
+challenge cannot be set live again. The podium definitions travel as a
+migration rather than a seed. The Legends view took the leaderboard, the
+Progress cabinet took every badge and achievement, and the vocal challenges
+moved into Practice beside the exercises.
+
+### Storage and playback (#656, #683, #694)
+
+Separated stems move out of the database and into Blobs with windowed
+playback, which is what lets a phone open a full-band song at all. Karaoke
+streams a song on a phone rather than holding it. The stem mixer's vocal
+lyrics generator came out into its own hook (Slice F).
+
+### Voice control (#662, #691, #715, #737, #740)
+
+The pill borrows the header row on a phone and gives it back. Segment offsets
+sit on the clock that indexes them. A refused microphone stands down. Then the
+0.9.2 retest rounds, which found four separate causes behind one symptom:
+
+- The quiet-session backoff left waits of up to 15 s while the pill still read
+  `listening`. Any wait over 900 ms now reports `dozing`, and the ramp caps at
+  3 s.
+- WebKit drops a session under Siri or a call with no `end` and no `error`,
+  leaving `live` true over nothing. Stale-session detection is 12 s where a
+  respawn is visible and 45 s on desktop.
+- WebKit also ends a session as soon as it delivers a final result, and the
+  300 ms respawn ate the start of the next command. A session that heard a
+  word now respawns on the next task.
+- `go` was in `PLAY_PHRASES` and is the first word of every navigation phrase.
+  A recognizer that finalises an utterance in pieces delivers a bare "go",
+  which started playback before the rest of the sentence arrived.
+
+Still open on iOS: see `VC-1` in the backlog. Android is unaffected.
+
+### Shell, mobile and the retest rounds (#674, #676, #720, #734, #737, #738, #740)
+
+Phone toast cap of two, the verify-email nudge as an inline strip, the docked
+voice pill, Piano Night's one-row phone landscape, Guitar Night's phone rows
+returned to the neck and transport, and the drum take strip carrying Finish so
+the bottom rail keeps plain play and pause. History handling was rebuilt around
+position stamps: a return traversal is known by its stamp and a push by the
+absence of `popstate`, because real browsers split those two into different
+tasks and jsdom does not.
+
+### Crawlable entry documents (#743, #744, #745, #747, #748, #749)
+
+`mercurypitch.com` held five indexed URLs and appeared for none of the eighteen
+keywords we target, because every entry document is a JavaScript shell: `#root`
+is empty in the file, so a crawler that does not run the bundle read no
+heading, no sentence and no link out, and the nine sitemap-only orphans got the
+lowest crawl priority there is. #743 put a prelude after `#root` in all ten
+documents — the page's own `h1`, its claim, a link to every sibling room and to
+the landing — hidden by `#root:not(:empty) ~ .entry-prelude` the moment the app
+mounts. It also made the four `FAQPage` blocks describe something visible,
+added `Organization` and `WebApplication` structured data, put `/jam` in the
+sitemap, and stopped non-production deploys competing with production: a
+build-time Vite plugin writes a disallow-all `robots.txt` and an
+`X-Robots-Tag: noindex, nofollow` for `build:dev`, which has to happen at build
+time because the Cloudflare asset layer answers most requests without ever
+reaching `src/worker.ts`.
+
+#745 took the ten byte-identical inline `<style>` blocks into one
+`src/styles/entry-prelude.css`, and made Drum Night a listed page — it shipped
+as a `noindex, nofollow` pilot with nothing linking to it, while shipping as a
+feature in this very release.
+
+#747 answered what the prelude actually is: the loading screen. The home entry
+preloads 55 modules — 4.8 MB of JS — so it holds the screen for the whole boot,
+and it was showing left-aligned body copy before the app's own opening curtain
+arrived with a plate and a lockup. It now wears the curtain's clothes: the
+First Light plate, the brand lockup at the curtain's height, everything
+centred, a scrim over the water. The ground paints immediately — delaying it
+flashes the body's white through first — while the lockup waits 160 ms and the
+copy 620 ms, so a boot that beats them is never interrupted by a word. The
+standalone rooms matter most here: they mount their own entry and never show
+App.tsx's curtain at all.
+
+Trap worth keeping: clearing `#root` after boot is **not** a way to inspect the
+pre-boot paint. The bundle's injected CSS then gives `#root` a 100vh
+min-height and pushes the prelude off screen. Strip every stylesheet but the
+prelude's own — which is also how the missing `body { margin: 0 }` surfaced.
+
+#744 brought five entry titles inside the roughly 15-to-65-character window
+Bing's URL inspection reports on, trimming from the tail so the query stays at
+the front, and pinned the bound across all ten documents. The root title stays
+at 63: shortening it means choosing what MercuryPitch leads with, which is a
+positioning call rather than a length one.
+
+#748 stopped `not_found_handling: "single-page-application"` answering every
+unmatched path with `index.html` and a 200 — soft 404s by the infinite supply,
+on a site whose actual problem is too few indexed pages. It is `404-page` now,
+with a real 404 document built as a Vite input so it shares the prelude
+stylesheet, carrying `noindex, follow` and no canonical. `/exercises/<slug>`
+was the one path genuinely relying on the fallback and is served on purpose by
+`src/worker.ts` with the URL intact. It also ships an `llms.txt`, including a
+"what MercuryPitch does not do" section drawn from the claims list, because
+GPTBot is the largest crawler on this domain.
+
+#749 closed what that sweep missed, found in review: the six friendly admin
+paths in `src/lib/admin-entry-route.ts` had exactly the same shape as the
+exercise deep links — no file, normalized to a hash route on boot — and went to
+404 with the fallback. The lesson is the one the CRITICAL comment in
+`wrangler.jsonc` already states: the asset layer answers every path not listed
+in `run_worker_first` **without invoking the Worker**, so every pathname the
+client routes on has to be listed there deliberately. A unit test over the
+mapping function cannot see this; only a routing test can.
+
+### Testing and CI (#655, #659, #740)
+
+The PR gate is parallel and runs the full browser suite on PRs, sharded four
+ways. Each fake-mic tone length got its own file. Two traps are now written
+down where they bit:
+
+- A `createMemo` runs **eagerly at creation**, so a memo that reads a signal
+  declared below it throws during render. The unit suite cannot see it; only
+  the browser suite can.
+- Any Guitar Night browser test that measures tone or level has to settle the
+  amp first, or it is racing a 172 KB cabinet download. Reproduce by delaying
+  `**/*.wav`.
+
 ## [0.9.1] - 2026-08-25
 
 ### Guitar Night: multi-track reading (#611, #613, #616, #617, #619)
@@ -1419,7 +2180,7 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   points at. A per-account first-seen stamp
   (`mercurypitch.localProgressNotice.firstSeen.v1`) now divides the history:
   `summarizeLocalProgress(before)` counts rows by `completedAt` and Ascent
-  days by date, excluding the seeded `ENDOWED_DAY` that nobody practised, and
+  days by date, excluding the seeded `ENDOWED_DAY` that nobody practiced, and
   the component reads `localProgressAtSignIn()`. The stamp is only written for
   an account that differs from the device id, so being signed out never dates
   the line.
@@ -2092,7 +2853,7 @@ none` so iOS never answers the hold with the selection magnifier.
   `applyRepair`, so any read or write brings the balance current. It needs
   its own anchor — `userProfiles.lastFreezeEarnedDate`, added by 0017 —
   because a date derived from practice would only advance for people who
-  practise, and an idle month is exactly the case that must accrue. The
+  practice, and an idle month is exactly the case that must accrue. The
   anchor advances by whole `periods * FREEZE_ACCRUAL_DAYS`, never to
   `today`, so partial periods are not silently forfeited. `applyRepair` now
   returns a typed `RepairResult` instead of a bare boolean, and repair is
@@ -3110,7 +3871,7 @@ sinceGlideStart)` is extracted and unit-tested — the guide dot was phased off
 - Siren note generation: `generateSirens` previously used spans up to 32 semitones with one-sided clamps (`Math.max(36,start)` / `Math.min(84,end)`), so wide descending glides produced sub-audible/negative MIDI (the "G0"). Now exported + parameterized by `[rangeMin, rangeMax]` (from `getComfortableMidiRange`), with singable spans (≤12, ≤range) shifted into range as a pair without distortion. `SirenExercise` shows the end note as a target line + a triangle-wave glide guide (`movingTarget`) and labels start→end. Added a range-safety regression test.
 - `PitchOverTimeCanvas`: the latest-dot note label now falls back to deriving the name from the dot's frequency (exercise samples carry no `noteName`), and `drawYAxisLabels` draws per-note gridlines/labels when zoomed to ≤ ~2.6 octaves (every semitone ≤1.4 oct, else every 2nd) instead of only octave Cs.
 - `.exercise-card-grade` is now `inline-flex` + `align-items: center` so the grade icon centers with its label.
-- Exercise difficulty badge + filter (`ExerciseMenu.tsx`): added a curated intrinsic `EXERCISE_DIFFICULTY: Record<ExerciseType, 'easy'|'medium'|'hard'>` shown as a badge on every card, plus All/Easy/Medium/Hard filter pills (`visibleCards` memo). Replaced the per-card adaptive `DifficultyIndicator` (which hid itself at the default level 5, so it only appeared on practised exercises and read as a fixed rating) — the adaptive level still drives scoring via `launchDifficulty`/`difficulty-store`, it's just no longer the card badge. `DifficultyIndicator.tsx` is now unused.
+- Exercise difficulty badge + filter (`ExerciseMenu.tsx`): added a curated intrinsic `EXERCISE_DIFFICULTY: Record<ExerciseType, 'easy'|'medium'|'hard'>` shown as a badge on every card, plus All/Easy/Medium/Hard filter pills (`visibleCards` memo). Replaced the per-card adaptive `DifficultyIndicator` (which hid itself at the default level 5, so it only appeared on practiced exercises and read as a fixed rating) — the adaptive level still drives scoring via `launchDifficulty`/`difficulty-store`, it's just no longer the card badge. `DifficultyIndicator.tsx` is now unused.
 - Sight-Singing rewrite (`use-sight-singing-controller.ts` + `SightSingingExercise.tsx`): `setScale(scale, rangeMin, rangeMax)` generates notes only within `getComfortableMidiRange(preset)` (pitch-classes from the current scale), preferring stepwise motion. Replaced the fixed 2s `setInterval` auto-advance with a pitch-driven poll (`HOLD_TO_PASS_MS` in-tolerance hold, `MAX_NOTE_MS` timeout fallback) that scores each note at advance and emits live metrics (`holdPct`, `detectedMidi`, `centsOff`, `matched`). Staff now maps by diatonic step (lines E4-G4-B4-D5-F5), draws ledger lines + ♯ accidentals + a real treble clef glyph, and highlights the active note; added a hold bar and a DEV-only (`import.meta.env.DEV`) detected/target/hold readout.
 - Interval Trainer & Dynamic Swell scored ~0 regardless of performance: `evaluateRound()` set its window start (`matchStartTime`/`holdStartTime`) and bound from absolute `performance.now()`, but pitch samples store `time` as exercise-relative (`elapsed/1000`). The predicate `p.time*1000 >= start-100` was therefore always false → the window selected zero samples → score 0. Both now use `base._getElapsed()` (same relative epoch) for the window start and the upper bound. Added driven happy-path regression tests for both (the interval-trainer happy path was previously un-assertable for this exact reason).
 - Routine Runner score could exceed 100: `fatigueScore = fatigued ? max(0, 100 + hnrTrend*2) : 100` was unclamped, so a positive `hnrTrend` pushed the 30%-weighted term past 100. Now `min(100, max(0, …))`.

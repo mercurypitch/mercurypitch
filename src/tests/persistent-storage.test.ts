@@ -73,7 +73,7 @@ describe('ensurePersistentStorage', () => {
     )
   })
 
-  it('explains a voice-take persistence request without changing the default flow', async () => {
+  it('requests persistence for a kept take silently, its page carries the advice', async () => {
     const storage = {
       persist: vi.fn().mockResolvedValue(false),
       persisted: vi.fn().mockResolvedValue(false),
@@ -84,11 +84,7 @@ describe('ensurePersistentStorage', () => {
     await expect(ensurePersistentStorage('voice-takes')).resolves.toBe(false)
 
     expect(storage.persist).toHaveBeenCalledTimes(1)
-    expect(mocks.showNotification).toHaveBeenCalledWith(
-      expect.stringContaining('Take saved on this device.'),
-      'info',
-      { durationMs: 12000 },
-    )
+    expect(mocks.showNotification).not.toHaveBeenCalled()
   })
 
   it('still requests persistence when localStorage access is blocked', async () => {

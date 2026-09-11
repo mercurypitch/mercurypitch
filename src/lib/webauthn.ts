@@ -10,6 +10,8 @@
 // already carrying the part that genuinely should not be hand-rolled (CBOR,
 // COSE, attestation).
 
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+
 export function base64UrlToBytes(value: string): Uint8Array {
   const padded = value.replace(/-/g, '+').replace(/_/g, '/')
   const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
@@ -32,6 +34,14 @@ export function bytesToBase64Url(buffer: ArrayBuffer): string {
  * dialog saying no — which reads as the site being broken.
  */
 export function passkeysSupported(): boolean {
+  // Never inside the app shells. Both WebViews DECLARE `PublicKeyCredential`
+  // and then behave unlike a browser: a passkey needs associated-domains on
+  // iOS and Digital Asset Links on Android, neither of which V1-1 ships, so
+  // the feature-detect says yes and the ceremony fails at the system dialog.
+  // Answering false here is what removes the button, the autofill request and
+  // the Settings section together — every one of them asks this, directly or
+  // through the two helpers below.
+  if (IS_NATIVE_BUILD) return false
   return (
     typeof window !== 'undefined' &&
     typeof window.PublicKeyCredential === 'function' &&

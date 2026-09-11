@@ -161,7 +161,7 @@ way through it is to just play the three drills it names.
    run, come back, and that row should be ticked and dimmed.
 4. Now open a sprint drill **from its own card lower down** instead of
    from the sprint. Finishing it must still tick the sprint row: the
-   sprint names what to practise, it does not own the only door in.
+   sprint names what to practice, it does not own the only door in.
 5. Finish all three. The subtitle should switch to "Done for today" and a
    **day count badge** should appear top-right.
 6. Reload the page — the ticks and the badge must survive.

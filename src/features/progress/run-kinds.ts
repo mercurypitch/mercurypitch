@@ -123,7 +123,7 @@ export interface ProgressRun {
    * runs with no pitch data behind them would be a chart of nothing. The
    * COUNT deliberately does not care: the run happened either way, and a
    * tile that hides it is how "0 sessions" got shown to somebody who had
-   * practised forty times.
+   * practiced forty times.
    */
   hasNoteDetail: boolean
 }

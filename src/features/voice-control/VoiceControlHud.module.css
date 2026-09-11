@@ -13,7 +13,15 @@
 
 .pill {
   position: fixed;
-  left: calc(var(--safe-left, 0px) + 0.75rem);
+  /* `--voice-pill-inset-left` is the room's own claim on the bottom-left
+     corner. Piano Night keeps a full-height rail there, and the pill sat on
+     its settings button — a collision Playwright reports as "subtree
+     intercepts pointer events" and a person reports as a button that does
+     nothing. Rooms set it to their rail width; it collapses to 0 wherever
+     the rail does, which is what makes the phone layout need no rule. */
+  left: calc(
+    var(--safe-left, 0px) + var(--voice-pill-inset-left, 0px) + 0.75rem
+  );
   bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
   z-index: var(--z-tabbar, 380);
   display: flex;
@@ -30,7 +38,8 @@
   opacity: 0.82;
   transition:
     opacity 0.2s ease,
-    bottom 0.2s ease;
+    bottom 0.2s ease,
+    left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pill:hover,
@@ -90,6 +99,13 @@
   100% {
     box-shadow: 0 0 0 0 rgb(0 0 0 / 0%);
   }
+}
+
+/* Dozing: the ear stopped respawning after a stretch of silence and the
+   next touch anywhere wakes it. The pulse is gone and the glyph dims; the
+   tooltip and the menu carry the sentence. */
+.dozing {
+  opacity: 0.55;
 }
 
 .errorState {
@@ -269,6 +285,18 @@
   box-shadow: 0 12px 32px rgb(0 0 0 / 40%);
 }
 
+/* The status sentence, for a pill that is collapsed: the menu is the one
+   place the pause lines can be read without the pill expanding. */
+.menuStatus {
+  overflow: hidden;
+  margin: 0.1rem 0 0.35rem;
+  padding: 0 0.45rem;
+  color: var(--text-muted, #6e7681);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .menuHeading {
   margin: 0.1rem 0 0.25rem;
   padding: 0 0.45rem;
@@ -327,6 +355,9 @@
    first-win deck's "Start count-in" button. Docked in the header rail it
    is out of the play area entirely. */
 .docked {
+  /* Static on purpose: `relative` would turn the floating pill's `left` and
+     `bottom` into offsets and shift the docked pill into the account glyph.
+     The menu's containing block is the tools group, which is positioned. */
   position: static;
   z-index: auto;
   margin-left: auto;
@@ -335,12 +366,33 @@
 }
 
 /* The floating pill's menu opens upward, because it lives at the bottom of
-   the screen. From a header rail, that would open off the top. */
+   the screen. From a header rail, that would open off the top.
+   Placed against the VIEWPORT, not the tools group: the docked pill takes
+   the header row the moment it has something to say, which moved the group
+   this menu hangs off and slid an open menu sideways — on a phone, past the
+   left edge of the screen. Fixed to the right margin it cannot go anywhere,
+   and `--voice-menu-top` is the group's own bottom, measured as it opens. */
 .docked .menu {
-  top: calc(100% + 0.5rem);
+  position: fixed;
+  top: calc(var(--voice-menu-top, 3.5rem) + 0.5rem);
+  /* Measured from the tools group as the menu opens, and clamped so it opens
+     under the cog on a wide header without ever leaving the screen on a
+     phone, where the pill spans the row and the gap collapses to the margin. */
+  right: var(--voice-menu-right, 0.5rem);
   bottom: auto;
   left: auto;
-  right: 0;
+  max-width: min(16rem, calc(100vw - 1rem));
+}
+
+/* Desktop: the floating pill shares the bottom-left corner with the app
+   sidebar, whose footer holds the Strictness control; the pill sat on it.
+   With the sidebar expanded the pill moves past it. */
+@media (min-width: 769px) {
+  /* `:global`: the sidebar's classes are plain app.css classes, and a CSS
+     module would otherwise hash them into names nothing carries. */
+  body:has(:global(.app-sidebar:not(.collapsed))) .pill:not(.docked) {
+    left: calc(300px + var(--safe-left, 0px) + 0.75rem);
+  }
 }
 
 @media (max-width: 768px) {

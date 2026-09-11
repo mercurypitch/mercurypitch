@@ -208,8 +208,7 @@ export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
           <div class={styles.headerText}>
             <h2 class={styles.title}>Voice commands</h2>
             <p class={styles.subtitle}>
-              Everything the mic answers to on this view. Every row is also a
-              button, for when you need to stay quiet.
+              See all commands, and tap any row to run it.
             </p>
           </div>
           <button
@@ -277,9 +276,27 @@ export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
           </Show>
         </div>
 
+        {/* One row, because on a phone this panel is mostly reading and the
+            reading that matters is the command list. What survived is the
+            rule a person cannot guess — the two words that are always
+            allowed — and the way back in. The rest (why the wake word
+            exists, when it is required) lives in Settings under Voice
+            Control, where it can take the paragraph it needs. */}
         <p class={styles.footer}>
-          Say "what can I say" or press Shift+V to open this — "hey Mercury" and
-          "please" are always allowed around a command.
+          <span class={styles.footerNote}>
+            "Mercury" and "please" are always allowed
+          </span>
+          {/* A keycap is no use to a thumb and a spoken phrase is no use to
+              someone who just pressed a key, so the pointer decides which of
+              the two ways in is worth the row. Both are rendered and CSS
+              picks; a media query costs nothing, a viewport import costs
+              this overlay a chunk. */}
+          <kbd class={styles.shortcut} data-kind="key">
+            Shift+V
+          </kbd>
+          <span class={styles.shortcut} data-kind="spoken">
+            "what can I say"
+          </span>
         </p>
       </div>
     </div>

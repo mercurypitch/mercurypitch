@@ -2,12 +2,12 @@
 // Cinematic onboarding audio — one pop-free Web Audio picture clock
 // ============================================================
 //
-// The clock rides the app's shared AudioContext (audio/shared-audio-context.ts)
+// The clock rides the app's shared AudioContext (@irchiinnuss/audio-io)
 // rather than opening its own, so the cinematic and everything the player
 // reaches afterwards are scheduled against a single clock.
 
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { fetchAssetBytes } from '@/audio/asset-fetch'
-import { acquireSharedAudioContext } from '../audio/shared-audio-context'
 
 const ENVELOPE_FLOOR = 0.0001
 const ATTACK_SECONDS = 0.09

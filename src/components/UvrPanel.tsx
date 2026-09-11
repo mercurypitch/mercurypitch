@@ -23,6 +23,7 @@ import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
 import { extractTitle } from '@/lib/lyrics-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
@@ -967,10 +968,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
    *  that link to Settings -> Account; other errors keep the plain toast. */
   const notifyServerBillingError = (message: string): boolean => {
     if (message.includes('Not enough credits')) {
-      showActionNotification(message, 'error', {
-        label: 'Get credits',
-        onClick: () => openSettingsSection('credits'),
-      })
+      // Nothing in a build that cannot take payment tops a balance up, so
+      // the shortcut would open a Credits tab explaining its own absence.
+      // The sentence is the whole message there.
+      if (CAN_TAKE_PAYMENT) {
+        showActionNotification(message, 'error', {
+          label: 'Get credits',
+          onClick: () => openSettingsSection('credits'),
+        })
+      } else {
+        showNotification(message, 'error')
+      }
       return true
     }
     if (message.includes('Sign in to use cloud')) {
@@ -1443,14 +1451,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         cost !== undefined &&
         songs * cost > balance
       ) {
-        showActionNotification(
-          `This setlist may use ${songs * cost} credits, but your balance is ${balance}. Remove songs or add credits before starting.`,
-          'warning',
-          {
-            label: 'Get credits',
-            onClick: () => openSettingsSection('credits'),
-          },
-        )
+        const shortfall = `This setlist may use ${songs * cost} credits, but your balance is ${balance}.`
+        if (CAN_TAKE_PAYMENT) {
+          showActionNotification(
+            `${shortfall} Remove songs or add credits before starting.`,
+            'warning',
+            {
+              label: 'Get credits',
+              onClick: () => openSettingsSection('credits'),
+            },
+          )
+        } else {
+          showNotification(
+            `${shortfall} Remove songs, or separate them on this device.`,
+            'warning',
+          )
+        }
         return
       }
     }

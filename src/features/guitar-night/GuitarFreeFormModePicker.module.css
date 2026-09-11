@@ -1,0 +1,76 @@
+/* The room's source selector uses the existing faceplate palette, not another rail. */
+.picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  color: #eee2cd;
+}
+.modes {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid #64523b;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #181610;
+}
+.modes button {
+  min-height: 44px;
+  min-width: 72px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #dac9ac;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+.modes button + button {
+  border-left: 1px solid #64523b;
+}
+.modes button[aria-pressed='true'] {
+  color: #21170b;
+  background: #edbc75;
+  font-weight: 650;
+}
+.modes button:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+.modes button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.modes button:focus-visible {
+  outline: 2px solid #fff1db;
+  outline-offset: -4px;
+}
+.source {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  color: #c6b89f;
+}
+.cancel {
+  color: #f4cb8e;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.cancel:focus-visible {
+  outline: 2px solid #edbc75;
+}
+@media (max-width: 720px) {
+  .modes button {
+    min-width: 62px;
+    padding-inline: 0.6rem;
+  }
+  .source {
+    font-size: 0.72rem;
+  }
+}

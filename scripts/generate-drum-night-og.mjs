@@ -36,10 +36,14 @@ const html = /* html */ `<!doctype html>
   .glow { position: absolute; inset: 0; background: radial-gradient(38% 64% at 72% 45%, rgba(231,173,82,.22), transparent 70%), radial-gradient(30% 50% at 88% 72%, rgba(127,57,67,.26), transparent 70%); mix-blend-mode: screen; }
   .content { position: relative; z-index: 3; display: flex; height: 100%; flex-direction: column; padding: 54px 62px 46px; }
   .brand { display: flex; align-items: center; gap: 14px; }
+  /* Floor under the gap to the headline. margin-top:auto on the headline only
+     distributes LEFTOVER space, and a full card leaves almost none, so the
+     lockup and the headline ended up nearly touching. */
+  .brand { margin-bottom: 46px; }
   .mark { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; box-shadow: 0 5px 20px rgba(231,173,82,.24); }
   .mark svg { width: 100%; height: 100%; }
   .wordmark { font-weight: 760; font-size: 27px; letter-spacing: -.02em; }
-  .wordmark b { color: #e7ad52; }
+  .wordmark b { background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .divider { width: 1px; height: 26px; background: rgba(238,231,219,.28); }
   .kicker { color: #e7ad52; font-size: 14px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; }
   h1 { max-width: 610px; margin: auto 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 78px; font-weight: 520; letter-spacing: -.035em; line-height: .98; text-shadow: 0 4px 28px rgba(0,0,0,.8); }
@@ -50,23 +54,26 @@ const html = /* html */ `<!doctype html>
   .lens:first-child { border-color: rgba(231,173,82,.62); color: #08090b; background: #eee7db; }
   .foot { display: flex; margin-top: auto; align-items: center; gap: 12px; color: #8f8980; font-size: 15px; }
   .foot strong { color: #eee7db; }
-  .ring { position: absolute; z-index: 2; right: -90px; top: 82px; width: 690px; height: 470px; opacity: .88; }
-  .ring ellipse { fill: none; stroke: rgba(102,213,205,.38); stroke-width: 2; }
-  .ring .anchor { stroke: #e7ad52; stroke-width: 9; stroke-linecap: round; }
-  .ring .late { stroke: #c96c70; stroke-width: 9; stroke-linecap: round; }
-  .ring .on { stroke: #66d5cd; stroke-width: 8; stroke-linecap: round; }
+  /* The pocket, as a timing lane rather than the concentric-ellipse orbit this
+     card shipped with. Hits sit against a beat grid at the distance they were
+     actually played from it -- which is the thing the room measures, and reads
+     at thumbnail size in a way an orbit never did. */
+  .lane { position: absolute; z-index: 2; right: 54px; top: 176px; width: 560px; height: 250px; opacity: .95; }
+  .lane .grid { stroke: rgba(238,231,219,.34); stroke-width: 1.5; }
+  .lane .centre { stroke: rgba(102,213,205,.45); stroke-width: 2; stroke-dasharray: 5 7; }
+  .lane .hit { stroke-width: 8; stroke-linecap: round; }
+  .lane .on { stroke: #66d5cd; }
+  .lane .anchor { stroke: #e7ad52; }
+  .lane .late { stroke: #c96c70; }
 </style>
 </head>
 <body>
   <div class="card">
     <div class="room"></div><div class="shade"></div><div class="glow"></div>
-    <svg class="ring" viewBox="0 0 690 470" aria-hidden="true">
-      <ellipse cx="345" cy="235" rx="306" ry="174" />
-      <ellipse cx="345" cy="235" rx="258" ry="140" />
-      <ellipse cx="345" cy="235" rx="208" ry="105" />
-      <path class="on" d="M72 167l20 9M146 104l16 14M248 69l7 21M360 62v22M472 76l-7 20M557 119l-16 13" />
-      <path class="anchor" d="M128 332l23-13M506 355l23 10" />
-      <path class="late" d="M579 281l22 5" />
+    <svg class="lane" viewBox="0 0 560 250" aria-hidden="true">
+      <line class="grid" x1="40" y1="58" x2="40" y2="192" /><line class="grid" x1="105" y1="58" x2="105" y2="192" /><line class="grid" x1="170" y1="58" x2="170" y2="192" /><line class="grid" x1="235" y1="58" x2="235" y2="192" /><line class="grid" x1="300" y1="58" x2="300" y2="192" /><line class="grid" x1="365" y1="58" x2="365" y2="192" /><line class="grid" x1="430" y1="58" x2="430" y2="192" /><line class="grid" x1="495" y1="58" x2="495" y2="192" />
+      <line class="centre" x1="18" y1="125" x2="542" y2="125" />
+      <line class="hit on" x1="33" y1="86" x2="33" y2="164" /><line class="hit anchor" x1="105" y1="86" x2="105" y2="164" /><line class="hit on" x1="173" y1="86" x2="173" y2="164" /><line class="hit on" x1="235" y1="86" x2="235" y2="164" /><line class="hit on" x1="296" y1="86" x2="296" y2="164" /><line class="hit anchor" x1="365" y1="86" x2="365" y2="164" /><line class="hit on" x1="432" y1="86" x2="432" y2="164" /><line class="hit late" x1="509" y1="86" x2="509" y2="164" />
     </svg>
     <div class="content">
       <div class="brand">

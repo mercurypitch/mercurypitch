@@ -17,6 +17,7 @@ import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
+import { holdExclusiveCapture } from '@/stores/mic-store'
 
 export type DryVoiceCaptureState =
   | 'idle'
@@ -278,6 +279,8 @@ export function useDryVoiceCapture(
   let continuityMonitor: CaptureContinuityMonitor | null = null
   let pendingPreviewSeekSec: number | null = null
   let unregisterMicIndicator = (): void => undefined
+  /** Voice control's recognizer is held off while this is set. */
+  let releaseExclusiveHold: (() => void) | null = null
 
   const currentDurationMs = (): number =>
     completedDurationMs +
@@ -298,6 +301,10 @@ export function useDryVoiceCapture(
   }
 
   function releaseMic(): void {
+    // The hold goes first: voice control resumes its recognizer on the flip,
+    // and it must not wait for MicManager's own release to settle.
+    releaseExclusiveHold?.()
+    releaseExclusiveHold = null
     micManager.release(options.consumerId)
   }
 
@@ -436,7 +443,14 @@ export function useDryVoiceCapture(
   })
 
   async function start(startOptions?: { paused?: boolean }): Promise<boolean> {
+    // Voice control's recognizer and this take cannot share the device on
+    // iOS (see holdExclusiveCapture). The hold is taken before the take it
+    // replaces lets go of its own, so a restart never lets the recognizer
+    // back in between the two; every exit from here runs through
+    // releaseMic(), which drops it.
+    const hold = holdExclusiveCapture()
     discard()
+    releaseExclusiveHold = hold
     setState('starting')
     const run = ++activeRun
     const context = createCaptureAudioContext()
@@ -450,7 +464,10 @@ export function useDryVoiceCapture(
       requestCaptureContextResume(context)
       const stream = await micManager.acquire(options.consumerId)
       if (run !== activeRun) {
-        releaseMic()
+        // Whatever superseded this run — a discard, a newer start, cleanup —
+        // has already released the hold, and a newer run's is not ours to
+        // drop. Only the device reference remains.
+        micManager.release(options.consumerId)
         return false
       }
       // The permission sheet can move WebKit from running to either suspended

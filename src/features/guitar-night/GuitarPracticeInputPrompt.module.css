@@ -1,0 +1,97 @@
+/* A short, opaque faceplate keeps the capture decision readable at any room clarity. */
+.panel {
+  width: min(32rem, 100%);
+  background: #16110e;
+}
+
+.explanation,
+.error {
+  margin: 0;
+  color: var(--ivory, #f4eadb);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.inputs {
+  display: grid;
+  gap: 0.45rem;
+}
+
+button.input,
+.alternatives button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(244, 234, 219, 0.22);
+  border-radius: 0.55rem;
+  color: var(--ivory, #f4eadb);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.input {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  text-align: start;
+}
+
+.input svg {
+  flex: 0 0 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.input span {
+  min-width: 0;
+}
+
+.input strong,
+.input small {
+  display: block;
+}
+
+.input small {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+button.input.selected {
+  border-color: var(--amber-bright, #f0bd78);
+  color: #23180d;
+  background: var(--amber-bright, #f0bd78);
+}
+
+.alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.alternatives button {
+  font-size: 0.85rem;
+}
+
+button.input:hover:not(:disabled),
+.alternatives button:hover:not(:disabled) {
+  border-color: var(--amber-bright, #f0bd78);
+}
+
+button.input:focus-visible,
+.alternatives button:focus-visible {
+  outline: 2px solid var(--amber-bright, #f0bd78);
+  outline-offset: 3px;
+}
+
+button.input:disabled,
+.alternatives button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.error {
+  color: #ffd0bd;
+}

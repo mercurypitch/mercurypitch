@@ -7,6 +7,7 @@ import { TAB_KARAOKE, TAB_PIANO, TAB_SINGING } from '@/features/tabs/constants'
 import { bpm, countIn, playbackSpeed, setBpm, setCountIn, setPlaybackSpeed, } from '@/stores/transport-store'
 import type { PlaybackMode } from '@/types'
 import { matchVoiceCommand } from './command-grammar'
+import { PLAY_PHRASES } from './shared-phrases'
 import type { TransportVoiceDeps } from './transport-commands'
 import { createTransportVoiceCommands } from './transport-commands'
 
@@ -144,6 +145,16 @@ beforeEach(() => {
   setPlaybackSpeed(1.0)
   setBpm(60)
   setCountIn(0)
+})
+
+describe('a bare "go" is navigation, never playback', () => {
+  it('does not start the transport', () => {
+    // "go" is the first word of every navigation phrase, and a recognizer
+    // that finalises an utterance in pieces delivers it alone: asking to go
+    // somewhere also started the loaded melody before the rest arrived.
+    expect(PLAY_PHRASES).not.toContain('go')
+    expect(PLAY_PHRASES).toContain('play')
+  })
 })
 
 describe('transport voice commands — singing tab', () => {

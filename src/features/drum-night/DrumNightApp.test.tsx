@@ -40,6 +40,16 @@ const takeSummaryBuilderLoad = vi.hoisted(() => ({
   gate: null as Promise<undefined> | null,
 }))
 const stemConfigureFailure = vi.hoisted(() => ({ next: false }))
+// The phone rail and the take strip are the only take surfaces a phone gets,
+// and `isNarrow` is an app-lifetime matchMedia singleton — jsdom never matches
+// it. Flip this before rendering to put the room on a phone; every other export
+// stays real.
+const viewportMocks = vi.hoisted(() => ({ narrow: false }))
+
+vi.mock('@/lib/use-viewport', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isNarrow: () => viewportMocks.narrow,
+}))
 
 vi.mock('./play-along/drum-stem-play-along', async (importOriginal) => {
   const actual = await importOriginal<typeof DrumStemPlayAlongModule>()
@@ -1091,6 +1101,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  viewportMocks.narrow = false
   stemConfigureFailure.next = false
   takeSummaryBuilderLoad.gate = null
   takeSummaryBuilderLoad.entered.mockClear()
@@ -3192,6 +3203,69 @@ describe('DrumNightApp', () => {
     )
   })
 
+  it('turns both play buttons into the load meter while a song loads, on a phone too', async () => {
+    // A UVR session can take a while to open on a phone, and the phone bar's
+    // play button used to sit there as a plain Play: nothing said a load was
+    // running, and the taps it swallowed read as "stuck".
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    })
+    const backing = preparedBackingHarness({
+      sessionId: 'two-stem-slow-open',
+      title: 'Slow Open',
+      kind: 'two-stem',
+    })
+    let finishLoad!: (result: {
+      ok: false
+      code: 'missing-local-audio'
+    }) => void
+    backing.load.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLoad = resolve
+        }),
+    )
+    const catalog = songPortHarness([backing])
+    renderRoom({ loadSongPort: catalog.loadSongPort })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Bring a song' })
+    const song = await within(drawer).findByRole('button', {
+      name: /Slow Open.*Two stems.*Load backing/i,
+    })
+    fireEvent.click(song)
+    await waitFor(() => expect(catalog.openSession).toHaveBeenCalledOnce())
+
+    const playButtons = await screen.findAllByRole('button', {
+      name: 'Play Slow Open song clock',
+    })
+    expect(playButtons).toHaveLength(2)
+    fireEvent.click(playButtons[0])
+    await waitFor(() => expect(backing.load).toHaveBeenCalledOnce())
+
+    // Console button and phone bar alike, after the 250 ms grace.
+    const loading = await screen.findAllByRole('button', {
+      name: 'Loading Slow Open audio',
+    })
+    expect(loading).toHaveLength(2)
+    for (const button of loading) {
+      expect(
+        within(button).getByTestId('drum-play-load-ring'),
+      ).toBeInTheDocument()
+    }
+
+    finishLoad({ ok: false, code: 'missing-local-audio' })
+    await waitFor(() =>
+      expect(
+        screen.queryAllByRole('button', { name: 'Loading Slow Open audio' }),
+      ).toHaveLength(0),
+    )
+    expect(
+      screen.getAllByRole('button', { name: 'Play Slow Open song clock' }),
+    ).toHaveLength(2)
+  })
+
   it('exposes independently mixable Source Drums, Backing, and You for full separated parts', async () => {
     const backing = preparedBackingHarness({
       sessionId: 'full-band-parts',
@@ -4074,7 +4148,9 @@ describe('DrumNightApp', () => {
     expect(createScoreIndex).toHaveBeenCalledOnce()
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Open live take monitor' }),
+      screen.getByRole('button', {
+        name: 'Open take history and phrase coach',
+      }),
     )
     expect(
       within(
@@ -4118,6 +4194,53 @@ describe('DrumNightApp', () => {
       expect(takeHistory.controller.loadHistory).toHaveBeenCalledWith(
         'created-project-1',
       ),
+    )
+  })
+
+  it('answers a held take on an unsaved groove with the save that unblocks it, never an endless spinner', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ clock, project, takeHistory })
+    await recordOnePreparedHit(clock)
+
+    // The coach column carries the held take even before a project exists;
+    // an Android tablet otherwise stopped playback into an empty aside.
+    const persistentCoach = screen.getByLabelText('Session phrase coach')
+    const compactTake =
+      await within(persistentCoach).findByTestId('drum-take-history')
+    expect(
+      within(compactTake).getByText('This take cannot be finished yet.'),
+    ).toBeVisible()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Open take history and phrase coach',
+      }),
+    )
+    const coachWorkspace = await screen.findByRole('region', {
+      name: 'Recover the backbeat',
+    })
+    const expandedTake =
+      await within(coachWorkspace).findByTestId('drum-take-history')
+    // No saved project means no history load is ever started, so the surface
+    // must say so instead of holding the "opening…" spinner forever.
+    expect(
+      within(expandedTake).getByText('No take history to open yet'),
+    ).toBeVisible()
+    expect(within(expandedTake).queryByText('Opening recent takes')).toBeNull()
+    expect(takeHistory.controller.loadHistory).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      within(expandedTake).getByRole('button', { name: 'Save project' }),
+    )
+    const library = await screen.findByTestId('drum-project-library')
+    expect(
+      within(library).getByRole('textbox', { name: 'Project name' }),
+    ).toBeVisible()
+    // Saving is the unblock, not a reset: the take is still held.
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
     )
   })
 
@@ -4921,5 +5044,158 @@ describe('Drum Night pattern library', () => {
     expect(
       within(drawer).getByRole('heading', { name: 'Start from a pattern' }),
     ).toBeVisible()
+  })
+})
+
+describe('Drum Night phone take rail', () => {
+  const phoneNav = (): HTMLElement =>
+    screen.getByRole('navigation', { name: 'Drum Night navigation' })
+
+  const takeCue = (): HTMLElement => screen.getByTestId('drum-take-cue')
+
+  it('offers Finish on the always-visible take strip while the rail keeps Play and Pause', async () => {
+    viewportMocks.narrow = true
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ clock, project, takeHistory })
+    await recordOnePreparedHit(clock)
+    await saveCurrentGroove('Phone Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
+
+    // Finish is offered the moment a take is waiting, running clock included:
+    // the strip is the one take surface a phone always shows.
+    expect(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    ).toBeInTheDocument()
+    expect(
+      within(phoneNav()).getByRole('button', {
+        name: 'Pause First Pocket take clock',
+      }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      within(phoneNav()).getByRole('button', {
+        name: 'Pause First Pocket take clock',
+      }),
+    )
+
+    // Pausing a take is just pausing. The rail never trades its transport for
+    // Finish, so a paused take can always be resumed.
+    expect(
+      within(phoneNav()).getByRole('button', {
+        name: 'Play First Pocket take clock',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      within(phoneNav()).queryByRole('button', { name: 'Finish take' }),
+    ).toBeNull()
+    // Song, Groove, the transport, Record, Kit — a sixth item wraps to a row
+    // the phone viewport cuts off.
+    expect(within(phoneNav()).getAllByRole('button')).toHaveLength(5)
+
+    fireEvent.click(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    )
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+  })
+
+  it('keeps the strip free of Finish while no take waits to be finished', async () => {
+    viewportMocks.narrow = true
+    const clock = new TestClock()
+    renderRoom({ clock, project: projectHarness() })
+
+    expect(
+      within(phoneNav()).getByRole('button', {
+        name: 'Play First Pocket take clock',
+      }),
+    ).toBeInTheDocument()
+    expect(within(phoneNav()).getAllByRole('button')).toHaveLength(5)
+    expect(
+      within(takeCue()).queryByRole('button', { name: 'Finish take' }),
+    ).toBeNull()
+  })
+
+  it('offers Keep and Not now on the always-visible take strip once a finished take has a replay waiting', async () => {
+    viewportMocks.narrow = true
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness('ready')
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Replay Strip Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    )
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+
+    const cue = await screen.findByTestId('drum-take-cue')
+    const keep = await within(cue).findByRole('button', {
+      name: 'Keep in Hear Yourself',
+    })
+    expect(within(cue).getByRole('button', { name: 'Not now' })).toBeEnabled()
+
+    fireEvent.click(keep)
+    await waitFor(() => expect(takeCapture.keep).toHaveBeenCalledOnce())
+    expect(
+      screen.getByText('Live-kit replay kept in Hear Yourself.'),
+    ).toBeInTheDocument()
+    // The decision is made, so the strip stops offering it.
+    expect(
+      within(cue).queryByRole('button', { name: 'Keep in Hear Yourself' }),
+    ).toBeNull()
+  })
+
+  it('never tells a musician to press Play on a take that is already saved', async () => {
+    viewportMocks.narrow = true
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    const takeCapture = takeCaptureHarness('ready')
+    renderRoom({ clock, project, takeHistory, takeCapture })
+    await saveCurrentGroove('Copy Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    // Every string below lives only on the take strip, so these read the whole
+    // room: a revert puts the pre-take prompt back and the assertions fail on
+    // the copy itself rather than on a missing container.
+    expect(
+      screen.getByText('1 strikes ready · Review and finish.'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      within(takeCue()).getByRole('button', { name: 'Finish take' }),
+    )
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take saved. Your replay is ready.'),
+      ).toBeInTheDocument(),
+    )
+    expect(
+      screen.getByText('Nothing is saved until you keep it.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Press Play, then answer the phrase.')).toBeNull()
+    expect(
+      screen.queryByText('Take events arms automatically on the first Play.'),
+    ).toBeNull()
+  })
+
+  it('names the take strip by what it opens', () => {
+    viewportMocks.narrow = true
+    renderRoom()
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Open take history and phrase coach',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Tap to open the phrase coach and take history.'),
+    ).toBeInTheDocument()
   })
 })

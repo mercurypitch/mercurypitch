@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Registered by GuitarNightRoom for the room's lifetime, over the SAME
-// GuitarBackingTransportController the room's own controls call. Seconds
+// backing or recording-audition controller the room's own controls call. Seconds
 // domain throughout. Track ids are stem kinds (vocal/drums/bass/...), so
 // the shared stem vocabulary maps straight onto setTrackMuted. Phrases come
 // from the shared families — what works in karaoke works on stage here.
@@ -22,16 +22,29 @@ export interface GuitarNightVoiceTrack {
 
 export interface GuitarNightVoiceDeps {
   playing: Accessor<boolean>
+  pending?: Accessor<boolean>
+  /** Explain missing selected media instead of claiming a no-op succeeded. */
+  playbackIssue?: Accessor<string | null>
   positionSeconds: Accessor<number>
   durationSeconds: Accessor<number>
   play: () => void
   pause: () => void
   stop: () => void
   seek: (seconds: number) => void
+  /** Scored hosts must finish their asynchronous seek before admitting Play. */
+  restart?: () => void | Promise<void>
   playbackRate: Accessor<number>
   setPlaybackRate: (rate: number) => void
   tracks: () => GuitarNightVoiceTrack[]
   setTrackMuted: (id: string, muted: boolean) => void
+  speedAvailable?: Accessor<boolean>
+  stemsAvailable?: Accessor<boolean>
+  recorder?: {
+    state: Accessor<'idle' | 'preparing' | 'recording' | 'stopping'>
+    start: () => Promise<void>
+    stop: () => Promise<void>
+    startIssue: Accessor<string | null>
+  }
 }
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
@@ -42,6 +55,18 @@ const formatSpeed = (multiplier: number): string =>
 export function createGuitarNightVoiceCommands(
   deps: GuitarNightVoiceDeps,
 ): VoiceCommand[] {
+  const stopRecording = (): VoiceCommandResult => {
+    const recorder = deps.recorder
+    const state = recorder?.state() ?? 'idle'
+    if (recorder === undefined || state === 'idle')
+      return voiceFailure('No recording is running')
+    if (state === 'stopping') return voiceFailure('Recording is saving')
+    void recorder.stop()
+    return state === 'preparing'
+      ? 'Cancelling recording start'
+      : 'Finishing recording'
+  }
+
   const clampSeconds = (seconds: number): number =>
     Math.min(Math.max(seconds, 0), Math.max(0, deps.durationSeconds()))
 
@@ -99,6 +124,8 @@ export function createGuitarNightVoiceCommands(
       phrases: PLAY_PHRASES,
       run: () => {
         if (deps.playing()) return voiceFailure('Already playing')
+        if (deps.pending?.() === true)
+          return voiceFailure('Playback is starting')
         deps.play()
         return 'Play'
       },
@@ -108,7 +135,8 @@ export function createGuitarNightVoiceCommands(
       label: 'Pause',
       phrases: PAUSE_PHRASES,
       run: () => {
-        if (!deps.playing()) return voiceFailure('Nothing playing')
+        if (!deps.playing() && deps.pending?.() !== true)
+          return voiceFailure('Nothing playing')
         deps.pause()
         return 'Pause'
       },
@@ -118,6 +146,8 @@ export function createGuitarNightVoiceCommands(
       label: 'Stop',
       phrases: STOP_PHRASES,
       run: () => {
+        if (deps.recorder !== undefined && deps.recorder.state() !== 'idle')
+          return stopRecording()
         deps.stop()
         return 'Stop'
       },
@@ -127,8 +157,11 @@ export function createGuitarNightVoiceCommands(
       label: 'From the top',
       phrases: RESTART_PHRASES,
       run: () => {
-        deps.seek(0)
-        if (!deps.playing()) deps.play()
+        if (deps.restart !== undefined) void deps.restart()
+        else {
+          deps.seek(0)
+          if (!deps.playing() && deps.pending?.() !== true) deps.play()
+        }
         return 'From the top'
       },
     },
@@ -144,13 +177,18 @@ export function createGuitarNightVoiceCommands(
     {
       id: 'guitarNight.forwardSeconds',
       label: 'Skip forward',
-      phrases: FORWARD_SECONDS_PHRASES,
+      phrases: [
+        ...FORWARD_SECONDS_PHRASES,
+        'forward',
+        'forwards',
+        'skip forward',
+      ],
       run: (args) => seekRelative(args.n ?? 10),
     },
     {
       id: 'guitarNight.backSeconds',
       label: 'Skip back',
-      phrases: BACK_SECONDS_PHRASES,
+      phrases: [...BACK_SECONDS_PHRASES, 'back', 'backwards', 'skip back'],
       run: (args) => seekRelative(-(args.n ?? 10)),
     },
     {
@@ -217,25 +255,107 @@ export function createGuitarNightVoiceCommands(
     },
   ]
 
+  const guardedCommands = commands.map(
+    (command): VoiceCommand => ({
+      ...command,
+      available: command.id.startsWith('guitarNight.speed')
+        ? deps.speedAvailable
+        : undefined,
+      run: (args) => {
+        // Stop must remain reachable through preparation and durable finalization.
+        // Muting stems is intentionally outside this guard: it does not move time.
+        if (command.id !== 'guitarNight.stop') {
+          const state = deps.recorder?.state() ?? 'idle'
+          if (state !== 'idle')
+            return voiceFailure(
+              state === 'stopping'
+                ? 'Recording is saving'
+                : 'Finish recording with Stop before changing playback.',
+            )
+          const issue = deps.playbackIssue?.()
+          if (issue != null) return voiceFailure(issue)
+        }
+        if (
+          command.id.startsWith('guitarNight.speed') &&
+          deps.speedAvailable?.() === false
+        )
+          return voiceFailure(
+            'Speed changes are not available for this playback',
+          )
+        return command.run(args)
+      },
+    }),
+  )
+
   for (const key of KNOWN_STEM_KEYS) {
     if (key === 'midi') continue
     const names = stemSpokenNames(key)
     const shown = stemDisplayName(key)
-    commands.push(
+    guardedCommands.push(
       {
         id: `guitarNight.mute.${key}`,
         label: `Mute ${shown}`,
         phrases: names.flatMap((n) => [`mute ${n}`, `${n} off`]),
+        available: deps.stemsAvailable,
         run: () => setMuted(key, true),
       },
       {
         id: `guitarNight.unmute.${key}`,
         label: `Unmute ${shown}`,
         phrases: names.flatMap((n) => [`unmute ${n}`, `${n} on`]),
+        available: deps.stemsAvailable,
         run: () => setMuted(key, false),
       },
     )
   }
 
-  return commands
+  const recorder = deps.recorder
+  if (recorder !== undefined)
+    guardedCommands.push(
+      {
+        id: 'guitarNight.record',
+        label: 'Record a melody',
+        phrases: [
+          'record',
+          'record melody',
+          'record a melody',
+          'record idea',
+          'record an idea',
+          'record my idea',
+          'start recording',
+          'start a recording',
+          'record a take',
+        ],
+        run: () => {
+          const state = recorder.state()
+          if (state !== 'idle')
+            return voiceFailure(
+              state === 'preparing'
+                ? 'Recording is preparing'
+                : state === 'stopping'
+                  ? 'Recording is saving'
+                  : 'Already recording',
+            )
+          const issue = recorder.startIssue()
+          if (issue !== null) return voiceFailure(issue)
+          void recorder.start()
+          return 'Starting recording'
+        },
+      },
+      {
+        id: 'guitarNight.stopRecording',
+        label: 'Stop recording',
+        phrases: [
+          'stop recording',
+          'finish recording',
+          'end recording',
+          'finish the take',
+          'stop the recording',
+          'cancel recording start',
+        ],
+        run: stopRecording,
+      },
+    )
+
+  return guardedCommands
 }

@@ -37,6 +37,8 @@ class FakeWaveShaperNode extends FakeAudioNode {
   oversample: OverSampleType = 'none'
 }
 
+class FakeConvolverNode extends FakeAudioNode {}
+
 class FakeAudioContext {
   currentTime = 2
   readonly gains: FakeGainNode[] = []
@@ -166,6 +168,154 @@ describe('createGuitarElectricAmpStage', () => {
     expect(stage.getParameters().enabled).toBe(true)
     expect(dry.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 14, 0.018)
     expect(wet.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, 14, 0.018)
+  })
+
+  it('keeps the original cabinet as the only default path after the head', () => {
+    const context = new FakeAudioContext()
+    const stage = createGuitarElectricAmpStage(
+      context as unknown as BaseAudioContext,
+    )
+    const [presence, body, highpass, lowpass] = context.filters.slice(5)
+    const outputLevel = context.gains[11]
+
+    expect(presence.connect.mock.calls).toEqual([[body]])
+    expect(body.connect.mock.calls).toEqual([[highpass]])
+    expect(highpass.connect.mock.calls).toEqual([[lowpass]])
+    expect(lowpass.connect.mock.calls).toEqual([[outputLevel]])
+    expect(stage.nodes).toHaveLength(25)
+    expect(body.frequency.value).toBe(1350)
+    expect(body.Q.value).toBe(0.72)
+    expect(body.gain.value).toBe(1.15)
+    expect(highpass.frequency.value).toBe(80.625)
+    expect(highpass.Q.value).toBe(0.7)
+    expect(lowpass.frequency.value).toBe(5350)
+    expect(lowpass.Q.value).toBe(0.72)
+  })
+
+  it('bypasses only the cabinet while retaining head, output level and amp bypass', () => {
+    const context = new FakeAudioContext()
+    const stage = createGuitarElectricAmpStage(
+      context as unknown as BaseAudioContext,
+      {},
+      { cabinet: 'bypass' },
+    )
+    const presence = context.filters[5]
+    const outputLevel = context.gains[11]
+    const wet = context.gains[12]
+    const dry = context.gains[2]
+
+    stage.setParameters({ cabinet: 'dark', output: 0.75 }, 7)
+    stage.setBypassed(true, 8)
+
+    expect(context.filters).toHaveLength(6)
+    expect(context.waveShapers).toHaveLength(3)
+    expect(stage.nodes).toHaveLength(22)
+    expect(presence.connect.mock.calls).toEqual([[outputLevel]])
+    expect(outputLevel.connect.mock.calls).toEqual([[wet]])
+    expect(wet.connect.mock.calls).toEqual([[stage.output]])
+    expect(dry.connect.mock.calls).toEqual([[stage.output]])
+    expect(outputLevel.gain.setTargetAtTime).toHaveBeenCalledWith(
+      computeGuitarElectricAmpVoicing({ output: 0.75 }).outputGain,
+      7,
+      0.018,
+    )
+    expect(wet.gain.setTargetAtTime).toHaveBeenLastCalledWith(0, 8, 0.018)
+    expect(dry.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, 8, 0.018)
+  })
+
+  it('ramps the original cabinet voicing without rebuilding the fixed graph', () => {
+    const context = new FakeAudioContext()
+    const stage = createGuitarElectricAmpStage(
+      context as unknown as BaseAudioContext,
+    )
+    const [, body, highpass, lowpass] = context.filters.slice(5)
+    const originalNodes = [...stage.nodes]
+
+    stage.setParameters({ cabinet: 'dark' }, 6)
+
+    expect(stage.nodes).toEqual(originalNodes)
+    expect(context.filters).toHaveLength(9)
+    expect(body.gain.setTargetAtTime).toHaveBeenCalledWith(1.48, 6, 0.018)
+    expect(highpass.frequency.setTargetAtTime).toHaveBeenCalledWith(
+      87.5,
+      6,
+      0.018,
+    )
+    expect(lowpass.frequency.setTargetAtTime).toHaveBeenCalledWith(
+      4360,
+      6,
+      0.018,
+    )
+    expect(lowpass.frequency.cancelAndHoldAtTime).toHaveBeenCalledWith(6)
+  })
+
+  it('injects one prepared cabinet between the unchanged head and output level', () => {
+    const context = new FakeAudioContext()
+    const convolver = new FakeConvolverNode()
+    const cabinetOutput = new FakeGainNode()
+    convolver.connect(cabinetOutput)
+    const factory = vi.fn(() => ({
+      input: convolver as unknown as AudioNode,
+      output: cabinetOutput as unknown as AudioNode,
+      nodes: [convolver, cabinetOutput] as unknown as readonly AudioNode[],
+      dispose: vi.fn(),
+    }))
+    const stage = createGuitarElectricAmpStage(
+      context as unknown as BaseAudioContext,
+      { drive: 0.8 },
+      { cabinet: factory },
+    )
+    const presence = context.filters[5]
+    const outputLevel = context.gains[11]
+
+    stage.setParameters({ drive: 0.9, cabinet: 'open' }, 5)
+
+    expect(factory).toHaveBeenCalledExactlyOnceWith(context)
+    expect(context.filters).toHaveLength(6)
+    expect(context.waveShapers).toHaveLength(3)
+    expect(presence.connect.mock.calls).toEqual([[convolver]])
+    expect(convolver.connect.mock.calls).toEqual([[cabinetOutput]])
+    expect(cabinetOutput.connect.mock.calls).toEqual([[outputLevel]])
+    expect(stage.nodes).toContain(convolver)
+    expect(stage.nodes).toContain(cabinetOutput)
+    expect(stage.getParameters()).toMatchObject({ drive: 0.9, cabinet: 'open' })
+    expect(context.gains[4].gain.setTargetAtTime).toHaveBeenCalledWith(
+      computeGuitarElectricAmpVoicing({ drive: 0.9 }).preampDriveGain,
+      5,
+      0.018,
+    )
+  })
+
+  it('owns custom cabinet cleanup once and ignores controls after disposal', () => {
+    const context = new FakeAudioContext()
+    const convolver = new FakeConvolverNode()
+    const dispose = vi.fn(() => convolver.disconnect())
+    const stage = createGuitarElectricAmpStage(
+      context as unknown as BaseAudioContext,
+      {},
+      {
+        cabinet: () => ({
+          input: convolver as unknown as AudioNode,
+          output: convolver as unknown as AudioNode,
+          nodes: [convolver] as unknown as readonly AudioNode[],
+          dispose,
+        }),
+      },
+    )
+
+    stage.dispose()
+    stage.dispose()
+    stage.setParameters({ drive: 1 }, 9)
+    stage.setBypassed(true, 9)
+
+    expect(dispose).toHaveBeenCalledOnce()
+    for (const node of stage.nodes as unknown as readonly FakeAudioNode[]) {
+      expect(node.disconnect).toHaveBeenCalledOnce()
+    }
+    expect(stage.getParameters()).toEqual(
+      DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
+    )
+    expect(context.gains[4].gain.setTargetAtTime).not.toHaveBeenCalled()
   })
 
   it('disconnects its fixed graph once', () => {

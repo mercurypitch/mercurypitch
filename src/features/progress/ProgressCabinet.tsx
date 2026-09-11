@@ -164,7 +164,7 @@ export const ProgressCabinet: Component<ProgressCabinetProps> = (props) => (
         </p>
       }
     >
-      <div class={styles.group}>
+      <div class={styles.group} data-tour="progress.badges">
         <h3 class={styles.groupTitle}>
           <IconBadge />
           <span>Badges</span>
@@ -177,7 +177,7 @@ export const ProgressCabinet: Component<ProgressCabinetProps> = (props) => (
         </ul>
       </div>
 
-      <div class={styles.group}>
+      <div class={styles.group} data-tour="progress.achievements">
         <h3 class={styles.groupTitle}>
           <IconStarChallenge />
           <span>Achievements</span>

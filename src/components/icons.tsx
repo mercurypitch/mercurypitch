@@ -314,6 +314,26 @@ export const PianoKeys: Component<{ size?: number; class?: string }> = (
   </svg>
 )
 
+// Crosshair Icon
+export const Crosshair: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="12" cy="12" r="8" />
+    <line x1="12" y1="2" x2="12" y2="6" />
+    <line x1="12" y1="18" x2="12" y2="22" />
+    <line x1="2" y1="12" x2="6" y2="12" />
+    <line x1="18" y1="12" x2="22" y2="12" />
+  </svg>
+)
+
 // Sliders Horizontal Icon
 export const SlidersHorizontal: Component = () => (
   <svg
@@ -438,6 +458,26 @@ export const Headphones: Component = () => (
     <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
   </svg>
 )
+
+// Crossed headphones indicate that input monitoring is off.
+export function HeadphonesOff() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      width="24"
+      height="24"
+    >
+      <path d="M3 18v-6a9 9 0 0 1 1.2-4.5M7.1 4.4A9 9 0 0 1 21 12v3" />
+      <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 16v3a2 2 0 0 0 2 2h1" />
+      <path d="m2 2 20 20" />
+    </svg>
+  )
+}
 
 // MIDI Icon (for MIDI files)
 export const Midi: Component = () => (
@@ -917,7 +957,7 @@ export const FilePlus: Component = () => (
 )
 
 // Sparkles Icon (magic/fresh-start)
-export const Sparkles: Component = () => (
+export const Sparkles: Component<{ size?: number }> = (p) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -925,8 +965,8 @@ export const Sparkles: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
   >
     <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
     <path d="M18 16l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
@@ -1078,6 +1118,12 @@ export const Metronome: Component = () => (
 )
 
 // Stop Icon (end a take)
+export const RecordCircle: Component = () => (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+    <circle cx="12" cy="12" r="7" />
+  </svg>
+)
+
 export const Square: Component = () => (
   <svg
     viewBox="0 0 24 24"

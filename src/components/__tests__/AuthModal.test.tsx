@@ -6,6 +6,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as NativeSignIn from '@/features/account/native-sign-in'
 import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
 const mocks = vi.hoisted(() => ({
@@ -61,6 +62,39 @@ vi.mock('@/lib/webauthn', () => ({
     err instanceof Error ? err.message : 'That did not work.',
 }))
 
+// The platform's own answer about which providers exist here. Defaulted to
+// the web build, so every pre-existing spec in this file keeps describing a
+// browser; the native cases set them.
+const platformMocks = vi.hoisted(() => ({
+  appleSignInOffered: vi.fn(() => false),
+  nativeGoogleSignInOffered: vi.fn(() => false),
+  webGoogleSignInOffered: vi.fn(() => true),
+}))
+
+const nativeMocks = vi.hoisted(() => ({
+  signInWithApple: vi.fn(),
+  signInWithGoogle: vi.fn(),
+}))
+
+vi.mock('@/features/account/sign-in-methods', () => ({
+  appleSignInOffered: () => platformMocks.appleSignInOffered(),
+  nativeGoogleSignInOffered: () => platformMocks.nativeGoogleSignInOffered(),
+  webGoogleSignInOffered: () => platformMocks.webGoogleSignInOffered(),
+}))
+
+vi.mock('@/features/account/native-sign-in', async () => {
+  const actual = await vi.importActual<typeof NativeSignIn>(
+    '@/features/account/native-sign-in',
+  )
+  return {
+    // The real error class: the modal branches on `instanceof`, and a stub
+    // would let a cancelled sheet print an error the real one never would.
+    NativeSignInError: actual.NativeSignInError,
+    signInWithApple: () => nativeMocks.signInWithApple(),
+    signInWithGoogle: () => nativeMocks.signInWithGoogle(),
+  }
+})
+
 vi.mock('../account/PhoneSignIn', () => ({
   PhoneSignIn: (props: { onLinked: () => void }) => (
     <button
@@ -83,6 +117,9 @@ beforeEach(() => {
   passkeyMocks.passkeysAvailable.mockResolvedValue(false)
   passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(false)
   passkeyMocks.conditionalMediationAvailable.mockResolvedValue(false)
+  platformMocks.appleSignInOffered.mockReturnValue(false)
+  platformMocks.nativeGoogleSignInOffered.mockReturnValue(false)
+  platformMocks.webGoogleSignInOffered.mockReturnValue(true)
   closeAuthModal()
 })
 
@@ -380,6 +417,93 @@ describe('Continue with Google', () => {
       ).toBeTruthy(),
     )
     expect(window.location.assign).not.toHaveBeenCalled()
+  })
+})
+
+// ── Inside an app shell ──────────────────────────────────────────────
+//
+// The shell offers the two providers the platform runs itself, and NOT the
+// web redirect: a WebView has no page to come back to, and Google refuses an
+// embedded user agent outright. Apple is present on iOS because guideline 4.8
+// asks for the privacy-preserving option beside the third-party one.
+
+describe('native sign-in', () => {
+  beforeEach(() => {
+    platformMocks.appleSignInOffered.mockReturnValue(true)
+    platformMocks.nativeGoogleSignInOffered.mockReturnValue(true)
+    platformMocks.webGoogleSignInOffered.mockReturnValue(false)
+  })
+
+  it('offers the platform providers and not the redirect', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    expect(await screen.findByTestId('auth-apple-native')).toBeTruthy()
+    expect(screen.getByTestId('auth-google-native')).toBeTruthy()
+    expect(screen.queryByTestId('auth-google')).not.toBeInTheDocument()
+  })
+
+  it('drops Apple where the platform is not iOS', async () => {
+    platformMocks.appleSignInOffered.mockReturnValue(false)
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    expect(await screen.findByTestId('auth-google-native')).toBeTruthy()
+    expect(screen.queryByTestId('auth-apple-native')).not.toBeInTheDocument()
+  })
+
+  it('closes on a session, without a page ever navigating', async () => {
+    nativeMocks.signInWithApple.mockResolvedValue({
+      token: 'jwt',
+      userId: 'u-1',
+      isNew: false,
+      user: { authProvider: 'apple' },
+    })
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-apple-native'))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('auth-modal-overlay'),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  it('says nothing when the singer dismisses the sheet', async () => {
+    const { NativeSignInError } =
+      await import('@/features/account/native-sign-in')
+    nativeMocks.signInWithGoogle.mockRejectedValue(
+      new NativeSignInError('cancelled', 'Sign-in was cancelled.'),
+    )
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-google-native'))
+
+    // Still open, and no error under the form: closing a system sheet is an
+    // answer, not a fault worth printing.
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-google-native')).toBeTruthy(),
+    )
+    expect(screen.queryByText('Sign-in was cancelled.')).toBeNull()
+  })
+
+  it('shows a refused token, because that one is ours to fix', async () => {
+    const { NativeSignInError } =
+      await import('@/features/account/native-sign-in')
+    nativeMocks.signInWithGoogle.mockRejectedValue(
+      new NativeSignInError('invalid_token', 'The token was rejected.'),
+    )
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-google-native'))
+
+    await waitFor(() =>
+      expect(screen.getByText('The token was rejected.')).toBeTruthy(),
+    )
   })
 })
 

@@ -10,6 +10,7 @@ interface GuitarNightLoopControlsProps {
   span: LoopSpan | null
   /** A mark exists but the pair is not loopable yet. */
   pending: boolean
+  pendingReason?: string
   hasStart: boolean
   hasEnd: boolean
   disabled?: boolean
@@ -63,7 +64,9 @@ export function GuitarNightLoopControls(props: GuitarNightLoopControlsProps) {
       <output aria-live="polite">
         <Show
           when={props.span}
-          fallback={props.pending ? 'Mark the other end' : null}
+          fallback={
+            props.pending ? (props.pendingReason ?? 'Mark the other end') : null
+          }
         >
           {(span) => (
             <>

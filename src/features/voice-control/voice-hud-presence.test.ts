@@ -182,6 +182,19 @@ describe('the voice pill knows when it has stopped talking', () => {
     h.dispose()
   })
 
+  it('collapses over a dozing ear', () => {
+    // The Web Speech ear stops respawning after a stretch of silence and
+    // waits for the next touch anywhere. Nothing to read, nothing to reach
+    // for — and expanded it would re-lay out a phone's header once per touch.
+    const h = harness()
+    h.setListenerState('dozing')
+
+    vi.advanceTimersByTime(VOICE_QUIET_HOLD_MS + 100)
+
+    expect(h.hasSomethingToSay()).toBe(false)
+    h.dispose()
+  })
+
   it('speaks up again the moment the pause ends badly', () => {
     // Coming back from a pause is a fresh `start()` with no gesture behind
     // it, which iOS refuses — and that one the singer does have to see.

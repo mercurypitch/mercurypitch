@@ -1210,7 +1210,7 @@ export const CommunityShare: Component = () => {
                     This listed getSessionHistory(), which only session mode
                     appends to and only when a run produced a scored item —
                     so it read "no practice sessions yet" however much the
-                    singer had actually practised, and Community > Sessions
+                    singer had actually practiced, and Community > Sessions
                     could never fill up. */}
                 <For each={shareableRuns()}>
                   {(s) => (

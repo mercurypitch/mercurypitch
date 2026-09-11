@@ -31,10 +31,12 @@
 //     shapes of it and they need different answers. One never got going —
 //     another audio consumer holding the mic — and `CONFIRM_START_MS` is the
 //     watchdog for it: a session that does not announce itself is dead. The
-//     other confirmed, worked, and then died inside a freeze the document
-//     came back from, leaving `live` true over nothing; no watchdog can see
-//     that, so a page returning from hidden or from the back/forward cache
-//     replaces its session rather than trusting it.
+//     other confirmed, worked, and then died — inside a freeze the document
+//     came back from, or under Siri, a call, another app's capture — leaving
+//     `live` true over nothing. A page returning from hidden or from the
+//     back/forward cache replaces its session rather than trusting it, and a
+//     confirmed session that fires no event at all for `STALE_SESSION_MS` is
+//     presumed dead and replaced too.
 //
 //  3. Karaoke Night is a separate document, so walking into it and back out
 //     is two full page loads, each with its own gesture-less mount. Recovery
@@ -43,8 +45,34 @@
 //     touch ANYWHERE in the app respawns. That is the seam iOS leaves open,
 //     and it is the same one `local-whisper-listener.ts` uses to resume its
 //     AudioContext.
+//
+//  4. Every `start()` is a fresh capture request. On desktop that is free; on
+//     iOS Chrome it is the "microphone allowed" bubble, and WebKit ends a
+//     session after a few seconds of silence rather than a minute. A flat
+//     300 ms respawn therefore showed the bubble every few seconds to anyone
+//     who had voice control on and was not talking. So a session that heard
+//     nothing costs more to respawn each time — the delay doubles per quiet
+//     session — and after `QUIET_ROLLOVER_LIMIT` of them the timer stops and
+//     the ear dozes: the next touch anywhere brings it back, one session per
+//     touch, until it hears a word. Every wait long enough to notice is
+//     announced as `dozing`, because a pill that says "listening" over a
+//     recognizer that is not running is worse than one that admits it is
+//     waiting for a tap. All of that is for devices where a respawn is
+//     visible (`visibleRespawn`). Desktop respawns are silent, so desktop
+//     keeps the flat 300 ms and never dozes: hands-free is the point of
+//     voice control at a piano. Typing is not a touch — a keystroke or a
+//     tap in a text field never starts a session — and neither is a tap on
+//     the pill itself, which has its own meaning.
 
+import { deviceClass } from '@/lib/device-tier'
+import { micManager } from '@/lib/mic-manager'
 import type { VoiceListener, VoiceListenerCallbacks } from './types'
+import { probeMicrophone, recordVoiceDiagnostic, registerVoiceDiagnosticsMic, } from './voice-diagnostics'
+
+// The recorder deliberately does not import the microphone — see the note on
+// `MicSource`. This module already loads with voice control and nothing else,
+// so it is the right place to hand it over.
+registerVoiceDiagnosticsMic(micManager)
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean
@@ -67,6 +95,17 @@ interface SpeechRecognitionLike {
   onend: (() => void) | null
   /** Fires when the service has actually begun listening. */
   onstart: (() => void) | null
+  /**
+   * The session's other lifecycle events. None of them carries words; they
+   * are the recognizer saying it is still there, which is all the liveness
+   * check below wants from them.
+   */
+  onaudiostart: (() => void) | null
+  onaudioend: (() => void) | null
+  onsoundstart: (() => void) | null
+  onsoundend: (() => void) | null
+  onspeechstart: (() => void) | null
+  onspeechend: (() => void) | null
   start: () => void
   stop: () => void
   abort?: () => void
@@ -84,15 +123,122 @@ const FAST_END_LIMIT = 5
  * also decoding a song, not for the happy path.
  */
 const CONFIRM_START_MS = 4000
+/**
+ * The respawn delay after a session that was live and heard nothing doubles
+ * with every consecutive quiet session, and stops growing here. Short,
+ * because every one of these waits is a stretch where the pill is on and the
+ * room is not being heard: the doze below is the honest end state, not a
+ * fifteen-second gap that still calls itself listening.
+ */
+const QUIET_RESPAWN_MAX_MS = 3000
+/**
+ * Consecutive quiet sessions before the timed respawn stops altogether and
+ * the ear dozes until the next touch — where a respawn is visible (see
+ * `WebSpeechListenerOptions.visibleRespawn`). Three, so the ambiguous ramp
+ * is a couple of seconds rather than most of a minute: on iOS the choice is
+ * between a permission bubble every few seconds and an ear that waits to be
+ * woken, and the second is only tolerable if the pill says so quickly.
+ */
+const QUIET_ROLLOVER_LIMIT = 3
+/**
+ * A wait longer than this is announced as `dozing` rather than left looking
+ * like listening. The pill saying "listening" over a recognizer that is not
+ * running is the "it says it hears me and it does not" report: below this the
+ * gap is a blink, above it the singer is owed the truth and a tap that fixes
+ * it.
+ */
+const QUIET_ANNOUNCE_MS = 900
+/**
+ * A session that heard a word respawns on the next task, not after
+ * `RESTART_DELAY_MS`: WebKit ends a session as soon as it delivers a final
+ * result, and the 300 ms that followed swallowed the beginning of a second
+ * command given straight after the first.
+ */
+const HEARD_RESPAWN_MS = 0
+/**
+ * A confirmed session that has not fired any event for this long is presumed
+ * dead — WebKit drops sessions without an `end` when another capture, Siri
+ * or a call takes the audio — and is replaced. Just under Chrome's own ~60 s
+ * silence end, so on desktop the replacement is one quiet session traded for
+ * another, not a visible restart.
+ */
+/**
+ * Below this, `start` did no real work.
+ *
+ * Measured across 90 sessions on an iPhone (iOS 18.7, FxiOS 155) on
+ * 2026-09-10: a session that reported `start` in under 400 ms went on to hear
+ * nothing 61 times out of 63. Every session that ever heard speech took
+ * between 321 ms and 2.4 s to start, and most took over a second — the time
+ * the platform needs to actually stand an audio pipeline up.
+ *
+ * A fast start is the platform handing back a recognizer it has not really
+ * provisioned, usually because the previous one is still being torn down. It
+ * still fires `start` and `audiostart`, and it never delivers a sample.
+ */
+const HOLLOW_START_MS = 400
+
+/**
+ * How long a suspiciously fast session gets to prove it is real.
+ *
+ * Long enough for `soundstart` from any room that is not silent, short
+ * enough that the singer is not left talking to nothing. The alternative was
+ * the stale timer below, which takes twelve seconds to reach the same
+ * conclusion and then does it twice more before giving up — thirty-six
+ * seconds of a dead microphone that looks alive.
+ */
+const HOLLOW_GRACE_MS = 2_500
+
+const STALE_SESSION_MS = 45_000
+/**
+ * The same check where a respawn is visible, which is also where sessions
+ * are short-lived: WebKit ends one after a few seconds of silence, so a
+ * confirmed session that has said nothing for this long is far more likely
+ * to be a phantom than a patient one. Forty-five seconds of a pill claiming
+ * to listen over a dead recognizer is the reported "he indicates he is
+ * listening, he doesn't listen"; this bounds it, and the replacement counts
+ * as a quiet session, so a phone that keeps doing it dozes rather than
+ * rebuilding for ever.
+ */
+const VISIBLE_STALE_SESSION_MS = 12_000
+/**
+ * A user gesture may replace a session that still calls itself live but has
+ * been event-free this long: a phantom is indistinguishable from a quiet
+ * room, and the gesture is the one moment iOS will surely accept a fresh
+ * `start()`.
+ */
+const GESTURE_STALE_MS = 10_000
+/**
+ * `start()` throwing `InvalidStateError` usually means the session this one
+ * replaced has not finished tearing down — WebKit's `abort()` is
+ * asynchronous. One retry after a short wait lands inside the same
+ * activation window; trusting the phantom instead left a session that never
+ * fired `start` and became `needs-gesture` four seconds later.
+ */
+const INVALID_STATE_RETRY_MS = 250
 
 /** Permission-shaped errors: do not restart, the user has to act first. */
 const FATAL_ERRORS = new Set(['not-allowed', 'service-not-allowed'])
 
 /**
- * `start()` throws this when a session is already running. It is the one
- * throw that means "carry on" rather than "that did not work".
+ * Errors the session recovers from on its own: `end` follows and the respawn
+ * handles it. Announcing them flipped the HUD to "Mic unavailable" and back
+ * again on every WebKit network hiccup.
  */
+const QUIET_ERRORS = new Set(['no-speech', 'aborted', 'network'])
+
+/** `start()` throws this when a session is already running. */
 const ALREADY_RUNNING = 'InvalidStateError'
+
+/** Where a keystroke or a tap is typing, not a touch to spend on the recognizer. */
+const EDITABLE_SELECTOR =
+  "input, textarea, select, [contenteditable]:not([contenteditable='false'])"
+/**
+ * The pill and its menu. A tap there is the singer operating voice control
+ * — toggling it, opening the menu — and the controller answers it on
+ * `click`; spending the `pointerdown` on a session first made the same tap
+ * mean two different things depending on which landed sooner.
+ */
+const VOICE_HUD_SELECTOR = '[data-voice-control-hud]'
 
 /**
  * Finals with a REAL low confidence estimate are dropped before they reach
@@ -101,9 +247,85 @@ const ALREADY_RUNNING = 'InvalidStateError'
  */
 const MIN_FINAL_CONFIDENCE = 0.3
 
+const isEditableTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
+
+const isVoiceHudTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest(VOICE_HUD_SELECTOR) !== null
+
+/**
+ * How long the first session waits for the microphone to wake.
+ *
+ * There has to be a ceiling. The permission is normally already granted, so
+ * this resolves in a few milliseconds; but a prompt nobody answers would
+ * otherwise mean voice control never starts at all, which is a worse bug
+ * than the one being chased.
+ */
+const WARM_UP_TIMEOUT_MS = 1_500
+
+/**
+ * Open the microphone once and give it straight back, before the first
+ * session.
+ *
+ * A documented iOS mitigation for exactly the symptom here — the FIRST
+ * recognition of a document failing while later ones are fine — on the
+ * reading that the platform needs the audio hardware woken before the
+ * recognizer asks for it. It costs one `getUserMedia` on a permission the
+ * page already holds, and the stream is stopped in the same breath.
+ *
+ * Never allowed to fail loudly: a refusal here is not a reason to keep voice
+ * control from starting, because the recognizer does its own capture and may
+ * well succeed anyway.
+ *
+ * Returns `null` — not a resolved promise — when the platform has no
+ * `getUserMedia` at all, so the caller can tell "nothing to wait for" from
+ * "waiting". There is no microphone to wake on such a platform, and making
+ * the first session queue behind a microtask for it would be a behaviour
+ * change dressed up as a no-op.
+ */
+function warmMicrophone(): Promise<void> | null {
+  const media = navigator.mediaDevices
+  if (media?.getUserMedia === undefined) return null
+  return media
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      for (const track of stream.getTracks()) track.stop()
+    })
+    .catch(() => {
+      // Refused, or held elsewhere. The recognizer gets its turn regardless.
+    })
+}
+
+export interface WebSpeechListenerOptions {
+  /**
+   * Every `start()` is something the user notices — the permission bubble on
+   * iOS, the start chime on Android. Quiet sessions then respawn with a
+   * growing delay and, after `QUIET_ROLLOVER_LIMIT` of them, not at all
+   * until the next touch; a touch may also replace a session that calls
+   * itself live but has been silent for `GESTURE_STALE_MS`. Defaults to
+   * phones, tablets and TVs, never to desktop, whose respawns are silent and
+   * whose user may have both hands on an instrument.
+   */
+  visibleRespawn?: boolean
+  /**
+   * Whether the first session waits for `getUserMedia` to hand the
+   * microphone back. On by default wherever `visibleRespawn` is.
+   *
+   * Turned off by most of the unit tests, and not to save time: jsdom
+   * supplies a `getUserMedia` that REJECTS, so leaving it on would make
+   * every test of the respawn backoff run the wake-up's failure path first
+   * and assert one microtask later than it reads. The tests that are about
+   * the wake-up turn it back on.
+   */
+  warmUpMicrophone?: boolean
+}
+
 export function createWebSpeechListener(
   callbacks: VoiceListenerCallbacks,
+  options: WebSpeechListenerOptions = {},
 ): VoiceListener {
+  const visibleRespawn = options.visibleRespawn ?? deviceClass() !== 'desktop'
+  const warmUp = options.warmUpMicrophone ?? visibleRespawn
   const w = window as unknown as Record<string, unknown>
   const RecognitionCtor = (w.SpeechRecognition ?? w.webkitSpeechRecognition) as
     | (new () => SpeechRecognitionLike)
@@ -131,9 +353,28 @@ export function createWebSpeechListener(
   let recognition: SpeechRecognitionLike | null = null
   let restartTimer: ReturnType<typeof setTimeout> | null = null
   let confirmTimer: ReturnType<typeof setTimeout> | null = null
+  let staleTimer: ReturnType<typeof setTimeout> | null = null
   let listeningForGesture = false
   let spinUpAt = 0
   let fastEnds = 0
+  /** Consecutive sessions that were live and ended without a result. */
+  let quietRollovers = 0
+  /** The current session has produced a result since it started. */
+  let heardResult = false
+  /** When the current session last said anything at all. */
+  let lastEventAt = 0
+  /** The one `InvalidStateError` retry this start attempt gets has been spent. */
+  let invalidStateRetried = false
+  /**
+   * Which session each record belongs to. A phantom and the session that
+   * replaced it are different numbers; reading a log that conflates them is
+   * how "it stopped hearing me" gets mistaken for "it never started".
+   */
+  let sessionSeq = 0
+  /** Records one transition against the session that is running now. */
+  const log = (event: string, detail: Record<string, unknown> = {}) => {
+    recordVoiceDiagnostic(event, sessionSeq, detail)
+  }
 
   const clearRestartTimer = () => {
     if (restartTimer !== null) {
@@ -149,17 +390,33 @@ export function createWebSpeechListener(
     }
   }
 
+  const clearStaleTimer = () => {
+    if (staleTimer !== null) {
+      clearTimeout(staleTimer)
+      staleTimer = null
+    }
+  }
+
   /** Drop a session we no longer believe in, without hearing from it again. */
   const discard = () => {
     const r = recognition
     recognition = null
     live = false
+    heardResult = false
     clearConfirmTimer()
+    clearStaleTimer()
+    clearHollowTimer()
     if (r === null) return
     r.onresult = null
     r.onerror = null
     r.onend = null
     r.onstart = null
+    r.onaudiostart = null
+    r.onaudioend = null
+    r.onsoundstart = null
+    r.onsoundend = null
+    r.onspeechstart = null
+    r.onspeechend = null
     try {
       // `abort` drops the session without waiting for a final result; `stop`
       // is the graceful form and is all some engines implement.
@@ -170,11 +427,32 @@ export function createWebSpeechListener(
     }
   }
 
-  /** Nothing is running and nothing is scheduled to run. */
-  const isSilent = (): boolean => recognition === null && restartTimer === null
+  /**
+   * 300 ms after a session that heard something; doubling after each that
+   * did not, where a respawn is visible. Silent respawns stay at 300 ms.
+   */
+  const quietRespawnDelay = (): number =>
+    visibleRespawn
+      ? Math.min(RESTART_DELAY_MS * 2 ** quietRollovers, QUIET_RESPAWN_MAX_MS)
+      : RESTART_DELAY_MS
 
   const scheduleRestart = (delay: number) => {
     clearRestartTimer()
+    // A wait the singer would notice is a pause, and is named one. The next
+    // session's own `start` event puts the pill back to listening, and the
+    // gesture seam can cut the wait short in the meantime. Only where a
+    // respawn is visible: desktop's own three-second backoff after a run of
+    // stillborn sessions is not a pause the user has to do anything about,
+    // and this file promises desktop never dozes.
+    if (visibleRespawn && delay >= QUIET_ANNOUNCE_MS) {
+      callbacks.onStateChange('dozing')
+    }
+    log('restart-scheduled', {
+      delay,
+      announced: visibleRespawn && delay >= QUIET_ANNOUNCE_MS,
+      quiet: quietRollovers,
+      fastEnds,
+    })
     restartTimer = setTimeout(() => {
       restartTimer = null
       if (started) spinUp()
@@ -184,13 +462,34 @@ export function createWebSpeechListener(
   // ── The gesture seam ──────────────────────────────────────────
   //
   // iOS grants `start()` inside a user gesture and, often enough, nowhere
-  // else. So while we are meant to be listening and are not, the next touch
-  // or key anywhere in the app is spent restarting. Capture phase and
-  // passive, so it never interferes with what the user was actually doing.
+  // else. So while we are meant to be listening, a touch anywhere in the app
+  // is spent on the recognizer whenever the recognizer could use it: nothing
+  // running (dozing, refused, or waiting out a backoff), or a session that
+  // calls itself live but has said nothing for a while and may be a phantom.
+  // Armed for the whole run. Capture phase and passive, so it never
+  // interferes with what the user was actually doing — and a keystroke that
+  // is typing, inside a text field, is left to the text field.
 
-  const onGesture = () => {
-    if (!started || !isSilent()) return
-    spinUp()
+  const onGesture = (event: Event) => {
+    if (!started) return
+    if (isEditableTarget(event.target) || isVoiceHudTarget(event.target)) return
+    if (recognition === null) {
+      // The touch is the restart; a timer waiting to do the same is moot,
+      // and a start that failed on `InvalidStateError` before gets its retry
+      // back, because this attempt is a new one.
+      log('gesture-wake', { kind: event.type, pending: restartTimer !== null })
+      clearRestartTimer()
+      invalidStateRetried = false
+      spinUp()
+      return
+    }
+    // A silent desktop session is not a phantom worth an abort-and-start on
+    // every click; the stale timer covers it there.
+    if (!visibleRespawn) return
+    if (live && Date.now() - lastEventAt > GESTURE_STALE_MS) {
+      log('gesture-replace', { sinceLastEvent: Date.now() - lastEventAt })
+      spinUp()
+    }
   }
 
   const listenForGesture = () => {
@@ -203,16 +502,6 @@ export function createWebSpeechListener(
     window.addEventListener('keydown', onGesture, { capture: true })
   }
 
-  /**
-   * Admit that nothing is listening and wait to be touched. The one exit from
-   * every way iOS takes the recognizer away silently.
-   */
-  const failToGesture = (detail: string) => {
-    hasBeenLive = false
-    callbacks.onStateChange('error', detail)
-    listenForGesture()
-  }
-
   const stopListeningForGesture = () => {
     if (!listeningForGesture) return
     listeningForGesture = false
@@ -220,21 +509,51 @@ export function createWebSpeechListener(
     window.removeEventListener('keydown', onGesture, { capture: true })
   }
 
+  /**
+   * Admit that nothing is listening and wait to be touched. The one exit from
+   * every way iOS takes the recognizer away silently. The seam is already
+   * armed; this only says so.
+   */
+  const failToGesture = (detail: string) => {
+    log('needs-gesture', { detail })
+    hasBeenLive = false
+    callbacks.onStateChange('error', detail)
+  }
+
+  /**
+   * Stop respawning on a timer and wait to be touched, without admitting
+   * anything: the sessions were healthy, they just heard nothing. `hasBeenLive`
+   * stays, so the session the next touch starts is a continuation and says
+   * nothing either — the HUD shows a mic at rest, not a fault.
+   */
+  const doze = () => {
+    // The leading hypothesis for VC-1 is that this is what the singer sees
+    // and reads as a death. If that is right, this line is the whole answer.
+    log('doze', { quiet: quietRollovers, limit: QUIET_ROLLOVER_LIMIT })
+    callbacks.onStateChange('dozing')
+  }
+
   /** Let go of everything that could bring a session back: timers, the
    *  gesture seam, and the page hooks below. */
   const letGoOfPage = () => {
     started = false
     hasBeenLive = false
+    frozenWithSession = false
+    stoppedForHidden = false
     clearRestartTimer()
     clearConfirmTimer()
+    clearStaleTimer()
+    clearHollowTimer()
     stopListeningForGesture()
     document.removeEventListener('visibilitychange', onVisibility)
     window.removeEventListener('pageshow', onPageShow)
+    window.removeEventListener('pagehide', onPageHide)
   }
 
   /** Give up until start() is called again, and say why. The exit for
    *  errors only the user can fix. */
   const standDown = (detail: string) => {
+    log('stand-down', { detail })
     letGoOfPage()
     discard()
     callbacks.onInterim('')
@@ -256,12 +575,102 @@ export function createWebSpeechListener(
   // `hasBeenLive`) — against a mic that is otherwise deaf until the tab is
   // reloaded.
 
+  /**
+   * A session was given back because the document was being frozen, and a
+   * restore should bring it back. Distinct from dozing, which also leaves
+   * nothing running but means the opposite: stay quiet until a touch.
+   */
+  let frozenWithSession = false
+  /** The microphone has been woken once for this listener. */
+  let warmedUp = false
+  /** Set while a suspiciously fast session is on probation. */
+  let hollowTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * The session was let go because the page went off screen, so coming back
+   * should bring it up again. Distinct from dozing, which also leaves
+   * nothing running and means the opposite: stay quiet until a touch.
+   */
+  let stoppedForHidden = false
+
+  const clearHollowTimer = () => {
+    if (hollowTimer === null) return
+    clearTimeout(hollowTimer)
+    hollowTimer = null
+  }
+
   const onVisibility = () => {
-    // `visibilitychange` only fires on a transition, so arriving here at
-    // `visible` means the document was hidden until a moment ago.
-    if (!started || document.visibilityState !== 'visible') return
+    log('visibilitychange', { to: document.visibilityState, started })
+    if (!started) return
+    if (document.visibilityState !== 'visible') {
+      // Let go while the page is off screen.
+      //
+      // Recognition does not survive being backgrounded on iOS, and our own
+      // record shows exactly how it fails: `error code=audio-capture`
+      // arriving in the same millisecond as the switch to hidden, then
+      // `aborted`, then a stillborn respawn that the platform refuses with
+      // `not-allowed`. Holding a session through that gains nothing and
+      // leaves the listener arguing with a platform that has already taken
+      // the microphone away.
+      //
+      // Only where respawns are visible: desktop backgrounds a tab without
+      // taking anything, and a pianist who alt-tabs mid-practice should not
+      // lose the ear.
+      if (!visibleRespawn || recognition === null) return
+      log('stand-by', { reason: 'hidden' })
+      stoppedForHidden = true
+      clearRestartTimer()
+      discard()
+      callbacks.onInterim('')
+      return
+    }
+    // Arriving here at `visible` means the document was hidden until a
+    // moment ago.
+    if (stoppedForHidden) {
+      stoppedForHidden = false
+      log('stand-by-over')
+      spinUp()
+      return
+    }
+    // Dozing — nothing running and nothing scheduled — stays dozing: a
+    // gesture-less `start()` here is one iOS refuses, and the refusal would
+    // expand the pill over the header. The next touch wakes it.
+    if (recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
+  }
+
+  const onPageHide = (event: Event) => {
+    if (!started) return
+    const persisted = (event as { persisted?: boolean }).persisted === true
+    // Logged as it is branched on, and the pending restart shown separately.
+    // A line whose whole job is to be read literally must not report `false`
+    // for a case the code then acts on — that is how "it never started" gets
+    // concluded from a page that was about to start.
+    const hadSession = recognition !== null || restartTimer !== null
+    log('pagehide', {
+      persisted,
+      live,
+      hadSession,
+      pendingRestart: restartTimer !== null,
+    })
+    if (!hadSession) return
+    // Hand the recognizer back before the document is put away.
+    //
+    // `persisted` means FROZEN, not destroyed: the document keeps its
+    // JavaScript state, a running recognizer included, and on iOS that
+    // session goes on owning the platform's speech recognition while the
+    // NEXT document runs. Measured on a device 2026-09-10, walking from here
+    // into Karaoke Night: this page froze with `live=true`, and from then on
+    // every session in every later document started in 40ms, reported
+    // `audiostart`, and received nothing at all — while `getUserMedia`
+    // probed the microphone itself as `free`. The rooms here are separate
+    // documents, so this is not an edge case; it is every navigation.
+    //
+    // A destroyed document would let go on its own, but only eventually, and
+    // letting go twice costs nothing.
+    frozenWithSession = true
+    clearRestartTimer()
+    discard()
   }
 
   const onPageShow = (event: Event) => {
@@ -270,13 +679,105 @@ export function createWebSpeechListener(
     // where a stale `live` looks healthy. iOS does not reliably fire
     // `visibilitychange` for it, so it is listened for separately.
     if (!started) return
-    if ((event as { persisted?: boolean }).persisted !== true) return
+    const persisted = (event as { persisted?: boolean }).persisted === true
+    // Logged either way. "Came back and it was a fresh document" and "came
+    // back to the frozen one" lead to completely different explanations, and
+    // logging only the second left the first looking like no event at all.
+    log(persisted ? 'pageshow-restored' : 'pageshow-fresh')
+    if (!persisted) return
+    // Whatever was running was handed back on the way out, so `recognition`
+    // is null by design here. The flag is what remembers there was something
+    // to bring back; without it the check below would read a thawed document
+    // as one that had been dozing and leave it silent.
+    const wasFrozen = frozenWithSession
+    frozenWithSession = false
+    if (!wasFrozen && recognition === null && restartTimer === null) return
     clearRestartTimer()
     spinUp()
   }
 
+  /**
+   * The liveness check for a confirmed session. Every event the recognizer
+   * fires re-arms it; expiry means it has said nothing at all — no sound, no
+   * speech, no result — for the whole window. Dead or merely quiet, it is
+   * replaced the same way, and it counts as a quiet rollover: a recognizer
+   * that keeps dying silently dozes like one that keeps ending silently,
+   * instead of being rebuilt forever.
+   */
+  /**
+   * Note a session that started implausibly fast. Diagnostic only.
+   *
+   * The start time is a real signal — across 90 sessions on a device, a
+   * `start` under `HOLLOW_START_MS` went on to hear nothing 61 times out of
+   * 63 — but it is not something to ACT on, and two runs proved why.
+   *
+   * Acting on it needs a second condition, "and then heard nothing", and
+   * there is no honest deadline for that. Healthy sessions in the same relay
+   * reached `speechstart` anywhere from 1.4 s to 4.9 s, and in a silent room
+   * a perfectly good session produces nothing at all for as long as nobody
+   * speaks. Any window short enough to be useful kills good sessions; any
+   * window long enough to be safe is the stale timer, which already exists.
+   *
+   * And the remedy did not work regardless. Replacing a hollow session after
+   * 600 ms, 1200 ms and a full 3 s all came back hollow again (`afterMs=9`
+   * after the three-second wait). Leaving the platform alone is not what it
+   * wants.
+   *
+   * So this only writes the line down. `hollow-start` in a record means "the
+   * platform handed this one back without opening anything", which is worth
+   * knowing and is not worth a guess.
+   */
+  const armHollowTimer = (r: SpeechRecognitionLike, afterMs: number) => {
+    clearHollowTimer()
+    hollowTimer = setTimeout(() => {
+      hollowTimer = null
+      if (!started || recognition !== r) return
+      log('hollow-start', { afterMs, graceMs: HOLLOW_GRACE_MS })
+      const hollowSession = sessionSeq
+      void probeMicrophone().then((result) => {
+        if (result !== 'not-probed')
+          recordVoiceDiagnostic('mic-probe', hollowSession, { result })
+      })
+    }, HOLLOW_GRACE_MS)
+  }
+
+  const armStaleTimer = (r: SpeechRecognitionLike) => {
+    clearStaleTimer()
+    staleTimer = setTimeout(
+      () => {
+        staleTimer = null
+        if (!started || recognition !== r || !live) return
+        // A confirmed session that has said nothing at all. This is the
+        // "live over nothing" shape; the count says how often it happens.
+        log('stale-replace', {
+          after: visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
+          sinceLastEvent: Date.now() - lastEventAt,
+        })
+        // A confirmed session that heard nothing at all is either a broken
+        // recognizer or a microphone somebody else is holding, and only the
+        // platform can say which. No-ops unless diagnostics are recording.
+        const deafSession = sessionSeq
+        void probeMicrophone().then((result) => {
+          if (result !== 'not-probed')
+            recordVoiceDiagnostic('mic-probe', deafSession, { result })
+        })
+        quietRollovers += 1
+        discard()
+        callbacks.onInterim('')
+        if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+          doze()
+          return
+        }
+        spinUp()
+      },
+      visibleRespawn ? VISIBLE_STALE_SESSION_MS : STALE_SESSION_MS,
+    )
+  }
+
   const spinUp = () => {
     discard()
+    sessionSeq += 1
+    log('spin-up', { visibleRespawn, hasBeenLive })
 
     const r = new RecognitionCtor()
     r.continuous = true
@@ -284,25 +785,88 @@ export function createWebSpeechListener(
     r.lang = 'en-US'
     r.maxAlternatives = 1
 
+    /** The session is still there. Only a live one runs the liveness clock. */
+    const ping = () => {
+      if (recognition !== r) return
+      lastEventAt = Date.now()
+      if (live) armStaleTimer(r)
+    }
+
+    /**
+     * These six were already keeping the session alive; now they say so.
+     *
+     * `audiostart` is the one that decides everything. It means the browser
+     * really opened an audio stream for this session, and its absence is the
+     * difference between a recognizer that is listening and one that agreed
+     * to listen to nothing. Until this was logged, the two were identical in
+     * the record: both show a clean `start` and then silence.
+     *
+     * First of each per session only. `audiostart` and `audioend` fire once
+     * anyway; the sound and speech pairs fire per utterance, and a line each
+     * would bury the session they belong to.
+     */
+    const heardSoFar = new Set<string>()
+    const heard = (event: string) => () => {
+      if (recognition !== r) return
+      if (!heardSoFar.has(event)) {
+        heardSoFar.add(event)
+        log(event, { afterMs: Date.now() - spinUpAt })
+      }
+      // `audiostart` proves nothing — a hollow session fires it too, within a
+      // few milliseconds. Sound is the proof, so only sound ends probation.
+      if (event !== 'audiostart' && event !== 'audioend') clearHollowTimer()
+      ping()
+    }
+    r.onaudiostart = heard('audiostart')
+    r.onaudioend = heard('audioend')
+    r.onsoundstart = heard('soundstart')
+    r.onsoundend = heard('soundend')
+    r.onspeechstart = heard('speechstart')
+    r.onspeechend = heard('speechend')
+
     r.onstart = () => {
       if (recognition !== r) return
+      const afterMs = Date.now() - spinUpAt
+      log('start', { afterMs })
+      // A start this fast provisioned nothing — see HOLLOW_START_MS. Put it
+      // on probation rather than trusting the stale timer, which needs twelve
+      // seconds to reach the same conclusion and then repeats itself twice.
+      // Only where respawns are visible, which is this file's name for the
+      // mobile path. A fast start on desktop is a healthy one — the platform
+      // has the pipeline standing already, and the record this was measured
+      // from is entirely iOS.
+      if (visibleRespawn && afterMs < HOLLOW_START_MS)
+        armHollowTimer(r, afterMs)
       live = true
       hasBeenLive = true
       fastEnds = 0
+      invalidStateRetried = false
       clearConfirmTimer()
-      stopListeningForGesture()
+      ping()
       callbacks.onStateChange('listening')
     }
 
     r.onresult = (event) => {
-      // Some engines deliver results without ever firing `start`. Hearing
-      // one is proof enough that the session is alive.
-      if (recognition === r && !live) {
-        live = true
-        hasBeenLive = true
-        clearConfirmTimer()
-        stopListeningForGesture()
-        callbacks.onStateChange('listening')
+      if (recognition === r) {
+        // Words are the strongest proof of all.
+        clearHollowTimer()
+        // Some engines deliver results without ever firing `start`. Hearing
+        // one is proof enough that the session is alive.
+        if (!live) {
+          live = true
+          hasBeenLive = true
+          clearConfirmTimer()
+          callbacks.onStateChange('listening')
+        }
+        // A word, even a half-formed interim one, ends the quiet stretch.
+        // Logged by shape, never by content: the point is "did it hear
+        // anything", and the transcript is the singer's own speech.
+        if (!heardResult)
+          log('first-result', { sinceStart: Date.now() - spinUpAt })
+        heardResult = true
+        quietRollovers = 0
+        invalidStateRetried = false
+        ping()
       }
       let interim = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -324,7 +888,12 @@ export function createWebSpeechListener(
     }
 
     r.onerror = (event) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return
+      log('error', { code: event.error, live })
+      // A session we have already replaced may still complain on its way
+      // out, and announcing that would paint an error over the state its
+      // replacement is in.
+      if (recognition !== r) return
+      if (QUIET_ERRORS.has(event.error)) return
       if (FATAL_ERRORS.has(event.error)) {
         // The user has to act, and nothing here can act for them: a refused
         // permission is refused again by every timed restart and by every
@@ -335,8 +904,9 @@ export function createWebSpeechListener(
         standDown(event.error)
         return
       }
-      // Transient errors (network, audio-capture) also land here; onend
-      // follows and restarts because `started` is still true.
+      // What is left is the mic itself (`audio-capture`) and the odd engine
+      // complaint, which the user should see. `end` follows and restarts
+      // because `started` is still true.
       hasBeenLive = false
       callbacks.onStateChange('error', event.error)
     }
@@ -345,11 +915,15 @@ export function createWebSpeechListener(
       if (recognition !== r) return
       recognition = null
       const wasLive = live
+      const wasQuiet = wasLive && !heardResult
       live = false
+      heardResult = false
       clearConfirmTimer()
+      clearStaleTimer()
       callbacks.onInterim('')
       if (!started) return
       const lifetime = Date.now() - spinUpAt
+      log('end', { lifetime, wasLive, wasQuiet, quiet: quietRollovers })
       fastEnds = lifetime < FAST_END_THRESHOLD_MS ? fastEnds + 1 : 0
       // A session that never got going is not worth respawning on a timer —
       // on iOS that is the gesture refusal, and every timed retry is refused
@@ -358,30 +932,51 @@ export function createWebSpeechListener(
         failToGesture('needs-gesture')
         return
       }
+      if (wasQuiet) {
+        quietRollovers += 1
+        if (visibleRespawn && quietRollovers >= QUIET_ROLLOVER_LIMIT) {
+          doze()
+          return
+        }
+      }
       scheduleRestart(
-        fastEnds >= FAST_END_LIMIT ? FAST_END_BACKOFF_MS : RESTART_DELAY_MS,
+        Math.max(
+          fastEnds >= FAST_END_LIMIT ? FAST_END_BACKOFF_MS : 0,
+          wasQuiet || !wasLive ? quietRespawnDelay() : HEARD_RESPAWN_MS,
+        ),
       )
     }
 
     recognition = r
     live = false
+    heardResult = false
     spinUpAt = Date.now()
+    lastEventAt = spinUpAt
     if (!hasBeenLive) callbacks.onStateChange('starting')
 
     try {
       r.start()
     } catch (err) {
       const name = (err as { name?: string } | null)?.name
-      if (name === ALREADY_RUNNING) {
-        // A session is already running somewhere in this document. Leave it
-        // be and let the watchdog below decide whether it ever speaks.
-      } else {
-        // The iOS refusal, and any other hard failure. Saying `listening`
-        // here is what made this bug invisible for so long.
-        recognition = null
-        failToGesture('needs-gesture')
+      log('start-threw', {
+        name: name ?? 'unknown',
+        retried: invalidStateRetried,
+      })
+      discard()
+      if (name === ALREADY_RUNNING && !invalidStateRetried) {
+        // Something still holds the recognizer — as a rule the session this
+        // one replaced, mid-teardown. Not ours to trust: retry once after it
+        // has had a moment to let go.
+        invalidStateRetried = true
+        scheduleRestart(INVALID_STATE_RETRY_MS)
         return
       }
+      invalidStateRetried = false
+      // The iOS refusal, a second `InvalidStateError` in a row, and any other
+      // hard failure. Saying `listening` here is what made this bug invisible
+      // for so long.
+      failToGesture('needs-gesture')
+      return
     }
 
     // Nothing above proves a session exists — only `onstart` does.
@@ -390,7 +985,9 @@ export function createWebSpeechListener(
       confirmTimer = null
       if (!started || recognition !== r || live) return
       // Stillborn: no start, no error, no end. Another consumer holding the
-      // mic looks exactly like this on iOS.
+      // mic looks exactly like this on iOS — which is why the record carries
+      // what the app's own microphone was doing at the time.
+      log('stillborn', { after: CONFIRM_START_MS })
       discard()
       callbacks.onInterim('')
       failToGesture('needs-gesture')
@@ -401,13 +998,58 @@ export function createWebSpeechListener(
     isSupported: true,
     start: () => {
       if (started) return
+      log('start-requested')
       started = true
       fastEnds = 0
+      quietRollovers = 0
+      invalidStateRetried = false
       document.addEventListener('visibilitychange', onVisibility)
       window.addEventListener('pageshow', onPageShow)
+      window.addEventListener('pagehide', onPageHide)
+      listenForGesture()
+      // Wake the microphone once, then hand it straight back, and only THEN
+      // ask the recognizer for a session.
+      //
+      // A documented iOS mitigation for exactly this symptom — the FIRST
+      // recognition of a document failing while later ones are fine — on the
+      // reading that the hardware wants waking before the recognizer asks
+      // for it.
+      //
+      // The waiting is the whole mitigation. A first cut started the wake-up
+      // and did not await it, which read as a safer change and was in fact a
+      // pointless one: the device log came back with `warm-up` and `spin-up`
+      // on the same millisecond, so the recognizer had still gone first and
+      // the experiment had measured nothing. `WARM_UP_TIMEOUT_MS` is what
+      // keeps an unanswered prompt from becoming a hang.
+      if (warmUp && !warmedUp) {
+        warmedUp = true
+        const warming = warmMicrophone()
+        if (warming !== null) {
+          const askedAt = Date.now()
+          log('warm-up')
+          let spun = false
+          const proceed = (): void => {
+            if (spun) return
+            spun = true
+            clearTimeout(deadline)
+            // Stopped while the microphone was waking. Spinning up now would
+            // start a session nobody asked for.
+            if (!started) return
+            log('warm-up-over', { afterMs: Date.now() - askedAt })
+            spinUp()
+          }
+          // A timer, not a `Promise.race` against one: the loser of a race
+          // stays in the queue, and a stray 1.5 s timeout is exactly the kind
+          // of thing that fires in the middle of a respawn backoff.
+          const deadline = setTimeout(proceed, WARM_UP_TIMEOUT_MS)
+          void warming.then(proceed)
+          return
+        }
+      }
       spinUp()
     },
     stop: () => {
+      log('stop-requested')
       letGoOfPage()
       discard()
       callbacks.onInterim('')

@@ -184,6 +184,12 @@ function lowerBoundStart<T extends { startBeat: number }>(
 
 /** Only the notes that can intersect this frame's temporal window. */
 export function visibleTabNotes(scene: TabScene): readonly TabSceneNote[] {
+  if (scene.recordingHistory === true)
+    return overlappingTabNotes(
+      scene,
+      scene.playheadBeat - scene.visibleBeatWindow,
+      scene.playheadBeat,
+    )
   const start = scene.playheadBeat - 0.05
   const end = scene.playheadBeat + scene.visibleBeatWindow * 1.04
   return overlappingTabNotes(scene, start, end)
@@ -220,6 +226,7 @@ export function matchingTabNoteAtPlayhead(
 }
 
 export function nextTabEvent(scene: TabScene): TabSceneEvent | null {
+  if (scene.recordingHistory === true) return null
   const index = lowerBoundStart(scene.events, scene.playheadBeat - 0.02)
   return scene.events[index] ?? null
 }

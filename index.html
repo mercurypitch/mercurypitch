@@ -67,7 +67,7 @@
     </title>
     <meta
       name="description"
-      content="See your vocal range and pitch accuracy, turn songs you own into Karaoke Night stages with synced lyrics and live pitch feedback, and sing together in Jam Rooms."
+      content="See your vocal range and pitch accuracy, turn songs you own into Karaoke Night stages with synced lyrics and live pitch scoring, and sing in Jam Rooms together."
     />
     <meta
       name="keywords"
@@ -148,9 +148,73 @@
       fetchpriority="high"
     />
     <link rel="preload" as="image" href="/brand-mark.svg" />
+    <!-- The prelude after #root is what crawlers and link previews read. Its
+         styles are shared by every entry document from
+         src/styles/entry-prelude.css. Pinned by launch-entry-seo.test.ts. -->
+    <link rel="stylesheet" href="/src/styles/entry-prelude.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "MercuryPitch",
+        "alternateName": "Mercury Pitch",
+        "url": "https://mercurypitch.com/",
+        "logo": "https://mercurypitch.com/brand-mark.svg",
+        "sameAs": [
+          "https://github.com/mercurypitch/mercurypitch",
+          "https://www.instagram.com/mercurypitch/",
+          "https://www.tiktok.com/@mercurypitch",
+          "https://about.mercurypitch.com/"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MercuryPitch",
+        "url": "https://mercurypitch.com/",
+        "applicationCategory": "MusicApplication",
+        "operatingSystem": "Any (browser)",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Free browser studio for singers and players: vocal range and pitch accuracy, karaoke from songs you own with live pitch scoring, instrument rooms and peer-to-peer Jam Rooms."
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <div class="entry-prelude">
+      <div class="entry-prelude__lockup">
+        <img
+          class="entry-prelude__mark"
+          src="/brand-mark.svg"
+          width="68"
+          height="68"
+          alt=""
+        />
+        <span class="entry-prelude__wordmark">Mercury<span>Pitch</span></span>
+      </div>
+      <h1>MercuryPitch — see your voice, sing karaoke, improve every take</h1>
+      <p>
+        A free browser studio for people who sing and play. See your vocal range
+        and pitch accuracy, turn songs you own into Karaoke Night stages with
+        synced lyrics and live pitch scoring, and sing together in Jam Rooms.
+        Nothing to install, and your audio is analysed on your own device.
+      </p>
+      <nav aria-label="More from MercuryPitch">
+        <a href="/mirror">Voice Mirror</a>
+        <a href="/vocal-range-test">Vocal Range Test</a>
+        <a href="/karaoke-night">Karaoke Night</a>
+        <a href="/glass">Break Glass</a>
+        <a href="/piano-night">Piano Night</a>
+        <a href="/guitar-night">Guitar Night</a>
+        <a href="/drum-night">Drum Night</a>
+        <a href="/ear-lab">Ear Lab</a>
+        <a href="/jam">Jam Rooms</a>
+        <a href="https://about.mercurypitch.com/">About MercuryPitch</a>
+      </nav>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

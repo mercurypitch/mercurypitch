@@ -19,6 +19,7 @@ import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
+import { APPLE_NOTIFICATIONS_PATH, handleAppleRoute } from './apple-routes'
 import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
@@ -71,6 +72,12 @@ const CORS: Record<string, string> = {
 function originAllowed(request: Request, env: Env): boolean {
   const origin = request.headers.get('Origin')
   if (origin === null) return true
+  // Apple's server-to-server notification endpoint is exempt, explicitly.
+  // Apple's servers send no Origin today, so the line above already lets them
+  // through — but "already passes for a reason nobody wrote down" is how a
+  // later tightening of that rule silently breaks account deletion at Apple.
+  // Nothing is granted here that the payload signature does not re-prove.
+  if (new URL(request.url).pathname === APPLE_NOTIFICATIONS_PATH) return true
   const allowed = env.ALLOWED_ORIGINS
   if (allowed === undefined || allowed === '') return true
 
@@ -1456,7 +1463,26 @@ async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
     .bind(JSON.stringify(results), new Date().toISOString(), row.id)
     .run()
 
-  await grantPodiumBadges(podium, env)
+  reportMissingPodiumDefinitions(row.id, await grantPodiumBadges(podium, env))
+}
+
+/**
+ * A close never fails on a missing badge row -- the next challenge cannot
+ * start until the close lands -- but a podium that granted nothing must not
+ * pass in silence either: the winners are owed a badge, and `reaward` can
+ * pay it once the definitions exist (migration 0042 seeds them). Error
+ * level, so it stands out in the worker's tail.
+ */
+function reportMissingPodiumDefinitions(
+  challengeId: string,
+  grants: readonly PodiumGrant[],
+): void {
+  for (const grant of grants) {
+    if (grant.outcome !== 'no-definition' || grant.badge === null) continue
+    console.error(
+      `[weekly] challenge ${challengeId}: no badgeDefinitions row named "${grant.badge}" -- rank ${grant.rank} was not granted; seed the definitions and run reaward`,
+    )
+  }
 }
 
 // ── Redaction on the way out ─────────────────────────────────────────
@@ -2308,6 +2334,17 @@ async function handleRequest(
     respond,
   )
   if (passkeyResponse) return passkeyResponse
+
+  // Ahead of handleAuth for the same reason as the two above: apple-routes
+  // imports auth.ts for the session issuer and the identity resolver, and
+  // auth.ts imports only apple-auth.ts, which sits below both.
+  const appleResponse = await handleAppleRoute(
+    request,
+    env,
+    url.pathname,
+    respond,
+  )
+  if (appleResponse) return appleResponse
 
   const authResponse = await handleAuth(
     request,

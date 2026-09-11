@@ -1,0 +1,14 @@
+/* A single reading column; no transport grid placement leaks into settings. */
+.sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.note {
+  color: var(--muted-readable);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}

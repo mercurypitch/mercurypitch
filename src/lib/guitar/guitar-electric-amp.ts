@@ -29,6 +29,7 @@ export const GUITAR_ELECTRIC_AMP_PARAMETER_LIMITS = Object.freeze({
   presence: [-1, 1] as const,
   output: [0, 1] as const,
   asymmetry: [0, 1] as const,
+  character: [0, 1] as const,
 })
 
 export type GuitarElectricAmpCabinet = 'open' | 'balanced' | 'dark'
@@ -40,6 +41,10 @@ export const GUITAR_ELECTRIC_AMP_CABINETS = Object.freeze([
 ] as const satisfies readonly GuitarElectricAmpCabinet[])
 
 export interface GuitarElectricAmpParameters {
+  /** Omitted by legacy callers; the original asset-free path remains Lite. */
+  readonly engine?: 'lite' | 'studio'
+  readonly head?: 'definition' | 'heavy' | 'lead'
+  readonly character?: number
   readonly enabled: boolean
   readonly drive: number
   readonly bass: number
@@ -63,6 +68,9 @@ export const DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS: GuitarElectricAmpParameters
     output: 0.6,
     cabinet: 'balanced',
     asymmetry: 0.18,
+    engine: 'lite',
+    head: 'definition',
+    character: 1,
   })
 
 export interface GuitarElectricAmpVoicing {
@@ -92,6 +100,28 @@ export interface GuitarElectricAmpStage {
   ): GuitarElectricAmpParameters
   setBypassed(bypassed: boolean, atTime?: number): void
   dispose(): void
+}
+
+/** A prepared, fixed cabinet whose nodes and resources belong to this amp. */
+export interface GuitarElectricAmpCabinetStage {
+  readonly input: AudioNode
+  readonly output: AudioNode
+  readonly nodes: readonly AudioNode[]
+  /** Disconnect every cabinet-owned node and release its resources. Called once. */
+  dispose(): void
+}
+
+/** Constructor-only seam; it never changes the persisted amp parameters. */
+export interface GuitarElectricAmpConstructionOptions {
+  /**
+   * Omit for the original filters, bypass for head-only, or supply a synchronous
+   * factory using this context and already-prepared assets. The amp owns the
+   * returned stage. Custom cabinets are fixed: the `cabinet` parameter continues
+   * to be stored, but its filter voicing applies only to the original cabinet.
+   */
+  readonly cabinet?:
+    | 'bypass'
+    | ((context: BaseAudioContext) => GuitarElectricAmpCabinetStage)
 }
 
 /** The original lightweight stage retained by standalone per-voice synths. */
@@ -132,6 +162,21 @@ export function normalizeGuitarElectricAmpParameters(
 ): GuitarElectricAmpParameters {
   const candidate = parameters ?? {}
   return {
+    engine:
+      candidate.engine === 'studio' || candidate.engine === 'lite'
+        ? candidate.engine
+        : (fallback.engine ?? 'lite'),
+    head:
+      candidate.head === 'definition' ||
+      candidate.head === 'heavy' ||
+      candidate.head === 'lead'
+        ? candidate.head
+        : (fallback.head ?? 'definition'),
+    character: finiteInRange(
+      candidate.character,
+      fallback.character ?? 1,
+      GUITAR_ELECTRIC_AMP_PARAMETER_LIMITS.character,
+    ),
     enabled:
       typeof candidate.enabled === 'boolean'
         ? candidate.enabled
@@ -543,6 +588,42 @@ function setInitialAudioParam(parameter: AudioParam, value: number): void {
   parameter.value = value
 }
 
+function createFilterCabinet(context: BaseAudioContext) {
+  const body = context.createBiquadFilter()
+  const highpass = context.createBiquadFilter()
+  const lowpass = context.createBiquadFilter()
+
+  body.type = 'peaking'
+  body.frequency.value = GUITAR_ELECTRIC_AMP_FREQUENCIES_HZ.cabinetBody
+  body.Q.value = 0.72
+  highpass.type = 'highpass'
+  highpass.Q.value = 0.7
+  lowpass.type = 'lowpass'
+  lowpass.Q.value = 0.72
+  body.connect(highpass)
+  highpass.connect(lowpass)
+
+  const nodes = [body, highpass, lowpass] as const
+  return {
+    input: body,
+    output: lowpass,
+    nodes,
+    applyVoicing(
+      voicing: GuitarElectricAmpVoicing,
+      atTime: number,
+      immediate: boolean,
+    ): void {
+      const assign = immediate ? setInitialAudioParam : setAudioParamTarget
+      assign(body.gain, voicing.cabinetBodyGainDb, atTime)
+      assign(highpass.frequency, voicing.cabinetHighpassHz, atTime)
+      assign(lowpass.frequency, voicing.cabinetLowpassHz, atTime)
+    },
+    dispose(): void {
+      for (const node of nodes) node.disconnect()
+    },
+  }
+}
+
 /**
  * Build one fixed amp/cabinet graph without activating the supplied context.
  * The input is band-limited from 45 Hz to 7.2 kHz, then shaped with a low
@@ -552,6 +633,7 @@ function setInitialAudioParam(parameter: AudioParam, value: number): void {
 export function createGuitarElectricAmpStage(
   context: BaseAudioContext,
   initial: Partial<GuitarElectricAmpParameters> = {},
+  options: GuitarElectricAmpConstructionOptions = {},
 ): GuitarElectricAmpStage {
   const input = context.createGain()
   const output = context.createGain()
@@ -573,9 +655,12 @@ export function createGuitarElectricAmpStage(
   const power = context.createWaveShaper()
   const powerCompensation = context.createGain()
   const presence = context.createBiquadFilter()
-  const cabinetBody = context.createBiquadFilter()
-  const cabinetHighpass = context.createBiquadFilter()
-  const cabinetLowpass = context.createBiquadFilter()
+  const filterCabinet =
+    options.cabinet === undefined ? createFilterCabinet(context) : null
+  const cabinet =
+    typeof options.cabinet === 'function'
+      ? options.cabinet(context)
+      : filterCabinet
   const outputLevel = context.createGain()
   const wet = context.createGain()
 
@@ -602,13 +687,6 @@ export function createGuitarElectricAmpStage(
   presence.type = 'peaking'
   presence.frequency.value = GUITAR_ELECTRIC_AMP_FREQUENCIES_HZ.presence
   presence.Q.value = 0.8
-  cabinetBody.type = 'peaking'
-  cabinetBody.frequency.value = GUITAR_ELECTRIC_AMP_FREQUENCIES_HZ.cabinetBody
-  cabinetBody.Q.value = 0.72
-  cabinetHighpass.type = 'highpass'
-  cabinetHighpass.Q.value = 0.7
-  cabinetLowpass.type = 'lowpass'
-  cabinetLowpass.Q.value = 0.72
 
   input.connect(dry)
   dry.connect(output)
@@ -630,14 +708,16 @@ export function createGuitarElectricAmpStage(
   powerDrive.connect(power)
   power.connect(powerCompensation)
   powerCompensation.connect(presence)
-  presence.connect(cabinetBody)
-  cabinetBody.connect(cabinetHighpass)
-  cabinetHighpass.connect(cabinetLowpass)
-  cabinetLowpass.connect(outputLevel)
+  if (cabinet !== null) {
+    presence.connect(cabinet.input)
+    cabinet.output.connect(outputLevel)
+  } else {
+    presence.connect(outputLevel)
+  }
   outputLevel.connect(wet)
   wet.connect(output)
 
-  const nodes: readonly AudioNode[] = [
+  const headNodes: readonly AudioNode[] = [
     input,
     dry,
     headroom,
@@ -657,12 +737,12 @@ export function createGuitarElectricAmpStage(
     power,
     powerCompensation,
     presence,
-    cabinetBody,
-    cabinetHighpass,
-    cabinetLowpass,
-    outputLevel,
-    wet,
-    output,
+  ]
+  const outputNodes = [outputLevel, wet, output] as const
+  const nodes: readonly AudioNode[] = [
+    ...headNodes,
+    ...(cabinet?.nodes ?? []),
+    ...outputNodes,
   ]
 
   let parameters = normalizeGuitarElectricAmpParameters(initial)
@@ -686,9 +766,7 @@ export function createGuitarElectricAmpStage(
     assign(powerDrive.gain, voicing.powerDriveGain, atTime)
     assign(powerCompensation.gain, voicing.powerCompensationGain, atTime)
     assign(presence.gain, voicing.presenceGainDb, atTime)
-    assign(cabinetBody.gain, voicing.cabinetBodyGainDb, atTime)
-    assign(cabinetHighpass.frequency, voicing.cabinetHighpassHz, atTime)
-    assign(cabinetLowpass.frequency, voicing.cabinetLowpassHz, atTime)
+    filterCabinet?.applyVoicing(voicing, atTime, immediate)
     assign(outputLevel.gain, voicing.outputGain, atTime)
     assign(wet.gain, next.enabled ? 1 : 0, atTime)
     assign(dry.gain, next.enabled ? 0 : 1, atTime)
@@ -719,7 +797,9 @@ export function createGuitarElectricAmpStage(
     dispose() {
       if (disposed) return
       disposed = true
-      for (const node of nodes) node.disconnect()
+      for (const node of headNodes) node.disconnect()
+      for (const node of outputNodes) node.disconnect()
+      cabinet?.dispose()
     },
   }
 }

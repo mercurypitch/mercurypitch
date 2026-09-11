@@ -1,4 +1,4 @@
-// Camera preset tests protect responsive framing and bounded phrase following.
+// Camera preset tests protect fixed responsive framing and isolated manual controls.
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
@@ -27,18 +27,12 @@ describe('tabCameraPreset', () => {
     expect(full.radius).toBeGreaterThan(flow.radius)
   })
 
-  it('bounds phrase following so it never throws the runway off stage', () => {
-    expect(
-      tabCameraPreset('phrase-focus', {
-        narrow: false,
-        phraseFocusX: 20,
-      }).target[0],
-    ).toBe(2.6)
-    expect(
-      tabCameraPreset('phrase-focus', {
-        narrow: false,
-        phraseFocusX: -20,
-      }).target[0],
-    ).toBe(-2.6)
+  it('returns independent camera and target objects for manual controls', () => {
+    const first = tabCameraPreset('flow', { narrow: false })
+    first.radius = 2
+    const next = tabCameraPreset('flow', { narrow: false })
+    expect(next.radius).toBe(21)
+    expect(next.target).toEqual([0, -2, -12])
+    expect(next.target).not.toBe(first.target)
   })
 })

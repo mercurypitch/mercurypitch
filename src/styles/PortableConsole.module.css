@@ -1,0 +1,204 @@
+/* PortableConsole — a debug surface, deliberately plain.
+
+   Neither screen edge is safe. The pill this was first built to watch moves:
+   a phone carries it in the HEADER, a desktop in the bottom HUD. Both edges
+   were measured covering it (2026-09-10), so the bar passes taps through
+   everywhere except its own controls, the summary is only as wide as its
+   text, and one tap flips it to the other edge. A debug overlay that blocks
+   the subject is worse than no overlay. */
+
+.panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 2147483002; /* above the consent banner and the lifecycle notice */
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  color: #d8dee9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+
+  pointer-events: none;
+}
+
+.bottom {
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.top {
+  top: 0;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Only the parts that are pressed take presses. */
+.summary,
+.log,
+.actions {
+  pointer-events: auto;
+  background: rgba(10, 12, 18, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Only as wide as its own text, so the rest of the row stays clickable —
+     the bottom HUD pill sits in that row and was being swallowed by it. */
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0 0 0.4rem 0;
+
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.count {
+  flex: none;
+  min-width: 2.2em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line, clipped rather than wrapped: collapsed height must not change as
+   entries arrive, or the app under it jumps while being tested. */
+.latest {
+  flex: 0 1 auto;
+  max-width: 60vw;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.chevron {
+  flex: none;
+  display: inline-flex;
+  opacity: 0.7;
+}
+
+.log {
+  width: 100%;
+  max-height: 45vh;
+  overflow: auto;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  -webkit-overflow-scrolling: touch;
+  /* Selectable on purpose: it is the fallback when the clipboard is refused. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.05rem 0;
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  /* A comfortable target on a phone, without growing the collapsed bar. */
+  min-height: 32px;
+}
+
+.action:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.line[data-level='error'],
+.line[data-level='onerror'],
+.line[data-level='unhandled'] {
+  color: #ff8080;
+}
+
+.line[data-level='warn'] {
+  color: #f0a530;
+}
+
+.line[data-level='info'] {
+  color: #8ab4ff;
+}
+
+.line[data-level='debug'] {
+  opacity: 0.65;
+}
+
+.filter {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+}
+
+/* Minimised. Deliberately tiny and deliberately still there — see the note in
+   the component about overlays that cannot be brought back. */
+.handle {
+  position: fixed;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  z-index: 2147483002;
+
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.35rem;
+  border: none;
+  border-radius: 0.8rem;
+
+  background: rgba(10, 12, 18, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #8fbcbb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.6rem;
+  text-align: center;
+
+  opacity: 0.55;
+  cursor: pointer;
+}
+.handle:active {
+  opacity: 1;
+}

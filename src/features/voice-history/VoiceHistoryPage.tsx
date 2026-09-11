@@ -35,9 +35,11 @@ import { performanceTakeSourceLabel, takeSupportsVoiceAnalysis, } from '@/lib/do
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
 import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
+import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
+import { showNotification } from '@/stores/notifications-store'
 import { startExercise } from '@/stores/ui-store'
 import type { DecodedVoicePlayback } from './decoded-voice-playback'
 import { attemptDecodedVoicePlayback } from './decoded-voice-playback'
@@ -51,6 +53,7 @@ import type { GuidedVoiceTakeContextV1 } from './guided-voice-take'
 import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './guided-voice-take'
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
+import { GuitarRecordedTakeLink } from './GuitarRecordedTakeLink'
 import { bindListeningRoomSettings } from './listening-room-settings'
 import { PerformanceTakeScoreCard } from './PerformanceTakeScoreCard'
 import { PracticeLoomPanel } from './PracticeLoomPanel'
@@ -356,6 +359,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
    *  update that added an index to the stem store re-indexes every kept
    *  recording inside one upgrade transaction -- minutes on a big
    *  library -- and a silent spinner reads as a hang. */
+  const databaseLifecycle = useDatabaseLifecycle()
   const [slowOpen, setSlowOpen] = createSignal(false)
   createEffect(() => {
     if (!loading()) {
@@ -1673,6 +1677,9 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     if (!(await refresh(comparisonKey))) {
       throw new Error('Voice history refresh failed')
     }
+    // One line, one fact. The storage advice that used to ride on this toast
+    // lives in the rail footer, next to where the takes are counted.
+    showNotification('Take kept', 'success', { channel: 'voice-history-keep' })
     // A newly kept take becomes the new edge of the thread. Re-resolve the
     // default pair so the Atlas keeps showing the full Earlier-to-Later span.
     setEarlierId(null)
@@ -1957,6 +1964,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         <>
           Delete <strong>{intent.take.title}</strong> from this device? This
           cannot be undone.
+          <Show when={intent.take.source === 'guitar-night'}>
+            {' '}
+            Saved melody notes are kept in Guitar Night; only the take audio is
+            removed here.
+          </Show>
           <Show when={deleteError()}>
             <span class={styles.deleteDialogError} role="alert">
               {deleteError()}
@@ -1972,6 +1984,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           {intent.thread.takes.length}{' '}
           {intent.thread.takes.length === 1 ? 'take' : 'takes'} from this
           device? Every other practice thread stays intact.
+          <Show when={intent.thread.source === 'guitar-night'}>
+            {' '}
+            Saved melody notes remain in Guitar Night.
+          </Show>
           <Show when={deleteError()}>
             <span class={styles.deleteDialogError} role="alert">
               {deleteError()}
@@ -1983,7 +1999,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     return (
       <>
         Delete all {intent?.count ?? 0} kept takes from this device? Their audio
-        cannot be recovered.
+        cannot be recovered. Saved guitar melody notes remain in Guitar Night.
         <Show when={deleteError()}>
           <span class={styles.deleteDialogError} role="alert">
             {deleteError()}
@@ -2031,7 +2047,20 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
             fallback={
               <div class={styles.loading} role="status">
                 Opening your local take history…
-                <Show when={slowOpen()}>
+                <Show when={databaseLifecycle() === 'superseded'}>
+                  <p>
+                    Another tab updated this site while you were here, so this
+                    one is now out of date. Reload to continue. Nothing is lost.
+                  </p>
+                </Show>
+                <Show when={databaseLifecycle() === 'blocked'}>
+                  <p>
+                    This site is open in another tab or window, and the older
+                    one is holding your takes while they update. Close the
+                    others and this will carry on. Nothing is lost.
+                  </p>
+                </Show>
+                <Show when={slowOpen() && databaseLifecycle() !== 'blocked'}>
                   <p>
                     The first open after an update re-indexes the recordings
                     kept on this device. It can take a minute on a large
@@ -2200,7 +2229,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                     <small>
                       {storage()?.persistent === true
                         ? 'Protected on this device'
-                        : 'Audio stays on this device'}
+                        : 'Audio stays on this device. If the browser asks, allow persistent storage so low disk space cannot reclaim it.'}
                     </small>
                   </div>
                 </div>
@@ -2347,6 +2376,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                               </Show>
                             </div>
 
+                            <Show when={thread.takes[0]}>
+                              {(take) => (
+                                <GuitarRecordedTakeLink take={take()} />
+                              )}
+                            </Show>
                             <Show when={selectedGuidedFocus()} keyed>
                               {(focus) => {
                                 const copy = savedFocusCopy(focus)
@@ -2477,7 +2511,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                             startSavedGuidedPractice(focus)
                                           }
                                         >
-                                          Practise Pitch Hold
+                                          Practice Pitch Hold
                                         </button>
                                       </div>
                                     </div>

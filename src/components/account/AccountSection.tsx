@@ -27,6 +27,7 @@ import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
+import { EmailVerificationRow } from './EmailVerificationRow'
 import { PasskeySettings } from './PasskeySettings'
 import { SessionList } from './SessionList'
 import { TwoFactorSettings } from './TwoFactorSettings'
@@ -505,7 +506,7 @@ export const AccountSection: Component = () => {
             </label>
             <p class={styles.fieldHint}>
               Off by default. Exercise and challenge results rank once you've
-              practised a few days running; free practice and your streak are
+              practiced a few days running; free practice and your streak are
               never published. Friends you add see more.
             </p>
           </div>
@@ -523,6 +524,20 @@ export const AccountSection: Component = () => {
         {/* A second factor needs a password (or Google) to be a second OF —
             a device identity has no first factor to add one to. Same gate as
             the device list above, for the same reason. */}
+        {/* Unconfirmed email: the banner's Resend, kept where it can always
+            be found once the banner has been dismissed. */}
+        <Show
+          when={
+            me()?.user.authProvider === 'password' &&
+            me()?.user.emailVerified === false &&
+            me()?.user.email != null
+          }
+        >
+          <div class={styles.accountField}>
+            <EmailVerificationRow email={me()!.user.email!} />
+          </div>
+        </Show>
+
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <TwoFactorSettings />
@@ -618,7 +633,7 @@ export const AccountSection: Component = () => {
       <ConfirmDialog
         open={confirmingSignOut()}
         title="Sign out?"
-        message="Your practice stays on this device. While signed out you keep practising with the device's own history; sign in again any time to see your account's history and sync."
+        message="Your practice stays on this device. While signed out you keep practicing with the device's own history; sign in again any time to see your account's history and sync."
         confirmLabel="Sign out"
         onConfirm={handleLogout}
         onCancel={() => setConfirmingSignOut(false)}

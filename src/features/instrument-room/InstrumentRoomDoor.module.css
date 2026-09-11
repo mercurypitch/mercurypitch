@@ -1,0 +1,182 @@
+/* The instrument room door.
+   Two cards and a tick over a dimmed app — the whole surface is one question,
+   so nothing here competes with the two things that answer it. */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  /* Modal tier. The app has no z-index token scale; dialogs sit at 10000-12100
+     (WalkthroughModal 10000, PlaylistExportDialog 12000) and the piano surface
+     draws its notes at 9999, so anything lower renders UNDER the room it is
+     asking about. Seen doing exactly that on 2026-09-10. */
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(3 6 10 / 72%);
+  backdrop-filter: blur(6px);
+  animation: doorScrimIn 0.18s ease-out;
+}
+
+.door {
+  width: min(560px, 100%);
+  padding: 30px 30px 24px;
+  border-radius: 18px;
+  border: 1px solid var(--border, #30363d);
+  background: linear-gradient(180deg, #161b22 0%, #0f141b 100%);
+  background-origin: border-box;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 58%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+  animation: doorIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  /* Two stops, not three. The full spectrum stroke is rationed to one per
+     screen and this surface does not own the screen. */
+  background: linear-gradient(90deg, #58a6ff, #2dd4bf);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.title {
+  margin: 0 0 22px;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text-primary, #e6edf3);
+  text-wrap: balance;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.choice {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 8px;
+  padding: 18px 16px 16px;
+  text-align: left;
+  border-radius: 13px;
+  border: 1px solid var(--border, #30363d);
+  background: linear-gradient(165deg, #1b222c 0%, #131922 100%);
+  background-origin: border-box;
+  color: var(--text-primary, #e6edf3);
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.choice:hover,
+.choice:focus-visible {
+  border-color: rgb(88 166 255 / 55%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgb(0 0 0 / 42%);
+  outline: none;
+}
+
+.choice:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+.choice strong {
+  font-size: 1rem;
+  font-weight: 620;
+}
+
+.choice small {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.choiceIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  border: 1px solid rgb(88 166 255 / 26%);
+  background: linear-gradient(
+    150deg,
+    rgb(88 166 255 / 18%),
+    rgb(45 212 191 / 14%)
+  );
+  background-origin: border-box;
+  color: #9fd0ff;
+}
+
+.choice[data-room='workspace'] .choiceIcon {
+  border-color: rgb(168 179 191 / 24%);
+  background: linear-gradient(
+    150deg,
+    rgb(168 179 191 / 14%),
+    rgb(168 179 191 / 6%)
+  );
+  background-origin: border-box;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.remember {
+  margin-top: 22px;
+}
+
+.footnote {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #6e7681);
+}
+
+@media (max-width: 560px) {
+  .choices {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes doorScrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes doorIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .door {
+    animation: none;
+  }
+
+  .choice {
+    transition: none;
+  }
+
+  .choice:hover,
+  .choice:focus-visible {
+    transform: none;
+  }
+}

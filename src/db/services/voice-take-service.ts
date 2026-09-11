@@ -9,8 +9,24 @@ import type { VoiceTakeAudioRecord, VoiceTakeContourRecord, VoiceTakeRecord, Voi
 import type { DatabaseAdapter } from '@/db/types'
 import type { VoiceReflection } from '@/lib/domain/voice-reflections'
 import { serializeVoiceReflections, VOICE_REFLECTIONS_VERSION, } from '@/lib/domain/voice-reflections'
+import type { GuitarRecording } from '@/lib/guitar/recording-types'
 import type { DecodedVoiceAtlasContour, VoiceAtlasContourPayloadV1, } from '@/lib/voice-contour'
 import { decodeVoiceAtlasContour } from '@/lib/voice-contour'
+
+/** Removing take audio never removes its separately accepted practice target. */
+async function detachRecordedGuitarAudio(
+  db: DatabaseAdapter,
+  takeId?: string,
+): Promise<void> {
+  if (takeId !== undefined && !takeId.startsWith('guitar-take:')) return
+  const recordings = db.getRepository<GuitarRecording>('guitarRecordings')
+  const rows = await recordings.findAll({
+    ...(takeId === undefined ? {} : { where: { takeId } }),
+    throwOnError: true,
+  })
+  for (const row of rows)
+    if (row.takeId !== null) await recordings.update(row.id, { takeId: null })
+}
 
 interface LocalTransactionAdapter extends DatabaseAdapter {
   transactionLocal: DatabaseAdapter['transaction']
@@ -298,6 +314,7 @@ export async function deleteVoiceTake(takeId: string): Promise<boolean> {
       await local.deleteByIndexStrict('voiceTakeAudio', 'takeId', takeId)
       await local.deleteByIndexStrict('voiceTakeContours', 'takeId', takeId)
       await local.deleteByIdStrict('voiceTakes', takeId)
+      await detachRecordedGuitarAudio(transactionDb, takeId)
     })
     return true
   } catch {
@@ -326,6 +343,7 @@ export async function deleteVoiceThread(
         await local.deleteByIndexStrict('voiceTakeAudio', 'takeId', take.id)
         await local.deleteByIndexStrict('voiceTakeContours', 'takeId', take.id)
         await local.deleteByIdStrict('voiceTakes', take.id)
+        await detachRecordedGuitarAudio(transactionDb, take.id)
       }
     })
     return true
@@ -345,6 +363,7 @@ export async function wipeVoiceTakes(): Promise<boolean> {
       await local.clearStrict('voiceTakeAudio')
       await local.clearStrict('voiceTakeContours')
       await local.clearStrict('voiceTakes')
+      await detachRecordedGuitarAudio(transactionDb)
     })
     return true
   } catch {

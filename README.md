@@ -6,8 +6,9 @@
 
 <p align="center">
   <strong>See your voice. Sing your songs. Share the room.</strong><br />
-  A free, open-source music studio for the browser, with Karaoke Night, rooms
-  for piano and guitar, live Jam Rooms, and private on-device pitch feedback.
+  Free browser practice studio that hears you play — vocal pitch training,
+  vocal range tests, karaoke with live scoring, and guitar, piano and drum
+  rooms that show every note you hit.
 </p>
 
 <p align="center">

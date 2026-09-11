@@ -35,7 +35,7 @@ describe('recordPathPracticeDay', () => {
   it('defaults to the singer’s calendar day, not UTC’s', () => {
     // The default argument is what production actually calls: the daily-goal
     // accumulator passes no date. It used to be
-    // `new Date().toISOString().slice(0, 10)`, so an Ascent day practised at
+    // `new Date().toISOString().slice(0, 10)`, so an Ascent day practiced at
     // 01:00 in Zagreb was filed under the previous day and a singer could
     // fill two ring segments with one calendar day of practice — or none, on
     // the other side of Greenwich.

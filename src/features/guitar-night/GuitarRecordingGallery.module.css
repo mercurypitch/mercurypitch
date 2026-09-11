@@ -1,0 +1,317 @@
+/* A translucent recording shelf: the room remains visible, the melody is the artwork. */
+.host {
+  display: contents;
+}
+.triggerGroup {
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .triggerGroup .trigger {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+  .triggerGroup .trigger strong,
+  .triggerGroup .trigger small {
+    display: none;
+  }
+}
+.quickTrigger {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem;
+  border: 1px solid rgb(237 188 117 / 0.3);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  color: #edbc75;
+  background: rgb(25 22 17 / 0.8);
+  cursor: pointer;
+}
+.quickTrigger svg {
+  width: 18px;
+  height: 18px;
+}
+.triggerGroup:has(.quickTrigger) .trigger {
+  border-radius: 8px 0 0 8px;
+}
+.quickTrigger:hover:not(:disabled) {
+  border-color: #edbc75;
+  background: #30251b;
+}
+.quickTrigger:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(237 188 117 / 0.3);
+  border-radius: 8px;
+  background: rgb(25 22 17 / 0.8);
+  color: #eee2cd;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.trigger svg {
+  width: 20px;
+  height: 20px;
+  color: #edbc75;
+}
+.trigger:hover:not(:disabled) {
+  background: #30251b;
+  border-color: #edbc75;
+}
+.trigger:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.count {
+  color: #edbc75;
+  font-variant-numeric: tabular-nums;
+}
+.scrim {
+  justify-items: end;
+}
+.panel:global([role='dialog']) {
+  width: min(47rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  gap: 1.2rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  background: rgb(23 21 18 / 0.91);
+  backdrop-filter: blur(14px);
+  border-color: rgb(237 188 117 / 0.38);
+  border-radius: 14px;
+}
+.panel > :first-child {
+  align-items: center;
+  gap: 1rem;
+}
+.panel > :first-child > div {
+  flex: 1;
+  min-width: 0;
+}
+.panel > :first-child strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 400;
+}
+.art {
+  width: 116px;
+  height: 116px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.collectionInfo {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #c6b8a1;
+}
+.collectionInfo > :last-child {
+  color: #76c8bb;
+}
+.grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+}
+.card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgb(237 188 117 / 0.2);
+  border-radius: 9px;
+  background: rgb(45 35 25 / 0.64);
+}
+.cardHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: #c6b8a1;
+  font-size: 0.7rem;
+}
+.savedState {
+  color: #edbc75;
+}
+.card[data-state='kept'] .savedState {
+  color: #76c8bb;
+}
+.card h3 {
+  margin: 0.7rem 0 0.8rem;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #eee2cd;
+  overflow-wrap: anywhere;
+}
+.contour {
+  height: 92px;
+  display: grid;
+  align-items: center;
+  border-radius: 4px;
+  background: rgb(10 10 8 / 0.48);
+  overflow: hidden;
+}
+.contour svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: #edbc75;
+}
+.guides {
+  fill: none;
+  stroke: rgb(237 188 117 / 0.15);
+  stroke-width: 0.2;
+}
+.contour p {
+  padding: 0.65rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #c6b8a1;
+}
+.metadata {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.85rem 0;
+}
+.metadata dt {
+  font-size: 0.7rem;
+  color: #c6b8a1;
+}
+.metadata dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: #eee2cd;
+}
+.source {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 0.72rem;
+  color: #c6b8a1;
+}
+.source span {
+  max-width: 60%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.cardActions button,
+.more,
+.empty button {
+  min-height: 44px;
+  border: 0;
+  padding: 0.5rem 0;
+  font: inherit;
+  font-size: 0.82rem;
+  color: #edbc75;
+  background: none;
+  cursor: pointer;
+}
+.cardActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cardActions .remove {
+  justify-content: center;
+  width: 44px;
+  margin-right: auto;
+  padding: 0;
+  color: #dbb5a4;
+}
+.cardActions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cardActions svg {
+  width: 17px;
+  height: 17px;
+}
+.cardActions button:hover,
+.more:hover,
+.empty button:hover {
+  color: #fff0d7;
+  text-decoration: underline;
+}
+.notice,
+.footnote {
+  margin: 0.7rem 0 0;
+  color: #c6b8a1;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+.footnote {
+  margin: 0;
+  max-width: 65ch;
+}
+.empty {
+  text-align: center;
+  padding: 2rem 0.8rem;
+}
+.empty > svg {
+  width: 30px;
+  height: 30px;
+  color: #edbc75;
+}
+.empty h3 {
+  font:
+    1.4rem Georgia,
+    serif;
+  color: #eee2cd;
+}
+.empty p {
+  max-width: 38ch;
+  margin-inline: auto;
+  line-height: 1.6;
+  color: #c6b8a1;
+}
+.trigger:focus-visible,
+.quickTrigger:focus-visible,
+.panel :focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: 3px;
+}
+@media (max-width: 620px) {
+  .panel:global([role='dialog']) {
+    padding: 1rem;
+  }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .art {
+    width: 68px;
+    height: 68px;
+  }
+  .panel > :first-child {
+    gap: 0.5rem;
+  }
+  .panel > :first-child strong {
+    font-size: 1.6rem;
+  }
+}

@@ -343,7 +343,7 @@ describe('RoutineRibbon reps', () => {
   const REPS_TEMPLATE: RoutineTemplate = {
     id: 'reps-routine',
     name: "Today's Session",
-    description: 'a drill worth practising',
+    description: 'a drill worth practicing',
     segments: [
       { ...LONG_NOTE_SEGMENT, reps: 3 },
       { ...SCALE_SEGMENT, reps: 2 },
@@ -405,7 +405,7 @@ describe('RoutineRibbon between-run countdown', () => {
   const REPS_TEMPLATE: RoutineTemplate = {
     id: 'reps-routine',
     name: "Today's Session",
-    description: 'a drill worth practising',
+    description: 'a drill worth practicing',
     segments: [{ ...LONG_NOTE_SEGMENT, reps: 3 }, SCALE_SEGMENT],
   }
 

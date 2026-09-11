@@ -92,6 +92,29 @@ export function exerciseSessionPayload(
   }
 }
 
+/**
+ * Background writes recordExerciseResult has started but not yet finished.
+ *
+ * The persistence tail below is deliberately fire-and-forget: nobody wants a
+ * results screen held open on IndexedDB. That leaves callers nothing to await,
+ * which is right in the app and wrong in a test -- a test that records a run
+ * and ends leaves the write running into the next file, where the torn-down
+ * jsdom has already taken localStorage with it. `flushExerciseHistoryWrites`
+ * is the handle tests need to end where they started.
+ */
+const inFlightWrites = new Set<Promise<unknown>>()
+
+/** Settle every background write recordExerciseResult started. For tests.
+ *
+ *  Drains rather than snapshots: the grant pass at the end of a write can
+ *  start another one, and a single Promise.all over today's set would hand
+ *  back control with that one still in flight. */
+export async function flushExerciseHistoryWrites(): Promise<void> {
+  while (inFlightWrites.size > 0) {
+    await Promise.all([...inFlightWrites])
+  }
+}
+
 export function recordExerciseResult(
   entry: ExerciseHistoryEntry,
   options?: ExerciseResultRecordOptions,
@@ -129,7 +152,7 @@ export function recordExerciseResult(
   // those paths first, and only write a 'source: exercise' record when
   // neither claimed the run. Each path credits practice minutes exactly once
   // via saveSessionRecord; there is no separate addScoredMs here anymore.
-  void (async () => {
+  const write = (async () => {
     // Call both unconditionally (not short-circuited): a mismatched-type run
     // is how each path learns the user moved on and disarms itself.
     const consumedChallenge = await recordChallengeAttempt({
@@ -159,7 +182,15 @@ export function recordExerciseResult(
     // drills (Drill Sergeant, Drill Habit, Well Rounded, every note and day
     // total), so this was not a small gap.
     await checkAndGrantBadges(ownerId)
-  })()
+  })().catch((error: unknown) => {
+    // Nothing here is retried. The run is already in memory and on screen, so
+    // losing the record is survivable -- losing it silently is not, and an
+    // unowned rejection is exactly how a storage-denied browser used to drop
+    // a whole session with nothing to show for it.
+    console.warn('[ExerciseHistory] recording the run failed:', error)
+  })
+  inFlightWrites.add(write)
+  void write.finally(() => inFlightWrites.delete(write))
 }
 
 export function getExerciseStats(type: ExerciseType): ExerciseStats {

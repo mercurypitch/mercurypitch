@@ -9,14 +9,15 @@
 // browser activation gesture.
 
 import type { JSX } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { batch, createEffect, createMemo, createSignal, For, lazy, Match, on, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
+import { AudioWave, CheckSmall, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
 import { loadUvrPlayAlongSongPort } from '@/features/play-along/song-port-loader'
 import { loadPlayAlongBandPreparationPort, usePlayAlongBandPreparationController, } from '@/features/play-along/useBandPreparationController'
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
+import { DeferredRoomVoiceControl } from '@/features/voice-control/DeferredRoomVoiceControl'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
@@ -26,6 +27,7 @@ import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import { createPersistedSignal } from '@/lib/storage'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { isNarrow } from '@/lib/use-viewport'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { createDrumKitPlayer, DRUM_KIT_CATALOG, DRUM_KIT_IDS, drumKitManifest, } from './audio'
@@ -49,6 +51,7 @@ import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangemen
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
+import { DrumPlayLoadMeter } from './play-along/DrumPlayLoadMeter'
 import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
@@ -1947,7 +1950,142 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setInputOpen(false)
   }
 
-  const openWorkspace = (nextWorkspace: Workspace): void => {
+  // Which card leads the coach workspace: the coach itself, or the takes
+  // when "Open take history" asked for them (UX-39).
+  const [coachLead, setCoachLead] = createSignal<'coach' | 'takes'>('coach')
+  // The takes lead only while the coach workspace opened for them stays
+  // open; any other workspace, by any path, puts the coach back first.
+  createEffect(
+    on(workspace, (open) => {
+      if (open !== 'coach') setCoachLead('coach')
+    }),
+  )
+  // The phrase-coach column is `display: none` at 1040px and below, so the room
+  // has to know the same cutoff to move that column's Finish into the strip.
+  // The stage's own query, not `use-viewport`, because 1040 is this room's
+  // layout breakpoint and nothing else in the app shares it.
+  const [compactCoachLayout, setCompactCoachLayout] = createSignal(false)
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+  ) {
+    const mql = window.matchMedia('(max-width: 1040px)')
+    setCompactCoachLayout(mql.matches)
+    const onChange = (): void => {
+      setCompactCoachLayout(mql.matches)
+    }
+    mql.addEventListener('change', onChange)
+    onCleanup(() => {
+      mql.removeEventListener('change', onChange)
+    })
+  }
+  // Only a saved, prepared First Pocket keeps take history.
+  const takeEligible = (): boolean =>
+    activeProject() !== null &&
+    !usingStemBacking() &&
+    activeDocument().sourceFormat === 'prepared'
+  // The compact take strip in the phrase-coach column, and whether a take is
+  // waiting to be finished. Captured evidence is enough to show the strip. An
+  // unsaved groove renders the held-take card with its Save project action
+  // instead of the Finish button, so no second Finish control appears — and a
+  // musician who just played a take is never shown an empty coach column.
+  const takeRailShown = (): boolean =>
+    retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
+    (takeHistoryController()?.finishState().kind ?? 'idle') !== 'idle'
+  const takeFinishStateKind = (): string =>
+    takeHistoryController()?.finishState().kind ?? 'idle'
+  const takeReadyToFinish = (): boolean =>
+    takeEligible() &&
+    retainedTakeHitCount() + omittedTakeHitCount() > 0 &&
+    takeFinishStateKind() === 'idle' &&
+    !takeFinishPreparing()
+  // Below 1040px the phrase-coach column is hidden, and with it the only
+  // Finish control in the room. The always-visible take strip carries one
+  // instead. The transport is left alone: Play and Pause keep meaning Play and
+  // Pause while a take waits, which is how a take is cut everywhere else
+  // (UX-37). `isNarrow` is the tested phone path; the wider query covers the
+  // 721-1040 tablet band, where the column is hidden too.
+  const coachColumnHidden = (): boolean => isNarrow() || compactCoachLayout()
+  const takeFinishInStrip = (): boolean =>
+    coachColumnHidden() && takeReadyToFinish()
+  // Keeping the live-kit replay is the other decision that lives in the hidden
+  // column, and Play is refused until it is made. The always-visible take strip
+  // carries it wherever that column is hidden, so the refusal is never a dead
+  // end — tablets in the 721-1040 band included.
+  const phoneKeepPending = (): boolean => {
+    if (!coachColumnHidden() || takeFinishStateKind() !== 'saved') return false
+    const replay = takeCapture.state()
+    return replay === 'processing' || replay === 'ready' || replay === 'saving'
+  }
+  const keepTakeReplay = (): void => {
+    void takeCapture.keep().then((kept) => {
+      if (kept) showToast('Live-kit replay kept in Hear Yourself.')
+    })
+  }
+  // The strip is the only take surface a phone shows, so its copy has to name
+  // the state the take is really in and say where a tap leads. Finishing a take
+  // clears the recorded-hit count, which used to drop this back to the pre-take
+  // prompt — telling a musician to press Play at the one moment Play is
+  // refused.
+  const takeCueHeadline = (): string => {
+    const finishKind = takeFinishStateKind()
+    if (takeFinishPreparing() || finishKind === 'saving') {
+      return 'Saving this take.'
+    }
+    if (finishKind === 'error') return 'This take is not saved yet.'
+    if (finishKind === 'saved') {
+      const replay = takeCapture.state()
+      if (replay === 'processing') return 'Take saved. Preparing your replay.'
+      if (replay === 'ready') return 'Take saved. Your replay is ready.'
+      if (replay === 'saving') return 'Take saved. Keeping the replay.'
+      return 'Take saved on this device.'
+    }
+    const retained = retainedTakeHitCount()
+    if (retained === 0) {
+      return recordingChoiceMade() && !transport().recording
+        ? 'Arm Take events, then press Play.'
+        : 'Press Play, then answer the phrase.'
+    }
+    const omitted = omittedTakeHitCount()
+    if (omitted > 0) {
+      return `${retained} strikes ready · ${omitted} older not retained.`
+    }
+    // "Review and finish" only where finishing is actually on offer: a take
+    // over a play-along song is never eligible, and promising a review the
+    // room will not give is worse than saying nothing about it.
+    return takeEligible()
+      ? `${retained} strikes ready · Review and finish.`
+      : `${retained} strikes ready to compare.`
+  }
+  const takeCueDetail = (): string => {
+    const finishKind = takeFinishStateKind()
+    if (takeFinishPreparing() || finishKind === 'saving') {
+      return 'Tap to open take history.'
+    }
+    if (finishKind === 'error') {
+      return 'Tap to open take history and try again.'
+    }
+    if (finishKind === 'saved') {
+      return phoneKeepPending()
+        ? 'Nothing is saved until you keep it.'
+        : 'Tap to open take history.'
+    }
+    if (retainedTakeHitCount() === 0) {
+      return 'Tap to open the phrase coach and take history.'
+    }
+    if (activeProject() === null) {
+      return 'Tap to open take history and save this groove.'
+    }
+    return takeReadyToFinish()
+      ? 'Review the take, then finish it.'
+      : 'Tap to open take history.'
+  }
+
+  const openWorkspace = (
+    nextWorkspace: Workspace,
+    lead: 'coach' | 'takes' = 'coach',
+  ): void => {
+    setCoachLead(lead)
     closeInput()
     if (drawerOpen() && workspace() === nextWorkspace) {
       closeWorkspace()
@@ -1985,6 +2123,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         })
     }
     updateUrl(view(), nextWorkspace)
+  }
+
+  // Take summaries are stored per saved project, so a held take on an unsaved
+  // groove needs the save prompt, not a dead-end explanation. Saving keeps the
+  // captured strikes: the active-project boundary only resets the take history
+  // controller, never the runtime evidence.
+  const openProjectSavePrompt = (): void => {
+    setProjectSavePromptOpen(true)
+    openWorkspace('projects')
   }
 
   const closeWorkspace = (): void => {
@@ -2538,12 +2685,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const stemAudioLoading = createMemo(
     () => playRequestPending() || stemPlayAlongSnapshot().status === 'loading',
   )
-  const stemLoadPercent = createMemo((): number | null => {
-    if (!stemAudioLoading()) return null
-    const fraction = stemPlayAlongSnapshot().loadFraction
-    if (fraction === null || fraction <= 0) return null
-    return Math.min(99, Math.round(fraction * 100))
-  })
   // The console Loop module wraps the whole source without touching A or B:
   // it sets (or clears) a full-span practice loop over the authored duration.
   const fullLoopSpan = createMemo(
@@ -3507,9 +3648,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   return (
     <div
-      class={styles.shell}
+      /* The dark-stage contract, opted into at this room's own root the way
+         Piano and Guitar Night do. Drum Night's local palette names its own
+         colours and nothing else, so every SHARED component that landed here
+         — the voice commands overlay first — read `var(--bg-card)` with
+         nothing behind it. An undefined custom property does not fall back,
+         it kills the whole declaration: the overlay rendered as unreadable
+         text on the photograph. */
+      class={`${styles.shell} mp-dark-stage`}
       style={background.resolvedStyle()}
       data-testid="drum-night-shell"
+      data-take-rail={takeRailShown() ? 'true' : 'false'}
       data-playing={isPlaying() ? 'true' : 'false'}
       data-click-enabled={clickSnapshot().enabled ? 'true' : 'false'}
       data-click-status={clickSnapshot().status}
@@ -3613,10 +3762,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
       <main class={styles.roomShell}>
         <header class={styles.sessionBar} inert={modalLayerOpen()}>
-          <div class={styles.mobileBrand} aria-label="MercuryPitch Drum Night">
+          {/* The only way back to the studio a phone has: the rail with
+              the brand mark is hidden there. */}
+          <a class={styles.mobileBrand} href="/" aria-label="MercuryPitch home">
             <img src="/favicon.svg" alt="" />
             <span>Drums</span>
-          </div>
+          </a>
           <button
             class={styles.sessionIdentity}
             type="button"
@@ -3815,35 +3966,30 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <button
                       class={styles.takeHistoryLink}
                       type="button"
-                      onClick={() => openWorkspace('coach')}
+                      onClick={() => openWorkspace('coach', 'takes')}
                     >
                       <History aria-hidden="true" />
                       <span>Open take history</span>
                     </button>
                   </Show>
-                  <Show
-                    when={
-                      activeProject() !== null &&
-                      (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
-                        (takeHistoryController()?.finishState().kind ??
-                          'idle') !== 'idle')
-                    }
-                  >
+                  <Show when={takeRailShown()}>
                     <DrumTakeHistoryHost
                       mode="compact"
                       controller={takeHistoryController()}
+                      historyProjectId={activeProjectId()}
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
-                      eligible={
-                        activeProject() !== null &&
-                        !usingStemBacking() &&
-                        activeDocument().sourceFormat === 'prepared'
-                      }
+                      eligible={takeEligible()}
                       unavailableReason={
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
                           : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      onSaveProject={
+                        activeProject() === null
+                          ? openProjectSavePrompt
+                          : undefined
                       }
                       preparing={takeFinishPreparing()}
                       onFinishTake={finishTake}
@@ -3853,13 +3999,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         state: takeCapture.state(),
                         message: takeCapture.message(),
                       }}
-                      onKeepReplay={() => {
-                        void takeCapture.keep().then((kept) => {
-                          if (kept) {
-                            showToast('Live-kit replay kept in Hear Yourself.')
-                          }
-                        })
-                      }}
+                      onKeepReplay={keepTakeReplay}
                       onDismissReplay={() => {
                         takeCapture.dismiss()
                       }}
@@ -3869,38 +4009,67 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   </Show>
                 </aside>
 
-                <button
-                  class={styles.coachCue}
-                  type="button"
-                  inert={drawerInteractionLocked()}
-                  onClick={() => openWorkspace('coach')}
-                  aria-label="Open live take monitor"
-                >
-                  <span class={styles.coachOrb}>
-                    <AudioWave />
-                  </span>
-                  <span>
-                    <strong>
-                      {retainedTakeHitCount() === 0
-                        ? recordingChoiceMade() && !transport().recording
-                          ? 'Arm Take events, then press Play.'
-                          : 'Press Play, then answer the phrase.'
-                        : omittedTakeHitCount() === 0
-                          ? activeProject() === null
-                            ? `${retainedTakeHitCount()} strikes ready to compare.`
-                            : `${retainedTakeHitCount()} strikes ready · Review and finish.`
-                          : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
-                    </strong>
-                    <small>
-                      {retainedTakeHitCount() === 0
-                        ? 'Take events arms automatically on the first Play.'
-                        : activeProject() === null
-                          ? 'Uses authored attacks and captured event timing.'
-                          : 'Finish saves only a compact local summary.'}
-                    </small>
-                  </span>
-                  <ChevronDown />
-                </button>
+                <div class={styles.coachCueDock} data-testid="drum-take-cue">
+                  <button
+                    class={styles.coachCue}
+                    type="button"
+                    inert={drawerInteractionLocked()}
+                    onClick={() =>
+                      openWorkspace(
+                        'coach',
+                        takeReadyToFinish() ? 'takes' : 'coach',
+                      )
+                    }
+                    aria-label="Open take history and phrase coach"
+                  >
+                    <span class={styles.coachOrb}>
+                      <AudioWave />
+                    </span>
+                    <span>
+                      <strong>{takeCueHeadline()}</strong>
+                      <small>{takeCueDetail()}</small>
+                    </span>
+                    <ChevronDown />
+                  </button>
+                  <Show when={takeFinishInStrip()}>
+                    <button
+                      class={styles.coachCueFinish}
+                      type="button"
+                      inert={drawerInteractionLocked()}
+                      onClick={finishTake}
+                    >
+                      <CheckSmall aria-hidden="true" />
+                      <span>Finish take</span>
+                    </button>
+                  </Show>
+                  <Show when={phoneKeepPending()}>
+                    <div
+                      class={styles.coachCueKeep}
+                      inert={drawerInteractionLocked()}
+                    >
+                      <button
+                        type="button"
+                        disabled={takeCapture.state() !== 'ready'}
+                        onClick={keepTakeReplay}
+                      >
+                        {takeCapture.state() === 'processing'
+                          ? 'Preparing replay…'
+                          : takeCapture.state() === 'saving'
+                            ? 'Keeping replay…'
+                            : 'Keep in Hear Yourself'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={takeCapture.state() === 'saving'}
+                        onClick={() => {
+                          takeCapture.dismiss()
+                        }}
+                      >
+                        Not now
+                      </button>
+                    </div>
+                  </Show>
+                </div>
               </>
             }
           >
@@ -4114,10 +4283,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                                   <button
                                     class={styles.saveProjectAction}
                                     type="button"
-                                    onClick={() => {
-                                      setProjectSavePromptOpen(true)
-                                      openWorkspace('projects')
-                                    }}
+                                    onClick={openProjectSavePrompt}
                                   >
                                     Save project
                                   </button>
@@ -4628,7 +4794,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </Match>
               <Match when={workspace() === 'coach'}>
                 <div class={cx('workspaceView', 'sessionCoachWorkspace')}>
-                  <div class={styles.coachWorkspaceStack}>
+                  <div
+                    class={styles.coachWorkspaceStack}
+                    data-lead={coachLead()}
+                  >
                     <DrumSessionCoach
                       session={activeSessionState}
                       playheadBeat={() => transport().positionBeats}
@@ -4640,18 +4809,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <DrumTakeHistoryHost
                       mode="expanded"
                       controller={takeHistoryController()}
+                      historyProjectId={activeProjectId()}
                       capturedHitCount={
                         retainedTakeHitCount() + omittedTakeHitCount()
                       }
-                      eligible={
-                        activeProject() !== null &&
-                        !usingStemBacking() &&
-                        activeDocument().sourceFormat === 'prepared'
-                      }
+                      eligible={takeEligible()}
                       unavailableReason={
                         activeProject() === null
                           ? 'Save this First Pocket as a project before finishing a take.'
                           : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      onSaveProject={
+                        activeProject() === null
+                          ? openProjectSavePrompt
+                          : undefined
                       }
                       preparing={takeFinishPreparing()}
                       onFinishTake={finishTake}
@@ -4661,13 +4832,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         state: takeCapture.state(),
                         message: takeCapture.message(),
                       }}
-                      onKeepReplay={() => {
-                        void takeCapture.keep().then((kept) => {
-                          if (kept) {
-                            showToast('Live-kit replay kept in Hear Yourself.')
-                          }
-                        })
-                      }}
+                      onKeepReplay={keepTakeReplay}
                       onDismissReplay={() => {
                         takeCapture.dismiss()
                       }}
@@ -4881,21 +5046,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 }
               >
                 {/* The button is the progress meter while the song loads. */}
-                <span
-                  aria-hidden="true"
-                  class={styles.playLoadRing}
-                  classList={{
-                    [styles.playLoadRingSpinning]: stemLoadPercent() === null,
-                  }}
-                  style={{
-                    '--load-fraction': String(
-                      stemPlayAlongSnapshot().loadFraction ?? 0,
-                    ),
-                  }}
+                <DrumPlayLoadMeter
+                  fraction={stemPlayAlongSnapshot().loadFraction}
                 />
-                <span aria-hidden="true" class={styles.playLoadPercent}>
-                  {stemLoadPercent() === null ? '' : `${stemLoadPercent()}%`}
-                </span>
               </Show>
             </button>
           </div>
@@ -4946,14 +5099,32 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </button>
           <button
             class={styles.mobilePlay}
+            classList={{ [styles.playButtonLoading]: playLoadingShown() }}
             type="button"
             onClick={togglePlaying}
-            aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
+            aria-label={
+              playLoadingShown()
+                ? `Loading ${sessionTitle()} audio`
+                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+            }
           >
-            {isPlaying() ? <Pause /> : <Play />}
-            <span class={styles.playSrLabel}>
-              {isPlaying() ? 'Pause' : 'Play'}
-            </span>
+            <Show
+              when={playLoadingShown()}
+              fallback={
+                <>
+                  {isPlaying() ? <Pause /> : <Play />}
+                  <span class={styles.playSrLabel}>
+                    {isPlaying() ? 'Pause' : 'Play'}
+                  </span>
+                </>
+              }
+            >
+              {/* The same meter as the console button: the phone bar is the
+                  only transport a phone sees while a song loads. */}
+              <DrumPlayLoadMeter
+                fraction={stemPlayAlongSnapshot().loadFraction}
+              />
+            </Show>
           </button>
           <button
             type="button"
@@ -5160,6 +5331,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <AuthModal tone="drum-night" onAuthenticated={handleAuthenticated} />
         </Suspense>
       </Show>
+
+      {/* Voice control, the same shape Karaoke and Guitar Night use: the
+          wrapper owns the listener, the pill and the V shortcut, and the
+          room registers what can be said here.
+
+          This room had none at all — which matters more here than anywhere
+          else, because both hands are on the pads. Voice could bring
+          somebody to Drum Night and then had nothing that left it: "go
+          home" and "go to singing" belong to the shell's tab set, which a
+          standalone document never loads. */}
+      <DeferredRoomVoiceControl />
     </div>
   )
 }

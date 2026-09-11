@@ -20,10 +20,10 @@
 // imports it.
 
 import { applyPreferredInput, listInputs, readPreferredInput, } from '@irchiinnuss/audio-io'
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { F0Stream } from '@irchiinnuss/pitch-engine'
 import { CONF_MIN, createF0Stream, listAudioInputs, micManager, pitchEngineModelPath, } from '@irchiinnuss/pitch-engine'
 import '@/games/glass/pitch-assets'
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 
 const out = document.getElementById('out') as HTMLTableElement
 const actions = document.getElementById('actions') as HTMLElement

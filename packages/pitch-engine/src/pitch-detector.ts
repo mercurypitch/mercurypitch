@@ -396,11 +396,14 @@ export class PitchDetector {
 
     // Step 1: Difference function (raw, no normalization)
     for (let tau = 0; tau < halfSize; tau++) {
-      this.yinBuffer[tau] = 0
+      let difference = 0
       for (let i = 0; i < halfSize; i++) {
         const delta = buffer[i] - buffer[i + tau]
-        this.yinBuffer[tau] += delta * delta
+        difference += delta * delta
       }
+      // One rounded store per lag, not millions of Float32 read/modify/writes
+      // per second. Keep the same difference function and search thresholds.
+      this.yinBuffer[tau] = difference
     }
 
     // Step 2: Cumulative mean normalized difference

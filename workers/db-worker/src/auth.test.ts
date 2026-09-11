@@ -97,10 +97,17 @@ class AuthStatement {
       ) ?? null) as T | null
     }
 
-    if (this.sql === 'SELECT * FROM users WHERE providerId = ?') {
-      const providerId = String(this.values[0])
+    // Provider-filtered, matching the (authProvider, providerId) unique
+    // index. A fake that answered on providerId alone would keep passing a
+    // worker that had lost the filter, which is the bug this shape prevents.
+    if (
+      this.sql ===
+      'SELECT * FROM users WHERE authProvider = ? AND providerId = ?'
+    ) {
+      const [authProvider, providerId] = this.values.map(String)
       return ([...this.db.users.values()].find(
-        (user) => user.providerId === providerId,
+        (user) =>
+          user.authProvider === authProvider && user.providerId === providerId,
       ) ?? null) as T | null
     }
 
@@ -523,7 +530,8 @@ class AuthDatabase {
     this.preparedSql.push(normalized)
     if (
       this.failProviderLookup &&
-      normalized === 'SELECT * FROM users WHERE providerId = ?'
+      normalized ===
+        'SELECT * FROM users WHERE authProvider = ? AND providerId = ?'
     ) {
       throw new Error('provider lookup unavailable')
     }
@@ -2632,5 +2640,72 @@ describe('the Turnstile gate on the public auth routes', () => {
     expect(
       db.preparedSql.some((sql) => sql.includes('emailVerifications')),
     ).toBe(false)
+  })
+})
+
+describe('which Google clients a token may come from', () => {
+  /** A tokeninfo response with a chosen audience. */
+  function stubGoogleAudience(aud: string, sub = 'native-google'): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              aud,
+              sub,
+              email: `${sub}@example.com`,
+              email_verified: 'true',
+              name: 'Native Singer',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+  }
+
+  it('accepts the iOS and Android clients once they are listed', async () => {
+    // One Google project, three clients: the token a phone produces carries
+    // that PLATFORM's client id in `aud`, so a single-valued check 401s every
+    // native sign-in with a message that reads like a plugin bug.
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_IDS = 'test-google-client,ios-client,android-client'
+
+    stubGoogleAudience('ios-client', 'ios-signer')
+    const ios = await postAuth('google', { idToken: 'from-ios' }, env)
+    expect(ios.token).toBeTypeOf('string')
+
+    stubGoogleAudience('android-client', 'android-signer')
+    const android = await postAuth('google', { idToken: 'from-android' }, env)
+    expect(android.token).toBeTypeOf('string')
+    expect(android.userId).not.toBe(ios.userId)
+  })
+
+  it('still refuses a client id nobody listed', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_IDS = 'test-google-client,ios-client'
+    stubGoogleAudience('some-other-app')
+    const response = await callAuth('google', { idToken: 'from-nowhere' }, env)
+    expect(response.status).toBe(401)
+  })
+
+  it('falls back to the single client id when no list is configured', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    expect(env.GOOGLE_CLIENT_IDS).toBeUndefined()
+    stubGoogleAudience('test-google-client', 'web-signer')
+    expect(
+      (await postAuth('google', { idToken: 'from-web' }, env)).token,
+    ).toBeTypeOf('string')
+  })
+
+  it('answers 501 when neither the list nor the single id is set', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    delete env.GOOGLE_CLIENT_ID
+    const response = await callAuth('google', { idToken: 'anything' }, env)
+    expect(response.status).toBe(501)
   })
 })

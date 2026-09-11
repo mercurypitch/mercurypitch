@@ -37,7 +37,7 @@ describe('weekDrillStats', () => {
   })
 
   it('keeps the local mirror when it has seen more than the record read', () => {
-    // A failed or lagging DB read must not zero a device that practised.
+    // A failed or lagging DB read must not zero a device that practiced.
     const stats = weekDrillStats(NOW, [loc(1, 60), loc(2, 80)], [rec(1, 60)])
     expect(stats).toEqual({ runs: 2, avgScore: 70 })
   })

@@ -183,15 +183,15 @@ contract.
 ## Release builds
 
 `.github/workflows/beside-cue-mobile.yml` owns both native builds. Beside Cue
-versions independently of MercuryPitch, so it uses `beside-cue-v*` tags rather
+versions independently of MercuryPitch, so it uses `bc-v*` tags rather
 than the `v*` tags that deploy the web app.
 
 | Trigger                       | Produces                                                                         |
 | ----------------------------- | -------------------------------------------------------------------------------- |
 | Pull request touching the app | `beside-cue-debug-apk`, an iOS simulator build, lint and unit test reports       |
-| `beside-cue-v*` tag           | The above, plus a release AAB and APK, and an IPA when Apple secrets are present |
+| `bc-v*` tag                   | The above, plus a release AAB and APK, and an IPA when Apple secrets are present |
 
-Artifacts are on the workflow run's summary page. `beside-cue-v0.2.0` gives
+Artifacts are on the workflow run's summary page. `bc-v0.2.0` gives
 `versionName` 0.2.0; `versionCode` is the workflow run number, because Play
 rejects a re-used one and only the run number is guaranteed to increase.
 

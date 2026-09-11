@@ -9,7 +9,7 @@
 //
 // Deliberately the METHOD and nothing else. No name, no address, no user id: a
 // rehearsal-room laptop or a shared family browser must not tell the next
-// person who practises here. "Sign in with your passkey" is the whole payload,
+// person who practices here. "Sign in with your passkey" is the whole payload,
 // and a passkey needs no address anyway — the credential is discoverable.
 //
 // Survives signing out on purpose. Signing out and coming back is exactly the

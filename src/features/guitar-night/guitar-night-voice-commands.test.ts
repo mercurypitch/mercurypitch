@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
 import type { GuitarNightVoiceDeps, GuitarNightVoiceTrack, } from './guitar-night-voice-commands'
 import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
@@ -74,6 +74,169 @@ function fire(fixture: Fixture, utterance: string): string | undefined {
 }
 
 describe('guitar night voice commands', () => {
+  it.each(['forward', 'skip forward', 'back', 'skip back'])(
+    'supports the bare %s command with a ten-second step',
+    (phrase) => {
+      const fixture = makeFixture()
+      expect(fire(fixture, phrase)).toBe(
+        phrase.includes('forward') ? 'Forward 10s' : 'Back 10s',
+      )
+      expect(fixture.seekedTo()).toBe(phrase.includes('forward') ? 40 : 20)
+    },
+  )
+
+  it('does not claim playback or seek succeeded without an available melody', () => {
+    const fixture = makeFixture()
+    fixture.deps.playbackIssue = () => 'Record or open a melody first.'
+    for (const phrase of ['play', 'pause', 'from the top', 'forward', 'rewind'])
+      expect(fire(fixture, phrase)).toBe('Record or open a melody first.')
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('clamps spoken seeks to the loaded source without starting playback', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'forward five minutes')).toBe('Forward 300s')
+    expect(fixture.seekedTo()).toBe(200)
+    expect(fire(fixture, 'back ten minutes')).toBe('Back 600s')
+    expect(fixture.seekedTo()).toBe(0)
+    expect(fixture.calls).toEqual(['seek', 'seek'])
+  })
+
+  it('does not turn a repeated Play into a pending-play cancellation', () => {
+    const fixture = makeFixture()
+    fixture.deps.pending = () => true
+    expect(fire(fixture, 'play')).toBe('Playback is starting')
+    expect(fire(fixture, 'pause')).toBe('Pause')
+    expect(fixture.calls).toEqual(['pause'])
+  })
+
+  it('delegates restart to the scored host instead of racing synchronous seek against Play', async () => {
+    const fixture = makeFixture()
+    let releaseSeek!: () => void
+    const seek = new Promise<void>((resolve) => {
+      releaseSeek = resolve
+    })
+    const restart = vi.fn(async () => {
+      fixture.calls.push('draining')
+      await seek
+      fixture.calls.push('seek-complete')
+      fixture.deps.play()
+    })
+    fixture.deps.restart = restart
+    expect(fire(fixture, 'from the top')).toBe('From the top')
+    expect(restart).toHaveBeenCalledOnce()
+    expect(fixture.calls).toEqual(['draining'])
+    expect(fixture.seekedTo()).toBeNull()
+    releaseSeek()
+    await restart.mock.results[0]?.value
+    expect(fixture.calls).toEqual(['draining', 'seek-complete', 'play'])
+  })
+
+  it('keeps recording and unavailable-media guards ahead of the optional restart', () => {
+    const fixture = makeFixture()
+    const restart = vi.fn()
+    fixture.deps.restart = restart
+    fixture.deps.playbackIssue = () => 'Record or open a melody first.'
+    expect(fire(fixture, 'from the top')).toBe('Record or open a melody first.')
+    fixture.deps.playbackIssue = () => null
+    fixture.deps.recorder = {
+      state: () => 'recording',
+      start: vi.fn(async () => undefined),
+      stop: vi.fn(async () => undefined),
+      startIssue: () => null,
+    }
+    expect(fire(fixture, 'from the top')).toMatch(/Finish recording/)
+    expect(restart).not.toHaveBeenCalled()
+  })
+
+  it('omits unsupported audition speed and stem commands', () => {
+    const fixture = makeFixture()
+    fixture.deps.speedAvailable = () => false
+    fixture.deps.stemsAvailable = () => false
+    expect(fire(fixture, 'half speed')).toBeUndefined()
+    expect(fire(fixture, 'mute drums')).toBeUndefined()
+    expect(fixture.calls).toEqual([])
+  })
+
+  it.each([
+    'record',
+    'record melody',
+    'record a melody',
+    'record idea',
+    'record an idea',
+    'record my idea',
+    'start recording',
+    'start a recording',
+    'record a take',
+  ])(
+    'starts capture explicitly for "%s", without toggling or playing',
+    (phrase) => {
+      const fixture = makeFixture()
+      let state: 'idle' | 'preparing' = 'idle'
+      const start = vi.fn(async () => {
+        state = 'preparing'
+      })
+      fixture.deps.recorder = {
+        state: () => state,
+        start,
+        stop: vi.fn(async () => undefined),
+        startIssue: () => null,
+      }
+      expect(fire(fixture, phrase)).toBe('Starting recording')
+      expect(fire(fixture, phrase)).toBe('Recording is preparing')
+      expect(start).toHaveBeenCalledTimes(1)
+      expect(fixture.calls).toEqual([])
+    },
+  )
+
+  it.each(['preparing', 'recording', 'stopping'] as const)(
+    'protects %s capture while leaving Stop reachable',
+    (state) => {
+      const fixture = makeFixture()
+      const stop = vi.fn(async () => undefined)
+      fixture.deps.recorder = {
+        state: () => state,
+        start: vi.fn(async () => undefined),
+        stop,
+        startIssue: () => null,
+      }
+      for (const phrase of [
+        'play',
+        'pause',
+        'forward 15',
+        'from the top',
+        'half speed',
+      ])
+        expect(fire(fixture, phrase)).toMatch(/recording/i)
+      expect(fixture.calls).toEqual([])
+      expect(fire(fixture, 'stop')).toBe(
+        state === 'preparing'
+          ? 'Cancelling recording start'
+          : state === 'recording'
+            ? 'Finishing recording'
+            : 'Recording is saving',
+      )
+      expect(stop).toHaveBeenCalledTimes(state === 'stopping' ? 0 : 1)
+      expect(fixture.calls).toEqual([])
+    },
+  )
+
+  it('reports an unsupported recording input without opening it or touching replay', () => {
+    const fixture = makeFixture()
+    const start = vi.fn(async () => undefined)
+    fixture.deps.recorder = {
+      state: () => 'idle',
+      start,
+      stop: vi.fn(async () => undefined),
+      startIssue: () =>
+        'Choose Direct input or Room mic to record audio and notes.',
+    }
+    expect(fire(fixture, 'record')).toMatch(/Choose Direct input/)
+    expect(fire(fixture, 'stop recording')).toBe('No recording is running')
+    expect(start).not.toHaveBeenCalled()
+    expect(fixture.calls).toEqual([])
+  })
+
   it('drives the room transport in seconds', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'play')).toBe('Play')

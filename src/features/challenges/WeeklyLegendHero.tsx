@@ -150,6 +150,9 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
     <section class={`${styles.card} home-legend-card`}>
       <div class={styles.eyebrowRow}>
         <span class={styles.eyebrow}>Legend Attempt</span>
+        <Show when={challenge()?.slug.includes('-encore-') === true}>
+          <span class={styles.eyebrow}>Encore</span>
+        </Show>
         <Show when={challenge()}>
           <span class={styles.countdown}>
             {countdownLabel(challenge()!.endsAt)}
@@ -261,8 +264,11 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
         open={consentOpen()}
         busy={consenting()}
         title="Sing it for the board?"
+        tone="primary"
         confirmLabel="Put me on the board"
         confirmIcon={<Trophy />}
+        secondaryLabel="Sing as practice"
+        onSecondary={declineConsent}
         message={
           <>
             A ranked take puts your display name and score on this challenge's
@@ -276,7 +282,9 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
           </>
         }
         onConfirm={() => void acceptConsent()}
-        onCancel={declineConsent}
+        // Cancel closes and nothing else: a Cancel that navigated into the
+        // practice stage was the one surprise in this dialog.
+        onCancel={() => setConsentOpen(false)}
       />
     </section>
   )

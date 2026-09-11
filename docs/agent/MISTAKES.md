@@ -48,6 +48,14 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### A late acknowledgement must not clear a newer phase deadline
+
+**Symptom:** quickly stopping a recorder that never finished could leave it waiting forever.
+**Cause:** a queued start acknowledgement cleared the timeout already guarding Stop.
+**Rule:** retire a deadline only while its own phase is current; a start acknowledgement
+may still provide timing evidence after Stop but must leave the stop watchdog armed.
+**See:** `src/lib/guitar/recording-capture.ts` and its late-start regression test.
+
 ### Never flip the page mic indicator from a non-page consumer
 
 **Symptom:** after using the Karaoke stem mixer, the Singing tab's mic toggle
@@ -193,6 +201,34 @@ route becomes the speaker must be a no-op. Native audio policy requires
 physical-device verification before release.
 **See:** `apps/beside-cue/ios/App/App/AudioSession.swift`
 
+### Give overlapping input starts their own microphone leases and pending nodes
+
+**Symptom:** Stop followed by a quick Listening restart lost the new input when
+the old worklet finished loading.
+**Cause:** stale completion ran shared cleanup; the manager's idempotent consumer
+ID also let an obsolete request release the newer request's hold.
+**Rule:** use attempt-local leases and pending-node disposers, check generation
+after every await, and let stale continuations release only their own resources.
+**See:** `src/features/guitar-night/useGuitarListeningController.ts`
+
+### Validate live capture timing before diagnosing an amp click
+
+**Symptom:** rapid tone changes appeared to introduce large PCM jumps.
+**Cause:** Chromium's worklet `currentFrame` repeated/skipped during graph edits;
+indexing recorded samples by it overwrote blocks and left zero-filled holes.
+**Rule:** record delivered blocks sequentially, retain clock anomalies as
+diagnostics, and require an independent raw signal to stay continuous before
+using processed PCM to judge transitions. Offline endpoint checks are separate.
+**See:** `scripts/guitar-amp-browser-probes.mjs`
+
+### Select the guitar channel before monitoring a multichannel interface
+
+**Symptom:** Direct-input guitar played only on the left while backing was stereo.
+**Cause:** the browser exposed input 1/2 as stereo; amp nodes preserved [guitar, silence].
+**Rule:** isolate a selected browser channel before the amp and center its mono output;
+never downmix every interface input or change the original analysis/recording route.
+**See:** `src/features/guitar-night/guitar-input-monitor.ts`
+
 ## Framework
 
 ### Do not destructure props
@@ -299,6 +335,15 @@ another one. What it does, and what any replacement must also do:
 **See:** `src/components/InfoPopover.tsx`, and the badge hints in
 `VocalChallenges.tsx` for a call site.
 
+### Supply semantic colours at a standalone portal's call site
+
+**Symptom:** Guitar Night's removal confirmation had transparent panels and an invisible action.
+**Cause:** its shared dialog expected app theme tokens; a nested body portal had only room colours.
+**Rule:** a portal skin bridge copies existing tokens, not missing aliases. Supply the shared
+component's semantic colours at its immediate caller and test both nested and ordinary entry paths.
+**See:** `src/features/guitar-night/GuitarRecordingRemoval.tsx`,
+`src/components/portal-skin.ts`, `src/e2e/guitar-recorder-overlays.spec.ts`.
+
 ### `scrollWidth` cannot tell you there is room to spare
 
 **Symptom:** a responsive bar that adapts its content to the available width
@@ -397,6 +442,73 @@ its top extended beneath the higher-z-index header outside that container.
 then regression-test settled geometry and `elementFromPoint` hit ownership.
 **See:** `src/features/drum-night/DrumNightApp.module.css`
 
+### Keep grid placement on the host, not reusable content
+
+**Symptom:** recorded-stem buttons became 263px columns beside the Amp.
+**Cause:** reused channel content retained `grid-area: channels` inside a
+different grid, creating implicit placement and stretching unrelated controls.
+**Rule:** host wrappers own placement; shared controls own only their internal
+layout. Test row geometry with both two and six tracks, not just overflow.
+**See:** `src/features/guitar-night/GuitarNightSongMixer.tsx`
+
+### Keep a CSS grid's named areas in one module
+
+**Symptom:** adding a Listening column made the song controls overlap in implicit columns.
+**Cause:** CSS Modules scoped new template-area names differently from the old child-area names.
+**Rule:** define the template and every named child placement in the same CSS module;
+verify bounding boxes and screenshots rather than only element visibility.
+**See:** `src/features/guitar-night/GuitarNightRoom.module.css`
+
+### Keep download links inside the modal that owns the action
+
+**Symptom:** exporting from Jam Doctor made bytes but no browser download.
+**Cause:** its capture-phase background-click guard blocked an anchor appended to `body`.
+**Rule:** append programmatic download anchors inside the owning dialog and remove
+them after the click; keep the background guard and verify a real download event.
+**See:** `src/lib/guitar/recording-export.ts`
+
+### Hoist conditional JSX props before asynchronous consumers read them
+
+**Symptom:** recorder RAF and Practice clicks repeatedly warned about ownerless computations.
+**Cause:** Solid compiled ternary `source`/`backing` JSX props into getters that created
+fresh conditional memos whenever an async callback read them outside the render owner.
+**Rule:** derive these values in component-owned `createMemo`s and pass their plain reads;
+do not hide the warning with a new root per frame. Capture a browser warning stack first.
+**See:** `src/features/guitar-night/GuitarNightSourceOwnership.test.tsx` exercises
+the actual compiled prop getters.
+
+### Restate `background-origin: border-box` after every `background` shorthand
+
+**Symptom:** a control with a translucent border and a gradient fill drew a flat 1px
+band at its edges, on a corner radius a pixel larger than the fill's. It reads as a
+second rectangle laid over the rounded corners.
+**Cause:** three defaults compounding. `background-origin` is `padding-box`, so the
+gradient tile is _sized_ to the padding box; `background-clip` is `border-box`, so it
+is _painted_ out to the border box; and `background-repeat` is `repeat`, so the strip
+between the two boxes is not empty — it is filled by the neighbouring tile. The result
+is a wrap seam, not a stretched end stop: the top and left strips show the tile's
+opposite edge, the **last** stop, and the bottom and right strips show the **first**.
+Measured on `linear-gradient(180deg, #ff0000, #0000ff)` with a 6px transparent border:
+the top strip is `rgb(2,0,254)` while the fill's first row beneath it is `rgb(251,0,4)`.
+Set `background-repeat: no-repeat` and the strip is not painted at all, which is the
+proof it is tiling and not extension. Only a translucent or transparent border lets it
+show, which is why it survives review. The `background` shorthand also resets
+`background-origin`, so a declaration in the base rule is a silent no-op the moment a
+`:hover` or `[aria-pressed]` rule sets `background:` again.
+**Rule:** put `background-origin: border-box` immediately after **every** `background`
+shorthand in the chain, not once in the base rule. It is not a blanket fix. The seam is
+worst where the two ends of the gradient differ most and the radius is tight — so a
+small control shows it and a wide panel behind a 20px radius and a low-contrast wash
+does not. A gradient whose last layer is an opaque colour cannot show it at all, since
+that layer fills the painting area on its own. A gradient ring built out of
+`linear-gradient(...) padding-box, linear-gradient(...) border-box` depends on the
+split and must be left alone. Render the candidate before and after rather than
+trusting the CSS.
+**See:** `pnpm audit:background-origin` lists candidates and separates the deliberate
+ones; `src/features/path/PlainPathView.module.css` restates it across five orb states;
+`.displayNamePill` in `src/components/account/AccountSection.module.css` (the two-layer
+`background` at line 52) is the ring that needs the split.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
@@ -457,7 +569,26 @@ Guard zero per-note style mutations in a browser test, not with an FPS gate.
 **See:** `src/features/piano-night/PianoNightStageViews.tsx`,
 `src/e2e/piano-night.spec.ts`
 
+### Measure detector throughput before enlarging a recording queue
+
+**Symptom:** recorder browser tests stopped after two seconds with processing behind.
+**Cause:** YIN wrote a Float32 sum inside its innermost loop; 2.048 seconds of
+audio needed about 1.6 seconds of analysis locally, leaving little CI headroom.
+**Rule:** benchmark the real analysis first. A local sum with one store per lag
+took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queues.
+**See:** `src/lib/pitch-detector.ts`, `docs/guitar-recording-testing.md`
+
 ## Data and billing
+
+### Share pending startup hydration, not just a ready flag
+
+**Symptom:** the first newly seeded song disappeared while a second remained.
+**Cause:** concurrent session initializers both passed a ready-after-await guard;
+the later whole-cache snapshot erased a song created after the first resolved.
+**Rule:** return one shared initialization promise, and await it before creating
+sessions. Check the durable completion result in fixtures instead of returning
+an ID for a session that was never saved.
+**See:** `src/stores/uvr-store-startup.test.ts`, `src/lib/e2e-song-seed.ts`
 
 ### Hydrate a durable job before trying to resume it
 
@@ -841,7 +972,63 @@ selects the destination by its exact accessible name.
 **Rule:** publish visibility/scroll readiness before contact, use `pinch-zoom` on the ready disc, and require both published and fresh readiness when admitting a turn. Never promote a page-owned contact mid-stream.
 **See:** `apps/beside-cue/src/components/punched-time-dial-readiness.ts`, `apps/beside-cue/e2e/punched-time-dial.e2e.ts` (trusted touch at both side tangents, partial visibility, gutter scrolling and quiet-window contact).
 
+### Isolate dependency scanning in offline Vite audio harnesses
+
+**Symptom:** a tiny audio harness scanned every app HTML entry and flooded errors; its intercepted baseline module could not import.
+**Cause:** Vite scans HTML entries by default and resolves literal imports before browser route interception.
+**Rule:** use `optimizeDeps.entries: []` with explicit dependencies; load route-only modules through a variable with `@vite-ignore`.
+**See:** `scripts/build-guitar-audition-pack.mjs`, `scripts/guitar-audition-browser.mjs`
+
+### Seeded synthesis is not a cross-run bit-exact listening fixture
+
+**Symptom:** an unchanged seeded score produced a different PCM hash, with maximum sample error only 2.98e-8, breaking a historical amp comparison before the amp ran.
+**Cause:** seeding note excitation did not establish cross-run floating-point PCM identity; the precise engine-level source of the tiny difference was not established.
+**Rule:** freeze and hash-verify the original pre-amp PCM for head-only comparisons. Re-parse score metadata and bound regenerated-source error separately so frozen audio cannot hide a changed or silent synth. Keep exact output-hash assertions for unchanged heads.
+**See:** `scripts/guitar-audition-browser.mjs`, `scripts/build-guitar-audition-pack.mjs`
+
+### Keep full-page screenshots out of bounded real-time capture assertions
+
+**Symptom:** the CI live-history timer froze at three seconds, although the test passed locally.
+**Cause:** the trace showed safe backpressure finalization during expensive page screenshots; a 1.92-second screenshot exceeded the 65,536-sample PCM budget at normal audio rates.
+**Rule:** inspect the capture stop reason, not only its timer. Observe first-note geometry at the actual canvas draw rather than a later automation read; encode images only after Stop. Test desktop/phone capture at separate fixed viewports, retaining active-duration assertions and production buffer limits.
+**See:** `src/e2e/guitar-recording-history.spec.ts`, PR Gate run `34252164591`.
+
+### Rebuild the tested bundle after changing source or rebasing
+
+**Symptom:** a recorder capture test passed, but a newer voice command was missing.
+**Cause:** the correct worktree's `dist` still predated its newer commits; Playwright only serves it.
+**Rule:** run `pnpm build:e2e` before production-browser checks after source changes or rebase. A matching worktree port proves location, not bundle freshness; do not count stale-build results as current-head verification.
+**See:** `playwright.config.ts`, `docs/agent/TESTING.md`
+
 ## Process
+
+### Validate native notation, not just the exporter importing its own bytes
+
+**Symptom:** GP7 round trips passed, but GP8 showed red bars and huge tuplet ratios.
+**Cause:** free-time fractions became isolated rational tuplets; shared parser/exporter behavior hid incompatible notation and wrong instrument metadata.
+**Rule:** keep exact timing in MIDI; disclose GP-only notation rounding and independently check GPIF bar sums, rhythms and instrument fields. Owner native-app verification is still required.
+**See:** `src/lib/guitar/recording-gp7.ts`, `recording-export.test.ts`
+
+### Do not pack capture and every responsive screenshot into one browser deadline
+
+**Symptom:** the recorder smoke timed out at different late actions in all CI
+attempts despite passing locally.
+**Cause:** six seconds of real capture, twenty viewport changes, screenshots,
+exports and cross-page persistence shared one 30-second budget. The CI trace
+showed forward progress throughout, not one hanging control.
+**Rule:** keep the real capture/persistence journey intact; test responsive
+layouts separately with a persisted fixture. Do not raise the global timeout
+or remove assertions to mask unrelated accumulated work.
+**See:** `src/e2e/guitar-recorder-layout.spec.ts`, `src/e2e/guitar-night-recording.spec.ts`
+
+### Animate recording previews from the audio clock, not saved chunk duration
+
+**Symptom:** live recording looked like a stuttering six-frame-per-second highway.
+**Cause:** the adapter used 8192-frame worker/IndexedDB checkpoints as its display
+clock: ~169 ms jumps despite sub-millisecond canvas drawing.
+**Rule:** sample the already-owned capture clock for visible frames; keep durable
+evidence on its frame timeline. Cancel visual work when preview is off/stopped.
+**See:** `src/features/guitar-night/useGuitarRecordingStage.ts` and its cadence regression.
 
 ### Do not commit, push, or open a PR unless asked
 

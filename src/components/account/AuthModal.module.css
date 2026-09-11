@@ -505,3 +505,49 @@
   font-weight: 600;
   letter-spacing: -0.015em;
 }
+
+/* Phones. iOS zooms into any field set below 16px and leaves the page
+   scrolled sideways, and the keyboard takes half the height; so the fields
+   are 16px, the dialog starts at the top with a compact head, and email,
+   password and the button sit close enough to share the half that is left. */
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-start;
+    padding: 8px 12px;
+  }
+  .dialog {
+    max-width: min(400px, 100%);
+    max-height: calc(100dvh - 16px);
+    padding: 14px 16px 12px;
+  }
+  .head {
+    margin-bottom: 2px;
+  }
+  .overlay .dialog .title {
+    font-size: 1.05rem;
+  }
+  .sub {
+    margin: 0 0 8px;
+    font-size: 12px;
+  }
+  .googleButton {
+    min-height: 42px;
+    padding: 7px 12px;
+  }
+  .divider {
+    margin: 8px 0;
+  }
+  .form {
+    gap: 8px;
+  }
+  .field {
+    gap: 3px;
+  }
+  .input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .submit {
+    min-height: 44px;
+  }
+}

@@ -7,7 +7,7 @@ applies it automatically.** `deploy-db.yml` runs
 wrangler d1 migrations apply ${{ env.DB_NAME }} --remote --env <env>
 ```
 
-which names the *main* database only. Adding a file here and merging will
+which names the _main_ database only. Adding a file here and merging will
 deploy a worker that expects a schema the database does not have.
 
 That is worth stating loudly because it is exactly the failure the tracked
@@ -38,7 +38,7 @@ pnpm exec wrangler d1 execute mercurypitch-perks --remote \
 
 Applying this chain from a pipeline means a **dev** deploy writes schema to
 a database **prod** reads — the two share one D1 by design, so there is no
-dev-only copy to practise on. That crosses the project's "never touch
+dev-only copy to practice on. That crosses the project's "never touch
 prod" line, so it stays a deliberate manual step rather than something a
 merge does on your behalf. Automate it only alongside a decision about
 which pipeline owns this database.

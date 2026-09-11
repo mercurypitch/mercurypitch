@@ -914,9 +914,11 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
       .filter({ hasText: 'Audio, samples, and MIDI stay off' }),
   ).toBeVisible()
   await expect(page.getByText('MIDI not connected')).toBeVisible()
+  // The room came off `noindex` on 2026-09-08 — a listed page now, not an
+  // unlisted pilot. See the sitemap and src/tests/launch-entry-seo.test.ts.
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
-    'noindex, nofollow',
+    'index, follow',
   )
   expect(await boundaryCounts(page)).toEqual({
     audio: 0,
@@ -2537,7 +2539,15 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       const consoleRect =
         visiblePlay?.parentElement?.parentElement?.getBoundingClientRect()
       const roomRect = document.querySelector('main')?.getBoundingClientRect()
+      // Drum Night's own controls, not the shared voice HUD floating over
+      // them. That pill is a deliberately small overlay with its own touch
+      // story (see the `pointer: coarse` block in its stylesheet), it ships
+      // unchanged on Guitar Night and Karaoke Night, and it is not part of
+      // the recomposition this test is about. Sweeping the whole document
+      // for it was incidental: when this was written the document held
+      // nothing but Drum Night.
       const undersized = [...document.querySelectorAll('button')]
+        .filter((button) => button.closest('[data-voice-control-hud]') === null)
         .filter(visible)
         .map((button) => button.getBoundingClientRect())
         .filter((rect) => rect.width < 44 || rect.height < 44)

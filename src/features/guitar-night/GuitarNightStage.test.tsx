@@ -15,6 +15,8 @@ import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_
 
 vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
   Guitar3DStage: (props: {
+    source: GuitarPerformanceStageSource
+    visibleBeatWindow?: Accessor<number>
     presentation?: Accessor<TabPresentation>
     loopSpan?: Accessor<TabSceneLoopSpan | null>
     display?: Accessor<DisplaySettings>
@@ -34,6 +36,9 @@ vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
       data-effects={props.display?.().effects ?? 'full'}
       data-camera-target-x={props.cameraPreset?.().target[0] ?? 0}
       data-camera-following={props.cameraAutoFollow?.() ?? false}
+      data-recording-history={props.source.recordingHistory?.() ?? false}
+      data-playhead-beat={props.source.timeline.playheadBeat()}
+      data-visible-beats={props.visibleBeatWindow?.()}
     />
   ),
 }))
@@ -81,6 +86,66 @@ describe('GuitarNightStage views', () => {
   afterEach(() => {
     cleanup()
     for (const key of persistedKeys) localStorage.removeItem(key)
+  })
+
+  it('shows measured history on the actual capture clock, then restores the playback view', async () => {
+    const [history, setHistory] = createSignal(true)
+    render(() => (
+      <GuitarNightStage
+        source={{
+          ...GUIDED_SOURCE,
+          recordingHistory: history,
+          timeline: { ...SOURCE.timeline, playheadBeat: () => 0 },
+        }}
+        active={() => true}
+      />
+    ))
+    const stage = await screen.findByTestId('shared-3d-stage')
+    expect(stage).toHaveAttribute('data-recording-history', 'true')
+    expect(stage).toHaveAttribute('data-playhead-beat', '0')
+    expect(stage).toHaveAttribute('data-visible-beats', '6')
+    expect(stage).toHaveAccessibleName(
+      /1 recorded notes.*NOW.*history, not targets/,
+    )
+    setHistory(false)
+    expect(stage).toHaveAttribute('data-recording-history', 'false')
+    expect(stage).toHaveAttribute('data-visible-beats', '8')
+    expect(stage).toHaveAccessibleName(/1 guided notes/)
+  })
+
+  it('names transient Live history honestly across Highway and Tab without changing its clock or camera', async () => {
+    const [kind, setKind] = createSignal<'live' | 'recording'>('live')
+    render(() => (
+      <GuitarNightStage
+        source={{
+          ...GUIDED_SOURCE,
+          title: () => 'A source title does not choose the history kind',
+          recordingHistory: () => true,
+          historyKind: kind,
+          timeline: { ...SOURCE.timeline, playheadBeat: () => 2.123 },
+        }}
+        active={() => false}
+      />
+    ))
+    const stage = await screen.findByTestId('shared-3d-stage')
+    expect(stage).toHaveAccessibleName(
+      /1 heard notes.*NOW.*You played; nothing is recorded/,
+    )
+    expect(screen.getByText('Live input')).toBeVisible()
+    expect(stage).toHaveAttribute('data-playhead-beat', '2.123')
+    expect(stage).toHaveAttribute('data-camera-following', 'false')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+    expect(
+      screen.getByRole('img', {
+        name: /Live tablature.*You played.*Nothing is recorded/,
+      }),
+    ).toBeVisible()
+    setKind('recording')
+    expect(
+      screen.getByRole('img', { name: /Recorded tablature.*You played/ }),
+    ).toBeVisible()
+    expect(screen.getByText('Recorded notes')).toBeVisible()
   })
 
   it('switches one mounted Flow stage between Highway and Grid and remembers it', async () => {
@@ -189,6 +254,79 @@ describe('GuitarNightStage views', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('51')
   })
 
+  describe('the resting status line on a phone', () => {
+    const narrow = (matches: boolean) => {
+      const media = (query: string) =>
+        ({
+          matches: query.includes('max-width') ? matches : false,
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          onchange: null,
+          dispatchEvent: () => false,
+        }) as unknown as MediaQueryList
+      vi.stubGlobal('matchMedia', media)
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('drops the line that only says the guide loaded', () => {
+      // "Guide ready" repeats what the neck under it already shows, and on a
+      // phone it costs a row the fretboard and transport both want.
+      narrow(true)
+      render(() => (
+        <GuitarNightStage source={GUIDED_SOURCE} active={() => true} />
+      ))
+
+      expect(screen.queryByText('Guide ready')).toBeNull()
+    })
+
+    it('keeps the line on a wide screen', () => {
+      narrow(false)
+      render(() => (
+        <GuitarNightStage source={GUIDED_SOURCE} active={() => true} />
+      ))
+
+      expect(screen.getByText('Guide ready')).toBeTruthy()
+    })
+
+    it('keeps the live score on a phone without the line it rode in on', () => {
+      // The accessory is the host's live score, which is why the faceplate
+      // survives. The tab view passes one on every render, so keeping the
+      // whole block for it put the guide line back on every phone.
+      narrow(true)
+      render(() => (
+        <GuitarNightStage
+          source={GUIDED_SOURCE}
+          active={() => true}
+          signalAccessory={
+            <span data-testid="stage-signal-evidence">A 86</span>
+          }
+        />
+      ))
+
+      expect(screen.getByTestId('stage-signal-evidence')).toBeTruthy()
+      expect(screen.queryByText('Guide ready')).toBeNull()
+    })
+
+    it('keeps the line on a phone while it is listening', () => {
+      narrow(true)
+      render(() => (
+        <GuitarNightStage
+          source={GUIDED_SOURCE}
+          active={() => true}
+          listening={() => true}
+        />
+      ))
+
+      expect(screen.getByText('Listening')).toBeTruthy()
+    })
+  })
+
   it('keeps host evidence inside the signal faceplate without adding a control', () => {
     render(() => (
       <GuitarNightStage
@@ -203,21 +341,52 @@ describe('GuitarNightStage views', () => {
     expect(evidence.closest('button, a, summary')).toBeNull()
   })
 
+  it('retires saved phrase following and keeps authored and recorded notes out of camera framing', async () => {
+    localStorage.setItem(GUITAR_NIGHT_CAMERA_PRESET_KEY, 'phrase-focus')
+    const [beat, setBeat] = createSignal(0)
+    const [history, setHistory] = createSignal(false)
+    render(() => (
+      <GuitarNightStage
+        source={{
+          ...GUIDED_SOURCE,
+          recordingHistory: history,
+          timeline: { ...GUIDED_SOURCE.timeline, playheadBeat: beat },
+        }}
+        active={() => true}
+      />
+    ))
+    const sharedStage = await screen.findByTestId('shared-3d-stage')
+    expect(screen.getByTestId('guitar-night-stage')).toHaveAttribute(
+      'data-camera-preset',
+      'flow',
+    )
+    for (const recording of [false, true]) {
+      setHistory(recording)
+      setBeat(0)
+      expect(sharedStage).toHaveAttribute('data-camera-target-x', '0')
+      setBeat(4)
+      expect(sharedStage).toHaveAttribute('data-camera-target-x', '0')
+      expect(sharedStage).toHaveAttribute('data-camera-following', 'false')
+    }
+    fireEvent.click(screen.getByLabelText('Camera, Runway'))
+    expect(screen.queryByRole('button', { name: /Phrase follow/ })).toBeNull()
+  })
+
   it('keeps camera and visual preferences in one compact persisted View menu', async () => {
     render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
     const sharedStage = await screen.findByTestId('shared-3d-stage')
     const stage = screen.getByTestId('guitar-night-stage')
 
     fireEvent.click(screen.getByLabelText('Camera, Runway'))
-    fireEvent.click(screen.getByRole('button', { name: /Phrase follow/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Player angle/ }))
 
-    expect(stage).toHaveAttribute('data-camera-preset', 'phrase-focus')
-    expect(sharedStage).toHaveAttribute('data-camera-following', 'true')
+    expect(stage).toHaveAttribute('data-camera-preset', 'player-neck')
+    expect(sharedStage).toHaveAttribute('data-camera-following', 'false')
     expect(localStorage.getItem(GUITAR_NIGHT_CAMERA_PRESET_KEY)).toBe(
-      'phrase-focus',
+      'player-neck',
     )
 
-    fireEvent.click(screen.getByLabelText('Camera, Phrase follow'))
+    fireEvent.click(screen.getByLabelText('Camera, Player angle'))
     fireEvent.click(screen.getByRole('button', { name: /Left-handed layout/ }))
     fireEvent.click(screen.getByRole('button', { name: /Reduced effects/ }))
 
@@ -695,13 +864,11 @@ describe('GuitarNightStage view picker on a phone', () => {
     const sheet = await screen.findByRole('dialog', {
       name: 'Camera and display settings',
     })
-    fireEvent.click(
-      within(sheet).getByRole('button', { name: /Phrase follow/ }),
-    )
+    fireEvent.click(within(sheet).getByRole('button', { name: /Player angle/ }))
 
-    expect(sharedStage).toHaveAttribute('data-camera-following', 'true')
+    expect(sharedStage).toHaveAttribute('data-camera-following', 'false')
     expect(localStorage.getItem(GUITAR_NIGHT_CAMERA_PRESET_KEY)).toBe(
-      'phrase-focus',
+      'player-neck',
     )
     await waitFor(() => {
       expect(

@@ -4,7 +4,7 @@
 //
 // The live tracker scrolls a 10-second window, so a finished run leaves it and
 // is gone. The result card then reported a number where it could have reported
-// a shape: 71% says nothing you can practise; a contour that drifts flat at the
+// a shape: 71% says nothing you can practice; a contour that drifts flat at the
 // top of every phrase says exactly what to work on.
 //
 // The trace is already published by use-base-exercise, so this is only the

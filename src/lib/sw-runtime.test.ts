@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { allEntryPaths } from '@/seo/entry-pages'
 import type { SwStaleBuildNotice } from './sw-runtime'
 import { BUILD_ID_MESSAGE, CACHE_PREFIX, createServiceWorkerRuntime, extensionOf, firstPaintAssets, htmlBelongsToBuild, isVersionedAssetPath, manifestRevision, SHELL_KEY, SKIP_WAITING_MESSAGE, STALE_BUILD_MESSAGE, STANDALONE_DOCUMENT_PATHS, } from './sw-runtime'
 
@@ -217,20 +218,18 @@ describe('the standalone documents', () => {
     // fetched whatever the origin answered, so an alias left off this list
     // still served the right product; cache-first answers it with the app
     // shell, and the visitor gets the studio where Voice Mirror should be.
-    // Each `const X_PATHS = new Set([...])` in the build config is one
-    // mini-app's URLs, and TONE_DEAF_PATH redirects onto one.
+    // The entry documents and their aliases are one list now
+    // (src/seo/entry-pages.ts), so this reads that rather than scraping the
+    // build config. TONE_DEAF_PATH is still a config constant: it redirects
+    // onto an entry rather than having a document of its own.
     const config = readFileSync(
       resolve(process.cwd(), 'vite.config.ts'),
       'utf8',
     )
-    const declarations = [
-      ...config.matchAll(
-        /const [A-Z_]+_PATHS?\s*=\s*(new Set\(\[[^\]]*\]\)|'[^']*')/g,
-      ),
-    ]
-    const paths = declarations.flatMap((match) =>
-      [...(match[1] ?? '').matchAll(/'(\/[^']*)'/g)].map((inner) => inner[1]),
-    )
+    const redirects = [
+      ...config.matchAll(/const [A-Z_]+_PATH\s*=\s*'(\/[^']*)'/g),
+    ].map((match) => match[1])
+    const paths = [...allEntryPaths(), ...redirects]
 
     expect(paths.length).toBeGreaterThan(10)
     for (const path of paths) {

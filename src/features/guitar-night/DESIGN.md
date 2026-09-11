@@ -36,6 +36,11 @@ workspace.
 
 ## Interaction contract
 
+- Recorder export help distinguishes readable GP7 notation from free-timed
+  MIDI before the action. GP7's thirty-second-note rounding affects the exported
+  copy only; the take's audio and practice timing remain unchanged. Keep this
+  alongside the export actions, not another modal or permanently visible rail.
+
 - `Start` first makes four open low-E notes feel musical, then teaches a
   one-string tab phrase. Touch and keyboard work before any listening
   permission. The explicit count-in starts a local percussion pulse; progress
@@ -59,12 +64,97 @@ workspace.
 - Inside the room, Space always toggles the backing transport — a focused
   mute chip, slider or panel button never steals the key; typing surfaces and
   modifier chords do (shared rule: `src/lib/space-playback.ts`).
+  Focused Mix, Session, Tune and review overlays own their keyboard input and
+  suspend background transport shortcuts, including spoken song commands.
 - The loaded song title visibly names its `Mix` action and opens the shared
   Track mixer rather than adding a permanent console beside the stage. The
   mixer keeps source track names, room level, Mute, Solo, Sheet visibility and
   a live fader together; unity is explicit and each authored lane has modest
   positive headroom behind the room limiter. A Drum row follows native Drum
   notation on moving views without ever becoming Guitar scoring authority.
+- Recorded-song practice uses the same fader, Mute/Solo and focus-managed
+  mixer controls, opened by an explicit `Mix` action. Stable stem rows retain
+  their identity during playback updates; saved levels and explicit mute are
+  restored by song/source ID. Reset restores source defaults, not an assumed
+  unity mix. Temporary Solo never overwrites those choices.
+- Song `Session` is a single reading column: visible input choices, input health
+  when relevant, then the shared Amp and optional score-placement controls.
+  Amp is clearly labeled as live Direct input processing, never recording
+  processing. Paid separation stays with the source/mixer action and discloses
+  credits. Signal-only review stays at the stage cue, not a large disabled card.
+- Both hosts share one compact Amp faceplate. Tight is the fresh default;
+  Articulate–Tight is a coordinated Character control on the Definition head,
+  and Heavy retains the original stronger audition. These use one fixed
+  cabinet IR, not different cabinets. Lead selects its own Studio solo head,
+  without the Definition-only Character control or an implied delay/reverb.
+  Studio clean, Edge and Crunch retain explicit Lite filter-cabinet choices.
+  Old saved Lite Lead becomes Custom with its sound intact; other V1 tones migrate to Lite
+  without changing bypass, and selecting/resetting a tone never enables a
+  bypassed amp. Detail controls disclose tone/output beneath the primary
+  preset, drive and character; loading/fallback is stated beside the cabinet.
+  Neither settings changes nor mounting the faceplate starts audio or loads
+  cabinet bytes. A held Character drag keeps its native slider mounted when
+  the preset becomes Custom, and persists only when the gesture ends.
+- A shared Monitoring latency disclosure sits below the monitoring action,
+  collapsed by default. It separates browser estimates from unmeasured physical
+  round trip and saved scoring compensation, with a local redacted report download.
+  Opening it is passive; missing values are unavailable, not zero. Context/input
+  interruption and MIDI's lack of captured audio have explicit copy. Estimates
+  refresh quietly without repeated live-region announcements; the main room and
+  monitoring control remain primary. No diagnostic dashboard or extra modal.
+  Reports use distinct UTC timestamped filenames and include export time separate
+  from capture time. A brief browser/system buffer tip explains the low-latency
+  request and the smaller-buffer/dropout trade-off without promising a round trip.
+- Monitoring off uses crossed headphones, a restrained red tint and explicit
+  action copy. Stopped Direct input offers Start Listening and monitoring in
+  place, with generation-checked completion; selecting a profile never opens
+  capture. Multichannel interfaces expose a compact Input N · Mono selector:
+  one browser channel feeds the amp and reaches both speakers, leaving the dry
+  detector, worklet and recording intact. Changing channels turns monitoring
+  off and retires the previous route through a short fade; re-enable is explicit.
+  Diagnostic copy distinguishes this selection from a browser multichannel mix.
+- Song Listening uses the score room's cycle and upward right-click/long-press
+  picker at the bottom left beside the timeline. Both Session sheets share the
+  explicit Start/Stop/Cancel action; song profile choices remain visible rather
+  than hiding in a second disclosure. The two stage layouts remain distinct.
+- With Direct input selected, the same upward picker has a compact second row:
+  Listening, Backing, You. Listening reuses Session's Start/Stop/Cancel action;
+  You is a separate live-monitor opt-in with crossed headphones while muted.
+  Backing affects the accompaniment, not You or the room master, and never
+  erases individual faders, mutes or Solo. The score host shares its existing
+  backing-parts state; recorded songs use a transient gain mask. Input changes
+  still reset monitoring for safety. The picker is opaque for readability,
+  keyboard reachable, and does not open audio merely by appearing.
+  It is portalled above stage artwork, anchored to Listening and clamped on
+  viewport/content changes; nesting it inside the rail must not bury it beneath
+  the recorder. Melody removal has a separate opaque confirmation faceplate,
+  independent of room clarity, using the shared dialog and its skin bridge.
+- Backing is also one click away directly below the song's bottom-left Listening
+  control; Direct input adds You beside it. Tab rehearsal retains Backing and
+  Target and adds the same You action. Shared toggles mirror the picker without
+  introducing another audio owner or remembered monitor opt-in. Muted monitoring
+  keeps its crossed-headphone/red treatment, and touch targets remain 44px.
+  Direct-input copy explains the actual action and browser latency rather than
+  warning every interface player about microphone feedback. Room-mic playback
+  warnings remain confined to that route.
+- Song A/B is adjacent to Play and the shared range rail in media seconds,
+  with persistent marks, drag/keyboard adjustment and the existing precision
+  lens. Both song and score reuse these presentation controls but retain their
+  own playback clocks and dedicated layouts. Rehearse the tab retains its
+  complete score-focused experience; the song host is not a replacement for it.
+  Buffered song loops repeat on the audio engine's shared epoch without
+  UI-driven seeks. Pitch-preserving/oversized streaming uses synchronized
+  readiness-gated seeks and explicitly warns of a possible boundary pause.
+  A loop that cannot fit its required silence padding in the decoded budget
+  stays visibly unavailable, while its chosen marks remain editable.
+- Song Direct-input Listening can remain on alongside the backing. Play never
+  opens input or enables the separate headphone-aware monitor. Room mic and
+  MIDI keep exclusive playback/listening behavior. Buttons, Space and spoken
+  Play use one song-specific safety policy. Tuner/calibration, fallback input,
+  source replacement, input changes/loss and room exit park the appropriate
+  lifetimes without hidden restart. Pausing only the song leaves deliberate DI
+  Listening/monitoring on for jamming; Stop Listening or leaving releases it.
+  Song evidence stays signal-only, not an authored score or saved audio take.
 - Drum Kit is a live timbre choice after the room owns audio, including while
   Paused; generated Feel remains a next-Play scheduling choice. Before the
   first Play both selectors remain data-only, and sampled kits may use Mercury
@@ -305,9 +395,10 @@ core Learn set in
   choice is stored locally. Guitar Night supplies its own translucent Velvet
   palette, direct mouse/touch camera, responsive entry/Reset framing, larger
   next target and truthful `NOW` rail without changing the legacy renderer
-  defaults. Four calm camera presets include phrase following that yields as
-  soon as the player drags, wheels, touches, or uses the keyboard and resumes
-  only on Reset. Left-handed Highway and Grid mirror their spatial projection;
+  defaults. Three fixed camera presets never follow authored or detected notes;
+  saved Phrase follow choices fall back to Runway. Manual orbit/pan/zoom remains
+  player-owned through playback, scrubbing and recording. Reset restores the
+  selected fixed framing. Left-handed Highway and Grid mirror their spatial projection;
   the moving thirteen-fret Neck reverses consistently; 4–8 strings, alternate
   tuning, and capo remain source-aware. Authored chords and bend, slide,
   hammer/pull, vibrato, palm-mute, and let-ring marks reach the stage without
@@ -428,6 +519,63 @@ core Learn set in
   ground truth is monophonic. A query-gated development export captures route,
   clock, aggregate health and event counts without audio or an event timeline;
   it labels a real-device run as user-captured and unverified.
+
+## Your melody recorder
+
+- Free form owns a flat two-row transport: a seekable take timeline above
+  centered Play/Pause, Stop and Record keys. Listening and its mix buttons
+  occupy an independent, tightly packed two-row column. Source and generated
+  amp/cabinet selectors flank the keys; on phones the amp menu also carries
+  source choices. A larger tactile brass-reel image, take title, duration and
+  Review action sit at the stage's lower left. Its options menu carries Live
+  notes. The tape remains an explicitly labelled Record/Stop alternative.
+  Generated reel animation is deferred; no video enters the capture path.
+- The recorder's visible clock reads the existing capture AudioContext between
+  worker checkpoints. Notes retain their exact frame-time evidence. Stopping or
+  disabling Live notes retires the visual frame loop, not the recording input.
+  Recording Flow has an explicit NOW / You played boundary near mid-runway:
+  new evidence appears there and travels toward the player as three seconds of
+  history, without next-target glow or a scored landing. Tab places NOW toward
+  the right and shows its recent history behind it. The clock is never shifted
+  to disguise recorded notes as future targets. Only live projection is bounded
+  to recent evidence; a stopped draft, review and audition retain the full take.
+  Small Worker previews publish independently of IndexedDB checkpoints, with
+  the same total PCM buffer capacity. This changes visual delivery, not the
+  amp/monitor signal path or claimed physical round-trip latency.
+  Playback offers Recording (original input) and Notes (current corrected
+  pitches/timing), sharing one owner with review. Both offer Current amp,
+  Clean/bypass and Saved amp; saved means settings at Record, not an exact wet
+  performance. No audio is overwritten or external recording colour removed.
+  Audition borrows the room output context and the existing amp/cabinet stage;
+  a final envelope fades effects as well as input. It never accepts a practice
+  target or turns Listening on. Review remains the bridge to corrections,
+  Keep, exports and accepted tab rehearsal with A/B and scoring.
+- Review puts audition before title metadata, keeping Play above the pinned
+  Keep/Practice footer on a short phone. Only short portrait free-form rooms
+  relax the stage's usual height floor to keep the complete recorder reachable;
+  authored-tab rehearsal retains its existing proportions and touch targets.
+- My melodies opens a personal recording shelf over the room, never a list in
+  the stage's layout. This owner-requested gallery is a deliberate exception to
+  the first-viewport no-card-grid rule: a small room-tool button is its only
+  closed-state chrome. A translucent charcoal faceplate retains the room;
+  each tile's identity is its own captured-note contour, not repeated clip art.
+  Date, duration, captured-note count/range, input and kept/draft status are
+  factual. No grade, fabricated waveform or inferred musical tempo is shown.
+- The shared room dialog owns focus, Escape and restoration. Gallery paging
+  reads at most eight additional ending-evidence rows at a time, never PCM or
+  Hear Yourself audio payloads. Missing evidence, interrupted capture and
+  removed audio remain distinct. The brass-reel emblem belongs to the collection
+  header; artwork provenance is in `docs/guitar-recorder-art.md`.
+- A chevron beside My melodies offers eight recent takes without opening the
+  full gallery; right-click or a held touch on the main button is a shortcut.
+  Choosing one loads it without auto-playing or opening Review. Trash actions
+  in either view confirm the exact take and its linked local data. Failed
+  deletion or loading preserves the current take, and a stale load cannot
+  replace a newer selection. Capture locks remain authoritative.
+- A timeline gesture previews its target and commits on release. Keyboard
+  arrows seek directly. Both original audio and synthesized notes use the
+  shared audition clock and pop-free output envelopes; Stop returns to zero,
+  Pause keeps the position, and seeking alone never requests audio/input.
 
 ## Where bars and beats come from
 

@@ -90,15 +90,21 @@ export async function ensurePersistentStorage(
 
   if (!claimPersistenceAttempt()) return false
 
-  try {
-    const { showNotification } = await import('@/stores/notifications-store')
-    const message =
-      reason === 'voice-takes'
-        ? 'Take saved on this device. Allow persistent storage when prompted to reduce the chance of your browser reclaiming it under low space.'
-        : 'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.'
-    showNotification(message, 'info', { durationMs: 12000 })
-  } catch {
-    // A notification failure must not prevent the browser request.
+  // Stems announce the request: the separation just finished and a prompt
+  // out of nowhere would be a mystery. A kept take says "Take kept" on its
+  // own page, and that page's rail footer carries the storage advice, so
+  // the request is silent there.
+  if (reason === 'stems') {
+    try {
+      const { showNotification } = await import('@/stores/notifications-store')
+      showNotification(
+        'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.',
+        'info',
+        { durationMs: 12000 },
+      )
+    } catch {
+      // A notification failure must not prevent the browser request.
+    }
   }
 
   try {

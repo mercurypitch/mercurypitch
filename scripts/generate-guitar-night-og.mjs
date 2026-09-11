@@ -40,7 +40,7 @@ const mark = readFileSync(resolve(REPO, 'public/favicon.svg'), 'utf8')
 const WAYS = [
   { name: 'Start', note: 'Read your first bar on one open string', lead: true },
   { name: 'Load a song', note: 'A prepared song, or your own audio' },
-  { name: 'I know my way around', note: 'Straight to the Guitar workspace' },
+  { name: 'Free play', note: 'See what you play, record it, practice' },
 ]
 
 const wayRows = WAYS.map(
@@ -116,10 +116,14 @@ const html = /* html */ `<!doctype html>
   }
 
   .brand { display: flex; align-items: center; gap: 14px; }
+  /* Floor under the gap to the headline. margin-top:auto on the headline only
+     distributes LEFTOVER space, and a full card leaves almost none, so the
+     lockup and the headline ended up nearly touching. */
+  .brand { margin-bottom: 46px; }
   .brand .globe { width: 46px; height: 46px; border-radius: 50%; box-shadow: 0 4px 18px rgba(224,164,93,0.32); flex: none; display: block; }
   .brand .globe svg { display: block; width: 100%; height: 100%; }
   .wordmark { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 27px; letter-spacing: -0.01em; }
-  .wordmark .p { color: var(--amber-bright); }
+  .wordmark .p { background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .divider { width: 1px; height: 26px; background: rgba(244,234,219,0.28); }
   .kicker {
     font-family: 'Outfit', sans-serif; font-weight: 700;
@@ -222,7 +226,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Your room is ready</h1>
-      <p class="sub">Begin with one string, bring a song, or step straight into the full workspace. <b>The room listens</b> and reads the bar back to you.</p>
+      <p class="sub">Begin with one string, bring a song, or just play. <b>The room listens</b> and reads the bar back to you.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>One string to start</span>

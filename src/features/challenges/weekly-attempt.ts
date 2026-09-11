@@ -205,7 +205,7 @@ export async function recordWeeklyAttempt(entry: {
 
       // Publish the result without navigating away. The app-level result
       // overlay sits above the frozen challenge canvas, so the singer can
-      // review the trace, practise the line without scoring, or explicitly
+      // review the trace, practice the line without scoring, or explicitly
       // arm another board attempt.
       presentChallengeResult({
         challengeId: a.challengeId,

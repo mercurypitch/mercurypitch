@@ -32,6 +32,14 @@ describe('GuitarNightInputHealth', () => {
     expect(status).toHaveAttribute('aria-live', 'polite')
     expect(status).toHaveTextContent('Signal is clear.')
     expect(
+      screen.getByText(/Saved scoring compensation: 18 ms/),
+    ).toHaveTextContent('it is not verified for the current output route')
+    expect(
+      screen.getByText(/Timing calibration aligns the score/),
+    ).toHaveTextContent(
+      'It does not reduce the delay you hear while monitoring',
+    )
+    expect(
       screen.getByRole('button', { name: 'Calibrate timing' }),
     ).toBeEnabled()
   })
@@ -58,6 +66,9 @@ describe('GuitarNightInputHealth', () => {
     const alert = screen.getByRole('alert')
     expect(alert).toHaveAttribute('aria-live', 'assertive')
     expect(alert).toHaveTextContent('Input is clipping.')
+    expect(
+      screen.getByText(/No scoring compensation is saved/),
+    ).toBeInTheDocument()
   })
 })
 

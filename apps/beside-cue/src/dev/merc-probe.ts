@@ -25,6 +25,7 @@
 // Keys 1-5 switch clips live. The HUD prints the backend and what is
 // playing, so a screenshot documents itself.
 
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { micManager, readMicLevel } from '@irchiinnuss/pitch-engine'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
@@ -34,7 +35,6 @@ import { Box3, Vector3 } from 'three'
 // class it cannot see lands under the fold, unstyled, and reads as
 // missing rather than as unstyled.
 import '../screens/games.css'
-import { acquireSharedAudioContext } from '@/audio/shared-audio-context'
 import { createSingDriver } from '../games/glass/drivers/sing'
 import type { InteractionDriver } from '../games/glass/drivers/types'
 import { micErrorLine } from '../games/glass/mic-error'
@@ -338,7 +338,7 @@ const startMeters = async (row: HTMLDivElement): Promise<void> => {
   )
   const meters: Meter[] = []
   // The app's one context, not a second of its own: audio/
-  // shared-audio-context.ts owns every lane, and a test asserts that no
+  // @irchiinnuss/audio-io owns every lane, and a test asserts that no
   // other module constructs one. A meter is not a good enough reason to
   // be the exception.
   const lease = acquireSharedAudioContext('merc-probe-meters')

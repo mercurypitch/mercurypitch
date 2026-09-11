@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type * as AudioUnlock from '@/lib/audio-unlock'
 import type { WildBook } from '@/lib/ear/wild'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -24,9 +25,13 @@ import { primeWildReading, resetWildStore, setFieldBookSessionId, } from './wild
 const mocks = vi.hoisted(() => ({ sessions: [] as UvrSession[] }))
 
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
-vi.mock('@/lib/audio-unlock', () => ({
-  unlockAudio: vi.fn(async () => undefined),
-}))
+// activateAudioPlayback stays real: waking the context is what these drills
+// were failing to do. Only the silent <audio> promotion is stubbed, and it is
+// the module's own internal reference, so the real helper still drives it.
+vi.mock('@/lib/audio-unlock', async (importOriginal) => {
+  const actual = await importOriginal<typeof AudioUnlock>()
+  return { ...actual, unlockAudio: vi.fn() }
+})
 vi.mock('@/db/services/uvr-service', () => ({
   getStemBlobUrl: vi.fn(async () => null),
 }))
@@ -104,11 +109,25 @@ const READING: WildReading = {
   },
 }
 
-function fakeEngine(): AudioEngine {
+/** A context born suspended, the way iOS hands one back when it was not
+ *  created inside a tap. Only a resume makes its clock advance. */
+function suspendedContext() {
+  const ctx = {
+    state: 'suspended' as AudioContextState,
+    resume: vi.fn(async () => {
+      ctx.state = 'running'
+    }),
+  }
+  return ctx
+}
+
+function fakeEngine(ctx: ReturnType<typeof suspendedContext>) {
   return {
     init: vi.fn(async () => undefined),
-    resume: vi.fn(async () => undefined),
-    getAudioContext: () => ({}) as AudioContext,
+    resume: vi.fn(async () => {
+      await ctx.resume()
+    }),
+    getAudioContext: () => ctx as unknown as AudioContext,
     getVolume: () => 0.8,
     setToneTrim: vi.fn(),
     playTone: vi.fn<(...args: unknown[]) => Promise<void>>(
@@ -116,14 +135,19 @@ function fakeEngine(): AudioEngine {
     ),
     playChord: vi.fn().mockResolvedValue(undefined),
     stopTone: vi.fn(),
-  } as unknown as AudioEngine
+  }
 }
 
+let audioContext: ReturnType<typeof suspendedContext>
+let engine: ReturnType<typeof fakeEngine>
+
 function mount(element: () => ReturnType<typeof FieldBookView>) {
+  audioContext = suspendedContext()
+  engine = fakeEngine(audioContext)
   return render(() => (
     <EngineContext.Provider
       value={{
-        audioEngine: fakeEngine(),
+        audioEngine: engine as unknown as AudioEngine,
         practiceEngine: {} as PracticeEngine,
         playbackRuntime: {} as PlaybackRuntime,
         ready: () => true,
@@ -180,6 +204,8 @@ describe('FieldBookCard', () => {
 describe('FieldBookView', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    // jsdom has no media playback; the silent promotion is not under test.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     resetEarLabStore()
     resetWildStore()
     mocks.sessions = [session('s1', 'Blue Moon.mp3')]
@@ -209,6 +235,43 @@ describe('FieldBookView', () => {
     expect(earPlayerRating('wild-home').attempts).toBe(1)
     expect(earPlayerRating('home').attempts).toBe(0)
     expect(earItemStates()['wild:s1:home:0']).toBeUndefined()
+  })
+
+  it('wakes a suspended context before a drill schedules the song', async () => {
+    mount(() => <FieldBookView onBack={() => undefined} />)
+    fireEvent.click(screen.getByRole('button', { name: /Home in the Wild/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await reach('Which degree of the song')
+
+    expect(playExcerpt).toHaveBeenCalledTimes(1)
+    // A context still suspended when the sources are scheduled leaves every
+    // one of them waiting on a clock that never advances: the drill runs its
+    // whole round in silence and nothing reports it.
+    expect(audioContext.resume).toHaveBeenCalled()
+    expect(audioContext.state).toBe('running')
+    expect(audioContext.resume.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(playExcerpt).mock.invocationCallOrder[0]!,
+    )
+  })
+
+  it('wakes the context for a replay that follows a miss, with no plant before it', async () => {
+    mount(() => <FieldBookView onBack={() => undefined} />)
+    fireEvent.click(screen.getByRole('button', { name: /Home in the Wild/ }))
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await reach('Which degree of the song')
+    audioContext.state = 'suspended'
+    audioContext.resume.mockClear()
+
+    // A wrong call replays the tail through excerpt() alone — plant(), the
+    // only other activation on this path, never runs for it.
+    fireEvent.click(screen.getByRole('button', { name: /5 Sol$/ }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(playExcerpt).toHaveBeenCalledTimes(2)
+    expect(audioContext.resume).toHaveBeenCalled()
+    expect(audioContext.state).toBe('running')
   })
 
   it('Echo in the Wild takes the phrase back on the ladder, 1′ folding to 1', async () => {

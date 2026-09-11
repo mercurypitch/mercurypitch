@@ -4,7 +4,7 @@
 //
 // Preferences are last-write-wins, and that is fine: the newest device
 // is the best guess for what someone wants. Progress is not a
-// preference. If a phone practised offline for three days and then the
+// preference. If a phone practiced offline for three days and then the
 // account's staler copy landed on top, those days would be gone with no
 // way to get them back.
 //
@@ -198,7 +198,7 @@ describe('a second account on the same device', () => {
   const OWNER_KEY = 'mp_sync_owner'
 
   it('does not give one singer the other singer practice days', async () => {
-    // Singer A practised here and the device now belongs to them.
+    // Singer A practiced here and the device now belongs to them.
     localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
     localStorage.setItem(OWNER_KEY, 'singer-a')
 
@@ -262,15 +262,15 @@ describe('a second account on the same device', () => {
   })
 })
 
-// ── Practising before there is an account ────────────────────────
+// ── Practicing before there is an account ────────────────────────
 // The other side of the same guard, and the commoner path by far:
-// someone practises for a fortnight, likes it, and then makes an
+// someone practices for a fortnight, likes it, and then makes an
 // account. Signing out is not what makes a device "signed out" — an
 // anonymous identity is provisioned on first write and holds a real
 // token, so the sync runs the whole time. Only an ACCOUNT may own the
 // device's copy; an anonymous identity IS the unowned state.
 
-describe('practising before there is an account', () => {
+describe('practicing before there is an account', () => {
   const OWNER_KEY = 'mp_sync_owner'
   const DEVICE = 'device-1'
 
@@ -401,7 +401,7 @@ describe('when the network or the data misbehaves', () => {
   })
 
   it('counts a day once when both sides already know it', async () => {
-    // Two devices that practised the same day must not produce two days.
+    // Two devices that practiced the same day must not produce two days.
     localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
     state.rows = [
       {

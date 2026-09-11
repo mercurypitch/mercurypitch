@@ -5,7 +5,7 @@
 // was previously untested — bugs here only surface under real network failure.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ServerAdapter } from '@/db/adapters/server-adapter'
+import { resetCloudReadWarningsForTests, ServerAdapter, } from '@/db/adapters/server-adapter'
 import type { DbEntity } from '@/db/types'
 
 interface Rec extends DbEntity {
@@ -361,5 +361,219 @@ describe('ServerAdapter response handling', () => {
     expect(url).toContain('orderDir=desc')
     expect(url).toContain('limit=10')
     expect(url).toContain('offset=5')
+  })
+})
+
+// ── What a failed cloud read says ───────────────────────────────
+//
+// A failed read still resolves empty, so the console line is the only thing
+// telling anyone whether a library is empty or broken. It used to say "cloud
+// backend unreachable" for every failure, once per session, and then name two
+// remedies that only exist in dev. These pin down each of those three.
+
+describe('a failed cloud read explains itself', () => {
+  function spyOnWarn() {
+    return vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  }
+  let warnSpy: ReturnType<typeof spyOnWarn>
+  const warnings = () => warnSpy.mock.calls.map((call) => String(call[0]))
+
+  beforeEach(() => {
+    resetCloudReadWarningsForTests()
+    // Restored in afterEach, not at the end of each body: a spy left behind by
+    // a failing assertion is adopted by the next `vi.spyOn`, carrying its calls
+    // with it, and the suite starts depending on its own order.
+    warnSpy = spyOnWarn()
+  })
+
+  afterEach(() => {
+    warnSpy.mockRestore()
+  })
+
+  it('names the status when the backend answered, and the table it read', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(404, 'not found')))
+
+    await expect(repo().findAll()).resolves.toEqual([])
+
+    const [line] = warnings()
+    // The whole defect: a backend that answered is not an unreachable one.
+    expect(line).toContain('the backend answered 404')
+    expect(line).not.toContain('could not be reached')
+    expect(line).toContain('sessionRecords')
+  })
+
+  it('says unreachable only when the network really failed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    )
+
+    const pending = repo().findAll()
+    await vi.advanceTimersByTimeAsync(2000)
+    await expect(pending).resolves.toEqual([])
+
+    expect(warnings()[0]).toContain('the backend could not be reached')
+  })
+
+  it('speaks up again when a different failure follows the first', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(fail(404))
+        .mockResolvedValue(fail(403, 'forbidden')),
+    )
+
+    await repo().findAll()
+    await repo().findAll()
+
+    // The old latch was once per session, so this second, different, and
+    // usually more interesting failure never reached the console at all.
+    const lines = warnings()
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toContain('answered 404')
+    expect(lines[1]).toContain('answered 403')
+  })
+
+  it('stays quiet while the same failure repeats', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(404)))
+
+    await repo().findAll()
+    await repo().findById('x')
+    await repo().count()
+
+    expect(warnings()).toHaveLength(1)
+  })
+
+  it('says nothing at all when there is simply no cloud identity yet', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+
+    await expect(repo().findAll()).resolves.toEqual([])
+
+    // Routine: identities are provisioned on the first write, so a visitor
+    // who has not written anything has no rows and no problem.
+    expect(warnings()).toHaveLength(0)
+  })
+
+  it('carries the status on the error so callers need not parse the message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(404, 'gone')))
+
+    await expect(repo().findAll({ throwOnError: true })).rejects.toMatchObject({
+      status: 404,
+    })
+  })
+
+  it('offers the dev remedies in dev', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(404)))
+
+    await repo().findAll()
+
+    expect(warnings()[0]).toContain('pnpm dev:db')
+  })
+
+  it('keeps the dev remedies out of a production console', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(404)))
+
+    // A fresh module graph is the only honest way to read the other branch of
+    // IS_DEV. Someone on mercurypitch.com was being told to run a dev command,
+    // which is exactly what this stops.
+    vi.resetModules()
+    vi.doMock('@/lib/defaults', async (importOriginal) => {
+      const actual = await importOriginal<Record<string, unknown>>()
+      return { ...actual, IS_DEV: false }
+    })
+    const { ServerAdapter: Shipped } =
+      await import('@/db/adapters/server-adapter')
+
+    await new Shipped({ baseUrl: 'http://api.test' })
+      .getRepository<Rec>('sessionRecords')
+      .findAll()
+
+    const [line] = warnings()
+    expect(line).toContain('the backend answered 404')
+    expect(line).not.toContain('pnpm dev:db')
+    expect(line).not.toContain('VITE_API_BASE_URL')
+
+    vi.doUnmock('@/lib/defaults')
+    vi.resetModules()
+  })
+})
+
+// ── A refused session must not look like an empty account ───────
+//
+// Reads degrade to empty so the app still loads, and a 401 becomes a
+// NoIdentityError, which is routine — identities mint on the first write. That
+// combination meant nothing downstream ever learned a session had been
+// refused, so an expired one looked exactly like a new visitor: an empty
+// library, no explanation. `onUnauthorized` is the seam that fixes it.
+
+describe('a refused session reaches the auth layer', () => {
+  it('tells the caller before swallowing the 401 as routine', async () => {
+    const onUnauthorized = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+    }).getRepository<Rec>('sessionRecords')
+
+    // Still empty, still silent: offline tolerance is unchanged.
+    await expect(repo.findAll()).resolves.toEqual([])
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports it on every kind of read, since any of them can be the first', async () => {
+    const onUnauthorized = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+    }).getRepository<Rec>('sessionRecords')
+
+    await repo.findById('x')
+    await repo.count()
+    expect(onUnauthorized).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not sign out the account that replaced the one being refused', async () => {
+    const onUnauthorized = vi.fn()
+    let identity = 'account-a'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => {
+        // The switch lands while this request is in flight.
+        identity = 'account-b'
+        return fail(401)
+      }),
+    )
+    const repo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onUnauthorized,
+      writeIdentity: () => identity,
+    }).getRepository<Rec>('sessionRecords')
+
+    await expect(repo.findAll()).resolves.toEqual([])
+
+    // Account B is signed in and fine; refusing A's stale request must not
+    // take B's session down with it.
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
+
+  it('leaves the 401 as a NoIdentityError, so nothing starts logging it', async () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    try {
+      resetCloudReadWarningsForTests()
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+      const repo = new ServerAdapter({
+        baseUrl: 'http://api.test',
+        onUnauthorized: vi.fn(),
+      }).getRepository<Rec>('sessionRecords')
+
+      await repo.findAll()
+      expect(warnSpy).not.toHaveBeenCalled()
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 })

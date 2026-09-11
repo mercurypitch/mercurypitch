@@ -1,8 +1,8 @@
+import type * as AudioIo from '@irchiinnuss/audio-io'
 // ============================================================
 // TapTuner on a fake shared clock: the ticks it puts on the audio
 // clock come off it when the tuner goes away, without a click.
 // ============================================================
-
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
@@ -63,7 +63,11 @@ const audio = vi.hoisted(() => {
   return { ctx, lease, oscillators, gains }
 })
 
-vi.mock('@/audio/shared-audio-context', () => ({
+// Only the clock is faked. `importOriginal` keeps the rest of the
+// package real, so a module in this graph that reaches for an input
+// device still finds one.
+vi.mock('@irchiinnuss/audio-io', async (importOriginal) => ({
+  ...(await importOriginal<typeof AudioIo>()),
   acquireSharedAudioContext: () => audio.lease,
 }))
 

@@ -7,7 +7,7 @@
 //
 // The old layout was four equal stat cards over two identical bar strips
 // over four more equal cards. Everything had the same weight, so nothing
-// led, and a singer who had not practised yet met a wall of confident
+// led, and a singer who had not practiced yet met a wall of confident
 // zeros — "Best Score 0%" reads as a bad result rather than an empty one.
 //
 // This leads with who they are, states the numbers once as a supporting

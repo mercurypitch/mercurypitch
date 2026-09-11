@@ -47,8 +47,13 @@ const e2ePort = numericEnv(process.env.VITE_E2E_PORT, checkoutPort())
 //
 // Half a machine per run is the wrong default where runs are concurrent, and a
 // re-run to tell contention from a regression costs more than the parallelism
-// saves. VITE_E2E_WORKERS raises it again for anyone testing alone. CI runners
-// are not shared, so they keep their four.
+// saves. VITE_E2E_WORKERS raises it again for anyone testing alone.
+//
+// CI keeps two browsers per shard, with all four shards and tests retained.
+// Real recording has main-thread delivery, analysis and durable-write deadlines:
+// four simultaneous browsers exhausted its unchanged PCM pool under two-core
+// contention; two browsers on those same cores passed all four repeats. Give
+// CI headroom instead of relaxing the application's safety limits.
 function localWorkers(): number {
   const configured = process.env.VITE_E2E_WORKERS
   if (configured !== undefined && configured !== '') return Number(configured)
@@ -60,7 +65,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: process.env.CI !== undefined,
   retries: process.env.CI !== undefined ? 2 : 0,
-  workers: process.env.CI !== undefined ? 4 : localWorkers(),
+  workers: process.env.CI !== undefined ? 2 : localWorkers(),
   reporter: 'html',
   timeout: numericEnv(process.env.VITE_E2E_TIMEOUT, 30000),
   expect: {

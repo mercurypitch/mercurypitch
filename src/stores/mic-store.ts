@@ -28,7 +28,8 @@ export const [micWaveVisible, setMicWaveVisible] =
 export const [micError, setMicError] = createSignal<string | null>(null)
 
 // True while a capture is listening to the user SING — the karaoke stage's
-// pitch ribbon, and anything else that scores a voice against a melody.
+// pitch ribbon, and anything else that scores a voice against a melody — or
+// while a take holds the microphone for itself (see `holdExclusiveCapture`).
 //
 // It exists for one consumer: voice control stands its recognizer down while
 // this is true. The two features want opposite things from the same audio.
@@ -39,10 +40,39 @@ export const [micError, setMicError] = createSignal<string | null>(null)
 // the listener resumes by itself when the singing stops, and the user is
 // never asked to manage the overlap.
 //
-// Set it from a capture's own lifecycle and clear it on cleanup — a stuck
-// `true` silently disables voice control app-wide.
-export const [singingCaptureActive, setSingingCaptureActive] =
-  createSignal<boolean>(false)
+// Two writers feed it. The stem mixer sets `setSingingCaptureActive` from its
+// own capture lifecycle and clears it on cleanup — a stuck `true` silently
+// disables voice control app-wide. Takes count holds instead, so two that
+// overlap cannot release each other's.
+const [stemMixerSinging, setStemMixerSinging] = createSignal<boolean>(false)
+const [exclusiveHolds, setExclusiveHolds] = createSignal(0)
+
+export const singingCaptureActive = (): boolean =>
+  stemMixerSinging() || exclusiveHolds() > 0
+export const setSingingCaptureActive = setStemMixerSinging
+
+/**
+ * Hold the microphone for a capture that cannot share it.
+ *
+ * On iOS the browser's speech recognizer and `getUserMedia` are one capture
+ * path: a take that opened the device while voice control was listening
+ * either got `NotReadableError`, or had its track cut when the recognizer
+ * respawned. Taking this before `micManager.acquire` flips
+ * `singingCaptureActive`; voice control's controller tells its recognizer to
+ * stand down on that flip, synchronously, so the stop is issued before the
+ * device is asked for — and starts it again when the hold goes.
+ *
+ * Returns the release, which is safe to call more than once.
+ */
+export function holdExclusiveCapture(): () => void {
+  setExclusiveHolds((n) => n + 1)
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    setExclusiveHolds((n) => Math.max(0, n - 1))
+  }
+}
 
 export function toggleMicWaveVisible(): void {
   setMicWaveVisible(!micWaveVisible())

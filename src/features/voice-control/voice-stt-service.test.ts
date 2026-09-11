@@ -94,3 +94,66 @@ describe('VoiceSttService load protocol', () => {
     await expect(service.init()).rejects.toThrow('Voice STT service destroyed')
   })
 })
+
+// ── The reason has to leave the worker ───────────────────────
+//
+// A worker's console reaches no device log, so everything an iPhone could
+// report was "Voice model failed to load" — the sentence naming the actual
+// ONNX Runtime failure died inside the worker, and a retest could not tell a
+// missing GPU adapter from weights the runtime refused.
+
+describe('VoiceSttService load failure detail', () => {
+  it('carries the reason the worker saw into the rejection', async () => {
+    const service = new VoiceSttService('test-model')
+    const worker = FakeWorker.instances[0]
+    const load = service.init()
+
+    worker.emit({
+      type: 'status',
+      status: 'error',
+      detail: 'webgpu: Failed to get GPU adapter | wasm: no available backend',
+    })
+
+    await expect(load).rejects.toThrow(/Failed to get GPU adapter/)
+    await expect(load).rejects.toThrow(/no available backend/)
+
+    // A retry posts a fresh load and reports whatever THAT attempt hit, not
+    // a cached sentence from the last one.
+    const retry = service.init()
+    worker.emit({
+      type: 'status',
+      status: 'error',
+      detail: 'wasm: out of memory',
+    })
+    await expect(retry).rejects.toThrow(/out of memory/)
+  })
+
+  it('still says something useful when the worker sends no reason', async () => {
+    const service = new VoiceSttService('test-model')
+    const worker = FakeWorker.instances[0]
+    const load = service.init()
+
+    worker.emit({ type: 'status', status: 'error' })
+
+    await expect(load).rejects.toThrow('Voice model failed to load')
+  })
+})
+
+// ── Killed is not the same as failed ─────────────────────────
+//
+// A model load that exhausts the device kills the content process: no error
+// is ever sent, because there is nothing left to send it. The only way to
+// see it in a device log is to say what is ABOUT to be attempted, so a log
+// that stops right there names the model that did it.
+
+describe('VoiceSttService load announcement', () => {
+  it('names the model before the load, where a kill cannot erase it', () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const service = new VoiceSttService('some-org/some-model')
+
+    void service.init()
+
+    expect(info).toHaveBeenCalledWith('[voice-stt] loading some-org/some-model')
+    info.mockRestore()
+  })
+})

@@ -61,19 +61,42 @@ export class VoiceSttService {
     // that never came until the load watchdog fired.
     if (this.status === 'idle' || this.status === 'error') {
       this.status = 'loading'
+      // Announced from the MAIN thread, on purpose: the worker's console
+      // reaches no device log, and a load that gets the content process
+      // killed never reports anything at all — the process is gone before
+      // there is an error to send. So this line is the evidence. A log that
+      // ends here means the device died loading this model; a log that
+      // reaches the failure below means it merely refused to load, which is
+      // a different problem with a different fix. Told apart on an iPhone 13
+      // only after a run where neither could be distinguished.
+      console.info(`[voice-stt] loading ${this.modelId}`)
       this.worker.postMessage({ type: 'load', modelId: this.modelId })
     }
     return new Promise((resolve, reject) => {
       const startedAt = Date.now()
       const onMessage = (e: MessageEvent) => {
-        const { type, status } = e.data as { type: string; status?: string }
+        const { type, status, detail } = e.data as {
+          type: string
+          status?: string
+          detail?: string
+        }
         if (type !== 'status') return
         if (status === 'ready') {
           cleanup()
           resolve()
         } else if (status === 'error') {
           cleanup()
-          reject(new Error('Voice model failed to load'))
+          // The worker's reason rides along in the message. Without it this
+          // rejection said only that the model failed, and since a worker's
+          // console reaches no device log, that sentence was the whole of
+          // what a phone could ever tell us.
+          reject(
+            new Error(
+              detail === undefined || detail === ''
+                ? 'Voice model failed to load'
+                : `Voice model failed to load — ${detail}`,
+            ),
+          )
         }
       }
       const watchdog = setInterval(() => {

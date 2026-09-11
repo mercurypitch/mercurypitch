@@ -3,10 +3,13 @@
 // Kept together because every assertion exercises the same prepared-song room
 // boundary and its route-owned transport double.
 
-import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
-import { createSignal } from 'solid-js'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
+import { batch, createSignal, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarBackingTransportStatus } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
+import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
+import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GuitarNightRoom } from './GuitarNightRoom'
@@ -28,6 +31,16 @@ const listening = vi.hoisted(() => ({
   take: vi.fn<() => GuitarTakeSnapshot | null>(() => null),
   events: vi.fn(() => []),
   observations: vi.fn(() => []),
+  recordableStream: vi.fn(() => null),
+  recordableAudioContext: vi.fn(() => null),
+  liveInputRoute: vi.fn(() => null),
+  subscribeLiveObservations: vi.fn(() => () => undefined),
+  settleTake: vi.fn(async () => null),
+  armTakeAt: vi.fn(() => false),
+  completeTakeAt: vi.fn(() => false),
+  completeTakeNow: vi.fn(() => false),
+  recordingInput: vi.fn(() => null),
+  monitorInputChannel: vi.fn(() => 0),
   inputProfile: vi.fn(() => 'microphone'),
   inputProfileLabel: vi.fn(() => 'Room mic'),
   audioInputs: vi.fn(() => []),
@@ -50,7 +63,7 @@ const listening = vi.hoisted(() => ({
   cancel: vi.fn(),
   calibrate: vi.fn(async () => false),
   clearTake: vi.fn(),
-  selectInputProfile: vi.fn(async () => undefined),
+  selectInputProfile: vi.fn(async (): Promise<void> => undefined),
   selectAudioInput: vi.fn(async () => undefined),
   selectMidiInput: vi.fn(),
   refreshAudioInputs: vi.fn(async () => undefined),
@@ -182,7 +195,14 @@ function createTransport(): GuitarBackingTransportController {
     durationSeconds: () => 60,
     playbackRate: () => 1,
     masterVolume: () => masterVolume,
+    backingMuted: () => false,
+    setBackingMuted: vi.fn(),
     tracks: () => [],
+    soloedTrackId: () => null,
+    loopRange: () => null,
+    loopMode: () => null,
+    loopError: () => null,
+    setLoopRange: vi.fn(() => true),
     error: () => null,
     configure: vi.fn(),
     activate: vi.fn(async () => true),
@@ -196,6 +216,9 @@ function createTransport(): GuitarBackingTransportController {
     }),
     setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
+    setTrackLevelDb: vi.fn(),
+    toggleTrackSolo: vi.fn(),
+    resetTrackLevels: vi.fn(),
     getAudioGraph: vi.fn(() => null),
   }
 }
@@ -207,6 +230,9 @@ describe('GuitarNightRoom', () => {
     // after the dismissal one would pass because nothing rendered at all.
     localStorage.clear()
     listening.status.mockReturnValue('off')
+    listening.stop.mockReset()
+    listening.start.mockReset().mockResolvedValue(true)
+    listening.selectInputProfile.mockReset().mockResolvedValue(undefined)
     listening.error.mockReturnValue(null)
     listening.notice.mockReturnValue(null)
     listening.take.mockReturnValue(null)
@@ -218,6 +244,489 @@ describe('GuitarNightRoom', () => {
   })
 
   afterEach(cleanup)
+
+  it('keeps the gallery opener focusable so Escape returns to My melodies', async () => {
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    const trigger = screen.getByRole('button', {
+      name: 'My melodies, 0 recordings',
+    })
+    trigger.focus()
+    fireEvent.click(trigger)
+    const gallery = screen.getByRole('dialog', { name: 'My melodies' })
+    expect(trigger).toBeEnabled()
+    await waitFor(() =>
+      expect(
+        within(gallery).getByRole('button', { name: 'Close My melodies' }),
+      ).toHaveFocus(),
+    )
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'My melodies' })).toBeNull()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('uses the recorder invitation in free form without covering it with the old note', () => {
+    const onAttachTab = vi.fn()
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        onAttachTab={onAttachTab}
+      />
+    ))
+    expect(screen.queryByTestId('guitar-night-free-play-note')).toBeNull()
+    expect(screen.getByTestId('guitar-recorder-stage')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Recorder options' }))
+    fireEvent.click(screen.getByTestId('overflow-attach-tab'))
+    expect(onAttachTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers free-form voice controls and reports empty playback without starting input', () => {
+    const transport = createTransport()
+    const { unmount } = render(() => (
+      <GuitarNightRoom backing={null} transport={transport} onSongs={vi.fn()} />
+    ))
+    const play = matchVoiceCommand('play', activeVoiceCommands())
+    expect(play?.command.run({})).toEqual({
+      failed: true,
+      message: 'Record or open a melody first.',
+    })
+    expect(
+      matchVoiceCommand('record idea', activeVoiceCommands())?.command.id,
+    ).toBe('guitarNight.record')
+    expect(transport.play).not.toHaveBeenCalled()
+    expect(transport.activate).not.toHaveBeenCalled()
+    expect(listening.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    expect(activeVoiceCommands()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session' }))
+    expect(matchVoiceCommand('record', activeVoiceCommands())).not.toBeNull()
+    unmount()
+    expect(activeVoiceCommands()).toEqual([])
+  })
+
+  it('keeps spoken Stop reachable while the real recorder awaits input, without double-starting', async () => {
+    let resolveInput!: (ready: boolean) => void
+    listening.start.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveInput = resolve
+        }),
+    )
+    render(() => (
+      <GuitarNightRoom
+        backing={null}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    const say = (phrase: string) =>
+      matchVoiceCommand(phrase, activeVoiceCommands())?.command.run({})
+    expect(say('record a melody')).toBe('Starting recording')
+    await waitFor(() => expect(listening.start).toHaveBeenCalledTimes(1))
+    expect(
+      screen.getByRole('button', {
+        name: 'Cancel recording start',
+      }),
+    ).toBeEnabled()
+    expect(say('record idea')).toEqual({
+      failed: true,
+      message: 'Recording is preparing',
+    })
+    expect(say('forward')).toEqual({
+      failed: true,
+      message: 'Finish recording with Stop before changing playback.',
+    })
+    expect(say('stop recording')).toBe('Cancelling recording start')
+    resolveInput(false)
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Record a melody' }),
+      ).toBeEnabled(),
+    )
+    expect(listening.start).toHaveBeenCalledTimes(1)
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+  })
+
+  it.each(['button', 'Space', 'voice'] as const)(
+    'uses the same Direct-input coexistence policy for %s playback',
+    async (trigger) => {
+      const [status, setStatus] =
+        createSignal<GuitarBackingTransportStatus>('armed')
+      const [inputStatus, setInputStatus] = createSignal('listening')
+      // The room reads this mocked accessor inside its reactive memos.
+      // eslint-disable-next-line solid/reactivity
+      listening.status.mockImplementation(inputStatus)
+      listening.inputProfile.mockReturnValue('interface')
+      listening.stop.mockImplementation(() => setInputStatus('off'))
+      const transport = createTransport()
+      transport.status = status
+      transport.play = vi.fn(async () => {
+        setStatus('playing')
+        return true
+      })
+      transport.pause = vi.fn(() => setStatus('paused'))
+      render(() => (
+        <GuitarNightRoom
+          backing={BACKING}
+          transport={transport}
+          onSongs={vi.fn()}
+        />
+      ))
+      if (trigger === 'button')
+        fireEvent.click(screen.getByRole('button', { name: 'Play backing' }))
+      if (trigger === 'Space')
+        fireEvent.keyDown(document, { key: ' ', code: 'Space' })
+      if (trigger === 'voice')
+        await activeVoiceCommands()
+          .find((command) => command.id === 'guitarNight.play')
+          ?.run({})
+      expect(untrack(status)).toBe('playing')
+      expect(untrack(inputStatus)).toBe('listening')
+      expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+    },
+  )
+
+  it('ends Room-mic Listening before a spoken Play can start the song', async () => {
+    const [inputStatus, setInputStatus] = createSignal('listening')
+    // The room reads this mocked accessor inside its reactive memos.
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(inputStatus)
+    listening.stop.mockImplementation(() => setInputStatus('off'))
+    const transport = createTransport()
+    const [status, setStatus] =
+      createSignal<GuitarBackingTransportStatus>('armed')
+    transport.status = status
+    transport.play = vi.fn(async () => {
+      setStatus('playing')
+      return true
+    })
+    transport.pause = vi.fn(() => setStatus('paused'))
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    await activeVoiceCommands()
+      .find((command) => command.id === 'guitarNight.play')
+      ?.run({})
+    expect(untrack(inputStatus)).toBe('off')
+    expect(untrack(status)).toBe('playing')
+  })
+
+  it('sends committed song marks to the loop backend without a frame-driven seek', () => {
+    const transport = createTransport()
+    const [position, setPosition] = createSignal(1)
+    const [range, setRange] = createSignal<{
+      start: number
+      end: number
+    } | null>(null)
+    transport.positionSeconds = position
+    transport.loopRange = range
+    transport.setLoopRange = vi.fn((next) => {
+      setRange(next)
+      return true
+    })
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'A — start the loop at the playhead',
+      }),
+    )
+    setPosition(3)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'B — end the loop at the playhead' }),
+    )
+    expect(untrack(range)).toEqual({ start: 1, end: 3 })
+    setPosition(3.2)
+    expect(transport.seek).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(untrack(range)).toBeNull()
+  })
+
+  it('retains a backend loop error when decoded duration invalidates both marks', () => {
+    const transport = createTransport()
+    const [position, setPosition] = createSignal(8)
+    const [duration, setDuration] = createSignal(12)
+    const [range, setRange] = createSignal<{
+      start: number
+      end: number
+    } | null>(null)
+    const [loopError, setLoopError] = createSignal<string | null>(null)
+    transport.positionSeconds = position
+    transport.durationSeconds = duration
+    transport.loopRange = range
+    transport.loopError = loopError
+    transport.setLoopRange = vi.fn((next) => {
+      batch(() => {
+        setRange(next)
+        setLoopError(null)
+      })
+      return true
+    })
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'A — start the loop at the playhead',
+      }),
+    )
+    setPosition(12)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'B — end the loop at the playhead' }),
+    )
+    expect(untrack(range)).toEqual({ start: 8, end: 12 })
+    vi.mocked(transport.setLoopRange).mockClear()
+    batch(() => {
+      setRange(null)
+      setLoopError(
+        'The loop is outside this recording. Set A and B within the song.',
+      )
+      setDuration(6)
+    })
+    expect(transport.setLoopRange).not.toHaveBeenCalled()
+    expect(screen.getByText('Loop unavailable')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The loop is outside this recording.',
+    )
+    expect(screen.queryByText('Mark the other end')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(untrack(loopError)).toBeNull()
+  })
+
+  it('explains a too-short committed pair rather than asking for a missing mark', () => {
+    const transport = createTransport()
+    const [position, setPosition] = createSignal(1)
+    transport.positionSeconds = position
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'A — start the loop at the playhead',
+      }),
+    )
+    setPosition(1.1)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'B — end the loop at the playhead' }),
+    )
+    expect(
+      screen.getByText('Set A and B at least 0.25 s apart'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Mark the other end')).not.toBeInTheDocument()
+  })
+
+  it('keeps Stop Listening reachable while the backing is loading', () => {
+    const [inputStatus, setInputStatus] = createSignal('listening')
+    // The rendered Listening control owns this reactive read.
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(inputStatus)
+    listening.inputProfile.mockReturnValue('interface')
+    listening.stop.mockImplementation(() => setInputStatus('off'))
+    const transport = createTransport()
+    transport.status = () => 'loading'
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    const stop = screen.getByRole('button', { name: 'Stop Listening' })
+    expect(stop).toBeEnabled()
+    fireEvent.click(stop)
+    expect(untrack(inputStatus)).toBe('off')
+    expect(transport.pause).not.toHaveBeenCalled()
+  })
+
+  it('keeps input configuration passive and offers an explicit Session restart', async () => {
+    const [profile, setProfile] = createSignal('microphone')
+    const [status, setStatus] = createSignal('off')
+    // These accessors are read by rendered components, not at mock setup.
+    // eslint-disable-next-line solid/reactivity
+    listening.inputProfile.mockImplementation(profile)
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(status)
+    listening.selectInputProfile.mockImplementationOnce(async () => {
+      setProfile('interface')
+    })
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    const transport = createTransport()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    const input = screen.getByRole('region', { name: 'Listening input' })
+    expect(input.closest('details')).toBeNull()
+    fireEvent.click(within(input).getByRole('button', { name: 'Direct input' }))
+    await waitFor(() =>
+      expect(listening.selectInputProfile).toHaveBeenCalledWith('interface'),
+    )
+    expect(listening.start).not.toHaveBeenCalled()
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Turn on Listening' }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Stop Listening' }),
+      ).toBeEnabled(),
+    )
+    expect(listening.start).toHaveBeenCalledOnce()
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+    expect(transport.play).not.toHaveBeenCalled()
+  })
+
+  it('routes the reused primary cycle through song input coexistence', async () => {
+    const [profile, setProfile] = createSignal('microphone')
+    const [status, setStatus] = createSignal('off')
+    // Rendered controls own the reactive reads of these mocked accessors.
+    // eslint-disable-next-line solid/reactivity
+    listening.inputProfile.mockImplementation(profile)
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(status)
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    const transport = createTransport()
+    const [transportStatus, setTransportStatus] =
+      createSignal<GuitarBackingTransportStatus>('playing')
+    transport.status = transportStatus
+    transport.pause = vi.fn(() => setTransportStatus('paused'))
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    const cycle = screen.getByTestId('guitar-night-listening-cycle')
+    fireEvent.click(cycle)
+    await waitFor(() =>
+      expect(cycle).toHaveAttribute('data-state', 'microphone'),
+    )
+    await waitFor(() => expect(listening.start).toHaveBeenCalledOnce())
+    expect(transport.pause).toHaveBeenCalledOnce()
+    listening.selectInputProfile.mockImplementationOnce(async () => {
+      setStatus('off')
+      setProfile('interface')
+    })
+    listening.start.mockImplementationOnce(async () => {
+      setStatus('listening')
+      return true
+    })
+    await waitFor(() => expect(cycle).toHaveAttribute('aria-disabled', 'false'))
+    fireEvent.click(cycle)
+    await waitFor(() =>
+      expect(cycle).toHaveAttribute('data-state', 'interface'),
+    )
+    expect(listening.selectInputProfile).toHaveBeenLastCalledWith('interface')
+    await waitFor(() => expect(listening.start).toHaveBeenCalledTimes(2))
+    expect(listening.setAmpMonitoringEnabled).not.toHaveBeenCalled()
+  })
+
+  it('does not start a selected input after its song room unmounts', async () => {
+    let finishSelection!: () => void
+    listening.selectInputProfile.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSelection = resolve
+        }),
+    )
+    const view = render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    fireEvent.click(screen.getByTestId('guitar-night-listening-cycle'))
+    expect(listening.start).not.toHaveBeenCalled()
+    view.unmount()
+    finishSelection()
+    await Promise.resolve()
+    expect(listening.start).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['Align Bass by hand', false],
+    ['Mark Bass', false],
+    ['Adjust Bass', true],
+  ] as const)(
+    'opens Session at hand placement from %s without starting audio',
+    async (label, placed) => {
+      const transport = createTransport()
+      render(() => (
+        <GuitarNightRoom
+          backing={BACKING}
+          transport={transport}
+          onSongs={vi.fn()}
+          handSync={() => ({
+            partName: 'Bass',
+            firstMarkSeconds: placed ? 4 : null,
+            lastMarkSeconds: null,
+            placed,
+            onMark: vi.fn(),
+            onClear: vi.fn(),
+            onNudge: vi.fn(),
+          })}
+        />
+      ))
+      const trigger = screen.getByRole('button', { name: label })
+      trigger.focus()
+
+      fireEvent.click(trigger)
+      await Promise.resolve()
+
+      const session = within(screen.getByRole('dialog', { name: 'Session' }))
+      expect(
+        session.getByRole('button', { name: 'First note here' }),
+      ).toHaveFocus()
+      expect(transport.activate).not.toHaveBeenCalled()
+      expect(transport.play).not.toHaveBeenCalled()
+      expect(listening.start).not.toHaveBeenCalled()
+
+      fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+      expect(screen.queryByRole('dialog', { name: 'Session' })).toBeNull()
+      expect(trigger).toHaveFocus()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+      await Promise.resolve()
+      expect(
+        screen.getByRole('button', { name: 'Close Session' }),
+      ).toHaveFocus()
+    },
+  )
 
   it('turns a hand-sync mark into the moment the recording is at', () => {
     // The room is the only place that knows where the recording is, so it is
@@ -244,6 +753,7 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     fireEvent.click(screen.getByRole('button', { name: 'First note here' }))
     fireEvent.click(screen.getByRole('button', { name: 'Last note here' }))
     expect(onMark).toHaveBeenNthCalledWith(1, 'first', 0)
@@ -287,9 +797,8 @@ describe('GuitarNightRoom', () => {
     const notice = screen.getByText(/Listening through Built-in input/)
     expect(notice).toHaveAttribute('role', 'status')
     expect(notice.closest('details')).toBeNull()
-    expect(
-      screen.getByTestId('guitar-night-band-panel').closest('details'),
-    ).not.toHaveAttribute('open')
+    expect(screen.queryByRole('dialog', { name: 'Session' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     expect(
       screen.getByRole('button', { name: 'Calibrate timing' }),
     ).toBeEnabled()
@@ -324,7 +833,7 @@ describe('GuitarNightRoom', () => {
     ).toBe('0.31')
   })
 
-  it('shares the Band amp without starting playback or Direct-input monitoring', () => {
+  it('shares the Session amp without starting playback or Direct-input monitoring', () => {
     listening.status.mockReturnValue('listening')
     listening.inputProfile.mockReturnValue('interface')
     listening.inputProfileLabel.mockReturnValue('Direct input')
@@ -338,10 +847,14 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
-    fireEvent.click(
-      screen.getByLabelText('Band, loop, and input controls, 1 track'),
-    )
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     const amp = within(screen.getByRole('region', { name: 'Guitar amp' }))
+    expect(amp.queryByText('Shared electric tone')).toBeNull()
+    expect(
+      screen.getByText(
+        'The amp shapes your live guitar and Current amp take playback, not the backing song or stems.',
+      ),
+    ).toBeInTheDocument()
     fireEvent.change(amp.getByLabelText('Guitar amp preset'), {
       target: { value: 'crunch' },
     })
@@ -351,10 +864,9 @@ describe('GuitarNightRoom', () => {
       target: { value: '0.25' },
     })
 
-    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      amp.getByRole('button', { name: 'Turn monitoring on' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(transport.setElectricAmpParameters).toHaveBeenLastCalledWith(
       expect.objectContaining({ enabled: false, treble: 0.25 }),
     )
@@ -468,20 +980,26 @@ describe('GuitarNightRoom', () => {
     expect(listening.start).toHaveBeenCalledOnce()
   })
 
-  // "Backing" — an eight-letter word — ran past the right edge of its own
-  // card on the owner's iPhone, because the speaker icon, the name and the
-  // state all shared one line. The name now owns the first line and the icon
-  // plus its state read as a caption underneath.
-  it('gives each stem card its name on the first line', () => {
+  it('opens named stem rows with independent mute, solo and level controls', () => {
     const transport = createTransport()
     transport.tracks = () => [
-      { id: 'vocal', label: 'Vocals', muted: false, available: true, level: 1 },
+      {
+        id: 'vocal',
+        label: 'Vocals',
+        muted: false,
+        effectiveMuted: false,
+        available: true,
+        level: 1,
+        levelDb: 0,
+      },
       {
         id: 'instrumental',
         label: 'Backing',
         muted: true,
+        effectiveMuted: true,
         available: true,
         level: 1,
+        levelDb: 0,
       },
     ]
 
@@ -493,14 +1011,81 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
-    const backing = screen.getByRole('button', { name: 'Backing muted' })
-    const parts = [...backing.children].map((child) => child.tagName)
-    expect(parts).toEqual(['STRONG', 'SPAN', 'SMALL'])
-    expect(backing.querySelector('strong')).toHaveTextContent('Backing')
-    expect(backing.querySelector('small')).toHaveTextContent('Muted')
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Open track mixer for Pocket Groove',
+      }),
+    )
+    const backing = within(screen.getByRole('group', { name: 'Backing track' }))
+    expect(backing.getByText('Backing')).toBeInTheDocument()
+    expect(backing.getByText('Muted')).toBeInTheDocument()
+    fireEvent.click(backing.getByRole('button', { name: 'Unmute Backing' }))
+    expect(transport.setTrackMuted).toHaveBeenLastCalledWith(
+      'instrumental',
+      false,
+    )
+    fireEvent.click(backing.getByRole('button', { name: 'Solo Backing' }))
+    expect(transport.toggleTrackSolo).toHaveBeenLastCalledWith('instrumental')
+    fireEvent.input(backing.getByRole('slider', { name: 'Backing level' }), {
+      target: { value: '3' },
+    })
+    expect(transport.setTrackLevelDb).toHaveBeenLastCalledWith(
+      'instrumental',
+      3,
+    )
+    expect(
+      within(screen.getByRole('group', { name: 'Vocals track' })).getByText(
+        'In mix',
+      ),
+    ).toBeInTheDocument()
+    expect(transport.play).not.toHaveBeenCalled()
+  })
 
-    const vocals = screen.getByRole('button', { name: 'Vocals on' })
-    expect(vocals.querySelector('small')).toHaveTextContent('In mix')
+  it('keeps Space inside Session and returns focus without starting audio', async () => {
+    const transport = createTransport()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+    const trigger = screen.getByRole('button', { name: 'Session controls' })
+    trigger.focus()
+    fireEvent.click(trigger)
+    await Promise.resolve()
+    const close = screen.getByRole('button', { name: 'Close Session' })
+    fireEvent.keyDown(close, { code: 'Space', key: ' ' })
+    expect(transport.play).not.toHaveBeenCalled()
+    fireEvent.keyDown(close, { key: 'Escape' })
+    await Promise.resolve()
+    expect(screen.queryByRole('dialog', { name: 'Session' })).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('parks spoken transport while either settings overlay is focused', () => {
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+    expect(activeVoiceCommands().length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
+    expect(activeVoiceCommands()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session' }))
+    expect(activeVoiceCommands().length).toBeGreaterThan(0)
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Open track mixer for Pocket Groove',
+      }),
+    )
+    expect(activeVoiceCommands()).toEqual([])
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close the track mixer' }),
+    )
+    expect(activeVoiceCommands().length).toBeGreaterThan(0)
   })
 
   // ------------------------------------------------------------

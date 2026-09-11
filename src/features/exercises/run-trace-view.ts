@@ -65,7 +65,7 @@ export function centsBetween(f: number, target: number): number {
  *
  * This is the one place on the result card that says WHERE it went wrong
  * rather than by how much overall — a score of 71 tells a singer nothing they
- * can practise, and "you were 90 cents flat four seconds in" does.
+ * can practice, and "you were 90 cents flat four seconds in" does.
  */
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null

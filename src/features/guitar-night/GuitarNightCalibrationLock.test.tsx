@@ -11,6 +11,7 @@ import { GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightScoreRoom } from './GuitarNightScoreRoom'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease } from './song-port'
+import type * as ScoreRoomModule from './useGuitarNightScoreRoomController'
 import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreLiveBoundary, } from './useGuitarNightScoreRoomController'
 
 const listening = vi.hoisted(() => ({
@@ -29,6 +30,13 @@ const listening = vi.hoisted(() => ({
   timingSource: vi.fn(() => 'audio-clock'),
   latencyMs: vi.fn(() => 0),
   health: vi.fn(() => null),
+  recordableStream: vi.fn(() => null),
+  recordableAudioContext: vi.fn(() => null),
+  liveInputRoute: vi.fn(() => null),
+  subscribeLiveObservations: vi.fn(() => () => undefined),
+  settleTake: vi.fn(async () => null),
+  recordingInput: vi.fn(() => null),
+  monitorInputChannel: vi.fn(() => 0),
   canAmpMonitor: vi.fn(() => false),
   ampMonitoringEnabled: vi.fn(() => false),
   ampMonitoringActive: vi.fn(() => false),
@@ -131,9 +139,8 @@ vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
   Guitar3DStage: () => <div role="img" aria-label="Guitar stage" />,
 }))
 
-vi.mock('./useGuitarNightScoreRoomController', () => ({
-  SCORE_ROOM_MIN_TEMPO: 40,
-  SCORE_ROOM_MAX_TEMPO: 220,
+vi.mock('./useGuitarNightScoreRoomController', async (importOriginal) => ({
+  ...(await importOriginal<typeof ScoreRoomModule>()),
   useGuitarNightScoreRoomController: () => scoreRoom,
 }))
 
@@ -282,7 +289,14 @@ function createTransport(): GuitarBackingTransportController {
     durationSeconds: () => 60,
     playbackRate: () => 1,
     masterVolume: () => 0.78,
+    backingMuted: () => false,
+    setBackingMuted: vi.fn(),
     tracks: () => [],
+    soloedTrackId: () => null,
+    loopRange: () => null,
+    loopMode: () => null,
+    loopError: () => null,
+    setLoopRange: vi.fn(() => true),
     error: () => null,
     configure: vi.fn(),
     activate: vi.fn(async () => true),
@@ -294,6 +308,9 @@ function createTransport(): GuitarBackingTransportController {
     setMasterVolume: vi.fn(),
     setElectricAmpParameters: vi.fn(),
     setTrackMuted: vi.fn(),
+    setTrackLevelDb: vi.fn(),
+    toggleTrackSolo: vi.fn(),
+    resetTrackLevels: vi.fn(),
     getAudioGraph: vi.fn(() => null),
   }
 }
@@ -335,12 +352,16 @@ describe('Guitar Night calibration lock', () => {
       />
     ))
 
+    // The song's shared route cycle is on the dock; calibration cancellation
+    // remains the explicit Listening action inside Session.
+    fireEvent.click(screen.getByRole('button', { name: 'Session controls' }))
     const listeningButton = screen.getByRole('button', {
       name: 'Stop calibration',
     })
     expect(listeningButton.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(listeningButton)
     expect(listening.stop).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'Close Session' }))
     expect(
       (screen.getByLabelText('Play backing') as HTMLButtonElement).disabled,
     ).toBe(true)

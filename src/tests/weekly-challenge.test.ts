@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { needsSignIn } from '@/db/services/auth-service'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { clearChallengeResult, lastChallengeResult, } from '@/features/challenges/challenge-result-store'
-import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
+import { practicePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, clearWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, parseTargetNotes, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
@@ -193,7 +193,7 @@ describe('past weekly challenge practice', () => {
       targetScore: 70,
     })
 
-    practisePastChallenge({
+    practicePastChallenge({
       id: 'past-week',
       slug: 'past-week',
       title: 'Past Legend',

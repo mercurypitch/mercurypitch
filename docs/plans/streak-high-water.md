@@ -109,9 +109,9 @@ SELECT id, currentStreak, longestStreak
 After deploying, exercise the write path itself — the migration proves the
 rows were repaired, not that they stay repaired:
 
-- Practise once on a fresh account, then again the same day. The second run
+- Practice once on a fresh account, then again the same day. The second run
   goes through the same-day branch, which used to re-persist a violation.
-- Practise, let the streak break, practise again. That is the reset branch,
+- Practice, let the streak break, practice again. That is the reset branch,
   the other one that never repaired.
 - Confirm the Home card's "longest" figure survives the streak breaking.
 

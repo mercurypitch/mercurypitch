@@ -1,5 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { copyFileSync } from 'node:fs'
+import { appendFileSync, copyFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { visualizer } from 'rollup-plugin-visualizer'
@@ -8,8 +8,10 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
+import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
+import { writeEntryPages } from './tools/generate-entry-pages'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -58,27 +60,24 @@ try {
 // equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
 // because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
-const MIRROR_PATHS = new Set(['/mirror', '/free-sing'])
-const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
-const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
-const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
-const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
-const DRUM_NIGHT_PATHS = new Set(['/drum-night'])
-// The Ear Lab is a tab of the studio, like Jam: /ear-lab boots the studio on
-// the Ear Lab tab so the bench has a real URL with a card — see ear-lab.html.
-const EAR_LAB_PATHS = new Set(['/ear-lab'])
-// Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
-// exists so the feature has a real URL a crawler can fetch — see jam.html.
-const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
-// Glass aliases are worker-routed in production (wrangler `run_worker_first`
-// + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
-const GLASS_PATHS = new Set([
-  '/glass',
-  '/break-glass-with-your-voice',
-  '/high-note-test',
-  '/shatter',
-])
+
+// Clean path -> generated document, straight off the model in
+// src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
+// (html_handling) plus the alias handling in src/worker.ts; the dev and
+// preview servers have neither, so they need the same table built here.
+// Adding an entry to the model adds it to both without touching this file.
+const ENTRY_REWRITES = new Map<string, string>(
+  ENTRY_PAGES.flatMap((page) =>
+    page.paths.map((path) => [path, `/${page.slug}.html`] as const),
+  ),
+)
+// Two entries boot the full studio rather than a standalone mini-app (their
+// `boot` in the model is /src/index.tsx): /ear-lab and /jam each open the
+// studio on their own tab, so the feature has a real URL a crawler can fetch.
+// Glass's aliases are worker-routed in production (wrangler `run_worker_first`
+// + src/worker.ts) — deliberately NO alias HTML files are emitted for them,
+// unlike /karaoke-night and /jam-rooms (standaloneAliasFilesPlugin below).
 
 function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
@@ -109,15 +108,8 @@ function standaloneEntryRewritePlugin() {
           res.end()
           return
         }
-        if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
-        else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
-        else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
-        else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
-        else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
-        else if (DRUM_NIGHT_PATHS.has(path)) req.url = '/drum-night.html'
-        else if (EAR_LAB_PATHS.has(path)) req.url = '/ear-lab.html'
-        else if (JAM_PATHS.has(path)) req.url = '/jam.html'
-        else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
+        const entry = ENTRY_REWRITES.get(path)
+        if (entry !== undefined) req.url = entry
       }
       next()
     })
@@ -162,12 +154,53 @@ function standaloneAliasFilesPlugin() {
   }
 }
 
+// dev.mercurypitch.com and every PR preview serve the same documents as
+// production, with the same `index, follow` meta and the same allow-all
+// robots.txt — so a crawler that finds one can index a second copy of the
+// whole site and pick the wrong host as canonical. The cross-host canonical
+// tag is the only thing arguing against it today, and a canonical is a hint.
+//
+// It has to happen at build time. `_headers` is served by the Cloudflare asset
+// layer, which answers most requests without ever reaching src/worker.ts
+// (assets.run_worker_first lists only the alias paths), so a header set in the
+// Worker would not reach the browser. Both non-production deploys build with
+// `build:dev`, i.e. mode === 'development', which is what this keys on.
+function nonProductionNoindexPlugin(isProductionBuild: boolean) {
+  return {
+    name: 'non-production-noindex',
+    // After writeBundle, so it lands on top of the copied public/ files rather
+    // than being overwritten by them.
+    closeBundle() {
+      if (isProductionBuild) return
+      const outDir = resolve(__dirname, 'dist')
+      writeFileSync(
+        resolve(outDir, 'robots.txt'),
+        '# Not the production site. mercurypitch.com is the one to index.\n' +
+          'User-agent: *\nDisallow: /\n',
+        'utf-8',
+      )
+      appendFileSync(
+        resolve(outDir, '_headers'),
+        '\n# Non-production deploy: never index this copy.\n/*\n' +
+          '  X-Robots-Tag: noindex, nofollow\n',
+        'utf-8',
+      )
+    },
+  }
+}
+
 function removeWasmAssetsPlugin() {
   return {
     name: 'remove-wasm-assets',
     generateBundle(_options: unknown, bundle: Record<string, unknown>) {
       for (const fileName in bundle) {
-        if (fileName.endsWith('.wasm')) {
+        // UVR's other runtimes stay CDN-backed, but explicit post-stop guitar
+        // refinement must work entirely from this origin. Preserve its exact
+        // non-JSEP WASM asset, emitted by the worker's package ?url import.
+        if (
+          fileName.endsWith('.wasm') &&
+          !/^assets\/ort-wasm-simd-threaded-[\w-]+\.wasm$/.test(fileName)
+        ) {
           delete bundle[fileName]
         }
       }
@@ -176,6 +209,11 @@ function removeWasmAssetsPlugin() {
 }
 
 export default defineConfig(({ command, mode }) => {
+  // Written before Vite resolves the inputs below, so dev, preview, build and
+  // the tests all read the same documents. Git-ignored; the model is the
+  // reviewable artefact.
+  const entryInputs = writeEntryPages(__dirname)
+
   const modeEnv = loadEnv(mode, __dirname, '')
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
@@ -210,6 +248,7 @@ export default defineConfig(({ command, mode }) => {
       typegpuPlugin({}),
       standaloneEntryRewritePlugin(),
       standaloneAliasFilesPlugin(),
+      nonProductionNoindexPlugin(mode === 'production'),
       removeWasmAssetsPlugin(),
       // PWA. `injectManifest` — not `generateSW` — because the caching rules
       // are the risky part of shipping a worker here (see src/sw.ts for the two
@@ -355,15 +394,16 @@ export default defineConfig(({ command, mode }) => {
         // bundle stays tiny — it must not pull in the app shell or ONNX.
         input: {
           index: resolve(__dirname, 'index.html'),
-          mirror: resolve(__dirname, 'mirror.html'),
-          vocalRangeTest: resolve(__dirname, 'vocal-range-test.html'),
-          karaoke: resolve(__dirname, 'karaoke.html'),
-          jam: resolve(__dirname, 'jam.html'),
-          guitarNight: resolve(__dirname, 'guitar-night.html'),
-          pianoNight: resolve(__dirname, 'piano-night.html'),
-          drumNight: resolve(__dirname, 'drum-night.html'),
-          earLab: resolve(__dirname, 'ear-lab.html'),
-          glass: resolve(__dirname, 'glass.html'),
+          // Every crawlable entry, generated from src/seo/entry-pages.ts just
+          // above. Adding a page to the model adds a build input here, a dev
+          // rewrite, and a cross-link on every other entry — nothing to keep
+          // in step by hand.
+          ...entryInputs,
+          // Served by the asset layer for every unmatched path, with a 404
+          // status (wrangler.jsonc `not_found_handling`). A build input rather
+          // than a public/ file so it shares the entry-prelude stylesheet
+          // instead of carrying its own copy.
+          notFound: resolve(__dirname, '404.html'),
         },
         output: {
           manualChunks(id) {
@@ -499,6 +539,52 @@ export default defineConfig(({ command, mode }) => {
             // vocal surfaces. Keep them out of `advanced`, whose StemMixer
             // importer otherwise makes Drum Night preload stores and media.
             if (id.includes('/src/lib/voice-capture.')) return 'voice-capture'
+            // Voice control is an ambient overlay in five surfaces, and its
+            // controller reads three Solid-and-localStorage stores plus the
+            // mic sentinel. Left organic, Rollup files those under `library`
+            // and `advanced` — chunks that carry Dexie — so a room asking
+            // "is the wake word on?" downloaded the app's whole persistence
+            // layer. None of the four depends on a database; they need only
+            // `runtime-storage` and the already-pinned mic manager.
+            if (
+              id.includes('/src/stores/settings-store.') ||
+              id.includes('/src/stores/mic-store.') ||
+              id.includes('/src/stores/practice-timer-store.') ||
+              id.includes('/src/lib/mic-sentinel.')
+            ) {
+              return 'app-preferences'
+            }
+            // The route vocabulary: the tab id list (a pure data leaf) and
+            // the hash builder every surface navigates through. Rollup files
+            // them under `library` and `community`, so a standalone room
+            // whose only spoken command is "go home" inherited the app's
+            // persistence and social graphs to build one URL.
+            if (
+              id.includes('/src/features/tabs/constants.') ||
+              id.includes('/src/lib/hash-router.') ||
+              id.includes('/src/lib/pending-friend-code.') ||
+              id.includes('/src/lib/room-code.') ||
+              id.includes('/src/lib/share-codec.') ||
+              id.includes('/src/lib/scale-data.')
+            ) {
+              return 'hash-routing'
+            }
+            // The voice-command vocabulary: a Solid-only registry, the
+            // command type, and the phrase lists. The app shell imports all
+            // three, so left organic Rollup files them under `advanced` —
+            // and `advanced` holds the karaoke playlist store, which opens
+            // Dexie. Drum Night's lazy-asset audit caught that the moment
+            // its voice control was wired: the room asked for five phrases
+            // and got a database.
+            if (
+              id.includes(
+                '/src/features/voice-control/voice-command-registry.',
+              ) ||
+              id.includes('/src/features/voice-control/shared-phrases.') ||
+              id.includes('/src/features/voice-control/types.')
+            ) {
+              return 'voice-vocabulary'
+            }
             // Persisted standalone-room preferences need only Solid and
             // localStorage. Keeping this primitive inside the broad
             // pitch-core chunk makes any standalone setting inherit the main
@@ -657,6 +743,10 @@ export default defineConfig(({ command, mode }) => {
       // register it. Keyed on the command rather than the mode because
       // `build:dev` is a real deploy that should carry the worker.
       __SW_ENABLED__: JSON.stringify(command === 'build'),
+      // False here, true in apps/mercurypitch. Both builds compile this same
+      // `src/` tree, so the constant has to exist in both or the one that
+      // omits it evaluates a bare identifier and throws.
+      __NATIVE_BUILD__: JSON.stringify(false),
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],

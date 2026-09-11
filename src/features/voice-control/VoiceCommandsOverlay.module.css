@@ -78,11 +78,17 @@
   letter-spacing: -0.01em;
 }
 
+/* One line, and it stays one line: this sits above a list that is the whole
+   point of the panel, and on a phone every row it takes is a command the
+   reader has to scroll for. */
 .subtitle {
+  overflow: hidden;
   margin: 0;
   color: var(--text-muted);
   font-size: 0.78rem;
   line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .closeButton {
@@ -134,7 +140,10 @@
 
 .list {
   overflow-y: auto;
-  padding: 0.25rem 0.6rem 0.75rem;
+  /* No padding at the top: a sticky child pins to the SCROLLPORT, so any
+     top padding here is a strip the rows scroll through before the title
+     reaches it. The rows carry the inset instead. */
+  padding: 0 0.6rem 0.75rem;
   overscroll-behavior: contain;
 }
 
@@ -144,13 +153,18 @@
 }
 
 /* Sticky is safe here: one scroller. The solid backdrop keeps rows from
-   ghosting through the title as they pass under it. */
+   ghosting through the title as they pass under it — but only where the
+   backdrop actually reaches. The list's 0.6rem gutters left the title's
+   background short of both edges, so on a phone the rows were visible
+   travelling up either side of it and through the strip above. Negative
+   margins put the background across the whole scroller and the padding
+   puts the text back where the rows start. */
 .groupTitle {
   position: sticky;
   top: 0;
   z-index: 1;
-  margin: 0;
-  padding: 0.7rem 0.65rem 0.3rem;
+  margin: 0 -0.6rem;
+  padding: 0.7rem 1.25rem 0.3rem;
   background: var(--bg-card);
   color: var(--accent);
   font-size: 0.66rem;
@@ -235,13 +249,55 @@
 /* ── Footer ───────────────────────────────────────────────── */
 
 .footer {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
   margin: 0;
   padding: 0.6rem 1.25rem 0.9rem;
   border-top: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.72rem;
   line-height: 1.4;
+}
+
+/* The note yields, the pill does not: a truncated shortcut is worse than a
+   truncated sentence, because half a key combination is not a key
+   combination. */
+.footerNote {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcut {
+  flex-shrink: 0;
+  padding: 0.16rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* A keycap for a pointer that has a keyboard behind it. */
+.shortcut[data-kind='spoken'] {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .shortcut[data-kind='key'] {
+    display: none;
+  }
+
+  .shortcut[data-kind='spoken'] {
+    display: inline;
+  }
 }
 
 /* Narrow screens: the label/phrase columns collapse into two lines. */

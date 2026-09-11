@@ -246,3 +246,44 @@ describe('ConfirmDialog', () => {
     })
   })
 })
+
+describe('ConfirmDialog tone and secondary action', () => {
+  it('paints a primary confirm without the destructive class and offers a labelled third way out', () => {
+    const onSecondary = vi.fn()
+    const onCancel = vi.fn()
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Sing it for the board?"
+        message="A ranked take goes on the public board."
+        tone="primary"
+        confirmLabel="Put me on the board"
+        secondaryLabel="Sing as practice"
+        onSecondary={onSecondary}
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+      />
+    ))
+    const confirm = screen.getByTestId('confirm-delete')
+    expect(confirm.className).not.toContain('delete')
+    expect(confirm.className).toContain('primary')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sing as practice' }))
+    expect(onSecondary).toHaveBeenCalledTimes(1)
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
+  it('keeps the destructive style and no third action by default', () => {
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Delete this take?"
+        message="Gone for good."
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    ))
+    expect(screen.getByTestId('confirm-delete').className).toContain('delete')
+    expect(screen.queryByTestId('confirm-secondary')).toBeNull()
+  })
+})

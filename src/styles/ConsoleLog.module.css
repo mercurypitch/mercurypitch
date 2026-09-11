@@ -1,0 +1,198 @@
+/* ============================================================
+   ConsoleLog — the in-app developer console, inline and floating
+   ============================================================
+
+   The floating panel deliberately takes no pointer events on its outer box:
+   a debug overlay that swallows taps meant for the control being debugged is
+   worse than no overlay. Only the button and the panel itself are clickable.
+
+   Sized against the short-viewport case too: a phone in landscape has very
+   little height, and a console pinned to a fixed pixel height covered the
+   whole page there. */
+
+.consoleLogFloat {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  /* See the header: the container is transparent to taps. */
+  pointer-events: none;
+}
+
+.consoleLogFab,
+.consoleLogPanel {
+  pointer-events: auto;
+}
+
+.consoleLogFab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted, #8b98a5);
+  background: var(--surface, #16181c);
+  border: 1px solid var(--border, #2f3336);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.consoleLogFab:hover {
+  opacity: 1;
+}
+
+.consoleLogCount {
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--bg, #0d0f12);
+  background: var(--yellow, #feca57);
+  border-radius: 999px;
+  text-align: center;
+}
+
+.consoleLogContainer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface, #16181c);
+  border: 1px solid var(--border, #2f3336);
+  border-radius: 8px;
+}
+
+.consoleLogInline {
+  margin-top: 1rem;
+  max-height: 300px;
+}
+
+.consoleLogPanel {
+  width: min(30rem, calc(100vw - 1.5rem));
+  /* Height, not a fixed pixel box: landscape on a phone has almost none. */
+  max-height: min(60vh, 24rem);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
+}
+
+.consoleLogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+  background: var(--surface-hover, #1d1f23);
+  border-bottom: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogTitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-primary, #e7e9ea);
+}
+
+.consoleLogActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.consoleLogBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.45rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b98a5);
+  background: transparent;
+  border: 1px solid var(--border, #2f3336);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.consoleLogBtn:hover {
+  color: var(--text-primary, #e7e9ea);
+}
+
+/* The icon components carry no size prop; they scale to the box given here. */
+.consoleLogBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.consoleLogMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.consoleLogEntry {
+  padding: 0.2rem 0.4rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  border-bottom: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogTime,
+.consoleLogLevel {
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.consoleLogTime {
+  color: var(--text-muted, #8b98a5);
+}
+
+.consoleLogLevel {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.consoleLogEmpty {
+  padding: 1rem;
+  font-style: italic;
+  color: var(--text-muted, #8b98a5);
+  text-align: center;
+}
+
+/* ── Registered sections ─────────────────────────────────────
+
+   Extra panels a build adds above the log (src/lib/developer-sections.ts).
+   Absent on every web page load, so they cost nothing there; inside an app
+   shell they are the only way to reach a switch, because a signed binary on
+   somebody else's phone has no devtools behind it.
+
+   Scrollable in their own right: the panel's height is already the smaller of
+   60vh and 24rem, and a section that pushed the log off the bottom would take
+   away the thing the console is for. */
+.consoleLogSections {
+  flex: 0 1 auto;
+  overflow-y: auto;
+  max-height: 55%;
+  border-bottom: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogSection {
+  padding: 0.5rem 0.75rem 0.65rem;
+}
+
+.consoleLogSection + .consoleLogSection {
+  border-top: 1px solid var(--border, #2f3336);
+}
+
+.consoleLogSectionTitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b98a5);
+}

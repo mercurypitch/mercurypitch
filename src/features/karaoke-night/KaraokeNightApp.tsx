@@ -11,6 +11,7 @@
 // landing surface, not just another tab.
 
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import { SyncHost } from '@/components/sync/SyncHost'
@@ -18,7 +19,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
-import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
+import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/room-navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -97,6 +98,11 @@ export function KaraokeNightApp() {
     openVoiceHelp: () => setShowVoiceHelp(true),
   })
   onCleanup(registerVoiceCommands(() => voiceHelpCommands))
+  // Nor was there anything to say that LEFT this page. Voice could bring a
+  // singer here and then had no way out: "go home" and "go to singing"
+  // belong to the shell's tab set, which this document never loads.
+  const leaveCommands = createLeaveForStudioVoiceCommands()
+  onCleanup(registerVoiceCommands(() => leaveCommands))
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
@@ -476,9 +482,11 @@ export function KaraokeNightApp() {
               App
             </span>
           </a>
-          <Suspense>
-            <KaraokeAccount />
-          </Suspense>
+          <ChunkErrorBoundary label="Your account">
+            <Suspense>
+              <KaraokeAccount />
+            </Suspense>
+          </ChunkErrorBoundary>
         </nav>
       </header>
 
@@ -538,7 +546,7 @@ export function KaraokeNightApp() {
                 </button>
                 <button
                   class="kn-rail-icon"
-                  title="Add a song you own"
+                  title="Add a song"
                   onClick={() => updateRail(false)}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
@@ -659,25 +667,27 @@ export function KaraokeNightApp() {
                 was simply blank on first load — no list, no sign it was
                 coming. It only fires once now: the panels keep their counts
                 on screen across song changes rather than re-suspending. */}
-            <Suspense
-              fallback={
-                <section class="kn-card kn-rail-loading">
-                  <span class="kn-song-spinner" aria-hidden="true" />
-                  <p>Loading your songs…</p>
-                </section>
-              }
-            >
-              <KaraokeRailPanels
-                onSing={(s) => setSongWithUrl(s, true)}
-                stageBusy={() => activeSong() !== null}
-                activeSessionId={() => activeSong()?.sessionId ?? null}
-                takeScannedSyncCode={() => {
-                  const code = scannedSyncCode()
-                  setScannedSyncCode(null)
-                  return code
-                }}
-              />
-            </Suspense>
+            <ChunkErrorBoundary label="Your songs">
+              <Suspense
+                fallback={
+                  <section class="kn-card kn-rail-loading">
+                    <span class="kn-song-spinner" aria-hidden="true" />
+                    <p>Loading your songs…</p>
+                  </section>
+                }
+              >
+                <KaraokeRailPanels
+                  onSing={(s) => setSongWithUrl(s, true)}
+                  stageBusy={() => activeSong() !== null}
+                  activeSessionId={() => activeSong()?.sessionId ?? null}
+                  takeScannedSyncCode={() => {
+                    const code = scannedSyncCode()
+                    setScannedSyncCode(null)
+                    return code
+                  }}
+                />
+              </Suspense>
+            </ChunkErrorBoundary>
           </Show>
         </aside>
 
@@ -720,17 +730,19 @@ export function KaraokeNightApp() {
           >
             {(song) => (
               <div class="kn-stage-panel">
-                <Suspense
-                  fallback={
-                    <div class="kn-stage-loading">Raising the curtain…</div>
-                  }
-                >
-                  <KaraokeStageHost
-                    song={song}
-                    onExit={() => setSongWithUrl(null, true)}
-                    onSong={(s) => setSongWithUrl(s, true)}
-                  />
-                </Suspense>
+                <ChunkErrorBoundary label="The stage">
+                  <Suspense
+                    fallback={
+                      <div class="kn-stage-loading">Raising the curtain…</div>
+                    }
+                  >
+                    <KaraokeStageHost
+                      song={song}
+                      onExit={() => setSongWithUrl(null, true)}
+                      onSong={(s) => setSongWithUrl(s, true)}
+                    />
+                  </Suspense>
+                </ChunkErrorBoundary>
               </div>
             )}
           </Show>
@@ -837,13 +849,17 @@ export function KaraokeNightApp() {
         <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
       </Show>
       <Show when={mercurySingOpen()}>
-        <Suspense>
-          <MercurySingStage />
-        </Suspense>
+        <ChunkErrorBoundary label="Mercury Sing">
+          <Suspense>
+            <MercurySingStage />
+          </Suspense>
+        </ChunkErrorBoundary>
       </Show>
-      <Suspense>
-        <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
-      </Suspense>
+      <ChunkErrorBoundary label="The playlist runner">
+        <Suspense>
+          <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
+        </Suspense>
+      </ChunkErrorBoundary>
     </div>
   )
 }

@@ -307,6 +307,38 @@ function scanCommands(
  * wins; registration order is the priority order. When only gated-off
  * commands match the phrase, the outcome says so.
  */
+/**
+ * Collapse a stutter: runs of the same token become one.
+ *
+ * "sing sing" is one `sing` said twice — a repetition is how a person speaks
+ * when the first attempt did not seem to land, and it is also what a
+ * recognizer produces from a hesitant start.
+ *
+ * Only ever a FALLBACK, never a rewrite: the tokens as spoken are matched
+ * first, so a command that legitimately repeats a word keeps working, and one
+ * added later cannot be broken from here.
+ *
+ * Numbers are left alone. "back two two" may be twenty-two misheard, or two
+ * separate values, and quietly turning it into "back two" would change what
+ * happens rather than fail honestly.
+ *
+ * Returns null when there was nothing to collapse, so the caller can skip a
+ * second scan over identical tokens.
+ */
+function collapseStutters(tokens: readonly string[]): string[] | null {
+  const collapsed: string[] = []
+  let changed = false
+  for (const token of tokens) {
+    const isRepeat = collapsed[collapsed.length - 1] === token
+    if (isRepeat && parseNumberAt([token], 0) === null) {
+      changed = true
+      continue
+    }
+    collapsed.push(token)
+  }
+  return changed ? collapsed : null
+}
+
 export function resolveVoiceCommand(
   rawUtterance: string,
   commands: readonly VoiceCommand[],
@@ -339,6 +371,16 @@ export function resolveVoiceCommand(
     if (branded.matched !== null) return branded.matched
   }
 
+  // Stutter pass — "sing sing", "go go to karaoke". Before salvage, and for
+  // the same reason the brand retry is: keeping every distinct word the user
+  // said beats discarding words they also said.
+  let stuttered: CommandScan | null = null
+  const collapsed = collapseStutters(tokens)
+  if (collapsed !== null) {
+    stuttered = scanCommands(collapsed, candidates)
+    if (stuttered.matched !== null) return stuttered.matched
+  }
+
   // Salvage pass — self-corrections and stray lead-ins: "backwards...
   // forward 60 seconds", "guitar, i play guitar". Up to two leading tokens
   // may be dropped, and what remains must be at least two tokens, so
@@ -367,7 +409,11 @@ export function resolveVoiceCommand(
     }
   }
 
-  const unavailable = primary.unavailable ?? branded?.unavailable ?? null
+  const unavailable =
+    primary.unavailable ??
+    branded?.unavailable ??
+    stuttered?.unavailable ??
+    null
   if (unavailable !== null) return { kind: 'unavailable', command: unavailable }
   return wakeGated ? { kind: 'ignored' } : { kind: 'none' }
 }

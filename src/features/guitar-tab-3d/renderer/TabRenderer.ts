@@ -129,6 +129,8 @@ export interface TabScene {
   playheadBeat: number
   /** How many beats ahead are visible (depth of the highway). */
   visibleBeatWindow: number
+  /** Window looks backward from actual capture time; no target/hit semantics. */
+  recordingHistory?: boolean
   stringCount: number
   /** Open-string MIDI per string index (0 = highest), for the neck note names. */
   openMidi: readonly number[]

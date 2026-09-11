@@ -31,25 +31,30 @@ import type { GuitarInputDeviceOption, GuitarInputProfileKind, GuitarInputProfil
 import { guitarInputProfileLabel, loadGuitarAudioInputId, loadGuitarInputProfile, loadGuitarMidiInputId, saveGuitarAudioInputId, saveGuitarInputProfile, saveGuitarMidiInputId, } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarMidiNoteMessage, GuitarMidiPort, } from '@/lib/guitar/guitar-midi-input'
 import { GuitarMidiInputAdapter, mapMidiTimestampToAudioClock, } from '@/lib/guitar/guitar-midi-input'
+import { createGuitarPitchDetector, guitarPitchConfiguration, } from '@/lib/guitar/guitar-pitch-evidence'
 import type { GuitarTakeEvent, GuitarTakeRecorder, GuitarTakeSnapshot, } from '@/lib/guitar/guitar-take-recorder'
 import { createGuitarTakeRecorder } from '@/lib/guitar/guitar-take-recorder'
-import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealthReading, GuitarInputTimingSource, } from '@/lib/guitar/input-events'
+import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealthReading, GuitarInputPitch, GuitarInputTimingSource, } from '@/lib/guitar/input-events'
 import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, PITCH_ATTACH_WINDOW_MS, playedAt, } from '@/lib/guitar/input-events'
 import type { LatencyFailure } from '@/lib/mic-latency'
 import { LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { PitchDetector } from '@/lib/pitch-detector'
 import { buildClickSchedule } from '@/lib/tap-calibration'
 import { micLatencyMsForDevice, micLatencySpreadMsForDevice, setMicLatencyMeasurementForDevice, } from '@/stores/mic-latency-store'
 import { recordGuitarDetectCost, resetGuitarAnalysisCost, } from './guitar-analysis-cost'
 import { buildGuitarTakeEvidenceReport, downloadGuitarInputEvidenceReport, guitarInputEvidenceExportEnabled, } from './guitar-input-evidence-export'
 import type { GuitarInputMonitor } from './guitar-input-monitor'
 import { createGuitarInputMonitor } from './guitar-input-monitor'
+import { createGuitarLiveInputObservations } from './guitar-live-input-observations'
 import { guitarPerformanceAnalyserSize } from './guitar-score-tuning'
+import { useGuitarMonitorDiagnostics } from './useGuitarMonitorDiagnostics'
 
 const CONSUMER_ID = 'guitar-night-listening'
+// MicManager holds are idempotent by ID, so overlapping starts need distinct
+// leases: an obsolete permission result must not release a newer live input.
+let inputLeaseSequence = 0
 const MAX_EVENTS = 256
 const TUNER_ANALYSER_SIZE = 8192
 const PERFORMANCE_MIN_FREQUENCY = 55
@@ -101,6 +106,8 @@ interface GuitarListeningControllerOptions {
   activateAudio(): Promise<boolean>
   getAudioGraph(): GuitarSessionAudioGraph | null
   ampParameters?: Accessor<GuitarElectricAmpParameters>
+  /** Free-room sessions may finish assessment without withdrawing an explicitly armed DI route. */
+  retainDirectInputOnTakeCompletion?: boolean
 }
 
 export interface GuitarListeningStartOptions {
@@ -356,6 +363,11 @@ export function useGuitarListeningController(
   const [ampMonitoringEnabled, setAmpMonitoringEnabledSignal] =
     createSignal(false)
   const [ampMonitoringActive, setAmpMonitoringActive] = createSignal(false)
+  const [monitorInputChannel, setMonitorInputChannel] = createSignal(0)
+  const [monitorInputChannelCount, setMonitorInputChannelCount] =
+    createSignal(0)
+  let monitorRoute: string | null = null
+  const monitorDiagnostics = useGuitarMonitorDiagnostics()
   const evidenceExportEnabled = createMemo(() =>
     guitarInputEvidenceExportEnabled(),
   )
@@ -378,6 +390,7 @@ export function useGuitarListeningController(
   const [health, setHealth] = createSignal<GuitarInputHealthReading | null>(
     null,
   )
+  const liveObservations = createGuitarLiveInputObservations()
   const observations = createMemo(() =>
     summarizeGuitarListeningEvidence(events(), take()?.droppedEventCount ?? 0),
   )
@@ -391,6 +404,7 @@ export function useGuitarListeningController(
   let frame = 0
   let generation = 0
   let midiRefreshGeneration = 0
+  let audioRefreshGeneration = 0
   let disposed = false
   let heldMidi: number | null = null
   let lastCoarseAttackAt: number | null = null
@@ -399,15 +413,22 @@ export function useGuitarListeningController(
   let cancelCalibrationRun: (() => void) | null = null
   let takeRecorder: GuitarTakeRecorder | null = null
   let takeContext: AudioContext | null = null
+  // Route ownership outlives a finished assessment only in the opt-in DI host.
+  let routeContext: AudioContext | null = null
   let takeLatencySeconds = 0
   let takeStartedAtSeconds = 0
   let scheduledTakeEndSeconds: number | null = null
   let completionTimer = 0
   let completionGeneration = 0
+  const completionWaiters = new Set<
+    (snapshot: GuitarTakeSnapshot | null) => void
+  >()
   let takeSequence = 0
   let takeBeforeRecording: GuitarTakeSnapshot | null = null
   let midiAdapter: GuitarMidiInputAdapter | null = null
   let ownsMic = false
+  let releaseOwnedMic: (() => void) | null = null
+  let disposePendingAudio: (() => void) | null = null
   let stoppingInput = false
   let lastStartOptions: GuitarListeningStartOptions = {}
   const initialInputProfile = untrack(inputProfile)
@@ -428,12 +449,26 @@ export function useGuitarListeningController(
   const publishTake = (): void => {
     setTake(takeRecorder?.snapshot() ?? null)
   }
+  const settleCompletionWaiters = (
+    snapshot: GuitarTakeSnapshot | null,
+  ): void => {
+    const waiting = [...completionWaiters]
+    completionWaiters.clear()
+    for (const resolve of waiting) resolve(snapshot)
+  }
+  const cancelCompletion = (): void => {
+    completionGeneration += 1
+    if (completionTimer !== 0) window.clearTimeout(completionTimer)
+    completionTimer = 0
+    settleCompletionWaiters(null)
+  }
 
   const beginTake = (
     context: AudioContext,
     attackTimingSource: GuitarTimingSource,
     startedAtSeconds = context.currentTime,
   ): void => {
+    cancelCompletion()
     takeRecorder?.cancel()
     takeSequence += 1
     const measuredLatencyMs =
@@ -467,10 +502,12 @@ export function useGuitarListeningController(
       maxEvents: MAX_EVENTS,
     })
     takeContext = context
+    routeContext = context
     publishTake()
   }
 
   const cancelTake = (): void => {
+    cancelCompletion()
     takeRecorder?.cancel()
     takeRecorder = null
     takeContext = null
@@ -483,16 +520,22 @@ export function useGuitarListeningController(
 
   const completeTake = (endedAtSeconds?: number): void => {
     if (takeRecorder === null || takeContext === null) return
-    setTake(takeRecorder.complete(endedAtSeconds ?? takeContext.currentTime))
+    const completed = takeRecorder.complete(
+      endedAtSeconds ?? takeContext.currentTime,
+    )
     takeRecorder = null
     takeContext = null
     takeLatencySeconds = 0
     takeStartedAtSeconds = 0
     scheduledTakeEndSeconds = null
     takeBeforeRecording = null
+    settleCompletionWaiters(completed)
+    // A retained-route consumer may re-arm reactively when completion is published.
+    setTake(completed)
   }
 
   const pushEvent = (capture: GuitarInputCapture): void => {
+    liveObservations.capture(capture)
     const recorder = takeRecorder
     if (recorder === null) return
     if (recorder.append(capture) !== null) publishTake()
@@ -514,15 +557,19 @@ export function useGuitarListeningController(
   }
 
   const releaseMicHold = (): void => {
+    monitorDiagnostics.clear()
     setRecordableStream(null)
     if (!ownsMic) return
     ownsMic = false
-    micManager.release(CONSUMER_ID)
+    const release = releaseOwnedMic
+    releaseOwnedMic = null
+    release?.()
   }
 
   const resetAmpMonitoring = (): void => {
     inputMonitor?.dispose()
     inputMonitor = null
+    setMonitorInputChannelCount(0)
     setAmpMonitoringEnabledSignal(false)
     setAmpMonitoringActive(false)
   }
@@ -539,8 +586,27 @@ export function useGuitarListeningController(
       inputProfile() === 'interface' &&
       status() === 'listening' &&
       recordableStream() !== null &&
+      monitorInputChannelCount() > 0 &&
       inputMonitor !== null,
   )
+
+  const selectMonitorInputChannel = (channel: number): boolean => {
+    if (
+      !canAmpMonitor() ||
+      inputMonitor === null ||
+      !Number.isInteger(channel) ||
+      channel < 0 ||
+      channel >= monitorInputChannelCount()
+    )
+      return false
+    if (channel === monitorInputChannel()) return true
+    if (!inputMonitor.setInputChannel(channel)) return false
+    setAmpMonitoringEnabledSignal(false)
+    setAmpMonitoringActive(false)
+    setMonitorInputChannel(channel)
+    monitorDiagnostics.refresh()
+    return true
+  }
 
   const setAmpMonitoringEnabled = (enabled: boolean): boolean => {
     if (!enabled) {
@@ -582,7 +648,7 @@ export function useGuitarListeningController(
   }
 
   const handleMidiNote = (message: GuitarMidiNoteMessage): void => {
-    const context = takeContext
+    const context = routeContext
     if (status() !== 'listening' || context === null) return
     const mapped = mapMidiTimestampToAudioClock(
       message.eventTimestampMs,
@@ -679,8 +745,10 @@ export function useGuitarListeningController(
   }
 
   const refreshAudioInputs = async (): Promise<void> => {
+    const refreshGeneration = ++audioRefreshGeneration
     try {
       const devices = await listAudioInputs()
+      if (disposed || refreshGeneration !== audioRefreshGeneration) return
       setAudioInputs(
         devices.map((device, index) => ({
           id: device.deviceId,
@@ -688,6 +756,7 @@ export function useGuitarListeningController(
         })),
       )
     } catch {
+      if (disposed || refreshGeneration !== audioRefreshGeneration) return
       setAudioInputs([])
     }
   }
@@ -739,11 +808,16 @@ export function useGuitarListeningController(
 
   const stopNodes = (): void => {
     stoppingInput = true
+    liveObservations.end()
+    routeContext = null
+    monitorDiagnostics.clear()
+    const disposePending = disposePendingAudio
+    disposePendingAudio = null
+    disposePending?.()
     resetAmpMonitoring()
     midiRefreshGeneration += 1
-    completionGeneration += 1
-    if (completionTimer !== 0) window.clearTimeout(completionTimer)
-    completionTimer = 0
+    audioRefreshGeneration += 1
+    cancelCompletion()
     cancelCalibrationRun?.()
     cancelCalibrationRun = null
     if (frame !== 0) cancelAnimationFrame(frame)
@@ -826,17 +900,14 @@ export function useGuitarListeningController(
    */
   const armTakeAt = (startedAtSeconds: number): boolean => {
     if (
-      takeContext === null ||
+      routeContext === null ||
       !Number.isFinite(startedAtSeconds) ||
       startedAtSeconds < 0 ||
       status() !== 'listening'
     ) {
       return false
     }
-    completionGeneration += 1
-    if (completionTimer !== 0) window.clearTimeout(completionTimer)
-    completionTimer = 0
-    beginTake(takeContext, liveTimingSource(), startedAtSeconds)
+    beginTake(routeContext, liveTimingSource(), startedAtSeconds)
     return true
   }
 
@@ -870,6 +941,9 @@ export function useGuitarListeningController(
     )
     const pinnedEndSeconds = scheduledTakeEndSeconds
     const completingMidiRoute = inputProfile() === 'midi'
+    const retainRoute =
+      options.retainDirectInputOnTakeCompletion === true &&
+      activeInput.kind === 'interface'
     completionTimer = window.setTimeout(() => {
       completionTimer = 0
       if (
@@ -878,8 +952,9 @@ export function useGuitarListeningController(
       ) {
         return
       }
-      generation += 1
+      if (!retainRoute) generation += 1
       completeTake(pinnedEndSeconds)
+      if (retainRoute) return
       stopNodes()
       releaseMicHold()
       setStatus('off')
@@ -901,6 +976,27 @@ export function useGuitarListeningController(
   const completeTakeNow = (): boolean => {
     const context = takeContext
     return context !== null && completeTakeAt(context.currentTime)
+  }
+
+  /** Drain late pitch before admitting another mode; cancellation settles with no result. */
+  const settleTake = (): Promise<GuitarTakeSnapshot | null> => {
+    if (takeRecorder === null) {
+      const snapshot = take()
+      return Promise.resolve(
+        snapshot?.lifecycle === 'completed' ? snapshot : null,
+      )
+    }
+    let resolveCompletion: (snapshot: GuitarTakeSnapshot | null) => void = () =>
+      undefined
+    const completion = new Promise<GuitarTakeSnapshot | null>((resolve) => {
+      resolveCompletion = resolve
+    })
+    completionWaiters.add(resolveCompletion)
+    if (!completeTakeNow()) {
+      completionWaiters.delete(resolveCompletion)
+      resolveCompletion(null)
+    }
+    return completion
   }
 
   onCleanup(
@@ -975,6 +1071,8 @@ export function useGuitarListeningController(
     if (status() !== 'off' && status() !== 'error') stop()
     const next = deviceId !== null && deviceId.length > 0 ? deviceId : null
     setActiveAudioInputId(null)
+    monitorRoute = null
+    setMonitorInputChannel(0)
     setSelectedAudioInputIdSignal(next)
     saveGuitarAudioInputId(next)
     setError(null)
@@ -1027,7 +1125,30 @@ export function useGuitarListeningController(
     generation += 1
     const currentGeneration = generation
     const previousTake = take()
+    const micLeaseId = `${CONSUMER_ID}-${++inputLeaseSequence}`
+    let acquiredMic = false
+    let releasedMic = false
+    const releaseAttemptMic = (): void => {
+      if (!acquiredMic || releasedMic) return
+      releasedMic = true
+      micManager.release(micLeaseId)
+    }
+    let pendingSource: MediaStreamAudioSourceNode | null = null
+    let pendingSplitter: ChannelSplitterNode | null = null
+    const pendingAnalysers: AnalyserNode[] = []
+    let pendingMonitor: GuitarInputMonitor | null = null
+    let pendingAudioDisposed = false
+    const disposeAttemptAudio = (): void => {
+      if (pendingAudioDisposed) return
+      pendingAudioDisposed = true
+      pendingMonitor?.dispose()
+      pendingSource?.disconnect()
+      pendingSplitter?.disconnect()
+      for (const analyser of pendingAnalysers) analyser.disconnect()
+    }
     const requestedProfile = inputProfile()
+    const requestedMonitorRoute = monitorRoute
+    const requestedMonitorChannel = monitorInputChannel()
     stopNodes()
     setActiveAudioInputId(null)
     setError(null)
@@ -1068,6 +1189,7 @@ export function useGuitarListeningController(
         takeBeforeRecording =
           previousTake?.lifecycle === 'completed' ? previousTake : null
         beginTake(context, 'midi-clock')
+        liveObservations.start(context, 'midi')
         setHealth({ state: 'good', hint: 'MIDI input is ready.' })
         setStatus('listening')
         return true
@@ -1075,15 +1197,22 @@ export function useGuitarListeningController(
 
       const requestedDeviceId = selectedAudioInputId()
       await micManager.setPreferredDevice(requestedDeviceId)
-      const stream = await micManager.acquire(CONSUMER_ID)
-      ownsMic = true
+      if (currentGeneration !== generation || disposed) return false
+      const stream = await micManager.acquire(micLeaseId)
+      acquiredMic = true
       if (currentGeneration !== generation) {
-        releaseMicHold()
+        releaseAttemptMic()
         return false
       }
+      ownsMic = true
+      releaseOwnedMic = releaseAttemptMic
       setRecordableStream(stream)
 
       await refreshAudioInputs()
+      if (currentGeneration !== generation || disposed) {
+        releaseAttemptMic()
+        return false
+      }
       const track = stream.getAudioTracks?.()[0]
       const reportedDeviceId = track?.getSettings?.().deviceId?.trim()
       const actualDeviceId =
@@ -1109,8 +1238,13 @@ export function useGuitarListeningController(
       }
       setActiveAudioInputId(actualDeviceId)
       if (requestedDeviceId !== null && actualDeviceId !== requestedDeviceId) {
-        setSelectedAudioInputIdSignal(actualDeviceId)
-        saveGuitarAudioInputId(actualDeviceId)
+        // A fallback microphone must not become the requested Direct-input
+        // route on the next start. Keep that explicit device choice until the
+        // player replaces it, including across room or page reloads.
+        if (requestedProfile !== 'interface') {
+          setSelectedAudioInputIdSignal(actualDeviceId)
+          saveGuitarAudioInputId(actualDeviceId)
+        }
         setNotice(
           actualDeviceId === null
             ? 'The browser opened an input but did not identify which one.'
@@ -1119,42 +1253,53 @@ export function useGuitarListeningController(
       }
 
       const nextSource = context.createMediaStreamSource(stream)
+      pendingSource = nextSource
+      disposePendingAudio = disposeAttemptAudio
       const reportedChannelCount = Number(track?.getSettings?.().channelCount)
       const sourceChannelCount = Number(nextSource.channelCount)
       const channelCount = guitarInputAnalysisChannelCount(
         reportedChannelCount,
         sourceChannelCount,
       )
+      const nextMonitorRoute = JSON.stringify([
+        actualDeviceId ?? requestedDeviceId,
+        channelCount,
+      ])
+      const nextMonitorChannel =
+        nextMonitorRoute === requestedMonitorRoute &&
+        requestedMonitorChannel < channelCount
+          ? requestedMonitorChannel
+          : 0
       const nextPitchAnalysers = Array.from({ length: channelCount }, () => {
         const channelAnalyser = context.createAnalyser()
         channelAnalyser.fftSize = analyserSize
         channelAnalyser.smoothingTimeConstant = 0
+        pendingAnalysers.push(channelAnalyser)
         return channelAnalyser
       })
       const canSplitChannels =
         channelCount > 1 && typeof context.createChannelSplitter === 'function'
       if (canSplitChannels) {
         const splitter = context.createChannelSplitter(channelCount)
+        pendingSplitter = splitter
         nextSource.connect(splitter)
         nextPitchAnalysers.forEach((channelAnalyser, channel) => {
           splitter.connect(channelAnalyser, channel)
         })
-        pitchSplitter = splitter
       } else {
         nextSource.connect(nextPitchAnalysers[0])
       }
-      source = nextSource
-      pitchAnalysers = nextPitchAnalysers
-
       if (
         requestedProfile === 'interface' &&
         latestAmpParameters !== undefined
       ) {
-        inputMonitor = createGuitarInputMonitor({
+        pendingMonitor = createGuitarInputMonitor({
           context,
           source: nextSource,
           destination: graph.buses.monitor,
           parameters: latestAmpParameters,
+          inputChannel: nextMonitorChannel,
+          inputChannelCount: channelCount,
         })
       }
 
@@ -1162,48 +1307,80 @@ export function useGuitarListeningController(
       // their exact frame evidence intact; the recorder applies the one
       // latency snapshot pinned when this take begins.
 
-      tap = await connectGuitarInputWorklet(context, nextSource, (message) => {
-        if (currentGeneration !== generation) return
-        if (message.type === 'level') {
-          const reading = describeInputHealth(message.peak, message.noiseFloor)
-          setHealth(reading)
-          observeTakeHealth(
-            reading,
-            playedAt(
-              frameToSeconds(message.atFrame, context.sampleRate),
-              takeLatencySeconds,
-            ),
-          )
-          return
-        }
-        const capturedAt = frameToSeconds(message.atFrame, context.sampleRate)
-        if (calibrationHits !== null) {
-          calibrationHits.push(capturedAt)
-          return
-        }
-        pushEvent({
-          kind: 'attack',
-          source: requestedProfile,
-          voiceId: null,
-          level: message.level,
-          clock: {
-            kind: 'audio-worklet',
-            atFrame: message.atFrame,
-            sampleRate: context.sampleRate,
-          },
-          pitch: null,
-        })
-      })
+      const nextTap = await connectGuitarInputWorklet(
+        context,
+        nextSource,
+        (message) => {
+          if (currentGeneration !== generation) return
+          if (message.type === 'level') {
+            const reading = describeInputHealth(
+              message.peak,
+              message.noiseFloor,
+            )
+            setHealth(reading)
+            observeTakeHealth(
+              reading,
+              playedAt(
+                frameToSeconds(message.atFrame, context.sampleRate),
+                takeLatencySeconds,
+              ),
+            )
+            return
+          }
+          const capturedAt = frameToSeconds(message.atFrame, context.sampleRate)
+          if (calibrationHits !== null) {
+            calibrationHits.push(capturedAt)
+            return
+          }
+          pushEvent({
+            kind: 'attack',
+            source: requestedProfile,
+            voiceId: null,
+            level: message.level,
+            clock: {
+              kind: 'audio-worklet',
+              atFrame: message.atFrame,
+              sampleRate: context.sampleRate,
+            },
+            pitch: null,
+          })
+        },
+      )
       if (currentGeneration !== generation) {
-        stopNodes()
-        releaseMicHold()
+        nextTap?.dispose()
+        disposeAttemptAudio()
+        releaseAttemptMic()
         return false
       }
+      // Only the current attempt can publish nodes to the shared lifetime.
+      // An older worklet may still resolve after Stop and a successful restart.
+      disposePendingAudio = null
+      source = nextSource
+      pitchAnalysers = nextPitchAnalysers
+      pitchSplitter = pendingSplitter
+      inputMonitor = pendingMonitor
+      // Dry recording shares this channel choice even when Room mic has no
+      // monitor branch. Publish the validated channel for every new route.
+      setMonitorInputChannel(nextMonitorChannel)
+      if (pendingMonitor !== null) {
+        monitorRoute = nextMonitorRoute
+        setMonitorInputChannelCount(channelCount)
+      }
+      if (track !== undefined)
+        monitorDiagnostics.attach({
+          context,
+          track,
+          requestedDeviceId,
+          monitorInputChannel: () =>
+            inputMonitor === null ? null : monitorInputChannel(),
+        })
+      tap = nextTap
       const nextTimingSource = tap === null ? 'frame-loop' : 'audio-clock'
       setTimingSource(nextTimingSource)
       takeBeforeRecording =
         previousTake?.lifecycle === 'completed' ? previousTake : null
       beginTake(context, nextTimingSource)
+      liveObservations.start(context, requestedProfile)
 
       const channelSamples = nextPitchAnalysers.map(
         (channelAnalyser) => new Float32Array(channelAnalyser.fftSize),
@@ -1211,15 +1388,13 @@ export function useGuitarListeningController(
       // How far back the analyser's window reaches. A note named from it began
       // at least this long ago, which is what the strike it belongs to knows.
       const windowSeconds = analyserSize / context.sampleRate
-      const detector = new PitchDetector({
-        algorithm: 'mpm',
-        sampleRate: context.sampleRate,
-        bufferSize: analyserSize,
-        minFrequency: minimumFrequency,
-        maxFrequency: 1600,
-        minConfidence: 0.38,
-        minAmplitude: 0.018,
-      })
+      const detector = createGuitarPitchDetector(
+        context.sampleRate,
+        guitarPitchConfiguration('rehearsal', {
+          bufferSize: analyserSize,
+          minFrequency: minimumFrequency,
+        }),
+      )
       const fallbackNoiseFloor = createNoiseFloorFollower()
       let smoothedRms = 0.008
       let silentFrames = 0
@@ -1283,6 +1458,7 @@ export function useGuitarListeningController(
           const detectEndedAt = performance.now()
           recordGuitarDetectCost(detectEndedAt - detectStartedAt, detectEndedAt)
         }
+        let observedPitch: GuitarInputPitch | null = null
         if (detected.frequency > 0 && detected.clarity >= 0.38) {
           const midi = Math.round(69 + 12 * Math.log2(detected.frequency / 440))
           const label = `${detected.noteName}${detected.octave}`
@@ -1302,6 +1478,7 @@ export function useGuitarListeningController(
               cents: detected.cents,
               clarity: detected.clarity,
             }
+            observedPitch = pitch
             const at = playedAt(capturedAt, takeLatencySeconds)
             const frameClock = {
               kind: 'frame-loop' as const,
@@ -1397,12 +1574,19 @@ export function useGuitarListeningController(
             setClarity(0)
           }
         }
+        if (calibrationHits === null) {
+          liveObservations.pitch(now, capturedAt, observedPitch)
+        }
         frame = requestAnimationFrame(tick)
       }
       frame = requestAnimationFrame(tick)
       return true
     } catch (caught) {
-      if (currentGeneration !== generation) return false
+      if (currentGeneration !== generation) {
+        disposeAttemptAudio()
+        releaseAttemptMic()
+        return false
+      }
       takeRecorder?.cancel()
       takeRecorder = null
       takeContext = null
@@ -1507,6 +1691,7 @@ export function useGuitarListeningController(
     const context = graph.context
     const hits: number[] = []
     calibrationHits = hits
+    liveObservations.reset()
     setStatus('calibrating')
 
     const clickTimes = buildClickSchedule(
@@ -1542,6 +1727,7 @@ export function useGuitarListeningController(
     })
     if (!completed || currentGeneration !== generation) return false
     calibrationHits = null
+    liveObservations.reset()
     setStatus('listening')
 
     // The wizard in @/features/mic-feedback records a buffer and finds its
@@ -1569,7 +1755,7 @@ export function useGuitarListeningController(
   }
 
   const clearTake = (): void => {
-    const context = takeContext
+    const context = routeContext
     const currentStatus = status()
     if (
       context !== null &&
@@ -1587,6 +1773,7 @@ export function useGuitarListeningController(
     cancelTake()
     stopNodes()
     releaseMicHold()
+    liveObservations.dispose()
   })
 
   return {
@@ -1602,10 +1789,25 @@ export function useGuitarListeningController(
     pitchRevision,
     clarity,
     take,
+    liveInputRoute: liveObservations.route,
+    subscribeLiveObservations: liveObservations.subscribe,
     /** The already-owned dry route; consumers must never stop its tracks. */
     recordableStream,
+    /** Borrow a dry side tap, never ownership of the stream or monitor. */
+    recordingInput: () => {
+      const stream = recordableStream()
+      if (stream === null || source === null || routeContext === null)
+        return null
+      return {
+        context: routeContext,
+        source,
+        stream,
+        channel: monitorInputChannel(),
+        channelCount: pitchAnalysers.length,
+      }
+    },
     /** The score scheduler and replay recorder read this same audio clock. */
-    recordableAudioContext: () => takeContext,
+    recordableAudioContext: () => routeContext,
     evidenceExportEnabled,
     canExportEvidence,
     events,
@@ -1622,7 +1824,11 @@ export function useGuitarListeningController(
     health,
     ampMonitoringEnabled,
     ampMonitoringActive,
+    monitorDiagnostics: monitorDiagnostics.snapshot,
     canAmpMonitor,
+    monitorInputChannel,
+    monitorInputChannelCount,
+    selectMonitorInputChannel,
     setAmpMonitoringEnabled,
     selectInputProfile,
     selectAudioInput,
@@ -1637,6 +1843,7 @@ export function useGuitarListeningController(
     armTakeAt,
     completeTakeAt,
     completeTakeNow,
+    settleTake,
     calibrate,
     clearTake,
   }

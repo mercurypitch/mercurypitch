@@ -1574,6 +1574,8 @@
 .uvr-import-button--primary {
   color: #fff;
   background: linear-gradient(135deg, #9270ee, #6f4fd0);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border: 1px solid rgba(205, 191, 255, 0.2);
   box-shadow: 0 8px 20px rgba(111, 79, 208, 0.22);
 }
@@ -2528,6 +2530,8 @@
 .uvr-queue-button--primary {
   color: #fff;
   background: linear-gradient(135deg, #8d6bea, #6d4dce);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: rgba(203, 189, 255, 0.22);
   box-shadow: 0 8px 20px rgba(109, 77, 206, 0.24);
 }

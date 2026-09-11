@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { EXERCISE_SLUGS } from '@/features/exercises/slug-map'
+import { ADMIN_ENTRY_PATHS, adminHashForPath } from '@/lib/admin-entry-route'
 import type { Env } from '@/worker'
 import worker from '@/worker'
 
@@ -183,6 +185,138 @@ describe('standalone entry routing', () => {
       expect(new URL(fetch.mock.calls[0][0].url).pathname).not.toMatch(
         /\.html$/,
       )
+    }
+  })
+})
+
+// ── Exercise deep links ───────────────────────────────────────
+//
+// These are the one thing that relied on `not_found_handling:
+// single-page-application`. Now that unmatched paths get a real 404, the worker
+// serves them, and a slug the landing links must not be able to fall through
+// the pattern.
+describe('exercise deep links', () => {
+  it('serves the studio shell with the URL intact', async () => {
+    const { env, fetch } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/exercises/perfect-octave?src=ig'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/')
+    expect(new URL(fetch.mock.calls[0][0].url).search).toBe('?src=ig')
+  })
+
+  it('accepts a trailing slash', async () => {
+    const { env } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/exercises/speed-scales/'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/')
+  })
+
+  it('serves every slug the landing is allowed to link', async () => {
+    for (const slug of Object.keys(EXERCISE_SLUGS)) {
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test/exercises/${slug}`),
+        env,
+      )
+
+      await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  it('leaves anything that is not an exercise path to the asset layer', async () => {
+    for (const path of [
+      '/exercises',
+      '/exercises/',
+      '/exercises/one/two',
+      '/exercise/perfect-octave',
+    ]) {
+      const { env, fetch } = entryEnv()
+      await worker.fetch(new Request(`https://mercurypitch.test${path}`), env)
+
+      // Untouched: the same path goes through, so the asset layer decides —
+      // which now means a 404 document rather than the home page.
+      expect(new URL(fetch.mock.calls[0][0].url).pathname).toBe(path)
+    }
+  })
+})
+
+// ── Admin entry paths ─────────────────────────────────────────
+//
+// The second thing that relied on the SPA fallback, and the one missed when
+// the exercise deep links were fixed: /admin and its five sections have no
+// file either. normalizeAdminEntryRoute() reads the path on boot and rewrites
+// it to a hash route, so the shell has to arrive at that URL.
+describe('admin entry paths', () => {
+  it('serves the shell for every friendly path the client can normalize', async () => {
+    for (const path of ADMIN_ENTRY_PATHS) {
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test${path}`),
+        env,
+      )
+
+      await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  it('serves the trailing-slash spellings the client accepts', async () => {
+    for (const path of ['/admin/', '/admin/weekly/']) {
+      // Whatever the client is willing to normalize, the worker must deliver.
+      expect(adminHashForPath(path)).not.toBeNull()
+
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test${path}`),
+        env,
+      )
+
+      await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  it('matches case-insensitively, even though routing will not', async () => {
+    // adminHashForPath lowercases, so the client would handle /ADMIN/WEEKLY —
+    // but wrangler's run_worker_first patterns are case-sensitive and are
+    // listed in lower case, so this worker never sees an upper-case path in
+    // production and the 404 page answers instead. Verified against a local
+    // wrangler run. The worker stays permissive because the cost is a regex
+    // flag and the alternative is a rule that silently disagrees with the
+    // client. Change the wrangler patterns, not this, if that ever matters.
+    expect(adminHashForPath('/ADMIN/WEEKLY')).toBe('#/admin/weekly')
+
+    const { env } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/ADMIN/WEEKLY'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/')
+  })
+
+  it('keeps the query string, which carries the entry source', async () => {
+    const { env, fetch } = entryEnv()
+    await worker.fetch(
+      new Request('https://mercurypitch.test/admin?source=bookmark'),
+      env,
+    )
+
+    expect(new URL(fetch.mock.calls[0][0].url).search).toBe('?source=bookmark')
+  })
+
+  it('leaves a path that only looks like admin to the asset layer', async () => {
+    for (const path of ['/administrator', '/admin/one/two', '/adminx']) {
+      expect(adminHashForPath(path)).toBeNull()
+
+      const { env, fetch } = entryEnv()
+      await worker.fetch(new Request(`https://mercurypitch.test${path}`), env)
+
+      expect(new URL(fetch.mock.calls[0][0].url).pathname).toBe(path)
     }
   })
 })

@@ -292,7 +292,7 @@ export function useThresholdRun(
 
     creditEarSession(elapsed)
     // A drill played anywhere counts toward today's sprint — the
-    // sprint names what to practise, it does not own the only door
+    // sprint names what to practice, it does not own the only door
     // into it. Idempotent, so a second run cannot double-book.
     // A segment counts when the run reached its end, not when it was
     // abandoned part-way.

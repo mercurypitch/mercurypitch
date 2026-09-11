@@ -1,6 +1,8 @@
 // Guitar Night session links preserve independent score and backing selections.
 // ============================================================
 
+import { GUITAR_NIGHT_PATH } from './route'
+
 const MAX_SESSION_ID_LENGTH = 256
 
 /** `song` selects the score reference; `session` selects the backing audio. */
@@ -27,8 +29,10 @@ function withParam(
   identifier: string | null,
 ): string {
   const url = new URL(currentHref, 'https://mercurypitch.local')
-  url.pathname = '/guitar-night'
+  url.pathname = GUITAR_NIGHT_PATH
   url.hash = ''
+  // Choosing a score/backing exits a saved-take review deep link.
+  url.searchParams.delete('recording')
 
   const normalized = identifier?.trim() ?? ''
   if (normalized === '' || normalized.length > MAX_SESSION_ID_LENGTH) {
@@ -55,6 +59,13 @@ export function withGuitarNightSession(
 
 export function readGuitarNightScore(search = currentSearch()): string | null {
   return readParam(search, SCORE_PARAM)
+}
+
+/** A saved-take link opens its review, never an audio device or playback. */
+export function readGuitarNightRecording(
+  search = currentSearch(),
+): string | null {
+  return readParam(search, 'recording')
 }
 
 export function withGuitarNightScore(

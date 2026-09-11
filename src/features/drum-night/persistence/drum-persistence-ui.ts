@@ -114,6 +114,12 @@ export type DrumTakeFinishState =
 export type DrumTakeHistoryState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'loading' }
+  /**
+   * There is no saved project to read history from, so no load will ever be
+   * started. Distinct from `idle` because `idle` renders as "opening…": a
+   * session with no saved project used to sit on that spinner forever.
+   */
+  | { readonly kind: 'unavailable'; readonly message: string }
   | { readonly kind: 'error'; readonly message?: string }
   | {
       readonly kind: 'ready'
@@ -144,6 +150,11 @@ export interface DrumTakeHistoryProps {
   readonly onDismissReplay: () => void
   readonly onLoadHistory: () => void
   readonly onRetryHistory: () => void
+  /**
+   * Set only when the one thing blocking this take is a groove that was never
+   * saved. Turns the held-take card from a dead end into the action it names.
+   */
+  readonly onSaveProject?: () => void
 }
 
 export function formatPersistenceCount(

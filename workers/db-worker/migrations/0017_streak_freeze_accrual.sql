@@ -4,7 +4,7 @@
 -- forgiveness to whoever was already keeping a streak and none to whoever had
 -- just lost one. Freezes now accrue one per thirty days waited, which needs an
 -- anchor of its own: a date derived from practice would only ever advance for
--- people who practise, and the whole point is that an idle month accrues too.
+-- people who practice, and the whole point is that an idle month accrues too.
 --
 -- Schema only. The one-time top-up of existing accounts to the new starting
 -- balance is `scripts/grant-starting-freezes.sql`, run by hand from the release

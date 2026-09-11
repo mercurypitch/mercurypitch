@@ -8,7 +8,7 @@
 // listener hears something or a command just landed. Not a live region:
 // interim transcripts change many times a second while music plays.
 
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Mic, Settings, X } from '@/components/icons'
 import { practiceTimerVisible } from '@/stores/practice-timer-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
@@ -62,24 +62,69 @@ const ENGINES: Array<{
   },
 ]
 
+/** Widest the docked menu is allowed to be; mirrors `max-width` on `.menu`. */
+const DOCKED_MENU_MAX_WIDTH = 256
+const DOCKED_MENU_MARGIN = 8
+
+/**
+ * How far the docked menu sits from the viewport's right edge.
+ *
+ * The menu is placed against the viewport rather than the tools group, so a
+ * pill that grows underneath it cannot drag it off the screen. Pinning it to
+ * the right margin outright was wrong on a wide screen: Guitar Night docks its
+ * pill mid-header, and the menu flew to the far corner instead of opening
+ * under the cog. So the gap follows the tools group, clamped at both ends —
+ * never inside the right margin, and never so far right that the menu's own
+ * left edge leaves the screen.
+ */
+export function dockedMenuRightGap(
+  toolsRight: number,
+  viewportWidth: number,
+): number {
+  const underTheCog = viewportWidth - toolsRight
+  const furthest = Math.max(
+    DOCKED_MENU_MARGIN,
+    viewportWidth - DOCKED_MENU_MAX_WIDTH - DOCKED_MENU_MARGIN,
+  )
+  return Math.min(Math.max(underTheCog, DOCKED_MENU_MARGIN), furthest)
+}
+
 export function VoiceControlHud(props: VoiceControlHudProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
+  /** The pill's shape at the moment the menu opened; see `expanded`. */
+  let expandedAtMenuOpen = false
+  /** Viewport placement for the docked menu, measured when it opens. */
+  const [menuTop, setMenuTop] = createSignal(0)
+  const [menuRight, setMenuRight] = createSignal(DOCKED_MENU_MARGIN)
   let statusEl: HTMLSpanElement | undefined
+  let toolsEl: HTMLDivElement | undefined
   /**
    * Expanded only while there is something to read. Between phrases the pill
    * is a mic and a cog again — on a phone the expanded bar was permanent
    * furniture, and docked in the header it sat over the app's own title for
    * the whole session rather than for the second the words were on screen.
    *
-   * The menu pins it open: a picker that closed itself three seconds after
-   * you opened it would be unusable.
+   * The engine menu does not pin it open. The menu is absolutely positioned
+   * and overlays whatever is beneath it, whereas expanding the docked pill
+   * hands the header row over — the title steps aside and the account
+   * cluster moves into the flow (see AppHeader.css) — so a tap on the cog
+   * re-laid out the whole header for a menu that needed none of it. The
+   * status line the expanded pill would have shown is in the menu instead.
    */
-  const expanded = () =>
-    props.controller.enabled() &&
-    (menuOpen() || props.controller.hasSomethingToSay())
+  const expanded = () => {
+    // Frozen while the menu is open. Docked, an expanding pill takes the
+    // whole header row — the app title steps aside — which moves the tools
+    // group the menu hangs off, so the menu slid sideways under the finger
+    // and, on a phone, off the left edge. The state that would have
+    // expanded it is readable in the menu's own status line meanwhile.
+    if (menuOpen()) return expandedAtMenuOpen
+    return props.controller.enabled() && props.controller.hasSomethingToSay()
+  }
   const listening = () =>
     props.controller.enabled() &&
     props.controller.listenerState() === 'listening'
+  const dozing = () =>
+    props.controller.enabled() && props.controller.listenerState() === 'dozing'
   const hasError = () =>
     props.controller.enabled() && props.controller.listenerState() === 'error'
 
@@ -100,11 +145,16 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     if (props.controller.listenerState() === 'starting') {
       return 'Loading voice engine'
     }
+    // The ear stopped respawning after a stretch of silence and waits for
+    // the next touch anywhere — a nap, not a fault. Quiet like `listening`,
+    // so this line is read from the menu and the mic's tooltip, never from
+    // an expanded pill.
+    if (dozing()) return 'Voice paused — tap to resume'
     // A deliberate stand-down while the stage mic scores a voice, not a
     // failure: it ends when the singing does, and the pill collapses over it
-    // rather than sitting open. Only the pinned-open menu shows this line —
-    // but it has to be true, because "tap the mic to restart" was not, and
-    // the tap it asked for did nothing.
+    // rather than sitting open. Only the menu shows this line — but it has
+    // to be true, because "tap the mic to restart" was not, and the tap it
+    // asked for did nothing.
     if (props.controller.suspendedForSinging()) {
       return 'Voice paused while you sing'
     }
@@ -133,10 +183,27 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     if (!props.controller.isSupported) {
       return 'Voice control is not supported in this browser (try Chrome, Edge or Safari)'
     }
+    if (dozing()) return 'Voice paused — tap to resume (V)'
     return props.controller.enabled()
       ? 'Turn voice control off (V)'
       : 'Turn voice control on (V)'
   }
+
+  // A touch outside the menu closes it. `onMouseLeave` covers a pointer that
+  // has a hover state; a finger has none, and on a phone the menu stayed up
+  // until something inside it was tapped.
+  createEffect(() => {
+    if (!menuOpen()) return
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && toolsEl?.contains(target) === true) return
+      setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePress, true)
+    onCleanup(() =>
+      document.removeEventListener('pointerdown', closeOnOutsidePress, true),
+    )
+  })
 
   // A long sentence runs off the end of a strip this narrow, so the strip
   // follows it: every new word scrolls the tail into view. The singer is
@@ -159,6 +226,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
         [styles.docked]: props.placement === 'docked',
       }}
       data-testid="voice-control-pill"
+      data-voice-control-hud=""
       data-placement={props.placement ?? 'floating'}
       data-talking={expanded() ? 'true' : 'false'}
     >
@@ -167,6 +235,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
         class={styles.toggle}
         classList={{
           [styles.listening]: listening(),
+          [styles.dozing]: dozing(),
           [styles.errorState]: hasError(),
           [styles.unsupported]: !props.controller.isSupported,
         }}
@@ -182,7 +251,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
           than any other setting here, and comparing them means switching
           them often. */}
       <Show when={props.controller.enabled()}>
-        <div class={styles.tools}>
+        <div class={styles.tools} ref={toolsEl}>
           <button
             type="button"
             class={styles.toolButton}
@@ -190,7 +259,27 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             aria-expanded={menuOpen()}
             aria-label="Voice engine and commands"
             title="Voice engine and commands"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => {
+              const opening = !menuOpen()
+              if (opening) {
+                expandedAtMenuOpen =
+                  props.controller.enabled() &&
+                  props.controller.hasSomethingToSay()
+                // Docked, the menu is placed against the viewport rather
+                // than the tools group, so it cannot be dragged off the
+                // screen by a pill that grows underneath it. Both numbers are
+                // read once, here, and never again while the menu is open.
+                const tools = toolsEl?.getBoundingClientRect()
+                setMenuTop(tools?.bottom ?? 0)
+                setMenuRight(
+                  dockedMenuRightGap(
+                    tools?.right ?? window.innerWidth,
+                    window.innerWidth,
+                  ),
+                )
+              }
+              setMenuOpen(opening)
+            }}
           >
             <Settings />
           </button>
@@ -198,8 +287,22 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
             <div
               class={styles.menu}
               role="menu"
+              style={{
+                '--voice-menu-top': `${menuTop()}px`,
+                '--voice-menu-right': `${menuRight()}px`,
+              }}
               onMouseLeave={() => setMenuOpen(false)}
             >
+              {/* What the ear is doing right now. Collapsed, the pill says
+                  nothing, and this is where the pause lines — "while you
+                  sing", "tap to resume" — can be read without it expanding
+                  to show them. */}
+              <p
+                class={styles.menuStatus}
+                data-testid="voice-control-menu-status"
+              >
+                {statusText()}
+              </p>
               <p class={styles.menuHeading}>Engine</p>
               <For each={ENGINES}>
                 {(engine) => (

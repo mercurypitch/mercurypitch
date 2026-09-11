@@ -15,7 +15,7 @@
 // Stored locally and mirrored to the signed-in account (settings-service
 // syncs PATH_PROGRESS_KEY). Sign-in UNIONS the two sides via
 // mergePathProgress rather than letting the cloud win — a device that
-// practised offline must never lose days to a staler copy.
+// practiced offline must never lose days to a staler copy.
 
 import { recordActivity } from '@/db/services/user-activity-service'
 import type { ExerciseType } from '@/features/exercises/types'

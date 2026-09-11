@@ -10,6 +10,31 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./assets": {
+      "types": "./src/assets.ts",
+      "import": "./src/assets.ts",
+      "default": "./src/assets.ts"
+    },
+    "./pitch-detector": {
+      "types": "./src/pitch-detector.ts",
+      "import": "./src/pitch-detector.ts",
+      "default": "./src/pitch-detector.ts"
+    },
+    "./pitch-detector-internals": {
+      "types": "./src/pitch-detector-internals.ts",
+      "import": "./src/pitch-detector-internals.ts",
+      "default": "./src/pitch-detector-internals.ts"
+    },
+    "./signal-quality": {
+      "types": "./src/signal-quality.ts",
+      "import": "./src/signal-quality.ts",
+      "default": "./src/signal-quality.ts"
+    },
+    "./swift-f0-detector": {
+      "types": "./src/swift-f0-detector.ts",
+      "import": "./src/swift-f0-detector.ts",
+      "default": "./src/swift-f0-detector.ts"
     }
   },
   "scripts": {

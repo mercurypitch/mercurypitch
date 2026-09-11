@@ -945,6 +945,8 @@ body {
     ),
     rgba(11, 16, 38, 0.55)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   background-size: cover;
   overflow: hidden;
   backdrop-filter: blur(6px);
@@ -1246,6 +1248,8 @@ body {
     var(--glass-gold),
     var(--glass-gold-deep)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: transparent;
 }
 .glass-fx-pill:focus-visible {
@@ -1263,6 +1267,8 @@ body {
 .glass-fx-monitor-toggle.on {
   color: var(--glass-void-0);
   background: linear-gradient(160deg, var(--glass-aqua), #1d9a8b);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: transparent;
 }
 .glass-fx-confirm {

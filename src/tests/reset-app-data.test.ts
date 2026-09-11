@@ -55,6 +55,9 @@ function fakeEnv(overrides: Partial<ResetEnv> = {}) {
         return true
       }),
     },
+    clearIdentity: vi.fn(async () => {
+      calls.push('clear-identity')
+    }),
     swContainer: {
       getRegistrations: vi.fn(
         async () =>
@@ -117,6 +120,11 @@ describe('resetAppData — scopes', () => {
       'close',
       `delete:${MERCURY_PITCH_DB_NAME}`,
       `delete:${MODEL_CACHE_DB_NAME}`,
+      // Before the localStorage clear, not instead of it: inside an app shell
+      // the identity keys live in Preferences, which a localStorage clear does
+      // not touch, and a factory reset that left them would hand the device
+      // straight back the account it was asked to forget.
+      'clear-identity',
       'storage-clear',
       'session',
       'cache:mercurypitch-assets-a',

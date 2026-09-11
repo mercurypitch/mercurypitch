@@ -18,7 +18,7 @@ export interface GuidedPracticeHandoff {
 }
 
 interface GuidedPracticeHandoffState extends GuidedPracticeHandoff {
-  phase: 'practising' | 'returned'
+  phase: 'practicing' | 'returned'
   practice: GuidedPracticeLaunchConfig | null
 }
 
@@ -42,7 +42,7 @@ export function armGuidedPracticeHandoff(
 ): void {
   setHandoff({
     ...value,
-    phase: 'practising',
+    phase: 'practicing',
     practice: practice ?? pitchCentrePracticeFor(value),
   })
 }
@@ -73,14 +73,14 @@ export function guidedPracticeLaunchFromRecommendation(
  */
 export function currentGuidedPracticeLaunch(): GuidedPracticeLaunchConfig | null {
   const current = handoff()
-  if (current === null || current.phase !== 'practising') return null
+  if (current === null || current.phase !== 'practicing') return null
   return current.practice
 }
 
 /** Mark an armed guided exercise as complete and return its immutable context. */
 export function returnFromGuidedPractice(): GuidedPracticeHandoff | null {
   const current = handoff()
-  if (current === null || current.phase !== 'practising') return null
+  if (current === null || current.phase !== 'practicing') return null
 
   setHandoff({ ...current, phase: 'returned' })
   return withoutPhase(current)
@@ -107,7 +107,7 @@ function pitchCentrePracticeFor(
 
   // Both reviewed Pitch Centre outcomes intentionally share one bounded
   // Pitch Hold execution contract; only their evidence-linked rationale
-  // differs. That lets the immediate Keep & Practise route recover the exact
+  // differs. That lets the immediate Keep & Practice route recover the exact
   // dose even though its legacy handoff call only carries the retake protocol.
   const template = PITCH_CENTRE_PILOT_RECOMMENDATION_RULES_V1[0]?.recommendation
   if (template === undefined) return null

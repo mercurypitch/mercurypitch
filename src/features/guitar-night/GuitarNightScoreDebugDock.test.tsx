@@ -10,11 +10,12 @@ const DOCK_STORAGE_KEY = 'guitar-night-score-debug-dock'
 
 // The dock portals to the document body, so it is never inside the render
 // container the testing library hands back.
-const mount = () =>
+const mount = (bottomClearance?: string) =>
   render(() => (
     <GuitarNightScoreDebugDock
       model={() => null}
       playheadSeconds={() => null}
+      bottomClearance={bottomClearance}
     />
   ))
 const dockEl = (): HTMLElement => screen.getByTestId('guitar-score-debug-dock')
@@ -54,5 +55,35 @@ describe('GuitarNightScoreDebugDock', () => {
     expect(
       Number(dock.style.getPropertyValue('--debug-dock-alpha')),
     ).toBeGreaterThan(0)
+  })
+
+  it('preserves the default corner placement and height cap without host clearance', () => {
+    mount()
+    const dock = dockEl()
+    expect(dock.style.bottom).toBe('12px')
+    expect(dock.style.maxHeight).toBe('')
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Score debug (dev only)' }),
+    )
+    expect(dock.style.bottom).toBe('12px')
+    expect(dock.style.maxHeight).toBe('')
+  })
+
+  it('reserves transport space only at bottom corners and bounds the open panel', () => {
+    mount('160px')
+    const dock = dockEl()
+    expect(dock.style.bottom).toBe('160px')
+    expect(dock.style.maxHeight).toBe('')
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Score debug (dev only)' }),
+    )
+    expect(dock.style.maxHeight).toBe('min(90vh, calc(100dvh - 160px - 12px))')
+    fireEvent.click(screen.getByRole('button', { name: 'Snap top right' }))
+    expect(dock.style.top).toBe('12px')
+    expect(dock.style.bottom).toBe('auto')
+    expect(dock.style.maxHeight).toBe('')
+    fireEvent.click(screen.getByRole('button', { name: 'Snap bottom right' }))
+    expect(dock.style.bottom).toBe('160px')
+    expect(dock.style.maxHeight).toBe('min(90vh, calc(100dvh - 160px - 12px))')
   })
 })

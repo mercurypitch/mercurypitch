@@ -153,7 +153,7 @@ describe('freeze accrual', () => {
   })
 
   it('accrues for an idle month — no practice required', () => {
-    // The whole reason this is its own field. A singer who has not practised
+    // The whole reason this is its own field. A singer who has not practiced
     // since May still comes back to a freeze.
     const idle = f({
       currentStreak: 0,
@@ -475,7 +475,7 @@ describe('the high-water invariant', () => {
   })
 
   it('repairs the row when the streak breaks and restarts', () => {
-    // The other non-raising branch. Practise once, break it, practise once —
+    // The other non-raising branch. Practice once, break it, practice once —
     // which is what 59 of the 60 production rows had been doing — and the
     // reset drops `currentStreak` to 1 without ever touching the record.
     // The break is 42 days old and the dying run was a single day, so the
@@ -638,7 +638,7 @@ describe('the repair window bounds the break', () => {
 
   it('a one-day run does not become repairable even inside the window', () => {
     // Parity with hasPendingBreak's `currentStreak >= 2`: "repairing" a
-    // 1-day run manufactures a streak of 2 out of one practised day.
+    // 1-day run manufactures a streak of 2 out of one practiced day.
     const afterPractice = advanceStreak(
       f({ currentStreak: 1, longestStreak: 1, lastPracticeDate: '2026-07-11' }),
       '2026-07-14',

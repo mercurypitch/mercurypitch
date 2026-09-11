@@ -312,21 +312,48 @@ function createMemoryRepository(
   let saves = 0
   let rejectNextSave = false
   let nextSaveGate: Deferred | undefined
+  // Saves land in the order they were made, as the IndexedDB repository
+  // serialises them: a save made behind a deferred one waits for it. With
+  // nothing queued a save still lands synchronously, so tests can read the
+  // snapshot right after the click that caused it.
+  let tail: Promise<void> = Promise.resolve()
+  let queued = 0
+
+  function commit(nextState: BesideCueStateV1): void {
+    if (rejectNextSave) {
+      rejectNextSave = false
+      throw new Error('Injected save failure.')
+    }
+    state = nextState
+  }
 
   return {
     async loadState() {
       return state
     },
-    async saveState(nextState) {
+    saveState(nextState) {
       saves += 1
       const saveGate = nextSaveGate
       nextSaveGate = undefined
-      if (saveGate !== undefined) await saveGate.promise
-      if (rejectNextSave) {
-        rejectNextSave = false
-        throw new Error('Injected save failure.')
+      if (saveGate === undefined && queued === 0) {
+        try {
+          commit(nextState)
+          return Promise.resolve()
+        } catch (error) {
+          return Promise.reject(error)
+        }
       }
-      state = nextState
+      queued += 1
+      const save = tail
+        .then(async () => {
+          if (saveGate !== undefined) await saveGate.promise
+          commit(nextState)
+        })
+        .finally(() => {
+          queued -= 1
+        })
+      tail = save.catch(() => undefined)
+      return save
     },
     async clear() {
       state = null
@@ -1186,6 +1213,57 @@ describe('Beside Cue V2 onboarding integration', () => {
     await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
     expect(repository.snapshot()?.cues[0]?.pullCategoryId).toBe('scrolling')
   })
+  it('keeps a mute toggled during the first-run save in the saved plan', async () => {
+    const repository = createMemoryRepository()
+    render(() => <App services={createTestServices(repository)} />)
+    const harness = await screen.findByRole('main', {
+      name: 'V2 onboarding test harness',
+    })
+    const saveGate = repository.deferNextSave()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save suggested V2 plan' }),
+    )
+    expect(repository.saveCalls()).toBe(1)
+    // The toggle lands while the plan's atomic save is still in flight. It
+    // used to be built from the pre-save state and, queued second, became
+    // the device's final snapshot: a plan saved a moment ago was gone.
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle V2 mute' }))
+    expect(harness).toHaveAttribute('data-muted', 'true')
+    expect(repository.saveCalls()).toBe(2)
+
+    saveGate.resolve()
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    expect(repository.snapshot()?.cues[0]?.pullCategoryId).toBe('scrolling')
+    expect(repository.snapshot()?.settings.voiceEnabled).toBe(false)
+  })
+
+  it('builds a reminder set after the plan landed on the mute toggled while it saved', async () => {
+    const repository = createMemoryRepository()
+    render(() => <App services={createTestServices(repository)} />)
+    await screen.findByRole('main', { name: 'V2 onboarding test harness' })
+    const saveGate = repository.deferNextSave()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save suggested V2 plan' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle V2 mute' }))
+    expect(repository.saveCalls()).toBe(2)
+
+    saveGate.resolve()
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    // The plan's save has landed and been shown; the mute was queued behind
+    // it. A commit made now must be built on the mute, not on the plan
+    // alone, or the mute is gone from the device.
+    fireEvent.click(screen.getByRole('button', { name: 'Set V2 reminder' }))
+
+    await waitFor(() =>
+      expect(repository.snapshot()?.scheduleRules).toHaveLength(1),
+    )
+    expect(repository.snapshot()?.settings.voiceEnabled).toBe(false)
+    expect(repository.snapshot()?.cues).toHaveLength(1)
+  })
+
   it('carries music into home quietly, persists its mute and stops it before games', async () => {
     const repository = createMemoryRepository()
     const output = createAudioOutputProbe()

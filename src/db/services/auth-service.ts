@@ -81,7 +81,12 @@ interface TokenPayload {
   sub: string
   provider: string
   exp: number
+  /** Issued-at, in seconds. Every worker-signed token carries one. */
+  iat?: number
 }
+
+/** The worker's token life, mirrored from TOKEN_TTL_SECONDS in auth.ts. */
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 function decodeToken(token: string): TokenPayload | null {
   const parts = token.split('.')
@@ -149,6 +154,25 @@ export function currentAccountId(): string | null {
   return decodeToken(token)?.sub ?? null
 }
 
+/**
+ * When the held token was issued, in epoch milliseconds, or null.
+ *
+ * For deciding whether a session is worth refreshing on foreground. `iat` is
+ * read rather than inferred wherever it is present; the fallback exists only
+ * for a token minted before the claim was, and it assumes the same thirty-day
+ * life — an over-estimate of the age at worst, which costs one extra refresh
+ * and never a missed one.
+ */
+export function tokenIssuedAt(): number | null {
+  const token = getAuthToken()
+  if (token == null || token === '') return null
+  const payload = decodeToken(token)
+  if (payload == null) return null
+  if (typeof payload.iat === 'number') return payload.iat * 1000
+  if (typeof payload.exp === 'number') return payload.exp * 1000 - TOKEN_TTL_MS
+  return null
+}
+
 // ── HTTP helpers ────────────────────────────────────────────────
 
 function requireBaseUrl(): string {
@@ -163,10 +187,45 @@ class AuthHttpError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
+    /** The worker's response body, verbatim, for a screen that shows it. */
+    readonly detail?: string,
   ) {
     super(message)
     this.name = 'AuthHttpError'
   }
+}
+
+/**
+ * Everything the worker said about a failure, as an object.
+ *
+ * For the native developer screen, which needs one field this module has no
+ * other reason to know about: a Turnstile rejection carries the `hostname`
+ * Cloudflare's siteverify reported, and that string is the value the owner
+ * has to paste into the widget's allowed-hostname list. Guessing what a
+ * Capacitor WebView calls itself is exactly the day-one blocker M-E1
+ * describes, so the answer is surfaced rather than guessed.
+ *
+ * Returns null for anything that is not a worker rejection with a JSON body.
+ */
+export function authErrorDetails(
+  error: unknown,
+): Record<string, unknown> | null {
+  if (!(error instanceof AuthHttpError)) return null
+  const { detail, status, code } = error
+  let parsed: Record<string, unknown> = {}
+  if (detail !== undefined && detail !== '') {
+    try {
+      const body: unknown = JSON.parse(detail)
+      if (typeof body === 'object' && body !== null) {
+        parsed = body as Record<string, unknown>
+      } else {
+        parsed = { body: detail }
+      }
+    } catch {
+      parsed = { body: detail }
+    }
+  }
+  return { status, ...(code === undefined ? {} : { code }), ...parsed }
 }
 
 /** The worker's answer when the OAuth state is unusable — almost always
@@ -215,6 +274,45 @@ export function handleAuthErrorResponse(
     })
   }
   console.info('[auth] account suspended — cloud access disabled')
+  return true
+}
+
+const SESSION_REJECTED_MESSAGE =
+  'Your session has expired. Sign in again to see everything kept in your account.'
+const SESSION_REJECTED_NOTIFICATION_CHANNEL = 'session-rejected'
+
+/**
+ * A cloud DATA request was rejected as unauthenticated.
+ *
+ * Deliberately not folded into `handleAuthErrorResponse`: on the auth
+ * endpoints a 401 means "wrong password", and signing someone out for
+ * mistyping one would be worse than the bug this fixes.
+ *
+ * Only an upgraded account can have a session to lose. A visitor with no
+ * token, or with a lazily provisioned anonymous one, is in the ordinary
+ * case — identities mint on the first write, so a 401 there means "you
+ * have not written anything yet", which is not a failure and must stay
+ * silent. Returns whether it acted.
+ *
+ * Why it matters: reads degrade to empty results so the app still loads,
+ * and `getUserId()` mints an anonymous id unconditionally, so nothing
+ * downstream could tell an expired session from a new visitor. On a real
+ * device on 2026-09-09 that showed up as a Karaoke library that was simply
+ * empty, with no suggestion that signing in would bring it back.
+ */
+export function handleCloudSessionRejected(notifyUser = true): boolean {
+  if (!hasUpgradedAccount()) return false
+  setAuthToken(null)
+  setRequiresLogin(true)
+  tokenServerVerified = false
+  authChanged()
+  if (notifyUser) {
+    showNotification(SESSION_REJECTED_MESSAGE, 'warning', {
+      channel: SESSION_REJECTED_NOTIFICATION_CHANNEL,
+      durationMs: 15000,
+    })
+  }
+  console.info('[auth] cloud session rejected — sign-in required')
   return true
 }
 
@@ -281,6 +379,7 @@ async function postSignIn(
       message !== '' ? message : `Sign-in failed (${res.status})`,
       res.status,
       code !== '' ? code : undefined,
+      detail,
     )
   }
   const outcome = (await res.json()) as SignInOutcome
@@ -502,13 +601,119 @@ export function adoptSession(auth: AuthResponse): void {
  * web UI (it goes through the redirect flow below — COOP breaks the GIS
  * popup); kept deliberately as the API for native/mobile clients, where
  * the platform sign-in SDK yields an idToken directly.
+ *
+ * Returns the OUTCOME rather than an AuthResponse, for the same reason
+ * `loginWithApple` does, and it is not a stylistic preference: an account
+ * with a second factor answers this route with a challenge, and `postAuth`
+ * turns a challenge into a thrown 409. Native Google sign-in is the caller,
+ * and the native orchestrator maps a numeric status to `network` — so a
+ * singer with 2FA on would have been told their PHONE was offline, on every
+ * attempt, with no code pane anywhere to finish in. The web path never hit
+ * it because its redirect carries the challenge separately; there is no
+ * redirect inside a WebView to carry one.
  */
-export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
-  return postAuth('google', {
+export async function loginWithGoogle(idToken: string): Promise<SignInOutcome> {
+  return postSignIn('google', {
     idToken,
     deviceId: getUserId(),
     deviceSecret: getDeviceSecret(),
   })
+}
+
+/**
+ * What the Sign in with Apple ceremony hands back, on its way to the worker.
+ *
+ * `nonce` is the RAW nonce this client generated, not the SHA-256 the request
+ * was made with: Apple puts the hash in the identity token and the worker
+ * compares the two. `user` arrives ONLY on the very first authorisation for
+ * this Apple ID and never again — Apple gives the name once, to whoever asked
+ * first — so it is forwarded rather than kept for later.
+ */
+export interface AppleSignInInput {
+  identityToken: string
+  authorizationCode?: string
+  nonce?: string
+  user?: {
+    name?: { firstName?: string; lastName?: string }
+    email?: string
+  }
+}
+
+/**
+ * Exchange an Apple identity token for a session.
+ *
+ * The native counterpart of loginWithGoogle, with one difference that is not
+ * cosmetic: this returns the OUTCOME rather than an AuthResponse, so an
+ * account holding a second factor gets its challenge pane instead of a thrown
+ * error. Google's web path goes through a redirect that carries the challenge
+ * separately; there is no redirect here to carry it.
+ */
+export async function loginWithApple(
+  input: AppleSignInInput,
+): Promise<SignInOutcome> {
+  return postSignIn('apple', {
+    identityToken: input.identityToken,
+    authorizationCode: input.authorizationCode,
+    nonce: input.nonce,
+    user: input.user,
+    deviceId: getUserId(),
+    // Signing in with a deviceId absorbs this browser's anonymous progress
+    // for good, so the worker needs proof the device is ours.
+    deviceSecret: getDeviceSecret(),
+  })
+}
+
+/** A session traded for a fresh one, with the moment it now runs out. */
+export interface RefreshedSession {
+  token: string
+  expiresAt: string
+}
+
+/**
+ * Trade a live session for a fresh JWT.
+ *
+ * The token lasts thirty days and, until this existed, had no renewal path at
+ * all: it simply expired, and the singer was handed a sign-in screen with no
+ * anonymous fallback — on a phone, with no passkey, that is a churn event on
+ * exactly the people a native app is for. The worker keeps the session row
+ * (`sid`), so this asks it to reissue rather than re-authenticating anything.
+ *
+ * Returns null when the session is gone, and never throws: the caller is a
+ * foreground handler, not a user action, and a rejected promise there has
+ * nowhere to be reported.
+ */
+export async function refreshSession(): Promise<RefreshedSession | null> {
+  const token = getAuthToken()
+  if (API_BASE_URL == null || API_BASE_URL === '') return null
+  if (token == null || token === '') return null
+  try {
+    const res = await fetch(`${requireBaseUrl()}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: '{}',
+    })
+    if (res.status === 401) {
+      // The session behind the token is gone — revoked elsewhere, or the
+      // account was deleted. Dropping it here is what turns the next write
+      // into "please sign in" rather than a silent 401 on every request.
+      console.info('[auth] session refresh refused — the session is gone')
+      setAuthToken(null)
+      return null
+    }
+    if (!res.ok) return null
+    const body = (await res.json()) as Partial<RefreshedSession>
+    if (typeof body.token !== 'string' || body.token === '') return null
+    setAuthToken(body.token)
+    tokenServerVerified = true
+    authChanged()
+    return { token: body.token, expiresAt: body.expiresAt ?? '' }
+  } catch {
+    // Offline. The token is still valid for weeks; try again next time.
+    return null
+  }
 }
 
 // ── Google sign-in (redirect flow) ──────────────────────────────

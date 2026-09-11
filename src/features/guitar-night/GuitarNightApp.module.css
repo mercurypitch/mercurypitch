@@ -839,8 +839,7 @@
   gap: 0.4rem;
 }
 
-.sessionMasterFader,
-.sessionTrackFader {
+.sessionMasterFader {
   display: grid;
   min-width: 0;
   border: 1px solid rgba(244, 234, 219, 0.11);
@@ -887,8 +886,7 @@
   font-size: 0.66rem;
 }
 
-.sessionMasterFader output,
-.sessionTrackFader output {
+.sessionMasterFader output {
   color: var(--ivory);
   font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
@@ -1021,28 +1019,7 @@
   align-items: stretch;
 }
 
-.sessionTrackFader {
-  grid-column: 1 / -1;
-  grid-template-columns: 2.5rem minmax(0, 1fr) 3.8rem;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: var(--touch-target);
-  padding: 0 0.7rem;
-  transition: opacity 140ms ease;
-}
-
-.sessionTrackFader > span {
-  color: var(--muted-readable);
-  font-size: 0.65rem;
-  font-weight: 700;
-}
-
-.sessionTrackFaderMasked {
-  opacity: 0.62;
-}
-
-.sessionMasterFader input,
-.sessionTrackFader input {
+.sessionMasterFader input {
   -webkit-appearance: none;
   appearance: none;
   min-width: 0;
@@ -1053,8 +1030,7 @@
   cursor: pointer;
 }
 
-.sessionMasterFader input::-webkit-slider-runnable-track,
-.sessionTrackFader input::-webkit-slider-runnable-track {
+.sessionMasterFader input::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
   background: linear-gradient(
@@ -1064,8 +1040,7 @@
   );
 }
 
-.sessionMasterFader input::-webkit-slider-thumb,
-.sessionTrackFader input::-webkit-slider-thumb {
+.sessionMasterFader input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 1rem;
   height: 1rem;
@@ -1076,23 +1051,20 @@
   box-shadow: 0 0 0.8rem rgba(224, 164, 93, 0.3);
 }
 
-.sessionMasterFader input::-moz-range-track,
-.sessionTrackFader input::-moz-range-track {
+.sessionMasterFader input::-moz-range-track {
   height: 4px;
   border: 0;
   border-radius: 999px;
   background: rgba(244, 234, 219, 0.18);
 }
 
-.sessionMasterFader input::-moz-range-progress,
-.sessionTrackFader input::-moz-range-progress {
+.sessionMasterFader input::-moz-range-progress {
   height: 4px;
   border-radius: 999px;
   background: rgba(224, 164, 93, 0.72);
 }
 
-.sessionMasterFader input::-moz-range-thumb,
-.sessionTrackFader input::-moz-range-thumb {
+.sessionMasterFader input::-moz-range-thumb {
   width: 0.75rem;
   height: 0.75rem;
   border: 2px solid #26190e;
@@ -1100,14 +1072,12 @@
   background: var(--amber-bright);
 }
 
-.sessionMasterFader input:focus-visible,
-.sessionTrackFader input:focus-visible {
+.sessionMasterFader input:focus-visible {
   outline: 2px solid var(--amber-bright);
   outline-offset: -8px;
 }
 
-.sessionMasterFader input:disabled,
-.sessionTrackFader input:disabled {
+.sessionMasterFader input:disabled {
   cursor: default;
   opacity: 0.4;
 }
@@ -1150,29 +1120,6 @@
 .sessionTrackVisibility svg {
   width: 18px;
   height: 18px;
-}
-
-.sessionTrackVisibility > span {
-  font-size: 0.62rem;
-  font-weight: 760;
-  letter-spacing: 0.04em;
-}
-
-.sessionTrackVisibility.sessionTrackSolo {
-  color: #dff7f2 !important;
-  border-color: rgba(106, 202, 189, 0.42);
-  background: rgba(106, 202, 189, 0.12);
-}
-
-.sessionTrackVisibility.sessionTrackMute {
-  color: var(--amber) !important;
-  border-color: rgba(224, 164, 93, 0.38);
-  background: rgba(224, 164, 93, 0.1);
-}
-
-.sessionTrackVisibility.sessionTrackMasked {
-  color: var(--muted) !important;
-  border-style: dashed;
 }
 
 .sessionTrackRowMasked > button:first-child {
@@ -1244,12 +1191,6 @@
     gap: 0.25rem;
   }
 
-  .sessionTrackFader {
-    grid-template-columns: 2.1rem minmax(0, 1fr) 3.4rem;
-    gap: 0.35rem;
-    padding-inline: 0.5rem;
-  }
-
   .sessionMixHeading {
     align-items: start;
   }
@@ -1265,23 +1206,18 @@
 
 @media (hover: none) and (pointer: coarse) {
   .sessionMasterFader input::-webkit-slider-runnable-track,
-  .sessionTrackFader input::-webkit-slider-runnable-track,
   .sessionMasterFader input::-moz-range-track,
-  .sessionTrackFader input::-moz-range-track,
-  .sessionMasterFader input::-moz-range-progress,
-  .sessionTrackFader input::-moz-range-progress {
+  .sessionMasterFader input::-moz-range-progress {
     height: 8px;
   }
 
-  .sessionMasterFader input::-webkit-slider-thumb,
-  .sessionTrackFader input::-webkit-slider-thumb {
+  .sessionMasterFader input::-webkit-slider-thumb {
     width: 1.5rem;
     height: 1.5rem;
     margin-top: -0.5rem;
   }
 
-  .sessionMasterFader input::-moz-range-thumb,
-  .sessionTrackFader input::-moz-range-thumb {
+  .sessionMasterFader input::-moz-range-thumb {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -1593,8 +1529,7 @@
 }
 
 .primaryAction,
-.secondaryAction,
-.expertAction {
+.secondaryAction {
   display: grid;
   grid-template-columns: minmax(7.5rem, 0.72fr) 1fr;
   align-items: center;
@@ -1610,14 +1545,12 @@
 }
 
 .primaryAction strong,
-.secondaryAction strong,
-.expertAction strong {
+.secondaryAction strong {
   font-size: 0.95rem;
 }
 
 .primaryAction span,
-.secondaryAction span,
-.expertAction span {
+.secondaryAction span {
   font-size: 0.78rem;
   line-height: 1.35;
 }
@@ -1638,20 +1571,12 @@
   background: rgba(244, 234, 219, 0.055);
 }
 
-.secondaryAction span,
-.expertAction span {
+.secondaryAction span {
   color: var(--muted);
 }
 
-.expertAction {
-  padding-block: 0.7rem;
-  color: #ddd0bd;
-  background: transparent;
-}
-
 .primaryAction:hover,
-.secondaryAction:hover,
-.expertAction:hover {
+.secondaryAction:hover {
   transform: translateY(-1px);
 }
 
@@ -1662,10 +1587,6 @@
 .secondaryAction:hover {
   border-color: rgba(224, 164, 93, 0.52) !important;
   background: rgba(244, 234, 219, 0.085);
-}
-
-.expertAction:hover {
-  background: rgba(244, 234, 219, 0.04);
 }
 
 .tunerEntryAction {
@@ -3351,6 +3272,26 @@
   gap: 0.3rem;
 }
 
+/* Inside the scrolling Band panel the mark buttons stay in view at the
+   bottom while the rest of the tool scrolls: they are the whole point. */
+.handSyncHost .handSyncMarks {
+  position: sticky;
+  /* Flush with the panel's visible edge: sticky offsets are measured from
+     the scrollport, and the panel's padding lies inside it. */
+  bottom: 0;
+  z-index: 1;
+  padding: 0.35rem 0;
+  background: rgba(12, 9, 7, 0.97);
+}
+
+/* The Align room tool: same shape as Tune, shown only while a part is being
+   placed by hand, and the placing tool is one tap away from it. */
+.roomTools > .alignTool {
+  border-color: rgba(224, 164, 93, 0.55);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.14);
+}
+
 .handSyncMarks button {
   min-height: var(--touch-target);
   padding: 0.35rem 0.6rem;
@@ -3635,7 +3576,11 @@
   right: 0;
   display: grid;
   width: min(23rem, calc(100vw - 2rem));
-  max-height: min(72vh, 34rem);
+  /* Below the shell topbar and the room heading, whatever the window; 72vh
+     from a panel that opens that far down ran past the bottom of a 844px
+     screen with the hand-placement tool in the part that was cut off. Phones
+     subtract their own rows below. */
+  max-height: min(calc(100dvh - 10rem), 34rem);
   gap: 0.8rem;
   padding: 0.9rem;
   overflow: auto;
@@ -3650,23 +3595,6 @@
     inset 0 1px rgba(255, 255, 255, 0.04);
   -webkit-backdrop-filter: blur(18px) saturate(1.08);
   backdrop-filter: blur(18px) saturate(1.08);
-}
-
-.bandSessionPanel {
-  width: min(27rem, calc(100vw - 2rem));
-}
-
-.bandSessionPanel .channelStrip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-tight);
-  margin: 0;
-  padding-top: var(--space-control);
-  overflow: visible;
-}
-
-.bandSessionPanel .channelStrip button {
-  min-width: 0;
 }
 
 .bandUpgrade {
@@ -3861,16 +3789,8 @@
   background: var(--amber-bright);
 }
 
-.ampPrimaryControls,
-.ampToneGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
 .ampPreset,
-.ampCabinet,
-.ampRange {
+.ampCabinet {
   min-width: 0;
 }
 
@@ -3881,8 +3801,7 @@
 }
 
 .ampPreset > span,
-.ampCabinet > span,
-.ampRange > span {
+.ampCabinet > span {
   color: rgba(244, 234, 219, 0.58);
   font-size: 0.57rem;
   font-weight: 650;
@@ -3908,27 +3827,6 @@
   background: #f4eadb;
 }
 
-.ampRange {
-  display: grid;
-  grid-template-columns: 3.7rem minmax(3.5rem, 1fr) 2.45rem;
-  align-items: center;
-  min-height: var(--touch-target);
-  gap: 0.35rem;
-}
-
-.ampRange input {
-  width: 100%;
-  min-width: 0;
-  accent-color: var(--amber-bright);
-}
-
-.ampRange output {
-  color: rgba(244, 234, 219, 0.5);
-  font-size: 0.55rem;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
 .ampDetails {
   border-top: 1px solid rgba(244, 234, 219, 0.08);
 }
@@ -3949,10 +3847,6 @@
 
 .ampDetails[open] > summary {
   color: var(--amber-bright);
-}
-
-.ampToneGrid {
-  padding-bottom: 0.35rem;
 }
 
 .ampReset {
@@ -4020,11 +3914,6 @@
 }
 
 @media (max-width: 440px) {
-  .ampPrimaryControls,
-  .ampToneGrid {
-    grid-template-columns: 1fr;
-  }
-
   .ampMonitorRow {
     display: grid;
   }
@@ -4050,6 +3939,8 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.1), transparent 62%),
     rgba(244, 234, 219, 0.035);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   text-align: left;
   cursor: pointer;
 }
@@ -4059,6 +3950,8 @@
   background:
     linear-gradient(110deg, rgba(106, 202, 189, 0.15), transparent 62%),
     rgba(244, 234, 219, 0.05);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
 }
 
 .scoreAssessmentAction:focus-visible {
@@ -5940,6 +5833,17 @@
   );
 }
 
+.stageTabPlayhead > span {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ivory);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .stageTabString {
   display: grid;
   grid-template-columns: 1.2rem 1fr;
@@ -5996,6 +5900,11 @@
   transform: translate3d(var(--stage-tab-track-shift, 0%), 0, 0);
 }
 
+.stageTabContinuations {
+  position: absolute;
+  inset: 0;
+}
+
 .stageTabString b {
   position: absolute;
   top: 0;
@@ -6040,6 +5949,8 @@
   background:
     linear-gradient(135deg, rgba(106, 202, 189, 0.045), transparent 52%),
     rgba(10, 8, 7, 0.8);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);
@@ -6068,6 +5979,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.16), transparent 58%),
     rgba(10, 8, 7, 0.86);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0 1rem rgba(224, 164, 93, 0.13),
     inset 0 1px rgba(255, 255, 255, 0.05);
@@ -6097,6 +6010,8 @@
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.075), transparent 48%),
     rgba(10, 8, 7, 0.8);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   box-shadow:
     0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.035);
@@ -6561,11 +6476,27 @@
 }
 
 [data-room-kind='backing'] .transportDeck {
-  grid-template-areas: 'rail controls';
-  grid-template-columns: minmax(15rem, 1fr) auto;
+  grid-template-areas: 'rail loop controls';
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0 var(--space-room);
   padding-block: 0.45rem;
+}
+
+.songLoopControls {
+  grid-area: loop;
+  min-width: 0;
+}
+
+/* Marks and their exact values live on the shared rail. Keep the grouped
+   buttons compact even after a range is set; screen readers retain the status. */
+.songLoopControls .loopControls output {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .timeRail {
@@ -7653,16 +7584,11 @@
   }
 
   .primaryAction,
-  .secondaryAction,
-  .expertAction {
+  .secondaryAction {
     grid-template-columns: 1fr;
     gap: 0.15rem;
     min-height: 3.65rem;
     padding: 0.72rem 0.85rem;
-  }
-
-  .expertAction {
-    min-height: var(--touch-target);
   }
 
   .lessonControls {
@@ -7850,7 +7776,7 @@
   }
 
   .stageModes button {
-    min-width: 0;
+    min-width: var(--touch-target);
     padding-inline: 0.4rem;
     font-size: inherit;
   }
@@ -7858,7 +7784,7 @@
   /* A narrow phone cannot hold five readable labels at once, so the row keeps
      its height and gives up width instead. */
   .stageModes {
-    grid-auto-columns: minmax(2.6rem, 1fr);
+    grid-auto-columns: minmax(max-content, 1fr);
   }
 
   .stageSetup summary,
@@ -7966,10 +7892,10 @@
 
   [data-room-kind='backing'] .transportDeck {
     grid-template-areas:
-      'rail'
-      'controls';
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
+      'rail loop'
+      'controls controls';
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 0.3rem;
     padding: 0.18rem max(0.45rem, var(--safe-right))
       max(0.22rem, var(--safe-bottom)) max(0.45rem, var(--safe-left));
   }
@@ -8011,14 +7937,6 @@
   [data-room-kind='backing'] .masterVolume input {
     min-width: 0;
     width: 100%;
-  }
-
-  .bandSessionPanel {
-    width: min(27rem, calc(100vw - 1.1rem));
-  }
-
-  [data-room-kind='backing'] .bandSessionPanel {
-    right: calc(-1 * (var(--touch-target) + 0.3rem));
   }
 
   .restartControl {
@@ -8091,14 +8009,14 @@
     min-height: var(--touch-target);
   }
 
+  /* The strip is a status readout — "Set · beat 12.5", and the elapsed time
+     the rail above already shows. On a phone it costs a whole row for that,
+     and its one button (Replay, when a take is complete) is the same action
+     the transport's play button already offers under the same name. So the
+     strip is screen-reader only at this width in every room, and the row
+     goes to the neck and the transport. The readout is still announced,
+     because it is the room's live region. */
   .roomFooter {
-    min-height: 2.6rem;
-    margin: 0;
-    padding: 0 max(0.55rem, var(--safe-right)) max(0.1rem, var(--safe-bottom))
-      max(0.55rem, var(--safe-left));
-  }
-
-  [data-room-kind='backing'] .roomFooter {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -8110,8 +8028,11 @@
     border: 0;
   }
 
-  .roomFooter p {
-    display: grid;
+  /* Clipped text is still readable; a clipped BUTTON is a tab stop nobody
+     can see. Its one action, Replay, is what the transport's own play button
+     already does at this width. */
+  .roomFooter button {
+    display: none;
   }
 
   .roomStatus {
@@ -8275,12 +8196,6 @@
     height: 54px;
   }
 
-  .roomFooter {
-    min-height: 44px;
-    padding: 0 max(8px, var(--safe-right)) max(2px, var(--safe-bottom))
-      max(8px, var(--safe-left));
-  }
-
   .firstWinRoom {
     grid-template-rows: minmax(280px, 1fr) auto;
     overflow-y: auto;
@@ -8330,10 +8245,6 @@
 
   .roomHeadingRow {
     min-height: 3.1rem;
-  }
-
-  .roomFooter small {
-    display: none;
   }
 }
 
@@ -8431,8 +8342,8 @@
   }
 
   [data-room-kind='backing'] .transportDeck {
-    grid-template-areas: 'rail controls';
-    grid-template-columns: minmax(11rem, 1fr) auto;
+    grid-template-areas: 'rail loop controls';
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 0.55rem;
     padding-block: 0.15rem;
   }
@@ -8580,7 +8491,6 @@
 
   .primaryAction,
   .secondaryAction,
-  .expertAction,
   .beatRow span,
   .learnShelf {
     transition: none;
@@ -9291,5 +9201,53 @@
   .percussionTransportControls .playControl {
     width: var(--touch-target);
     height: var(--touch-target);
+  }
+}
+
+/* Phone portrait (UX-27): the stage stays dominant. The view tools become
+   one row that scrolls sideways instead of two rows stacked over the stage,
+   the corner part opens as a chip (GuitarNightSecondaryPart), and the stage
+   keeps a floor of 45vh whatever else the room shows. */
+@media (max-width: 480px) and (orientation: portrait) {
+  .performanceStage {
+    min-height: 45vh;
+  }
+
+  @media (max-height: 700px) {
+    /* The free-form recorder has source/tone controls as well as Record.
+       Keep its full touch targets on short phones; tab rehearsal retains
+       the established stage floor above. */
+    .roomPanel[data-free-form='true'] > .performanceStage {
+      min-height: 0;
+    }
+  }
+
+  /* The row itself never scrolls: it stays the containing block of the
+     instrument setup popover, and a scroll container would clip that to
+     the row's 44px. Setup and camera keep their width; the views strip,
+     already a horizontal scroller, takes what is left and scrolls. */
+  .stageHeaderTools {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    justify-self: stretch;
+    max-width: 100%;
+  }
+
+  .stageHeaderTools > * {
+    flex: 0 0 auto;
+  }
+
+  .stageHeaderTools .stageModes {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+/* Phones: the Band panel measures the rows above it. Topbar 3.75rem, heading
+   row 3.55rem, gap 0.5rem, margin 0.6rem. */
+@media (max-width: 720px) {
+  .scoreSessionPanel {
+    max-height: calc(100dvh - 8.4rem - var(--safe-bottom, 0px));
   }
 }

@@ -536,6 +536,8 @@
     rgba(88, 166, 255, 0.12),
     rgba(130, 80, 220, 0.1)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   color: var(--accent);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -552,6 +554,8 @@
     rgba(88, 166, 255, 0.22),
     rgba(130, 80, 220, 0.18)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.45);
   box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
   transform: translateY(-1px);
@@ -599,6 +603,8 @@
     rgba(88, 166, 255, 0.1),
     rgba(130, 80, 220, 0.08)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.3);
   color: var(--accent);
 }
@@ -609,6 +615,8 @@
     rgba(88, 166, 255, 0.18),
     rgba(130, 80, 220, 0.14)
   );
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
   border-color: rgba(88, 166, 255, 0.5);
   box-shadow: 0 0 12px rgba(88, 166, 255, 0.12);
 }

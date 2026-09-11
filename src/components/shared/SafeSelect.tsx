@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { splitProps } from 'solid-js'
+import { createEffect, splitProps } from 'solid-js'
 
 /**
  * SafeSelect — Drop-in replacement for native `<select>` that documents
@@ -49,7 +49,7 @@ import { splitProps } from 'solid-js'
 export const SafeSelect: Component<
   JSX.SelectHTMLAttributes<HTMLSelectElement>
 > = (props) => {
-  const [local, selectProps] = splitProps(props, ['ref'])
+  const [local, selectProps] = splitProps(props, ['ref', 'value'])
 
   const checkAncestorTransform = (el: HTMLSelectElement) => {
     // Forward the ref if provided
@@ -93,5 +93,38 @@ export const SafeSelect: Component<
     }
   }
 
-  return <select ref={(el) => checkAncestorTransform(el)} {...selectProps} />
+  let node!: HTMLSelectElement
+
+  /**
+   * Apply `value` only when it actually differs from what the element holds.
+   *
+   * Binding `value` on the JSX directly compiles to an effect that assigns
+   * `el.value` on every change of the signal — INCLUDING the change the user
+   * just made, which writes back a value the element already has. Chrome on
+   * Linux fires `change` while the popup is still open (moving through the
+   * options is a change), and assigning `.value` at that moment closes it. The
+   * symptom is a dropdown that shuts the instant you pick anything, so the
+   * only way to change it is to press, drag and release in one gesture, which
+   * fires a single `change` at the end. Reported 2026-09-10 on the instrument
+   * room selects; every select in the app had it.
+   *
+   * The guard keeps external updates working — a value changed elsewhere still
+   * lands here — and drops only the redundant self-echo.
+   */
+  createEffect(() => {
+    const next = local.value
+    if (next === undefined || next === null) return
+    const serialized = String(next)
+    if (node.value !== serialized) node.value = serialized
+  })
+
+  return (
+    <select
+      ref={(el) => {
+        node = el
+        checkAncestorTransform(el)
+      }}
+      {...selectProps}
+    />
+  )
 }

@@ -1007,6 +1007,10 @@
   display: block;
   width: 318px;
   min-height: 0;
+  /* The column scrolls and the take strip, its last child, sticks to the
+     bottom edge (DrumTakeHistory.module.css), so Keep and Not now are never
+     clipped by the column's edge (UX-36). */
+  overscroll-behavior: contain;
   padding: 12px;
   overflow: auto;
   border-left: 1px solid var(--line);
@@ -1310,7 +1314,7 @@
   color: var(--vellum-muted);
   font-size: 10px;
 }
-.coachCue {
+.coachCueDock {
   display: none;
 }
 
@@ -2141,6 +2145,12 @@
   gap: 18px;
 }
 
+/* Opened from "Open take history", the takes lead and the coach card, which
+   the page already shows, follows below the fold instead of repeating first. */
+.coachWorkspaceStack[data-lead='takes'] > :first-child {
+  order: 2;
+}
+
 .largeRecovery,
 .songActions button {
   min-height: 48px;
@@ -2365,6 +2375,16 @@
 }
 .playButton:active {
   transform: translateY(1px) scale(0.98);
+}
+
+/* Light ink on the dark loading disc. It has to carry the same weight as
+   `.shell .playButton` above, which paints every transport button in the
+   near-black room colour: a bare `.playButtonLoading` loses to it, and the
+   percent was drawn in #08090b on a #1d232b disc — a meter with an invisible
+   number. */
+.shell .playButton.playButtonLoading,
+.shell .mobilePlay.playButtonLoading {
+  color: var(--vellum);
 }
 
 /* While stem audio loads the button IS the progress meter, same as Guitar
@@ -2768,6 +2788,16 @@
   transform: translateY(0);
 }
 
+/* Where the phrase-coach column is on screen and a take strip shows in it,
+   the toast steps left of the column instead of covering Keep and Not now,
+   whatever height the strip has in its current state. The column is hidden
+   below 1041px and in the seat view. */
+@media (min-width: 1041px) {
+  .shell[data-take-rail='true']:not([data-view='seat']) .toast {
+    right: calc(318px + 22px + env(safe-area-inset-right));
+  }
+}
+
 @keyframes calibrationStrike {
   0% {
     transform: scale(0.72);
@@ -2826,13 +2856,26 @@
   .phraseCoach {
     display: none;
   }
-  .coachCue {
+  /* The dock is the anchor so the cue can be followed by the Keep row a phone
+     needs; it never takes a pointer of its own, or its empty half would eat
+     taps meant for the kit behind it. */
+  .coachCueDock {
     position: absolute;
     z-index: 14;
     right: 14px;
     bottom: 12px;
     display: grid;
     width: min(360px, calc(100% - 28px));
+    justify-items: end;
+    gap: 7px;
+    pointer-events: none;
+  }
+  .coachCueDock > * {
+    pointer-events: auto;
+  }
+  .coachCue {
+    display: grid;
+    width: 100%;
     min-height: 56px;
     grid-template-columns: 36px minmax(0, 1fr) 16px;
     align-items: center;
@@ -2845,6 +2888,59 @@
     box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
     cursor: pointer;
     text-align: left;
+  }
+  /* Below 1040px the phrase-coach column is hidden, so its Finish moves here.
+     The dock is the one take surface these widths always show, and it sits
+     clear of the transport, which keeps plain Play and Pause. */
+  .coachCueFinish {
+    display: inline-grid;
+    min-height: 44px;
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 7px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    color: var(--room);
+    background: var(--cyan);
+    box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 760;
+  }
+  .coachCueFinish > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .coachCueKeep {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    background: rgb(8 9 11 / 92%);
+    box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
+  }
+  .coachCueKeep button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    color: var(--room);
+    background: var(--cyan);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .coachCueKeep button:last-child {
+    color: var(--vellum-muted);
+    background: transparent;
+  }
+  .coachCueKeep button:disabled {
+    cursor: default;
+    opacity: 0.6;
   }
   .shell:not([data-view='pocket']) .coachCue {
     width: 46px;
@@ -3001,8 +3097,10 @@
     flex: 0 0 auto;
     align-items: center;
     gap: 6px;
+    color: inherit;
     font-size: 11px;
     font-weight: 730;
+    text-decoration: none;
   }
   .mobileBrand img {
     width: 25px;
@@ -3092,10 +3190,12 @@
   .shell[data-view='seat'] .authoredPlaybackNotice {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 7px;
     width: calc(100% - 16px);
+  }
+  .coachCue {
     min-height: 52px;
   }
   .sessionStageView {
@@ -3161,6 +3261,8 @@
     border: 1px solid rgb(238 231 219 / 15%);
     border-radius: 12px 12px 18px 18px;
     background: linear-gradient(180deg, #20252a, #14181c);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 4%),
       0 5px 12px rgb(0 0 0 / 20%);
@@ -3174,11 +3276,15 @@
   .touchKit button.isHit {
     border-color: rgb(231 173 82 / 72%);
     background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
     transform: translateY(1px);
   }
   .touchKit .kickPad {
     border-color: rgb(238 231 219 / 28%);
     background: linear-gradient(180deg, #2a2521, #171719);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
   }
   .touchKit span {
     font-size: 10px;
@@ -3238,7 +3344,18 @@
     width: 25px;
     height: 25px;
   }
-
+  /* While a song loads the amber disc goes dark, like the console button, so
+     the amber ring and its percent read against it. */
+  .mobileNav .mobilePlay {
+    position: relative;
+  }
+  .mobileNav .mobilePlay.playButtonLoading {
+    background: #1d232b;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  }
+  .mobileNav .mobilePlay > .playLoadPercent {
+    font-size: 12px;
+  }
   .sheetScrim {
     position: absolute;
     z-index: 70;
@@ -3250,6 +3367,8 @@
   }
   .workbench {
     position: absolute;
+    display: flex;
+    flex-direction: column;
     z-index: 75;
     right: 7px;
     bottom: 0;
@@ -3260,18 +3379,36 @@
     border-right: 1px solid rgb(238 231 219 / 20%);
     border-left: 1px solid rgb(238 231 219 / 20%);
   }
-  .shell[data-drawer-open='true'] .coachCue {
+  .shell[data-drawer-open='true'] .coachCueDock {
     display: none;
   }
+  /* Two rows that size themselves: the eyebrow and the title share the
+     first row with Rack controls and Close, and the tabs get a full row of
+     their own. A fixed 86px squeezed the tabs against the rule and pushed
+     Rack controls through it. */
   .workbenchBar {
-    height: 86px;
-    grid-template-columns: minmax(0, 1fr) 44px;
+    flex: none;
+    height: auto;
+    min-height: 58px;
+    grid-template-columns: minmax(0, 1fr) auto 44px;
     align-content: center;
-    row-gap: 6px;
-    padding: 10px 10px 0 14px;
+    row-gap: 8px;
+    padding: 8px 10px 8px 14px;
+  }
+  .workbenchBar > div:first-child {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .workbenchBar > div:first-child span {
+    flex: none;
   }
   .workbenchBar > div:first-child strong {
+    overflow: hidden;
     font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .workbenchTabs {
     grid-column: 1 / -1;
@@ -3288,17 +3425,19 @@
     padding: 0 7px;
   }
   .contextRackBack {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: start;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
   }
   .closeWorkbench {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
   }
   .workspaceView {
     display: grid;
-    height: calc(100% - 86px);
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
     grid-template-columns: 1fr;
     align-content: start;
     gap: 18px;
@@ -3448,6 +3587,8 @@
     border: 1px solid rgb(238 231 219 / 15%);
     border-radius: 9px 9px 13px 13px;
     background: linear-gradient(180deg, #20252a, #14181c);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
     cursor: pointer;
   }
@@ -3455,10 +3596,14 @@
   .touchKit button.isHit {
     border-color: rgb(231 173 82 / 72%);
     background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
   }
   .touchKit .kickPad {
     border-color: rgb(238 231 219 / 28%);
     background: linear-gradient(180deg, #2a2521, #171719);
+    /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+    background-origin: border-box;
   }
   .touchKit span {
     font-size: 10px;
@@ -3491,9 +3636,11 @@
   .guideSteps {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 6px;
+  }
+  .coachCue {
     width: 46px;
     min-height: 46px;
     grid-template-columns: 1fr;
@@ -3608,9 +3755,11 @@
   .guideSteps {
     display: none;
   }
-  .coachCue {
+  .coachCueDock {
     right: 8px;
     bottom: 6px;
+  }
+  .coachCue {
     width: 46px;
     min-height: 46px;
     grid-template-columns: 1fr;

@@ -3,13 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
-import { PricingPanel } from '@/components/billing/PricingPanel'
-import { ChangelogModal } from '@/components/ChangelogModal'
-import { ConsoleLog } from '@/components/ConsoleLog'
-import { FileText } from '@/components/icons'
+import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
+import { ConsoleLog, setupDeveloperConsole } from '@/components/ConsoleLog'
+import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { BusyButton, BusyLink } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -19,6 +18,8 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import type { RoomChoice } from '@/features/instrument-room/room-preference'
+import { ROOM_INSTRUMENTS, ROOM_LABEL, roomChoice, setRoomChoice, } from '@/features/instrument-room/room-preference'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
@@ -29,11 +30,12 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, gridLinesVisible, playbackSpeed, reverbConfig, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
-import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
+import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, startVoiceTour, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
@@ -50,6 +52,29 @@ import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, 
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import { MicSensitivitySlider } from './MicSensitivitySlider'
 import styles from './SettingsPanel.module.css'
+
+/**
+ * Credit packs and the supporter tiers, ABSENT from the store binary.
+ *
+ * `PricingPanel` sells credit packs through Stripe checkout and mounts
+ * `DonatePanel`, which links out to Ko-fi. Both are digital goods sold
+ * outside in-app purchase: App Store guideline 3.1.1 and Play's billing
+ * policy each reject a binary that carries them. Hiding the UI is not enough
+ * when the link is still in the bundle, so the guard is a build constant, not
+ * a runtime flag: `CAN_TAKE_PAYMENT` folds to a literal, the dynamic import
+ * sits in a dead branch, and Rollup emits no chunk for it at all.
+ *
+ * On the web this is now a lazy chunk fetched when Settings opens rather than
+ * part of the main bundle -- an accepted timing change, not a regression.
+ * Real native billing arrives later through RevenueCat.
+ */
+const PricingPanel = CAN_TAKE_PAYMENT
+  ? lazy(async () =>
+      import('@/components/billing/PricingPanel').then((m) => ({
+        default: m.PricingPanel,
+      })),
+    )
+  : null
 
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
  *  ResetScope actions run through resetAppData and reload. */
@@ -467,7 +492,7 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Guided Path</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              The Ascent normally opens one week at a time as you practise. Turn
+              The Ascent normally opens one week at a time as you practice. Turn
               this on to unlock every week now — jump ahead to preview a week or
               try its drills. Your rings and streak are unaffected.
             </p>
@@ -511,7 +536,28 @@ export const SettingsPanel: Component = () => {
             {/* The processing-default picker (tier cards + quality chips)
                 lives inside PricingPanel — the Karaoke page toggles use the
                 same persisted signals and stay in sync. */}
-            <PricingPanel />
+            <Show
+              when={PricingPanel}
+              keyed
+              fallback={
+                <p
+                  class={styles.settingsDesc}
+                  data-testid="credits-not-for-sale"
+                >
+                  Credits are not sold in this app. Everything that runs on your
+                  device stays free, and the server option spends credits your
+                  account already holds.
+                </p>
+              }
+            >
+              {(Panel) => (
+                <Suspense
+                  fallback={<p class={styles.settingsDesc}>Loading…</p>}
+                >
+                  <Panel />
+                </Suspense>
+              )}
+            </Show>
           </div>
         </Show>
 
@@ -932,21 +978,38 @@ export const SettingsPanel: Component = () => {
           >
             <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
             <div class={styles.settingsDivider} />
-            <p class={styles.settingsDesc}>
+            <p class={styles.settingsDesc} data-tour="voice.what">
               Control playback with your voice: turn on the mic pill
               (bottom-left, or press V), then speak a command — "play", "pause",
-              "from the top", "loop off". To see every phrase, press Shift+V or
-              ask aloud: "what can I say".
+              "from the top", "loop off". Navigation works too: "go to karaoke",
+              "go to guitar night", "go home". To see every phrase, press
+              Shift+V or ask aloud: "what can I say".
+            </p>
+            <p class={styles.settingsDesc} data-tour="voice.sing">
+              Forgotten what a song is called? Say "what song is this" and sing
+              a few bars — Mercury Sing listens, matches it against your
+              library, and you pick from the results by saying "sing number
+              two".
             </p>
             <div class={styles.settingsActionRow}>
               <button
                 type="button"
                 class={styles.settingsActionBtn}
                 data-testid="settings-voice-commands"
+                data-tour="voice.list"
                 onClick={openVoiceCommandList}
               >
                 <FileText size={16} />
                 Command list
+              </button>
+              <button
+                type="button"
+                class={styles.settingsActionBtn}
+                data-testid="settings-voice-tour"
+                onClick={() => startVoiceTour()}
+              >
+                <Sparkles size={16} />
+                Take the tour
               </button>
             </div>
 
@@ -976,7 +1039,7 @@ export const SettingsPanel: Component = () => {
               </small>
             </div>
 
-            <div class={styles.settingsRow}>
+            <div class={styles.settingsRow} data-tour="voice.wake-word">
               <label for="voice-wake-word">
                 Require "Mercury" While Playing
               </label>
@@ -1296,6 +1359,46 @@ export const SettingsPanel: Component = () => {
                   : ''}
               </small>
             </div>
+          </div>
+
+          {/* Instrument rooms — the other half of the first-visit door in
+              features/instrument-room. Whatever was chosen there (or never
+              chosen) is changed here, including going back to being asked. */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Instrument Rooms</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              Piano and Guitar each have two rooms: the lit standalone Night
+              page, and the in-app workspace with the full set of tools. Choose
+              which one the tab opens. On a phone both always open Night.
+            </p>
+
+            <For each={ROOM_INSTRUMENTS}>
+              {(instrument) => (
+                <div class={styles.settingsRow}>
+                  <label for={`room-choice-${instrument}`}>
+                    {ROOM_LABEL[instrument]} tab opens
+                  </label>
+                  <SafeSelect
+                    value={roomChoice(instrument)}
+                    onChange={(e) => {
+                      setRoomChoice(instrument, e.target.value as RoomChoice)
+                    }}
+                    id={`room-choice-${instrument}`}
+                    data-testid={`room-choice-${instrument}`}
+                  >
+                    <option value="night">
+                      {ROOM_LABEL[instrument]} Night
+                    </option>
+                    <option value="workspace">
+                      {ROOM_LABEL[instrument]} workspace
+                    </option>
+                    <option value="ask">Ask me each time</option>
+                  </SafeSelect>
+                </div>
+              )}
+            </For>
           </div>
 
           {/* Appearance */}
@@ -2088,7 +2191,15 @@ export const SettingsPanel: Component = () => {
                   <input
                     type="checkbox"
                     checked={showConsoleLog()}
-                    onChange={() => toggleConsoleLog()}
+                    onChange={() => {
+                      toggleConsoleLog()
+                      // Mount the floating panel on the press that turns it
+                      // on, rather than at the next page load. The entries
+                      // only read the flag at boot (see lib/developer-console
+                      // — a room cannot reach this switch), and `ConsoleLog`
+                      // is already imported here for the inline log below.
+                      if (showConsoleLog()) setupDeveloperConsole()
+                    }}
                   />
                   <span class={styles.settingsSlider}></span>
                 </label>
@@ -2144,19 +2255,23 @@ export const SettingsPanel: Component = () => {
                   </span>
                 </Show>
               </div>
-              <button
-                class={styles.whatsNewBtn}
-                data-testid="whats-new-btn"
-                onClick={() => setShowChangelog(true)}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-                  />
-                </svg>
-                What's New
-              </button>
+              {/* No release notes in the store binary -- the store listing
+                  says what changed there. See ChangelogModalSlot. */}
+              <Show when={HAS_CHANGELOG}>
+                <button
+                  class={styles.whatsNewBtn}
+                  data-testid="whats-new-btn"
+                  onClick={() => setShowChangelog(true)}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path
+                      fill="currentColor"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                    />
+                  </svg>
+                  What's New
+                </button>
+              </Show>
               <p
                 class={styles.aboutDesc}
                 data-testid="about-desc"
@@ -2226,7 +2341,7 @@ export const SettingsPanel: Component = () => {
                   Vocal Analysis
                 </span>
               </div>
-              <ChangelogModal
+              <ChangelogModalSlot
                 open={showChangelog()}
                 onClose={() => setShowChangelog(false)}
               />

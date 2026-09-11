@@ -14,7 +14,10 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { TapCheck } from './TapCheck'
 
-vi.mock('@/lib/audio-unlock', () => ({ unlockAudio: vi.fn() }))
+vi.mock('@/lib/audio-unlock', () => ({
+  unlockAudio: vi.fn(),
+  activateAudioPlayback: vi.fn(async () => undefined),
+}))
 
 const param = () => ({
   setValueAtTime: vi.fn(),

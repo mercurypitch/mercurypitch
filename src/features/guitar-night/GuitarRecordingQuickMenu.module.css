@@ -1,0 +1,146 @@
+/* The quick shelf is the gallery's compact counterpart, with no audio-dependent artwork. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+}
+.menu {
+  position: fixed;
+  z-index: 76;
+  display: flex;
+  flex-direction: column;
+  width: min(344px, calc(100vw - 16px));
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0.5rem;
+  border: 1px solid #80613d;
+  border-radius: 10px;
+  background: #171512;
+  color: #eee2cd;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.5);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0 0.5rem 0.4rem;
+}
+.heading > div {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.15rem;
+}
+.heading strong {
+  font-weight: 650;
+}
+.heading span {
+  color: #c6b8a1;
+  font-size: 0.72rem;
+}
+.menu button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.heading button {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.menu svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-top: 1px solid rgb(237 188 117 / 0.12);
+}
+.list li[data-current='true'] {
+  background: #30251b;
+  border-radius: 5px;
+}
+.list .select {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 0.55rem;
+  padding: 0.65rem 0.4rem;
+  text-align: left;
+}
+.select > svg {
+  color: #edbc75;
+}
+.select > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+.select strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 550;
+}
+.select small {
+  color: #c6b8a1;
+  font-size: 0.7rem;
+}
+.list .remove {
+  display: grid;
+  place-items: center;
+  color: #dbb5a4;
+  flex: none;
+}
+.menu button:hover:not(:disabled) {
+  background: #493826;
+  color: #ffce8d;
+}
+.menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.menu button:focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: -2px;
+}
+.menu .gallery {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: #edbc75;
+  border-top: 1px solid #594833;
+  border-radius: 0;
+}
+.empty,
+.error {
+  color: #c6b8a1;
+  margin: 0.5rem;
+  line-height: 1.5;
+}
+.error {
+  color: #ffd3c4;
+}

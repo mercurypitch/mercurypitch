@@ -70,6 +70,95 @@ describe('GuitarNightMovingTab', () => {
     return { ...result, setPlayheadBeat }
   }
 
+  it('uses a history window while recording and restores upcoming notes for playback', () => {
+    const [recordingHistory, setRecordingHistory] = createSignal(true)
+    const score = [note('past', 6), note('now', 10), note('future', 11)]
+    const result = render(() => (
+      <GuitarNightMovingTab
+        notes={() => score}
+        tuning={() => standardTuning('guitar', 6)}
+        tempoBpm={() => 120}
+        playheadBeat={() => 10}
+        recordingHistory={recordingHistory}
+        summary={() => 'Recorded notes behind NOW'}
+        hasGuide={() => true}
+        loopStart={() => 9}
+        loopEnd={() => 11}
+        loopActive={() => true}
+      />
+    ))
+    const lanes = screen.getByTestId('guitar-night-moving-tab')
+    const now = screen.getByTestId('guitar-night-tab-now')
+
+    expect(lanes).toHaveAttribute('data-tab-timeline', 'recording-history')
+    expect(lanes.parentElement).toHaveAttribute('data-window-beats', '6.00')
+    expect(now).toHaveStyle({ left: '82%' })
+    expect(now).toHaveTextContent('NOW')
+    expect(
+      Number.parseFloat(
+        lanes.style.getPropertyValue('--stage-tab-track-shift'),
+      ),
+    ).toBeCloseTo(92)
+    expect(
+      result.container.querySelector('[data-note-id="past"]'),
+    ).not.toBeNull()
+    expect(result.container.querySelector('[data-note-id="future"]')).toBeNull()
+    expect(screen.queryByTestId('guitar-night-tab-loop-range')).toBeNull()
+
+    setRecordingHistory(false)
+
+    expect(lanes).toHaveAttribute('data-tab-timeline', 'upcoming')
+    expect(now).toHaveStyle({ left: '18%' })
+    expect(now).toBeEmptyDOMElement()
+    expect(result.container.querySelector('[data-note-id="past"]')).toBeNull()
+    expect(
+      result.container.querySelector('[data-note-id="future"]'),
+    ).not.toBeNull()
+    expect(
+      screen.getByTestId('guitar-night-tab-loop-range'),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a long recorded sustain visible at the history edge without moving its onset', () => {
+    const [recordingHistory, setRecordingHistory] = createSignal(true)
+    const [playhead, setPlayhead] = createSignal(10)
+    const held = { ...note('held', 0), duration: 12 }
+    const result = render(() => (
+      <GuitarNightMovingTab
+        notes={() => [held]}
+        tuning={() => standardTuning('guitar', 6)}
+        tempoBpm={() => 120}
+        playheadBeat={playhead}
+        recordingHistory={recordingHistory}
+        summary={() => 'Recorded history'}
+        hasGuide={() => true}
+        loopStart={() => null}
+        loopEnd={() => null}
+        loopActive={() => false}
+      />
+    ))
+    const marker = result.container.querySelector('[data-note-id="held"]')!
+    const markerStyle = marker.getAttribute('style')
+
+    expect(marker).toHaveAttribute('data-history-continuation', 'true')
+    expect(marker.parentElement).toHaveAttribute(
+      'data-testid',
+      'guitar-night-tab-continuations',
+    )
+    setPlayhead(10.1)
+    expect(result.container.querySelector('[data-note-id="held"]')).toBe(marker)
+    expect(marker.getAttribute('style')).toBe(markerStyle)
+    expect(held.startBeat).toBe(0)
+    expect(held.duration).toBe(12)
+
+    setRecordingHistory(false)
+    const replayMarker = result.container.querySelector(
+      '[data-note-id="held"]',
+    )!
+    expect(replayMarker).not.toHaveAttribute('data-history-continuation')
+    expect(replayMarker).toHaveStyle({ left: '0%' })
+  })
+
   it('exposes an honest persisted zoom range without borrowing camera controls', () => {
     mount()
     const slider = screen.getByRole('slider', { name: /Tab zoom/ })

@@ -392,11 +392,11 @@
     },
     {
       "name": "All Star",
-      "description": "Complete all bronze badges",
+      "description": "Every bronze practice badge earned",
       "icon": "sparkle",
       "tier": "gold",
       "category": "meta",
-      "unlockCondition": "Complete all bronze-tier badges",
+      "unlockCondition": "Complete all bronze practice badges",
       "sortOrder": 16
     },
     {
@@ -450,10 +450,10 @@
     },
     {
       "name": "Two Days Running",
-      "description": "Practise on 2 different days",
+      "description": "Practice on 2 different days",
       "icon": "sunrise",
       "points": 10,
-      "condition": "Practise on 2 different days",
+      "condition": "Practice on 2 different days",
       "required": 2,
       "sortOrder": 3,
       "category": "beginnings"
@@ -590,30 +590,30 @@
     },
     {
       "name": "Ten Days In",
-      "description": "Practise on 10 different days",
+      "description": "Practice on 10 different days",
       "icon": "moon",
       "points": 25,
-      "condition": "Practise on 10 different days",
+      "condition": "Practice on 10 different days",
       "required": 10,
       "sortOrder": 17,
       "category": "building"
     },
     {
       "name": "Regular",
-      "description": "Practise on 25 different days",
+      "description": "Practice on 25 different days",
       "icon": "calendarcheck",
       "points": 35,
-      "condition": "Practise on 25 different days",
+      "condition": "Practice on 25 different days",
       "required": 25,
       "sortOrder": 18,
       "category": "building"
     },
     {
       "name": "Week Runner",
-      "description": "Practise on 7 days in a row",
+      "description": "Practice on 7 days in a row",
       "icon": "fire",
       "points": 25,
-      "condition": "Practise on 7 days in a row",
+      "condition": "Practice on 7 days in a row",
       "required": 7,
       "sortOrder": 19,
       "category": "building"
@@ -670,20 +670,20 @@
     },
     {
       "name": "Wide Repertoire",
-      "description": "Practise 15 different melodies or drills",
+      "description": "Practice 15 different melodies or drills",
       "icon": "shelf",
       "points": 25,
-      "condition": "Practise 15 different melodies or drills",
+      "condition": "Practice 15 different melodies or drills",
       "required": 15,
       "sortOrder": 25,
       "category": "building"
     },
     {
       "name": "Well Rounded",
-      "description": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "description": "Practice all four ways: a session, a drill, a challenge and a Legend",
       "icon": "sparkle",
       "points": 30,
-      "condition": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "condition": "Practice all four ways: a session, a drill, a challenge and a Legend",
       "required": 4,
       "sortOrder": 26,
       "category": "building"
@@ -780,30 +780,30 @@
     },
     {
       "name": "Early Bird",
-      "description": "Practise before 8am on 5 days",
+      "description": "Practice before 8am on 5 days",
       "icon": "sunrise",
       "points": 20,
-      "condition": "Practise before 8am on 5 days",
+      "condition": "Practice before 8am on 5 days",
       "required": 5,
       "sortOrder": 36,
       "category": "building"
     },
     {
       "name": "Night Owl",
-      "description": "Practise after 10pm on 5 days",
+      "description": "Practice after 10pm on 5 days",
       "icon": "moonstars",
       "points": 20,
-      "condition": "Practise after 10pm on 5 days",
+      "condition": "Practice after 10pm on 5 days",
       "required": 5,
       "sortOrder": 37,
       "category": "building"
     },
     {
       "name": "Weekend Voice",
-      "description": "Practise on 5 weekend days",
+      "description": "Practice on 5 weekend days",
       "icon": "coffee",
       "points": 20,
-      "condition": "Practise on 5 weekend days",
+      "condition": "Practice on 5 weekend days",
       "required": 5,
       "sortOrder": 38,
       "category": "building"
@@ -850,20 +850,20 @@
     },
     {
       "name": "Fifty Days",
-      "description": "Practise on 50 different days",
+      "description": "Practice on 50 different days",
       "icon": "calendarcheck",
       "points": 60,
-      "condition": "Practise on 50 different days",
+      "condition": "Practice on 50 different days",
       "required": 50,
       "sortOrder": 43,
       "category": "mastery"
     },
     {
       "name": "Hundred Days",
-      "description": "Practise on 100 different days",
+      "description": "Practice on 100 different days",
       "icon": "mountain",
       "points": 90,
-      "condition": "Practise on 100 different days",
+      "condition": "Practice on 100 different days",
       "required": 100,
       "sortOrder": 44,
       "category": "mastery"
@@ -920,10 +920,10 @@
     },
     {
       "name": "Deep Repertoire",
-      "description": "Practise 50 different melodies or drills",
+      "description": "Practice 50 different melodies or drills",
       "icon": "shelf",
       "points": 70,
-      "condition": "Practise 50 different melodies or drills",
+      "condition": "Practice 50 different melodies or drills",
       "required": 50,
       "sortOrder": 50,
       "category": "mastery"

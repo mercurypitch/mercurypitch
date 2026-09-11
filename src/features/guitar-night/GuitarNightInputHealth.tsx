@@ -20,7 +20,7 @@ interface GuitarNightInputHealthProps {
   calibrating: Accessor<boolean>
   health: Accessor<GuitarInputHealthReading | null>
   timingSource: Accessor<GuitarTimingSource>
-  /** Measured round trip in ms. Zero means nobody has measured this input. */
+  /** Saved scoring compensation in ms, not current monitoring latency. */
   latencyMs: Accessor<number>
   /** A scheduled take owns its route until its exact boundary completes. */
   locked?: Accessor<boolean>
@@ -65,8 +65,8 @@ export function GuitarNightInputHealth(props: GuitarNightInputHealthProps) {
           {props.profile() === 'midi'
             ? 'MIDI route delay is not measured, so absolute early or late feedback stays unavailable.'
             : props.latencyMs() > 0
-              ? `Measured on this input: ${props.latencyMs()} ms, and taken off every strike.`
-              : 'Nothing has measured this input, so strike times are uncorrected.'}
+              ? `Saved scoring compensation: ${props.latencyMs()} ms. This input's offset is subtracted from strike times; it is not verified for the current output route.`
+              : 'No scoring compensation is saved for this input, so strike times are uncorrected.'}
         </small>
         <Show when={props.profile() === 'microphone'}>
           <button
@@ -83,6 +83,10 @@ export function GuitarNightInputHealth(props: GuitarNightInputHealthProps) {
           </button>
         </Show>
       </div>
+      <small class={styles.inputHealthNote}>
+        Timing calibration aligns the score. It does not reduce the delay you
+        hear while monitoring.
+      </small>
       <Show
         when={
           props.profile() === 'microphone' &&

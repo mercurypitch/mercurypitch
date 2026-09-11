@@ -21,10 +21,11 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
@@ -165,7 +166,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Learn & Guide',
     targetSelector: '[data-tour="singing.guides"]',
     description:
-      'Come back any time: Learn opens read-along tutorials, Guide restarts these spotlight tours, and Tour appears on pages that have their own quick tour.',
+      'Come back any time: Learn opens read-along tutorials, Guide restarts these spotlight tours — including the one for voice control — and Tour appears on pages that have their own quick tour.',
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
@@ -698,8 +699,11 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Credits',
     targetSelector: '[data-tour="settings.credits"]',
-    description:
-      'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.',
+    // "top up here" is only true where there is a top-up to reach; a build
+    // that cannot take payment shows the same tab without the packs.
+    description: CAN_TAKE_PAYMENT
+      ? 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.'
+      : 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song) and check your balance here.',
     placement: 'bottom',
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,
@@ -1235,6 +1239,72 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+// Voice control tour. Not tab-keyed: voice belongs to no single tab, which is
+// exactly why it had no tour at all — the pill sits in every view and every
+// catalogue here is a list of tabs. Offered from the Guide modal and from
+// Settings, and deliberately short: five steps, and the last three are the
+// only three facts a person cannot work out by opening the command list.
+export const VOICE_TOUR_STEPS: WalkthroughStep[] = [
+  // The pill lives in two places (`bottomHudVisible`): bottom-left with room
+  // above it on desktop, docked into the header on a phone. One step each,
+  // because a tooltip placed above a header pill opens off the top.
+  {
+    title: 'The mic pill',
+    description:
+      'Voice control lives here, and it starts off. Click the pill — or press V — and it listens; click it again and it stops. Dimmed means it is resting between phrases, not broken.',
+    targetSelector: '[data-voice-control-hud]',
+    placement: 'top',
+    viewport: 'desktop',
+  },
+  {
+    title: 'The mic pill',
+    description:
+      'Voice control lives here, and it starts off. Tap the pill to make it listen, and tap it again to stop. Dimmed means it is resting between phrases, not broken.',
+    targetSelector: '[data-voice-control-hud]',
+    placement: 'bottom',
+    viewport: 'mobile',
+  },
+  {
+    title: 'What to say',
+    description:
+      '"Play", "pause", "from the top" and "loop off" drive whatever is playing. "Go to karaoke", "go to guitar night" and "go home" move you around — including into the standalone rooms, which are a different page.',
+    targetSelector: '[data-tour="voice.what"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    // Settings' own tabs are a switch, not a scroll: without this the step
+    // points into a panel that is not rendered. The release walk caught all
+    // four of these as `no-highlight` on the first run.
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Name the song you are humming',
+    description:
+      'Say "what song is this" and sing a few bars. Mercury Sing listens, matches what you sang against your library, and you choose from the results out loud: "sing number two".',
+    targetSelector: '[data-tour="voice.sing"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'The whole list, any time',
+    description:
+      'Shift+V anywhere opens every phrase this view answers to, and so does asking "what can I say". Every row in that list is also a button, for a room too loud to talk in.',
+    targetSelector: '[data-tour="voice.list"]',
+    placement: 'bottom',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Mercury, once the music starts',
+    description:
+      'While a track is playing, commands begin with "Mercury" — "Mercury, from the top" — so a backing track singing the word "stop" cannot stop your take. Turn it off here if you practice on headphones.',
+    targetSelector: '[data-tour="voice.wake-word"]',
+    placement: 'top',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+]
+
 // Karaoke stem-mixer tour. Contextual (not tab-keyed): the targets only exist
 // while a session is loaded in the mixer, so it is offered from StemMixer itself
 // (auto-once on mount + a manual "Tour" button) rather than via PAGE_TOURS.
@@ -1257,7 +1327,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & seek',
     description:
-      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too.',
+      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
     targetSelector: '[data-tour="mixer.transport"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1583,7 +1653,7 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Keep your streak',
     description:
-      'Practise ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free. This week’s drills, average score and best streak read out on the same card.',
+      'Practice ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free. This week’s drills, average score and best streak read out on the same card.',
     targetSelector: '.home-streak-card',
     placement: 'bottom',
     requiredTab: TAB_HOME,
@@ -1657,7 +1727,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_PATH,
   },
   {
-    title: 'Practise today',
+    title: 'Practice today',
     description:
       'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
     targetSelector: '.path-cta',
@@ -1693,20 +1763,24 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_CHALLENGES,
   },
   {
+    // Badges and achievements left the Challenges tab for the Progress
+    // cabinet, so these two steps follow them rather than pointing at
+    // sections that no longer render. The walk catches this: `.badges-section`
+    // and `.achievements-section` were both MISS on desktop and mobile.
     title: 'Earn badges',
     description:
-      'Completing challenges unlocks badges that show up here — collect them all.',
-    targetSelector: '.badges-section',
+      'Completing challenges unlocks badges. They live in Progress, with everything else you have earned.',
+    targetSelector: '[data-tour="progress.badges"]',
     placement: 'top',
-    requiredTab: TAB_CHALLENGES,
+    requiredTab: TAB_PROGRESS,
   },
   {
     title: 'Achievements',
     description:
       'Long-term milestones tracked across everything you do in the app — see which are earned and what is still ahead.',
-    targetSelector: '.achievements-section',
+    targetSelector: '[data-tour="progress.achievements"]',
     placement: 'top',
-    requiredTab: TAB_CHALLENGES,
+    requiredTab: TAB_PROGRESS,
   },
 ]
 
@@ -1826,7 +1900,7 @@ export const PAGE_TOUR_CATALOG: {
     tab: TAB_PATH,
     title: 'Path',
     description:
-      'The Ascent — the guided seven-week path whose orbs fill as you practise',
+      'The Ascent — the guided seven-week path whose orbs fill as you practice',
   },
   {
     tab: TAB_EAR_LAB,
@@ -1899,6 +1973,18 @@ export function startPageTour(tab: ActiveTab): void {
   const forView = forThisViewport(steps)
   if (forView.length === 0) return
   startTour(forView)
+}
+
+/**
+ * Start the voice-control tour.
+ *
+ * Its own starter rather than a bare `startTour(VOICE_TOUR_STEPS)`: the pill
+ * step exists twice, once per viewport, and only `forThisViewport` knows to
+ * drop the wrong one. Called that way it would spotlight a header pill that
+ * is not there and then the same pill again.
+ */
+export function startVoiceTour(): void {
+  startTour(forThisViewport(VOICE_TOUR_STEPS))
 }
 
 export function nextWalkthroughStep(): void {

@@ -177,7 +177,7 @@ describe('applyReps', () => {
 
 describe('every prescribed route is worth the streak', () => {
   // The finding itself: follow the app's own plan and you should end the day
-  // having practised the five minutes the same app asks for.
+  // having practiced the five minutes the same app asks for.
   it('generates a daily session of at least five minutes at every length', () => {
     for (const length of LENGTHS) {
       for (let day = 0; day < 7; day++) {

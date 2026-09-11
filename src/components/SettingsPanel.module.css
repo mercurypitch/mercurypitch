@@ -172,7 +172,13 @@
   max-width: 500px; /* Keep everything compact and on the left */
 }
 
-.settingsRow label {
+/* The TEXT label at the left of a row — not a control that merely happens to
+   be a <label> element. .settingsToggle is one, and min-width stretched it to
+   160px, which is why the switches read as long pills instead of fixed ones.
+   `width: 46px !important` on the toggle could never win that: !important
+   settles a cascade fight between the SAME property, and min-width clamps the
+   used width afterwards whatever `width` said. */
+.settingsRow label:not(.settingsToggle) {
   min-width: 160px;
   width: auto;
   font-size: 0.85rem;
@@ -247,8 +253,8 @@
 .settingsToggle {
   position: relative;
   display: inline-block;
-  width: 42px !important; /* Strictly enforce width */
-  height: 22px;
+  width: 46px;
+  height: 24px;
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -260,40 +266,143 @@
   position: absolute;
 }
 
+/* ── The MercuryPitch switch ─────────────────────────────────────────
+   Brand colours, not theme accents. Eight themes each define their own
+   --accent, and a control that changes hue per theme is a theme element;
+   this one is meant to be the same object everywhere, the way the mark is.
+
+   The lit track runs #58a6ff -> #2dd4bf: the FIRST TWO STOPS of the spectrum,
+   never all three. The full blue-aqua-violet spectrum stroke is rationed to
+   one per screen, and a settings page carries twenty-three of these. Two
+   stops read as the same family without spending that budget. */
 .settingsSlider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--bg-tertiary);
-  transition: 0.3s;
-  border-radius: 22px;
+  inset: 0;
+  border-radius: 26px;
   border: 1px solid var(--border);
-  width: 42px; /* Match parent width */
+  background: linear-gradient(180deg, #161b22 0%, #0f141b 100%);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
+  /* Recessed: the bead sits IN the track, so the track is lit from below. */
+  box-shadow:
+    inset 0 2px 4px rgb(0 0 0 / 46%),
+    inset 0 -1px 0 rgb(255 255 255 / 4%);
+  transition:
+    background 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
 }
 
+/* The bead fills most of the track height -- at 16px in a 22px track it read
+   as a dot rattling around in a slot. */
 .settingsSlider:before {
   position: absolute;
   content: '';
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: var(--text-secondary);
-  transition: 0.3s;
+  height: 20px;
+  width: 20px;
+  left: 1px;
+  top: 1px;
   border-radius: 50%;
+  /* A mirrored sphere, not a shaded disc.
+     Chrome is one hard value break -- the reflected horizon -- and a bright
+     bounce off the ground below it. A smooth gradient can only ever read as
+     matte, and a LINEAR break cuts a flat band straight across a circle,
+     which reads as a painted stripe. So the environment map is an ellipse
+     anchored above the ball: its edge crosses the silhouette in a shallow
+     smile, sky inside, ground outside, no blend between them. Layers, top
+     down: specular, Fresnel rim, environment. */
+  background:
+    radial-gradient(
+      circle at 33% 22%,
+      #fff 0%,
+      #fff 5%,
+      rgb(255 255 255 / 0%) 14%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgb(255 255 255 / 0%) 72%,
+      rgb(226 238 246 / 40%) 92%,
+      rgb(168 190 204 / 62%) 100%
+    ),
+    radial-gradient(
+      155% 76% at 50% -22%,
+      #fff 20%,
+      #f2f7fb 46%,
+      #dbe6ef 72%,
+      #b9cbd9 90%,
+      #93aabb 99.7%,
+      #2c3b46 100%,
+      #3d515f 112%,
+      #5c7787 132%,
+      #93b0c1 150%,
+      #cadeea 165%
+    );
+  box-shadow: 0 2px 5px rgb(0 0 0 / 55%);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 input:checked + .settingsSlider {
-  background-color: var(--accent-dim);
-  border-color: var(--accent);
+  background: linear-gradient(90deg, #58a6ff 0%, #2dd4bf 100%);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
+  border-color: rgb(45 212 191 / 30%);
+  box-shadow:
+    inset 0 1px 3px rgb(0 0 0 / 22%),
+    0 0 7px rgb(88 166 255 / 16%);
 }
 
+/* Lit, the bead turns from satin to polished: a hard specular near the top
+   left, a soft bounce off the track below it, and a dark underside. That
+   contrast is what makes it read as metal rather than a pale circle. */
 input:checked + .settingsSlider:before {
-  transform: translateX(20px);
-  background-color: var(--accent);
+  transform: translateX(22px);
+  background:
+    radial-gradient(
+      circle at 33% 22%,
+      #fff 0%,
+      #fff 6%,
+      rgb(255 255 255 / 0%) 15%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgb(255 255 255 / 0%) 72%,
+      rgb(233 247 252 / 46%) 92%,
+      rgb(163 197 214 / 70%) 100%
+    ),
+    radial-gradient(
+      155% 76% at 50% -22%,
+      #fff 20%,
+      #f4fafd 46%,
+      #dcebf4 72%,
+      #b3cddc 90%,
+      #86a8bd 99.7%,
+      #21343f 100%,
+      #2f4a59 112%,
+      #4a7183 132%,
+      #82aec4 150%,
+      #c6e6f2 165%
+    );
+  box-shadow:
+    0 3px 7px rgb(0 0 0 / 55%),
+    0 0 6px rgb(45 212 191 / 22%);
+}
+
+/* The input is transparent and zero-sized, so focus has to be drawn on the
+   track or a keyboard user cannot see where they are. */
+.settingsToggle input:focus-visible + .settingsSlider {
+  outline: 2px solid #58a6ff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsSlider,
+  .settingsSlider:before {
+    transition: none;
+  }
 }
 
 .settingsInfo {

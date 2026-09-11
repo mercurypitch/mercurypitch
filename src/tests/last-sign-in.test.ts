@@ -28,7 +28,7 @@ describe('lastSignInMethod', () => {
 
   it('stores the method and NOTHING else', () => {
     // The privacy property: a rehearsal-room laptop must not tell the next
-    // person who practises on it. No name, no address, no user id — the whole
+    // person who practices on it. No name, no address, no user id — the whole
     // stored value is one of four words.
     rememberSignInMethod('google')
     const raw = localStorage.getItem(KEY) ?? ''

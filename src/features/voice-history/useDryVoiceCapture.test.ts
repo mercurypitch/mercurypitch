@@ -11,8 +11,10 @@ const {
   acquireMock,
   createF0StreamMock,
   createRecorderMock,
+  holdMock,
   inspectMock,
   registerIndicatorMock,
+  releaseHoldMock,
   releaseMock,
   recorderPauseMock,
   recorderResumeMock,
@@ -22,8 +24,10 @@ const {
   acquireMock: vi.fn(),
   createF0StreamMock: vi.fn(),
   createRecorderMock: vi.fn(),
+  holdMock: vi.fn(),
   inspectMock: vi.fn(),
   registerIndicatorMock: vi.fn(),
+  releaseHoldMock: vi.fn(),
   releaseMock: vi.fn(),
   recorderPauseMock: vi.fn(),
   recorderResumeMock: vi.fn(),
@@ -33,6 +37,9 @@ const {
 
 vi.mock('@/lib/mic-manager', () => ({
   micManager: { acquire: acquireMock, release: releaseMock },
+}))
+vi.mock('@/stores/mic-store', () => ({
+  holdExclusiveCapture: holdMock,
 }))
 vi.mock('@/lib/mic-sentinel', () => ({
   registerMicIndicator: registerIndicatorMock,
@@ -180,6 +187,7 @@ describe('useDryVoiceCapture', () => {
       new CaptureStream(captureTrack) as unknown as MediaStream,
     )
     registerIndicatorMock.mockReturnValue(vi.fn())
+    holdMock.mockReturnValue(releaseHoldMock)
     recorderStartMock.mockReturnValue(true)
     recorderPauseMock.mockResolvedValue(true)
     recorderResumeMock.mockResolvedValue(true)
@@ -633,5 +641,119 @@ describe('useDryVoiceCapture', () => {
     await expect(starting).resolves.toBe(true)
     expect(recorderStartMock).toHaveBeenCalledOnce()
     expect(controller.state()).toBe('recording')
+  })
+
+  // ── Handing the microphone over from voice control ──────────────
+  //
+  // On iOS the browser's speech recognizer and getUserMedia are one capture
+  // path. A take that opened the device while voice control was listening
+  // either got NotReadableError, or had its track cut when the recognizer
+  // respawned. The hold in mic-store is what tells voice control to stand
+  // down: it has to be up before the device is asked for, and gone the
+  // moment the take lets go — on every exit.
+
+  it('holds the microphone for itself from before the device opens until the take lets go', async () => {
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    await controller.start()
+
+    expect(holdMock).toHaveBeenCalledOnce()
+    expect(holdMock.mock.invocationCallOrder[0]!).toBeLessThan(
+      acquireMock.mock.invocationCallOrder[0]!,
+    )
+    expect(releaseHoldMock).not.toHaveBeenCalled()
+
+    // Released before the recorder's stop resolves: voice control resumes
+    // on the release, and the encode is not something it should wait on.
+    let resolveStop!: (blob: Blob) => void
+    recorderStopMock.mockReturnValueOnce(
+      new Promise<Blob>((resolve) => {
+        resolveStop = resolve
+      }),
+    )
+    const stopping = controller.stop()
+    expect(releaseHoldMock).toHaveBeenCalledOnce()
+    resolveStop(new Blob(['voice'], { type: 'audio/webm' }))
+    await stopping
+    expect(releaseHoldMock).toHaveBeenCalledOnce()
+  })
+
+  it('takes the next hold before the take it replaces lets go, and keeps it when that take lands late', async () => {
+    const releaseFirst = vi.fn()
+    const releaseSecond = vi.fn()
+    holdMock
+      .mockReturnValueOnce(releaseFirst)
+      .mockReturnValueOnce(releaseSecond)
+    let resolveFirst!: (stream: MediaStream) => void
+    acquireMock.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        resolveFirst = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const first = controller.start()
+    const second = controller.start()
+
+    // The restart holds before it discards, so the recognizer never gets the
+    // device back in between.
+    expect(holdMock).toHaveBeenCalledTimes(2)
+    expect(releaseFirst).toHaveBeenCalledOnce()
+    expect(holdMock.mock.invocationCallOrder[1]!).toBeLessThan(
+      releaseFirst.mock.invocationCallOrder[0]!,
+    )
+    expect(releaseSecond).not.toHaveBeenCalled()
+
+    // The first acquire lands after it was superseded: it gives back the
+    // device and leaves the newer take's hold alone.
+    resolveFirst(new CaptureStream(captureTrack) as unknown as MediaStream)
+    await expect(first).resolves.toBe(false)
+    await expect(second).resolves.toBe(true)
+    expect(releaseSecond).not.toHaveBeenCalled()
+    expect(releaseMock).toHaveBeenCalled()
+
+    controller.discard()
+    expect(releaseSecond).toHaveBeenCalledOnce()
+  })
+
+  it('lets go of the hold when the device refuses', async () => {
+    acquireMock.mockRejectedValueOnce(
+      new Error('The microphone is in use by another app or browser tab.'),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    await expect(controller.start()).resolves.toBe(false)
+
+    expect(holdMock).toHaveBeenCalledOnce()
+    expect(releaseHoldMock).toHaveBeenCalledOnce()
+    expect(controller.state()).toBe('idle')
+  })
+
+  it('lets go of the hold on discard, and not again on cleanup', async () => {
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+    await controller.start()
+
+    controller.discard()
+    expect(releaseHoldMock).toHaveBeenCalledOnce()
+
+    dispose()
+    dispose = (): void => undefined
+    expect(releaseHoldMock).toHaveBeenCalledOnce()
   })
 })

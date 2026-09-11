@@ -1,7 +1,7 @@
 // Unified song import classification keeps play-along hosts on one lightweight file contract.
 // ============================================================
-
 import { acceptsAudioUpload, AUDIO_UPLOAD_ACCEPT, } from '@/lib/audio-upload-contract'
+import { isAppleTouchDevice } from '@/lib/device-tier'
 
 export type UnifiedSongImportKind = 'audio' | 'midi' | 'guitar-pro'
 
@@ -13,6 +13,30 @@ export const UNIFIED_SONG_IMPORT_ACCEPT = [
   AUDIO_UPLOAD_ACCEPT,
   SONG_REFERENCE_FILE_ACCEPT,
 ].join(',')
+
+/**
+ * The accept list for this device's picker. iOS and iPadOS match `accept`
+ * against known document types and grey out everything else, and Guitar Pro
+ * files have no registered type there, so the picker refused the very tabs
+ * it was opened for. Those devices get no filter; the import path still
+ * checks the file after the pick.
+ */
+export function songImportAcceptForDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): string | undefined {
+  return isAppleTouchDevice(nav) ? undefined : UNIFIED_SONG_IMPORT_ACCEPT
+}
+
+/**
+ * The same rule for a picker that takes authored scores only — Drum Night's,
+ * which offers MIDI and Guitar Pro. Same reason: on an Apple touch device an
+ * `accept` list greys out the Guitar Pro files the picker exists to open.
+ */
+export function referenceAcceptForDevice(
+  nav: Pick<Navigator, 'userAgent' | 'maxTouchPoints' | 'platform'> = navigator,
+): string | undefined {
+  return isAppleTouchDevice(nav) ? undefined : SONG_REFERENCE_FILE_ACCEPT
+}
 
 export function isMidiSongFile(fileName: string): boolean {
   return /\.midi?$/i.test(fileName)

@@ -82,6 +82,28 @@ class FakeAudioContext {
 }
 
 describe('createGuitarSessionAudioGraph', () => {
+  it('keeps Studio dormant for clean, drum, bass, stem and monitor routes', () => {
+    const context = new FakeAudioContext()
+    const graph = createGuitarSessionAudioGraph(
+      context as unknown as AudioContext,
+      { electricAmpParameters: { engine: 'studio', character: 0.2 } },
+    )
+    const nodeCount = context.gains.length
+    expect(graph.guideInputs.clean).toBe(graph.buses.guide)
+    graph.setElectricAmpParameters({ character: 0.8, drive: 0.7 })
+    expect(graph.getElectricAmpParameters()).toMatchObject({
+      engine: 'studio',
+      character: 0.8,
+      drive: 0.7,
+    })
+    expect(context.gains).toHaveLength(nodeCount)
+    expect(context.waveShapers).toHaveLength(0)
+    expect(context.filters).toHaveLength(0)
+    graph.dispose()
+    expect(() => graph.guideInputs.electric).toThrow('disposed')
+    expect(context.waveShapers).toHaveLength(0)
+  })
+
   it('keeps the default drum bus at unity and honors an explicit override', () => {
     const defaultContext = new FakeAudioContext()
     const defaultGraph = createGuitarSessionAudioGraph(
@@ -125,9 +147,10 @@ describe('createGuitarSessionAudioGraph', () => {
         (graph.buses[bus] as unknown as FakeGainNode).connect,
       ).toHaveBeenCalledWith(master)
     }
+    graph.dispose()
   })
 
-  it('seeds its dormant stage and updates the same nodes on the audio clock', () => {
+  it('seeds its dormant stage and updates stable ports on the audio clock', () => {
     const context = new FakeAudioContext()
     const initial = {
       ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
@@ -138,16 +161,18 @@ describe('createGuitarSessionAudioGraph', () => {
       context as unknown as AudioContext,
       { electricAmpParameters: initial },
     )
+    expect(graph.getElectricAmpParameters()).toEqual(initial)
+    graph.setElectricAmpParameters({ drive: 0.61 })
+    expect(context.waveShapers).toHaveLength(0)
+    const input = graph.guideInputs.electric
     const nodeCount =
       context.gains.length + context.filters.length + context.waveShapers.length
-
-    expect(graph.getElectricAmpParameters()).toEqual(initial)
     context.currentTime = 7
-    graph.setElectricAmpParameters({ drive: 0.81, enabled: false })
+    graph.setElectricAmpParameters({ drive: 0.81 })
 
     expect(graph.getElectricAmpParameters()).toMatchObject({
       drive: 0.81,
-      enabled: false,
+      enabled: true,
       mid: -0.3,
     })
     expect(
@@ -160,6 +185,8 @@ describe('createGuitarSessionAudioGraph', () => {
         context.filters.length +
         context.waveShapers.length,
     ).toBe(nodeCount)
+    expect(graph.guideInputs.electric).toBe(input)
+    graph.dispose()
   })
 
   it('disconnects the shared amp stage with the graph', () => {
@@ -167,12 +194,14 @@ describe('createGuitarSessionAudioGraph', () => {
     const graph = createGuitarSessionAudioGraph(
       context as unknown as AudioContext,
     )
+    void graph.guideInputs.electric
 
     graph.dispose()
     graph.dispose()
 
     for (const gain of context.gains) {
-      expect(gain.disconnect).toHaveBeenCalledOnce()
+      // The facade first detaches its owned branch, then clears its input.
+      expect(gain.disconnect).toHaveBeenCalled()
     }
     for (const shaper of context.waveShapers) {
       expect(shaper.disconnect).toHaveBeenCalledOnce()

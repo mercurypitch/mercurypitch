@@ -4,6 +4,8 @@
 import { devices, expect, test } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import { seedAuthoredGuitarScore } from './helpers/guitar-night-score'
+
 const TEST_SONG_DURATION_SECONDS = 4
 
 function createTestWav(
@@ -347,65 +349,6 @@ async function seedCompletedFullBandSong(
   )
 }
 
-async function seedAuthoredGuitarScore(
-  page: import('@playwright/test').Page,
-  songId: string,
-  includeSecondaryPart = false,
-): Promise<void> {
-  await page.addInitScript(
-    ({ includeSecondary, seededSongId }) => {
-      const notes = Array.from({ length: 16 }, (_, index) => ({
-        midi: index % 2 === 0 ? 64 : 67,
-        startBeat: index,
-        duration: 1,
-        stringIndex: 0,
-        fret: index % 2 === 0 ? 0 : 3,
-      }))
-      const rhythmNotes = Array.from({ length: 16 }, (_, index) => ({
-        midi: index % 2 === 0 ? 59 : 62,
-        startBeat: index + 0.5,
-        duration: 0.5,
-        stringIndex: 1,
-        fret: index % 2 === 0 ? 0 : 3,
-      }))
-      localStorage.setItem(
-        'pitchperfect_guitar_songs',
-        JSON.stringify([
-          {
-            id: seededSongId,
-            name: 'Velvet pointer study',
-            bpm: 120,
-            tracks: [
-              {
-                id: 'track-lead',
-                name: 'Lead guitar',
-                instrumentName: 'Clean Guitar',
-                noteCount: notes.length,
-                notes,
-              },
-              ...(includeSecondary
-                ? [
-                    {
-                      id: 'track-rhythm',
-                      name: 'Rhythm guitar',
-                      instrumentName: 'Rhythm Guitar',
-                      noteCount: rhythmNotes.length,
-                      notes: rhythmNotes,
-                    },
-                  ]
-                : []),
-            ],
-            scoreTrackId: 'track-lead',
-            backingTrackIds: includeSecondary ? ['track-rhythm'] : [],
-            importedAt: Date.now(),
-          },
-        ]),
-      )
-    },
-    { includeSecondary: includeSecondaryPart, seededSongId: songId },
-  )
-}
-
 async function seedDenseAuthoredGuitarScore(
   page: import('@playwright/test').Page,
   songId: string,
@@ -506,11 +449,13 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
 
   const actions = page.getByTestId('guitar-night-entry-actions')
   const buttons = actions.getByRole('button')
-  // Two entries, not three: the way to the Guitar workspace is a return
-  // control on the eyebrow rather than a third choice of equal weight.
-  await expect(buttons).toHaveCount(2)
+  // Three destinations, and the workspace is still not one of them: that is a
+  // return control on the eyebrow. Free play earns its place because playing
+  // with nothing loaded used to mean opening the song picker first.
+  await expect(buttons).toHaveCount(3)
   await expect(buttons.nth(0)).toHaveAccessibleName('Start')
   await expect(buttons.nth(1)).toHaveAccessibleName('Load a song')
+  await expect(buttons.nth(2)).toHaveAccessibleName('Free play')
   await expect(
     page.getByRole('button', { name: 'Open the Guitar workspace' }),
   ).toBeVisible()
@@ -525,7 +470,9 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   expect(focusStyle.outline).not.toBe('none')
   expect(focusStyle.width).not.toBe('0px')
   await page.keyboard.press('Tab')
-  // Tune guitar sits outside the pair, so the third stop leaves the group.
+  await expect(buttons.nth(2)).toBeFocused()
+  await page.keyboard.press('Tab')
+  // Tune guitar sits outside the group, so the stop after it leaves them.
   await expect(page.getByRole('button', { name: /Tune guitar/ })).toBeFocused()
 
   const accountTrigger = page.getByRole('button', {
@@ -1277,8 +1224,8 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     const buttons = page
       .getByTestId('guitar-night-entry-actions')
       .getByRole('button')
-    await expect(buttons).toHaveCount(2)
-    for (let index = 0; index < 2; index += 1) {
+    await expect(buttons).toHaveCount(3)
+    for (let index = 0; index < 3; index += 1) {
       const box = await buttons.nth(index).boundingBox()
       expect(box).not.toBeNull()
       expect(box?.width).toBeGreaterThanOrEqual(44)
@@ -2542,7 +2489,27 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
 
   const setup = room.getByLabel('6-string guitar setup', { exact: true })
   await setup.click()
-  await room.getByRole('combobox', { name: 'Strings' }).selectOption('8')
+  // On a phone the tools row can scroll sideways, which would clip an
+  // absolutely positioned popover to the row's own height. The setup popover
+  // has to be hittable inside the viewport, not a slice of it.
+  const strings = room.getByRole('combobox', { name: 'Strings' })
+  await expect(strings).toBeVisible()
+  const stringsHit = await strings.evaluate((field) => {
+    const rect = field.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    return {
+      top: rect.top,
+      bottom: rect.bottom,
+      innerHeight: window.innerHeight,
+      hitsField: hit === field || field.contains(hit),
+    }
+  })
+  expect(stringsHit.top).toBeGreaterThanOrEqual(0)
+  expect(stringsHit.bottom).toBeLessThanOrEqual(stringsHit.innerHeight)
+  expect(stringsHit.hitsField).toBe(true)
+  await strings.selectOption('8')
   await page.keyboard.press('Escape')
   await expect(tabWindow).toHaveAttribute('data-string-count', '8')
   await expectLargeTabContained()
@@ -3272,6 +3239,9 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
       viewportWidth: window.innerWidth,
     }
   })
+  await page.screenshot({
+    path: test.info().outputPath('prepared-song-layout.png'),
+  })
   expect(fullRoomLayout.roomWidth).toBeGreaterThanOrEqual(
     fullRoomLayout.viewportWidth * 0.98,
   )
@@ -3301,8 +3271,8 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     'string-highway',
   )
   await room.getByLabel('Camera, Runway', { exact: true }).click()
-  await room.getByRole('button', { name: /Phrase follow/ }).click()
-  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
+  await room.getByRole('button', { name: /Player angle/ }).click()
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'false')
   await flowCanvas.scrollIntoViewIfNeeded()
   const initialYaw = await flowCanvas.getAttribute('data-camera-yaw')
   const canvasBox = await flowCanvas.boundingBox()
@@ -3353,7 +3323,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await room
     .getByRole('group', { name: '3D performance view controls' })
     .press('r')
-  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'false')
 
   await room.getByRole('button', { name: 'Neck', exact: true }).click()
   await expect(room.locator('[data-stage-mode="neck"]')).toBeVisible()
@@ -3476,7 +3446,10 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   expect(microphoneRequests).toBe(0)
 
   await room
-    .getByRole('button', { name: 'Turn on Listening', exact: true })
+    .getByRole('button', {
+      name: 'Listening is off. Switch to Room mic',
+      exact: true,
+    })
     .click()
   await expect(room.getByRole('alert')).toContainText(
     'Unexpected microphone request',
@@ -3515,6 +3488,9 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     await expect(room).toBeVisible()
     const stage = page.getByTestId('guitar-night-stage')
     const mobileStage = await stage.boundingBox()
+    await page.screenshot({
+      path: test.info().outputPath('prepared-song-phone.png'),
+    })
     expect(mobileStage).not.toBeNull()
     expect(mobileStage?.width).toBeGreaterThanOrEqual(388)
     expect(mobileStage?.height).toBeGreaterThanOrEqual(844 * 0.65)
@@ -3533,9 +3509,13 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
       viewportMetrics.clientWidth + 2,
     )
 
-    const band = room.getByLabel('Band, loop, and input controls, 2 tracks')
-    await band.click()
-    const amp = room.getByRole('region', { name: 'Guitar amp' })
+    const sessionTrigger = room.getByRole('button', {
+      name: 'Session controls',
+      exact: true,
+    })
+    await sessionTrigger.click()
+    const session = room.getByRole('dialog', { name: 'Session', exact: true })
+    const amp = session.getByRole('region', { name: 'Guitar amp' })
     const toneDisclosure = amp.getByText('Shape tone & cabinet')
     await toneDisclosure.click()
     await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
@@ -3554,7 +3534,9 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
     }
     await expectAmpInsideViewport()
-    await band.click()
+    await session
+      .getByRole('button', { name: 'Close Session', exact: true })
+      .click()
 
     const controls = room.locator('button:visible, input[type="range"]:visible')
     expect(await controls.count()).toBeGreaterThanOrEqual(4)
@@ -3579,13 +3561,17 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     expect(narrowMetrics.scrollWidth).toBeLessThanOrEqual(
       narrowMetrics.clientWidth + 2,
     )
-    await band.click()
-    await toneDisclosure.click()
+    await sessionTrigger.click()
+    // Session is a dialog now: closing it unmounts its temporary disclosures.
     await expect(amp.getByLabel('Guitar amp bass')).toBeHidden()
     await toneDisclosure.click()
     await expect(amp.getByLabel('Guitar amp bass')).toBeVisible()
     await expectAmpInsideViewport()
-    await band.click()
+    await toneDisclosure.click()
+    await expect(amp.getByLabel('Guitar amp bass')).toBeHidden()
+    await session
+      .getByRole('button', { name: 'Close Session', exact: true })
+      .click()
     await expect(
       room.getByRole('button', { name: 'Play backing', exact: true }),
     ).toBeVisible()
@@ -3618,27 +3604,31 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
     await page.getByRole('button', { name: 'Enter room', exact: true }).click()
 
     const room = page.getByTestId('guitar-night-room')
-    const bandControls = room.getByLabel(
-      'Band, loop, and input controls, 6 tracks',
-      { exact: true },
-    )
+    const bandControls = room.getByRole('button', {
+      name: 'Open track mixer for full-band-tablet.wav',
+      exact: true,
+    })
     await bandControls.click()
-    const channels = room.locator('[aria-label="Backing tracks"] button')
+    const mixer = room.getByRole('dialog', {
+      name: 'Track mixer for full-band-tablet.wav',
+      exact: true,
+    })
+    const channels = mixer.getByTestId('guitar-night-mixer-channel')
     await expect(channels).toHaveCount(6)
-    await channels.first().focus()
+    await channels.first().getByRole('slider').focus()
     await page.keyboard.press('Escape')
     await expect(bandControls).toBeFocused()
-    await expect(bandControls.locator('..')).not.toHaveAttribute('open', '')
+    await expect(mixer).toHaveCount(0)
     await bandControls.click()
 
     const layout = await room.evaluate((element) => {
       const panel = element.getBoundingClientRect()
       const strip = element.querySelector<HTMLElement>(
-        '[aria-label="Backing tracks"]',
+        '[aria-label="Recorded song tracks"]',
       )
       const buttons = [
         ...element.querySelectorAll<HTMLElement>(
-          '[aria-label="Backing tracks"] button',
+          '[data-testid="guitar-night-mixer-channel"]',
         ),
       ]
       return {
@@ -3667,11 +3657,11 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
         '[data-testid="guitar-night-deck"]',
       )
       const strip = element.querySelector<HTMLElement>(
-        '[aria-label="Backing tracks"]',
+        '[aria-label="Recorded song tracks"]',
       )
       const buttons = [
         ...element.querySelectorAll<HTMLElement>(
-          '[aria-label="Backing tracks"] button',
+          '[data-testid="guitar-night-mixer-channel"]',
         ),
       ]
       return {

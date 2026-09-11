@@ -11,6 +11,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { earInfoOpen, resetEarLabStore } from '@/stores/ear-lab-store'
+import { PlayPad } from './EarStage'
 import { HairlineDrill } from './HairlineDrill'
 import { HomeDrill } from './HomeDrill'
 
@@ -169,6 +170,66 @@ describe('EarStage with Home', () => {
       .querySelectorAll('button')
     expect(rungs).toHaveLength(7)
     expect(screen.getByText('Sol')).toBeTruthy()
+  })
+})
+
+describe('the lead play pad', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => cleanup())
+
+  it('creates and wakes the audio context inside the tap that starts a run', async () => {
+    // The room enters silent, so on the first pad there is no context yet.
+    // A pad that only reads getAudioContext() therefore unlocks nothing, and
+    // the context is built later, after awaits — outside the gesture iOS
+    // needs it to be inside, which leaves the run playing to a frozen clock.
+    const suspendedContext = () => {
+      const created = {
+        state: 'suspended' as AudioContextState,
+        resume: async (): Promise<void> => {
+          created.state = 'running'
+        },
+      }
+      return created
+    }
+    let ctx: ReturnType<typeof suspendedContext> | null = null
+    // Read through a call so the assignments inside init() are not narrowed
+    // away; TypeScript cannot see that the click ran them.
+    const currentCtx = (): ReturnType<typeof suspendedContext> | null => ctx
+    const engine = {
+      ...fakeEngine(),
+      // Mirrors AudioEngine.init: the context exists before the first await.
+      init: vi.fn(async () => {
+        ctx ??= suspendedContext()
+      }),
+      resume: vi.fn(async () => {
+        await ctx?.resume()
+      }),
+      getAudioContext: () => ctx as unknown as AudioContext | null,
+    }
+    const Engine = withEngine(
+      engine as unknown as ReturnType<typeof fakeEngine>,
+    )
+    const onClick = vi.fn()
+    render(() => (
+      <Engine>
+        <PlayPad label="Begin" onClick={onClick} />
+      </Engine>
+    ))
+
+    fireEvent.click(pad('Begin'))
+    // Synchronously, still inside the tap.
+    expect(engine.init).toHaveBeenCalled()
+    expect(currentCtx()).not.toBeNull()
+    expect(onClick).toHaveBeenCalledOnce()
+
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(currentCtx()?.state).toBe('running')
   })
 })
 

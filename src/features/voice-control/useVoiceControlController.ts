@@ -15,11 +15,12 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { singingCaptureActive } from '@/stores/mic-store'
-import { showNotification } from '@/stores/notifications-store'
+import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
-import { voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
+import { setVoiceControlEngine, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
 import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
+import { localModelKilledTheDocument } from './local-model-crash-guard'
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
 import { activeVoiceCommands, anyRegisteredMusicPlaying, reportHeardSpeech, wakeWordHoldActive, } from './voice-command-registry'
@@ -29,6 +30,21 @@ import { createWebSpeechListener } from './webspeech-listener'
 /** Experimental on-device alternative, selectable in Settings for latency
  *  comparison against whisper-tiny. */
 const MOONSHINE_MODEL_ID = 'onnx-community/moonshine-tiny-ONNX'
+
+/**
+ * Why voice control gave up on an on-device engine. The two cases need
+ * different words: a model that failed to load left the page standing, while
+ * one that exhausted the content process took the page with it and the user
+ * watched it reload. Telling them "it would not load" after that describes
+ * something they did not see.
+ */
+type EngineFallbackReason = 'would-not-load' | 'exhausted-the-device'
+
+const ENGINE_FALLBACK_LEAD: Record<EngineFallbackReason, string> = {
+  'would-not-load': 'The on-device voice model would not load',
+  'exhausted-the-device':
+    'The on-device voice model needed more memory than this device would give it, and the page reloaded',
+}
 
 export interface VoiceFeedback {
   /**
@@ -337,19 +353,32 @@ export function useVoiceControlController(
           { channel: 'voice-control-permission' },
         )
       } else if (detail === 'local-engine-failed') {
-        // Almost always the model download (network hiccup or a
-        // rate-limited model host) — the service retries on the next
-        // start, so tell the user the retry is one toggle away.
-        showNotification(
-          'The on-device voice model failed to load. Toggle voice control to retry the download, or switch to the Browser engine in Settings.',
-          'warning',
-        )
+        // The model did not load: a network hiccup, a rate-limited model
+        // host, or — on iOS, every time — a device that cannot run it at
+        // all. Leaving voice control off until somebody visits Settings
+        // means the feature is simply broken there, so fall back to the
+        // browser engine and say so. The preference itself changes, so the
+        // next visit starts on the engine that works; picking the on-device
+        // one again in Settings is one tap and retries the download.
+        fallBackToBrowserEngine()
       }
     },
     onLatency: (roundTripMs: number) => {
       setLastLatencyMs(Math.round(roundTripMs))
     },
   }
+
+  /**
+   * This document already watched an on-device model take the tab down.
+   *
+   * The guard at mount hands over to the browser engine once, and picking the
+   * on-device engine again is a deliberate retry — but a silent one walks
+   * straight back into the same kill, which is what happened on the iPhone 13
+   * the moment the toast was dismissed. So the retry gets asked for rather
+   * than obeyed, and the preference is not left claiming an engine that never
+   * started.
+   */
+  let killedThisDocument = false
 
   let webspeechListener: VoiceListener | null = null
   let localListener: VoiceListener | null = null
@@ -409,6 +438,41 @@ export function useVoiceControlController(
     startListening()
   }
 
+  /**
+   * Move off a local engine that will not load, onto the browser one.
+   *
+   * Only the choice is made here: the engine effect further down already
+   * owns the swap — it stops the old listener, checks support and starts the
+   * new one — so doing any of that here would restart twice and stack two
+   * toasts. The one case it cannot phrase well is this one, where its
+   * "pick Whisper or Moonshine instead" would name the engine that just
+   * failed, so a browser with no speech engine is answered here and the
+   * preference is left alone.
+   */
+  const fallBackToBrowserEngine = (
+    reason: EngineFallbackReason = 'would-not-load',
+  ): void => {
+    if (voiceControlEngine() === 'webspeech') return
+    const lead = ENGINE_FALLBACK_LEAD[reason]
+    if (!listenerFor('webspeech').isSupported) {
+      stopListening()
+      setEnabled(false)
+      showNotification(
+        `${lead}, and this browser has no speech engine to fall back to. Voice control is off.`,
+        'warning',
+        { channel: 'voice-control-engine-fallback' },
+      )
+      return
+    }
+    setErrorDetail(null)
+    showNotification(
+      `${lead}, so voice control switched to the browser engine. Pick the on-device one again in Settings to try it once more.`,
+      'warning',
+      { channel: 'voice-control-engine-fallback' },
+    )
+    setVoiceControlEngine('webspeech')
+  }
+
   const turnOff = () => {
     setEnabled(false)
     // An explicit turn-off outranks the pause: forget it, so ending the
@@ -445,10 +509,17 @@ export function useVoiceControlController(
     // it was a no-op, so the press fell through to nothing at all; falling
     // through to `turnOff` instead makes the mic button mean what its label
     // has said the whole time.
+    //
+    // `dozing` belongs with `idle` and `error`: the ear stopped respawning
+    // after a stretch of silence and is waiting for a touch, and this is one.
+    // The gesture seam has usually spent it already, on `pointerdown`; the
+    // restart then only makes the label true.
     if (
       enabled() &&
       !suspendedForSinging() &&
-      (listenerState() === 'idle' || listenerState() === 'error')
+      (listenerState() === 'idle' ||
+        listenerState() === 'error' ||
+        listenerState() === 'dozing')
     ) {
       setLastLatencyMs(null)
       stopListening()
@@ -493,6 +564,25 @@ export function useVoiceControlController(
     console.log('[voice] engine switched to:', engine)
     stopListening()
     setLastLatencyMs(null)
+    if (engine !== 'webspeech' && killedThisDocument) {
+      // Put the preference back before asking, so nothing on screen claims an
+      // engine that is not running. Accepting sets it again, which re-enters
+      // this effect with the flag cleared.
+      setVoiceControlEngine('webspeech')
+      showActionNotification(
+        'Loading the on-device model is what closed this tab a moment ago. Trying again may close it once more.',
+        'warning',
+        {
+          label: 'Try anyway',
+          onClick: () => {
+            killedThisDocument = false
+            setVoiceControlEngine(engine)
+          },
+        },
+        { channel: 'voice-control-engine-fallback' },
+      )
+      return
+    }
     // toggle() checks support before starting; a switch must too, or an
     // unsupported engine (browser engine on Firefox, picked from the pill
     // menu) "runs" as a silent no-op stub under a Listening label.
@@ -509,6 +599,15 @@ export function useVoiceControlController(
 
   onMount(() => {
     if (!enabled()) return
+    // A document that starts while a model load is still marked in flight is
+    // a document that came back from a content-process kill. Starting the
+    // same load again is what turns one reload into a dead tab, so this is
+    // the one place the preference is overruled without the user asking.
+    if (voiceControlEngine() !== 'webspeech' && localModelKilledTheDocument()) {
+      killedThisDocument = true
+      fallBackToBrowserEngine('exhausted-the-device')
+      return
+    }
     const listener = listenerFor(voiceControlEngine())
     if (listener.isSupported) {
       // Mounting mid-song (the zen stage remounts on a playlist advance)

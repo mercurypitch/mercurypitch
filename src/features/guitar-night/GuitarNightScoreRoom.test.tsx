@@ -3,7 +3,7 @@
 // Kept together because the room-boundary assertions and exported state helpers
 // share the same authored-score fixture and lifecycle invariants.
 
-import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -12,6 +12,7 @@ import styles from './GuitarNightApp.module.css'
 import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreCountInControlDisabled, scoreEndControlState, scoreLiveRange, scoreLoopPendingRestart, scorePlaybackControlLabel, scoreRecoveryRange, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
+import * as listeningController from './useGuitarListeningController'
 import { GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY } from './useGuitarNightScoreRoomController'
 
 const VELVET_RIFF: GuitarNightReference = {
@@ -44,6 +45,77 @@ describe('GuitarNightScoreRoom', () => {
     globalThis.localStorage.clear()
     vi.restoreAllMocks()
   })
+
+  it.each([false, true])(
+    'does not transfer canceled monitoring consent to a later plain Listening start (late result: %s)',
+    async (lateResult) => {
+      const originalController =
+        listeningController.useGuitarListeningController
+      const [status, setStatus] =
+        createSignal<listeningController.GuitarListeningStatus>('off')
+      let resolveCanceledStart!: (started: boolean) => void
+      const canceledStart = new Promise<boolean>((resolve) => {
+        resolveCanceledStart = resolve
+      })
+      const start = vi
+        .fn<() => Promise<boolean>>()
+        .mockImplementationOnce(() => {
+          setStatus('requesting')
+          return canceledStart
+        })
+        .mockImplementationOnce(async () => {
+          setStatus('listening')
+          return true
+        })
+      const stop = vi.fn(() => setStatus('off'))
+      const setMonitoring = vi.fn(() => true)
+      // Keep the real room and amp consent flow; only the device-opening
+      // boundary is deferred so an old permission result can arrive late.
+      vi.spyOn(
+        listeningController,
+        'useGuitarListeningController',
+      ).mockImplementation((options) => ({
+        ...originalController(options),
+        status,
+        inputProfile: () => 'interface',
+        start,
+        stop,
+        canAmpMonitor: () => status() === 'listening',
+        setAmpMonitoringEnabled: setMonitoring,
+      }))
+      render(() => (
+        <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+      ))
+      fireEvent.click(screen.getByLabelText('Session controls'))
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Start Listening and monitoring' }),
+      )
+      expect(start).toHaveBeenCalledTimes(1)
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Cancel opening input' }),
+      )
+      expect(stop).toHaveBeenCalledOnce()
+      fireEvent.click(screen.getByRole('button', { name: 'Turn on Listening' }))
+      expect(start).toHaveBeenCalledTimes(2)
+      expect(
+        screen.getByRole('button', { name: 'Stop Listening' }),
+      ).toBeEnabled()
+      expect(setMonitoring).not.toHaveBeenCalled()
+
+      resolveCanceledStart(lateResult)
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', {
+            name: 'Opening input for monitoring',
+          }),
+        ).not.toBeInTheDocument(),
+      )
+      expect(setMonitoring).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: 'Stop Listening' }),
+      ).toBeEnabled()
+    },
+  )
 
   it('opens silent, naming the tab and its own clock', () => {
     render(() => (
@@ -339,10 +411,9 @@ describe('GuitarNightScoreRoom', () => {
     fireEvent.change(bass, { target: { value: '-0.25' } })
 
     expect(amp.getByLabelText('Guitar amp preset')).toHaveValue('custom')
-    expect(amp.getByRole('button', { name: /Hear my input/i })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      amp.getByRole('button', { name: 'Turn monitoring on' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(audioContext).not.toHaveBeenCalled()
     expect(screen.getByLabelText('Start the count-in')).toBeInTheDocument()
     expect(screen.queryByLabelText('Pause score')).toBeNull()

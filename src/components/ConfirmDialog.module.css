@@ -82,6 +82,54 @@
   background: var(--bg-hover);
 }
 
+/* A consent or a commitment that destroys nothing: the accent, not the red. */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg-primary, #0d1117));
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* The third way out: as quiet as Cancel, but it says where it leads. */
+.secondary {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+}
+
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .delete {
   display: inline-flex;
   align-items: center;
@@ -114,7 +162,8 @@
   outline-offset: 2px;
 }
 
-.delete svg {
+.delete svg,
+.primary svg {
   width: 0.9rem;
   height: 0.9rem;
 }

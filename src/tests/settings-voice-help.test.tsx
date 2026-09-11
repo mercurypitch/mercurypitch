@@ -14,6 +14,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import { endWalkthrough, tourSteps, walkthroughActive, } from '@/stores/app-store'
 import { notifications, setNotifications } from '@/stores/notifications-store'
 
 function openSingingTab(): HTMLElement {
@@ -87,5 +88,37 @@ describe('Settings voice-control help', () => {
     expect(button!.textContent).toContain('Command list')
     expect(button!.querySelector('svg')).not.toBeNull()
     expect(container.textContent).not.toContain('Hands-free transport')
+  })
+
+  it("sizes both buttons' icons the same", () => {
+    // They sit side by side in one row. The icon set defaults to 24 and only
+    // some of it takes a `size`, so a new button next to an old one is
+    // exactly where a mismatch appears — this one shipped at 24 beside 16.
+    const container = openSingingTab()
+    const sizes = ['settings-voice-commands', 'settings-voice-tour'].map((id) =>
+      container
+        .querySelector(`[data-testid="${id}"] svg`)
+        ?.getAttribute('width'),
+    )
+    expect(sizes[0]).toBe(sizes[1])
+  })
+
+  it('starts the voice tour from the same section', () => {
+    // The button is the whole point of Settings being a second door into the
+    // tour: someone who is already reading about voice control should not
+    // have to find the Guide modal to be shown it.
+    openSingingTab()
+    expect(walkthroughActive()).toBe(false)
+
+    fireEvent.click(screen.getByTestId('settings-voice-tour'))
+
+    expect(walkthroughActive()).toBe(true)
+    expect(tourSteps().length).toBeGreaterThan(0)
+    // One pill step, not both: `startVoiceTour` filters by viewport.
+    const pillSteps = tourSteps().filter(
+      (step) => step.targetSelector === '[data-voice-control-hud]',
+    )
+    expect(pillSteps).toHaveLength(1)
+    endWalkthrough()
   })
 })

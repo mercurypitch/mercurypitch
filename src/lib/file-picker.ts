@@ -24,6 +24,8 @@
 // Tests: src/lib/file-picker.test.ts
 // ============================================================
 
+import { isAppleTouchDevice } from './device-tier'
+
 /** How long to wait for evidence that a native picker took over. */
 export const FILE_PICKER_PROBE_MS = 1500
 
@@ -71,7 +73,10 @@ export function openFilePicker(
   if (!input) return
 
   const onUnavailable = options.onUnavailable
-  if (!onUnavailable) {
+  // iPhone and iPad always have a picker, and their Files sheet fires none
+  // of the signals below on a cancel, which read as "no picker" and told a
+  // phone it was a TV. No probe there.
+  if (!onUnavailable || isAppleTouchDevice()) {
     input.click()
     return
   }

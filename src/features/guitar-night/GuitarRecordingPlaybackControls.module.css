@@ -1,0 +1,153 @@
+/* Small instrument selectors retain Velvet materials without enlarging the transport. */
+.playback {
+  min-width: 0;
+  width: 100%;
+  color: #eee2cd;
+}
+.choices {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.sourceTrigger.sourceTrigger,
+.ampTrigger.ampTrigger {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #eee2cd;
+  background: transparent;
+  border: 1px solid transparent;
+  font: inherit;
+}
+.sourceTrigger.sourceTrigger {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 0.65rem;
+}
+.sourceTrigger svg {
+  width: 20px;
+  height: 20px;
+}
+.amp {
+  display: grid;
+  grid-template-columns: 40px auto;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+}
+.amp img {
+  display: block;
+  width: 40px;
+  height: 44px;
+  object-fit: contain;
+}
+.amp[data-bypassed='true'] img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.sourceTrigger.sourceTrigger:hover:not(:disabled),
+.ampTrigger.ampTrigger:hover:not(:disabled),
+.sourceTrigger.sourceTrigger[aria-expanded='true'],
+.ampTrigger.ampTrigger[aria-expanded='true'] {
+  background: #30251b;
+  border-color: #8c6c46;
+  color: #ffce8d;
+}
+.menu {
+  --bg-primary: #171512;
+  --bg-tertiary: #30251b;
+  --text-primary: #eee2cd;
+  --text-secondary: #c6b8a1;
+  --border-color: #64523b;
+  --accent: #edbc75;
+}
+.menu [role^='menuitem'] {
+  min-height: 48px;
+}
+.menu svg {
+  width: 18px;
+  height: 18px;
+}
+.menu img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.transport button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #64523b;
+  border-radius: 6px;
+  background: #30251b;
+  color: #eee2cd;
+  cursor: pointer;
+}
+.transport button:first-child {
+  background: #edbc75;
+  color: #21170b;
+}
+.transport svg {
+  width: 20px;
+  height: 20px;
+}
+.transport button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.details {
+  margin-top: 0.35rem;
+  color: #c6b8a1;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+.details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.details summary::before {
+  content: '+';
+  color: #edbc75;
+}
+.details[open] summary::before {
+  content: '−';
+}
+.details p,
+.explanation {
+  margin: 0.35rem 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #c6b8a1;
+}
+.playback :focus-visible,
+.sourceTrigger:focus-visible,
+.ampTrigger:focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .amp {
+    grid-template-columns: 1fr;
+    gap: 0;
+    line-height: 1;
+  }
+  .amp img {
+    width: 32px;
+    height: 32px;
+  }
+  .ampTrigger.ampTrigger {
+    padding: 1px 4px;
+  }
+}

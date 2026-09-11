@@ -9,6 +9,13 @@ const ADMIN_PATHS: Readonly<Record<string, AdminSection>> = {
   '/admin/premium-perks': 'premium-perks',
 }
 
+/**
+ * The friendly paths themselves. Exported because they have no file behind
+ * them: src/worker.ts has to serve the studio shell for these, and a test
+ * walks this list so the worker's pattern cannot fall behind a new section.
+ */
+export const ADMIN_ENTRY_PATHS: readonly string[] = Object.keys(ADMIN_PATHS)
+
 /** Convert a friendly path entry into the app's canonical hash route. */
 export function adminHashForPath(pathname: string): string | null {
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'

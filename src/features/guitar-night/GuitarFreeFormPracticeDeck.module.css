@@ -1,0 +1,149 @@
+/* The accepted-note transport retains the recorder's compact Velvet faceplate. */
+.deck {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  width: 100%;
+  color: #eee2cd;
+}
+.timeline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 44px;
+  margin-left: 160px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: #c6b8a1;
+}
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.options,
+.results,
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.results {
+  justify-content: flex-end;
+}
+.options {
+  justify-content: flex-end;
+  margin-right: 1.2rem;
+}
+.transport > button,
+.wideAction,
+.option.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.35rem;
+  border: 1px solid #64523b;
+  border-radius: 6px;
+  background: #30251b;
+  color: #eee2cd;
+  font: inherit;
+  cursor: pointer;
+}
+.option.option {
+  gap: 0.35rem;
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.option small {
+  font: inherit;
+  color: #c6b8a1;
+}
+.deck svg,
+.option svg {
+  width: 19px;
+  height: 19px;
+}
+.transport .play {
+  background: #edbc75;
+  color: #21170b;
+  border-color: #edbc75;
+}
+.transport button {
+  min-width: 44px;
+}
+.transport > button:hover:not(:disabled),
+.wideAction:hover:not(:disabled),
+.option.option:hover:not(:disabled),
+.option.option[aria-expanded='true'] {
+  border-color: #edbc75;
+  filter: brightness(1.1);
+}
+.transport .play:hover:not(:disabled) {
+  background: #ffce8d;
+}
+.wideAction[aria-pressed='true'] {
+  border-color: #8c6c46;
+  color: #ffce8d;
+}
+.deck button:disabled,
+.option.option:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.deck :focus-visible,
+.option.option:focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: 3px;
+}
+.option.compactAction {
+  display: none;
+}
+.menu {
+  --bg-primary: #171512;
+  --bg-tertiary: #30251b;
+  --text-primary: #eee2cd;
+  --text-secondary: #c6b8a1;
+  --border-color: #64523b;
+  --accent: #edbc75;
+}
+.menu [role^='menuitem'] {
+  min-height: 44px;
+}
+@media (max-width: 720px) {
+  .timeline,
+  .controls {
+    margin-left: 62px;
+  }
+  .options {
+    justify-content: flex-start;
+    margin-right: 0;
+  }
+  .wideAction {
+    display: none;
+  }
+  .option.compactAction {
+    display: inline-flex;
+  }
+  .option.option {
+    flex-direction: column;
+    gap: 0;
+    padding: 0.2rem;
+    font-size: 0.65rem;
+  }
+  .option small {
+    display: none;
+  }
+  .timeline {
+    gap: 0.35rem;
+  }
+}

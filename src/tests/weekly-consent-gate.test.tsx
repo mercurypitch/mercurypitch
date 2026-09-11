@@ -131,11 +131,26 @@ describe('the first ranked take', () => {
     await tapSingIt()
     await waitFor(() => screen.getByText('Sing it for the board?'))
 
-    fireEvent.click(screen.getByText('Cancel'))
+    fireEvent.click(screen.getByText('Sing as practice'))
 
     await waitFor(() => expect(staged).toHaveLength(1))
     // Declining is not a dead end, but it is definitely not a ranked run.
     expect(staged[0].mode).toBe('practice')
+    expect(began).toEqual([])
+    expect(consentWrites).toBe(0)
+  })
+
+  it('only closes on Cancel, staging nothing', async () => {
+    await openHero()
+    await tapSingIt()
+    await waitFor(() => screen.getByText('Sing it for the board?'))
+
+    fireEvent.click(screen.getByText('Cancel'))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Sing it for the board?')).toBeNull(),
+    )
+    expect(staged).toEqual([])
     expect(began).toEqual([])
     expect(consentWrites).toBe(0)
   })

@@ -5,6 +5,196 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.7] - 2026-09-10
+
+Piano and Guitar let you pick which room they open, voice control reaches the
+last two rooms, and a long list of things that quietly did the wrong thing now
+do the right one.
+
+### Added
+
+- **Piano and Guitar ask which room you want the first time you open them.**
+  The lit Night room, or the full workspace with all the tools. It remembers
+  your answer, and you can untick that if you would rather be asked each time.
+  Settings changes it later either way. On a phone both always open Night.
+- **Guitar Night has a third way in: Free play.** See what you play, record it,
+  practice it — no file to load first.
+- **Voice control works in Piano Night and Drum Night.** Neither room had any,
+  so voice could carry you in and then had nothing that got you out.
+- **Every Night room has something you can say to reach it.** "Go to guitar
+  night", "take me to drum night", and from inside one room you can ask for
+  another. Only Karaoke Night had ever been given a phrase.
+- **"What can I say" works everywhere voice control does.** The one command
+  whose whole job is to list the others was missing from the rooms.
+- **A developer console you can open on the page the bug is on.** Switch it on
+  in Settings' danger zone and it follows you as a small button — open it, copy
+  the log, clear it. On a phone there is otherwise no way to see what the app
+  is saying.
+- **Voice control has a tour, and a Learn chapter to go with it.** Where the
+  pill is, what to say, and how to name a song you are humming — the one
+  feature in the app with no button, where saying it is the only way in. Start
+  it from the Guide, or from Settings under Voice Control.
+
+### Fixed
+
+- **A theme you chose no longer turns back.** Picking one and reloading soon
+  after used to lose it.
+- **Switches in Settings stretched across the row**, and dropdowns closed the
+  moment you picked anything unless you held the mouse down.
+- **A hairline of the wrong colour ran just inside the border** of buttons,
+  cards, pills and panels across the app — forty-one of them.
+- **An expired sign-in no longer looks like an empty library.** When your
+  session had quietly run out, pages loaded with nothing in them and never said
+  why. The app now says so and asks you to sign in again.
+- **A recording no longer ends after a note or two when saving is slow.** It
+  can ride out about thirty seconds of stalled writes instead of one and a half.
+- **A tab another tab has replaced explains itself on every screen**, not only
+  in the two rooms that happened to say so.
+- **Turning on the on-device voice engine can no longer close the tab twice.**
+  On a phone that download can take the whole tab with it; the app now comes
+  back on the browser engine and asks before letting you try again.
+- **Voice control stands down while the page is off screen** and picks up when
+  you come back, instead of arguing with a phone that already took the
+  microphone.
+- **A link you share now shows a picture made for the page you shared.** Six
+  pages were showing the same generic one, and a few described artwork that was
+  not in it.
+- **The room gallery only fetches the artwork you can actually see.** Opening
+  it used to pull every room at once, which is what made it stall partway
+  through on a big collection.
+- **Landing pages stopped downloading a picture nothing ever showed.** About
+  170 KB, on every visit.
+
+## [0.9.6] - 2026-09-09
+
+Four new front doors, one for each thing people arrive looking for.
+
+### Added
+
+- **Pitch Training, Voice Type Test, Vocal Remover and Singer Match each have
+  their own page now.** Every one opens straight into the tool it names, and
+  every one is an address you can bookmark or send to someone.
+
+### Fixed
+
+- **Some pages had nothing to show when JavaScript was switched off.** They now
+  say what they are and what they need in order to run.
+
+## [0.9.5] - 2026-09-09
+
+A fix for what the app tells you when your account's data cannot load.
+
+### Fixed
+
+- **When something in your account fails to load, the app now says what
+  happened.** It used to blame the connection every time, even when the
+  connection was fine.
+
+## [0.9.4] - 2026-09-09
+
+A fix for the app opening in more than one tab.
+
+### Fixed
+
+- **Rooms no longer hang when the site is open in two tabs.** After an update
+  an older tab could hold your recordings while a newer one waited. Nothing
+  was lost.
+
+## [0.9.3] - 2026-09-09
+
+A fix for choosing rooms.
+
+### Fixed
+
+- **Picking a room no longer reloads the whole shelf.** Every choice
+  re-fetched the other rooms' artwork, so pictures stalled and the gallery
+  stuttered. Each room loads once now.
+
+## [0.9.2] - 2026-09-08
+
+Two new rooms, takes you can hear back, and a sign-in worth having.
+
+### Added
+
+- **Ear Lab.** A room for training your ear, built around measuring what you
+  hear rather than asking you to grade yourself. Thirteen drills across
+  melody, rhythm, metre and harmony, laid out as a route with a short daily
+  run that picks them for you.
+- **Ear drills on your own songs.** The Field Book builds a drill out of a
+  song you already know, so the ear work happens on music you care about.
+- **Drum Night.** A room for drummers: the kit on screen or your own e-kit,
+  grooves you start from a pattern library and shape until they are yours,
+  and a room that plays them with feel rather than on the grid.
+- **Drum takes and full-band play-along.** Record against a saved groove and
+  keep its history, or play the whole band and drum over it.
+- **Guitar Night records what you play.** A melody take, with Studio amp
+  tones and monitoring while you are playing it, alongside percussion parts
+  from an imported file.
+- **Play your take back, or practice against it.** A recorded melody becomes
+  something you can replay — original audio or the notes it heard, clean or
+  through your amp — or practice against, scored the way a rehearsal is, with
+  the loop, the tempo and the count-in you already know.
+- **Take a melody with you.** A recorded take exports as MIDI or as a Guitar
+  Pro file that opens as readable notation.
+- **Record without touching anything.** "Record an idea" starts a take and
+  "stop recording" finishes it, hands free.
+- **Chords, if you want them.** Guitar Night can show more than one note at a
+  time while you play, and after you stop it can offer a reading of the chords
+  it heard. You compare it against what was captured, keep it or leave it, and
+  go back to the original in one step. Both switches live in Session, and it
+  all happens on your own device.
+- **Sign in with a passkey**, a code sent to your email, or a second factor
+  with a way back in if you lose it — and see every device on your account,
+  with a way to revoke any of them.
+- **The Progress cabinet.** Every badge and achievement in one place, the
+  leaderboard in its own Legends view, and the vocal challenges beside the
+  exercises in Practice.
+- **Voice control inside the rooms.** "Go home" and its friends now get you
+  out of Karaoke Night, Guitar Night, Drum Night and Piano Night.
+- **A phone streams a karaoke song** instead of downloading all of it first.
+
+### Changed
+
+- **Piano Night in phone landscape is one bottom row** — the studio, the
+  transport, Music and More — with the falling notes and the keys both still
+  on screen.
+- **Guitar Night gives a phone its rows back**: the resting guide line and the
+  bottom status strip are gone at phone width. Both are unchanged on a wide
+  screen.
+- **Finishing a drum take is on the take strip**, which is always visible, so
+  the bottom bar keeps plain play and pause.
+- **A phone shows at most two notifications at once**, and the verify-email
+  nudge is a strip in the page rather than a card over the bottom navigation.
+- **Separated songs are stored as files** and play back a window at a time,
+  which is what lets a phone open a full band at all.
+- **Practice is ordered Singing, Piano, Guitar, Drums**, and Drum Night has
+  its own row on the home gallery.
+- **Every room opens on the MercuryPitch mark** while it loads, instead of on
+  an empty screen, and a link shared from any of them arrives with a
+  description a search engine and a chat app can both read.
+
+### Fixed
+
+- **Ear Lab drills play.** A drill could run its whole course in silence when
+  the sound had not been woken by your first tap.
+- **Drum Night keeps the take** through a variation switch, plays from the top
+  after a song ends, and comes back after a spell in the background.
+- **Voice control hands over when a local model will not load** instead of
+  staying on and deaf, and stops claiming to listen while it is restarting.
+- **A navigation command no longer starts the music.** "Go home" said with a
+  song loaded used to play it on the way out.
+- **Seeking in Guitar Night keeps playing** instead of pausing at the new spot.
+- **Guitar Pro and MIDI files can be picked on an iPhone.**
+- **Signing in on an iPhone no longer zooms the page**, and the dialog stays
+  above the keyboard.
+- **The Back button goes back** from a screen that asks before you leave.
+- **A screen that fails to load says so**, and so does a practice run that
+  could not be saved.
+- **A closed challenge cannot be set live again**, and past challenges show
+  the day they actually closed.
+- **A link to a page that does not exist says so** instead of quietly opening
+  the home page.
+
 ## [0.9.1] - 2026-08-25
 
 ### Added
@@ -79,7 +269,7 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 - **Piano Night.** A room for the keyboard, the way Guitar Night is one for
   the guitar. It plays the music already on your device, and a connected MIDI
-  keyboard can be mapped and practised against.
+  keyboard can be mapped and practiced against.
 - **A Progress tab.** Practice used to end when you closed the tab. This is
   the record it leaves: one honest moment out of your history, the evidence
   behind it, and a way back to the practice that carries it forward.
@@ -599,7 +789,7 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
-- **A tidier view while you practise on your phone.** During a run the Stop button is now a compact button tucked in the corner so it never covers your live metrics, and the pitch tracker is a little shorter so each drill has more room to breathe.
+- **A tidier view while you practice on your phone.** During a run the Stop button is now a compact button tucked in the corner so it never covers your live metrics, and the pitch tracker is a little shorter so each drill has more room to breathe.
 
 ## [0.7.8] - 2026-07-14
 
@@ -717,7 +907,7 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
-- **Switching tracks keeps your place.** Changing which track you practise in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
+- **Switching tracks keeps your place.** Changing which track you practice in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
 - **On-device separations retry cleanly.** Retrying a browser (WebGPU) vocal separation while Cloud mode was selected could fail with a technical error instead of running. It now re-initialises and processes, and any unexpected error shows a readable message.
 - **Switching songs on the Singing tab refreshes properly.** Loading a different melody or an imported MIDI now updates the notes and the timeline right away (and starts the new song from the beginning), instead of leaving the previous song on screen when you switched during playback or a loop.
 - **Focus mode fits long songs.** The full-screen focus view now scrolls a readable window of notes for long imported songs, instead of squeezing the whole song on screen at once.
@@ -856,7 +1046,7 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 - **Reworked Singing practice screen**: the pitch view, score, and live mic monitor now float as glass cards over a full-bleed canvas, like the 3D guitar view. A floating control bar replaces the old toolbar — drag it to the top or bottom, or hide it for more room. A top-left chip shows the current scale/melody, tempo and position, and session scores sit in a top-right scoreboard. The pitch view auto-fits to your melody with clear note-name labels, and the overlays fade back during playback so the notes stay front and centre.
 - **Consistent controls across tabs**: Piano, Guitar and Compose now use the same sleek glass control bar as Singing, so transport, tempo, volume and the rest behave the same everywhere.
-- **Practice context in the header**: Singing, Piano and Guitar show a small pill with what you're practising, plus the loaded melody and character.
+- **Practice context in the header**: Singing, Piano and Guitar show a small pill with what you're practicing, plus the loaded melody and character.
 - **Tidier Compose editor**: the Piano Roll / Session Editor switch is now a clean tab strip, with the playback controls tucked into the same row.
 - **Karaoke playlists tidy-up**: friendlier empty states, and deleting a playlist now asks for confirmation first so you can't remove one by accident.
 - **Tabbed Settings**: settings are grouped into General, Practice, and Display & Controls tabs, alongside a polished account card.
@@ -944,7 +1134,7 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 - **Siren / Range Explorer**: glides are now generated within your comfortable range (no more sub-audible targets like "G0"), and the start/end notes plus a guide dot are shown so you know exactly where to glide.
 - The grade badge on exercise cards ("Good", "Great"…) now has its icon properly centered with the text.
 - **Sight-Singing reworked**: notes are kept within your vocal range (no more unreachable highs), the cursor now advances when you actually sing each note (instead of marching on a fixed timer), the staff renders properly (real clef, ledger lines, accidentals), and a "hold to continue" bar plus a DEV-only pitch readout make practice and testing clearer.
-- **Exercise difficulty + filter**: every exercise card now shows a fixed Easy/Medium/Hard difficulty, and a pill filter at the top lets you show just the exercises at a level. (This replaces the old badge, which was your personal adapting level and only appeared once you'd practised an exercise.)
+- **Exercise difficulty + filter**: every exercise card now shows a fixed Easy/Medium/Hard difficulty, and a pill filter at the top lets you show just the exercises at a level. (This replaces the old badge, which was your personal adapting level and only appeared once you'd practiced an exercise.)
 - **Interval Trainer, Dynamic Swell and Call & Response now score correctly**: a timing bug made them measure an empty slice of your take, so they almost always scored 0 no matter how well you sang. They now score the notes you actually sang.
 - **Routine Runner score capped at 100**: a fatigue bonus could push the total above 100; the score is now bounded correctly.
 

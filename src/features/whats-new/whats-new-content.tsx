@@ -1,11 +1,17 @@
 // ============================================================
-// What's New — the v0.9.0 release, in the visitor's terms
+// What's New — the 0.9 line, in the visitor's terms
 // ============================================================
 //
-// Content, not code. Every entry is drawn from the CHANGELOG's 0.9.0
-// section, cut down to the handful somebody would actually change their
-// evening over — a release page that lists twenty-nine bullets is a
-// changelog, and there is already one of those.
+// One page for the whole release LINE, not one per version, because that is
+// the granularity the panel announces at (see whats-new-release.ts). A reader
+// who arrives on 0.9.2 having never seen 0.9.0 should still be told about
+// Piano Night, so the page accumulates rather than resetting each patch.
+//
+// Content, not code. Every entry is drawn from the CHANGELOG, cut down to the
+// handful somebody would actually change their evening over — a release page
+// that lists twenty-nine bullets is a changelog, and there is already one of
+// those. Newest first: a returning reader should meet what they have not
+// seen before scrolling past what they have.
 //
 // Each entry answers two questions in order: what is it, and what do I do
 // to try it. The second is the one that gets a feature used, so `tryIt`
@@ -13,16 +19,14 @@
 // the app, this file is wrong and should be fixed rather than reworded.
 
 import type { JSX } from 'solid-js'
-import { Cloud, DeviceSync, Guitar, MercuryPlanet, Mic, PianoKeys, Trophy, } from '@/components/icons'
+import { Cloud, DeviceSync, Drum, Ear, Guitar, Headphones, MercuryPlanet, Mic, PianoKeys, Trophy, } from '@/components/icons'
+import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
 import { openMercurySing } from '@/features/mercury-sing/mercury-sing-store'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
-import { TAB_PROGRESS } from '@/features/tabs/constants'
+import { TAB_EAR_LAB, TAB_PROGRESS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
 import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
-
-/** The standalone Guitar Night room. No constant of its own yet; the two
- *  in-app doors to it (GuitarPage) hard-code the same path. */
-const GUITAR_NIGHT_PATH = '/guitar-night'
 
 /**
  * The night rooms are their own pages, not tabs, so reaching one is a real
@@ -61,12 +65,68 @@ export interface Release {
   alsoIn: string[]
 }
 
-export const RELEASE_0_9_0: Release = {
-  version: '0.9.0',
-  date: 'August 2026',
+export const RELEASE_0_9: Release = {
+  version: '0.9',
+  date: 'September 2026',
   headline:
-    'Two rooms for players, a record of your practice that outlives the tab, your library on every device, and an app you can talk to.',
+    'A room for your ears and a room for drums, takes you can hear back, four rooms for players, and a record of your practice that outlives the tab.',
   highlights: [
+    {
+      id: 'ear-lab',
+      title: 'Ear Lab',
+      icon: () => <Ear />,
+      body: 'A room for training your ear, built around measuring what you actually hear instead of asking you to grade yourself. Thirteen drills across melody, rhythm, metre and harmony, each on its own stage. The Ear Path lays them out as a route rather than a menu, and the Daily Sprint picks a short run for you when you do not want to choose.',
+      tryIt:
+        'Start with the Daily Sprint — it is three or four minutes and it picks the drills. The Ear Path shows what comes next.',
+      go: {
+        label: 'Open Ear Lab',
+        run: () => {
+          setActiveTab(TAB_EAR_LAB)
+        },
+      },
+    },
+    {
+      id: 'field-book',
+      title: 'Ear drills on your own songs',
+      icon: () => <Mic />,
+      body: 'The Field Book takes a song you already know and builds the drill out of it, so the ear work happens on music you care about rather than on generated tones. It hears the song\u2019s own key and chords and asks you about those.',
+      tryIt:
+        'Bring a song into Ear Lab and open the Field Book. A song you know by heart is the one to start with.',
+      go: {
+        label: 'Open Ear Lab',
+        run: () => {
+          setActiveTab(TAB_EAR_LAB)
+        },
+      },
+    },
+    {
+      id: 'drum-night',
+      title: 'Drum Night',
+      icon: () => <Drum />,
+      body: 'A room for drummers. Play the kit on screen or bring your own e-kit, start from a groove in the pattern library, and shape it until it is yours. The room plays grooves with feel rather than on the grid, and repeated hits vary instead of machine-gunning.',
+      tryIt:
+        'Pick a groove from the library and press play, then swap a few hits. Save it and the room keeps your takes against it.',
+      go: {
+        label: 'Open Drum Night',
+        run: () => {
+          openNightRoom(DRUM_NIGHT_PATH)
+        },
+      },
+    },
+    {
+      id: 'hear-yourself',
+      title: 'Hear Yourself',
+      icon: () => <Headphones />,
+      body: 'Every take you keep is here to listen back to, from any room — singing, guitar, piano and now drums. Put two takes side by side and hear the difference rather than trusting your memory of last week. The audio stays on your device.',
+      tryIt:
+        'Record anything, keep it, then open Hear Yourself and compare it with an older take of the same thing.',
+      go: {
+        label: 'Open Hear Yourself',
+        run: () => {
+          setActiveTab(TAB_VOICE_HISTORY)
+        },
+      },
+    },
     {
       id: 'progress',
       title: 'A Progress tab',
@@ -112,7 +172,7 @@ export const RELEASE_0_9_0: Release = {
       id: 'piano-night',
       title: 'Piano Night',
       icon: () => <PianoKeys />,
-      body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practised against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
+      body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practiced against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
       tryIt:
         'Connect a MIDI keyboard first if you have one — it is offered on arrival. There is a door to the room in the Piano tab too.',
       go: {
@@ -166,6 +226,11 @@ export const RELEASE_0_9_0: Release = {
     },
   ],
   alsoIn: [
+    'Sign in with a passkey, a code sent to your email, or a second factor \u2014 and see every device signed in to your account, with a way to revoke any of them.',
+    'Guitar Night records what you play. A melody take, with amp tones and monitoring while you are playing it.',
+    'Every badge and achievement is in one cabinet in Progress, the leaderboard has its own Legends view, and the vocal challenges sit beside the exercises in Practice.',
+    'Separated songs are stored as files rather than in the database and play back a window at a time, which is what lets a phone open a full band.',
+    'Voice control works inside the rooms: "go home" and its friends now get you out of Karaoke Night, Guitar Night, Drum Night and Piano Night.',
     'Loading a separated song shows real progress instead of counting whole stems and appearing to stall.',
     'The app adapts to televisions and slower devices, so a session on a living-room screen behaves like one.',
     'Compose fits on a phone — the editor header no longer stacks five rows of controls above the notes.',

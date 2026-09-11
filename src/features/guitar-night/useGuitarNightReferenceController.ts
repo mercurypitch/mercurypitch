@@ -97,7 +97,10 @@ export async function loadDefaultGuitarNightTranscriptionPort(): Promise<GuitarN
 
 export async function loadDefaultGuitarNightReferencePort(): Promise<GuitarNightReferencePort> {
   const module = await import('./saved-score-reference-port')
-  return module.createSavedScoreGuitarNightReferencePort()
+  const recorded = await import('./recorded-score-reference-port')
+  return recorded.withRecordedGuitarScores(
+    module.createSavedScoreGuitarNightReferencePort(),
+  )
 }
 
 export function useGuitarNightReferenceController(
@@ -503,7 +506,18 @@ export function useGuitarNightReferenceController(
 
   const ensurePort = async (): Promise<GuitarNightReferencePort | null> => {
     const current = port()
-    if (current !== null) return current
+    if (current !== null) {
+      try {
+        await current.refresh?.()
+        if (disposed) return null
+        setLibraryVersion((version) => version + 1)
+        setLibraryState('ready')
+        return current
+      } catch {
+        if (!disposed) setLibraryState('error')
+        return null
+      }
+    }
 
     if (portPromise === null) {
       setLibraryState('loading')
@@ -561,6 +575,8 @@ export function useGuitarNightReferenceController(
       setImportPendingFileName(null)
     }
     const generation = ++attachGeneration
+    setReadingOnRecording(null)
+    setHandPlacement(null)
     // An authored score replaces whatever was being measured: stop that work
     // rather than letting a late transcription overwrite this attachment.
     cancelFollowStem()
@@ -754,7 +770,25 @@ export function useGuitarNightReferenceController(
    * change anything, and a failure to place never leaves a stale tab claiming
    * to be somewhere it is not.
    */
-  const showWrittenOnRecording = (written: ReadingOnRecording): boolean => {
+  const persistRecordedPlacement = (
+    songId: string,
+    alignment: ScoreAlignment | null,
+  ): void => {
+    const backingId = options.backingSessionId?.()
+    if (backingId == null || backingId === '') return
+    void port()
+      ?.saveRecordedPlacement?.(songId, backingId, alignment)
+      .catch(() => {
+        if (!disposed)
+          setAlignStatus(
+            'The melody is placed for this session, but its placement could not be saved. Try the alignment again.',
+          )
+      })
+  }
+  const showWrittenOnRecording = (
+    written: ReadingOnRecording,
+    persist = true,
+  ): boolean => {
     const placed = placeWrittenOnRecording(written, tuning())
     if (placed === null) {
       setAlignStatus('That part could not be placed on this instrument.')
@@ -763,7 +797,62 @@ export function useGuitarNightReferenceController(
     setReadingOnRecording(written)
     setAlignStatus(null)
     setState({ kind: 'ready', reference: placed })
+    if (persist && written.placedBy === 'hand')
+      persistRecordedPlacement(written.songId, written.alignment)
     return true
+  }
+
+  const restoreRecordedPlacement = async (
+    songId: string,
+    backingId: string,
+  ): Promise<void> => {
+    const loaded = port()
+    const generation = attachGeneration
+    if (loaded?.readRecordedPlacement === undefined) return
+    try {
+      const alignment = await loaded.readRecordedPlacement(songId, backingId)
+      if (
+        disposed ||
+        generation !== attachGeneration ||
+        options.backingSessionId?.() !== backingId ||
+        reference()?.songId !== songId ||
+        alignment === null ||
+        readingOnRecording() !== null
+      )
+        return
+      const source = loaded.readSource(songId)
+      const track = source?.tracks.find(
+        (item) => item.id === source.scoreTrackId,
+      )
+      if (source === null || source === undefined || track === undefined) return
+      const first = alignment.anchors[0]
+      const last = alignment.anchors.at(-1)
+      setHandPlacement({
+        songId,
+        trackId: track.id,
+        trackName: track.name,
+        marks: {
+          firstAudioSeconds: first?.audioSeconds,
+          lastAudioSeconds:
+            alignment.anchors.length > 1 ? last?.audioSeconds : undefined,
+        },
+      })
+      showWrittenOnRecording(
+        {
+          songId,
+          trackId: track.id,
+          alignment,
+          driftSeconds: alignmentDriftSeconds(alignment),
+          placedBy: 'hand',
+        },
+        false,
+      )
+    } catch {
+      if (!disposed && generation === attachGeneration)
+        setAlignStatus(
+          'The saved melody placement could not be loaded. Use Align to place it again.',
+        )
+    }
   }
 
   /**
@@ -872,13 +961,28 @@ export function useGuitarNightReferenceController(
     const alignment = nudgeAlignment(written.alignment, deltaSeconds)
     // Built rather than spread: a nudged reading is hand-placed, and spreading
     // would carry the measured share along as if it still described this.
-    showWrittenOnRecording({
+    const placed = showWrittenOnRecording({
       songId: written.songId,
       trackId: written.trackId,
       alignment,
       driftSeconds: alignmentDriftSeconds(alignment),
       placedBy: 'hand',
     })
+    const placing = handPlacement()
+    if (placed && placing?.songId === written.songId) {
+      // The mark labels and the next first/last edit must use the same clock
+      // as the moved notes and durable alignment, without requiring a reload.
+      setHandPlacement({
+        ...placing,
+        marks: {
+          firstAudioSeconds: alignment.anchors[0]?.audioSeconds,
+          lastAudioSeconds:
+            alignment.anchors.length > 1
+              ? alignment.anchors.at(-1)?.audioSeconds
+              : undefined,
+        },
+      })
+    }
   }
 
   /**
@@ -891,6 +995,7 @@ export function useGuitarNightReferenceController(
    */
   const stopReadingOnRecording = (): void => {
     const written = readingOnRecording()
+    if (written !== null) persistRecordedPlacement(written.songId, null)
     setReadingOnRecording(null)
     setAlignStatus(null)
     const measured = measuredForAlignment()
@@ -901,7 +1006,19 @@ export function useGuitarNightReferenceController(
       })
       return
     }
-    if (written !== null) void attach(written.songId, written.trackId, 'none')
+    if (written !== null) {
+      // Return the already-loaded score to its own clock. Re-attaching is a
+      // source replacement and would discard the hand-placement controls.
+      const result = port()?.openReference(
+        written.songId,
+        written.trackId,
+        tuning(),
+      )
+      if (result?.ok === true) {
+        attachGeneration += 1
+        setState({ kind: 'ready', reference: result.reference })
+      } else void attach(written.songId, written.trackId, 'none')
+    }
   }
 
   const replaceOnCurrentInstrument = (nextTuning: InstrumentTuning): void => {
@@ -921,7 +1038,16 @@ export function useGuitarNightReferenceController(
       })
       return
     }
-    void attach(current.reference.songId, current.reference.trackId, 'none')
+    // The already-loaded score is sufficient for a neck change. Refreshing the
+    // IndexedDB catalogue here would leave the old frets visible under new rows.
+    const loaded = port()
+    if (loaded === null) return
+    const result = loaded.openReference(
+      current.reference.songId,
+      current.reference.trackId,
+      nextTuning,
+    )
+    if (result.ok) setState({ kind: 'ready', reference: result.reference })
   }
 
   const setInstrument = (next: StringedInstrument): void => {
@@ -1148,6 +1274,7 @@ export function useGuitarNightReferenceController(
     readingOnRecording,
     alignStatus,
     readScoreOnRecording,
+    restoreRecordedPlacement,
     stopReadingOnRecording,
     handPlacement,
     handFallback,

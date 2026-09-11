@@ -10,6 +10,7 @@ import { Portal } from 'solid-js/web'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { ComposeMobileToolbar } from '@/components/compose/ComposeMobileToolbar'
+import { DatabaseLifecycleNotice } from '@/components/DatabaseLifecycleNotice'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { Drum, Music, MusicBoard, MusicNote, PianoKeys, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
@@ -213,6 +214,10 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
+import { InstrumentRoomDoor } from '@/features/instrument-room/InstrumentRoomDoor'
+import type { RoomInstrument } from '@/features/instrument-room/room-preference'
+import { roomChoice, setRoomChoice, } from '@/features/instrument-room/room-preference'
 import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
@@ -224,6 +229,7 @@ import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
@@ -253,7 +259,7 @@ import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/featur
 import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceHistoryPage'
 import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
-import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
+import { RELEASE_0_9 } from '@/features/whats-new/whats-new-content'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -1152,12 +1158,75 @@ const AppShell: Component<AppProps> = (props) => {
     onResolved(true)
   }
 
+  const [roomDoorFor, setRoomDoorFor] = createSignal<RoomInstrument | null>(
+    null,
+  )
+
+  const instrumentOfTab = (tab: ActiveTab): RoomInstrument | null => {
+    if (tab === TAB_PIANO) return 'piano'
+    if (tab === TAB_GUITAR) return 'guitar'
+    return null
+  }
+
+  const nightPathOf = (instrument: RoomInstrument): string =>
+    instrument === 'piano' ? PIANO_NIGHT_PATH : GUITAR_NIGHT_PATH
+
+  /**
+   * Piano and Guitar each open two rooms, so the tab asks once which one.
+   *
+   * Answered here rather than in the tab bar because there are several ways
+   * to reach a tab — the top nav, the keyboard's next/prev, a call from
+   * another surface — and the question belongs to the destination, not to
+   * whichever control happened to ask for it. Hash routing goes through
+   * requestActiveTabChange directly and is deliberately NOT intercepted: a
+   * deep link to #/piano is already a statement about where to land.
+   *
+   * Only ever called once requestActiveTabChange has ACCEPTED the move. The
+   * guard it runs is not about tabs: it blocks navigation while a take is
+   * still saving to this device, and lets Voice History ask before it is
+   * left. Taking over ahead of it would have skipped both — and the Night
+   * answer is a full page navigation, so a take mid-save would have been
+   * abandoned rather than merely interrupted.
+   *
+   * Returns true when it has taken over the navigation.
+   */
+  function roomDoorIntercepts(
+    newTab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ): boolean {
+    const instrument = instrumentOfTab(newTab)
+    if (instrument === null) return false
+    // A phone has one answer — the Night room IS the mobile experience and the
+    // workspace is a desktop surface — so it never asks. BottomTabBar routes
+    // there directly; this covers every other way a narrow viewport gets here.
+    if (isNarrow()) {
+      window.location.assign(nightPathOf(instrument))
+      onResolved?.(false)
+      return true
+    }
+    const choice = roomChoice(instrument)
+    if (choice === 'night') {
+      window.location.assign(nightPathOf(instrument))
+      onResolved?.(false)
+      return true
+    }
+    if (choice === 'ask') {
+      setRoomDoorFor(instrument)
+      onResolved?.(false)
+      return true
+    }
+    return false
+  }
+
   function handleTabChange(
     newTab: ActiveTab,
     onResolved?: (accepted: boolean) => void,
   ): void {
     requestActiveTabChange(newTab, (accepted) => {
       if (accepted) {
+        // Inside the callback, not before it: the current surface has to
+        // release us first. See roomDoorIntercepts.
+        if (roomDoorIntercepts(newTab, onResolved)) return
         setActiveTab(newTab)
       } else {
         const route = parseHash(window.location.hash)
@@ -3088,7 +3157,7 @@ const AppShell: Component<AppProps> = (props) => {
 
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>
-            <WhatsNewPage release={RELEASE_0_9_0} onClose={whatsNew.close} />
+            <WhatsNewPage release={RELEASE_0_9} onClose={whatsNew.close} />
           </Suspense>
         </Show>
 
@@ -3311,6 +3380,9 @@ const AppShell: Component<AppProps> = (props) => {
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
+              {/* Phones: the verify-email nudge is a strip here, in the flow,
+                  not a pill over the tab bar and the toasts. */}
+              <VerifyEmailBanner placement="inline" />
               <Show when={activeTab() === TAB_HOME}>
                 <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
                   <HomePage />
@@ -4371,6 +4443,11 @@ const AppShell: Component<AppProps> = (props) => {
             and the dialog is gone by the time the account is held. */}
         <LocalProgressNotice />
 
+        {/* A superseded or blocked database breaks every surface at once,
+            so the explanation belongs to the shell rather than to whichever
+            spinner the visitor happens to be watching. */}
+        <DatabaseLifecycleNotice />
+
         <Notifications />
         {/* The sync dialog and its corner chip outlive any tab — a
             transfer must survive the panel that started it
@@ -4403,6 +4480,34 @@ const AppShell: Component<AppProps> = (props) => {
         <Show when={showVoiceHelp()}>
           <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
         </Show>
+        <Show when={roomDoorFor()} keyed>
+          {(instrument) => (
+            <InstrumentRoomDoor
+              instrument={instrument}
+              onDismiss={() => setRoomDoorFor(null)}
+              onChoose={(choice, remember) => {
+                setRoomDoorFor(null)
+                // Unticked leaves 'ask' in place, so the door opens again next
+                // time. That is the whole meaning of the tick, and the reason
+                // the stored value is a third state rather than a flag.
+                if (remember) setRoomChoice(instrument, choice)
+                const tab = instrument === 'piano' ? TAB_PIANO : TAB_GUITAR
+                // Re-asked here, not just before the door opened: answering it
+                // takes as long as it takes, and a take can start saving in
+                // that time. Night is a full page navigation, so it is the
+                // answer that most needs the veto.
+                requestActiveTabChange(tab, (accepted) => {
+                  if (!accepted) return
+                  if (choice === 'night') {
+                    window.location.assign(nightPathOf(instrument))
+                    return
+                  }
+                  setActiveTab(tab)
+                })
+              }}
+            />
+          )}
+        </Show>
         {/* Mounting IS opening: the stage's engine spins up with the
             component and releases the mic on unmount. */}
         <Show when={mercurySingOpen()}>
@@ -4410,7 +4515,7 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />
-        <VerifyEmailBanner />
+        <VerifyEmailBanner placement="floating" />
 
         <Show when={isLibraryModalOpenSignal()}>
           <LibraryModal

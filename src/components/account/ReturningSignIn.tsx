@@ -25,11 +25,13 @@ import { signInWithPasskey } from '@/db/services/auth-passkey-service'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
+import { NativeSignInError, signInWithGoogle, } from '@/features/account/native-sign-in'
+import { nativeGoogleSignInOffered } from '@/features/account/sign-in-methods'
 import { API_BASE_URL } from '@/lib/defaults'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
 import type { SignInMethod } from '@/lib/last-sign-in'
 import { dismissReturningPrompt, lastSignInMethod, returningPromptDismissed, signInMethodLabel, } from '@/lib/last-sign-in'
-import { describeWebAuthnError } from '@/lib/webauthn'
+import { describeWebAuthnError, passkeysSupported } from '@/lib/webauthn'
 import { showNotification } from '@/stores/notifications-store'
 import { isFirstRun } from '@/stores/onboarding-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -95,14 +97,27 @@ export const ReturningSignIn: Component = () => {
         await signInWithPasskey()
         showNotification('Signed in', 'info')
       } else if (current === 'google') {
-        const failure = await startGoogleSignIn()
-        if (failure !== null) setError(failure)
+        if (nativeGoogleSignInOffered()) {
+          // Inside a shell the redirect has nowhere to come back to, and
+          // Google refuses an embedded WebView anyway. Same button, the
+          // platform's own sheet behind it.
+          await signInWithGoogle()
+          showNotification('Signed in', 'info')
+        } else {
+          const failure = await startGoogleSignIn()
+          if (failure !== null) setError(failure)
+        }
       } else {
         // Password and mailed code both need a form, and the modal already is
         // that form — including the pane that asks for a code.
         openAuthModal('login')
       }
     } catch (err) {
+      if (err instanceof NativeSignInError) {
+        // Closing the system sheet is an answer, not a fault.
+        if (err.kind !== 'cancelled') setError(err.message)
+        return
+      }
       const message = describeWebAuthnError(err)
       if (message !== '') setError(message)
     } finally {
@@ -110,8 +125,19 @@ export const ReturningSignIn: Component = () => {
     }
   }
 
-  const googleBlocked = (): boolean =>
-    method() === 'google' && googleSignInUnavailableReason !== null
+  /**
+   * The remembered method cannot be offered here.
+   *
+   * Google on a PR preview (no exact-match callback URI), and a passkey in
+   * either app shell — `passkeysSupported()` answers false there, so the one
+   * button this strip exists to show would open a system dialog that says no.
+   * "Another way" below is always offered, so nobody is cornered by either.
+   */
+  const methodBlocked = (): boolean =>
+    (method() === 'google' &&
+      googleSignInUnavailableReason !== null &&
+      !nativeGoogleSignInOffered()) ||
+    (method() === 'passkey' && !passkeysSupported())
 
   return (
     <Show when={visible()}>
@@ -138,7 +164,7 @@ export const ReturningSignIn: Component = () => {
           </Show>
         </span>
 
-        <Show when={!googleBlocked()}>
+        <Show when={!methodBlocked()}>
           <button
             type="button"
             class={styles.action}

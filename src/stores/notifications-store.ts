@@ -7,7 +7,8 @@
 // confirmations): showing a channelled toast clears the previous one on that
 // channel, so a category can never stack up the screen.
 
-import { createSignal } from 'solid-js'
+import { createEffect, createRoot, createSignal, on } from 'solid-js'
+import { isNarrow } from '@/lib/use-viewport'
 
 export interface NotificationAction {
   label: string
@@ -93,15 +94,107 @@ const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
   error: 10000,
 }
 
-/** Append a notification, first evicting any prior toast sharing its channel. */
-function pushNotification(notif: Notification): void {
-  setNotifications((list) => {
-    const base =
-      notif.channel != null
-        ? list.filter((n) => n.channel !== notif.channel)
-        : list
-    return [...base, notif]
+/** A phone shows this many toasts at once; the rest wait their turn. */
+const MAX_VISIBLE_NARROW = 2
+
+/** The app's own phone breakpoint, reactive; false where there is no DOM. */
+function narrowViewport(): boolean {
+  return isNarrow()
+}
+
+// The cap has to hold across a rotation, in BOTH directions. Widening past
+// the phone breakpoint has room for everything that was waiting; narrowing
+// back has to take back the slots it no longer has, or a landscape phone's
+// four toasts all stay on screen in portrait — which is what it did, since
+// the cap was only ever applied as a toast arrived.
+//
+// Both calls are guarded, so the order below is the whole logic: give the
+// slots back first, then fill whatever is free.
+// App-lifetime root: the store outlives every component.
+createRoot(() => {
+  createEffect(
+    on(
+      isNarrow,
+      () => {
+        evictOverflow()
+        admitWaiting()
+      },
+      { defer: true },
+    ),
+  )
+})
+
+/**
+ * Toasts that arrived while a phone already showed its two. First in, first
+ * out: a full-width toast covers content, and four of them stacked on a
+ * phone covered the whole lower half. A waiting toast's clock starts when it
+ * is shown, not when it was asked for.
+ */
+const waiting: Array<{ notif: Notification; durationMs: number }> = []
+
+function dropWaiting(match: (notif: Notification) => boolean): void {
+  for (let i = waiting.length - 1; i >= 0; i -= 1) {
+    if (match(waiting[i]!.notif)) waiting.splice(i, 1)
+  }
+}
+
+function dropVisible(id: number): void {
+  const timer = timers.get(id)
+  if (timer !== undefined) clearTimeout(timer)
+  timers.delete(id)
+  deadlines.delete(id)
+  setNotifications((n) => n.filter((x) => x.id !== id))
+}
+
+/**
+ * Bring the visible stack back inside the phone cap after a rotation.
+ *
+ * The oldest stay: they have been readable longest and are nearest their
+ * own end anyway. The overflow goes back to the FRONT of the queue in
+ * arrival order — nothing is dropped, and the order a phone shows them in
+ * is still the order they arrived in.
+ *
+ * A re-queued toast carries the time it had LEFT rather than a fresh full
+ * lifetime — it has already been on screen — floored so one with 80ms on
+ * the clock does not come back only to flash.
+ */
+function evictOverflow(): void {
+  if (!narrowViewport()) return
+  const overflow = notifications().slice(MAX_VISIBLE_NARROW)
+  if (overflow.length === 0) return
+  const requeued = overflow.map((notif) => {
+    const left = (deadlines.get(notif.id) ?? 0) - Date.now()
+    dropVisible(notif.id)
+    return { notif, durationMs: Math.max(left, MIN_ON_SCREEN_MS) }
   })
+  waiting.unshift(...requeued)
+}
+
+function admitWaiting(): void {
+  while (
+    waiting.length > 0 &&
+    (!narrowViewport() || notifications().length < MAX_VISIBLE_NARROW)
+  ) {
+    const next = waiting.shift()!
+    setNotifications((list) => [...list, next.notif])
+    scheduleRemoval(next.notif.id, next.durationMs)
+  }
+}
+
+/** Append a notification, first evicting any prior toast sharing its channel. */
+function pushNotification(notif: Notification, durationMs: number): void {
+  const channel = notif.channel
+  if (channel != null) {
+    dropWaiting((n) => n.channel === channel)
+    for (const stale of notifications().filter((n) => n.channel === channel))
+      dropVisible(stale.id)
+  }
+  if (narrowViewport() && notifications().length >= MAX_VISIBLE_NARROW) {
+    waiting.push({ notif, durationMs })
+    return
+  }
+  setNotifications((list) => [...list, notif])
+  scheduleRemoval(notif.id, durationMs)
 }
 
 /**
@@ -114,8 +207,13 @@ function pushNotification(notif: Notification): void {
 const deadlines = new Map<number, number>()
 const timers = new Map<number, ReturnType<typeof setTimeout>>()
 
-/** The shortest a merged toast gets to be read before it goes. */
-const MIN_AFTER_MERGE_MS = 2500
+/**
+ * The shortest a toast gets to be read once it is (back) on screen.
+ *
+ * Two callers: a merge extending a toast that was about to expire, and a
+ * toast a rotation pushed back into the queue coming round again.
+ */
+const MIN_ON_SCREEN_MS = 2500
 
 function scheduleRemoval(id: number, inMs: number): void {
   const existing = timers.get(id)
@@ -136,6 +234,20 @@ export function showNotification(
   const group = opts?.group
 
   if (group !== undefined) {
+    const queued = waiting.find((w) => w.notif.groupKey === group.key)
+    if (queued !== undefined) {
+      const parts = [
+        ...(queued.notif.groupParts ?? [queued.notif.message]),
+        message,
+      ]
+      const write = queued.notif.groupSummarise ?? group.summarise
+      queued.notif = {
+        ...queued.notif,
+        message: write(parts),
+        groupParts: parts,
+      }
+      return
+    }
     const live = notifications().find((n) => n.groupKey === group.key)
     if (live !== undefined) {
       const parts = [...(live.groupParts ?? [live.message]), message]
@@ -150,29 +262,31 @@ export function showNotification(
         ),
       )
       const left = (deadlines.get(live.id) ?? 0) - Date.now()
-      scheduleRemoval(live.id, Math.max(left, MIN_AFTER_MERGE_MS))
+      scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
       return
     }
   }
 
   const id = ++_notifId
-  pushNotification({
-    id,
-    message: group === undefined ? message : group.summarise([message]),
-    type,
-    channel: opts?.channel,
-    // Spread-guarded so an absent option stays absent rather than becoming an
-    // explicit `undefined`, which `title in notif` checks would then see.
-    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
-    ...(group === undefined
-      ? {}
-      : {
-          groupKey: group.key,
-          groupParts: [message],
-          groupSummarise: group.summarise,
-        }),
-  })
-  scheduleRemoval(id, duration)
+  pushNotification(
+    {
+      id,
+      message: group === undefined ? message : group.summarise([message]),
+      type,
+      channel: opts?.channel,
+      // Spread-guarded so an absent option stays absent rather than becoming
+      // an explicit `undefined`, which `title in notif` checks would then see.
+      ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
+      ...(group === undefined
+        ? {}
+        : {
+            groupKey: group.key,
+            groupParts: [message],
+            groupSummarise: group.summarise,
+          }),
+    },
+    duration,
+  )
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */
@@ -183,15 +297,17 @@ export function showActionNotification(
   opts?: NotificationOptions,
 ): number {
   const id = ++_notifId
-  pushNotification({
-    id,
-    message,
-    type,
-    action,
-    channel: opts?.channel,
-    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
-  })
-  scheduleRemoval(id, opts?.durationMs ?? 10000)
+  pushNotification(
+    {
+      id,
+      message,
+      type,
+      action,
+      channel: opts?.channel,
+      ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
+    },
+    opts?.durationMs ?? 10000,
+  )
   return id
 }
 
@@ -204,31 +320,46 @@ export function showDecisionNotification(
   opts?: NotificationOptions,
 ): number {
   const id = ++_notifId
-  pushNotification({
-    id,
-    message,
-    type,
-    action,
-    secondaryAction,
-    channel: opts?.channel,
-    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
-  })
-  scheduleRemoval(id, opts?.durationMs ?? 10000)
+  pushNotification(
+    {
+      id,
+      message,
+      type,
+      action,
+      secondaryAction,
+      channel: opts?.channel,
+      ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
+    },
+    opts?.durationMs ?? 10000,
+  )
   return id
 }
 
 /** Remove a notification by id immediately. Called by action onClick to dismiss. */
 export function removeNotification(id: number): void {
-  const timer = timers.get(id)
-  if (timer !== undefined) clearTimeout(timer)
-  timers.delete(id)
-  deadlines.delete(id)
-  setNotifications((n) => n.filter((x) => x.id !== id))
+  if (waiting.some((w) => w.notif.id === id)) {
+    dropWaiting((n) => n.id === id)
+    return
+  }
+  dropVisible(id)
+  admitWaiting()
 }
 
 /** Remove every notification currently on a given channel. */
 export function removeNotificationsByChannel(channel: string): void {
-  setNotifications((n) => n.filter((x) => x.channel !== channel))
+  dropWaiting((n) => n.channel === channel)
+  for (const stale of notifications().filter((n) => n.channel === channel))
+    dropVisible(stale.id)
+  admitWaiting()
+}
+
+/** Forget every toast, shown or waiting, and its clock. For tests. */
+export function resetNotifications(): void {
+  for (const timer of timers.values()) clearTimeout(timer)
+  timers.clear()
+  deadlines.clear()
+  waiting.length = 0
+  setNotifications([])
 }
 
 export function getNotifications() {

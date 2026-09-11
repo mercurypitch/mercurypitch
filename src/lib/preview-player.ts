@@ -92,8 +92,21 @@ export function dipEnvelope(
   gain.gain.linearRampToValueAtTime(target, now + seconds)
 }
 
+export interface PreviewPlayerProcessing {
+  input: AudioNode
+  output: AudioNode
+  dispose(): void
+}
+
 export interface PreviewPlayerOptions {
   onEnded?: () => void
+  /** Borrow a route-owned context/output; the player never closes this context. */
+  audioGraph?: { context: AudioContext; destination: AudioNode }
+  /**
+   * Created lazily on Play, before the final pop-free envelope. Explicit
+   * processing is required: setup failure must not silently play dry audio.
+   */
+  createProcessing?: (context: AudioContext) => PreviewPlayerProcessing
   /** Product-specific recovery copy for failed media. */
   errorMessage?: string
   /** Envelope timings (ms); see ENVELOPE_DEFAULTS. Longer = softer
@@ -107,7 +120,7 @@ export interface PreviewPlayer {
   /** Load `url` (if it changed) and fade playback in. Safe to call while
    *  a fade-out is in flight — the pending pause is cancelled. Resolves
    *  false (never rejects) when the source could not be played. */
-  play(url: string): Promise<boolean>
+  play(url: string, options?: { startSeconds?: number }): Promise<boolean>
   /** Fade out, then pause. Keeps the position. */
   pause(): void
   /** Fade out, pause and rewind to zero. */
@@ -179,40 +192,137 @@ export function createPreviewPlayer(
 
   let el: HTMLAudioElement | null = null
   let ctx: AudioContext | null = null
+  let source: MediaElementAudioSourceNode | null = null
+  let processing: PreviewPlayerProcessing | null = null
   let gain: GainNode | null = null
+  let ownsContext = false
   let enveloped = false
   let wantPlaying = false
+  let playIntent = 0
+  let disposed = false
   let currentUrl: string | null = null
   let pauseTimer: ReturnType<typeof setTimeout> | undefined
   let seekTimer: ReturnType<typeof setTimeout> | undefined
+  // A queued position is logical immediately, but is only applied after the
+  // output is silent. In particular, Pause still has an audible release tail.
+  let queuedPosition: number | null = null
+  let starting = false
+  let seekRevision = 0
+  let cancelTransition: (() => void) | null = null
+
+  const cancelSeek = () => {
+    seekRevision++
+    clearTimeout(seekTimer)
+    seekTimer = undefined
+    cancelTransition?.()
+  }
+
+  /** Both startup and scrubbing must leave the envelope closed until the
+   * decoder has actually reached the requested position. Cancellation resolves
+   * the wait too, so repeated scrubs cannot leave orphaned promises/listeners. */
+  const waitForSeek = (element: HTMLAudioElement): Promise<boolean> => {
+    if (!element.seeking) return Promise.resolve(true)
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer)
+        element.removeEventListener('seeked', ready)
+        element.removeEventListener('error', failed)
+        if (cancelTransition === cancel) cancelTransition = null
+      }
+      const ready = () => {
+        cleanup()
+        resolve(true)
+      }
+      const failed = () => {
+        cleanup()
+        reject(new Error('Audio seeking failed.'))
+      }
+      const cancel = () => {
+        cleanup()
+        resolve(false)
+      }
+      const timer = setTimeout(failed, 5_000)
+      element.addEventListener('seeked', ready)
+      element.addEventListener('error', failed)
+      cancelTransition = cancel
+    })
+  }
+
+  const waitForDip = (): Promise<boolean> =>
+    new Promise((resolve) => {
+      const finish = (completed: boolean) => {
+        clearTimeout(timer)
+        if (cancelTransition === cancel) cancelTransition = null
+        resolve(completed)
+      }
+      const cancel = () => finish(false)
+      const timer = setTimeout(() => finish(true), seekFadeS * 1000 + 5)
+      cancelTransition = cancel
+    })
+
+  const applyPosition = (element: HTMLAudioElement, seconds: number) => {
+    element.currentTime = Number.isFinite(element.duration)
+      ? Math.min(Math.max(0, element.duration), Math.max(0, seconds))
+      : Math.max(0, seconds)
+  }
+
+  const releaseGraph = (): void => {
+    source?.disconnect()
+    processing?.dispose()
+    gain?.disconnect()
+    if (ownsContext) void ctx?.close().catch(() => {})
+    source = null
+    processing = null
+    gain = null
+    ctx = null
+    ownsContext = false
+    enveloped = false
+  }
 
   const ensureGraph = (): HTMLAudioElement => {
     if (el) return el
     el = new Audio()
     el.preload = 'auto'
     el.onended = () => {
+      playIntent++
+      cancelSeek()
+      starting = false
+      queuedPosition = null
       wantPlaying = false
       options.onEnded?.()
     }
     try {
-      ctx = new AudioContext()
-      const source = ctx.createMediaElementSource(el)
+      ownsContext = options.audioGraph === undefined
+      ctx = options.audioGraph?.context ?? new AudioContext()
+      source = ctx.createMediaElementSource(el)
       gain = ctx.createGain()
       gain.gain.value = 0
-      source.connect(gain)
-      gain.connect(ctx.destination)
+      processing = options.createProcessing?.(ctx) ?? null
+      source.connect(processing?.input ?? gain)
+      processing?.output.connect(gain)
+      gain.connect(options.audioGraph?.destination ?? ctx.destination)
       enveloped = true
-    } catch {
+    } catch (error) {
+      releaseGraph()
+      if (
+        options.audioGraph !== undefined ||
+        options.createProcessing !== undefined
+      ) {
+        // The element may already be bound to a failed MediaElementSource.
+        // Retire it so retry can construct a fresh graph, never a dry fallback.
+        el.onended = null
+        el = null
+        throw error
+      }
       // No Web Audio (tests, exotic embeds): direct element control. The
       // envelope is lost but playback still works.
-      enveloped = false
     }
     return el
   }
 
   const clearTimers = () => {
     clearTimeout(pauseTimer)
-    clearTimeout(seekTimer)
+    cancelSeek()
     pauseTimer = undefined
     seekTimer = undefined
   }
@@ -227,6 +337,7 @@ export function createPreviewPlayer(
     clearTimeout(pauseTimer)
     pauseTimer = setTimeout(
       () => {
+        pauseTimer = undefined
         // The tail sits ≤ −43 dB now; a hard zero is inaudible and gives
         // the next attack a clean floor.
         gain?.gain.cancelScheduledValues(ctx?.currentTime ?? 0)
@@ -246,14 +357,39 @@ export function createPreviewPlayer(
    * not an application error (owner hit exactly this: a blocked R2
    * stem source took the whole app down with the crash overlay).
    */
-  const play = async (url: string): Promise<boolean> => {
-    const element = ensureGraph()
+  const play = async (
+    url: string,
+    startOptions?: { startSeconds?: number },
+  ): Promise<boolean> => {
+    if (disposed) return false
+    const intent = ++playIntent
+    cancelSeek()
+    starting = true
+    const startSeconds = startOptions?.startSeconds
+    if (startSeconds !== undefined && Number.isFinite(startSeconds))
+      queuedPosition = Math.max(0, startSeconds)
+    let element: HTMLAudioElement
+    try {
+      element = ensureGraph()
+    } catch {
+      starting = false
+      wantPlaying = false
+      showNotification(
+        options.errorMessage ?? "Couldn't prepare audio playback. Try again.",
+        'error',
+      )
+      return false
+    }
     // A play during a fade-out must win over the queued pause.
     clearTimeout(pauseTimer)
     pauseTimer = undefined
     wantPlaying = true
     if (ctx && ctx.state === 'suspended') void ctx.resume()
-    if (url !== currentUrl) {
+    const changedSource = url !== currentUrl
+    if (changedSource) {
+      // A pending seek belongs to its source; an explicit startup offset is
+      // the only position carried across a URL replacement.
+      if (!Number.isFinite(startOptions?.startSeconds)) queuedPosition = null
       // Silence the swap itself: the old signal must not bleed one full-
       // scale frame while the new source loads.
       if (enveloped && gain && ctx) {
@@ -268,8 +404,32 @@ export function createPreviewPlayer(
     // first, then open the envelope — the swell begins from real silence.
     try {
       await element.play()
+      while (
+        !disposed &&
+        intent === playIntent &&
+        wantPlaying &&
+        element === el &&
+        queuedPosition !== null
+      ) {
+        const target = queuedPosition
+        // A resumed element can still be in its old release. Do not jump
+        // across that audible tail, even when Play follows Stop immediately.
+        if (!changedSource && enveloped && ctx && gain) {
+          dipEnvelope(gain, ctx, seekFadeS, 0)
+          if (!(await waitForDip())) continue
+        }
+        if (disposed || intent !== playIntent || !wantPlaying) return false
+        if (queuedPosition !== target) continue
+        applyPosition(element, target)
+        if (!(await waitForSeek(element))) continue
+        if (disposed || intent !== playIntent || !wantPlaying) return false
+        if (queuedPosition === target) queuedPosition = null
+      }
     } catch (err) {
+      if (disposed || intent !== playIntent || element !== el) return false
       wantPlaying = false
+      starting = false
+      fadeOutThen(() => element.pause())
       // Forget the failed source so a retry re-assigns src cleanly.
       currentUrl = null
       const aborted = err instanceof DOMException && err.name === 'AbortError'
@@ -284,46 +444,100 @@ export function createPreviewPlayer(
       }
       return false
     }
+    // A permission/load promise may settle after Pause, disposal, or another
+    // Play. Only its own still-current intent may open this graph's envelope.
+    if (disposed || intent !== playIntent || !wantPlaying || element !== el)
+      return false
+    starting = false
     if (enveloped && ctx && gain) openEnvelope(gain, ctx, attackS)
     return true
   }
 
   const pause = () => {
+    playIntent++
+    cancelSeek()
+    starting = false
     if (!el) return
     wantPlaying = false
-    fadeOutThen(() => el?.pause())
+    fadeOutThen(() => {
+      el?.pause()
+      if (el && queuedPosition !== null) {
+        applyPosition(el, queuedPosition)
+        queuedPosition = null
+      }
+    })
   }
 
   const stop = () => {
+    playIntent++
+    cancelSeek()
+    starting = false
+    queuedPosition = 0
     if (!el) return
     wantPlaying = false
     fadeOutThen(() => {
       if (el) {
         el.pause()
-        el.currentTime = 0
+        applyPosition(el, queuedPosition ?? 0)
+        queuedPosition = null
       }
     })
   }
 
   const seekToFraction = (fraction: number) => {
-    if (!el) return
+    if (disposed || !el || !Number.isFinite(fraction)) return
     const d = el.duration
     if (!Number.isFinite(d) || d <= 0) return
-    const target = Math.min(d - 0.05, Math.max(0, fraction * d))
+    const target = Math.min(d, Math.max(0, fraction * d))
+    queuedPosition = target
+    cancelSeek()
+    if (starting) return
+    // Pause is logical immediately, but the media continues during its fade.
+    // The pending pause applies this target once the tail has retired.
+    if (!wantPlaying && pauseTimer !== undefined) return
     // Paused (or un-enveloped): no signal is flowing, move directly.
     if (!enveloped || !wantPlaying || !ctx || !gain) {
       el.currentTime = target
+      queuedPosition = null
       return
     }
     // Dip around the jump: down, move, back up. Re-scrubbing mid-dip just
     // restarts the sequence.
-    clearTimeout(seekTimer)
+    const intent = playIntent
+    const revision = seekRevision
     dipEnvelope(gain, ctx, seekFadeS, 0)
     seekTimer = setTimeout(
       () => {
-        if (!el || !ctx || !gain) return
-        el.currentTime = target
-        dipEnvelope(gain, ctx, seekFadeS, 1)
+        seekTimer = undefined
+        const element = el
+        if (!element || !ctx || !gain || !wantPlaying) return
+        applyPosition(element, target)
+        void waitForSeek(element)
+          .then((ready) => {
+            if (
+              !ready ||
+              disposed ||
+              intent !== playIntent ||
+              revision !== seekRevision ||
+              !wantPlaying ||
+              queuedPosition !== target ||
+              !ctx ||
+              !gain
+            )
+              return
+            queuedPosition = null
+            dipEnvelope(gain, ctx, seekFadeS, 1)
+          })
+          .catch(() => {
+            if (disposed || intent !== playIntent || revision !== seekRevision)
+              return
+            pause()
+            showNotification(
+              options.errorMessage ??
+                "Couldn't seek this audio. Try Play again.",
+              'error',
+            )
+          })
       },
       seekFadeS * 1000 + 5,
     )
@@ -333,22 +547,20 @@ export function createPreviewPlayer(
   // guard both land here. Detaching src tears down the element's fetch/
   // decode pipeline so nothing can keep producing audio.
   const hardStop = () => {
+    disposed = true
+    playIntent++
     clearTimers()
     wantPlaying = false
+    starting = false
+    queuedPosition = null
     if (el) {
+      el.onended = null
       el.pause()
       el.removeAttribute('src')
       el.load()
     }
-    try {
-      gain?.disconnect()
-    } catch {
-      /* already disconnected */
-    }
-    void ctx?.close().catch(() => {})
+    releaseGraph()
     el = null
-    ctx = null
-    gain = null
     currentUrl = null
   }
   livePlayers.add(hardStop)
@@ -359,7 +571,7 @@ export function createPreviewPlayer(
     stop,
     seekToFraction,
     get currentTime() {
-      return el?.currentTime ?? 0
+      return queuedPosition ?? el?.currentTime ?? 0
     },
     get duration() {
       const d = el?.duration

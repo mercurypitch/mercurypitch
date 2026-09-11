@@ -33,9 +33,26 @@ rules (`memory`).
 
 1. **Never test against production.** Local or dev only (`api-dev`, localhost
    workers). Prod deploys go through `/prod-upd`.
-2. **Never push to `main`; never force-push.** Feature branches prefixed
-   `feat/` (never `claude/`), PRs target `main`. `--force-with-lease` is fine
-   for rebases; plain `--force` is not.
+2. **Never push to `main`.** Feature branches prefixed `feat/` (never
+   `claude/`), PRs target `main`.
+
+   **Update a branch by rebasing onto `main`. Never merge `main` into it.** A
+   merge commit on a feature branch buries the change among someone else's and
+   leaves a reviewer diffing two histories instead of reading one. Rebasing
+   rewrites your own commits, so the push that follows needs a force, and
+   **`--force-with-lease` is the expected way** — the lease is what refuses to
+   overwrite commits that landed while you were rebasing. Plain `--force` is
+   not allowed, and neither is rewriting a branch you do not own.
+
+   ```bash
+   git fetch origin main && git rebase origin/main
+   git push --force-with-lease origin <your-branch>
+   ```
+
+   Read this rule here, not from the summary in CLAUDE.md. That summary said
+   only "never force-push" for a while, and agents acting on it merged `main`
+   into their branches instead of rebasing — the exact thing this forbids.
+
 3. **Do not commit, push, or open a PR unless asked.** Write the code, report
    what changed, stop. The user tests first and says when to commit.
 4. **Never merge a PR** without an explicit go-ahead in the current
@@ -53,9 +70,28 @@ rules (`memory`).
    and build gate; fix a failure with its targeted command instead of
    rerunning every local check.
 
-Use `gh` for issues and PRs, not WebFetch. Merge with `--rebase`, never squash,
-unless told otherwise. Each task gets its own PR targeting
+Use `gh` for issues and PRs, not WebFetch. Each task gets its own PR targeting
 `mercurypitch/mercurypitch:main`; leave reviewer assignment to the owner.
+
+### Squash or rebase, when merging
+
+**Never merge without an explicit go-ahead** (guardrail 4) — the strategy
+question only arises once the owner has approved the merge.
+
+Then look at what the branch's commits actually are:
+
+- **`--squash`** when they are one piece of work and its iterations: polish on
+  polish, review fixes, a typo, a CI green-up, four passes at the same
+  component. Nobody will ever want those separately, and `main` reads better
+  with one honest commit than with twelve saying "fix the fix".
+- **`--rebase`** when they are genuinely distinct — separate features, or
+  unrelated bugfixes that happened to travel together. Squashing those buries
+  changes a future reader would want to find, revert, or bisect on their own.
+
+The test is not the number of commits, it is whether any of them would be
+worth reading alone a year from now. When both apply — real features plus a
+tail of polish — say so and ask, rather than flattening the features to be rid
+of the noise.
 
 ## Build and verify
 
@@ -88,6 +124,11 @@ both teach people to ignore them — see [METRICS.md](docs/agent/METRICS.md).
 The churn-based hotspot section needs real history. A shallow clone (which is
 what cloud sessions get) makes it report `skipped`; run `git fetch --unshallow`
 first if you want it.
+
+A bug that only happens on a phone is not a `pnpm check` problem. `pnpm run
+dev:portable` puts the console on the device itself, and every build that
+writes `dist` asserts the feature was eliminated —
+[DEVICE-DEBUGGING.md](docs/agent/DEVICE-DEBUGGING.md).
 
 `pnpm pr:prepare` always regenerates `docs/agent/INDEX.md`, formats and lints
 only files changed from `origin/main`, and runs `git diff --check`. It does not

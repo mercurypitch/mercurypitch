@@ -23,6 +23,60 @@ function open(items: OverflowMenuItem[]): void {
 const noop = (): void => {}
 
 describe('OverflowMenu', () => {
+  it('keeps custom artwork reactive and selectable rows keyboard reachable inside a dialog', () => {
+    const [selected, setSelected] = createSignal(false)
+    render(() => (
+      <div role="dialog" aria-label="Recorder review">
+        <OverflowMenu
+          label="Playback tone"
+          triggerContent={<span>{selected() ? 'Clean' : 'Current'}</span>}
+          items={[
+            {
+              key: 'current',
+              label: 'Current',
+              checked: !selected(),
+              onSelect: () => setSelected(false),
+            },
+            {
+              key: 'clean',
+              label: 'Clean',
+              checked: selected(),
+              onSelect: () => setSelected(true),
+            },
+            {
+              key: 'live',
+              label: 'Live notes',
+              checked: true,
+              checkType: 'checkbox',
+              onSelect: noop,
+            },
+          ]}
+        />
+      </div>
+    ))
+    const trigger = screen.getByRole('button', { name: 'Playback tone' })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('dialog')).toContainElement(
+      screen.getByRole('menu'),
+    )
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Current' }),
+    ).toHaveAttribute('aria-checked', 'true')
+    const clean = screen.getByRole('menuitemradio', { name: 'Clean' })
+    clean.focus()
+    fireEvent.keyDown(clean, { key: 'ArrowDown' })
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Live notes' }),
+    ).toHaveFocus()
+    fireEvent.click(clean)
+    expect(trigger).toHaveTextContent('Clean')
+    fireEvent.click(trigger)
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Clean' }),
+    ).toHaveAttribute('aria-checked', 'true')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(trigger).toHaveFocus()
+  })
   it('shows nothing until it is asked', () => {
     render(() => (
       <OverflowMenu
@@ -123,6 +177,27 @@ describe('OverflowMenu', () => {
       { key: 'zip', label: 'Export ZIP', onSelect: noop },
     ])
     expect(screen.queryByRole('separator')).not.toBeInTheDocument()
+  })
+
+  it('separates independent radio choice sets without moving their rows', () => {
+    open([
+      { key: 'recording', label: 'Recording', checked: true, onSelect: noop },
+      { key: 'notes', label: 'Notes', checked: false, onSelect: noop },
+      {
+        key: 'current',
+        label: 'Current amp',
+        checked: true,
+        separatorBefore: true,
+        onSelect: noop,
+      },
+      { key: 'clean', label: 'Clean', checked: false, onSelect: noop },
+    ])
+    const separator = screen.getByRole('separator')
+    expect(separator.previousElementSibling).toHaveTextContent('Notes')
+    expect(separator.nextElementSibling).toHaveTextContent('Current amp')
+    expect(
+      screen.getAllByRole('menuitemradio', { checked: true }),
+    ).toHaveLength(2)
   })
 
   it('will not run a disabled row', () => {

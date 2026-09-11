@@ -1,0 +1,92 @@
+/* A flat, two-row transport leaves the room and recorder artwork to the stage. */
+.deck {
+  width: 100%;
+  min-width: 0;
+  color: #eee2cd;
+}
+.timeline {
+  min-height: 44px;
+  margin-left: 160px;
+}
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 48px;
+}
+.source {
+  justify-self: end;
+  margin-right: 1.2rem;
+}
+.tone {
+  justify-self: start;
+  margin-left: 1.2rem;
+}
+.keys {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.keys > div {
+  display: contents;
+}
+.keys button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #64523b;
+  border-radius: 7px;
+  background: #30251b;
+  color: #eee2cd;
+  cursor: pointer;
+}
+.keys button.play {
+  background: #edbc75;
+  border-color: #edbc75;
+  color: #21170b;
+}
+.keys button[aria-label='Record a melody'],
+.keys button[aria-pressed='true'] {
+  background: #4d2e25;
+  color: #ffd3c4;
+  border-color: #a56755;
+}
+.keys button:hover:not(:disabled) {
+  border-color: #ffce8d;
+  filter: brightness(1.12);
+}
+.keys button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.keys svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+.deck :focus-visible {
+  outline: 2px solid #edbc75;
+  outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .timeline {
+    margin-left: 62px;
+  }
+  .source {
+    visibility: hidden;
+    margin: 0;
+  }
+  .tone {
+    justify-self: end;
+    margin: 0;
+  }
+  .keys {
+    gap: 0.3rem;
+  }
+}

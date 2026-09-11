@@ -32,9 +32,15 @@
     // (src/worker.ts) can serve assets. Required: without it env.ASSETS is
     // undefined and any non-asset path (e.g. /exercises/<slug>) 500s.
     "binding": "ASSETS",
-    // Serve index.html for non-asset paths (e.g. /exercises/<slug> marketing
-    // deep-links) so the SPA shell loads instead of a 404.
-    "not_found_handling": "single-page-application",
+    // Real 404s. This was "single-page-application", which handed index.html
+    // and a 200 to every unmatched path: /llms.txt, /foo/bar and every probe
+    // and dead link answered as if they were the home page. Google reads those
+    // as soft 404s, and on a site whose problem is that too few of its pages
+    // are indexed at all, spending crawl budget on infinite fake pages is the
+    // opposite of what it needs. The only path that genuinely relied on the
+    // fallback was /exercises/<slug>, which src/worker.ts now serves on
+    // purpose via run_worker_first below.
+    "not_found_handling": "404-page",
     // CRITICAL: with static assets + SPA not_found_handling, the asset layer
     // answers every path NOT listed here WITHOUT invoking the Worker — non-GET
     // requests get an empty 405 and unknown GETs get index.html. Every
@@ -48,6 +54,10 @@
     //   glass aliases — served as glass.html content with the URL preserved
     //             (no byte-copied HTML files, unlike mirror/karaoke aliases;
     //             /glass itself maps via html_handling).
+    //   /exercises/* — served as the studio shell with the URL preserved, so
+    //             the client can read the slug.
+    //   /admin*  — the friendly admin entries, likewise: no file behind them,
+    //             the client rewrites the path to a hash route on boot.
     "run_worker_first": [
       "/api/*",
       "/",
@@ -57,6 +67,16 @@
       // Serves mirror.html at /free-sing with the URL intact. Without this
       // line the asset layer answers first and hands back the SPA shell.
       "/free-sing",
+      // Marketing deep links. With not_found_handling now "404-page", these
+      // have no file to fall back to — without this line every /exercises/*
+      // link on the landing page returns 404.
+      "/exercises/*",
+      // The friendly admin entries, for the same reason. Two patterns, not
+      // three: wrangler rejects `/admin/` as redundant against `/admin/*`,
+      // which settles that the wildcard covers the trailing slash. The bare
+      // `/admin` it does not cover, and wrangler accepts both.
+      "/admin",
+      "/admin/*",
     ],
   },
   "compatibility_flags": ["nodejs_compat"],

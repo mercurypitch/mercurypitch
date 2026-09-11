@@ -19,8 +19,9 @@
 //     the bug was a mismatch between the parser and the file's actual shape,
 //     and they must keep holding for whatever the file says next.
 
-import { cleanup, render, screen, within } from '@solidjs/testing-library'
+import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
+import { APP_VERSION } from '@/lib/defaults'
 import rawChangelog from '../../../CHANGELOG.md?raw'
 import { ChangelogModal, parseChangelog } from '../ChangelogModal'
 
@@ -269,7 +270,15 @@ describe('the changelog modal', () => {
     const versions = screen.getAllByTestId('changelog-version')
     expect(versions.length).toBeGreaterThan(40)
     const newest = versions[0]!
-    expect(within(newest).getByText('v0.9.1')).toBeInTheDocument()
-    expect(within(newest).getByText('2026-08-25')).toBeInTheDocument()
+    // Derived, not quoted: the first cut of this test named v0.9.1 and broke
+    // the moment 0.9.2 was written, which taught nobody anything. What is
+    // worth holding is that the top of the file is either the version this
+    // build ships or the section still being written — anything else means
+    // the release notes and package.json have drifted apart.
+    const [tag, date] = [...newest.querySelectorAll('span')]
+    expect([`v${APP_VERSION}`, 'vUnreleased']).toContain(
+      tag?.textContent?.trim(),
+    )
+    expect(date?.textContent?.trim() ?? '').toMatch(/^\d{4}-\d{2}-\d{2}$|^$/)
   })
 })

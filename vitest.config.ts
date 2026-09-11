@@ -75,6 +75,10 @@ export default defineConfig({
     // so a .test.ts placed there is still not swept in. The beside-cue
     // workspaces are deliberately absent: they are a separate Vitest project,
     // run by `pnpm beside-cue:test`.
+    // The generated entry documents have to exist before any suite reads one;
+    // see src/tests/setup-entry-pages.ts. Global, not per-project, because
+    // both projects contain suites that read them.
+    globalSetup: ['./src/tests/setup-entry-pages.ts'],
     projects: [
       {
         extends: true,

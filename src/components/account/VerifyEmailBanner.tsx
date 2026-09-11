@@ -8,6 +8,13 @@
 // — the studio app or the standalone Karaoke Night page — can mount it
 // without threading account state. Also surfaces the outcome of the emailed
 // confirm link (#everified fragment consumed at boot) as a toast.
+//
+// Placement: the desktop pill floats bottom-centre. On a phone that corner is
+// where the tab bar, the toasts and every bottom sheet already are, and the
+// pill sat on top of all of them; there it is a strip at the top of the page
+// flow instead (Settings is a tab in that same flow, so it is covered too).
+// The studio app mounts one of each and CSS shows the one that fits the
+// viewport; the answer and the dismissal are shared between mounts.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
@@ -25,19 +32,46 @@ function loadDismissed(): boolean {
   }
 }
 
-export const VerifyEmailBanner: Component = () => {
-  const [email, setEmail] = createSignal<string | null>(null)
-  const [sendState, setSendState] = createSignal<'idle' | 'sending' | 'sent'>(
-    'idle',
-  )
-  const [dismissed, setDismissed] = createSignal(loadDismissed())
+const [email, setEmail] = createSignal<string | null>(null)
+const [dismissed, setDismissed] = createSignal(loadDismissed())
+// A dismissal lasts the tab session, which on a phone can be weeks. It ends
+// at the next sign-in, so the nudge and its Resend come back for whoever
+// signs in then; a reload while signed in is not a sign-in.
+//
+// Read on the first refresh rather than here: `hasValidToken` reaches
+// localStorage, and a browser with site data blocked throws on the getter —
+// at module scope that takes the whole app down on import.
+let wasSignedIn: boolean | null = null
 
-  async function refresh(): Promise<void> {
+function clearDismissal(): void {
+  setDismissed(false)
+  try {
+    sessionStorage.removeItem(DISMISS_KEY)
+  } catch {
+    // Storage may be unavailable; the signal already says "show".
+  }
+}
+let inFlight: { stamp: unknown; done: Promise<void> } | null = null
+let latestStamp: unknown = Symbol('none')
+
+// Two mounts waking on the same auth change share one /me request, and an
+// answer that lands after the auth changed again is thrown away: it would
+// re-show the nudge to someone who just signed out.
+function refresh(stamp: unknown): Promise<void> {
+  latestStamp = stamp
+  const signedIn = hasValidToken()
+  // The first pass only records where we started; a page opened while
+  // already signed in is not a sign-in.
+  if (wasSignedIn === false && signedIn) clearDismissal()
+  wasSignedIn = signedIn
+  if (inFlight !== null && inFlight.stamp === stamp) return inFlight.done
+  const done = (async () => {
     if (!hasValidToken()) {
       setEmail(null)
       return
     }
     const me = await fetchMe()
+    if (stamp !== latestStamp) return
     const user = me?.user
     setEmail(
       user != null &&
@@ -47,13 +81,31 @@ export const VerifyEmailBanner: Component = () => {
         ? user.email
         : null,
     )
-  }
+  })().finally(() => {
+    if (inFlight?.done === done) inFlight = null
+  })
+  inFlight = { stamp, done }
+  return done
+}
+
+export interface VerifyEmailBannerProps {
+  /**
+   * `floating`: the desktop pill, hidden on phones. `inline`: a strip in the
+   * page flow, shown on phones only. Omitted: the pill at every width, for a
+   * shell that mounts it once.
+   */
+  placement?: 'floating' | 'inline'
+}
+
+export const VerifyEmailBanner: Component<VerifyEmailBannerProps> = (props) => {
+  const [sendState, setSendState] = createSignal<'idle' | 'sending' | 'sent'>(
+    'idle',
+  )
 
   // Re-check whenever auth changes (register, login, logout, redirects) so
   // the nudge appears right after an in-session signup — no reload needed.
   createEffect(() => {
-    authStamp()
-    void refresh()
+    void refresh(authStamp())
   })
 
   onMount(() => {
@@ -98,9 +150,14 @@ export const VerifyEmailBanner: Component = () => {
   return (
     <Show when={email() !== null && !dismissed()}>
       <div
-        class={styles.banner}
+        classList={{
+          [styles.inline]: props.placement === 'inline',
+          [styles.banner]: props.placement !== 'inline',
+          [styles.floatingOnly]: props.placement === 'floating',
+        }}
         role="status"
         data-testid="verify-email-banner"
+        data-placement={props.placement ?? 'any'}
       >
         <svg
           class={styles.icon}

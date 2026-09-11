@@ -15,10 +15,14 @@
 // button is even offered — which is the part a toast arriving later
 // cannot fix.
 //
-// Pure on purpose, and with no imports at all: callers pass the facts they
-// already hold, so this is testable without a network, a database or a
-// store — and it cannot drag `uvr-api`'s fetch paths into a chunk that
-// only wanted to ask a question.
+// Pure on purpose, and with one import — a build constant that folds to a
+// literal before Rollup runs, so it is not a dependency in any bundle.
+// Everything else is passed in: callers hand over the facts they already
+// hold, so this is testable without a network, a database or a store — and
+// it cannot drag `uvr-api`'s fetch paths into a chunk that only wanted to
+// ask a question.
+
+import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
 
 /** Which part of Settings answers this blocker. */
 export type CloudSplitCtaSection = 'account' | 'credits'
@@ -86,12 +90,23 @@ export function cloudSplitBlocker(
     const known = cost !== undefined && Number.isFinite(cost) && cost > 0
     const need = known ? cost : 1
     if (balance < need) {
+      // A build that cannot take payment has nowhere to send anyone for
+      // credits, so it neither offers the errand nor names it: the
+      // shortfall is still quoted in full, and the sentence stops there.
+      const topUp = CAN_TAKE_PAYMENT
+        ? ' Add credits and the split is one tap away.'
+        : ''
+      const emptyTail = CAN_TAKE_PAYMENT
+        ? ' — add credits and the split is one tap away.'
+        : '.'
       return {
         reason: 'insufficient-credits',
         message: known
-          ? `Separating the band needs ${cost} credit${cost === 1 ? '' : 's'} and you have ${balance}. Add credits and the split is one tap away.`
-          : 'Separating the band runs on a cloud GPU and uses credits. Your balance is empty — add credits and the split is one tap away.',
-        cta: { label: 'Get credits', section: 'credits' },
+          ? `Separating the band needs ${cost} credit${cost === 1 ? '' : 's'} and you have ${balance}.${topUp}`
+          : `Separating the band runs on a cloud GPU and uses credits. Your balance is empty${emptyTail}`,
+        cta: CAN_TAKE_PAYMENT
+          ? { label: 'Get credits', section: 'credits' }
+          : null,
       }
     }
   }

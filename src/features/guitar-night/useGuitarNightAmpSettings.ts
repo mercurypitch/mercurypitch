@@ -3,7 +3,7 @@
 
 import { createMemo, createSignal } from 'solid-js'
 import type { GuitarElectricAmpCabinet, GuitarElectricAmpParameters, } from '@/lib/guitar/guitar-electric-amp'
-import type { GuitarNightAmpPresetId, GuitarNightAmpSettingsV1, } from './guitar-amp-settings'
+import type { GuitarNightAmpPresetId, GuitarNightAmpSettingsV2, } from './guitar-amp-settings'
 import { DEFAULT_GUITAR_NIGHT_AMP_SETTINGS, guitarNightAmpSettingsForPreset, loadGuitarNightAmpSettings, normalizeGuitarNightAmpSettings, saveGuitarNightAmpSettings, } from './guitar-amp-settings'
 
 export type GuitarNightAmpContinuousParameter =
@@ -13,9 +13,10 @@ export type GuitarNightAmpContinuousParameter =
   | 'treble'
   | 'presence'
   | 'output'
+  | 'character'
 
 function ampParameters(
-  settings: GuitarNightAmpSettingsV1,
+  settings: GuitarNightAmpSettingsV2,
 ): GuitarElectricAmpParameters {
   return {
     enabled: settings.enabled,
@@ -27,12 +28,15 @@ function ampParameters(
     output: settings.output,
     cabinet: settings.cabinet,
     asymmetry: settings.asymmetry,
+    engine: settings.engine,
+    head: settings.head,
+    character: settings.character,
   }
 }
 
 /** Own one in-memory tone and persist only deliberate scalar setting changes. */
 export function useGuitarNightAmpSettings() {
-  const [settings, setSettingsSignal] = createSignal<GuitarNightAmpSettingsV1>(
+  const [settings, setSettingsSignal] = createSignal<GuitarNightAmpSettingsV2>(
     loadGuitarNightAmpSettings(),
   )
   const parameters = createMemo(() => ampParameters(settings()))
@@ -45,7 +49,10 @@ export function useGuitarNightAmpSettings() {
 
   const selectPreset = (presetId: GuitarNightAmpPresetId): void => {
     if (presetId === 'custom') return
-    replace(guitarNightAmpSettingsForPreset(presetId))
+    replace({
+      ...guitarNightAmpSettingsForPreset(presetId),
+      enabled: settings().enabled,
+    })
   }
 
   const setEnabled = (enabled: boolean): void => {
@@ -76,7 +83,10 @@ export function useGuitarNightAmpSettings() {
   }
 
   const reset = (): void => {
-    replace(DEFAULT_GUITAR_NIGHT_AMP_SETTINGS)
+    replace({
+      ...DEFAULT_GUITAR_NIGHT_AMP_SETTINGS,
+      enabled: settings().enabled,
+    })
   }
 
   return {

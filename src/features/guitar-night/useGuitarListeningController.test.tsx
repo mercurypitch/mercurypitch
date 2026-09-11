@@ -1,10 +1,12 @@
 // Listening runtime regressions cover coarse attacks and calibration teardown.
 // ============================================================
 
-import { createRoot, createSignal } from 'solid-js'
+import { createEffect, createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
+import type { GuitarMidiInputPortLike } from '@/lib/guitar/guitar-midi-input'
 import type { GuitarInputWorkletMessage } from '@/lib/guitar/input-events'
+import type { GuitarLiveInputObservation } from './guitar-live-input-observations'
 import { guitarInputAnalysisChannelCount, strongestGuitarInputChannel, useGuitarListeningController, } from './useGuitarListeningController'
 
 const dependencies = vi.hoisted(() => ({
@@ -25,6 +27,7 @@ const dependencies = vi.hoisted(() => ({
     | null,
   runGuard: null as (() => boolean) | null,
   connectWorklet: vi.fn(),
+  createDetector: vi.fn(),
   workletTap: null as { dispose(): void } | null,
   detections: [] as Array<{
     frequency: number
@@ -48,6 +51,7 @@ const dependencies = vi.hoisted(() => ({
   createInputMonitor: vi.fn(),
   inputMonitors: [] as Array<{
     setEnabled: ReturnType<typeof vi.fn>
+    setInputChannel: ReturnType<typeof vi.fn>
     setParameters: ReturnType<typeof vi.fn>
     dispose: ReturnType<typeof vi.fn>
   }>,
@@ -81,6 +85,9 @@ vi.mock('@/lib/mic-sentinel', () => ({
 
 vi.mock('@/lib/pitch-detector', () => ({
   PitchDetector: class {
+    constructor() {
+      dependencies.createDetector()
+    }
     detect() {
       return (
         dependencies.detections.shift() ?? {
@@ -130,6 +137,14 @@ vi.mock('@/stores/mic-latency-store', () => ({
 interface FakeOscillator {
   stop: ReturnType<typeof vi.fn>
   disconnect: ReturnType<typeof vi.fn>
+}
+
+function deferredResult<T>() {
+  let resolve: (result: T) => void = () => undefined
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  return { promise, resolve }
 }
 
 function createAudioHarness() {
@@ -223,12 +238,14 @@ async function withController(
   run: (
     controller: ReturnType<typeof useGuitarListeningController>,
   ) => Promise<void>,
+  options: Partial<Parameters<typeof useGuitarListeningController>[0]> = {},
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     createRoot((dispose) => {
       const controller = useGuitarListeningController({
         activateAudio: async () => true,
         getAudioGraph: () => ({ context }) as never,
+        ...options,
       })
       void run(controller).then(
         () => {
@@ -312,6 +329,7 @@ describe('useGuitarListeningController', () => {
     dependencies.createInputMonitor.mockImplementation(() => {
       const monitor = {
         setEnabled: vi.fn((enabled: boolean) => enabled),
+        setInputChannel: vi.fn(() => true),
         setParameters: vi.fn(),
         dispose: vi.fn(),
       }
@@ -336,21 +354,398 @@ describe('useGuitarListeningController', () => {
     vi.unstubAllGlobals()
   })
 
+  it('observes raw attacks and pitch/silence without another detector or assessment-clock filtering', async () => {
+    const audio = createAudioHarness()
+    Object.assign(audio.context, { currentTime: 10, sampleRate: 44100 })
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    dependencies.latencyMs = 40
+    dependencies.detections = [E4]
+    const observations: GuitarLiveInputObservation[] = []
+
+    await withController(audio.context, async (controller) => {
+      controller.subscribeLiveObservations(() => {
+        throw new Error('Display failed')
+      })
+      const unsubscribe = controller.subscribeLiveObservations((value) =>
+        observations.push(value),
+      )
+      expect(controller.liveInputRoute()).toBeNull()
+      expect(observations).toEqual([])
+      expect(await controller.start()).toBe(true)
+      const route = controller.liveInputRoute()!
+      expect(route).toMatchObject({
+        generation: 1,
+        sampleRate: 44100,
+        startedAtSeconds: 10,
+        source: 'microphone',
+      })
+      expect(controller.armTakeAt(11)).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 445410,
+        level: 0.2,
+      })
+      frames.run(10.14)
+      frames.run(10.18)
+      expect(observations.map((value) => value.type)).toEqual([
+        'route-start',
+        'capture',
+        'capture',
+        'pitch',
+        'pitch',
+      ])
+      expect(observations[1]).toMatchObject({
+        generation: 1,
+        id: 'live-1-1',
+        capture: {
+          kind: 'attack',
+          clock: { kind: 'audio-worklet', atFrame: 445410, sampleRate: 44100 },
+          pitch: null,
+        },
+      })
+      expect(observations[2]).toMatchObject({
+        type: 'capture',
+        capture: { kind: 'pitch-change', pitch: { midi: 64 } },
+      })
+      expect(observations[3]).toMatchObject({
+        type: 'pitch',
+        observedAtSeconds: 10.14,
+        windowStartAtSeconds: 10.14 - audio.analyser.fftSize / 44100,
+        pitch: { midi: 64 },
+      })
+      expect(observations[4]).toMatchObject({ type: 'pitch', pitch: null })
+      expect(controller.events()).toHaveLength(0)
+      expect(route.currentTimeSeconds()).toBe(10.18)
+      expect(controller.liveInputRoute()).toBe(route)
+      expect(dependencies.createDetector).toHaveBeenCalledOnce()
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(dependencies.connectWorklet).toHaveBeenCalledOnce()
+      const latest: GuitarLiveInputObservation[] = []
+      controller.subscribeLiveObservations((value) => latest.push(value))
+      expect(latest).toEqual([{ type: 'route-start', route }])
+      unsubscribe()
+      controller.stop()
+      expect(observations).toHaveLength(5)
+      expect(latest.at(-1)).toMatchObject({
+        type: 'route-end',
+        generation: 1,
+        atSeconds: 10.18,
+      })
+      expect(controller.liveInputRoute()).toBeNull()
+    })
+  })
+
+  it('observes exact MIDI voice attacks and releases without starting audio capture or another analyser', async () => {
+    const port: GuitarMidiInputPortLike = {
+      id: 'guitar-midi',
+      name: 'Guitar MIDI',
+      state: 'connected',
+      onmidimessage: null,
+    }
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      requestMIDIAccess: vi.fn(async () => ({
+        inputs: new Map([[port.id, port]]),
+        onstatechange: null,
+      })),
+    })
+    const audio = createAudioHarness()
+    const observations: GuitarLiveInputObservation[] = []
+    await withController(audio.context, async (controller) => {
+      controller.subscribeLiveObservations((value) => observations.push(value))
+      await controller.selectInputProfile('midi')
+      await controller.start()
+      Object.assign(audio.context, { currentTime: 1 })
+      port.onmidimessage?.({
+        data: [0x90, 64, 100],
+        timeStamp: performance.now(),
+      })
+      port.onmidimessage?.({
+        data: [0x90, 67, 100],
+        timeStamp: performance.now(),
+      })
+      Object.assign(audio.context, { currentTime: 1.25 })
+      port.onmidimessage?.({
+        data: [0x80, 64, 0],
+        timeStamp: performance.now(),
+      })
+      const captures = observations.filter((value) => value.type === 'capture')
+      expect(captures.map((value) => value.capture.kind)).toEqual([
+        'attack',
+        'attack',
+        'release',
+      ])
+      expect(captures[0].capture.voiceId).toBe(captures[2].capture.voiceId)
+      expect(captures[1].capture.voiceId).not.toBe(captures[0].capture.voiceId)
+      expect(captures[2].capture.clock).toMatchObject({
+        kind: 'web-midi',
+        inputId: port.id,
+        channel: 0,
+      })
+      const releaseClock = captures[2].capture.clock
+      if (releaseClock.kind !== 'web-midi')
+        throw new Error('Expected MIDI clock')
+      expect(releaseClock.mappedAudioTime).toBeCloseTo(1.25, 2)
+      expect(dependencies.acquire).not.toHaveBeenCalled()
+      expect(dependencies.createDetector).not.toHaveBeenCalled()
+      expect(audio.context.createAnalyser).not.toHaveBeenCalled()
+    })
+  })
+
+  it('resets display evidence around calibration and never publishes its clicks or detector samples', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    const observations: GuitarLiveInputObservation[] = []
+    await withController(audio.context, async (controller) => {
+      controller.subscribeLiveObservations((value) => observations.push(value))
+      await controller.start()
+      const calibration = controller.calibrate()
+      dependencies.emitWorklet?.({ type: 'attack', atFrame: 48000, level: 0.2 })
+      dependencies.detections = [E4]
+      frames.run(1.04)
+      expect(observations.map((value) => value.type)).toEqual([
+        'route-start',
+        'reset',
+      ])
+      await vi.runAllTimersAsync()
+      await calibration
+      expect(observations.map((value) => value.type)).toEqual([
+        'route-start',
+        'reset',
+        'reset',
+      ])
+      expect(controller.status()).toBe('listening')
+    })
+  })
+
+  it('gives restarted routes fresh observation identity and rejects retired worklet callbacks', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    const observations: GuitarLiveInputObservation[] = []
+    await withController(audio.context, async (controller) => {
+      controller.subscribeLiveObservations((value) => observations.push(value))
+      await controller.start()
+      const stale = dependencies.emitWorklet
+      controller.stop()
+      Object.assign(audio.context, { currentTime: 5 })
+      await controller.start()
+      stale?.({ type: 'attack', atFrame: 241000, level: 0.2 })
+      expect(observations.map((value) => value.type)).toEqual([
+        'route-start',
+        'route-end',
+        'route-start',
+      ])
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 242000,
+        level: 0.3,
+      })
+      expect(observations.at(-1)).toMatchObject({
+        type: 'capture',
+        generation: 2,
+        id: 'live-2-1',
+      })
+    })
+    const count = observations.length
+    dependencies.emitWorklet?.({ type: 'attack', atFrame: 243000, level: 0.3 })
+    expect(observations).toHaveLength(count)
+    expect(observations.at(-1)?.type).toBe('route-end')
+  })
+
+  it('drains a retained DI assessment while keeping its route, monitor, and finished result stable', async () => {
+    vi.useFakeTimers()
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    dependencies.detections = [E4, E4]
+    const stream = {} as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+    await withController(
+      audio.context,
+      async (controller) => {
+        await controller.start()
+        controller.setAmpMonitoringEnabled(true)
+        const route = controller.liveInputRoute()
+        controller.armTakeAt(1)
+        dependencies.emitWorklet?.({
+          type: 'attack',
+          atFrame: 93600,
+          level: 0.25,
+        })
+        Object.assign(audio.context, { currentTime: 2 })
+        let drained = false
+        const finishing = controller.settleTake().then((snapshot) => {
+          drained = true
+          return snapshot
+        })
+        frames.run(2.01)
+        await vi.advanceTimersByTimeAsync(119)
+        expect(drained).toBe(false)
+        await vi.advanceTimersByTimeAsync(2)
+        const completed = await finishing
+        expect(completed).toMatchObject({
+          lifecycle: 'completed',
+          durationFrames: 48000,
+          events: [
+            expect.objectContaining({
+              pitch: expect.objectContaining({ midi: 64 }),
+            }),
+          ],
+        })
+        expect(controller.status()).toBe('listening')
+        expect(controller.recordableStream()).toBe(stream)
+        expect(controller.recordingInput()?.context).toBe(audio.context)
+        expect(controller.recordableAudioContext()).toBe(audio.context)
+        expect(controller.liveInputRoute()).toBe(route)
+        expect(controller.ampMonitoringActive()).toBe(true)
+        expect(dependencies.release).not.toHaveBeenCalled()
+        expect(dependencies.inputMonitors[0].dispose).not.toHaveBeenCalled()
+        const live: GuitarLiveInputObservation[] = []
+        controller.subscribeLiveObservations((value) => live.push(value))
+        for (let index = 0; index < 300; index++)
+          dependencies.emitWorklet?.({
+            type: 'attack',
+            atFrame: 100000 + index * 1000,
+            level: 0.2,
+          })
+        frames.run(9)
+        expect(controller.take()).toBe(completed)
+        expect(controller.events()).toHaveLength(1)
+        expect(live.filter((value) => value.type === 'capture')).toHaveLength(
+          300,
+        )
+        await expect(controller.settleTake()).resolves.toBe(completed)
+        expect(controller.armTakeAt(10)).toBe(true)
+        expect(controller.take()?.id).not.toBe(completed?.id)
+        expect(controller.events()).toHaveLength(0)
+        expect(controller.liveInputRoute()).toBe(route)
+        controller.clearTake()
+        expect(controller.take()?.clock.startedAtFrame).toBe(432000)
+        expect(controller.liveInputRoute()).toBe(route)
+        expect(dependencies.acquire).toHaveBeenCalledOnce()
+        controller.stop()
+        expect(controller.liveInputRoute()).toBeNull()
+        expect(dependencies.release).toHaveBeenCalledOnce()
+        expect(dependencies.inputMonitors[0].dispose).toHaveBeenCalledOnce()
+      },
+      {
+        retainDirectInputOnTakeCompletion: true,
+        ampParameters: () => AMP_PARAMETERS,
+        getAudioGraph: () =>
+          ({ context: audio.context, buses: { monitor: {} } }) as never,
+      },
+    )
+  })
+
+  it('cancels an awaiting drain when another assessment re-arms instead of completing the new take', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    await withController(
+      audio.context,
+      async (controller) => {
+        await controller.start()
+        Object.assign(audio.context, { currentTime: 1 })
+        const finishing = controller.settleTake()
+        controller.armTakeAt(2)
+        await expect(finishing).resolves.toBeNull()
+        await vi.runAllTimersAsync()
+        expect(controller.status()).toBe('listening')
+        expect(controller.take()).toMatchObject({
+          lifecycle: 'recording',
+          clock: { startedAtFrame: 96000 },
+        })
+      },
+      { retainDirectInputOnTakeCompletion: true },
+    )
+  })
+
+  it('publishes a finished retained assessment without clearing a synchronously re-armed take', async () => {
+    vi.useFakeTimers()
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    await withController(
+      audio.context,
+      async (controller) => {
+        createEffect(() => {
+          if (controller.take()?.lifecycle === 'completed')
+            controller.armTakeAt(2)
+        })
+        await controller.start()
+        const finishing = controller.settleTake()
+        await vi.runAllTimersAsync()
+        expect((await finishing)?.lifecycle).toBe('completed')
+        expect(controller.take()).toMatchObject({
+          lifecycle: 'recording',
+          clock: { startedAtFrame: 96000 },
+        })
+        expect(controller.completeTakeAt(3)).toBe(true)
+        controller.cancel()
+      },
+      { retainDirectInputOnTakeCompletion: true },
+    )
+  })
+
+  it('keeps microphone teardown even when the free-room DI retention option is enabled', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    await withController(
+      audio.context,
+      async (controller) => {
+        await controller.start()
+        const finishing = controller.settleTake()
+        await vi.runAllTimersAsync()
+        expect((await finishing)?.lifecycle).toBe('completed')
+        expect(controller.status()).toBe('off')
+        expect(controller.liveInputRoute()).toBeNull()
+        expect(dependencies.release).toHaveBeenCalledOnce()
+      },
+      { retainDirectInputOnTakeCompletion: true },
+    )
+  })
+
   it('exposes only the already-owned audio route and clears it on stop', async () => {
     const audio = createAudioHarness()
     installFrameHarness(audio.context)
-    const stream = {} as MediaStream
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({
+        sampleRate: 48000,
+        channelCount: 1,
+        latency: 0.012,
+      }),
+      getConstraints: () => ({ echoCancellation: false }),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
     dependencies.acquire.mockResolvedValue(stream)
 
     await withController(audio.context, async (controller) => {
       expect(controller.recordableStream()).toBeNull()
+      expect(controller.monitorDiagnostics()).toBeNull()
+      expect(dependencies.acquire).not.toHaveBeenCalled()
       expect(await controller.start()).toBe(true)
       expect(controller.recordableStream()).toBe(stream)
       expect(controller.recordableAudioContext()).toBe(audio.context)
+      expect(
+        controller.monitorDiagnostics()?.capture.actual.latencySeconds,
+      ).toBe(0.012)
+      expect(
+        controller.monitorDiagnostics()?.capture.requested.echoCancellation,
+      ).toBe(false)
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledOnce()
 
       controller.stop()
       expect(controller.recordableStream()).toBeNull()
       expect(controller.recordableAudioContext()).toBeNull()
+      expect(controller.monitorDiagnostics()).toBeNull()
     })
   })
 
@@ -395,6 +790,8 @@ describe('useGuitarListeningController', () => {
         source: audio.source,
         destination: monitorBus,
         parameters: AMP_PARAMETERS,
+        inputChannel: 0,
+        inputChannelCount: 1,
       })
       expect(controller.canAmpMonitor()).toBe(true)
       expect(controller.ampMonitoringEnabled()).toBe(false)
@@ -430,6 +827,127 @@ describe('useGuitarListeningController', () => {
     expect(dependencies.inputMonitors[1]?.dispose).toHaveBeenCalledOnce()
   })
 
+  it('selects one mono monitor channel without replacing dry evidence and requires opt-in after changes', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    let deviceId = 'interface-a'
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({ deviceId, sampleRate: 48000, channelCount: 2 }),
+      getConstraints: () => ({}),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({ context: audio.context, buses: { monitor: {} } }) as never,
+        ampParameters: () => AMP_PARAMETERS,
+      })
+    })
+    try {
+      expect(controller.selectMonitorInputChannel(1)).toBe(false)
+      expect(await controller.start()).toBe(true)
+      expect(controller.monitorInputChannelCount()).toBe(2)
+      expect(controller.monitorInputChannel()).toBe(0)
+      controller.setAmpMonitoringEnabled(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.ampMonitoringActive()).toBe(false)
+      expect(controller.monitorInputChannel()).toBe(1)
+      expect(controller.monitorDiagnostics()?.capture).toMatchObject({
+        monitorChannelMode: 'selected-mono',
+        monitorInputChannel: 1,
+      })
+      expect(
+        dependencies.inputMonitors[0]?.setInputChannel,
+      ).toHaveBeenCalledExactlyOnceWith(1)
+      expect(controller.recordableStream()).toBe(stream)
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(dependencies.connectWorklet).toHaveBeenCalledOnce()
+      expect(controller.selectMonitorInputChannel(2)).toBe(false)
+      expect(controller.selectMonitorInputChannel(Number.NaN)).toBe(false)
+      expect(controller.monitorInputChannel()).toBe(1)
+      controller.setAmpMonitoringEnabled(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(true)
+
+      controller.stop()
+      expect(controller.monitorInputChannelCount()).toBe(0)
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(await controller.start()).toBe(true)
+      expect(dependencies.createInputMonitor).toHaveBeenLastCalledWith(
+        expect.objectContaining({ inputChannel: 1, inputChannelCount: 2 }),
+      )
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+
+      controller.stop()
+      deviceId = 'interface-b'
+      expect(await controller.start()).toBe(true)
+      expect(controller.monitorInputChannel()).toBe(0)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      controller.selectMonitorInputChannel(1)
+      await controller.selectAudioInput('interface-c')
+      expect(controller.monitorInputChannel()).toBe(0)
+      expect(controller.monitorInputChannelCount()).toBe(0)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+    } finally {
+      dispose()
+    }
+  })
+
+  it('resets a stale interface channel when room-mic capture negotiates a mono route', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    let channelCount = 2
+    const track = {
+      readyState: 'live',
+      getSettings: () => ({
+        deviceId: 'default-input',
+        sampleRate: 48000,
+        channelCount,
+      }),
+      getConstraints: () => ({}),
+    }
+    const stream = { getAudioTracks: () => [track] } as unknown as MediaStream
+    dependencies.acquire.mockResolvedValue(stream)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({ context: audio.context, buses: { monitor: {} } }) as never,
+        ampParameters: () => AMP_PARAMETERS,
+      })
+    })
+    try {
+      expect(await controller.start()).toBe(true)
+      expect(controller.selectMonitorInputChannel(1)).toBe(true)
+      expect(controller.recordingInput()).toMatchObject({
+        channel: 1,
+        channelCount: 2,
+      })
+
+      await controller.selectInputProfile('microphone')
+      channelCount = 1
+      expect(await controller.start()).toBe(true)
+      expect(controller.canAmpMonitor()).toBe(false)
+      expect(dependencies.createInputMonitor).toHaveBeenCalledOnce()
+      expect(controller.recordingInput()).toMatchObject({
+        channel: 0,
+        channelCount: 1,
+      })
+    } finally {
+      dispose()
+    }
+  })
+
   it('never creates or enables the wet branch for a room microphone', async () => {
     const audio = createAudioHarness()
     installFrameHarness(audio.context)
@@ -459,6 +977,246 @@ describe('useGuitarListeningController', () => {
     } finally {
       dispose()
     }
+  })
+
+  it('disposes a delayed worklet without silencing a newer dry capture or opted-in monitor', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    const firstAudio = createAudioHarness()
+    const nextAudio = createAudioHarness()
+    const frames = installFrameHarness(firstAudio.context)
+    vi.mocked(firstAudio.context.createMediaStreamSource)
+      .mockReturnValueOnce(
+        firstAudio.source as unknown as MediaStreamAudioSourceNode,
+      )
+      .mockReturnValueOnce(
+        nextAudio.source as unknown as MediaStreamAudioSourceNode,
+      )
+    vi.mocked(firstAudio.context.createAnalyser)
+      .mockReturnValueOnce(firstAudio.analyser as unknown as AnalyserNode)
+      .mockReturnValueOnce(nextAudio.analyser as unknown as AnalyserNode)
+    const firstStream = {
+      getAudioTracks: () => [
+        { getSettings: () => ({ sampleRate: 48000, channelCount: 1 }) },
+      ],
+    } as unknown as MediaStream
+    const nextStream = {
+      getAudioTracks: () => [
+        { getSettings: () => ({ sampleRate: 44100, channelCount: 1 }) },
+      ],
+    } as unknown as MediaStream
+    dependencies.acquire
+      .mockResolvedValueOnce(firstStream)
+      .mockResolvedValueOnce(nextStream)
+    const firstTap = { dispose: vi.fn() }
+    const nextTap = { dispose: vi.fn() }
+    const delayedTap = deferredResult<typeof firstTap>()
+    const messages: Array<(message: GuitarInputWorkletMessage) => void> = []
+    dependencies.connectWorklet
+      .mockImplementationOnce((_context, _source, onMessage) => {
+        messages.push(onMessage)
+        return delayedTap.promise
+      })
+      .mockImplementationOnce(async (_context, _source, onMessage) => {
+        messages.push(onMessage)
+        return nextTap
+      })
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () =>
+          ({ context: firstAudio.context, buses: { monitor: {} } }) as never,
+        ampParameters: () => AMP_PARAMETERS,
+      })
+    })
+
+    try {
+      const firstStart = controller.start()
+      await vi.waitFor(() =>
+        expect(dependencies.connectWorklet).toHaveBeenCalledOnce(),
+      )
+      expect(controller.status()).toBe('requesting')
+      expect(controller.setAmpMonitoringEnabled(true)).toBe(false)
+
+      controller.stop()
+      expect(firstAudio.source.disconnect).toHaveBeenCalledOnce()
+      expect(dependencies.inputMonitors[0]?.dispose).toHaveBeenCalledOnce()
+      expect(await controller.start()).toBe(true)
+      expect(controller.ampMonitoringEnabled()).toBe(false)
+      expect(controller.setAmpMonitoringEnabled(true)).toBe(true)
+      expect(controller.recordableStream()).toBe(nextStream)
+      const currentDiagnostics = controller.monitorDiagnostics()
+      expect(currentDiagnostics?.capture.actual.sampleRate).toBe(44100)
+
+      delayedTap.resolve(firstTap)
+      expect(await firstStart).toBe(false)
+      expect(firstTap.dispose).toHaveBeenCalledOnce()
+      expect(firstAudio.source.disconnect).toHaveBeenCalledOnce()
+      expect(nextTap.dispose).not.toHaveBeenCalled()
+      expect(nextAudio.source.disconnect).not.toHaveBeenCalled()
+      expect(nextAudio.analyser.disconnect).not.toHaveBeenCalled()
+      expect(dependencies.inputMonitors[1]?.dispose).not.toHaveBeenCalled()
+      expect(controller.status()).toBe('listening')
+      expect(controller.ampMonitoringActive()).toBe(true)
+      expect(controller.recordableStream()).toBe(nextStream)
+      expect(controller.monitorDiagnostics()).toBe(currentDiagnostics)
+      expect(dependencies.release).toHaveBeenCalledTimes(1)
+      expect(dependencies.release).toHaveBeenCalledWith(
+        dependencies.acquire.mock.calls[0]?.[0],
+      )
+
+      const attack: GuitarInputWorkletMessage = {
+        type: 'attack',
+        atFrame: 48000,
+        level: 0.3,
+      }
+      messages[0]?.(attack)
+      expect(controller.events()).toHaveLength(0)
+      messages[1]?.(attack)
+      expect(controller.events()).toHaveLength(1)
+      dependencies.detections = [E4]
+      nextAudio.setAmplitude(0.1)
+      frames.run(1.05)
+      expect(controller.currentNote()).toBe('E4')
+      expect(controller.events()[0]?.pitch?.noteName).toBe('E4')
+    } finally {
+      dispose()
+    }
+    expect(nextTap.dispose).toHaveBeenCalledOnce()
+    expect(dependencies.inputMonitors[1]?.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('releases only the obsolete lease when an old permission request resolves after restart', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const delayedStream = deferredResult<MediaStream>()
+    const firstStream = {} as MediaStream
+    const nextStream = {} as MediaStream
+    dependencies.acquire
+      .mockReturnValueOnce(delayedStream.promise)
+      .mockResolvedValueOnce(nextStream)
+
+    await withController(audio.context, async (controller) => {
+      const firstStart = controller.start()
+      await vi.waitFor(() =>
+        expect(dependencies.acquire).toHaveBeenCalledOnce(),
+      )
+      controller.stop()
+      expect(await controller.start()).toBe(true)
+      const firstLease = dependencies.acquire.mock.calls[0]?.[0]
+      const nextLease = dependencies.acquire.mock.calls[1]?.[0]
+      expect(firstLease).not.toBe(nextLease)
+
+      delayedStream.resolve(firstStream)
+      expect(await firstStart).toBe(false)
+      expect(dependencies.release).toHaveBeenCalledOnce()
+      expect(dependencies.release).toHaveBeenCalledWith(firstLease)
+      expect(dependencies.release).not.toHaveBeenCalledWith(nextLease)
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledOnce()
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledWith(
+        nextStream,
+      )
+      expect(audio.source.disconnect).not.toHaveBeenCalled()
+      expect(controller.recordableStream()).toBe(nextStream)
+      expect(controller.status()).toBe('listening')
+    })
+  })
+
+  it('ignores a cancelled device enumeration after a newer capture publishes its route', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const delayedDevices = deferredResult<MediaDeviceInfo[]>()
+    const firstDevice = {
+      deviceId: 'old-input',
+      label: 'Old input',
+      kind: 'audioinput',
+    } as MediaDeviceInfo
+    const nextDevice = {
+      deviceId: 'current-input',
+      label: 'Current input',
+      kind: 'audioinput',
+    } as MediaDeviceInfo
+    dependencies.listAudioInputs
+      .mockReturnValueOnce(delayedDevices.promise)
+      .mockResolvedValueOnce([nextDevice])
+    const nextStream = {} as MediaStream
+    dependencies.acquire
+      .mockResolvedValueOnce({} as MediaStream)
+      .mockResolvedValueOnce(nextStream)
+
+    await withController(audio.context, async (controller) => {
+      const firstStart = controller.start()
+      await vi.waitFor(() =>
+        expect(dependencies.listAudioInputs).toHaveBeenCalledOnce(),
+      )
+      controller.cancel()
+      expect(await controller.start()).toBe(true)
+      expect(controller.audioInputs().map((input) => input.id)).toEqual([
+        'current-input',
+      ])
+
+      delayedDevices.resolve([firstDevice])
+      expect(await firstStart).toBe(false)
+      expect(controller.audioInputs().map((input) => input.id)).toEqual([
+        'current-input',
+      ])
+      expect(audio.context.createMediaStreamSource).toHaveBeenCalledOnce()
+      expect(audio.source.disconnect).not.toHaveBeenCalled()
+      expect(dependencies.connectWorklet).toHaveBeenCalledOnce()
+      expect(dependencies.release).toHaveBeenCalledOnce()
+      expect(controller.recordableStream()).toBe(nextStream)
+      expect(controller.status()).toBe('listening')
+    })
+  })
+
+  it('does not request permission when a cancelled device selection settles', async () => {
+    const audio = createAudioHarness()
+    const delayedSelection = deferredResult<undefined>()
+    dependencies.setPreferredDevice.mockReturnValueOnce(
+      delayedSelection.promise,
+    )
+
+    await withController(audio.context, async (controller) => {
+      const starting = controller.start()
+      await vi.waitFor(() =>
+        expect(dependencies.setPreferredDevice).toHaveBeenCalledOnce(),
+      )
+      controller.cancel()
+      delayedSelection.resolve(undefined)
+      expect(await starting).toBe(false)
+      expect(dependencies.acquire).not.toHaveBeenCalled()
+      expect(audio.context.createMediaStreamSource).not.toHaveBeenCalled()
+      expect(controller.status()).toBe('off')
+      expect(controller.recordableStream()).toBeNull()
+    })
+  })
+
+  it('disposes a worklet that finishes opening after the room unmounts', async () => {
+    const audio = createAudioHarness()
+    const delayedTap = deferredResult<{ dispose(): void }>()
+    const lateTap = { dispose: vi.fn() }
+    dependencies.connectWorklet.mockReturnValueOnce(delayedTap.promise)
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () => ({ context: audio.context }) as never,
+      })
+    })
+    const starting = controller.start()
+    await vi.waitFor(() =>
+      expect(dependencies.connectWorklet).toHaveBeenCalledOnce(),
+    )
+    dispose()
+    expect(audio.source.disconnect).toHaveBeenCalledOnce()
+    expect(controller.recordableStream()).toBeNull()
+    delayedTap.resolve(lateTap)
+    expect(await starting).toBe(false)
+    expect(lateTap.dispose).toHaveBeenCalledOnce()
+    expect(audio.source.disconnect).toHaveBeenCalledOnce()
+    expect(dependencies.release).toHaveBeenCalledOnce()
   })
 
   it('admits a same-pitch coarse restrike after the debounce', async () => {
@@ -1024,7 +1782,7 @@ describe('useGuitarListeningController', () => {
     dispose()
   })
 
-  it('records the actual interface route when the saved device falls back', async () => {
+  it('preserves the explicitly requested interface across fallback, restart and remount', async () => {
     localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
     localStorage.setItem('mp.guitarInputDevice', 'saved-interface')
     dependencies.listAudioInputs.mockResolvedValue([
@@ -1050,7 +1808,10 @@ describe('useGuitarListeningController', () => {
     await withController(audio.context, async (controller) => {
       expect(await controller.start()).toBe(true)
       expect(controller.inputProfile()).toBe('interface')
-      expect(controller.selectedAudioInputId()).toBe('system-default')
+      expect(controller.selectedAudioInputId()).toBe('saved-interface')
+      expect(localStorage.getItem('mp.guitarInputDevice')).toBe(
+        'saved-interface',
+      )
       expect(controller.take()?.input).toEqual({
         kind: 'interface',
         requestedDeviceId: 'saved-interface',
@@ -1059,6 +1820,52 @@ describe('useGuitarListeningController', () => {
       })
       expect(controller.error()).toBeNull()
       expect(controller.notice()).toContain('saved input is unavailable')
+      controller.stop()
+      expect(await controller.start()).toBe(true)
+      expect(controller.take()?.input.requestedDeviceId).toBe('saved-interface')
+      expect(controller.take()?.input.activeDeviceId).toBe('system-default')
+    })
+
+    await withController(audio.context, async (controller) => {
+      expect(controller.selectedAudioInputId()).toBe('saved-interface')
+      expect(await controller.start()).toBe(true)
+      expect(controller.take()?.input.requestedDeviceId).toBe('saved-interface')
+      expect(controller.take()?.input.activeDeviceId).toBe('system-default')
+
+      await controller.selectAudioInput('system-default')
+      expect(await controller.start()).toBe(true)
+      expect(controller.take()?.input.requestedDeviceId).toBe('system-default')
+      expect(localStorage.getItem('mp.guitarInputDevice')).toBe(
+        'system-default',
+      )
+      expect(controller.notice()).toBeNull()
+    })
+  })
+
+  it('still remembers the actual fallback for a room microphone', async () => {
+    localStorage.setItem('mp.guitarInputDevice', 'saved-microphone')
+    dependencies.acquire.mockResolvedValue({
+      getAudioTracks: () => [
+        {
+          label: 'Built-in input',
+          getSettings: () => ({ deviceId: 'system-default' }),
+        },
+      ],
+    })
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.inputProfile()).toBe('microphone')
+      expect(controller.selectedAudioInputId()).toBe('system-default')
+      expect(localStorage.getItem('mp.guitarInputDevice')).toBe(
+        'system-default',
+      )
+      expect(controller.take()?.input.requestedDeviceId).toBe(
+        'saved-microphone',
+      )
+      expect(controller.take()?.input.activeDeviceId).toBe('system-default')
     })
   })
 

@@ -18,7 +18,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
-import { unlockAudio } from '@/lib/audio-unlock'
+import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
@@ -407,7 +407,20 @@ export function PlayPad(props: PlayPadProps): JSX.Element {
       onClick={() => {
         // Still inside the tap: iOS only un-suspends a context, and only
         // promotes the page to the audible session, from a gesture.
-        unlockAudio(engines?.audioEngine.getAudioContext())
+        // activateAudioPlayback rather than unlockAudio(getAudioContext()):
+        // the room enters silent, so on the first pad there is no context
+        // yet and getAudioContext() hands over null — nothing is created and
+        // nothing is resumed. init() builds the context synchronously before
+        // its first await, so this keeps the unlock inside the gesture where
+        // iOS still honours it.
+        const engine = engines?.audioEngine
+        if (engine) {
+          void activateAudioPlayback(engine).catch(() => {
+            // Not in a gesture iOS accepted — the next tap retries.
+          })
+        } else {
+          unlockAudio(null)
+        }
         props.onClick?.()
       }}
     >

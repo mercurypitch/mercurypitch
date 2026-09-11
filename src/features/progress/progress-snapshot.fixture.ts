@@ -146,7 +146,7 @@ export function snapshot(): ProgressPageSnapshot {
         title: 'Steady Return',
         kindLabel: 'Badge',
         earnedAtLabel: 'Earned August 7',
-        detail: 'Practised in four consecutive weeks.',
+        detail: 'Practiced in four consecutive weeks.',
       },
     ],
     cabinet: {
@@ -161,7 +161,7 @@ export function snapshot(): ProgressPageSnapshot {
           tier: 'silver',
           earned: true,
           earnedAtLabel: 'Earned August 7',
-          howToEarn: 'Practise in four consecutive weeks.',
+          howToEarn: 'Practice in four consecutive weeks.',
           artUrl: '/badges/firstvoice.webp',
           icon: 'firstvoice',
         },
