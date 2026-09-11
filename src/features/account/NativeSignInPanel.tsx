@@ -25,6 +25,14 @@
 // a debug panel is a thing that gets pasted into an issue, and three
 // characters at each end is enough to tell two ids apart without handing one
 // over.
+//
+// Apple is offered by the SAME predicate the product surfaces use,
+// `appleSignInOffered()`, rather than by always drawing the button. A
+// developer screen that offers a provider this platform does not have is not
+// a harmless convenience: the point of the screen is to answer "does this
+// work on this device", and an Android tap that fails because Apple is
+// iOS-only reads exactly like an Android tap that fails because the
+// configuration is wrong.
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
@@ -33,6 +41,7 @@ import { getUserId } from '@/db/services/user-service'
 import { flushStoragePort, storageDurable, storagePortSnapshot, } from '@/lib/storage-port'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from './native-sign-in'
 import styles from './NativeSignInPanel.module.css'
+import { appleSignInOffered } from './sign-in-methods'
 
 /** Enough to tell two credentials apart, not enough to use one. */
 function mask(value: string | null): string {
@@ -51,6 +60,11 @@ const LABELS: Record<Action, string> = {
 }
 
 const ORDER: Action[] = ['apple', 'google', 'refresh', 'storage']
+
+/** The buttons this platform has something behind. Apple is iOS-only. */
+function offeredActions(): Action[] {
+  return ORDER.filter((action) => action !== 'apple' || appleSignInOffered())
+}
 
 export const NativeSignInPanel: Component = () => {
   const [busy, setBusy] = createSignal<Action | null>(null)
@@ -106,6 +120,20 @@ export const NativeSignInPanel: Component = () => {
         })
         return
       }
+      if (action === 'apple' && !appleSignInOffered()) {
+        // The button is not drawn here, so this is a keyboard, a stale
+        // render, or someone calling run() from a console. Say which of the
+        // two failures it is, because the whole point of the screen is to
+        // tell a configuration fault apart from a platform that has no
+        // Apple sheet to begin with.
+        show({
+          action,
+          ok: false,
+          kind: 'unavailable',
+          message: 'Sign in with Apple is not offered on this platform.',
+        })
+        return
+      }
       const outcome =
         action === 'apple' ? await signInWithApple() : await signInWithGoogle()
       if (isTwofaChallenge(outcome)) {
@@ -131,7 +159,7 @@ export const NativeSignInPanel: Component = () => {
   return (
     <div class={styles.panel}>
       <div class={styles.actions}>
-        <For each={ORDER}>
+        <For each={offeredActions()}>
           {(action) => (
             <button
               type="button"
