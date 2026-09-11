@@ -11,10 +11,16 @@
 // calm mode skips drawing is still a frame that moment can fall in. Calm
 // never engages while glass is in the air, but a tap should not depend on
 // that staying true.
+//
+// Under `prefers-reduced-motion` (P6) it plays `reducedImpact` instead:
+// the same taps at the same moments, no hitstop, slow motion, shake or
+// pixel-ratio step, and the shards' flight in half the time. Asked every
+// frame, so a viewer who changes the setting mid-break is answered on the
+// next one.
 
 import { tap } from '../runtime/haptics'
 import type { ImpactConfig, ImpactFrame, Tap } from '../runtime/impact'
-import { createImpactTrack, pixelRatioFor } from '../runtime/impact'
+import { createImpactTrack, pixelRatioFor, REDUCED_FLIGHT_RATE, reducedImpact, } from '../runtime/impact'
 
 export interface StageImpact {
   /** The glass broke at this wall time. A second break starts it over. */
@@ -30,11 +36,22 @@ export interface StageImpact {
   onBurst(refit: () => void): void
 }
 
+export interface StageImpactOptions {
+  /** Whether the viewer has asked the system for less motion. */
+  reduced?: () => boolean
+  /** Where a tap goes: the app's haptics port, unless a test says so. */
+  haptic?: (style: Tap) => void
+  /** The screen's device pixel ratio. */
+  screenRatio?: () => number
+}
+
 export const createStageImpact = (
   config: () => ImpactConfig,
-  haptic: (style: Tap) => void = tap,
-  screenRatio: () => number = () => window.devicePixelRatio,
+  opts: StageImpactOptions = {},
 ): StageImpact => {
+  const reduced = opts.reduced ?? (() => false)
+  const haptic = opts.haptic ?? tap
+  const screenRatio = opts.screenRatio ?? (() => window.devicePixelRatio)
   const track = createImpactTrack()
   let burst = false
   let refit = (): void => {}
@@ -43,14 +60,20 @@ export const createStageImpact = (
       track.start(wallSeconds)
     },
     frame(wallSeconds) {
-      const f = track.frame(wallSeconds, config())
+      const calmer = reduced()
+      const f = track.frame(
+        wallSeconds,
+        calmer ? reducedImpact(config()) : config(),
+      )
       if (f === null) return null
       for (const t of f.taps) haptic(t)
       if (f.burst !== burst) {
         burst = f.burst
         refit()
       }
-      return f
+      return calmer
+        ? { ...f, shardSeconds: f.shardSeconds * REDUCED_FLIGHT_RATE }
+        : f
     },
     pixelRatio: () => pixelRatioFor(screenRatio(), burst, config()),
     onBurst(fn) {

@@ -177,6 +177,30 @@ export const pixelRatioFor = (
   return burst ? Math.min(running, cfg.burstPixelRatio) : running
 }
 
+/**
+ * The break under `prefers-reduced-motion` (P6): the taps, and nothing
+ * that moves the picture for its own sake. No hitstop and no slow
+ * motion, so the break plays at the speed it happens; no shake, the one
+ * motion that fills the whole view; no burst, because a pixel-ratio step
+ * is a pop. The taps stay where they were: they are not motion.
+ */
+export const reducedImpact = (cfg: ImpactConfig): ImpactConfig => ({
+  ...cfg,
+  hitstopSeconds: 0,
+  slowScale: 1,
+  shakeSeconds: 0,
+  burstSeconds: 0,
+})
+
+/**
+ * How much faster the shards' clock runs under reduced motion: P6 has
+ * them fly for half the time. The same paths played twice as fast,
+ * rather than a flight cut off in mid-air or a smaller burst: nothing
+ * fades or shrinks that did not before, and the camera -- whose movement
+ * is what fills the view -- stays still throughout.
+ */
+export const REDUCED_FLIGHT_RATE = 2
+
 export type Tap = 'heavy' | 'light'
 
 /** The taps whose moment falls in (from, to], seconds after the crack.

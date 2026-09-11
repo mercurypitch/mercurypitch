@@ -2,6 +2,7 @@ import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { AssetSlot, RenderableTierName } from '@/content'
 import { resolveAsset } from '@/content'
 import { NonCopyableArt } from '@/interaction/selection'
+import { createReducedMotion } from '@/platform/reduced-motion'
 
 // ============================================================
 // AssetStage — draws whichever tier of a slot is actually available
@@ -28,22 +29,6 @@ interface AssetStageProps {
   class?: string
   /** Rendered size hint. The stills are square. */
   size?: number
-}
-
-function createReducedMotion(): () => boolean {
-  if (typeof window === 'undefined' || window.matchMedia === undefined) {
-    return () => false
-  }
-  const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-  const [reduced, setReduced] = createSignal(query.matches)
-  const listener = (event: MediaQueryListEvent): void => {
-    setReduced(event.matches)
-  }
-  query.addEventListener('change', listener)
-  onCleanup(() => {
-    query.removeEventListener('change', listener)
-  })
-  return reduced
 }
 
 export function AssetStage(props: AssetStageProps) {
