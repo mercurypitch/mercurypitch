@@ -251,6 +251,11 @@ export const stepShelf = (
     // 6b).
     if (!flight.flashed && loco.vy <= 0) {
       flight.flashed = true
+      // Past the apex the carry is walking pace (§3.2). The pace drops
+      // there, but the aimed speed would only ease off at his
+      // acceleration and carry on through the landing, over the thumb.
+      const pace = climb.locomotion.walkSpeed
+      loco.vx = Math.max(-pace, Math.min(pace, loco.vx))
       flash = {
         x: target === undefined ? loco.x + HALF : target.from,
         y: climb.apex,
