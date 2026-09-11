@@ -24,6 +24,7 @@ import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/service
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initDeviceTier } from '@/lib/device-tier'
+import { configurePitchEngineAssetsFromEnv } from '@/lib/pitch-engine-assets'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
@@ -31,6 +32,11 @@ import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
 import { initTheme } from '@/stores/theme-store'
 import { armDeveloperConsole } from '@/lib/developer-console'
+
+// Before anything else: the pitch engine is a package now, and it reads its
+// wasm and model locations from module state that has to be set before the
+// first detector exists — which is the moment anything opens the microphone.
+configurePitchEngineAssetsFromEnv()
 
 // The head prepaint script covers the network gap. Reconcile the persisted
 // source and install system/time watchers before Solid mounts.

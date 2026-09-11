@@ -4,12 +4,18 @@
 // Handles: init (load model), separate (process audio), cancel.
 // ============================================================
 
+import { configureWasmPaths, getValidatedWasmBase, } from '@irchiinnuss/pitch-engine/assets'
 import type * as OrtModule from 'onnxruntime-web'
 import type { InferenceSession, Tensor } from 'onnxruntime-web'
 import { computeChunkRanges, overlapAdd, UVR_CHUNK_CONFIG, } from '../lib/audio-chunker'
-import { configureWasmPaths, getValidatedWasmBase, IS_DEV, } from '../lib/defaults'
+import { IS_DEV } from '../lib/defaults'
 import { getCachedModel, setCachedModel } from '../lib/model-cache'
+import { configurePitchEngineAssetsFromEnv } from '../lib/pitch-engine-assets'
 import { stftForward, stftInverse } from '../lib/stft-engine'
+
+// A worker is its own module graph: the configuration the main thread gave
+// the engine package is not visible in here, so this graph configures it too.
+configurePitchEngineAssetsFromEnv()
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
