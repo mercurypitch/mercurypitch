@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onMount, Show, untrack } from 'solid-js'
 import { buildLabel } from '@/build-info'
 import { AppHeader } from '@/components/AppHeader'
 import { LanguageSelector } from '@/components/LanguageSelector'
@@ -15,7 +15,12 @@ import { probeDeviceSupport } from '@/platform/device-support'
 const SUPPORT_URL = 'https://about.besidecue.com/support/'
 const PRIVACY_NOTICE_URL = 'https://about.besidecue.com/privacy/'
 
+/** A group Home can open this screen at; the heading takes focus. */
+export type SettingsFocus = 'daily-reminder'
+
 interface SettingsScreenProps {
+  /** Opened from Home at this group: it scrolls into view and takes focus. */
+  initialFocus?: SettingsFocus
   /** Purchase surface, supplied by the shell so this screen stays store-free. */
   proSection?: JSX.Element
   paused: boolean
@@ -45,6 +50,18 @@ export function SettingsScreen(props: SettingsScreenProps) {
   // requesting a GPU adapter at screen load costs something and nobody
   // needs this until they are diagnosing.
   const [support, setSupport] = createSignal<DeviceSupport | undefined>()
+  let reminderHeading: HTMLHeadingElement | undefined
+
+  onMount(() => {
+    if (
+      props.initialFocus !== 'daily-reminder' ||
+      reminderHeading === undefined
+    )
+      return
+    reminderHeading.focus({ preventScroll: true })
+    // jsdom has no scrollIntoView; a phone does.
+    reminderHeading.scrollIntoView?.({ block: 'start' })
+  })
 
   createEffect(() => {
     const scheduledTime = props.scheduleTime
@@ -70,7 +87,9 @@ export function SettingsScreen(props: SettingsScreenProps) {
         <div class="settings-group__heading">
           <div>
             <p class="screen-kicker">{copy.t('Optional')}</p>
-            <h2 id="daily-cue-title">{copy.t('Daily reminder')}</h2>
+            <h2 id="daily-cue-title" ref={reminderHeading} tabIndex={-1}>
+              {copy.t('Daily reminder')}
+            </h2>
           </div>
           {props.scheduleTime === undefined ? (
             <span>{copy.t('No daily reminder')}</span>

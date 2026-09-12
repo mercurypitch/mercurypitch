@@ -110,6 +110,16 @@ export const CORKY_QUIET_ART = {
   alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled with lowered lids.',
 } as const satisfies AssetSlot
 
+// Corky on Home: the rest still, in a slot of its own so the living-rest
+// loop (L01) can land here without touching the cue or quiet screens. When
+// the clip is accepted, add `video` to this slot, framed on the still's 1024
+// canvas; the still stays its poster and the reduced-motion fallback, and
+// nothing on Home changes (see `HomeCompanion.tsx`).
+export const CORKY_HOME_ART = {
+  still: CORKY_REST_ART.still,
+  alt: CORKY_REST_ART.alt,
+} as const satisfies AssetSlot
+
 // The six free Pulls are the approved cast renders, byte for byte the art the
 // landing shows (`packages/beside-cue/src/assets/cast/*.png` in the
 // disjoint-colliders repo is a tight crop of these files). Sugarlump is the

@@ -15,7 +15,7 @@ export {
 } from './locale'
 
 const semanticSources = {
-  'home.title': 'Your current pressing',
+  'home.title': 'Your current plan',
   'premium.show': 'Show Deluxe',
   'premium.hide': 'Hide Deluxe',
   'premium.available': 'Your Deluxe cast. Choose the Pull you want to notice.',

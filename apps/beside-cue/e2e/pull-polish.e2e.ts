@@ -35,7 +35,7 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/?devSeed')
-    const title = page.getByRole('heading', { name: 'Your current pressing' })
+    const title = page.getByRole('heading', { name: 'Your current plan' })
     await expect(title).toBeVisible()
     const primaryBox = await page
       .getByRole('button', { name: /^Cue me now/u })
@@ -50,7 +50,6 @@ for (const viewport of [
         page.getByText('Endless scrolling', { exact: true }),
       ),
     ).toContain('scrolling')
-    await page.getByRole('button', { name: 'Side B · My choice' }).click()
     await expect(
       page.getByText('Walk to the end of the street', { exact: true }),
     ).toBeVisible()
@@ -75,7 +74,7 @@ test('Home pressing fits its container at 200% text @smoke', async ({
 }, info) => {
   await page.setViewportSize({ width: 320, height: 568 })
   await page.goto('/?devSeed')
-  await page.getByRole('heading', { name: 'Your current pressing' }).waitFor()
+  await page.getByRole('heading', { name: 'Your current plan' }).waitFor()
   await page.addStyleTag({ content: 'html { font-size: 200% !important; }' })
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),

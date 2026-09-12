@@ -1,0 +1,53 @@
+.record {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.disc {
+  transform-box: view-box;
+  transform-origin: 200px 200px;
+}
+
+.text {
+  font-family: 'Saira Condensed', sans-serif;
+  font-weight: 600;
+}
+
+/* The landing's plate-spin: 2 s per revolution, linear, while a cue is on
+   its way. Home unmounts with the transition, and the spin ends with it. */
+.spin .disc {
+  animation: home-record-spin 2s linear infinite;
+}
+
+/* One slowing revolution after a recorded Side B, then still. */
+.settle .disc {
+  animation: home-record-settle 2s var(--ease-out) 1 forwards;
+}
+
+@keyframes home-record-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes home-record-settle {
+  from {
+    transform: rotate(-360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* The global reduced-motion rule already shortens every animation to a cut;
+   this keeps the disc from even starting one. `animationend` then never fires,
+   which is why HomeRecord also reports the settle on a timer. */
+@media (prefers-reduced-motion: reduce) {
+  .spin .disc,
+  .settle .disc {
+    animation: none;
+  }
+}

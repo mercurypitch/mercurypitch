@@ -1,8 +1,9 @@
 import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTimeScheduleRule, } from '@irchiinnuss/beside-cue-core'
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { BuildStamp } from '@/components/BuildStamp'
+import type { RecordSide } from '@/components/HomeRecord'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
 import { localizeActionStarter } from './action-starters/localized-action-starter'
@@ -56,6 +57,7 @@ import { HomeScreen } from './screens/HomeScreen'
 import { QuietScreen } from './screens/QuietScreen'
 import type { ReflectionDay } from './screens/ReflectionScreen'
 import { ReflectionScreen } from './screens/ReflectionScreen'
+import type { SettingsFocus } from './screens/SettingsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { WelcomeScreen } from './screens/WelcomeScreen'
 
@@ -301,6 +303,17 @@ export function App(props: AppProps) {
   const [scheduleMessage, setScheduleMessage] = createSignal<AppNotice>()
   const [scheduleError, setScheduleError] = createSignal<AppNotice>()
   const [today, setToday] = createSignal(localDate(new Date()))
+  // What the Home record wears and whether it still owes its one slowing
+  // revolution: Side B after a recorded turn, until the next cue, a new plan,
+  // midnight or a relaunch. Presentation only, so never persisted.
+  const [homeRecordSide, setHomeRecordSide] = createSignal<RecordSide>('A')
+  const [homeRecordSettle, setHomeRecordSettle] = createSignal(false)
+  const [settingsFocus, setSettingsFocus] = createSignal<SettingsFocus>()
+  // Where Change this plan came from, so backing out of the prefilled setup
+  // returns there.
+  const [replaceReturn, setReplaceReturn] = createSignal<'home' | 'settings'>(
+    'settings',
+  )
   const proAccess = createMemo(() => {
     const appServices = services()
     return createProAccess({
@@ -668,7 +681,15 @@ export function App(props: AppProps) {
       .catch(() => undefined)
   }
 
+  function resetHomeRecord(): void {
+    setHomeRecordSide('A')
+    setHomeRecordSettle(false)
+  }
+
+  createEffect(on(today, () => resetHomeRecord(), { defer: true }))
+
   function prepareCueMomentEntry(): void {
+    resetHomeRecord()
     setCueResolutionPending(false)
     setQuietStarter(undefined)
     timerCompletionHapticPlayed = false
@@ -1431,6 +1452,7 @@ export function App(props: AppProps) {
           }
           setSchedulePending(false)
           setActiveView('cue')
+          resetHomeRecord()
           setScreen('home')
         })
         .catch(() => {
@@ -1779,6 +1801,12 @@ export function App(props: AppProps) {
   function finishQuietScreen(): void {
     stopCharacterVoice('route-exit')
     setQuietStarter(undefined)
+    // Back on Home after Side B the record shows its turned face and settles
+    // once; after Not now it is already settled. Persisted before this point.
+    if (quietChoseBSide()) {
+      setHomeRecordSide('B')
+      setHomeRecordSettle(true)
+    }
     setScreen('home')
   }
 
@@ -1832,13 +1860,29 @@ export function App(props: AppProps) {
     setScreen(view === 'cue' ? 'home' : 'reflection')
   }
 
-  function openSettings(): void {
+  // The focus target is set before the screen switches: SettingsScreen reads
+  // it in onMount, which runs inside the same synchronous update.
+  function openSettingsAt(focus: SettingsFocus | undefined): void {
     stopCharacterVoice('route-exit')
+    setSettingsFocus(focus)
     setSettingsReturnView(activeView())
     setResetArmed(false)
     setScheduleMessage(undefined)
     setScheduleError(undefined)
     setScreen('settings')
+  }
+
+  function openSettings(): void {
+    openSettingsAt(undefined)
+  }
+
+  function openReminderSettings(): void {
+    openSettingsAt('daily-reminder')
+  }
+
+  function beginReplace(from: 'home' | 'settings'): void {
+    setReplaceReturn(from)
+    beginSetup('replace')
   }
 
   function setCharacterVoiceEnabled(voiceEnabled: boolean): void {
@@ -2246,7 +2290,7 @@ export function App(props: AppProps) {
           }}
           onBack={() => {
             stopCharacterVoice('route-exit')
-            setScreen(setupMode() === 'replace' ? 'settings' : 'welcome')
+            setScreen(setupMode() === 'replace' ? replaceReturn() : 'welcome')
           }}
           onContinue={continueFromPull}
         />
@@ -2313,18 +2357,32 @@ export function App(props: AppProps) {
 
       {screen() === 'home' && cue() !== undefined ? (
         <HomeScreen
-          pullText={displayedCue()?.pullText ?? ''}
-          bSideText={displayedCue()?.bSideText ?? ''}
-          cueContextText={displayedCue()?.cueContextText}
-          todayCount={progress().today}
-          weekCount={progress().total}
-          paused={cue()?.status === 'paused'}
+          plan={{
+            pullText: displayedCue()?.pullText ?? '',
+            bSideText: displayedCue()?.bSideText ?? '',
+            ...(displayedCue()?.cueContextText === undefined
+              ? {}
+              : { cueContextText: displayedCue()?.cueContextText }),
+            ...(cue()?.pullCategoryId === undefined
+              ? {}
+              : { pullId: cue()?.pullCategoryId }),
+            paused: cue()?.status === 'paused',
+            ...(dailyRule()?.localTime === undefined
+              ? {}
+              : { scheduleTime: dailyRule()?.localTime }),
+          }}
           cueStatePending={schedulePending()}
+          recordSide={homeRecordSide()}
+          recordSettle={homeRecordSettle()}
+          onRecordSettled={() => setHomeRecordSettle(false)}
           activeView={activeView()}
           onChangeView={changeMainView}
           onCueNow={showManualCue}
           onPauseToggle={togglePause}
           onOpenSettings={openSettings}
+          onOpenReminder={openReminderSettings}
+          onReplace={() => beginReplace('home')}
+          onStartPlan={() => beginSetup('create')}
           onOpenGames={() => setScreen('games')}
           muted={v2Muted()}
           onMuteToggle={toggleCharacterVoice}
@@ -2419,7 +2477,8 @@ export function App(props: AppProps) {
           onPauseToggle={togglePause}
           onVoiceToggle={toggleCharacterVoice}
           onReplayIntroduction={replayIntroduction}
-          onReplace={() => beginSetup('replace')}
+          onReplace={() => beginReplace('settings')}
+          initialFocus={settingsFocus()}
           onSetSchedule={keepDailyCue}
           onDisableSchedule={disableDailyCue}
           onTimeHaptic={playTimeDialHaptic}
