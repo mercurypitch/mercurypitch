@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { midiToFreq } from '@/lib/scale-data'
 import type { TakeFrame } from './take-summary'
-import { formatRange, formatTakeDate, formatTakeDuration, MIN_VOICED_MS, percentile, rangeTouched, summarizeTake, takeSentence, voicedMs, } from './take-summary'
+import { createTakeAccumulator, formatRange, formatTakeDate, formatTakeDuration, MIN_VOICED_MS, percentile, rangeTouched, runMs, summarizeTake, takeSentence, voicedMs, } from './take-summary'
 
-/** A run of frames on one note, one frame every `stepMs`. */
+/**
+ * A run of frames on one note, one frame every `stepMs`.
+ *
+ * 64 ms by default, which is what the detector actually delivers. The
+ * fixtures used to be spaced 16 ms apart and hid a real defect: a note held
+ * for 150 ms spans only 128 ms of timestamps at the production rate, so the
+ * hold rule dropped every held note on a device and kept them all in here.
+ */
 function held(
   midi: number,
   fromMs: number,
   durationMs: number,
   cents = 0,
-  stepMs = 16,
+  stepMs = 64,
 ): TakeFrame[] {
   const frames: TakeFrame[] = []
   for (let t = 0; t <= durationMs; t += stepMs) {
@@ -19,7 +26,7 @@ function held(
 }
 
 /** Silence, which is a frame with no frequency in it — not a missing frame. */
-function silence(fromMs: number, durationMs: number, stepMs = 16): TakeFrame[] {
+function silence(fromMs: number, durationMs: number, stepMs = 64): TakeFrame[] {
   const frames: TakeFrame[] = []
   for (let t = 0; t <= durationMs; t += stepMs) {
     frames.push({ atMs: fromMs + t, freq: 0, cents: 0, midi: 0 })
@@ -103,22 +110,58 @@ describe('rangeTouched', () => {
   it('answers null when nothing was sung', () => {
     expect(rangeTouched(silence(0, 2000))).toBeNull()
   })
+
+  it('keeps a real hold at the rate the detector actually runs at', () => {
+    // Three frames 64 ms apart: 128 ms of timestamps, 192 ms of singing,
+    // because the last frame covers the interval after it too. A rule that
+    // measured only the timestamps threw away every held note on a device
+    // while every fixture in here, spaced 16 ms, passed.
+    const frames: TakeFrame[] = [0, 64, 128].map((atMs) => ({
+      atMs,
+      freq: midiToFreq(67),
+      cents: 0,
+      midi: 67,
+    }))
+    expect(rangeTouched(frames)?.lowLabel).toBe('G4')
+  })
+
+  it('still refuses a hold that is genuinely too short', () => {
+    const frames: TakeFrame[] = [0, 64].map((atMs) => ({
+      atMs,
+      freq: midiToFreq(67),
+      cents: 0,
+      midi: 67,
+    }))
+    expect(rangeTouched(frames)).toBeNull()
+  })
 })
 
 describe('summarizeTake', () => {
-  const run = { startedAtMs: 0, endedAtMs: 182_000, takeNumber: 2 }
-
   it('shows nothing at all under three seconds of voice', () => {
-    const frames = held(69, 0, MIN_VOICED_MS - 500)
-    expect(summarizeTake(frames, { ...run, endedAtMs: 3000 })).toBeNull()
+    expect(summarizeTake(held(69, 0, MIN_VOICED_MS - 500), 2)).toBeNull()
   })
 
   it('counts silence in the duration and not in the voice', () => {
     const frames = [...held(69, 0, 4000), ...silence(4016, 4000)]
-    const summary = summarizeTake(frames, { ...run, endedAtMs: 8000 })
+    const summary = summarizeTake(frames, 2)
     expect(summary).not.toBeNull()
-    expect(summary!.durationMs).toBe(8000)
+    expect(summary!.durationMs).toBeGreaterThan(7900)
+    expect(summary!.durationMs).toBeLessThanOrEqual(8000)
     expect(summary!.voicedMs).toBeLessThan(4500)
+  })
+
+  it('leaves the time a parked take spent elsewhere out of the duration', () => {
+    // Seven seconds of singing with a forty-second park in the middle. The
+    // room is unmounted across a park, so no frame arrives for it — and a
+    // duration read off the wall clock called this a forty-nine second take.
+    const frames = [
+      ...held(69, 0, 3500),
+      ...held(69, 45_000, 3500),
+    ]
+    const summary = summarizeTake(frames, 1)
+    expect(summary!.durationMs).toBeLessThan(7500)
+    expect(summary!.durationMs).toBeGreaterThan(6800)
+    expect(runMs(frames)).toBe(summary!.durationMs)
   })
 
   it('reports the 80th percentile of the absolute deviation', () => {
@@ -135,17 +178,62 @@ describe('summarizeTake', () => {
       cents,
       midi: 69,
     }))
-    const summary = summarizeTake(frames, { ...run, endedAtMs: 4000 })
-    expect(summary!.heldWithinCents).toBe(16)
+    expect(summarizeTake(frames, 2)!.heldWithinCents).toBe(16)
   })
 
   it('carries the take number through untouched', () => {
-    const summary = summarizeTake(held(69, 0, 5000), {
-      ...run,
-      takeNumber: 4,
-      endedAtMs: 5000,
-    })
-    expect(summary!.takeNumber).toBe(4)
+    expect(summarizeTake(held(69, 0, 5000), 4)!.takeNumber).toBe(4)
+  })
+})
+
+describe('the accumulator', () => {
+  const feed = (frames: TakeFrame[]): ReturnType<typeof createTakeAccumulator> => {
+    const accumulator = createTakeAccumulator()
+    for (const frame of frames) accumulator.push(frame)
+    return accumulator
+  }
+
+  it('answers exactly what the batch path answers', () => {
+    const frames = [
+      ...held(50, 0, 900, 4),
+      ...silence(1000, 300),
+      ...held(62, 1400, 1600, -22),
+      ...held(69, 3100, 2200, 11),
+      ...silence(5400, 200),
+      ...held(64, 5700, 1800, -7),
+    ]
+    const batch = summarizeTake(frames, 3)
+    const running = feed(frames).summarize(3)
+    expect(running).toEqual(batch)
+  })
+
+  it('keeps its memory flat however long the take runs', () => {
+    const accumulator = createTakeAccumulator()
+    for (let i = 0; i < 60_000; i++) {
+      accumulator.push({
+        atMs: i * 30,
+        freq: midiToFreq(60 + (i % 12)),
+        cents: (i % 41) - 20,
+        midi: 60 + (i % 12),
+      })
+    }
+    expect(accumulator.frameCount).toBe(60_000)
+    // Half an hour of frames, and the only thing that grew is a counter.
+    expect(accumulator.elapsedSeconds).toBeCloseTo(1799.97, 1)
+    expect(accumulator.summarize(1)!.heldWithinCents).toBeGreaterThan(0)
+  })
+
+  it('shows nothing under three seconds of voice, as the batch path does', () => {
+    expect(feed(held(69, 0, 2000)).summarize(1)).toBeNull()
+  })
+
+  it('starts over on a reset', () => {
+    const accumulator = feed(held(69, 0, 5000))
+    expect(accumulator.summarize(1)).not.toBeNull()
+    accumulator.reset()
+    expect(accumulator.frameCount).toBe(0)
+    expect(accumulator.elapsedSeconds).toBe(0)
+    expect(accumulator.summarize(1)).toBeNull()
   })
 })
 

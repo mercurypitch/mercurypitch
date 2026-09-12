@@ -58,6 +58,20 @@ export interface NativeRunControls {
   /** Open the room's own options sheet (the shell's gear). */
   openOptions?: () => void
   /**
+   * Close the topmost thing the ROOM has over its own stage, if there is
+   * one, and say whether anything closed.
+   *
+   * Back has an order (`shell-navigation.ts`) and everything in it belongs to
+   * the shell — the column, the Keep alert, the More sheet, a pushed screen.
+   * A room with a sheet or a card of its own was invisible to it: Back fell
+   * straight through to history, the room unmounted with its card still
+   * undecided, and the Sing room's end card took the take with it.
+   *
+   * Asking IS closing, deliberately. "Is something open" and "close it" would
+   * be two answers that can disagree, and only the room can answer either.
+   */
+  closeRoomOverlay?: () => boolean
+  /**
    * Whether a take the singer has not kept is on screen.
    *
    * Absent means NO. Today no room can answer — a practice run leaves nothing

@@ -58,11 +58,30 @@ export interface SingRoomContext {
   micOnArrival: boolean
   /** True once a melody is loaded and running — the M half of a live run. */
   melody: boolean
+  /**
+   * Has a melody been chosen IN THE ROOM this session?
+   *
+   * Not the same question as `melody`, and not the same as
+   * `melodyStore.currentMelody()`: the app always has a melody loaded, so a
+   * room that asked the store drew a song chip on a fresh boot for a melody
+   * nobody picked — against the free tracker the brief opens with. This is
+   * set by the one act that loads one and never cleared by a stop, because
+   * the melody is still there after the run that used it.
+   */
+  melodyLoaded: boolean
 }
 
 export type SingRoomEvent =
-  /** The tab became the one on screen (arrival, or a return from the pill). */
-  | { type: 'enter' }
+  /**
+   * The tab became the one on screen (arrival, or a return from the pill).
+   *
+   * `hasSummary` is the safety net under the end card: the card is the only
+   * thing `ended` means, and the summary it reads lives beside this context.
+   * An `ended` that comes back with no summary — a reload, a store cleared
+   * under it — is a room with no card, no capsule and no way out, so it
+   * rests instead. Measured: Back with the card open left exactly that.
+   */
+  | { type: 'enter'; hasSummary: boolean }
   /** The tab stopped being the one on screen. The shell parks the run. */
   | { type: 'leave' }
   /** The capsule. The gesture the permission ask has to happen inside. */
@@ -71,6 +90,16 @@ export type SingRoomEvent =
   | { type: 'priming-continue' }
   | { type: 'mic-granted' }
   | { type: 'mic-denied' }
+  /**
+   * The device opened, but the audio context is not running.
+   *
+   * iOS only resumes a context inside a user gesture, and the remembered
+   * grant means the room can reach for the microphone with no gesture behind
+   * it at all. The capture is then live over a suspended clock: the chip
+   * would say "Listening" over a dead line. The room rests instead, and the
+   * chip's next tap — which IS a gesture — resumes and starts.
+   */
+  | { type: 'mic-suspended' }
   /** The state chip. */
   | { type: 'toggle-mute' }
   /** Play on a loaded melody. */
@@ -102,6 +131,7 @@ export function initialSingRoomContext(
     active: false,
     micOnArrival: true,
     melody: false,
+    melodyLoaded: false,
     ...overrides,
   }
 }
@@ -125,7 +155,15 @@ export function singRoomReducer(
     case 'enter': {
       // A fresh arrival clears a mute: the chip is a mid-run control, and a
       // room that came back silent with no visible reason reads as broken.
-      const entered = { ...ctx, active: true, muted: false }
+      const entered = {
+        ...ctx,
+        active: true,
+        muted: false,
+        state:
+          ctx.state === 'ended' && !event.hasSummary
+            ? ('resting' as SingRoomState)
+            : ctx.state,
+      }
       return autoStarts(entered) ? { ...entered, state: 'live' } : entered
     }
 
@@ -163,13 +201,26 @@ export function singRoomReducer(
     case 'mic-denied':
       return { ...ctx, permission: 'denied', state: 'denied' }
 
+    case 'mic-suspended':
+      // Disarmed, so the next arrival does not walk straight back into the
+      // same gestureless acquisition. "Sing a note" arms it again, and that
+      // one always has a gesture behind it.
+      return { ...ctx, permission: 'granted', armed: false, state: 'resting' }
+
     case 'toggle-mute':
       if (ctx.state !== 'live' && ctx.state !== 'paused') return ctx
       return { ...ctx, muted: !ctx.muted }
 
     case 'melody-play':
       // Play on a melody turns the mic on if it is off (owner answer 8).
-      return { ...ctx, melody: true, muted: false, armed: true, state: 'live' }
+      return {
+        ...ctx,
+        melody: true,
+        melodyLoaded: true,
+        muted: false,
+        armed: true,
+        state: 'live',
+      }
 
     case 'pause':
       return ctx.state === 'live' ? { ...ctx, state: 'paused' } : ctx

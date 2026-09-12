@@ -106,6 +106,17 @@ interface PitchCanvasProps {
   /** With `targetStyle: 'line'`, burn each note's accuracy onto its own
    *  segment of the target. Off by default (owner answer 6). */
   perNoteBurn?: () => boolean
+  /**
+   * Stop repainting: the picture is finished and nothing behind it moves.
+   *
+   * The loop's own throttle cannot work this out. It keeps painting while
+   * the pitch history has anything in it — which is right for a live mic and
+   * wrong for a trail that was frozen two minutes ago behind an end card,
+   * where it measured 56 full clears a second for a picture that never
+   * changed. One final frame is drawn as this turns on, then nothing until
+   * it turns off or the geometry changes.
+   */
+  frozen?: () => boolean
 }
 
 /** Map a per-note rating to (fill, stroke, text) triple for the
@@ -680,6 +691,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     arcState.initialized = false
   }
 
+  // Every flip of `frozen` owes one frame: the one that freezes the picture,
+  // and the one that shows what changed while it was still.
+  createEffect(() => {
+    props.frozen?.()
+    needsRedraw = true
+  })
+
   const startLoop = () => {
     const loop = (ts: number) => {
       updateArc(ts)
@@ -694,6 +712,20 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       // left-anchored live marker tracks in real time, even when not playing),
       // and force one final repaint when it falls silent to clear the marker.
       const liveFreq = props.livePitch?.()?.frequency ?? 0
+
+      // Frozen: draw the one frame that owes itself and then idle. Kept
+      // above every other test, because `hasMicData` alone is true forever
+      // once a trail exists and would repaint a still picture at 60 Hz.
+      if (props.frozen?.() === true) {
+        if (needsRedraw) {
+          draw()
+          needsRedraw = false
+          lastPitchLength = pitchLen
+          lastLiveFreq = liveFreq
+        }
+        animFrameId = requestAnimationFrame(loop)
+        return
+      }
 
       if (
         needsRedraw ||
@@ -1879,13 +1911,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         spectrumStroke.addColorStop(1, '#bc8cff')
         ctx.save()
         ctx.strokeStyle = spectrumStroke
+        // ONE path, two strokes. `stroke()` does not consume the current
+        // path, so the glow and the line share it — walking a 1500-point
+        // trail twice a frame is the same work done for nothing.
+        tracePath()
         ctx.globalAlpha = 0.18
         ctx.lineWidth = 11
-        tracePath()
         ctx.stroke()
         ctx.globalAlpha = 1
         ctx.lineWidth = 3
-        tracePath()
         ctx.stroke()
         ctx.restore()
       } else {
