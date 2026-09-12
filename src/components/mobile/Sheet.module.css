@@ -48,29 +48,53 @@
 }
 
 /* The whole top band drags — a 4px bar alone is not a touch target at all,
-   and the 28px band this replaces was reported as hard to grab on iOS
-   (device round 2, R7). It is a full-width strip at least 44pt tall; the
-   negative margins re-cover the panel's own top padding, so the band really
-   does begin at the panel's edge rather than 8px inside it. */
+   and the bar this replaces was reported as hard to grab on iOS (device
+   round 2, R7). The negative side margins re-cover the panel's own padding,
+   so the band really does begin at the panel's edge rather than 16px inside.
+
+   THE BAND'S BOX IS THE ONE EVERY SHEET IN THE APP WAS LAID OUT AGAINST, to
+   the pixel, and it has to stay that way: R7 first shipped this as a 44px
+   flex band, which pushed the content of every sheet — web and native — 16
+   to 28px down the screen. Both of the sheets measured are pinned at
+   `--sheet-max-h`, so the cost landed as that much less content and that
+   much more scroll (review F6).
+
+   Two things make it the same box the pre-R7 markup produced. The 16px
+   height is what an 8px pad over a 4px bar with a 4px lead came to; and the
+   12px BOTTOM MARGIN is the bar's own, which used to collapse out through a
+   zone with no bottom padding and land on whatever followed — so a sheet
+   whose first row carries a bigger top margin than 12px still gets its own,
+   rather than 12px added to it. A flex container's margins still collapse
+   with its siblings; only its children's do not. */
 .handleZone {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  margin: -8px -16px 0;
+  height: 16px;
+  margin: -8px -16px 12px;
   padding: 0 16px;
   touch-action: none;
   cursor: grab;
 }
 
 /* The grabber's own 44x44 — what a tap-to-close is measured against. The bar
-   itself stays 38x4; only the target around it is finger-sized. */
+   itself stays 38x4; only the target around it is finger-sized.
+
+   OUT OF FLOW, because a 44px box inside a 16px band is the thing that moved
+   every sheet. It is centred on the band and reaches past it in both
+   directions: upwards into the panel's rounded top, downwards over the gap
+   above the first row — which is the "grabber + title row" R7 asked for. */
 .handleHit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .handle {

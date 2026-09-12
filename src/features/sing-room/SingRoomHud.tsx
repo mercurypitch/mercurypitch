@@ -73,7 +73,13 @@ export const NoteChip: Component<NoteChipProps> = (props) => (
       [styles.noteChipSharp]: props.signal.variant === 'sharp',
       [styles.noteChipQuiet]: props.signal.variant === 'quiet',
     }}
-    aria-label={`${props.signal.announce}. Tap for your takes`}
+    /* THE VISIBLE WORDS FIRST (Label in Name). R4 made this pill a button,
+       and a button's accessible name has to start with what is written on
+       it or a voice-control user cannot speak the control they can see: the
+       pill reads "A", "3", "+2 cents" and the name said "A3, in tune" — no
+       "+2 cents" anywhere in it (review F7). `SessionPill` in the shell
+       carries the same rule for the same reason. */
+    aria-label={`${props.signal.note}${props.signal.octave}, ${props.signal.cents}. ${props.signal.announce}. Tap for your takes`}
     onClick={() => props.onOpenTakes()}
     data-testid="sing-note-chip"
     data-variant={props.signal.variant}

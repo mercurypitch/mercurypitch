@@ -122,9 +122,21 @@ describe('the note chip', () => {
     const handlers = mount()
     const pill = screen.getByTestId('sing-note-chip')
     expect(pill.tagName).toBe('BUTTON')
-    expect(pill.getAttribute('aria-label')).toBe(
-      'A3, in tune. Tap for your takes',
-    )
+    // Label in Name: a button's name starts with the words printed on it,
+    // or a voice-control user cannot speak the control they can see. The
+    // name used to open with the paraphrase and never said "+2 cents" at
+    // all, which is the one string the pill actually shows (review F7).
+    const label = pill.getAttribute('aria-label') ?? ''
+    // The note and the octave are said twice — the live region's line
+    // already opens with them — and that is the prescribed shape: the name
+    // has to LEAD with what is printed, and the spoken line has to stay
+    // whole behind it.
+    expect(label).toBe('A3, +2 cents. A3, in tune. Tap for your takes')
+    const box = screen.getByTestId('sing-note-chip-box')
+    for (const word of ['A', '3', '+2 cents']) {
+      expect(box.textContent).toContain(word)
+      expect(label).toContain(word)
+    }
     fireEvent.click(pill)
     expect(handlers.onOpenTakes).toHaveBeenCalledTimes(1)
   })

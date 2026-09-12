@@ -188,6 +188,7 @@ export const Sheet: Component<SheetProps> = (props) => {
               aria-modal="true"
               aria-label={props.ariaLabel}
               tabindex="-1"
+              data-testid="sheet-panel"
               classList={{
                 [styles.panel]: true,
                 [styles.tall]: props.snap === 'tall',

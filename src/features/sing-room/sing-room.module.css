@@ -678,6 +678,15 @@
   color: var(--text-primary, #e6edf3);
 }
 
+/* The one line under the slider that says what the number does. Piano
+   Night's picker has carried one since it shipped; this one had a label and
+   a percentage and nothing that said what was being thinned (review F11). */
+.glassNote {
+  margin: 8px 2px 0;
+  font: 400 12px/17px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+}
+
 /* ── The options sheet's toggle ──────────────────────────── */
 
 .toggle {

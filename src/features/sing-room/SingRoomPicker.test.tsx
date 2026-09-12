@@ -110,6 +110,41 @@ describe('the sing room picker', () => {
     expect(select).toHaveBeenCalledWith('sing-retro-analog-studio-b')
   })
 
+  it('says which cover was chosen, because nothing else does', () => {
+    // A card changes a photograph and moves nothing on screen, so a screen
+    // reader was told nothing at all. Piano Night's picker has announced its
+    // covers since it shipped; this is the same sentence (review F11).
+    mount()
+    fireEvent.click(
+      screen.getByText('Retro Analog Studio B').closest('button')!,
+    )
+    const live = screen.getByTestId('sing-room-picker-live')
+    expect(live.getAttribute('aria-live')).toBe('polite')
+    expect(live.textContent).toBe('Retro Analog Studio B selected.')
+  })
+
+  it('says nothing when the choice was refused', () => {
+    // A locked cover returns false from the controller and the photograph
+    // does not change; announcing one that was not applied is worse than
+    // announcing nothing.
+    mount(controller(vi.fn(() => false)))
+    fireEvent.click(
+      screen.getByText('Retro Analog Studio B').closest('button')!,
+    )
+    expect(screen.getByTestId('sing-room-picker-live').textContent).toBe('')
+  })
+
+  it('tells you what the slider thins, in words', () => {
+    mount()
+    const slider = screen.getByTestId('sing-room-glass')
+    expect(slider.closest('label')?.getAttribute('title')).toBe(
+      'How much of the room shows through the line',
+    )
+    expect(
+      screen.getByText(/Thins the scrims over the photograph/u),
+    ).not.toBeNull()
+  })
+
   it('carries the veil slider, at the preference’s own bounds', () => {
     mount()
     const slider = screen.getByTestId('sing-room-glass') as HTMLInputElement

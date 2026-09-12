@@ -1436,6 +1436,15 @@ async function walkRun(page, ctx, steps) {
 // reads boxes rather than pressing buttons — a screenshot of a squeezed row
 // and a screenshot of a fine one are the same picture at a glance.
 
+/**
+ * Where the options sheet's first row starts, measured from the panel's top.
+ *
+ * The pre-R7 number, to the pixel: 1px border + 8px panel pad - 8px band
+ * margin + a 16px band + the bar's 12px bottom margin, collapsed with this
+ * sheet's own first row (review F6).
+ */
+const SHEET_CONTENT_TOP = 31
+
 /** The box of one element, rounded, or null when it is not there. */
 async function boxOf(page, selector) {
   return page.evaluate((sel) => {
@@ -1588,6 +1597,64 @@ async function setRange(page, selector, value) {
   }, value)
 }
 
+/**
+ * The veil at rest, in numbers (review F10).
+ *
+ * `sing-glass.test.ts` re-derives `(1 - glass) * heaviest` in JavaScript and
+ * asserts on its own arithmetic; the CSS check only looks for the custom
+ * property inside the block. Inverting the stylesheet to
+ * `opacity: var(--mp-sing-glass)` leaves both of them green, and the probe
+ * asserted only that the slider moved the number in the right direction. What
+ * the room actually SHIPS at its default is this: 50% of a 50% black in
+ * portrait — a quarter — and 50% of a 70% black in landscape.
+ */
+async function assertScrim(page, ctx) {
+  const read = async () =>
+    page.evaluate(() => {
+      const node = document.querySelector('[data-testid="sing-scrim-dim"]')
+      if (node === null) return null
+      const style = getComputedStyle(node)
+      return { opacity: style.opacity, colour: style.backgroundColor }
+    })
+
+  const want = (what, got, opacity, colour) => {
+    if (got === null) throw new Error('the room has no dim scrim')
+    if (got.opacity !== opacity || got.colour !== colour) {
+      throw new Error(
+        `the ${what} veil is ${got.opacity} over ${got.colour}, not ${opacity} over ${colour}`,
+      )
+    }
+  }
+
+  const portrait = await read()
+  want('portrait', portrait, '0.5', 'rgba(0, 0, 0, 0.498)')
+
+  // The same element, turned on its side: the kit's own 35% comes back,
+  // because a landscape phone shows less of the photograph's dark half.
+  await page.setViewportSize({
+    width: ctx.frame.height,
+    height: ctx.frame.width,
+  })
+  await page.waitForFunction(
+    () => window.matchMedia('(orientation: landscape)').matches,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  const landscape = await read()
+  await page.setViewportSize({
+    width: ctx.frame.width,
+    height: ctx.frame.height,
+  })
+  await page.waitForFunction(
+    () => window.matchMedia('(orientation: portrait)').matches,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  want('landscape', landscape, '0.5', 'rgba(0, 0, 0, 0.7)')
+
+  return `room: the veil at rest is ${portrait.opacity} over ${portrait.colour} portrait, ${landscape.colour} landscape`
+}
+
 async function walkRound2(page, ctx, steps) {
   const { frame } = ctx
   const near = (a, b, slack = 1) => Math.abs(a - b) <= slack
@@ -1600,6 +1667,9 @@ async function walkRound2(page, ctx, steps) {
     page.locator('[data-testid="sing-capsule"]'),
     'the capsule at the start of round 2',
   )
+
+  // ── R5: the veil, at the value a fresh profile arrives with ──
+  steps.push(await assertScrim(page, ctx))
 
   // ── R3: there is ONE pitch readout on the screen ──
   //
@@ -1675,8 +1745,27 @@ async function walkRound2(page, ctx, steps) {
       `the grabber's target is ${grabber.width}x${grabber.height}, under 44`,
     )
   }
-  if (band.height < 44) {
-    throw new Error(`the drag band is ${band.height} tall, under 44`)
+  // …and it costs the sheet nothing. R7 first shipped the target as the
+  // band's own height, which pushed this sheet's content 28px down the
+  // screen and every other sheet in the app with it (review F6). The number
+  // is the pre-R7 one, measured from the panel's own top edge.
+  const contentTop = await page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="sheet-panel"]')
+    const first = panel?.children[1]
+    if (panel === null || first === undefined) return null
+    return (
+      Math.round(
+        (first.getBoundingClientRect().top -
+          panel.getBoundingClientRect().top) *
+          100,
+      ) / 100
+    )
+  })
+  if (contentTop === null) throw new Error('the sheet has no content row')
+  if (Math.abs(contentTop - SHEET_CONTENT_TOP) > 1) {
+    throw new Error(
+      `the options sheet's content starts ${contentTop}px down, not ${SHEET_CONTENT_TOP}`,
+    )
   }
   await shoot(page, ctx, 'r2-sheet-handle')
   await page.mouse.click(
@@ -1688,7 +1777,7 @@ async function walkRound2(page, ctx, steps) {
     'the sheet after a tap on its grabber',
   )
   steps.push(
-    `sheet: the grabber is ${grabber.width}x${grabber.height} in a ${band.height}pt band, and a tap closes`,
+    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, content still ${contentTop}px down, and a tap closes`,
   )
 
   // ── R4: the pill opens Your takes, and Remove removes one ──
