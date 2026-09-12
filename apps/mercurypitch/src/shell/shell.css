@@ -657,6 +657,16 @@
   height: 16px;
 }
 
+/* A chip with a picker behind it (R5). Taller, because it is a control now
+   and a control on this surface is 44pt; the glass and the text are the
+   label's, so the two read as one thing in two states rather than as two
+   different chips. */
+.mp-room-chip--button {
+  height: 44px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
 /* ---------- a pushed screen (Settings lives in one) ---------- */
 
 .mp-pushed {

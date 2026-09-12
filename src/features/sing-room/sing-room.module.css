@@ -49,16 +49,26 @@
 
 /* The kit's three scrims. The dim is LIGHTER than the kit's 35% in portrait:
    this room's own luminance is 12% there, and the kit value takes it to black
-   on a phone (brief §7). Landscape keeps the kit's value. */
+   on a phone (brief §7). Landscape keeps the kit's value.
+
+   AND IT IS THE ONE THE VEIL SLIDER MOVES (device round 2, R5). The slider's
+   own value is `--mp-sing-glass`, 0 to 1, and the scrim is painted at its
+   heaviest with the ELEMENT's opacity carrying the number — a computed
+   opacity is a thing a probe can read off the layout, where an alpha inside
+   a `background` shorthand is not. At the default 0.5 that is exactly the
+   25% portrait / 35% landscape the room shipped with; at 1 the veil is gone.
+   The top and bottom gradients are deliberately not touched: they are what
+   keeps the shell's own chrome legible over any photograph. */
 .scrimDim {
   position: absolute;
   inset: 0;
-  background: rgb(0 0 0 / 25%);
+  background: rgb(0 0 0 / 50%);
+  opacity: calc(1 - var(--mp-sing-glass, 0.5));
 }
 
 @media (orientation: landscape) {
   .scrimDim {
-    background: rgb(0 0 0 / 35%);
+    background: rgb(0 0 0 / 70%);
   }
 }
 
@@ -630,6 +640,39 @@
 .takeRowRemove svg {
   width: 16px;
   height: 16px;
+}
+
+/* ── The room sheet's veil slider (R5) ───────────────────── */
+
+.glass {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.glassLabel {
+  grid-column: 1 / -1;
+  font: 500 12px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.glassSlider {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent-primary, #58a6ff);
+  cursor: pointer;
+}
+
+.glassValue {
+  min-width: 7ch;
+  text-align: right;
+  font: 500 13px/1 var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
 }
 
 /* ── The options sheet's toggle ──────────────────────────── */

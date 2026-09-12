@@ -54,9 +54,11 @@ import { hasUnsavedTake as takeUndecided, melodyRanOut, micChipAction, micChipSt
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
 import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSingTakeResult, singRoomContext, singTakeClock, singTakePrevious, singTakeSummary, takesThisSession, } from './sing-room-store'
+import { loadSingGlass, persistSingGlass, SING_GLASS_VAR, } from './sing-glass'
 import { singStageView } from './stage-view'
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
+import { SingRoomPicker } from './SingRoomPicker'
 import { SingTakeSheet } from './SingTakeSheet'
 import { SingSongSheet } from './SingSongSheet'
 import { SingTakesSheet } from './SingTakesSheet'
@@ -144,13 +146,20 @@ const EMPTY_MELODY: MelodyItem[] = []
 const EMPTY_HISTORY: PitchSample[] = []
 
 export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
-  const background = useBackgroundSurfaceController('sing', () => false)
-
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   /** "Your takes", from the pitch pill (R4). */
   const [takesOpen, setTakesOpen] = createSignal(false)
   /** Play again · Change song · Remove, from the song chip (R1). */
   const [songOpen, setSongOpen] = createSignal(false)
+  /** The room sheet — which photograph, and the veil over it (R5). */
+  const [pickerOpen, setPickerOpen] = createSignal(false)
+  const [glass, setGlass] = createSignal(loadSingGlass())
+
+  // The premium catalogue is retained only while the picker is open: the room
+  // itself is three free public covers and has no business asking a server
+  // about supporter art to draw one of them. That is the silent-first
+  // contract `useBackgroundSurfaceController` takes this flag for.
+  const background = useBackgroundSurfaceController('sing', pickerOpen)
 
   // The take on the card is the STORE's, not this component's. Both halves of
   // it — the state that says a card is open and the summary the card draws —
@@ -428,6 +437,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       setSongOpen(false)
       return true
     }
+    if (pickerOpen()) {
+      setPickerOpen(false)
+      return true
+    }
     if (optionsOpen()) {
       setOptionsOpen(false)
       return true
@@ -492,6 +505,11 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         openOptions: () => {
           dismissCoachMark()
           setOptionsOpen(true)
+        },
+        // The room name chip in the shell's header. The shell owns no picker,
+        // so the chip is a button only because this is here (R5).
+        openRoomPicker: () => {
+          setPickerOpen(true)
         },
         closeRoomOverlay,
         // The end card IS the decision, so the shell's Keep alert only has
@@ -647,7 +665,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     <div
       class={styles.room}
       data-testid="sing-room"
-      style={background.resolvedStyle()}
+      style={{
+        ...background.resolvedStyle(),
+        [SING_GLASS_VAR]: String(glass()),
+      }}
     >
       <div class={styles.cover} />
       <div class={styles.scrimDim} />
@@ -832,6 +853,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onDiscard={() => {
           clearSingTakeResult()
           dispatchSingRoom({ type: 'take-decided' })
+        }}
+      />
+
+      <SingRoomPicker
+        isOpen={pickerOpen()}
+        close={() => setPickerOpen(false)}
+        background={background}
+        glass={glass}
+        onGlassChange={(value) => {
+          setGlass(persistSingGlass(value))
         }}
       />
 
