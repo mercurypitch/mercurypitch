@@ -101,16 +101,32 @@ function seed(theme) {
 const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
 
 /**
- * The web page headers that must not mount under the shell, per rail item.
+ * What each rail item must and must not have under the shell (P5).
  *
- * One selector each, and each is a control INSIDE the band rather than the
- * band itself: both bands are styled through CSS modules, whose class names
- * are hashed per build, so a probe that matched on them would go green the
- * day the hash changed.
+ * `gone` is the page's own information band. `kept` is everything the first
+ * cut of that fix took away with it — a page heading, and the Ear Lab's three
+ * chips, which are the only way to the readiness panel every tap drill
+ * subtracts from, to the rulers, and to the room picker. Hiding a band is one
+ * line; hiding a band and its controls is a regression, and only the second
+ * list can tell them apart.
+ *
+ * Every selector is a `data-testid`, never a class: both bands are styled
+ * through CSS modules whose names are hashed per build, so a probe that
+ * matched on them would go green the day the hash changed.
  */
 const WEB_PAGE_HEADER = {
-  rooms: '[data-testid="home-learn"]',
-  ear: '[data-testid="ear-session-bar"]',
+  rooms: {
+    gone: ['[data-testid="home-learn"]', '[data-testid="home-whats-new"]'],
+    kept: ['[data-testid="home-heading"]'],
+  },
+  ear: {
+    gone: ['[data-testid="ear-session-copy"]'],
+    kept: [
+      '[data-testid="ear-readiness-chip"]',
+      '[data-testid="ear-rulers-chip"]',
+      '[data-testid="ear-room-chip"]',
+    ],
+  },
 }
 
 /** `<frame>-<theme>-<name>` — one flat directory holds every frame and theme. */
@@ -127,14 +143,15 @@ async function shoot(page, ctx, name) {
 //
 // Device round 1's first item was "the rail looks squished next to the lab
 // page", and nothing in the walk could tell whether that was true. It can
-// now: this reads the computed font, the item, its label, its plate and its
-// icon box, writes them beside the screenshots, and fails on the two things
-// the eye was actually reporting — a label that does not fit, and a plate
-// that does not reach the end of the label it is behind.
+// now: this reads the computed font, the item, its label, its plate, its icon
+// box and the label's text-size-adjust, and writes them beside the
+// screenshots. What is asserted from them is in `measureRail` below.
 //
 // The plate IS the item's background (`.mp-rail__item[aria-current]`), so the
-// plate box is the item box; they are reported separately because the kit
-// draws its indicator as its own element and a future rail may too.
+// plate box is the item box. It is reported separately because the kit draws
+// its indicator as its own element and a future rail may too — but for that
+// same reason a plate-versus-label comparison proves nothing today, and
+// `measureRail` does not make one.
 const readRail = () => {
   const round = (n) => Math.round(n * 100) / 100
   const box = (el) => {
@@ -190,6 +207,34 @@ const readRail = () => {
   }
 }
 
+/**
+ * The kit's numbers, which are also the lab page's. Asserted, not just dumped.
+ *
+ * The first version of this check dumped everything and asserted almost
+ * nothing, and a review proved it: re-injecting the original bug — a `font:`
+ * shorthand with an undefined token, and a 64 px aside — left it GREEN at both
+ * frames. Two reasons, and both are worth remembering.
+ *
+ * `label.width > plate.width` cannot fire. The plate IS the item's own
+ * background, so the two boxes are the same element, and `.mp-rail__label` is
+ * `max-width: 100%` inside it — the label is incapable of being wider. And
+ * `overflow` stayed 0 because "Progress" at 16px happens to fit a 68 px item
+ * in headless Chrome by three pixels.
+ *
+ * So the check is now on the values that actually broke, plus a headroom
+ * margin instead of a boundary: three pixels of slack is not a rail that fits,
+ * it is a rail that fits this string in this font on this machine.
+ */
+const RAIL_SPEC = {
+  labelSize: '10px',
+  labelWeight: '500',
+  asideWidth: 52,
+  iconSize: 26,
+  textSizeAdjust: '100%',
+  /** Px of item width a label must leave over. Below this it only looks fine. */
+  headroom: 6,
+}
+
 async function measureRail(page, ctx) {
   const rail = await page.evaluate(readRail)
   if (ctx.shots !== null) {
@@ -201,23 +246,57 @@ async function measureRail(page, ctx) {
   if (rail.items.length !== 4) {
     throw new Error(`the pill holds ${rail.items.length} items, not four`)
   }
+
+  // The bug was a dropped `font:` shorthand, so the label's computed font is
+  // the thing to read back. Nothing about a box would have caught it.
+  if (rail.textSizeAdjust !== RAIL_SPEC.textSizeAdjust) {
+    throw new Error(
+      `the rail's labels are at text-size-adjust ${rail.textSizeAdjust}, not ${RAIL_SPEC.textSizeAdjust}`,
+    )
+  }
+  if (rail.aside === null) throw new Error('there is no More circle')
+  if (Math.abs(rail.aside.width - RAIL_SPEC.asideWidth) > 0.5) {
+    throw new Error(
+      `the More circle is ${rail.aside.width} px, not the kit's ${RAIL_SPEC.asideWidth}`,
+    )
+  }
+
   for (const item of rail.items) {
     if (item.label === null) throw new Error(`${item.id} has no label`)
+    if (item.font.size !== RAIL_SPEC.labelSize) {
+      throw new Error(
+        `"${item.text}" is set at ${item.font.size}, not ${RAIL_SPEC.labelSize}`,
+      )
+    }
+    if (item.font.weight !== RAIL_SPEC.labelWeight) {
+      throw new Error(
+        `"${item.text}" is weight ${item.font.weight}, not ${RAIL_SPEC.labelWeight}`,
+      )
+    }
+    if (item.icon === null) throw new Error(`${item.id} has no symbol`)
+    if (Math.abs(item.icon.width - RAIL_SPEC.iconSize) > 0.5) {
+      throw new Error(
+        `${item.id}'s symbol is ${item.icon.width} px, not ${RAIL_SPEC.iconSize}`,
+      )
+    }
     if (item.overflow > 0.5) {
       throw new Error(
         `"${item.text}" is clipped by ${item.overflow} px at ${ctx.frame.width}`,
       )
     }
-    // The plate is what says "you are here". A label wider than it reads as
-    // text spilling out of the mark rather than sitting inside it.
-    if (item.label.width > item.plate.width + 0.5) {
+    const headroom = item.item.width - item.label.width
+    if (headroom < RAIL_SPEC.headroom) {
       throw new Error(
-        `"${item.text}" is ${item.label.width} px wide inside a ${item.plate.width} px plate`,
+        `"${item.text}" leaves ${Math.round(headroom * 10) / 10} px of its ${item.item.width} px item — under ${RAIL_SPEC.headroom}`,
       )
     }
   }
+
+  const worst = rail.items.reduce((a, b) =>
+    a.item.width - a.label.width < b.item.width - b.label.width ? a : b,
+  )
   const label = rail.items[0].font
-  return `rail: ${rail.items[0].item.width} px items, ${label.size}/${label.weight} labels, nothing clipped`
+  return `rail: ${rail.items[0].item.width} px items, ${label.size}/${label.weight} labels, ${rail.aside.width} px More, ${Math.round((worst.item.width - worst.label.width) * 10) / 10} px spare on "${worst.text}"`
 }
 
 async function walkChrome(page, ctx) {
@@ -301,17 +380,27 @@ async function walkChrome(page, ctx) {
     await shoot(page, ctx, `tab-${id}`)
     steps.push(`rail: ${id} selected`)
 
-    // The web page header is a band of greeting, date and two links that the
-    // native design does not have — and under a room header it is a second
-    // title bar. Absent, not merely scrolled off: these are the tabs that had
-    // one (device round 1, P5).
-    const band = WEB_PAGE_HEADER[id]
-    if (band !== undefined) {
-      const present = await page.locator(band).count()
-      if (present !== 0) {
-        throw new Error(`the web page header is still on ${id} (${band})`)
+    // The web page header is a band of prose the native design does not have —
+    // and under a room header it is a second title bar. Absent, not merely
+    // scrolled off. But the controls that sat beside it are NOT the band, and
+    // taking them with it is the review finding this half exists for.
+    const rule = WEB_PAGE_HEADER[id]
+    if (rule !== undefined) {
+      for (const selector of rule.gone) {
+        const present = await page.locator(selector).count()
+        if (present !== 0) {
+          throw new Error(`the web page band is still on ${id} (${selector})`)
+        }
       }
-      steps.push(`${id}: no web page header`)
+      for (const selector of rule.kept) {
+        const present = await page.locator(selector).count()
+        if (present === 0) {
+          throw new Error(`${id} lost ${selector} along with its band`)
+        }
+      }
+      steps.push(
+        `${id}: no page band, ${rule.kept.length} control(s)/heading kept`,
+      )
     }
   }
 
@@ -371,43 +460,89 @@ async function walkChrome(page, ctx) {
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   steps.push('settings: back to the rail')
 
-  // One reservation, not two (P2). The stage's own bar used to add its own
-  // safe-area inset on top of the scroller's, which put 8 + 10 + 34 pt of
+  // One reservation, not two (P2). The stage's own bar added its own
+  // safe-area inset on top of the scroller's, which left 8 + 10 + 34 pt of
   // nothing between the last control and the band on a notched phone.
+  //
+  // WITH A HOME INDICATOR STOOD UP BY HAND. Headless resolves every
+  // `env(safe-area-inset-*)` to 0, so the whole bug is invisible here: the
+  // doubled reservation IS the safe area, and at 0 the broken bar and the
+  // fixed one measure the same. The inset is pushed onto the document for
+  // this one measurement and taken off again, which is also the only place
+  // in the walk that exercises the reserve chain the way a phone does.
   await page.locator('[data-rail-item="stage"]').click()
   await page
     .locator('[data-testid="singing-mobile-stage"]')
     .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   await page.waitForTimeout(400)
-  const seam = await page.evaluate(() => {
+
+  const readSeam = () => {
+    const round = (n) => Math.round(n * 10) / 10
     const bar = document.querySelector('[data-testid="mobile-transport-bar"]')
     const band = document.querySelector('.mp-band')
     if (bar === null || band === null) return null
-    const controls = [...bar.querySelectorAll('button')].map(
-      (node) => node.getBoundingClientRect().bottom,
+    const boxes = [...bar.querySelectorAll('button')].map((node) =>
+      node.getBoundingClientRect(),
     )
+    if (boxes.length === 0) return null
+    const barBox = bar.getBoundingClientRect()
     const bandTop = band.getBoundingClientRect().top
+    const style = getComputedStyle(bar)
     return {
-      // The border box AND the lowest control: the padding the bar used to
-      // carry sits between the two, so a check on the box alone never saw it.
-      box: Math.round((bandTop - bar.getBoundingClientRect().bottom) * 10) / 10,
-      controls:
-        controls.length === 0
-          ? null
-          : Math.round((bandTop - Math.max(...controls)) * 10) / 10,
+      // The box seam is the reservation. The two insets are the bar's own
+      // padding as the eye reads it — a row flush with one edge and 10 px off
+      // the other is the doubled reserve showing up as an off-centre row.
+      box: round(bandTop - barBox.bottom),
+      above: round(Math.min(...boxes.map((b) => b.top)) - barBox.top),
+      below: round(barBox.bottom - Math.max(...boxes.map((b) => b.bottom))),
+      controls: round(bandTop - Math.max(...boxes.map((b) => b.bottom))),
+      paddingBottom: style.paddingBottom,
+      safeBottom: getComputedStyle(document.documentElement)
+        .getPropertyValue('--safe-bottom')
+        .trim(),
     }
-  })
-  if (seam === null) throw new Error('no stage bar, or no band, on Sing')
-  if (Math.abs(seam.box - 8) > 1) {
-    throw new Error(`the stage bar's box sits ${seam.box} px above the band`)
   }
-  if (seam.controls === null || Math.abs(seam.controls - 8) > 1) {
+
+  const NOTCH = 34
+  await page.evaluate((inset) => {
+    document.documentElement.style.setProperty('--safe-bottom', `${inset}px`)
+  }, NOTCH)
+  await page.waitForTimeout(200)
+  const notched = await page.evaluate(readSeam)
+  await shoot(page, ctx, 'stage-bar-seam')
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty('--safe-bottom')
+  })
+  await page.waitForTimeout(200)
+  const flat = await page.evaluate(readSeam)
+
+  for (const [what, seam] of [
+    ['with a home indicator', notched],
+    ['without one', flat],
+  ]) {
+    if (seam === null) throw new Error('no stage bar, or no band, on Sing')
+    if (Math.abs(seam.box - 8) > 1) {
+      throw new Error(
+        `${what}, the stage bar's box sits ${seam.box} px above the band`,
+      )
+    }
+    // The half that only a real inset can show: the bar used to carry the
+    // safe area itself, so its row sat `10 + inset` off its own bottom edge
+    // and `10` off its top.
+    if (Math.abs(seam.below - seam.above) > 1) {
+      throw new Error(
+        `${what}, the stage bar's row sits ${seam.above} px from its top and ${seam.below} px from its bottom`,
+      )
+    }
+  }
+  if (notched.safeBottom !== `${NOTCH}px`) {
     throw new Error(
-      `the stage bar's controls sit ${seam.controls} px above the band`,
+      `the home indicator did not take: --safe-bottom read ${notched.safeBottom}`,
     )
   }
-  await shoot(page, ctx, 'stage-bar-seam')
-  steps.push(`stage: the bar sits ${seam.controls} px above the band`)
+  steps.push(
+    `stage: the bar's box is ${flat.box} px above the band, its row centred at a ${NOTCH} pt inset too`,
+  )
 
   // The room header steps aside for a pushed screen (P6). It is fixed at
   // `--z-rail` and a pushed screen sits one step below, so its Back used to
@@ -571,6 +706,10 @@ async function walkRun(page, ctx) {
       if (node === null) return false
       return Math.abs(node.getBoundingClientRect().width - 56) <= 1.5
     },
+    // `undefined` in the ARG slot: waitForFunction is (fn, arg, options), so
+    // an options object passed second is serialised as the function's
+    // argument and the deadline silently falls back to the 30 s default.
+    undefined,
     { timeout: RUN_TIMEOUT_MS },
   )
   const chip = await page.locator('[data-testid="shell-chip"]').boundingBox()
@@ -659,9 +798,11 @@ async function walkRun(page, ctx) {
   // the dock's accessory slot, and the microphone is released on the way.
   await page.locator('[data-testid="shell-chip"]').click()
   await page.locator('[data-column-item="progress"]').click()
-  await page.waitForFunction(() => window.location.hash.includes('progress'), {
-    timeout: RUN_TIMEOUT_MS,
-  })
+  await page.waitForFunction(
+    () => window.location.hash.includes('progress'),
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
   await expectVisible(
     page.locator('[data-testid="shell-session-pill"]'),
     'the session pill',
