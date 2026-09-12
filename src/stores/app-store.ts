@@ -25,7 +25,7 @@ import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, 
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
-import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
@@ -996,14 +996,17 @@ function buildStepsFromSections(sectionIds: string[]): WalkthroughStep[] {
   )
 }
 
-/** Start full guide tour or specific sections */
+/**
+ * Start the full guide tour, or specific sections.
+ *
+ * Through `startTour` rather than writing the three signals itself, so the one
+ * rule about whether this build runs spotlights at all is read here too — it
+ * used to be the single launcher that went straight to the signals, and a
+ * guard anywhere else would have missed it.
+ */
 export function startWalkthrough(sectionIds?: string[]): void {
   const sections = sectionIds ?? GUIDE_SECTIONS.map((s) => s.id)
-  const steps = buildStepsFromSections(sections)
-  if (steps.length === 0) return
-  setTourSteps(steps)
-  setWalkthroughActive(true)
-  setWalkthroughStep(0)
+  startTour(buildStepsFromSections(sections))
 }
 
 // Focused "practice modes" tour for the Singing toolbar — distinct from the
@@ -1953,13 +1956,34 @@ export const PAGE_TOUR_CATALOG: {
   },
 ]
 
+/**
+ * Whether this build runs spotlight tours at all.
+ *
+ * It does not under the native shell, and that is a decision rather than an
+ * omission. Every tour in this file points at web chrome — the header, the
+ * sidebar, the bottom bar, a page band — and the shell replaced all of it, so
+ * a spotlight there lands on nothing or on the wrong thing. Device round 1
+ * turned that from theory into a list: hiding the Ear Lab's prose band alone
+ * orphaned two steps that aimed at it. Native onboarding is Phase 2, and coach
+ * marks rather than spotlights are the pattern it will use.
+ *
+ * Read at the two places every tour has to pass: `hasPageTour`, which is what
+ * anything ASKS before offering one, and `startTour`, which is what every
+ * launcher — the walkthrough, a page tour, the voice tour, a contextual offer
+ * — goes through to RUN one. A build with neither cannot show a spotlight by
+ * any route, and no caller has to remember the rule.
+ */
+export const TOURS_AVAILABLE = !IS_NATIVE_BUILD
+
 export function hasPageTour(tab: ActiveTab): boolean {
+  if (!TOURS_AVAILABLE) return false
   const steps = PAGE_TOURS[tab]
   return steps !== undefined && forThisViewport(steps).length > 0
 }
 
 /** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
 export function startTour(steps: WalkthroughStep[]): void {
+  if (!TOURS_AVAILABLE) return
   if (steps.length === 0) return
   setTourSteps(steps)
   setWalkthroughActive(true)

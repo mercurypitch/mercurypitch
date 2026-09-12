@@ -1,5 +1,5 @@
 import type { WalkthroughStep } from '@/stores'
-import { removeNotification, showActionNotification, startTour, TOUR_OFFER_CHANNEL, } from '@/stores'
+import { removeNotification, showActionNotification, startTour, TOUR_OFFER_CHANNEL, TOURS_AVAILABLE, } from '@/stores'
 
 /**
  * Offer a contextual spotlight tour exactly once, the first time its host view
@@ -13,6 +13,10 @@ export function offerTourOnce(
   message: string,
   steps: WalkthroughStep[],
 ): void {
+  // Asked before the toast, not only before the tour. `startTour` already
+  // refuses in a build with no spotlights, but a toast whose button does
+  // nothing is worse than no toast — it is the Console tile all over again.
+  if (!TOURS_AVAILABLE) return
   if (steps.length === 0) return
   try {
     if (localStorage.getItem(storageKey) === 'true') return

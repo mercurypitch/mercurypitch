@@ -137,6 +137,16 @@ const HomePage: Component = () => {
 
   return (
     <div class={styles.page}>
+      {/* The page's heading, and on the web the only one: the band below
+          carries it. Under the shell the band is gone and this is what is
+          left, read but not drawn — a page with no <h1> is a document whose
+          landmark list is empty, and Rooms is the app's first screen. */}
+      <Show when={IS_NATIVE_BUILD}>
+        <h1 class={styles.srOnly} data-testid="home-heading">
+          Rooms
+        </h1>
+      </Show>
+
       {/* A <div>, not <header>: the global app-bar CSS targets header and
           adds padding plus a doubled safe-area inset on phones.
 
@@ -144,8 +154,13 @@ const HomePage: Component = () => {
           greeting, a date and two links above it is an information band the
           native design does not have — the owner's first word on it was that
           it should not be there (device round 1, P5). The constant folds to a
-          literal, so the web keeps the band and the native bundle drops it.
-          The real Rooms layout is Phase 1b. */}
+          literal, so the branch the native build takes is fixed at build time;
+          both branches are still in the module, because a `Show` chooses which
+          to RENDER and removes neither. What went with the band is the entry
+          to the web walkthrough, which under the shell is deliberate: the
+          spotlight tours are off in this build (`TOURS_AVAILABLE`), because
+          every one of them points at web chrome the shell replaced. Native
+          onboarding is Phase 2. The real Rooms layout is Phase 1b. */}
       <Show when={!IS_NATIVE_BUILD}>
         <div class={styles.head}>
           <div class={styles.headText}>
