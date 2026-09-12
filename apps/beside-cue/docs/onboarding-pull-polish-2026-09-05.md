@@ -59,15 +59,18 @@ change. New premium lines are captions only; no unrecorded voice is advertised.
 The [24-line premium recording pack](premium-pull-voice-recording-pack-2026-09-05.md)
 provides exact caption-matched Meet/Present/Recede scripts, filenames and direction.
 
-Known source issue: **Pillow's entrance and recede cutouts are defective**
-(confirmed 2026-09-07: a magenta fringe along the silhouette, dark fragments at
-the feet and missing leg pixels, all baked in before encoding). Both clips stay
-in the delivery, but `V2_ONBOARDING_PULL_MOTION_HOLDS` in
-`src/onboarding/v2-onboarding-media-pack.ts` holds them back: Pillow's present
-and recede beats resolve to the settled still and the P02 plate, exactly as
-reduced motion shows them, on the same dwell and dialogue timing. Repaired clips
-go in under a new version suffix with refreshed `SHA256SUMS`; then delete the
-hold entry.
+Resolved 2026-09-12: **Pillow's cutouts were defective and have been repaired**.
+The 09-07 audit found a magenta fringe along the silhouette, dark fragments at
+the feet and missing leg pixels, all baked in before encoding, and
+`V2_ONBOARDING_PULL_MOTION_HOLDS` held both beats back on the settled still and
+the P02 plate. The cause was the backing, not the key: separating a shaded
+magenta field from lavender felt left about four hundredths of chroma ratio to
+work with. The pair was re-shot on pure green (Seedance 2.5 through Higgsfield,
+4 s, 9:16, 720p), where the same two materials sit a third of the ratio range
+apart, and re-keyed through `key_green` in
+`scripts/prepare-beside-cue-pull-expansion.py`. The delivery filenames are
+unchanged; `SHA256SUMS` and the media-source manifest carry the new bytes, and
+the hold map is now empty.
 
 The misnamed Bookmark and Tape walk-ins in dotfiles now use `b03-…-present`.
 The actual exits remain `b05-the-bookmark-actual-recede-…v0_1` and
