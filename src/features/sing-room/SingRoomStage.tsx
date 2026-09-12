@@ -670,8 +670,11 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         [SING_GLASS_VAR]: String(glass()),
       }}
     >
-      <div class={styles.cover} />
-      <div class={styles.scrimDim} />
+      <div class={styles.cover} data-testid="sing-cover" />
+      {/* The veil the room sheet's slider moves (R5). Named for the walk: its
+          computed opacity IS the setting, and nothing else on screen says
+          what the slider just did. */}
+      <div class={styles.scrimDim} data-testid="sing-scrim-dim" />
       <div class={styles.scrimTop} />
       <div class={styles.scrimBottom} />
 

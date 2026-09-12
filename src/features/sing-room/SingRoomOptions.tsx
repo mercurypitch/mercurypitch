@@ -138,6 +138,7 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
           max="220"
           step="1"
           value={bpm()}
+          data-testid="sing-options-tempo"
           onInput={(event) => setBpm(Number(event.currentTarget.value))}
         />
       </OptionRow>

@@ -26,7 +26,7 @@
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
@@ -56,6 +56,7 @@ function parseArgs(argv) {
     theme: 'dark',
     headed: false,
     chromeOnly: false,
+    dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i]
@@ -64,6 +65,7 @@ function parseArgs(argv) {
     else if (flag === '--theme') args.theme = argv[(i += 1)]
     else if (flag === '--headed') args.headed = true
     else if (flag === '--chrome-only') args.chromeOnly = true
+    else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
   if (args.theme !== 'dark' && args.theme !== 'light') {
@@ -1425,6 +1427,533 @@ async function walkRun(page, ctx, steps) {
   return steps
 }
 
+// ── Device round 2: the polish batch (R1-R7) ─────────────────
+//
+// Everything here is a thing the owner saw on a phone and the walk could not
+// see at all: a second pitch readout under the HUD, a pill whose text sat at
+// the top of it, a melody that could be loaded and never put down, a run that
+// vanished when its melody ran out. Half of these are LAYOUT, so half of this
+// reads boxes rather than pressing buttons — a screenshot of a squeezed row
+// and a screenshot of a fine one are the same picture at a glance.
+
+/** The box of one element, rounded, or null when it is not there. */
+async function boxOf(page, selector) {
+  return page.evaluate((sel) => {
+    const node = document.querySelector(sel)
+    if (node === null) return null
+    const rect = node.getBoundingClientRect()
+    const round = (n) => Math.round(n * 100) / 100
+    return {
+      x: round(rect.x),
+      y: round(rect.y),
+      width: round(rect.width),
+      height: round(rect.height),
+      right: round(rect.right),
+      bottom: round(rect.bottom),
+      centreY: round(rect.y + rect.height / 2),
+    }
+  }, selector)
+}
+
+/** Which melody to walk with, and how fast it has to be played. */
+async function pickMelody(page) {
+  return page.evaluate(() => {
+    const items = [...document.querySelectorAll('.fn-modal-item')]
+    const read = (item) => {
+      const meta = item.querySelector('.fn-item-meta')?.textContent ?? ''
+      const notes = Number(/(\d+)\s+notes/u.exec(meta)?.[1] ?? '0')
+      const bpm = Number(/(\d+)\s+BPM/u.exec(meta)?.[1] ?? '0')
+      return {
+        name: item.querySelector('.fn-item-name')?.textContent ?? '',
+        notes,
+        bpm,
+      }
+    }
+    const all = items.map(read).filter((entry) => entry.notes > 0)
+    if (all.length === 0) return null
+    // The longest melody that is still short enough to play to its end inside
+    // a walk: a Stop has to land before it finishes, and later on it has to
+    // finish inside the poll below.
+    const bounded = all.filter((entry) => entry.notes <= 64)
+    const pool = bounded.length > 0 ? bounded : all
+    return pool.reduce((best, entry) =>
+      entry.notes > best.notes ? entry : best,
+    )
+  })
+}
+
+/** Drag a range input the way a finger does, and let Solid hear it. */
+async function setRange(page, selector, value) {
+  await page.locator(selector).evaluate((node, next) => {
+    const input = node
+    input.value = String(next)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+}
+
+async function walkRound2(page, ctx, steps) {
+  const { frame } = ctx
+  const near = (a, b, slack = 1) => Math.abs(a - b) <= slack
+
+  await expectVisible(
+    page.locator('[data-testid="sing-room"]'),
+    'the Sing room for round 2',
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule at the start of round 2',
+  )
+
+  // ── R3: there is ONE pitch readout on the screen ──
+  //
+  // The room's live region carried `class="sr-only"`, a class this repository
+  // defines in no stylesheet at all, so it rendered as ordinary text under the
+  // HUD: a second "No voice", and a second note-and-cents while singing.
+  const readouts = await page.evaluate(() => {
+    const room = document.querySelector('[data-testid="sing-room"]')
+    if (room === null) return { error: 'no room' }
+    const leaves = [...room.querySelectorAll('*')].filter(
+      (node) => node.children.length === 0,
+    )
+    const visible = leaves.filter((node) => {
+      const rect = node.getBoundingClientRect()
+      // The live region is clipped to a single pixel, which is the whole
+      // point of it; anything a singer can actually read is bigger.
+      return rect.width > 2 && rect.height > 2
+    })
+    const says = (node) => (node.textContent ?? '').includes('No voice')
+    return {
+      visible: visible.filter(says).length,
+      hidden:
+        leaves.filter((node) => says(node)).length -
+        visible.filter(says).length,
+    }
+  })
+  if (readouts.error !== undefined) throw new Error(readouts.error)
+  if (readouts.visible !== 1) {
+    throw new Error(`"No voice" is drawn ${readouts.visible} times, not once`)
+  }
+  if (readouts.hidden < 1) {
+    throw new Error('the live region that says it to a screen reader is gone')
+  }
+  steps.push(
+    'room: one visible "No voice", and the live region still speaks it',
+  )
+
+  // ── R3: the pill's text is centred in the pill ──
+  const pill = await boxOf(page, '[data-testid="sing-note-chip"]')
+  const pillBox = await boxOf(page, '[data-testid="sing-note-chip-box"]')
+  if (pill === null || pillBox === null) throw new Error('no pitch pill')
+  if (!near(pill.centreY, pillBox.centreY)) {
+    throw new Error(
+      `the pill's text sits ${Math.round((pillBox.centreY - pill.centreY) * 100) / 100}px off its centre`,
+    )
+  }
+  if (pill.height < 44) {
+    throw new Error(
+      `the pill is ${pill.height} tall, not the taller pill R3 asked for`,
+    )
+  }
+  const pillRow = await boxOf(page, '[data-testid="sing-hud-pill-row"]')
+  if (pillRow === null) throw new Error('no pill row')
+  if (!near(pill.x - pillRow.x, pillRow.right - pill.right, 1.5)) {
+    throw new Error('the pill is not centred in its row')
+  }
+  steps.push(
+    `room: the pitch pill is ${pill.height} tall, centred, and its text is centred in it`,
+  )
+  await shoot(page, ctx, 'r2-hud-rows')
+
+  // ── R7: the sheet's grabber, and a tap on it ──
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sheet-handle"]'),
+    'the sheet grabber',
+  )
+  const grabber = await boxOf(page, '[data-testid="sheet-handle"]')
+  const band = await boxOf(page, '[data-testid="sheet-handle-zone"]')
+  if (grabber === null || band === null) throw new Error('no sheet handle')
+  if (grabber.width < 44 || grabber.height < 44) {
+    throw new Error(
+      `the grabber's target is ${grabber.width}x${grabber.height}, under 44`,
+    )
+  }
+  if (band.height < 44) {
+    throw new Error(`the drag band is ${band.height} tall, under 44`)
+  }
+  await shoot(page, ctx, 'r2-sheet-handle')
+  await page.mouse.click(
+    grabber.x + grabber.width / 2,
+    grabber.y + grabber.height / 2,
+  )
+  await expectGone(
+    page.locator('[data-testid="sheet-handle"]'),
+    'the sheet after a tap on its grabber',
+  )
+  steps.push(
+    `sheet: the grabber is ${grabber.width}x${grabber.height} in a ${band.height}pt band, and a tap closes`,
+  )
+
+  // ── R4: the pill opens Your takes, and Remove removes one ──
+  const before = await storedTakes(page)
+  if (before < 1) throw new Error('no kept takes to list')
+  await page.locator('[data-testid="sing-note-chip"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-takes-sheet"]'),
+    'the takes sheet',
+  )
+  const rows = await page.locator('[data-testid="sing-takes-row"]').count()
+  if (rows !== before) {
+    throw new Error(`${rows} rows for ${before} kept takes`)
+  }
+  await shoot(page, ctx, 'r2-takes-sheet')
+  await page.locator('[data-testid="sing-takes-remove"]').first().click()
+  await page.waitForFunction(
+    (want) =>
+      document.querySelectorAll('[data-testid="sing-takes-row"]').length ===
+      want,
+    rows - 1,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  const after = await storedTakes(page)
+  if (after !== before - 1) {
+    throw new Error(`Remove left ${after} takes stored, not ${before - 1}`)
+  }
+  steps.push(`room: the pill opens ${rows} takes, and Remove forgets one`)
+  const takesBack = await pressBack(page)
+  if (takesBack !== 'room-overlay') {
+    throw new Error(`Back over the takes sheet resolved as "${takesBack}"`)
+  }
+
+  // ── R5: the room name chip opens the picker ──
+  const chip = await boxOf(page, '[data-testid="shell-room-chip"]')
+  if (chip === null) throw new Error('no room chip in the header')
+  if (chip.height < 44) {
+    throw new Error(`the room chip is ${chip.height} tall, under 44`)
+  }
+  const coverBefore = await page.evaluate(
+    () =>
+      getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
+        .backgroundImage,
+  )
+  await page.locator('[data-testid="shell-room-chip"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-room-picker"]'),
+    'the room picker',
+  )
+  await shoot(page, ctx, 'r2-room-picker')
+  await page
+    .locator('[data-testid="sing-room-picker"] button', {
+      hasText: 'Retro Analog Studio B',
+    })
+    .first()
+    .click()
+  await page.waitForFunction(
+    (was) =>
+      getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
+        .backgroundImage !== was,
+    coverBefore,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  const coverAfter = await page.evaluate(
+    () =>
+      getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
+        .backgroundImage,
+  )
+  if (!coverAfter.includes('retro-analog-studio-b')) {
+    throw new Error(`choosing B left the cover at ${coverAfter}`)
+  }
+  steps.push('room: the header chip opens the picker, and B changes the cover')
+
+  // …and the veil slider moves the scrim it is for.
+  const veil = async () =>
+    Number(
+      await page.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector('[data-testid="sing-scrim-dim"]'),
+          ).opacity,
+      ),
+    )
+  const veilBefore = await veil()
+  await setRange(page, '[data-testid="sing-room-glass"]', 1)
+  const veilOpen = await veil()
+  await setRange(page, '[data-testid="sing-room-glass"]', 0)
+  const veilShut = await veil()
+  if (!(veilOpen < veilBefore && veilShut > veilBefore)) {
+    throw new Error(
+      `the veil read ${veilShut} / ${veilBefore} / ${veilOpen} across the slider`,
+    )
+  }
+  await setRange(page, '[data-testid="sing-room-glass"]', 0.5)
+  await shoot(page, ctx, 'r2-room-picker-veil')
+  steps.push(
+    `room: the veil slider moves the scrim (${veilShut} shut, ${veilBefore} default, ${veilOpen} open)`,
+  )
+  const pickerBack = await pressBack(page)
+  if (pickerBack !== 'room-overlay') {
+    throw new Error(`Back over the room picker resolved as "${pickerBack}"`)
+  }
+
+  // ── R1: a melody, and everything that happens to it ──
+  //
+  // THE TEMPO IS SET BY THE WALK, twice, and it has to be: picking a melody
+  // adopts that melody's own BPM, and the library is short scales. The first
+  // run is slowed so a Stop can land inside it; the second is set so the
+  // melody runs out on its own inside a walk's patience while still holding
+  // the three seconds of voice a take needs.
+  const tempoFor = (seconds) =>
+    Math.min(220, Math.max(40, Math.round((melodyBeats * 60) / seconds)))
+
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await page.locator('[data-testid="sing-options-song"]').click()
+  await expectVisible(page.locator('.fn-modal-content'), 'the song picker')
+  const melody = await pickMelody(page)
+  if (melody === null) throw new Error('the song picker has no melodies in it')
+  const melodyBeats = melody.notes
+  await page.locator('.fn-modal-item', { hasText: melody.name }).first().click()
+  await expectVisible(
+    page.locator('[data-testid="sing-song-chip"]'),
+    'the song chip once a melody is loaded',
+  )
+  await page.waitForFunction(
+    () => window.mpSingRoom?.().melodyRun === true,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  steps.push(
+    `room: the Melody row loads "${melody.name}" and the chip names it`,
+  )
+
+  // The row it is in has room left at this width, with the chip in it.
+  const slack = await boxOf(page, '[data-testid="sing-hud-slack"]')
+  const song = await boxOf(page, '[data-testid="sing-song-chip"]')
+  const row = await boxOf(page, '[data-testid="sing-hud"]')
+  if (slack === null || song === null || row === null) {
+    throw new Error('the HUD row is missing a part of itself')
+  }
+  if (slack.width < 12) {
+    throw new Error(
+      `row 1 has ${slack.width}px of slack with the song chip in it, under 12`,
+    )
+  }
+  if (song.right > row.right) {
+    throw new Error('the song chip runs past the end of its row')
+  }
+  await shoot(page, ctx, 'r2-hud-with-song')
+  steps.push(
+    `room: row 1 keeps ${slack.width}px of slack at ${frame.width} with the song chip`,
+  )
+
+  // Slow it down, so the Stop below lands inside the melody rather than
+  // after it — which would be the other test, by accident.
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await setRange(page, '[data-testid="sing-options-tempo"]', tempoFor(12))
+  const slowBack = await pressBack(page)
+  if (slowBack !== 'room-overlay') {
+    throw new Error(`Back over the options sheet resolved as "${slowBack}"`)
+  }
+  await page.waitForFunction(
+    () => (window.mpSingRoom?.().elapsedSeconds ?? 0) > 3.6,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  const beforeStop = await page.evaluate(() => window.mpSingRoom?.())
+  if (beforeStop?.state !== 'live') {
+    throw new Error(
+      `the melody ended before the Stop step could reach it (${beforeStop?.state})`,
+    )
+  }
+  await page
+    .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
+    .click()
+  await expectVisible(
+    page.locator('[data-testid="sing-take-sheet"]'),
+    'the end card for a melody take',
+  )
+  await page.locator('[data-testid="sing-take-keep"]').click()
+
+  // …and the room comes back with the melody still loaded.
+  await page.locator('[data-rail-item="rooms"]').click()
+  await page.locator('[data-rail-item="stage"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-song-chip"]'),
+    'the song chip after re-entering',
+  )
+  const preview = await page.evaluate(() => {
+    const stage = document.querySelector('[data-testid="sing-stage"]')
+    return {
+      view: stage?.getAttribute('data-view') ?? null,
+      opacity: Number(getComputedStyle(stage).opacity),
+      canvas: stage?.querySelector('canvas') !== null,
+    }
+  })
+  if (preview.view !== 'melody-preview' || !preview.canvas) {
+    throw new Error(`the staff is showing ${JSON.stringify(preview)}`)
+  }
+  if (!(preview.opacity < 1)) {
+    throw new Error('the target line is not dimmed at rest')
+  }
+  await expectText(
+    page,
+    '[data-testid="sing-capsule"]',
+    'Continue',
+    'the capsule with a melody loaded',
+  )
+  await shoot(page, ctx, 'r2-melody-resting')
+  steps.push(
+    `room: the melody stays loaded — a dimmed target at ${preview.opacity} and a Continue capsule`,
+  )
+
+  // ── R1: it plays to its own end, and the card opens ──
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  const tempo = tempoFor(8)
+  await setRange(page, '[data-testid="sing-options-tempo"]', tempo)
+  const gearBack = await pressBack(page)
+  if (gearBack !== 'room-overlay') {
+    throw new Error(`Back over the options sheet resolved as "${gearBack}"`)
+  }
+  await page.locator('[data-testid="sing-song-chip"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-song-sheet"]'),
+    'the song sheet',
+  )
+  await shoot(page, ctx, 'r2-song-sheet')
+  await page.locator('[data-testid="sing-song-play-again"]').click()
+  await page.waitForFunction(
+    () => window.mpSingRoom?.().melodyRun === true,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  steps.push(`room: Play again starts the same melody, at ${tempo} BPM`)
+
+  // Nothing is pressed from here: the melody runs out on its own.
+  await page.waitForFunction(
+    () => window.mpSingRoom?.().cardOpen === true,
+    undefined,
+    { timeout: 120_000 },
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-take-sheet"]'),
+    'the end card when the melody ran out',
+  )
+  await shoot(page, ctx, 'r2-melody-end-card')
+  steps.push(
+    'room: a melody that reaches its end opens the card, exactly like Stop',
+  )
+  await page.locator('[data-testid="sing-take-keep"]').click()
+
+  // ── R1: Remove puts it down, and the free tracker is back ──
+  await page.locator('[data-testid="sing-song-chip"]').click()
+  await page.locator('[data-testid="sing-song-remove"]').click()
+  await expectGone(
+    page.locator('[data-testid="sing-song-chip"]'),
+    'the song chip after Remove',
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-trace-silent"]'),
+    'the silent trace after Remove',
+  )
+  const freed = await page.evaluate(() => window.mpSingRoom?.())
+  if (freed?.melodyLoaded !== false || freed?.view !== 'silent') {
+    throw new Error(`Remove left the room at ${JSON.stringify(freed)}`)
+  }
+  await expectText(
+    page,
+    '[data-testid="sing-capsule"]',
+    'Sing a note',
+    'the capsule after Remove',
+  )
+  await shoot(page, ctx, 'r2-free-tracker')
+  steps.push('room: Remove unloads the melody and the free tracker is back')
+
+  // ── R2: the session pill, with a long room name in it ──
+  await page.locator('[data-testid="sing-capsule"]').click()
+  await expectText(
+    page,
+    '[data-testid="sing-state-chip"]',
+    'Listening',
+    'the state chip before parking for the pill',
+  )
+  await page.locator('[data-testid="shell-chip"]').click()
+  await page.locator('[data-column-item="progress"]').click()
+  await expectVisible(
+    page.locator('[data-testid="shell-session-pill"]'),
+    'the session pill',
+  )
+  // A name long enough to overflow, written into the element the layout is
+  // meant to protect. The rooms this shell will hold are not all called
+  // "Retro Analog Studio", and the squeeze the owner reported needs a name
+  // that does not fit.
+  await page
+    .locator('[data-testid="shell-session-pill-name"]')
+    .evaluate((node) => {
+      node.textContent = 'The Very Long Retro Analog Studio Room Name'
+    })
+  const pillMetrics = await page.evaluate(() => {
+    const round = (n) => Math.round(n * 100) / 100
+    const at = (sel) => document.querySelector(sel)
+    const button = at('[data-testid="shell-session-pill"]')
+    const name = at('[data-testid="shell-session-pill-name"]')
+    const state = at('[data-testid="shell-session-pill-state"]')
+    const control = at('.mp-pill__btn')
+    const box = (el) => {
+      const rect = el.getBoundingClientRect()
+      return {
+        width: round(rect.width),
+        height: round(rect.height),
+        right: round(rect.right),
+      }
+    }
+    return {
+      pill: box(button),
+      control: box(control),
+      nameClipped: name.scrollWidth > name.clientWidth + 1,
+      stateClipped: state.scrollWidth > state.clientWidth + 1,
+      stateText: state.textContent,
+      viewport: window.innerWidth,
+    }
+  })
+  await shoot(page, ctx, 'r2-session-pill-long-name')
+  if (pillMetrics.control.width < 44 || pillMetrics.control.height < 44) {
+    throw new Error(
+      `the return control is ${pillMetrics.control.width}x${pillMetrics.control.height} under a long name`,
+    )
+  }
+  if (pillMetrics.stateClipped) {
+    throw new Error('the state word is clipped under a long name')
+  }
+  if (!pillMetrics.nameClipped) {
+    throw new Error('the long name was not ellipsized — it did not overflow')
+  }
+  if (pillMetrics.pill.right > pillMetrics.viewport) {
+    throw new Error('the pill runs off the side of the screen')
+  }
+  steps.push(
+    `pill: a long name ellipsizes, "${pillMetrics.stateText.trim()}" stays whole, and the control keeps ${pillMetrics.control.width}x${pillMetrics.control.height}`,
+  )
+
+  // Put the room back the way the rest of the walk expects it.
+  await page.locator('[data-testid="shell-session-pill"]').click()
+  await expectVisible(
+    page.locator('[data-testid="shell-transport"] [aria-label="Play"]'),
+    'the transport on return from the pill',
+  )
+  await page
+    .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
+    .click()
+  if (await page.locator('[data-testid="sing-take-sheet"]').count()) {
+    await page.locator('[data-testid="sing-take-keep"]').click()
+  }
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule at the end of round 2',
+  )
+
+  return steps
+}
+
 /**
  * The denied path (3d), in a context whose microphone refuses.
  *
@@ -1759,6 +2288,10 @@ async function walkFrame(browser, args, frame) {
       const room = []
       try {
         await walkRun(page, ctx, room)
+        // Device round 2 continues in the same context on purpose: it needs a
+        // granted microphone and a couple of kept takes, which is exactly
+        // what the walk above leaves behind.
+        await walkRound2(page, ctx, room)
       } finally {
         steps = steps.concat(room)
       }
@@ -1775,6 +2308,58 @@ async function walkFrame(browser, args, frame) {
     steps: steps.map((step) => `[${at}] ${step}`),
     failures: failures.map((failure) => `[${at}] ${failure}`),
   }
+}
+
+/**
+ * The copy R6 took out, checked against the bundle that ships it.
+ *
+ * NOT a blanket grep for "uploaded": other surfaces in this binary say it
+ * legitimately (the onboarding beat, the karaoke rail, the transcription
+ * bench), and a check that failed on those would be deleted by the first
+ * person it stopped. The four dead sentences are named, and so are the three
+ * that replaced them — without the second half this would pass just as
+ * happily against a bundle with no Sing room in it at all.
+ */
+function checkNativeCopy(dir) {
+  const files = listJs(dir)
+  if (files.length === 0) {
+    throw new Error(`no .js under ${dir} to read the room's copy out of`)
+  }
+  const source = files.map((file) => readFileSync(file, 'utf8')).join('\n')
+
+  const gone = [
+    'Keep stores it on this phone. Nothing uploaded',
+    'The microphone stays off until you tap. Nothing is uploaded',
+    'Nothing is uploaded. Nobody hears you but you',
+  ].filter((sentence) => source.includes(sentence))
+  if (gone.length > 0) {
+    throw new Error(`the native bundle still says: ${gone.join(' / ')}`)
+  }
+
+  const missing = [
+    'Keep stores it on this phone.',
+    'The microphone stays off until you tap.',
+    'Only you can hear you.',
+  ].filter((sentence) => !source.includes(sentence))
+  if (missing.length > 0) {
+    throw new Error(
+      `the sentences that replaced them are not in the bundle: ${missing.join(' / ')}`,
+    )
+  }
+
+  const elsewhere = (source.match(/uploaded/gu) ?? []).length
+  return `dist: no "uploaded" in any sing-room or shell string (${elsewhere} left elsewhere in the bundle)`
+}
+
+/** Every .js under `dir`, recursively. */
+function listJs(dir) {
+  const out = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = resolve(dir, entry.name)
+    if (entry.isDirectory()) out.push(...listJs(path))
+    else if (entry.name.endsWith('.js')) out.push(path)
+  }
+  return out
 }
 
 async function main() {
@@ -1803,6 +2388,13 @@ async function main() {
 
   const steps = []
   const failures = []
+  if (args.dist !== null) {
+    try {
+      steps.push(checkNativeCopy(args.dist))
+    } catch (error) {
+      failures.push(`copy: ${error.message}`)
+    }
+  }
   try {
     // Every frame is walked even when an earlier one failed: "it broke at 390"
     // and "it broke at both" are different reports, and the second one is the
