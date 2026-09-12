@@ -323,6 +323,7 @@ describe('createGuitarRoomBand', () => {
       status: 'ready',
       sampleStatus: 'reduced',
       sampledReady: true,
+      sampledPlayerCount: 2,
       selectedFormat: 'opus',
       routingCounts: {
         synthesized: 3,

@@ -2,7 +2,7 @@
 // ============================================================
 
 import { createRoot, createSignal, untrack } from 'solid-js'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
@@ -10,7 +10,12 @@ import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { onPersistedWrite } from '@/lib/storage'
 import type { GuitarNightReference } from './reference-port'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
-import { GUITAR_NIGHT_SCORE_CHANNEL, GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { GUITAR_NIGHT_SCORE_CHANNEL, GUITAR_NIGHT_SCORE_CLICK_KEY, GUITAR_NIGHT_SCORE_COUNT_IN_KEY, GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+
+beforeEach(() => {
+  localStorage.removeItem(GUITAR_NIGHT_SCORE_COUNT_IN_KEY)
+  localStorage.removeItem(GUITAR_NIGHT_SCORE_CLICK_KEY)
+})
 
 function reference(
   overrides: Partial<GuitarNightReference> = {},
@@ -137,6 +142,87 @@ function pulseAudible(
 }
 
 describe('useGuitarNightScoreRoomController', () => {
+  it.each([0, 1, 2, 4])(
+    'remembers %s count-in beats and the click across songs and room remounts',
+    async (beats) => {
+      const click = beats === 1 || beats === 4
+      const firstBand = bandHarness()
+      const first = createRoot((dispose) => {
+        const [currentReference, setReference] = createSignal(reference())
+        const room = useGuitarNightScoreRoomController({
+          reference: currentReference,
+          createBand: () => firstBand.band,
+        })
+        return { room, setReference, dispose }
+      })
+      try {
+        first.room.setCountInBeats(beats)
+        first.room.setHearClick(click)
+        expect(localStorage.getItem(GUITAR_NIGHT_SCORE_COUNT_IN_KEY)).toBe(
+          String(beats),
+        )
+        expect(localStorage.getItem(GUITAR_NIGHT_SCORE_CLICK_KEY)).toBe(
+          String(click),
+        )
+        first.setReference(
+          reference({ songId: 'different-song', trackId: 'other-part' }),
+        )
+        expect(first.room.configuredCountInBeats()).toBe(beats)
+        expect(first.room.hearClick()).toBe(click)
+        expect(firstBand.band.start).not.toHaveBeenCalled()
+        expect(firstBand.band.activate).not.toHaveBeenCalled()
+      } finally {
+        first.dispose()
+      }
+
+      const restoredBand = bandHarness()
+      const restored = createRoot((dispose) => ({
+        dispose,
+        room: useGuitarNightScoreRoomController({
+          reference: () => reference({ songId: 'third-song' }),
+          createBand: () => restoredBand.band,
+        }),
+      }))
+      try {
+        expect(restored.room.configuredCountInBeats()).toBe(beats)
+        expect(restored.room.hearClick()).toBe(click)
+        expect(restoredBand.band.start).not.toHaveBeenCalled()
+        expect(restoredBand.band.activate).not.toHaveBeenCalled()
+        await restored.room.start()
+        expect(restoredBand.getOptions()?.countInBeats).toBe(beats)
+        expect(pulseAudible(restoredBand.getOptions)).toBe(click)
+      } finally {
+        restored.dispose()
+      }
+    },
+  )
+
+  it.each([-1, 99, 2.5, '2', null, {}])(
+    'ignores invalid stored count-in %j and click types without opening audio',
+    (value) => {
+      localStorage.setItem(
+        GUITAR_NIGHT_SCORE_COUNT_IN_KEY,
+        JSON.stringify(value),
+      )
+      localStorage.setItem(GUITAR_NIGHT_SCORE_CLICK_KEY, '"false"')
+      createRoot((dispose) => {
+        const { band } = bandHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+        })
+        try {
+          expect(room.configuredCountInBeats()).toBe(4)
+          expect(room.hearClick()).toBe(true)
+          expect(band.start).not.toHaveBeenCalled()
+          expect(band.activate).not.toHaveBeenCalled()
+        } finally {
+          dispose()
+        }
+      })
+    },
+  )
+
   it('seeds amp state without opening audio and forwards later edits live', async () => {
     await createRoot(async (dispose) => {
       const { band } = bandHarness()

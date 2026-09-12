@@ -229,6 +229,15 @@ using processed PCM to judge transitions. Offline endpoint checks are separate.
 never downmix every interface input or change the original analysis/recording route.
 **See:** `src/features/guitar-night/guitar-input-monitor.ts`
 
+### Audit sample-bank instrument identities before adopting their MIDI map
+
+**Symptom:** a kit appeared mostly fallback, and its custom map looked like a quick fix.
+**Cause:** Crocell note 59 is a crash (GM ride 2), 54 a china (GM tambourine),
+and 39 snare-rest noise (GM clap); native power ranks also mispredicted pedal mix levels.
+**Rule:** preserve imported GM identity, map by actual instrument, and measure the
+final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
+**See:** `scripts/expand-drum-kit-recorded-banks.mjs`, `public/drum-night/kits/README.md`
+
 ## Framework
 
 ### Do not destructure props
