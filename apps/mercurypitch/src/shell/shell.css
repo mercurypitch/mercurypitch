@@ -16,6 +16,35 @@
    TRANSFORMS AND OPACITY ONLY. No animated heights anywhere: the band is one
    fixed slot with two layers stacked in the same grid cell. */
 
+/* THE TOKEN IS NOT OPTIONAL, AND ITS FALLBACK MUST BE A REAL FAMILY LIST.
+   Every `font:` shorthand below reads `var(--font-body, …)` because that is
+   what the kit's stylesheet spells, and the lab page defines the token. This
+   app does not — it puts its family on `body`, behind `--app-font`. So the
+   shorthands substituted their old `inherit` fallback, which the `font`
+   shorthand does not accept: the whole declaration was invalid and dropped,
+   and every label, chip and time in this file rendered at the document's
+   16px/400 instead of the size and weight written beside it. On a phone that
+   is a rail whose labels do not fit their plate (device round 1, P1). A
+   missing custom property fails silently; a wrong-but-valid one does not.
+
+   On the document rather than on `.mp-shell`, because the More sheet portals
+   to <body> and only what resolves on its anchor travels with it. This file
+   is loaded by the native bundle alone, and the attribute is set by the shell
+   and nothing else, so the web keeps none of it either way. */
+:root[data-native-shell] {
+  --font-body: var(
+    --app-font,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
+}
+
 .mp-shell {
   --mp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --mp-out: 220ms;
@@ -26,6 +55,12 @@
   --mp-pop: 0.6;
   --mp-glass-shadow:
     0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* iOS text autosizing inflates small text inside a narrow block, and every
+     label in this band is exactly that. The chrome is drawn at fixed sizes
+     against a fixed 64 px bar; there is no reflow for a bigger glyph to take. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Reduced motion: every transition becomes a 120 ms opacity crossfade, from
@@ -166,7 +201,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--text-secondary);
-  font: 500 10px/1 var(--font-body, inherit);
+  font: 500 10px/1 var(--font-body, sans-serif);
   letter-spacing: 0.01em;
   cursor: pointer;
 }
@@ -190,10 +225,16 @@
   white-space: nowrap;
 }
 
+/* 52, not the bar's 64: the kit's `.tabbar__aside` is a 52 px circle centred
+   in the 64 px band, and the twelve points are not decoration — they are
+   twelve points of row the four items in the pill do not have to share. At
+   390 pt that is the difference between a 68 px item and a 71 px one, which
+   is the width "Progress" was missing (device round 1, P1). Still a 52 pt
+   target, comfortably over the 44 pt floor. */
 .mp-more-aside {
   flex: 0 0 auto;
-  width: var(--tabbar-height);
-  height: var(--tabbar-height);
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
   border: 1px solid var(--glass-border);
@@ -204,6 +245,13 @@
   box-shadow: var(--mp-glass-shadow);
   color: var(--text-secondary);
   cursor: pointer;
+}
+
+/* The kit's aside glyph is 24, one step under the pill's 26. Written out
+   rather than left to the icon's default, so the two cannot drift apart. */
+.mp-more-aside svg {
+  width: 24px;
+  height: 24px;
 }
 
 .mp-more-aside[aria-current='page'] {
@@ -250,7 +298,7 @@
 
 .mp-transport__time {
   min-width: 44px;
-  font: 500 15px/1 var(--font-body, inherit);
+  font: 500 15px/1 var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
@@ -307,7 +355,7 @@
 /* The count-in takes the primary's face. Tabular, so 1 and 4 are the same
    width and the glyph does not jump between beats. */
 .mp-transport__count {
-  font: 600 26px/1 var(--font-body, inherit);
+  font: 600 26px/1 var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
 }
 
@@ -416,7 +464,7 @@
   backdrop-filter: var(--glass-blur);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: var(--text-primary);
-  font: 500 14px/1 var(--font-body, inherit);
+  font: 500 14px/1 var(--font-body, sans-serif);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -449,7 +497,7 @@
   backdrop-filter: var(--glass-blur);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: var(--text-primary);
-  font: 500 14px/1 var(--font-body, inherit);
+  font: 500 14px/1 var(--font-body, sans-serif);
   cursor: pointer;
   max-width: 100%;
 }
@@ -532,7 +580,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   color: var(--text-primary);
-  font: 500 13px/1 var(--font-body, inherit);
+  font: 500 13px/1 var(--font-body, sans-serif);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -567,7 +615,7 @@
 }
 
 .mp-pushed__title {
-  font: 600 17px/1.2 var(--font-body, inherit);
+  font: 600 17px/1.2 var(--font-body, sans-serif);
   color: var(--text-primary);
 }
 
@@ -579,6 +627,27 @@
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: calc(var(--tabbar-total) + 16px);
+}
+
+/* ---------- the developer screen ---------- */
+
+.mp-dev {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.mp-dev__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-dev__title {
+  margin: 0;
+  font: 600 17px/1.2 var(--font-body, sans-serif);
+  color: var(--text-primary);
 }
 
 /* ---------- the More sheet's tiles ---------- */
@@ -601,7 +670,7 @@
   border-radius: 12px;
   background: var(--bg-tertiary);
   color: var(--text-primary);
-  font: 500 11px/13px var(--font-body, inherit);
+  font: 500 11px/13px var(--font-body, sans-serif);
   text-align: center;
   cursor: pointer;
 }
@@ -624,7 +693,7 @@
 }
 
 .mp-sheet-group__title {
-  font: 500 11px/14px var(--font-body, inherit);
+  font: 500 11px/14px var(--font-body, sans-serif);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -656,13 +725,13 @@
 }
 
 .mp-alert__title {
-  font: 600 17px/22px var(--font-body, inherit);
+  font: 600 17px/22px var(--font-body, sans-serif);
   color: var(--text-primary);
 }
 
 .mp-alert__text {
   margin-top: 4px;
-  font: 400 13px/18px var(--font-body, inherit);
+  font: 400 13px/18px var(--font-body, sans-serif);
   color: var(--text-secondary);
 }
 
@@ -677,7 +746,7 @@
   border: 0;
   background: transparent;
   color: var(--accent);
-  font: 500 17px/1 var(--font-body, inherit);
+  font: 500 17px/1 var(--font-body, sans-serif);
   cursor: pointer;
 }
 
