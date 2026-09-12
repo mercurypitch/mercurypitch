@@ -21,3 +21,20 @@
     )
   );
 }
+
+/* ONE RESERVATION, NOT TWO.
+   Under the native shell the home indicator is the dock's problem: the rail
+   floats `--safe-bottom + 8px` off the edge, and `.main-content` already
+   reserves the whole band (mobile-kit.css). This bar then added its own
+   `10px + --safe-bottom` on top of that reserve, which on a notched phone
+   left 52 px of nothing between the last control and the rail — the dead
+   space the owner photographed in device round 1 (P2). Without the bottom
+   inset the controls sit where the box does: the scroller's single 8 px above
+   the band.
+
+   `:global` on the attribute only, so the class stays module-scoped. The
+   attribute is set by the shell in `apps/mercurypitch` and by nothing else,
+   so this rule cannot match in a browser. */
+:global(:root[data-native-shell]) .bar {
+  padding-bottom: 0;
+}
