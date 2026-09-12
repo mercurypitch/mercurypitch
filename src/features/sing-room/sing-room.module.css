@@ -1,0 +1,556 @@
+/* ============================================================
+   Retro Analog Studio — the native Sing room
+   ============================================================
+
+   One module for the whole room: the cover and its scrims, the HUD row, the
+   canvas slot, the resting and denied copy, the coach mark and the end card's
+   stats. They are one surface, and every value here is the kit's own (mock
+   `native-app/native-app.css`) mapped to a literal or to a token this app
+   actually defines.
+
+   THE FALLBACK IN EVERY `font:` SHORTHAND IS A REAL FAMILY LIST. `--font-body`
+   is defined by the shell's own stylesheet on `:root[data-native-shell]`, and
+   `var(--x, inherit)` inside a `font` shorthand is invalid — the whole
+   declaration is dropped and the text renders at the document's 16px/400.
+   That is what device round 1 came back with (P1), and it is silent. */
+
+.room {
+  /* A room is the viewport, not a block inside a scroller: the photograph has
+     to reach under the room header and under the rail, both of which the
+     shell fixes to the edges. Below `--z-rail` (470) and below sheets (600),
+     so the chrome the shell owns still sits on top of it. */
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage, 450);
+  overflow: hidden;
+  background: var(--bg-primary, #0d1117);
+}
+
+/* The room takes the viewport, so the scroller it was rendered into has
+   nothing left to lay out: without this it keeps the room header's top
+   reservation and the rail's bottom one as empty space, which is a scrollbar
+   over an empty column.
+
+   `overflow` alone. The `padding: 0` that used to sit here changed nothing —
+   the room is `position: fixed` and does not read its parent's box at all —
+   and a rule that does nothing is a rule somebody later has to disprove. */
+:global(.main-content):has(.room) {
+  overflow: hidden;
+}
+
+.cover {
+  position: absolute;
+  inset: 0;
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, 50% 68%);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* The kit's three scrims. The dim is LIGHTER than the kit's 35% in portrait:
+   this room's own luminance is 12% there, and the kit value takes it to black
+   on a phone (brief §7). Landscape keeps the kit's value. */
+.scrimDim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 25%);
+}
+
+@media (orientation: landscape) {
+  .scrimDim {
+    background: rgb(0 0 0 / 35%);
+  }
+}
+
+.scrimTop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 55%) 0%,
+    rgb(0 0 0 / 0%) 32%
+  );
+}
+
+.scrimBottom {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 60%) 0%,
+    rgb(0 0 0 / 60%) 30%,
+    rgb(0 0 0 / 35%) 52%,
+    rgb(0 0 0 / 0%) 72%
+  );
+}
+
+.scrimDim,
+.scrimTop,
+.scrimBottom {
+  pointer-events: none;
+}
+
+/* ── The room's own column ───────────────────────────────── */
+
+.ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* The room header's 52px sits above; the band (rail or transport) below. */
+  padding: calc(var(--safe-top, 0px) + 52px + 8px) 16px
+    calc(var(--tabbar-total, 64px) + 12px);
+}
+
+.hud {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.canvasWrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The shell's corner chip floats over the room's bottom-right while a run is
+   going, and the newest pixels of a trace are exactly there. */
+:global(:root[data-shell-chip='on']) .canvasWrap {
+  padding-right: 56px;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.onCover {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.display {
+  font: 600 30px/36px var(--font-body, sans-serif);
+  letter-spacing: -0.015em;
+  color: var(--text-primary, #e6edf3);
+  margin: 0;
+}
+
+.head {
+  font: 600 20px/26px var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #e6edf3);
+  margin: 0;
+}
+
+.body {
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  margin: 0;
+}
+
+.caption {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-tertiary, #8b949e);
+  margin: 0;
+}
+
+.center {
+  text-align: center;
+}
+
+.grow {
+  flex: 1 1 auto;
+}
+
+/* ── Capsule ─────────────────────────────────────────────── */
+
+.capsule {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-primary, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  font: 600 17px/1 var(--font-body, sans-serif);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.capsule:active {
+  transform: scale(0.98);
+}
+
+.capsuleSecondary {
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+}
+
+.linkQuiet {
+  display: inline-block;
+  min-height: 44px;
+  padding: 12px 8px;
+  border: 0;
+  background: none;
+  color: var(--text-secondary, #a8b3bf);
+  font: 500 15px/20px var(--font-body, sans-serif);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.btnPair {
+  display: flex;
+  gap: 12px;
+}
+
+.btnPair > * {
+  flex: 1 1 0;
+}
+
+/* ── Chips ───────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  max-width: 46vw;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgb(230 237 243 / 10%);
+  background: var(--glass-bg, rgb(22 27 34 / 72%));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  color: var(--text-primary, #e6edf3);
+  font: 500 13px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.chip svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+/* ── The note chip (kit `note-chip`, every variant) ──────── */
+
+.noteChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--glass-bg, rgb(22 27 34 / 72%));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  border: 1px solid rgb(230 237 243 / 10%);
+  color: var(--text-primary, #e6edf3);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.noteChipNote {
+  font: 600 20px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.noteChipNote sub {
+  position: relative;
+  top: 1px;
+  margin-left: 1px;
+  font: 600 12px/1 var(--font-body, sans-serif);
+  vertical-align: baseline;
+}
+
+.noteChipCents {
+  font: 500 13px/1 var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.noteChipMark {
+  width: 0;
+  height: 0;
+  align-self: center;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+.noteChipIn {
+  border-color: rgb(86 211 100 / 45%);
+}
+
+.noteChipIn .noteChipCents {
+  color: #56d364;
+}
+
+.noteChipIn .noteChipMark {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: #56d364;
+}
+
+.noteChipFlat .noteChipCents {
+  color: #e3b341;
+}
+
+.noteChipFlat .noteChipMark {
+  border-top: 7px solid #e3b341;
+}
+
+.noteChipSharp .noteChipCents {
+  color: #ff7b72;
+}
+
+.noteChipSharp .noteChipMark {
+  border-bottom: 7px solid #ff7b72;
+}
+
+.noteChipQuiet {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(230 237 243 / 16%);
+}
+
+/* ── The silent / demo trace (R0, R1, D) ─────────────────── */
+
+.trace {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.traceGrid line {
+  stroke: rgb(230 237 243 / 8%);
+  stroke-width: 1;
+}
+
+.traceGrid text {
+  fill: rgb(230 237 243 / 55%);
+  font: 500 10px var(--font-body, sans-serif);
+}
+
+.traceSilent {
+  fill: none;
+  stroke: rgb(230 237 243 / 20%);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1 7;
+}
+
+.traceDemo {
+  fill: none;
+  stroke: rgb(168 179 191 / 75%);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 10 6;
+}
+
+.traceTarget {
+  fill: none;
+  stroke: rgb(230 237 243 / 28%);
+  stroke-width: 2;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.traceWrap {
+  position: relative;
+  height: 100%;
+}
+
+.traceWrap .demoChip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.demoChip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  font: 500 13px/1 var(--font-body, sans-serif);
+}
+
+/* ── The one coach mark ──────────────────────────────────── */
+
+.coach {
+  position: absolute;
+  z-index: 12;
+  top: calc(var(--safe-top, 0px) + 108px);
+  left: 20px;
+  max-width: 230px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  border: 1px solid rgb(230 237 243 / 16%);
+  font: 400 13px/18px var(--font-body, sans-serif);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.coach::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 40px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: rotate(45deg);
+  box-shadow: -1px -1px 0 rgb(230 237 243 / 16%);
+}
+
+.coachTitle {
+  display: block;
+  margin-bottom: 2px;
+  font: 600 12px/16px var(--font-body, sans-serif);
+  color: var(--accent-primary, #58a6ff);
+}
+
+/* ── The priming screen (3b) ─────────────────────────────── */
+
+/* PORTALLED TO <body>, and it has to be. `.room` is a fixed, z-indexed
+   element, which makes it a stacking context: a child at `--z-sheet` (600)
+   is still only 600 INSIDE a room painted at 450, so the shell's rail (470)
+   drew straight over the door and took its Continue tap. Measured in the
+   probe, where the click was intercepted by the rail's own microphone glyph. */
+.priming {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet, 600);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: calc(var(--safe-top, 0px) + 24px) 20px
+    calc(var(--safe-bottom, 0px) + 24px);
+  background: var(--bg-primary, #0d1117);
+}
+
+.primingArt {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── The end card's four counts (screen 16) ──────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  background: var(--bg-secondary, #161b22);
+}
+
+.statNum {
+  font: 600 24px/28px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #e6edf3);
+}
+
+.statLabel {
+  margin-top: 2px;
+  font: 400 12px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+}
+
+/* The one spectrum rule on the screen. */
+.spectrumRule {
+  height: 2px;
+  margin: 12px 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+}
+
+.takeSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── The options sheet's toggle ──────────────────────────── */
+
+.toggle {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-tertiary, #21262d);
+  cursor: pointer;
+  position: relative;
+}
+
+.toggle i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-secondary, #a8b3bf);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toggleOn {
+  background: var(--accent-primary, #58a6ff);
+}
+
+.toggleOn i {
+  background: #fff;
+  transform: translateX(18px);
+}
+
+.stepBtn {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgb(230 237 243 / 16%);
+  border-radius: 10px;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  font: 500 14px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.stepValue {
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #e6edf3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capsule,
+  .toggle i {
+    transition: none;
+  }
+}

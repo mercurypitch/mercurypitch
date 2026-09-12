@@ -79,6 +79,15 @@ const PICKER_COPY = {
     description: 'Included rooms and supporter editions for Drum Night.',
     busy: 'Preparing your room…',
   },
+  // The Sing room has one free cover and no picker of its own yet; the copy
+  // exists so the surface is complete, not because anything opens it.
+  sing: {
+    trigger: 'Choose Sing room background',
+    dialog: 'Choose your Sing room',
+    heading: 'Choose your room',
+    description: 'Included rooms and supporter editions for Sing.',
+    busy: 'Preparing your room…',
+  },
 } as const satisfies Record<
   BackgroundSurface,
   {

@@ -145,6 +145,13 @@ export const NATIVE_ASSETS = [
     reason:
       'Home rail: the Drum Night room photo (src/features/home/DestinationGallery.tsx).',
   },
+
+  // ── The Sing room's cover ────────────────────────────────────
+  {
+    glob: 'sing/retro-analog-studio*.webp',
+    reason:
+      "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one, and there is no network in the room to fetch it from.",
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */

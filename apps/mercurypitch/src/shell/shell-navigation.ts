@@ -20,6 +20,7 @@
 import type { ActiveTab, PracticeScope } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
+import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
 
@@ -100,9 +101,15 @@ export type BackOutcome =
   | 'column'
   | 'sheet'
   | 'alert'
+  | 'room-overlay'
   | 'pushed'
   | 'history'
   | 'minimize'
+
+/** Everything the SHELL owns that outranks the room's own overlay. */
+function shellOverlayOpen(): boolean {
+  return columnOpen() || keepAlertOpen() || moreOpen()
+}
 
 /**
  * The order, top to bottom, for every Back there is — the room header's, the
@@ -111,6 +118,11 @@ export type BackOutcome =
  * The pushed screen sits under the sheet because a sheet opens OVER one
  * (More is reachable while Settings is up); the alert is above both because
  * a modal question has to be answerable.
+ *
+ * The room's own overlay sits between the sheet and a pushed screen, and it
+ * is NOT resolved here: the only way to ask a room whether it has one is to
+ * ask it to close it, so `performBack` does that and this answers what
+ * happens when no room claims the press.
  */
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
@@ -148,6 +160,14 @@ export function shellBackHost(): BackHost {
 
 /** Performs `resolveBack`'s answer and reports which one it was. */
 export function performBack(host: BackHost): BackOutcome {
+  // The room's overlay, between the More sheet and a pushed screen. Asked
+  // only once nothing the shell owns wants the press, and asking is closing.
+  if (
+    !shellOverlayOpen() &&
+    nativeRunControls()?.closeRoomOverlay?.() === true
+  ) {
+    return 'room-overlay'
+  }
   const outcome = resolveBack(host.canGoBack)
   switch (outcome) {
     case 'column':
@@ -158,6 +178,9 @@ export function performBack(host: BackHost): BackOutcome {
       break
     case 'sheet':
       closeMore()
+      break
+    case 'room-overlay':
+      // Already closed by the ask above.
       break
     case 'pushed':
       popScreen()
