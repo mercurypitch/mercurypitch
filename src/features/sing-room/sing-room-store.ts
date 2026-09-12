@@ -58,7 +58,11 @@ function room(): RoomSignals {
   if (signals !== undefined) return signals
   // Destructured, every one of them: `solid/reactivity` reads an array
   // destructuring as "this is a signal" and warns on anything else.
-  const [context, setContext] = createSignal<SingRoomContext>(fresh())
+  // UNTRACKED: whoever first touches `room()` may be inside a tracked scope,
+  // and `fresh()` reads two persisted preferences — so that scope would
+  // subscribe to them and re-run on a settings change that has nothing to do
+  // with it, with a context it cannot rebuild.
+  const [context, setContext] = createSignal<SingRoomContext>(untrack(fresh))
   const [takes, setTakes] = createSignal(0)
   const [summary, setSummary] = createSignal<TakeSummary | null>(null)
   const [previous, setPrevious] = createSignal<SingTake | null>(null)

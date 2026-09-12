@@ -88,6 +88,15 @@ export type SingRoomEvent =
   | { type: 'sing-a-note' }
   /** The priming screen's Continue — the system alert comes next. */
   | { type: 'priming-continue' }
+  /**
+   * The priming screen was dismissed without answering it.
+   *
+   * Back, or a tap outside the door. `priming` is a full-screen portal with
+   * no control on it but Continue, so without this the state stuck: leaving
+   * the tab from the door and coming back drew the door again over a room
+   * with no way past it. The permission is NOT touched — nothing was asked.
+   */
+  | { type: 'priming-cancel' }
   | { type: 'mic-granted' }
   | { type: 'mic-denied' }
   /**
@@ -188,6 +197,9 @@ export function singRoomReducer(
       // guessing, so a slow alert cannot leave the room in a state it has to
       // be walked back from.
       return ctx
+
+    case 'priming-cancel':
+      return ctx.state === 'priming' ? { ...ctx, state: 'resting' } : ctx
 
     case 'mic-granted':
       return {

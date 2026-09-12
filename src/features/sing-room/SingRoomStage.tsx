@@ -244,8 +244,12 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    */
   const claimLive = (): boolean => {
     if (props.audioRunning()) return true
-    props.stopMic()
+    // Dispatch BEFORE the stop. The intent effect watches `micIntent`, and
+    // while the state still says live a release looks like a device that
+    // dropped out — so it opened the microphone again, once, before
+    // `mic-suspended` landed and took the intent away.
     dispatchSingRoom({ type: 'mic-suspended' })
+    props.stopMic()
     return false
   }
 
@@ -333,6 +337,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const handlePark = (): void => {
     if (props.isPlaying()) props.onPause()
+    // A sheet or a picker left open outlives the park otherwise: the room
+    // unmounts with it open and comes back with a modal over a paused run.
+    closeRoomSheets()
+    if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
     if (takeUndecided(ctx())) keepTake()
     dispatchSingRoom({ type: 'leave' })
     if (props.micActive()) props.stopMic()
@@ -345,7 +353,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * and closes by KEEPING: a summary is four numbers that never leave the
    * phone, and losing one to a Back is worse than storing one nobody wanted.
    */
-  const closeRoomOverlay = (): boolean => {
+  /** Shut every sheet and modal the room is holding. */
+  const closeRoomSheets = (): boolean => {
     if (props.picker.trackModalSong() !== null) {
       props.picker.setTrackModalSong(null)
       return true
@@ -356,6 +365,19 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     }
     if (optionsOpen()) {
       setOptionsOpen(false)
+      return true
+    }
+    return false
+  }
+
+  const closeRoomOverlay = (): boolean => {
+    if (closeRoomSheets()) return true
+    // The priming door, above the card and below the sheets. It is a portal
+    // with one button on it, so a press that is not Continue has to be able
+    // to close it — otherwise `priming` sticks and the room comes back with
+    // a door over it and no way past.
+    if (state() === 'priming') {
+      dispatchSingRoom({ type: 'priming-cancel' })
       return true
     }
     if (takeUndecided(ctx())) {

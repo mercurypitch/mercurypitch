@@ -403,3 +403,42 @@ describe('what a tap on the state chip does', () => {
     expect(at('priming')).toBeNull()
   })
 })
+
+describe('dismissing the priming door', () => {
+  const primed = run(
+    initialSingRoomContext(),
+    {
+      type: 'enter',
+      hasSummary: false,
+    },
+    { type: 'sing-a-note' },
+  )
+
+  it('returns to rest, with nothing asked and nothing remembered', () => {
+    expect(primed.state).toBe('priming')
+    const cancelled = run(primed, { type: 'priming-cancel' })
+    expect(cancelled.state).toBe('resting')
+    // Nothing was asked, so nothing was answered: the room must ask again at
+    // the next capsule rather than assume either way.
+    expect(cancelled.permission).toBe('unknown')
+    expect(micIntent(cancelled)).toBe(false)
+  })
+
+  it('asks again at the next tap', () => {
+    const again = run(
+      primed,
+      { type: 'priming-cancel' },
+      { type: 'sing-a-note' },
+    )
+    expect(again.state).toBe('priming')
+  })
+
+  it('does nothing anywhere else', () => {
+    const live = run(
+      initialSingRoomContext({ permission: 'granted' }),
+      { type: 'enter', hasSummary: false },
+      { type: 'sing-a-note' },
+    )
+    expect(run(live, { type: 'priming-cancel' })).toBe(live)
+  })
+})

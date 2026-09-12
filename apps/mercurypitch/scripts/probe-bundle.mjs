@@ -895,6 +895,30 @@ async function walkRun(page, ctx, steps) {
   await shoot(page, ctx, 'room-priming')
   steps.push('room: Sing a note opens the priming screen, not the microphone')
 
+  // The door closes. It is a portal with one button on it, so a Back that
+  // fell through to history left `priming` set for good: the room came back
+  // with the door drawn over it and nothing on it but Continue.
+  const primingBack = await pressBack(page)
+  if (primingBack !== 'room-overlay') {
+    throw new Error(`Back over the priming door resolved as "${primingBack}"`)
+  }
+  await expectGone(
+    page.locator('[data-testid="sing-priming"]'),
+    'the priming screen after Back',
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule after Back over the door',
+  )
+  steps.push('room: Back over the priming door rests the room')
+
+  // …and the next tap asks again.
+  await page.locator('[data-testid="sing-capsule"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-priming"]'),
+    'the priming screen on the second tap',
+  )
+
   await page.locator('[data-testid="sing-priming-continue"]').click()
   await expectGone(
     page.locator('[data-testid="sing-priming"]'),
@@ -1479,17 +1503,19 @@ async function walkDenied(browser, args, frame) {
 }
 
 /**
- * The remembered grant, in a browser that has NOT been told to ignore the
- * autoplay policy.
+ * The remembered grant over an audio clock that will not start.
  *
- * Its own browser, because the flag is a launch argument: every other walk
- * runs with `--autoplay-policy=no-user-gesture-required` so the take's audio
- * works without a tap, and that is exactly the thing this has to do without.
- * A room that trusts a remembered grant reaches for the microphone with no
- * gesture behind it, and iOS will hand over the device while leaving the
- * audio clock suspended — a chip saying "Listening" over a line that can
- * never move. The invariant is the assertion: Listening implies a running
- * clock, whatever this browser decides to do about the policy.
+ * Its own browser, because the autoplay flag every other walk runs with
+ * (`--autoplay-policy=no-user-gesture-required`) is a launch argument and
+ * this is the one walk that must not have it. But a desktop Chromium hands
+ * over a running context anyway, so the flag's absence proves nothing on
+ * Linux and the step could not fail: the clock is FORCED suspended here,
+ * which is what iOS does to a context nobody has tapped for.
+ *
+ * The stub is the smallest lie that reproduces it — `state` reads
+ * 'suspended' and `resume()` does nothing, so the device opens and the clock
+ * does not. Lifting the stub is the gesture's half of the story: the chip's
+ * tap then has a context that can actually start.
  */
 async function walkSuspended(args, frame) {
   const tone = resolve(tmpdir(), 'mp-probe-voice.wav')
@@ -1523,19 +1549,53 @@ async function walkSuspended(args, frame) {
       } catch {
         /* storage blocked */
       }
+      // And its audio clock refuses to start without a gesture. `state` and
+      // `resume` live on BaseAudioContext, so the descriptor is found by
+      // walking up rather than assumed to be on AudioContext itself.
+      window.__mpForceSuspended = true
+      let owner = AudioContext.prototype
+      let state = Object.getOwnPropertyDescriptor(owner, 'state')
+      while (state === undefined && owner !== null) {
+        owner = Object.getPrototypeOf(owner)
+        state =
+          owner === null
+            ? undefined
+            : Object.getOwnPropertyDescriptor(owner, 'state')
+      }
+      if (owner === null || state === undefined || state.get === undefined) {
+        window.__mpForceSuspended = false
+        return
+      }
+      const realState = state.get
+      Object.defineProperty(owner, 'state', {
+        configurable: true,
+        get() {
+          if (window.__mpForceSuspended === true) return 'suspended'
+          return realState.call(this)
+        },
+      })
+      const realResume = owner.resume
+      owner.resume = function stubbedResume(...rest) {
+        if (window.__mpForceSuspended === true) return Promise.resolve()
+        return realResume.apply(this, rest)
+      }
     })
     try {
       await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
       await page
         .locator('#root.loaded')
         .waitFor({ state: 'attached', timeout: BOOT_TIMEOUT_MS })
+      if ((await page.evaluate(() => window.__mpForceSuspended)) !== true) {
+        throw new Error('the audio clock could not be held suspended')
+      }
       await page.locator('[data-rail-item="stage"]').click()
       await expectVisible(
         page.locator('[data-testid="sing-room"]'),
         'the Sing room',
       )
 
-      // Two seconds of watching. Every sample has to hold the invariant.
+      // Two seconds of watching. Every sample has to hold the invariant, and
+      // the clock really is suspended for all of them.
       let sawSuspended = false
       for (let i = 0; i < 20; i += 1) {
         const room = await page.evaluate(() => window.mpSingRoom?.())
@@ -1548,17 +1608,31 @@ async function walkSuspended(args, frame) {
         if (room.audioRunning !== true) sawSuspended = true
         await page.waitForTimeout(100)
       }
+      if (!sawSuspended) {
+        throw new Error('the clock never read suspended: the stub did nothing')
+      }
+      await expectText(
+        page,
+        '[data-testid="sing-state-chip"]',
+        'Mic off',
+        'the state chip over a suspended clock',
+      )
+      await expectVisible(
+        page.locator('[data-testid="sing-capsule"]'),
+        'the capsule over a suspended clock',
+      )
       await shoot(page, ctx, 'room-remembered-grant')
       steps.push(
-        `room: a remembered grant never claims Listening over a suspended clock (${sawSuspended ? 'clock was suspended' : 'clock ran'})`,
+        'room: a remembered grant over a suspended clock rests, mic off',
       )
 
-      // And the chip is the way back in: a tap is a gesture, and a gesture is
-      // the one thing that resumes a context.
+      // The gesture's half: the clock can start again, and the chip is what
+      // starts it — a tap on it is the one thing iOS resumes a context from.
+      await page.evaluate(() => {
+        window.__mpForceSuspended = false
+      })
       const chip = page.locator('[data-testid="sing-state-chip"]')
-      if ((await chip.textContent())?.includes('Mic off') === true) {
-        await chip.click()
-      }
+      await chip.click()
       await page.waitForFunction(
         () => window.mpSingRoom?.().chip === 'listening',
         undefined,
