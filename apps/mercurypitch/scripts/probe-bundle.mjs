@@ -798,7 +798,13 @@ async function sampleTrace(page) {
       // way across, which the green never is.
       if (b > 120 && b - r > 40) spectrum += 1
     }
-    return { total: pixels.length / 4, transparent, painted, flatGreen, spectrum }
+    return {
+      total: pixels.length / 4,
+      transparent,
+      painted,
+      flatGreen,
+      spectrum,
+    }
   })
 }
 
@@ -808,7 +814,10 @@ async function walkRun(page, ctx) {
   const steps = []
 
   await page.locator('[data-rail-item="stage"]').click()
-  await expectVisible(page.locator('[data-testid="sing-room"]'), 'the Sing room')
+  await expectVisible(
+    page.locator('[data-testid="sing-room"]'),
+    'the Sing room',
+  )
 
   // ── R0: the path opens on a silent trace and asks for nothing ──
   await expectVisible(
@@ -888,7 +897,9 @@ async function walkRun(page, ctx) {
   if (trace.error !== undefined) throw new Error(trace.error)
   if (trace.transparent < trace.total * 0.5) {
     const opaque = Math.round((100 * trace.painted) / trace.total)
-    throw new Error(`the canvas is ${opaque}% opaque — the room is behind a plate`)
+    throw new Error(
+      `the canvas is ${opaque}% opaque — the room is behind a plate`,
+    )
   }
   if (trace.spectrum < 200) {
     throw new Error(
@@ -932,7 +943,9 @@ async function walkRun(page, ctx) {
       `the chip sits ${band.y - (chip.y + chip.height)} above the band`,
     )
   }
-  steps.push('run: the shell has the band, and the chip is 56, 8 above it, 16 in')
+  steps.push(
+    'run: the shell has the band, and the chip is 56, 8 above it, 16 in',
+  )
 
   // ── The state chip mutes, and does NOT end the take ──
   await page.locator('[data-testid="sing-state-chip"]').click()
@@ -1018,7 +1031,8 @@ async function walkRun(page, ctx) {
   if (locked.removed) {
     throw new Error('a locked Stop left the accessibility tree')
   }
-  if (Number(locked.opacity) > 0.6) throw new Error('a locked Stop is not dimmed')
+  if (Number(locked.opacity) > 0.6)
+    throw new Error('a locked Stop is not dimmed')
   await shoot(page, ctx, 'run-locked')
   steps.push('run: locked, dimmed, still announced')
   await page.locator('[aria-label="Lock controls"]').click()
@@ -1083,10 +1097,14 @@ async function walkRun(page, ctx) {
     }
   }
   if ((await page.locator('[data-testid="sing-take-history"]').count()) !== 0) {
-    throw new Error('a first take compared itself with a history it has not got')
+    throw new Error(
+      'a first take compared itself with a history it has not got',
+    )
   }
   await shoot(page, ctx, 'room-end-card')
-  steps.push('room: Stop opens the end card with four counts and no history yet')
+  steps.push(
+    'room: Stop opens the end card with four counts and no history yet',
+  )
 
   await page.locator('[data-testid="sing-take-keep"]').click()
   await expectGone(
@@ -1118,7 +1136,10 @@ async function walkRun(page, ctx) {
   const history = (
     await page.locator('[data-testid="sing-take-history"]').textContent()
   )?.trim()
-  if (history === undefined || !history.startsWith('Against your own history:')) {
+  if (
+    history === undefined ||
+    !history.startsWith('Against your own history:')
+  ) {
     throw new Error(`the history line reads "${history}"`)
   }
   const takes = (
@@ -1235,7 +1256,9 @@ async function walkDenied(browser, args, frame) {
       throw new Error('the denied state offers no way out')
     }
     await shoot(page, ctx, 'room-denied')
-    steps.push('room: a refused mic shows the demo line, Settings and a way out')
+    steps.push(
+      'room: a refused mic shows the demo line, Settings and a way out',
+    )
 
     // And the rooms really do still open.
     await page.getByText('Explore the rooms').click()

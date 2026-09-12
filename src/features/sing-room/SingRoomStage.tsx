@@ -280,6 +280,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // A trace that is not drawing has four possible reasons and a
     // screenshot distinguishes none of them; this says which one it is.
     // Written only under `window.E2E_TEST_MODE`, as everything here is.
+    //
+    // Deliberately NOT a tracked scope: it is polled by a walk, one call at a
+    // time, and reading these signals is the whole job. Nothing subscribes.
+    // eslint-disable-next-line solid/reactivity
     exposeForE2E('mpSingRoom', () => ({
       state: ctx().state,
       micIntent: micIntent(ctx()),
