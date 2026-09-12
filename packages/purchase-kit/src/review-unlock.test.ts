@@ -4,7 +4,7 @@
 
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { createReviewUnlock, REVIEW_CODE_ALPHABET, normalizeReviewCode, readReviewGrant, reviewUnlockDigestInput, serializeReviewGrant, } from './review-unlock.ts'
+import { createReviewUnlock, normalizeReviewCode, readReviewGrant, REVIEW_CODE_ALPHABET, reviewUnlockDigestInput, serializeReviewGrant, } from './review-unlock.ts'
 
 const APP_ID = 'beside-cue'
 const CODE = 'REVIEW-7K4M-93XQ'
