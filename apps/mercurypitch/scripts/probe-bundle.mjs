@@ -409,6 +409,83 @@ async function walkChrome(page, ctx) {
   await shoot(page, ctx, 'stage-bar-seam')
   steps.push(`stage: the bar sits ${seam.controls} px above the band`)
 
+  // The room header steps aside for a pushed screen (P6). It is fixed at
+  // `--z-rail` and a pushed screen sits one step below, so its Back used to
+  // take the tap meant for the screen's own — and this is the only place in
+  // the walk where a room header and a pushed screen are up together, which
+  // is why the step lives here and not beside the other Settings push.
+  const roomHeader = page.locator('[data-testid="shell-room-header"]')
+  await roomHeader.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  const headerBack = await page
+    .locator('[data-testid="shell-room-back"]')
+    .boundingBox()
+  if (headerBack === null) throw new Error('the room header has no Back')
+  const atBack = {
+    x: Math.round(headerBack.x + headerBack.width / 2),
+    y: Math.round(headerBack.y + headerBack.height / 2),
+  }
+
+  await page.locator('[data-rail-item="more"]').click()
+  await settingsTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await settingsTile.click()
+  await pushed.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+
+  // Waited for rather than read once: the header fades over `--mp-out`, and a
+  // box read on the frame the class changed is the state it is leaving.
+  await page.waitForFunction(
+    () => {
+      const node = document.querySelector('[data-testid="shell-room-header"]')
+      if (node === null) return true
+      const style = getComputedStyle(node)
+      return style.visibility === 'hidden' && Number(style.opacity) === 0
+    },
+    undefined,
+    { timeout: STEP_TIMEOUT_MS },
+  )
+
+  // Gone is not the same as out of the way. `elementFromPoint` is the only
+  // question that matters here: whose Back is under the thumb at the corner
+  // the room header used to own?
+  const atCorner = await page.evaluate(({ x, y }) => {
+    const node = document.elementFromPoint(x, y)
+    const header = document.querySelector('[data-testid="shell-room-header"]')
+    return {
+      inHeader: node !== null && header !== null && header.contains(node),
+      inPushed:
+        node !== null && node.closest('[data-testid="shell-pushed"]') !== null,
+      inert: header !== null && header.hasAttribute('inert'),
+    }
+  }, atBack)
+  if (atCorner.inHeader) {
+    throw new Error('the room header still takes the tap over a pushed screen')
+  }
+  if (!atCorner.inPushed) {
+    throw new Error('nothing of the pushed screen is under its own Back')
+  }
+  if (!atCorner.inert) throw new Error('the hidden room header is not inert')
+  await shoot(page, ctx, 'room-header-pushed')
+  steps.push('room header: out, inert, and not under the thumb while pushed')
+
+  // And back on the pop — this click is itself the proof, because it is the
+  // one that used to land on the room header instead.
+  await page.locator('[data-testid="shell-pushed-back"]').click()
+  await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+  await page.waitForFunction(
+    () => {
+      const node = document.querySelector('[data-testid="shell-room-header"]')
+      if (node === null) return false
+      const style = getComputedStyle(node)
+      return (
+        style.visibility === 'visible' &&
+        Number(style.opacity) === 1 &&
+        !node.hasAttribute('inert')
+      )
+    },
+    undefined,
+    { timeout: STEP_TIMEOUT_MS },
+  )
+  steps.push('room header: back on the pop')
+
   return steps
 }
 

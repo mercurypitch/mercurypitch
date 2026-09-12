@@ -202,6 +202,23 @@ export const chipVisible = createMemo<boolean>(
   () => variant() === 'r2' && transportVisible(),
 )
 
+/**
+ * Whether the room's header belongs on screen, for a room that has one.
+ *
+ * It does not while a screen is pushed. The header is the ROOM's chrome —
+ * its name, its gear, and a Back that leaves it — and a pushed screen is a
+ * navigation level over the top of that room with a Back of its own. Two
+ * Backs at the same corner is the least of it: the header sits one step
+ * ABOVE the pushed screen in the z order (`--z-rail` against
+ * `--z-rail - 1`), so it took the tap meant for the screen's own Back and
+ * floated its chip and gear over a page they have nothing to do with.
+ *
+ * Not "is there a header" — that is the shell's question, and it answers it
+ * by whether a room registered controls at all. This is only "should the one
+ * we have be showing".
+ */
+export const roomHeaderVisible = createMemo<boolean>(() => pushed() === null)
+
 export function elapsedMs(): number {
   tick()
   const running = startedAt === null ? 0 : Date.now() - startedAt

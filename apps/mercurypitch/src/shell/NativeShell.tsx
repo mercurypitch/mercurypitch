@@ -37,7 +37,7 @@ import { MoreSheet } from './MoreSheet'
 import { PushedScreen } from './PushedScreen'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
@@ -187,6 +187,7 @@ export const NativeShell: Component = () => {
             {(controls) => (
               <RoomHeader
                 title={() => controls().roomLabel}
+                visible={roomHeaderVisible}
                 onBack={() => {
                   performBack(shellBackHost())
                 }}

@@ -7,6 +7,13 @@
 // through the bridge to this component, so the check that stays honest is
 // that whatever the room registered is what the chip shows — verbatim, and
 // reactively, because the room can rename itself when the singer changes it.
+//
+// P6 is the other half: the header is fixed one step ABOVE a pushed screen,
+// so while one is up it has to stop being on screen AND stop taking taps.
+// The first is a class the stylesheet animates; the second is `inert`, which
+// is asserted here because jsdom applies no stylesheet and a test that
+// checked the class alone would pass against a header that still swallowed
+// the screen's Back.
 
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -44,6 +51,65 @@ describe('RoomHeader', () => {
     expect(
       rendered.container.querySelector('.mp-room-chip')?.textContent,
     ).toContain('Broadway Theater')
+  })
+
+  describe('while a screen is pushed', () => {
+    it('is in, and touchable, with nothing pushed', () => {
+      const rendered = renderShell(() => (
+        <RoomHeader title={() => 'Retro Analog Studio'} onBack={() => {}} />
+      ))
+      unmount = rendered.unmount
+
+      const header = rendered.container.querySelector(
+        '[data-testid="shell-room-header"]',
+      )
+      expect(header?.classList.contains('is-in')).toBe(true)
+      expect(header?.hasAttribute('inert')).toBe(false)
+    })
+
+    it('goes out and inert when the screen is pushed, and back on the pop', () => {
+      const [visible, setVisible] = createSignal(true)
+      const rendered = renderShell(() => (
+        <RoomHeader
+          title={() => 'Retro Analog Studio'}
+          visible={visible}
+          onBack={() => {}}
+        />
+      ))
+      unmount = rendered.unmount
+
+      const header = rendered.container.querySelector(
+        '[data-testid="shell-room-header"]',
+      )
+      expect(header?.classList.contains('is-in')).toBe(true)
+
+      setVisible(false)
+      expect(header?.classList.contains('is-in')).toBe(false)
+      expect(header?.hasAttribute('inert')).toBe(true)
+
+      setVisible(true)
+      expect(header?.classList.contains('is-in')).toBe(true)
+      expect(header?.hasAttribute('inert')).toBe(false)
+    })
+
+    it('keeps Back in the tree while it is out — this is a fade, not an unmount', () => {
+      // The header animates out with the rail's own tokens, which needs a
+      // live element. Unmounting it would skip the transition and would take
+      // the room's own Back away from anything that reaches for it by
+      // reference.
+      const rendered = renderShell(() => (
+        <RoomHeader
+          title={() => 'Retro Analog Studio'}
+          visible={() => false}
+          onBack={() => {}}
+        />
+      ))
+      unmount = rendered.unmount
+
+      expect(
+        rendered.container.querySelector('[data-testid="shell-room-back"]'),
+      ).not.toBe(null)
+    })
   })
 
   it('keeps Back and the gear either side of the chip', () => {

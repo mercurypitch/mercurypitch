@@ -535,6 +535,17 @@
 
 /* ---------- the room header ---------- */
 
+/* Out is the BASE state, the same way it is for the band's two layers, and
+   for the same reason: one set of tokens, so the reduced-motion override
+   collapses the header and the rail to the same 120 ms crossfade with
+   nothing moving. It leaves upward, toward the edge it lives on.
+
+   `visibility` is deferred until the fade ends, so it cannot be the thing
+   that stops the taps — for those 220 ms a header at `--z-rail` is still one
+   step above a pushed screen at `--z-rail - 1`, and still takes its Back.
+   Only `.is-in` hands pointer events to the controls, on the same frame the
+   class changes; `inert` on the element covers the keyboard and the
+   accessibility tree. */
 .mp-room-header {
   position: fixed;
   top: 0;
@@ -548,9 +559,28 @@
   padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-left)) 4px
     max(12px, var(--safe-right));
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(calc(var(--mp-lift) * -1));
+  transition:
+    opacity var(--mp-out) var(--mp-ease),
+    transform var(--mp-out) var(--mp-ease),
+    visibility 0s linear var(--mp-out);
 }
 
-.mp-room-header > * {
+.mp-room-header.is-in {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--mp-in) var(--mp-ease),
+    transform var(--mp-in) var(--mp-ease),
+    visibility 0s linear 0s;
+}
+
+/* A frame like the dock: only its controls take taps, so the room keeps the
+   pixels between them — and only while the header is in. */
+.mp-room-header.is-in > * {
   pointer-events: auto;
 }
 

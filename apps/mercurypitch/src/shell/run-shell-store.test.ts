@@ -19,7 +19,7 @@ import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { chipVisible, closeColumn, COLUMN_IDLE_MS, columnOpen, countInBeat, countingIn, elapsedMs, finishRun, formatElapsed, keepAlertOpen, locked, openColumn, parked, parkRun, railVisible, requestEnd, resetRunShell, runLabel, runOwner, runState, toggleLock, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, COLUMN_IDLE_MS, columnOpen, countInBeat, countingIn, elapsedMs, finishRun, formatElapsed, keepAlertOpen, locked, openColumn, parked, parkRun, popScreen, pushed, pushScreen, railVisible, requestEnd, resetRunShell, roomHeaderVisible, runLabel, runOwner, runState, toggleLock, touchColumn, transportVisible, } from './run-shell-store'
 
 /** A room exactly as `SingingMobileStage` registers one, with its own state. */
 function fakeRoom(extra: Partial<NativeRunControls> = {}) {
@@ -457,6 +457,58 @@ describe('the tab column', () => {
     vi.advanceTimersByTime(COLUMN_IDLE_MS)
 
     expect(columnOpen()).toBe(false)
+  })
+})
+
+describe('the room header, while a screen is pushed', () => {
+  // The bug: the header is fixed at `--z-rail` and a pushed screen sits one
+  // step below it, so the header's Back stayed on top of the screen's own and
+  // swallowed the tap. Its chip and gear belong to the room, not to Settings.
+  it('is on for a room with nothing pushed', () => {
+    mount()
+
+    expect(pushed()).toBe(null)
+    expect(roomHeaderVisible()).toBe(true)
+  })
+
+  it('leaves while a screen is pushed, and comes back on the pop', () => {
+    mount()
+
+    pushScreen('settings')
+    expect(roomHeaderVisible()).toBe(false)
+
+    popScreen()
+    expect(roomHeaderVisible()).toBe(true)
+  })
+
+  it('leaves for every pushed screen, not only Settings', () => {
+    mount()
+
+    pushScreen('developer')
+    expect(roomHeaderVisible()).toBe(false)
+  })
+
+  it('stays on through the overlays that are not a screen', () => {
+    // A sheet and the tab column open OVER the bottom of the room and take
+    // nothing from the header. Hiding it for those would make the room's name
+    // and its gear flicker on every tap of More.
+    mount()
+
+    openColumn()
+    expect(roomHeaderVisible()).toBe(true)
+    closeColumn()
+
+    expect(roomHeaderVisible()).toBe(true)
+  })
+
+  it('does not depend on whether a run is going', () => {
+    const room = mount()
+
+    room.play()
+    expect(roomHeaderVisible()).toBe(true)
+
+    pushScreen('settings')
+    expect(roomHeaderVisible()).toBe(false)
   })
 })
 
