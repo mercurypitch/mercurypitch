@@ -1338,9 +1338,32 @@ async function walkRun(page, ctx, steps) {
   await expectVisible(picker, 'the song picker')
   const railBox = await page.locator('[data-rail-item="rooms"]').boundingBox()
   if (railBox === null) throw new Error('no rail to tap behind the picker')
+  await shoot(page, ctx, 'room-song-picker')
+
+  // What is actually on top of the rail's own middle. This is the whole
+  // question, asked without a click: while the picker was trapped inside the
+  // room's stacking context the answer here was the rail button itself.
+  const onTop = await page.evaluate(
+    ([x, y]) => {
+      const el = document.elementFromPoint(x, y)
+      return {
+        rail:
+          el?.closest('[data-rail-item]')?.getAttribute('data-rail-item') ??
+          null,
+        picker: el?.closest('.fn-modal-overlay') !== null,
+      }
+    },
+    [railBox.x + railBox.width / 2, railBox.y + railBox.height / 2],
+  )
+  if (onTop.rail !== null || !onTop.picker) {
+    throw new Error(
+      `the rail is on top of the open picker (${JSON.stringify(onTop)})`,
+    )
+  }
+
+  // And a real tap there reaches the picker's backdrop, not the dock: the
+  // picker closes, and the tab does not change.
   const hashBefore = await page.evaluate(() => window.location.hash)
-  // The mouse, not the locator: a locator click refuses to hit a covered
-  // element, and whether it IS covered is the whole question.
   await page.mouse.click(
     railBox.x + railBox.width / 2,
     railBox.y + railBox.height / 2,
@@ -1352,10 +1375,13 @@ async function walkRun(page, ctx, steps) {
       `a tap behind the picker changed the tab (${hashBefore} to ${hashAfter})`,
     )
   }
-  await expectVisible(picker, 'the song picker after a tap on the rail')
-  await shoot(page, ctx, 'room-song-picker')
+  await expectGone(picker, 'the song picker after its backdrop was tapped')
   steps.push('room: the song picker is above the dock and swallows its taps')
 
+  // Back closes it too, rather than leaving the room under it.
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await page.locator('[data-testid="sing-options-song"]').click()
+  await expectVisible(picker, 'the song picker, opened again')
   const pickerBack = await pressBack(page)
   if (pickerBack !== 'room-overlay') {
     throw new Error(`Back over the song picker resolved as "${pickerBack}"`)
