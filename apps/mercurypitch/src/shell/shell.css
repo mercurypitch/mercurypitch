@@ -514,26 +514,59 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 25%, transparent);
 }
 
+/* The name may shrink; the state word may not (R2). One span holding
+   "<room> · paused" ellipsized the whole sentence, so a long room name took
+   the state with it and left the pill saying nothing about the run. */
 .mp-pill__label {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mp-pill__name {
+  min-width: 0;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.mp-pill__state {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* 44pt, and it keeps it: the circle inside is the kit's 32, the target around
+   it is what a finger needs. `flex: 0 0 auto` is what stops a long name from
+   squeezing it — the failure the owner reported. The negative block margin
+   keeps the pill itself 44 tall rather than 56. */
 .mp-pill__btn {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  margin-block: -6px;
+  margin-right: -6px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--accent);
   color: var(--bg-primary);
 }
 
+.mp-pill__btn::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 .mp-pill__btn svg {
+  grid-area: 1 / 1;
   width: 16px;
   height: 16px;
+  place-self: center;
 }
 
 /* ---------- the room header ---------- */

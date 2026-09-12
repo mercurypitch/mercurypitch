@@ -105,6 +105,25 @@ describe('Dock', () => {
     expect(onReturn).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps the room name and the state word as separate elements', () => {
+    // R2: they were one string in one span, so the ellipsis that keeps a long
+    // room name inside the pill ate "paused" with it. Only the name may
+    // shrink; the state word and the return control are fixed.
+    const { container } = mount({ parked: true })
+
+    const name = container.querySelector(
+      '[data-testid="shell-session-pill-name"]',
+    )
+    const state = container.querySelector(
+      '[data-testid="shell-session-pill-state"]',
+    )
+    expect(name?.textContent).toBe(ROOM)
+    expect(state?.textContent).toBe(' · paused')
+    // …and the name is the room's alone. A song name here is what would push
+    // the state and the control off the end of the pill again.
+    expect(name?.textContent).not.toContain('·')
+  })
+
   it('names itself with the words it shows', () => {
     // The invariant rather than the string: whatever the pill comes to say,
     // its accessible name has to contain the visible text verbatim, or voice
