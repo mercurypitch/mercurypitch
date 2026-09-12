@@ -180,7 +180,7 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
             type="button"
             class={styles.chip}
             onClick={() => props.onOpenSong()}
-            aria-label={`Melody: ${name()}. Tap to choose another`}
+            aria-label={`Melody: ${name()}. Tap for what to do with it`}
             data-testid="sing-song-chip"
           >
             <span class={styles.chipText}>{name()}</span>

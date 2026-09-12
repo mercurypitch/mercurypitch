@@ -113,6 +113,14 @@ export type SingRoomEvent =
   | { type: 'toggle-mute' }
   /** Play on a loaded melody. */
   | { type: 'melody-play' }
+  /**
+   * "Remove" on the song sheet: the melody is put down (device round 2, R1).
+   *
+   * The only thing that clears `melodyLoaded`. A stop does not — the melody
+   * is still there after the run that used it, which is the whole of R1 —
+   * so without this there was no way back to the free tracker at all.
+   */
+  | { type: 'melody-unload' }
   | { type: 'pause' }
   | { type: 'resume' }
   /** Stop. `hasTake` is the summary's verdict: under three seconds, none. */
@@ -234,6 +242,13 @@ export function singRoomReducer(
         state: 'live',
       }
 
+    case 'melody-unload':
+      // The state is left alone: a run that was going goes on, as the free
+      // tracker it becomes the moment the transport it was reading stops.
+      return ctx.melody || ctx.melodyLoaded
+        ? { ...ctx, melody: false, melodyLoaded: false }
+        : ctx
+
     case 'pause':
       return ctx.state === 'live' ? { ...ctx, state: 'paused' } : ctx
 
@@ -337,6 +352,45 @@ export function startsNewTake(
 ): boolean {
   if (next !== 'live') return false
   return previous !== undefined && previous !== 'live' && previous !== 'paused'
+}
+
+/**
+ * The app's transport, as one word.
+ *
+ * `isPlaying` and `isPaused` are two signals and every transition writes
+ * both, so the pair has a third reading — neither — which is what a transport
+ * that has stopped looks like AND what a pause looks like for the instant
+ * between its two writes. The caller settles that; this only names it.
+ */
+export type TransportPhase = 'running' | 'held' | 'stopped'
+
+export function transportPhase(
+  isPlaying: boolean,
+  isPaused: boolean,
+): TransportPhase {
+  if (isPlaying) return 'running'
+  if (isPaused) return 'held'
+  return 'stopped'
+}
+
+/**
+ * Did the melody reach its own end, with nobody pressing anything?
+ *
+ * Device round 2, R1: "when the melody plays to its end the take just
+ * vanishes, no Keep/Discard card". A melody that runs out stops the app's
+ * transport and tells the room nothing, so the room sat in `live` with a
+ * dead transport until something else moved.
+ *
+ * It is NOT a pause (the transport is held, and the room moved itself to
+ * `paused` first), and it is NOT a park (the shell pauses on its way out).
+ * Both of those leave the room somewhere other than `live`, which is why the
+ * state is part of the question.
+ */
+export function melodyRanOut(
+  ctx: SingRoomContext,
+  phase: TransportPhase,
+): boolean {
+  return phase === 'stopped' && ctx.melody && ctx.state === 'live'
 }
 
 /** Is the room's run one the shell should draw a transport for? */

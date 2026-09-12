@@ -136,6 +136,14 @@
   min-height: 0;
 }
 
+/* Resting with a melody loaded (R1): the same canvas, drawing the same target
+   line, dimmed — "this is where you will be singing", not "this is where you
+   are". Nothing on it moves, so the dim is a static opacity rather than a
+   second set of colours to keep in step with the live ones. */
+.canvasResting {
+  opacity: 0.55;
+}
+
 /* The shell's corner chip floats over the room's bottom-right while a run is
    going, and the newest pixels of a trace are exactly there. */
 :global(:root[data-shell-chip='on']) .canvasWrap {

@@ -28,7 +28,7 @@
 // read anyway is work nobody sees.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
@@ -50,13 +50,15 @@ import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores
 import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
 import type { SingRoomState } from './room-machine'
-import { hasUnsavedTake as takeUndecided, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
+import { hasUnsavedTake as takeUndecided, melodyRanOut, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, transportPhase, } from './room-machine'
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
 import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSingTakeResult, singRoomContext, singTakeClock, singTakePrevious, singTakeSummary, takesThisSession, } from './sing-room-store'
+import { singStageView } from './stage-view'
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
 import { SingTakeSheet } from './SingTakeSheet'
+import { SingSongSheet } from './SingSongSheet'
 import { SingTakesSheet } from './SingTakesSheet'
 import { SingPrimingArt, SingTrace } from './SingTrace'
 import { recordTakeFrame, startTakeRecording, takeElapsedSeconds, takeRecording, } from './take-recorder'
@@ -139,6 +141,7 @@ const FREE_WINDOW_SECONDS = 17
 
 /** One shared empty array: a new one per frame is a new prop every frame. */
 const EMPTY_MELODY: MelodyItem[] = []
+const EMPTY_HISTORY: PitchSample[] = []
 
 export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const background = useBackgroundSurfaceController('sing', () => false)
@@ -146,6 +149,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   /** "Your takes", from the pitch pill (R4). */
   const [takesOpen, setTakesOpen] = createSignal(false)
+  /** Play again · Change song · Remove, from the song chip (R1). */
+  const [songOpen, setSongOpen] = createSignal(false)
 
   // The take on the card is the STORE's, not this component's. Both halves of
   // it — the state that says a card is open and the summary the card draws —
@@ -154,6 +159,9 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const ctx = singRoomContext
   const state = (): SingRoomState => ctx().state
+
+  /** What the middle of the room is showing. One answer, in `stage-view.ts`. */
+  const view = createMemo(() => singStageView(ctx()))
 
   /** A melody run: the app's transport is the thing that is running. */
   const melodyRun = (): boolean => props.isPlaying() || props.isPaused()
@@ -338,6 +346,52 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }
 
+  /**
+   * The melody reached its own end (R1).
+   *
+   * The same ending as Stop, minus the transport: it has already stopped
+   * itself, which is what this is about. The take ends, and the card opens if
+   * there was one — the failure it replaces is a run that just vanished,
+   * leaving the room in `live` over a transport that had finished.
+   *
+   * `transportRan` is what keeps the FIRST frames of a melody run from
+   * reading as the last: `melody-play` puts the room in `live` before the
+   * app's transport reports anything, so the pair says "stopped" until it
+   * starts. Only a transport that was seen running can run out.
+   */
+  let transportRan = false
+  let endWatch = 0
+
+  const handleMelodyRanOut = (): void => {
+    transportRan = false
+    dispatchSingRoom({ type: 'stop', hasTake: endTake() })
+  }
+
+  createEffect(() => {
+    const phase = transportPhase(props.isPlaying(), props.isPaused())
+    const context = ctx()
+    if (phase === 'running') {
+      transportRan = true
+      return
+    }
+    if (phase === 'held' || !transportRan) return
+    if (!melodyRanOut(context, phase)) return
+    // A pause writes `isPlaying(false)` before it writes `isPaused(true)`, so
+    // for one moment the pair reads exactly like a transport that ended. The
+    // decision waits a microtask and asks again — the same shape the shell's
+    // own run store uses for the same two signals.
+    const token = ++endWatch
+    queueMicrotask(() => {
+      if (token !== endWatch) return
+      const settled = transportPhase(
+        untrack(() => props.isPlaying()),
+        untrack(() => props.isPaused()),
+      )
+      if (!melodyRanOut(untrack(ctx), settled)) return
+      handleMelodyRanOut()
+    })
+  })
+
   const handlePark = (): void => {
     if (props.isPlaying()) props.onPause()
     // A sheet or a picker left open outlives the park otherwise: the room
@@ -368,6 +422,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     }
     if (takesOpen()) {
       setTakesOpen(false)
+      return true
+    }
+    if (songOpen()) {
+      setSongOpen(false)
       return true
     }
     if (optionsOpen()) {
@@ -410,6 +468,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       state: ctx().state,
       micIntent: micIntent(ctx()),
       melodyRun: melodyRun(),
+      melodyLoaded: ctx().melodyLoaded,
+      view: singStageView(ctx()),
       trail: takeRecording.trail.length,
       frames: takeRecording.summary.frameCount,
       elapsedSeconds: takeElapsedSeconds(),
@@ -492,7 +552,22 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const openSongPicker = (): void => {
     setOptionsOpen(false)
+    setSongOpen(false)
     props.picker.setIsModalOpen(true)
+  }
+
+  /**
+   * "Remove" on the song sheet: put the melody down (R1).
+   *
+   * A melody run that is still going ends first, exactly as Stop would end
+   * it — the alternative is a trace measured against a target the room has
+   * just taken off the screen. The unload follows, so the free tracker is
+   * what the room rests into.
+   */
+  const removeMelody = (): void => {
+    setSongOpen(false)
+    if (melodyRun() || ctx().melody) handleStop()
+    dispatchSingRoom({ type: 'melody-unload' })
   }
 
   /**
@@ -539,6 +614,24 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     frozen: () => !melodyRun() && !micIntent(ctx()),
   }
 
+  /**
+   * The same canvas, resting: the loaded melody's target line and nothing
+   * else (R1). No trail — a run's leftover line under a target it was never
+   * measured against is a picture of something that did not happen — and
+   * frozen, because nothing here moves until the capsule is pressed.
+   */
+  const previewOptions: SingRoomCanvasOptions = {
+    pitchHistory: () => EMPTY_HISTORY,
+    melody: () => props.melody(),
+    scale: () => melodyStore.currentScale(),
+    currentBeat: () => 0,
+    totalBeats: () => props.totalBeats(),
+    isPlaying: () => false,
+    isPaused: () => false,
+    perNoteBurn: () => false,
+    frozen: () => true,
+  }
+
   const onCapsule = (): void => {
     haptics.tapLight()
     // Still inside the tap: iOS un-suspends a context, and promotes the page
@@ -582,7 +675,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             haptics.tapLight()
             dispatchSingRoom({ type: 'toggle-mute' })
           }}
-          onOpenSong={() => props.picker.setIsModalOpen(true)}
+          onOpenSong={() => {
+            haptics.tapLight()
+            setSongOpen(true)
+          }}
           onOpenTakes={() => {
             dismissCoachMark()
             haptics.tapLight()
@@ -598,27 +694,34 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           {noteChipSignal(props.currentPitch()).announce}
         </span>
 
-        <div class={styles.canvasWrap}>
-          <Show
-            when={
-              state() === 'live' || state() === 'paused' || state() === 'ended'
-            }
-            fallback={
-              <Show
-                when={state() === 'denied'}
-                fallback={<SingTrace variant="silent" />}
-              >
-                <div class={styles.traceWrap}>
-                  <span class={styles.demoChip}>
-                    This is what you would see
-                  </span>
-                  <SingTrace variant="demo" labelled />
-                </div>
-              </Show>
-            }
-          >
-            {props.renderCanvas(canvasOptions)}
-          </Show>
+        {/* Four pictures, one answer, and the answer is `stage-view.ts` —
+            the nest of fallbacks this replaces had the melody preview (R1)
+            nowhere to go that could be read in one pass. */}
+        <div
+          classList={{
+            [styles.canvasWrap]: true,
+            [styles.canvasResting]: view() === 'melody-preview',
+          }}
+          data-view={view()}
+          data-testid="sing-stage"
+        >
+          <Switch fallback={<SingTrace variant="silent" />}>
+            <Match when={view() === 'run'}>
+              {props.renderCanvas(canvasOptions)}
+            </Match>
+            {/* The same canvas, dimmed and still: the chip says a melody is
+                loaded, so the staff shows the line it will be sung against
+                rather than an empty dashed one. */}
+            <Match when={view() === 'melody-preview'}>
+              {props.renderCanvas(previewOptions)}
+            </Match>
+            <Match when={view() === 'demo'}>
+              <div class={styles.traceWrap}>
+                <span class={styles.demoChip}>This is what you would see</span>
+                <SingTrace variant="demo" labelled />
+              </div>
+            </Match>
+          </Switch>
         </div>
 
         {/* R0/R1 — the silent trace asks for nothing, and one capsule is the
@@ -730,6 +833,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           clearSingTakeResult()
           dispatchSingRoom({ type: 'take-decided' })
         }}
+      />
+
+      <SingSongSheet
+        isOpen={songOpen()}
+        close={() => setSongOpen(false)}
+        songName={() => songName() ?? 'The melody'}
+        onPlayAgain={() => {
+          setSongOpen(false)
+          startMelodyRun()
+        }}
+        onChangeSong={openSongPicker}
+        onRemove={removeMelody}
       />
 
       <SingTakesSheet
