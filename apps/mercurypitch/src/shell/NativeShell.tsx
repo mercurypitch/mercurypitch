@@ -20,7 +20,7 @@
 // (src/stores/native-shell-store.ts).
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -29,7 +29,6 @@ import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/s
 import { practiceScope } from '@/stores/settings-store'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
-import { DeveloperScreen } from './DeveloperScreen'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
 import { KeepAlert } from './KeepAlert'
@@ -45,6 +44,26 @@ import { Transport } from './Transport'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
 const MINIMISE_AT = 24
+
+/**
+ * The developer screen exists on a test build and on no other.
+ *
+ * Lazy AND behind the constant, which is the same pattern the portable console
+ * uses in `main.tsx`. The ternary is what does the work: the constant folds to
+ * a literal, so a store build keeps only the `() => null` arm and the dynamic
+ * import goes with the branch — no chunk is emitted at all. Behind a `Show`
+ * alone the factory still existed, and Rollup still wrote the chunk; behind a
+ * static import the screen would have shipped whatever the flag said.
+ */
+const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+
+const DeveloperScreen: Component = DEVELOPER_AVAILABLE
+  ? lazy(async () =>
+      import('./DeveloperScreen').then((module) => ({
+        default: module.DeveloperScreen,
+      })),
+    )
+  : () => null
 
 export const NativeShell: Component = () => {
   const [minimised, setMinimised] = createSignal(false)
@@ -258,7 +277,7 @@ export const NativeShell: Component = () => {
             </PushedScreen>
           </Show>
 
-          <Show when={pushed() === 'developer'}>
+          <Show when={DEVELOPER_AVAILABLE && pushed() === 'developer'}>
             <PushedScreen title="Developer" onBack={popScreen}>
               <DeveloperScreen />
             </PushedScreen>

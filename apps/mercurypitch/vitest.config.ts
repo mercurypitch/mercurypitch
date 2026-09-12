@@ -35,6 +35,10 @@ export default defineConfig({
     dedupe: ['solid-js'],
   },
   test: {
+    // The shell is developed against a TEST build, which is the one with the
+    // developer screen in it. Without this the suites would run as a store
+    // build and every case that pushes that screen would assert a no-op.
+    env: { VITE_PORTABLE_CONSOLE: 'true' },
     projects: [
       {
         extends: true,

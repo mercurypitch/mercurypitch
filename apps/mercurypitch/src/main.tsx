@@ -85,7 +85,6 @@ import '@/styles/short-viewport.css'
 import '@/styles/performance-mode.css'
 import { App } from '@/App'
 import { registerSocialLoginBridge } from '@/features/account/native-sign-in'
-import { NativeSignInPanel } from '@/features/account/NativeSignInPanel'
 import { installForegroundSessionRefresh } from '@/features/account/session-refresh'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { armDeveloperConsole } from '@/lib/developer-console'
@@ -135,11 +134,26 @@ registerSocialLoginBridge(() => Promise.resolve(createSocialLoginBridge()))
 // on a TestFlight build before there is one — including the hostname a
 // Turnstile failure reports, which is the value that unblocks email sign-up
 // in the shell (checklist M-E1).
-registerDeveloperSection({
-  id: 'native-sign-in',
-  title: 'Native sign-in',
-  render: () => <NativeSignInPanel />,
-})
+//
+// Behind the same constant as the console it is reached from, because this is
+// a developer screen and not a product surface: a store build must not carry
+// the provider buttons or the masked token readout at all, and the tile that
+// opens it is gone there too.
+//
+// The IMPORT is inside the branch, not at the top of the file. A static import
+// keeps the module in the graph whatever the branch does, and the panel's
+// strings were still in `dist` with the flag off — which is the whole of what
+// this gate is for.
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+  void import('@/features/account/NativeSignInPanel').then((module) => {
+    const Panel = module.NativeSignInPanel
+    registerDeveloperSection({
+      id: 'native-sign-in',
+      title: 'Native sign-in',
+      render: () => <Panel />,
+    })
+  })
+}
 armDeveloperConsole()
 
 const root = document.getElementById('root')

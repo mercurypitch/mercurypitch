@@ -276,7 +276,19 @@ export function closeMore(): void {
   setMoreOpen(false)
 }
 
+/**
+ * A build that has no developer screen must not be able to push one.
+ *
+ * The tile that opens it is already behind this constant and so is the screen
+ * itself, so nothing in a store build can reach this — but a `pushed` state
+ * whose screen renders nothing is a Back press that pops something invisible,
+ * which is the same class of bug as the tile that did nothing. Cheaper to
+ * refuse here than to trust every future caller.
+ */
+const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+
 export function pushScreen(screen: PushedScreen): void {
+  if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
   closeColumn()
   closeMore()
   setPushed(screen)
