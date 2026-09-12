@@ -68,6 +68,10 @@ jobs:
       profile-build-setting: BESIDE_CUE_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
       changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine|ios-audio-session)/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      # The hash of the store reviewer's unlock code. Not a secret (it is a
+      # digest), so it lives in a repository variable; the code itself is in
+      # the vault and is only ever typed into App Store Connect and Play.
+      review-unlock-sha256: ${{ vars.BESIDE_CUE_REVIEW_UNLOCK_SHA256 }}
       distribution-env-name: VITE_BESIDE_CUE_DISTRIBUTION
       platform-env-name: VITE_BESIDE_CUE_NATIVE_PLATFORM
       testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
