@@ -55,12 +55,23 @@ interface RoomSignals {
 let signals: RoomSignals | undefined
 
 function room(): RoomSignals {
-  signals ??= {
-    context: createSignal<SingRoomContext>(fresh()),
-    takes: createSignal(0),
-    summary: createSignal<TakeSummary | null>(null),
-    previous: createSignal<SingTake | null>(null),
-    clock: createSignal<TakeClock>({ startedAt: 0, endedAt: 0 }),
+  if (signals !== undefined) return signals
+  // Destructured, every one of them: `solid/reactivity` reads an array
+  // destructuring as "this is a signal" and warns on anything else.
+  const [context, setContext] = createSignal<SingRoomContext>(fresh())
+  const [takes, setTakes] = createSignal(0)
+  const [summary, setSummary] = createSignal<TakeSummary | null>(null)
+  const [previous, setPrevious] = createSignal<SingTake | null>(null)
+  const [clock, setClock] = createSignal<TakeClock>({
+    startedAt: 0,
+    endedAt: 0,
+  })
+  signals = {
+    context: [context, setContext],
+    takes: [takes, setTakes],
+    summary: [summary, setSummary],
+    previous: [previous, setPrevious],
+    clock: [clock, setClock],
   }
   return signals
 }
