@@ -1,12 +1,26 @@
 // ============================================================
-// The Sing room's HUD — three chips, and nothing that scores you
+// The Sing room's HUD — two rows, and nothing that scores you
 // ============================================================
 //
-// Note (with the cents), key, and what the microphone is doing. No score
-// percentage anywhere: the mock shows none during a run, and the numbers
-// come at the end (owner answer 6). The song chip joins the row only once a
-// melody is loaded, which is the one thing that turns a free run into a
-// melody run.
+// Row 1, under the header: the key, what the microphone is doing, the song
+// once one is loaded, and room for more. Row 2: the pitch pill, centred — the
+// note and how far from it you are, in cents. No score percentage anywhere:
+// the mock shows none during a run, and the numbers come at the end (owner
+// answer 6).
+//
+// WHY TWO ROWS (device round 2, R3). One row held all four, and at 390pt with
+// a song chip in it they were squeezed edge to edge with nothing between
+// them. The pill is also the biggest thing here and the one a singer actually
+// watches, so it gets a row of its own, centred, where a glance finds it.
+//
+// AND ROW 1 WRAPS RATHER THAN SQUEEZES. The key and the microphone never give
+// width up — a clipped "C chromati…" or "Listeni…" is the room lying about
+// the two things it must be honest about — so the song name is the only thing
+// that ellipsizes, down to a floor, and below that floor it takes a second
+// line to itself. The stylesheet says how; `sing-room.module.css` `.hud`.
+//
+// THE PILL IS A BUTTON, and its tap opens "Your takes" (R4). The coach mark
+// promised a tap that did nothing; this is what it now promises instead.
 //
 // Every one of these is a thin reading of `hud-signals.ts`. Nothing here
 // decides anything.
@@ -35,10 +49,23 @@ const KeyGlyph: Component = () => (
 
 interface NoteChipProps {
   signal: NoteChipSignal
+  onOpenTakes: () => void
 }
 
+/**
+ * The pitch pill.
+ *
+ * ITS CONTENT IS CENTRED BY A BOX, not by the pill's own alignment. The pill
+ * used to be one flex row at `align-items: baseline`, which lines the pieces
+ * up with each other and then leaves the group wherever the tallest of them
+ * puts it — at `line-height: 1` that is hard against the top, which is what
+ * the owner saw ("the — and the note text sit at the top of the pill"). The
+ * pieces still share a baseline; the box that holds them is what the pill
+ * centres.
+ */
 export const NoteChip: Component<NoteChipProps> = (props) => (
-  <span
+  <button
+    type="button"
     classList={{
       [styles.noteChip]: true,
       [styles.noteChipIn]: props.signal.variant === 'in',
@@ -46,18 +73,28 @@ export const NoteChip: Component<NoteChipProps> = (props) => (
       [styles.noteChipSharp]: props.signal.variant === 'sharp',
       [styles.noteChipQuiet]: props.signal.variant === 'quiet',
     }}
+    /* THE VISIBLE WORDS FIRST (Label in Name). R4 made this pill a button,
+       and a button's accessible name has to start with what is written on
+       it or a voice-control user cannot speak the control they can see: the
+       pill reads "A", "3", "+2 cents" and the name said "A3, in tune" — no
+       "+2 cents" anywhere in it (review F7). `SessionPill` in the shell
+       carries the same rule for the same reason. */
+    aria-label={`${props.signal.note}${props.signal.octave}, ${props.signal.cents}. ${props.signal.announce}. Tap for your takes`}
+    onClick={() => props.onOpenTakes()}
     data-testid="sing-note-chip"
     data-variant={props.signal.variant}
   >
-    <span class={styles.noteChipNote}>
-      {props.signal.note}
-      <Show when={props.signal.octave !== ''}>
-        <sub>{props.signal.octave}</sub>
-      </Show>
+    <span class={styles.noteChipBox} data-testid="sing-note-chip-box">
+      <span class={styles.noteChipNote}>
+        {props.signal.note}
+        <Show when={props.signal.octave !== ''}>
+          <sub>{props.signal.octave}</sub>
+        </Show>
+      </span>
+      <span class={styles.noteChipMark} />
+      <span class={styles.noteChipCents}>{props.signal.cents}</span>
     </span>
-    <span class={styles.noteChipMark} />
-    <span class={styles.noteChipCents}>{props.signal.cents}</span>
-  </span>
+  </button>
 )
 
 interface SingRoomHudProps {
@@ -70,6 +107,7 @@ interface SingRoomHudProps {
   onOpenKey: () => void
   onToggleMic: () => void
   onOpenSong: () => void
+  onOpenTakes: () => void
 }
 
 /** What the state chip promises a tap will do. Null is not a promise. */
@@ -81,32 +119,57 @@ function micChipHint(action: MicChipAction): string | undefined {
 }
 
 export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
-  <div class={styles.hud} data-testid="sing-hud">
-    <NoteChip signal={props.note()} />
+  <>
+    <div class={styles.hud} data-testid="sing-hud">
+      <button
+        type="button"
+        class={styles.chip}
+        onClick={() => props.onOpenKey()}
+        aria-label={`Key: ${props.keyLabel()}. Tap to change it`}
+        data-testid="sing-key-chip"
+      >
+        <KeyGlyph />
+        <span class={styles.chipText}>{props.keyLabel()}</span>
+      </button>
 
-    <button
-      type="button"
-      class={styles.chip}
-      onClick={() => props.onOpenKey()}
-      aria-label={`Key: ${props.keyLabel()}. Tap to change it`}
-      data-testid="sing-key-chip"
-    >
-      <KeyGlyph />
-      {props.keyLabel()}
-    </button>
+      {/* The only visible microphone control in the whole room (owner answer
+          8): it says what the mic is doing and a tap mutes or resumes it. A
+          mute is not a stop — the take keeps running underneath.
 
-    {/* The only visible microphone control in the whole room (owner answer 8):
-        it says what the mic is doing and a tap mutes or resumes it. A mute is
-        not a stop — the take keeps running underneath.
+          Where a tap would do NOTHING it is not a button at all. The chip used
+          to read "Microphone off. Tap to listen again" in `ended` and
+          `denied`, where there is no microphone to listen with and the tap was
+          ignored — a promise the room could not keep, announced to a screen
+          reader.
 
-        Where a tap would do NOTHING it is not a button at all. The chip used
-        to read "Microphone off. Tap to listen again" in `ended` and `denied`,
-        where there is no microphone to listen with and the tap was ignored —
-        a promise the room could not keep, announced to a screen reader. */}
-    <Show
-      when={props.micAction() !== null}
-      fallback={
-        <span class={styles.chip} data-testid="sing-state-chip">
+          It never shrinks: one word, and the word is the state of the
+          microphone. Row 1 gives its width up from the key and the song. */}
+      <Show
+        when={props.micAction() !== null}
+        fallback={
+          <span class={styles.chip} data-testid="sing-state-chip">
+            <Show
+              when={props.micState() !== 'paused'}
+              fallback={<PauseIcon size={16} />}
+            >
+              <MicIcon size={16} />
+            </Show>
+            {stateChipLabel(props.micState())}
+          </span>
+        }
+      >
+        <button
+          type="button"
+          class={styles.chip}
+          onClick={() => props.onToggleMic()}
+          aria-label={micChipHint(props.micAction())}
+          aria-pressed={
+            props.micAction() === 'start'
+              ? undefined
+              : props.micState() === 'listening'
+          }
+          data-testid="sing-state-chip"
+        >
           <Show
             when={props.micState() !== 'paused'}
             fallback={<PauseIcon size={16} />}
@@ -114,46 +177,29 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
             <MicIcon size={16} />
           </Show>
           {stateChipLabel(props.micState())}
-        </span>
-      }
-    >
-      <button
-        type="button"
-        class={styles.chip}
-        onClick={() => props.onToggleMic()}
-        aria-label={micChipHint(props.micAction())}
-        aria-pressed={
-          props.micAction() === 'start'
-            ? undefined
-            : props.micState() === 'listening'
-        }
-        data-testid="sing-state-chip"
-      >
-        <Show
-          when={props.micState() !== 'paused'}
-          fallback={<PauseIcon size={16} />}
-        >
-          <MicIcon size={16} />
-        </Show>
-        {stateChipLabel(props.micState())}
-      </button>
-    </Show>
-
-    {/* Only once a melody has been chosen IN THE ROOM. The app always has
-        one loaded, and a chip naming it on a fresh boot is a melody run
-        announced to somebody the brief opens as a free tracker. */}
-    <Show when={props.songName()}>
-      {(name) => (
-        <button
-          type="button"
-          class={styles.chip}
-          onClick={() => props.onOpenSong()}
-          aria-label={`Melody: ${name()}. Tap to choose another`}
-          data-testid="sing-song-chip"
-        >
-          {name()}
         </button>
-      )}
-    </Show>
-  </div>
+      </Show>
+
+      {/* Only once a melody has been chosen IN THE ROOM. The app always has
+          one loaded, and a chip naming it on a fresh boot is a melody run
+          announced to somebody the brief opens as a free tracker. */}
+      <Show when={props.songName()}>
+        {(name) => (
+          <button
+            type="button"
+            classList={{ [styles.chip]: true, [styles.chipSong]: true }}
+            onClick={() => props.onOpenSong()}
+            aria-label={`Melody: ${name()}. Tap for what to do with it`}
+            data-testid="sing-song-chip"
+          >
+            <span class={styles.chipText}>{name()}</span>
+          </button>
+        )}
+      </Show>
+    </div>
+
+    <div class={styles.pillRow} data-testid="sing-hud-pill-row">
+      <NoteChip signal={props.note()} onOpenTakes={props.onOpenTakes} />
+    </div>
+  </>
 )

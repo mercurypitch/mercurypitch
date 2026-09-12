@@ -28,7 +28,7 @@
 // read anyway is work nobody sees.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
@@ -46,18 +46,24 @@ import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
-import { keepSingTake, lastSingTake } from '@/stores/sing-takes-store'
+import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
 import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
 import type { SingRoomState } from './room-machine'
 import { hasUnsavedTake as takeUndecided, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
+import { createRunOutWatch } from './run-out-watch'
+import { loadSingGlass, persistSingGlass, SING_GLASS_VAR } from './sing-glass'
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
 import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSingTakeResult, singRoomContext, singTakeClock, singTakePrevious, singTakeSummary, takesThisSession, } from './sing-room-store'
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
+import { SingRoomPicker } from './SingRoomPicker'
+import { SingSongSheet } from './SingSongSheet'
 import { SingTakeSheet } from './SingTakeSheet'
+import { SingTakesSheet } from './SingTakesSheet'
 import { SingPrimingArt, SingTrace } from './SingTrace'
+import { singStageView } from './stage-view'
 import { recordTakeFrame, startTakeRecording, takeElapsedSeconds, takeRecording, } from './take-recorder'
 
 /** What the room hands the host so the host can build its `PitchCanvas`. */
@@ -138,11 +144,23 @@ const FREE_WINDOW_SECONDS = 17
 
 /** One shared empty array: a new one per frame is a new prop every frame. */
 const EMPTY_MELODY: MelodyItem[] = []
+const EMPTY_HISTORY: PitchSample[] = []
 
 export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
-  const background = useBackgroundSurfaceController('sing', () => false)
-
   const [optionsOpen, setOptionsOpen] = createSignal(false)
+  /** "Your takes", from the pitch pill (R4). */
+  const [takesOpen, setTakesOpen] = createSignal(false)
+  /** Play again · Change song · Remove, from the song chip (R1). */
+  const [songOpen, setSongOpen] = createSignal(false)
+  /** The room sheet — which photograph, and the veil over it (R5). */
+  const [pickerOpen, setPickerOpen] = createSignal(false)
+  const [glass, setGlass] = createSignal(loadSingGlass())
+
+  // The premium catalogue is retained only while the picker is open: the room
+  // itself is three free public covers and has no business asking a server
+  // about supporter art to draw one of them. That is the silent-first
+  // contract `useBackgroundSurfaceController` takes this flag for.
+  const background = useBackgroundSurfaceController('sing', pickerOpen)
 
   // The take on the card is the STORE's, not this component's. Both halves of
   // it — the state that says a card is open and the summary the card draws —
@@ -151,6 +169,9 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const ctx = singRoomContext
   const state = (): SingRoomState => ctx().state
+
+  /** What the middle of the room is showing. One answer, in `stage-view.ts`. */
+  const view = createMemo(() => singStageView(ctx()))
 
   /** A melody run: the app's transport is the thing that is running. */
   const melodyRun = (): boolean => props.isPlaying() || props.isPaused()
@@ -332,14 +353,70 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const handleStop = (): void => {
     if (melodyRun()) props.onStop()
+    // The run is over by a decision, so nothing about it can "run out" any
+    // more — and the next run has to be seen running again before it can.
+    // Without this the latch survived a Stop, and the first frames of the
+    // run after it read (live, stopped) with the latch already set.
+    runOut.cancel()
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }
+
+  /**
+   * The melody reached its own end (R1).
+   *
+   * The same ending as Stop, minus the transport: it has already stopped
+   * itself, which is what this is about. The take ends, and the card opens if
+   * there was one — the failure it replaces is a run that just vanished,
+   * leaving the room in `live` over a transport that had finished.
+   *
+   * EVERY SHEET GOES FIRST, for the reason a park shuts them. Until this path
+   * existed a card could only open from the shell's Stop, and a sheet covers
+   * the band the Stop is on; now the pill (R4), the gear and the song sheet
+   * are all reachable during a run, and the card opened ON TOP of whichever
+   * was open — two `aria-modal` dialogs, two focus traps, and the sheet still
+   * there after Keep or Discard (review F4).
+   */
+  const handleMelodyRanOut = (): void => {
+    closeAllRoomSheets()
+    dispatchSingRoom({ type: 'stop', hasTake: endTake() })
+  }
+
+  /**
+   * Is the transport's silence the melody finishing, or something else?
+   *
+   * The latch and the microtask settle that answer that are in
+   * `run-out-watch`, where a run is an array of transport frames instead of a
+   * component nothing renders in a test. Both were deleted by the reviewer
+   * against a green suite (review F8); both are now a failing test.
+   */
+  const runOut = createRunOutWatch({
+    ctx,
+    transport: () => ({
+      isPlaying: props.isPlaying(),
+      isPaused: props.isPaused(),
+    }),
+    // A microtask already runs outside the effect that queued it, so these
+    // reads are untracked anyway; saying so keeps it that way if the settle
+    // ever grows a reader that matters.
+    settle: (decide) => queueMicrotask(() => untrack(decide)),
+    onRanOut: handleMelodyRanOut,
+  })
+
+  createEffect(() => {
+    // The three signals the decision reads, read HERE: the watch itself
+    // short-circuits, and an effect subscribed to only the signals a given
+    // frame happened to reach is an effect that misses the next one.
+    void props.isPlaying()
+    void props.isPaused()
+    void ctx()
+    runOut.observe()
+  })
 
   const handlePark = (): void => {
     if (props.isPlaying()) props.onPause()
     // A sheet or a picker left open outlives the park otherwise: the room
     // unmounts with it open and comes back with a modal over a paused run.
-    closeRoomSheets()
+    closeAllRoomSheets()
     if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
     if (takeUndecided(ctx())) keepTake()
     dispatchSingRoom({ type: 'leave' })
@@ -353,7 +430,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * and closes by KEEPING: a summary is four numbers that never leave the
    * phone, and losing one to a Back is worse than storing one nobody wanted.
    */
-  /** Shut every sheet and modal the room is holding. */
+  /** Shut every sheet and modal the room is holding, topmost first. */
   const closeRoomSheets = (): boolean => {
     if (props.picker.trackModalSong() !== null) {
       props.picker.setTrackModalSong(null)
@@ -363,6 +440,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       props.picker.setIsModalOpen(false)
       return true
     }
+    if (takesOpen()) {
+      setTakesOpen(false)
+      return true
+    }
+    if (songOpen()) {
+      setSongOpen(false)
+      return true
+    }
+    if (pickerOpen()) {
+      setPickerOpen(false)
+      return true
+    }
     if (optionsOpen()) {
       setOptionsOpen(false)
       return true
@@ -370,18 +459,40 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     return false
   }
 
+  /**
+   * Shut ALL of them, not just the topmost.
+   *
+   * A Back closes one thing; leaving the room, or ending a run, has to leave
+   * nothing behind. Two of these can be open at once — the song picker's
+   * modal with the track modal on top of it — so one step is not enough.
+   */
+  const closeAllRoomSheets = (): void => {
+    // Bounded, because a step that closes nothing returns false and a step
+    // that closes something removes one of a fixed list.
+    for (let step = 0; step < 8; step += 1) {
+      if (!closeRoomSheets()) return
+    }
+  }
+
   const closeRoomOverlay = (): boolean => {
+    // THE CARD FIRST, because it is the topmost thing the room draws and the
+    // comment above has always claimed to go topmost first. It asked the
+    // sheets before it, so in the one case where two overlays could coexist
+    // Back closed the one underneath and left the card on screen (F4). It
+    // closes by KEEPING: a summary is four numbers that never leave the
+    // phone, and losing one to a Back is worse than storing one nobody
+    // wanted.
+    if (takeUndecided(ctx())) {
+      keepTake()
+      return true
+    }
     if (closeRoomSheets()) return true
-    // The priming door, above the card and below the sheets. It is a portal
+    // The priming door, below the card and below the sheets. It is a portal
     // with one button on it, so a press that is not Continue has to be able
     // to close it — otherwise `priming` sticks and the room comes back with
     // a door over it and no way past.
     if (state() === 'priming') {
       dispatchSingRoom({ type: 'priming-cancel' })
-      return true
-    }
-    if (takeUndecided(ctx())) {
-      keepTake()
       return true
     }
     return false
@@ -403,6 +514,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       state: ctx().state,
       micIntent: micIntent(ctx()),
       melodyRun: melodyRun(),
+      melodyLoaded: ctx().melodyLoaded,
+      view: singStageView(ctx()),
       trail: takeRecording.trail.length,
       frames: takeRecording.summary.frameCount,
       elapsedSeconds: takeElapsedSeconds(),
@@ -426,6 +539,11 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           dismissCoachMark()
           setOptionsOpen(true)
         },
+        // The room name chip in the shell's header. The shell owns no picker,
+        // so the chip is a button only because this is here (R5).
+        openRoomPicker: () => {
+          setPickerOpen(true)
+        },
         closeRoomOverlay,
         // The end card IS the decision, so the shell's Keep alert only has
         // something to ask about while that card is open and undecided.
@@ -436,6 +554,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // every other way of leaving the tab still has to release the room.
     // A card still open at that point is kept, never dropped.
     onCleanup(() => {
+      // The last frame of a run can have queued a decision; without this it
+      // lands a microtask later on a room that is no longer here, dispatching
+      // into a store the next arrival will read (review F12).
+      runOut.cancel()
       if (takeUndecided(ctx())) keepTake()
       dispatchSingRoom({ type: 'leave' })
     })
@@ -485,7 +607,22 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const openSongPicker = (): void => {
     setOptionsOpen(false)
+    setSongOpen(false)
     props.picker.setIsModalOpen(true)
+  }
+
+  /**
+   * "Remove" on the song sheet: put the melody down (R1).
+   *
+   * A melody run that is still going ends first, exactly as Stop would end
+   * it — the alternative is a trace measured against a target the room has
+   * just taken off the screen. The unload follows, so the free tracker is
+   * what the room rests into.
+   */
+  const removeMelody = (): void => {
+    setSongOpen(false)
+    if (melodyRun() || ctx().melody) handleStop()
+    dispatchSingRoom({ type: 'melody-unload' })
   }
 
   /**
@@ -532,6 +669,24 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     frozen: () => !melodyRun() && !micIntent(ctx()),
   }
 
+  /**
+   * The same canvas, resting: the loaded melody's target line and nothing
+   * else (R1). No trail — a run's leftover line under a target it was never
+   * measured against is a picture of something that did not happen — and
+   * frozen, because nothing here moves until the capsule is pressed.
+   */
+  const previewOptions: SingRoomCanvasOptions = {
+    pitchHistory: () => EMPTY_HISTORY,
+    melody: () => props.melody(),
+    scale: () => melodyStore.currentScale(),
+    currentBeat: () => 0,
+    totalBeats: () => props.totalBeats(),
+    isPlaying: () => false,
+    isPaused: () => false,
+    perNoteBurn: () => false,
+    frozen: () => true,
+  }
+
   const onCapsule = (): void => {
     haptics.tapLight()
     // Still inside the tap: iOS un-suspends a context, and promotes the page
@@ -547,10 +702,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     <div
       class={styles.room}
       data-testid="sing-room"
-      style={background.resolvedStyle()}
+      style={{
+        ...background.resolvedStyle(),
+        [SING_GLASS_VAR]: String(glass()),
+      }}
     >
-      <div class={styles.cover} />
-      <div class={styles.scrimDim} />
+      <div class={styles.cover} data-testid="sing-cover" />
+      {/* The veil the room sheet's slider moves (R5). Named for the walk: its
+          computed opacity IS the setting, and nothing else on screen says
+          what the slider just did. */}
+      <div class={styles.scrimDim} data-testid="sing-scrim-dim" />
       <div class={styles.scrimTop} />
       <div class={styles.scrimBottom} />
 
@@ -575,34 +736,53 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             haptics.tapLight()
             dispatchSingRoom({ type: 'toggle-mute' })
           }}
-          onOpenSong={() => props.picker.setIsModalOpen(true)}
+          onOpenSong={() => {
+            haptics.tapLight()
+            setSongOpen(true)
+          }}
+          onOpenTakes={() => {
+            dismissCoachMark()
+            haptics.tapLight()
+            setTakesOpen(true)
+          }}
         />
 
-        <span class="sr-only" aria-live="polite">
+        {/* THE ROOM'S OWN VISUALLY-HIDDEN CLASS, not `sr-only`: that class is
+            defined in no stylesheet this repository ships, so this live
+            region rendered as ordinary text right under the HUD — the second
+            "No voice" the owner reported under native (R3). */}
+        <span class={styles.srOnly} aria-live="polite">
           {noteChipSignal(props.currentPitch()).announce}
         </span>
 
-        <div class={styles.canvasWrap}>
-          <Show
-            when={
-              state() === 'live' || state() === 'paused' || state() === 'ended'
-            }
-            fallback={
-              <Show
-                when={state() === 'denied'}
-                fallback={<SingTrace variant="silent" />}
-              >
-                <div class={styles.traceWrap}>
-                  <span class={styles.demoChip}>
-                    This is what you would see
-                  </span>
-                  <SingTrace variant="demo" labelled />
-                </div>
-              </Show>
-            }
-          >
-            {props.renderCanvas(canvasOptions)}
-          </Show>
+        {/* Four pictures, one answer, and the answer is `stage-view.ts` —
+            the nest of fallbacks this replaces had the melody preview (R1)
+            nowhere to go that could be read in one pass. */}
+        <div
+          classList={{
+            [styles.canvasWrap]: true,
+            [styles.canvasResting]: view() === 'melody-preview',
+          }}
+          data-view={view()}
+          data-testid="sing-stage"
+        >
+          <Switch fallback={<SingTrace variant="silent" />}>
+            <Match when={view() === 'run'}>
+              {props.renderCanvas(canvasOptions)}
+            </Match>
+            {/* The same canvas, dimmed and still: the chip says a melody is
+                loaded, so the staff shows the line it will be sung against
+                rather than an empty dashed one. */}
+            <Match when={view() === 'melody-preview'}>
+              {props.renderCanvas(previewOptions)}
+            </Match>
+            <Match when={view() === 'demo'}>
+              <div class={styles.traceWrap}>
+                <span class={styles.demoChip}>This is what you would see</span>
+                <SingTrace variant="demo" labelled />
+              </div>
+            </Match>
+          </Switch>
         </div>
 
         {/* R0/R1 — the silent trace asks for nothing, and one capsule is the
@@ -614,7 +794,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
                 Hum. The line is you.
               </p>
               <p classList={{ [styles.body]: true, [styles.onCover]: true }}>
-                The microphone stays off until you tap. Nothing is uploaded.
+                The microphone stays off until you tap.
               </p>
             </Show>
             <button
@@ -683,7 +863,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             <p class={styles.display}>Hear your voice as a line</p>
             <p class={styles.body}>
               MercuryPitch listens while you sing and draws your pitch on
-              screen. Nothing is uploaded. Nobody hears you but you.
+              screen. Only you can hear you.
             </p>
             <div class={styles.grow} />
             <button
@@ -713,6 +893,45 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onDiscard={() => {
           clearSingTakeResult()
           dispatchSingRoom({ type: 'take-decided' })
+        }}
+      />
+
+      <SingRoomPicker
+        isOpen={pickerOpen()}
+        close={() => setPickerOpen(false)}
+        background={background}
+        glass={glass}
+        onGlassChange={(value) => {
+          setGlass(persistSingGlass(value))
+        }}
+      />
+
+      <SingSongSheet
+        isOpen={songOpen()}
+        close={() => setSongOpen(false)}
+        songName={() => songName() ?? 'The melody'}
+        onPlayAgain={() => {
+          setSongOpen(false)
+          // A run in flight ends first, the same two lines Remove uses.
+          // Without them "Play again" dispatched `melody-play` into a room
+          // already `live`, which the machine ignores — the button did
+          // nothing during a run — and into a `paused` one, where it read as
+          // a resume and carried on from where the pause left it instead of
+          // starting the melody again (review F5).
+          if (melodyRun() || ctx().melody) handleStop()
+          startMelodyRun()
+        }}
+        onChangeSong={openSongPicker}
+        onRemove={removeMelody}
+      />
+
+      <SingTakesSheet
+        isOpen={takesOpen()}
+        close={() => setTakesOpen(false)}
+        takes={singTakes}
+        onRemove={(id) => {
+          haptics.tapLight()
+          removeSingTake(id)
         }}
       />
 

@@ -146,11 +146,28 @@ export const NATIVE_ASSETS = [
       'Home rail: the Drum Night room photo (src/features/home/DestinationGallery.tsx).',
   },
 
-  // ── The Sing room's cover ────────────────────────────────────
+  // ── The Sing room's covers ───────────────────────────────────
+  //
+  // Three candidates ship for the test period (device round 2, R5): the room
+  // picker offers all three and the owner is choosing between them, so every
+  // one has to be in the binary — there is no network in the room to fetch
+  // the other two from. The first glob is a family and covers the other two
+  // as well; the entries below it are what make each PAIR its own tripwire,
+  // so a rename of the B or the mock art fails the build that ships it.
   {
     glob: 'sing/retro-analog-studio*.webp',
     reason:
-      "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one, and there is no network in the room to fetch it from.",
+      "Every Retro Analog Studio cover, in all four variants each — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
+  },
+  {
+    glob: 'sing/retro-analog-studio-b*.webp',
+    reason:
+      "The second candidate, 'Retro Analog Studio B' — the same room rendered warmer with the desk further back, offered by the room picker (src/features/sing-room/SingRoomPicker.tsx) and catalogued as sing-retro-analog-studio-b.",
+  },
+  {
+    glob: 'sing/retro-analog-studio-mock*.webp',
+    reason:
+      "The third candidate, 'Retro Analog Studio (mock)' — the approved mock tile upscaled, which is the photograph the owner asked to see beside the other two (catalogued as sing-retro-analog-studio-mock).",
   },
 ]
 

@@ -132,7 +132,7 @@ export const SingTakeSheet: Component<SingTakeSheetProps> = (props) => (
           </div>
 
           <p classList={{ [styles.caption]: true, [styles.center]: true }}>
-            Keep stores it on this phone. Nothing uploaded.
+            Keep stores it on this phone.
           </p>
         </div>
       )}

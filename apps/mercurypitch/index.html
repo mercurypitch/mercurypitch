@@ -74,7 +74,16 @@
           document.body.appendChild(box)
         }
         window.addEventListener('error', function (e) {
-          show('error', (e.error && e.error.stack) || e.message || String(e))
+          // "ResizeObserver loop completed with undelivered notifications" is
+          // a browser NOTICE, not a failure: an observer callback changed
+          // layout and the browser deferred the rest to the next frame.
+          // Chromium raises it as a window error, so the watchdog painted
+          // "Mercury Pitch did not start" over a perfectly running app the
+          // first time the frame changed size — found by the probe's own
+          // orientation step (device round 2, F10).
+          var message = (e && e.message) || ''
+          if (message.indexOf('ResizeObserver loop') !== -1) return
+          show('error', (e.error && e.error.stack) || message || String(e))
         })
         window.addEventListener('unhandledrejection', function (e) {
           var r = e.reason

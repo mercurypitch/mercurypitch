@@ -346,6 +346,19 @@ const english = {
   'Apply a 60-day test offer': 'Apply a 60-day test offer',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.',
+  'Review access': 'Review access',
+  'Review access code': 'Review access code',
+  'Turn on review access': 'Turn on review access',
+  'Turn off review access': 'Turn off review access',
+  'For app review. The code opens {name} on this device. Nothing is bought and nothing is charged.':
+    'For app review. The code opens {name} on this device. Nothing is bought and nothing is charged.',
+  'Review access is on. {name} is open on this device and nothing was bought.':
+    'Review access is on. {name} is open on this device and nothing was bought.',
+  'That code does not match. Check it and try again.':
+    'That code does not match. Check it and try again.',
+  'This build cannot check review codes.':
+    'This build cannot check review codes.',
+  'Checking…': 'Checking…',
 } as const
 
 type SharedUiCopySource = keyof typeof english
@@ -690,6 +703,19 @@ const spanish = {
   'Apply a 60-day test offer': 'Aplicar una oferta de prueba de 60 días',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'Esto simula un acceso promocional confirmado sin renovación. No canjea un código real de Apple ni de Google.',
+  'Review access': 'Acceso para revisión',
+  'Review access code': 'Código de acceso para revisión',
+  'Turn on review access': 'Activar el acceso para revisión',
+  'Turn off review access': 'Desactivar el acceso para revisión',
+  'For app review. The code opens {name} on this device. Nothing is bought and nothing is charged.':
+    'Para la revisión de la app. El código abre {name} en este dispositivo. No se compra ni se cobra nada.',
+  'Review access is on. {name} is open on this device and nothing was bought.':
+    'El acceso para revisión está activo. {name} está abierto en este dispositivo y no se compró nada.',
+  'That code does not match. Check it and try again.':
+    'Ese código no coincide. Revísalo e inténtalo de nuevo.',
+  'This build cannot check review codes.':
+    'Esta versión no puede comprobar códigos de revisión.',
+  'Checking…': 'Comprobando…',
 } as const satisfies SharedUiCopyCatalog
 
 const german = {
@@ -1030,6 +1056,19 @@ const german = {
   'Apply a 60-day test offer': '60-tägiges Testangebot anwenden',
   'This simulates confirmed promotional access without renewal. It does not redeem a real Apple or Google code.':
     'Dies simuliert bestätigten Aktionszugang ohne Verlängerung. Es löst keinen echten Apple- oder Google-Code ein.',
+  'Review access': 'Prüfzugang',
+  'Review access code': 'Code für den Prüfzugang',
+  'Turn on review access': 'Prüfzugang aktivieren',
+  'Turn off review access': 'Prüfzugang deaktivieren',
+  'For app review. The code opens {name} on this device. Nothing is bought and nothing is charged.':
+    'Für die App-Prüfung. Der Code öffnet {name} auf diesem Gerät. Es wird nichts gekauft und nichts berechnet.',
+  'Review access is on. {name} is open on this device and nothing was bought.':
+    'Der Prüfzugang ist aktiv. {name} ist auf diesem Gerät geöffnet und es wurde nichts gekauft.',
+  'That code does not match. Check it and try again.':
+    'Dieser Code passt nicht. Bitte prüfen und erneut versuchen.',
+  'This build cannot check review codes.':
+    'Diese Version kann Prüfcodes nicht überprüfen.',
+  'Checking…': 'Wird geprüft…',
 } as const satisfies SharedUiCopyCatalog
 
 const catalogs: Readonly<Record<AppLocale, UiCopyCatalog>> = {

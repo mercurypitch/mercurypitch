@@ -486,7 +486,7 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
               <FileUpload />
               <span>Drop a .lrc or .txt here, or browse</span>
               <span class={styles.hint}>
-                It fills the box below — nothing is uploaded until you save.
+                It fills the box below — nothing is sent until you save.
               </span>
             </label>
 

@@ -112,6 +112,44 @@ describe('RoomHeader', () => {
     })
   })
 
+  describe('the room chip', () => {
+    it('is a label while the room offers nothing behind it', () => {
+      // A chip that is always a button and sometimes inert teaches nothing.
+      const rendered = renderShell(() => (
+        <RoomHeader title={() => 'Retro Analog Studio'} onBack={() => {}} />
+      ))
+      unmount = rendered.unmount
+
+      const chip = rendered.container.querySelector(
+        '[data-testid="shell-room-chip"]',
+      )
+      expect(chip?.tagName).toBe('SPAN')
+      expect(chip?.getAttribute('aria-label')).toBeNull()
+    })
+
+    it('is a button, and says what it opens, when the room hands one over', () => {
+      const onChip = vi.fn()
+      const rendered = renderShell(() => (
+        <RoomHeader
+          title={() => 'Retro Analog Studio'}
+          onBack={() => {}}
+          onChip={onChip}
+        />
+      ))
+      unmount = rendered.unmount
+
+      const chip = rendered.container.querySelector<HTMLButtonElement>(
+        '[data-testid="shell-room-chip"]',
+      )
+      expect(chip?.tagName).toBe('BUTTON')
+      expect(chip?.getAttribute('aria-label')).toBe(
+        'Retro Analog Studio. Tap to choose the room',
+      )
+      chip?.click()
+      expect(onChip).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('keeps Back and the gear either side of the chip', () => {
     const onBack = vi.fn()
     const onGear = vi.fn()

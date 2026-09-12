@@ -30,6 +30,16 @@ export interface RoomHeaderProps {
   title: () => string
   onBack: () => void
   onGear?: () => void
+  /**
+   * The chip's tap, where the room has something behind it — today the
+   * background picker (device round 2, R5).
+   *
+   * ABSENT MEANS A LABEL, and the chip stays a `<span>`. A room with no
+   * picker of its own must not grow a button that does nothing; the shell
+   * cannot open a picker it does not own, so the room provides the one it
+   * has (`openRoomPicker` on the bridge) or the chip does not react at all.
+   */
+  onChip?: () => void
   /** On screen, or fading out behind a pushed screen. Absent means on. */
   visible?: () => boolean
 }
@@ -65,10 +75,28 @@ export const RoomHeader: Component<RoomHeaderProps> = (props) => {
       >
         <BackIcon />
       </button>
-      <span class="mp-room-chip">
-        <MicIcon />
-        {props.title()}
-      </span>
+      <Show
+        when={props.onChip}
+        fallback={
+          <span class="mp-room-chip" data-testid="shell-room-chip">
+            <MicIcon />
+            {props.title()}
+          </span>
+        }
+      >
+        {(chip) => (
+          <button
+            type="button"
+            class="mp-room-chip mp-room-chip--button"
+            aria-label={`${props.title()}. Tap to choose the room`}
+            data-testid="shell-room-chip"
+            onClick={() => chip()()}
+          >
+            <MicIcon />
+            {props.title()}
+          </button>
+        )}
+      </Show>
       <Show
         when={props.onGear}
         fallback={<span class="mp-iconbtn" aria-hidden="true" />}

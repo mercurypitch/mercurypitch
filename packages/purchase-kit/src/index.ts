@@ -18,3 +18,20 @@
 
 export type { PurchaseBuildPolicy } from './build-policy.ts'
 export { assertPurchaseBuildSafe } from './build-policy.ts'
+export type {
+  ReviewUnlock,
+  ReviewUnlockGrant,
+  ReviewUnlockOptions,
+  ReviewUnlockOutcome,
+  ReviewUnlockResult,
+  ReviewUnlockStorage,
+} from './review-unlock.ts'
+export {
+  createReviewUnlock,
+  REVIEW_CODE_ALPHABET,
+  isReviewUnlockDigest,
+  normalizeReviewCode,
+  readReviewGrant,
+  reviewUnlockDigestInput,
+  serializeReviewGrant,
+} from './review-unlock.ts'

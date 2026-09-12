@@ -4,7 +4,9 @@ import type { Copy } from '@/i18n/ui-copy'
 import { useCopy } from '@/i18n/ui-copy'
 import { Selectable } from '@/interaction/selection'
 import type { ProAccessStatus } from '@/purchases/pro-access'
+import type { ReviewAccessState } from '@/purchases/review-access'
 import styles from './ProSection.module.css'
+import { ReviewAccessRow } from './ReviewAccessRow'
 
 interface ProSectionProps {
   name: string
@@ -25,6 +27,17 @@ interface ProSectionProps {
   onRedeemCode?: (() => void) | (() => Promise<unknown>)
   onCheckAccess?: () => void
   onExternalRedemption?: () => void
+  /** Present only in a build compiled with a review unlock digest. */
+  review?: ReviewAccessControls
+}
+
+export interface ReviewAccessControls {
+  readonly active: boolean
+  readonly state: ReviewAccessState
+  readonly onRedeem:
+    | ((code: string) => void)
+    | ((code: string) => Promise<unknown>)
+  readonly onRevoke: () => void
 }
 
 function formatDate(value: Date, locale: string): string {
@@ -269,6 +282,18 @@ export function ProSection(props: ProSectionProps) {
             </p>
           )}
         </Show>
+      </Show>
+
+      <Show when={props.review}>
+        {(review) => (
+          <ReviewAccessRow
+            name={props.name}
+            active={review().active}
+            state={review().state}
+            onRedeem={review().onRedeem}
+            onRevoke={review().onRevoke}
+          />
+        )}
       </Show>
     </section>
   )
