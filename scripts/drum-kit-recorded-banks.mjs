@@ -40,13 +40,16 @@ export const RECORDED_KIT_ZONES = Object.freeze(
     RECORDED_KIT_RECIPES[kitId].mixes.map((mix) => ({
       kitId,
       articulation: mix.articulation,
-      gmKeys: [mix.gmKey],
+      gmKeys: mix.gmKeys ?? [mix.gmKey],
+      resourceName: mix.resourceName,
       layer: mix.layer,
       roundRobin: mix.roundRobin,
       velocityMin: mix.velocityMin,
       velocityMax: mix.velocityMax,
       chokeGroup: mix.articulation === 'hh-open' ? 'hi-hat-open' : null,
-      chokes: mix.articulation === 'hh-closed' ? ['hi-hat-open'] : [],
+      chokes: ['hh-closed', 'hh-pedal'].includes(mix.articulation)
+        ? ['hi-hat-open']
+        : [],
       sourceKind: 'approved-mix',
       sourceCommit:
         RECORDED_KIT_RECIPES[kitId].source.commit ??

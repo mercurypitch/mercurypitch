@@ -99,6 +99,70 @@ async function openSessionControls(
   expect(opened).toBe(true)
 }
 
+test('remembers count-in and click across reloads and part changes @smoke', async ({
+  page,
+}) => {
+  await openTheRoom(page, 'remembered-rehearsal-preferences')
+  const room = page.getByTestId('guitar-night-score-room')
+  const countIn = room
+    .getByRole('button', {
+      name: /^Count-in .* before playback\. Change count-in$/,
+    })
+    .filter({ visible: true })
+  const click = room
+    .getByRole('button', {
+      name: /^Turn playback click (on|off)$/,
+    })
+    .filter({ visible: true })
+
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in 4 beats before playback. Change count-in',
+  )
+  await countIn.click()
+  await click.click()
+
+  const enterAfterReload = async () => {
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Practice with tab', exact: true })
+      .click()
+    await expect(room).toBeVisible()
+    await expect(room.getByRole('button', { name: 'Pause score' })).toHaveCount(
+      0,
+    )
+    await expect(
+      room.getByRole('button', { name: 'Start the count-in', exact: true }),
+    ).toBeVisible()
+  }
+
+  await enterAfterReload()
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in Off before playback. Change count-in',
+  )
+  await expect(click).toHaveAttribute('aria-pressed', 'false')
+
+  await page.getByTestId('guitar-night-session-trigger').click()
+  await page
+    .getByTestId('guitar-night-session-panel')
+    .getByTestId('guitar-night-session-track')
+    .filter({ hasText: 'Rhythm guitar' })
+    .click()
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in Off before playback. Change count-in',
+  )
+  await expect(click).toHaveAttribute('aria-pressed', 'false')
+
+  await countIn.click()
+  await countIn.click()
+  await click.click()
+  await enterAfterReload()
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in 2 beats before playback. Change count-in',
+  )
+  await expect(click).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('plays the rest of the band, and lets any of it be muted @smoke', async ({
   page,
 }) => {

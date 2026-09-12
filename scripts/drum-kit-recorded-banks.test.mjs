@@ -13,8 +13,8 @@ test('pins the selected editions and retains public microphone provenance withou
     'fc165714974aa843125ce88597f341b31376e1d5',
   )
   assert.equal(RECORDED_KIT_RECIPES.crocell.source.version, 'CrocellKit1_1')
-  assert.equal(RECORDED_KIT_RECIPES.muldjord.mixes.length, 56)
-  assert.equal(RECORDED_KIT_RECIPES.crocell.mixes.length, 47)
+  assert.equal(RECORDED_KIT_RECIPES.muldjord.mixes.length, 111)
+  assert.equal(RECORDED_KIT_RECIPES.crocell.mixes.length, 107)
   assert.doesNotMatch(
     JSON.stringify(RECORDED_KIT_RECIPES),
     /\/home\/|\/tmp\/|file:\/\//,

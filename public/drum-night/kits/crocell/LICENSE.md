@@ -10,7 +10,7 @@ Kit setup by **Andreas**, drummer of **Crocell**; microphone setup by
 - [Full licence text, including warranty disclaimer](CC-BY-4.0.txt)
 - [Selected strikes, source hashes and microphone recipes](selected-mixes.json)
 
-MercuryPitch modifications: selected eight core GM voices and adjacent distinct
+MercuryPitch modifications: selected and expanded GM acoustic voices and distinct
 recorded strikes from source-power bands; mixed the recorded microphone channels
 offline; cropped leading silence, retained short attack pre-roll and applied
 tail fades; resampled and encoded MP3/Opus; assigned velocity bands and repeat
@@ -19,6 +19,10 @@ selection policy, not a claim that the original kit used fixed round robins.
 No per-hit normalization, artificial room reverb, or replacement synthesis is
 baked into the samples. Other articulations use the application's separately
 identified synth fallback.
+The pedal chick has a fixed +12 dB offline bus gain and measured dynamic pairs.
+Four physical toms cover six GM notes, and the one ride bow serves GM51/59.
+Custom upstream MIDI numbers are translated by instrument identity, not copied
+onto unrelated General MIDI percussion.
 
 These sample derivatives are also offered under **CC BY 4.0**, separately from
 the application's software licence. The upstream README's GPL statement refers

@@ -6,11 +6,36 @@ import { drumKitManifest, drumKitResourcesForHit, drumKitVelocityCurveFor, } fro
 import { resolveDrumHitGain } from './drum-velocity-contract.mjs'
 
 describe.each(['muldjord', 'crocell'] as const)('%s recorded bank', (kitId) => {
-  it('covers each core key at every velocity without inventing missing articulations', () => {
+  it('covers every expanded GM key at all velocities without inventing missing articulations', () => {
     const kit = drumKitManifest(kitId)
-    expect(kit.resources).toHaveLength(kitId === 'muldjord' ? 56 : 47)
+    expect(kit.resources).toHaveLength(kitId === 'muldjord' ? 111 : 107)
     expect(kit.sampleStatus).toBe('ready')
-    for (const gm of [36, 38, 41, 42, 46, 48, 49, 51]) {
+    const expectedKeys = [
+      35,
+      36,
+      38,
+      41,
+      42,
+      43,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      57,
+      59,
+      ...(kitId === 'crocell' ? [37, 40, 44, 55] : []),
+    ].sort((a, b) => a - b)
+    expect(
+      [...new Set(kit.resources.flatMap((r) => [...r.gmKeys]))].sort(
+        (a, b) => a - b,
+      ),
+    ).toEqual(expectedKeys)
+    for (const gm of expectedKeys) {
       for (let velocity = 1; velocity <= 127; velocity += 1) {
         const strikes = drumKitResourcesForHit(kitId, gm, velocity)
         expect(strikes.length).toBeGreaterThanOrEqual(1)
@@ -19,7 +44,17 @@ describe.each(['muldjord', 'crocell'] as const)('%s recorded bank', (kitId) => {
         expect(strikes.every((s) => s.readiness === 'ready')).toBe(true)
       }
     }
-    for (const missing of [37, 39, 44, 45, 52, 59]) {
+    for (const missing of [
+      39,
+      54,
+      56,
+      58,
+      73,
+      75,
+      78,
+      80,
+      ...(kitId === 'muldjord' ? [37, 40, 44, 55] : []),
+    ]) {
       expect(drumKitResourcesForHit(kitId, missing, 100)).toEqual([])
     }
   })
@@ -45,6 +80,29 @@ describe.each(['muldjord', 'crocell'] as const)('%s recorded bank', (kitId) => {
         r.chokes.includes('hi-hat-open'),
       ),
     ).toBe(true)
+    if (kitId === 'crocell') {
+      expect(
+        drumKitResourcesForHit(kitId, 44, 100).every((r) =>
+          r.chokes.includes('hi-hat-open'),
+        ),
+      ).toBe(true)
+      expect(drumKitResourcesForHit(kitId, 59, 100)).toEqual(
+        drumKitResourcesForHit(kitId, 51, 100),
+      )
+    } else {
+      expect(drumKitResourcesForHit(kitId, 59, 100)).not.toEqual(
+        drumKitResourcesForHit(kitId, 51, 100),
+      )
+    }
+    expect(drumKitResourcesForHit(kitId, 53, 100)).not.toEqual(
+      drumKitResourcesForHit(kitId, 51, 100),
+    )
+    expect(drumKitResourcesForHit(kitId, 43, 100)).toEqual(
+      drumKitResourcesForHit(kitId, 45, 100),
+    )
+    expect(drumKitResourcesForHit(kitId, 48, 100)).toEqual(
+      drumKitResourcesForHit(kitId, 50, 100),
+    )
     expect(
       drumKitResourcesForHit(kitId, 46, 100).every(
         (r) => r.chokeGroup === 'hi-hat-open',

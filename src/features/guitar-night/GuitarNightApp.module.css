@@ -3158,6 +3158,35 @@
   background: rgba(224, 164, 93, 0.12);
 }
 
+.referenceTrackHelpAnchor {
+  /* The shared popover portals outside this standalone room's theme. */
+  --bg-primary: var(--night);
+  --text-primary: var(--ivory);
+  --text-muted: var(--muted);
+  --border-color: var(--line);
+  --accent: var(--amber-bright);
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.referenceTracks .referenceTrackUnavailable {
+  width: auto;
+  height: auto;
+  border-style: dashed;
+  color: var(--muted);
+  cursor: help;
+}
+
+.referenceTrackUnavailable span {
+  white-space: normal;
+}
+
+.referenceTrackUnavailable svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
 /* Hanging a written part on the recording being read. Set apart from the
    measured line's own facts, because it is an offer rather than a statement:
    a reader who does not want it should be able to skip past the whole box. */

@@ -6,6 +6,8 @@ interface AudioEvidence {
   __recordedKitStarts: number
 }
 
+test.use({ launchOptions: { args: ['--mute-audio'] } })
+
 async function trackRealSamples(page: Page): Promise<string[]> {
   const requests: string[] = []
   page.on('request', (request) => {
@@ -50,7 +52,7 @@ async function sampleStarts(page: Page): Promise<number> {
   )
 }
 
-/** A sixteen-second channel-10 fixture spans every core voice at several velocities. */
+/** Channel-10 fixture starts with formerly missing bells/hats/toms, then covers the full acoustic map. */
 function coreDrumMidi(): Buffer {
   const name = [...Buffer.from('Recorded Kit Check')]
   const events = [
@@ -68,7 +70,10 @@ function coreDrumMidi(): Buffer {
     0x20,
   ]
   for (const velocity of [45, 75, 100, 120]) {
-    for (const key of [36, 38, 41, 42, 46, 48, 49, 51]) {
+    for (const key of [
+      53, 44, 45, 47, 59, 35, 36, 37, 38, 40, 41, 42, 43, 46, 48, 49, 50, 51,
+      52, 55, 57,
+    ]) {
       events.push(0, 0x99, key, velocity, 0x60, 0x89, key, 0)
     }
   }
@@ -184,5 +189,10 @@ for (const kit of [
     expect(requests.length).toBeGreaterThan(0)
     expect(requests.every((url) => url.includes(`/kits/${kit.id}/`))).toBe(true)
     expect(errors).toEqual([])
+    expect(requests.some((url) => url.includes('ride-gm53'))).toBe(true)
+    await room.getByTestId('guitar-night-session-trigger').click()
+    const status = mixer.getByTestId('guitar-night-drum-sound-controls')
+    await expect(status).not.toContainText('Synth kit ready.')
+    await expect(status).toContainText(/\d+ sampled/)
   })
 }

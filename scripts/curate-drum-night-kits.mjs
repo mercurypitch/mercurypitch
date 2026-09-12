@@ -694,7 +694,7 @@ function renderSonivox(zone, workDirectory) {
 }
 
 function slugForZone(zone) {
-  return `${zone.articulation}-l${zone.layer}-rr${zone.roundRobin}`
+  return `${zone.resourceName ?? zone.articulation}-l${zone.layer}-rr${zone.roundRobin}`
 }
 
 function dbToGain(decibels) {
