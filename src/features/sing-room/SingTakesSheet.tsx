@@ -45,7 +45,11 @@ interface SingTakesSheetProps {
 }
 
 export const SingTakesSheet: Component<SingTakesSheetProps> = (props) => (
-  <Sheet isOpen={props.isOpen} close={() => props.close()} ariaLabel="Your takes">
+  <Sheet
+    isOpen={props.isOpen}
+    close={() => props.close()}
+    ariaLabel="Your takes"
+  >
     <div class={styles.takeSheet} data-testid="sing-takes-sheet">
       <h2 class={styles.head}>Your takes</h2>
 

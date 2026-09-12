@@ -9,7 +9,8 @@ import { singStageView } from './stage-view'
 const at = (
   state: ReturnType<typeof initialSingRoomContext>['state'],
   melodyLoaded = false,
-) => singStageView(initialSingRoomContext({ state, melodyLoaded, active: true }))
+) =>
+  singStageView(initialSingRoomContext({ state, melodyLoaded, active: true }))
 
 describe('the stage view', () => {
   it('is the canvas for a run, a pause and the take behind its card', () => {

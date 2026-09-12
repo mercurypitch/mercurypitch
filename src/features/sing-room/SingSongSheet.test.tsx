@@ -50,7 +50,11 @@ describe('the song sheet', () => {
       const handlers = mount()
       fireEvent.click(screen.getByTestId(testId))
       expect(handlers[key], testId).toHaveBeenCalledTimes(1)
-      for (const other of ['onPlayAgain', 'onChangeSong', 'onRemove'] as const) {
+      for (const other of [
+        'onPlayAgain',
+        'onChangeSong',
+        'onRemove',
+      ] as const) {
         if (other !== key) expect(handlers[other], other).not.toHaveBeenCalled()
       }
       cleanup()

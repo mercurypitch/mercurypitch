@@ -104,7 +104,9 @@ describe('the sing room picker', () => {
   it('chooses through the surface controller, so the choice persists', () => {
     const select = vi.fn(() => true)
     mount(controller(select))
-    fireEvent.click(screen.getByText('Retro Analog Studio B').closest('button')!)
+    fireEvent.click(
+      screen.getByText('Retro Analog Studio B').closest('button')!,
+    )
     expect(select).toHaveBeenCalledWith('sing-retro-analog-studio-b')
   })
 

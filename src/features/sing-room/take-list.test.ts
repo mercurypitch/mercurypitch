@@ -34,7 +34,9 @@ describe('a take row', () => {
     expect(row.range).toBe('—')
     // …and the spoken line simply leaves the clause out rather than reading
     // an em dash aloud.
-    expect(row.announce).toBe('2 September 2026, 9:41, 3 min, held within 12 cents')
+    expect(row.announce).toBe(
+      '2 September 2026, 9:41, 3 min, held within 12 cents',
+    )
   })
 
   it("carries the store's id, because that is what Remove is called with", () => {

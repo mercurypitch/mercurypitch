@@ -16,7 +16,7 @@ import type { Component } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { BackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { formatSingGlassValue, SING_GLASS, singGlassLabel, } from './sing-glass'
+import { formatSingGlassValue, SING_GLASS, singGlassLabel } from './sing-glass'
 import styles from './sing-room.module.css'
 
 interface SingRoomPickerProps {
