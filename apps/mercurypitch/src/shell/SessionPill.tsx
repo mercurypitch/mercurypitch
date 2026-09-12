@@ -7,6 +7,12 @@
 // slot, above a full rail, and only where the run is NOT — a run store in
 // this app is a module-level global, so without the owner check it would
 // light up in the room it belongs to as well.
+//
+// "<room> · <state>" is the kit's grammar for this pill, and the state is
+// never in doubt: the pill exists only while a run is parked, and parking
+// pauses (`parkRun`), so the run behind it is paused by construction. The
+// label it is handed is the ROOM's name — "Retro Analog Studio", not "Sing"
+// (device round 1, P4).
 
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
@@ -29,7 +35,7 @@ export const SessionPill: Component<SessionPillProps> = (props) => (
     }}
   >
     <span class="mp-pill__dot" />
-    <span class="mp-pill__label">{props.label()}</span>
+    <span class="mp-pill__label">{props.label()} · paused</span>
     <span class="mp-pill__btn" aria-hidden="true">
       <PlayIcon />
     </span>

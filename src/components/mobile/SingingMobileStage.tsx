@@ -24,6 +24,7 @@ import { TransportBar } from '@/components/mobile/TransportBar'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
+import { roomName } from '@/features/rooms/room-names'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_SINGING, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -115,7 +116,9 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       onCleanup(
         registerRunControls({
           tab: TAB_SINGING,
-          roomLabel: 'Sing',
+          // The room, not the tab: the header's chip and the session pill
+          // both read this, and both of them name a place (P4).
+          roomLabel: roomName('sing'),
           isPlaying: () => props.isPlaying(),
           isPaused: () => props.isPaused(),
           isCountingIn: () => props.isCountingIn(),
