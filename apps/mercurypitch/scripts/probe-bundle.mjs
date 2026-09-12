@@ -1455,9 +1455,100 @@ async function boxOf(page, selector) {
   }, selector)
 }
 
-/** Which melody to walk with, and how fast it has to be played. */
-async function pickMelody(page) {
-  return page.evaluate(() => {
+/**
+ * Row 1, measured rather than assumed (R3, and the review's F3).
+ *
+ * The rule the stylesheet states: the key chip and the microphone chip never
+ * clip, whatever is in them; the song chip may ellipsize but must keep its
+ * floor and stay inside the row — and when the floor will not fit, it takes a
+ * line of its own rather than squeezing the two beside it.
+ *
+ * The assertion this replaces read `.hudSlack`'s width against its own
+ * `min-width`, which is a CSS invariant: `flex-shrink: 0` meant the spacer
+ * could not be narrower than 12px whatever the chips did, so the step could
+ * not fail — and it reported that floor as headroom while both chips beside
+ * it were clipped (review F3).
+ */
+async function assertRow1(page, ctx, what) {
+  const m = await page.evaluate(() => {
+    const round = (n) => Math.round(n * 100) / 100
+    const read = (sel) => {
+      const el = document.querySelector(sel)
+      if (el === null) return null
+      const rect = el.getBoundingClientRect()
+      // Every chip is `overflow: hidden`, so content wider than the box is
+      // exactly what `scrollWidth > clientWidth` means — but the ellipsis
+      // lives on the inner `.chipText` span where there is one, and the
+      // outer box is whole while the span inside it is cut. Both are read.
+      const boxes = [el, ...el.querySelectorAll('span')]
+      const clip = boxes.reduce(
+        (worst, box) => Math.max(worst, box.scrollWidth - box.clientWidth),
+        0,
+      )
+      return {
+        width: round(rect.width),
+        top: round(rect.top),
+        right: round(rect.right),
+        clip,
+        text: (el.textContent ?? '').trim(),
+      }
+    }
+    const row = document.querySelector('[data-testid="sing-hud"]')
+    if (row === null) return null
+    const rowRect = row.getBoundingClientRect()
+    return {
+      row: { right: round(rowRect.right) },
+      key: read('[data-testid="sing-key-chip"]'),
+      mic: read('[data-testid="sing-state-chip"]'),
+      song: read('[data-testid="sing-song-chip"]'),
+    }
+  })
+
+  if (m === null || m.key === null || m.mic === null) {
+    throw new Error(`row 1 has lost the key chip or the state chip (${what})`)
+  }
+  for (const [name, chip] of [
+    ['the key chip', m.key],
+    ['the state chip', m.mic],
+  ]) {
+    if (chip.clip > 1) {
+      throw new Error(
+        `${name} is clipped with ${what}: "${chip.text}" is ${chip.clip}px over its box`,
+      )
+    }
+  }
+  if (m.song === null) {
+    return `room: row 1 clips neither the key nor the microphone, ${what}, at ${ctx.frame.width}`
+  }
+  if (m.song.width < 95) {
+    throw new Error(
+      `the song chip is ${m.song.width}px wide with ${what}, under its 96px floor`,
+    )
+  }
+  if (m.song.right > m.row.right + 1) {
+    throw new Error(
+      `the song chip runs ${round2(m.song.right - m.row.right)}px past the end of row 1 with ${what}`,
+    )
+  }
+  const wrapped = m.song.top > m.key.top + 4
+  const clipped = m.song.clip > 1
+  const note = `${clipped ? ', song ellipsized' : ''}${wrapped ? ', song on its own line' : ''}`
+  return `room: row 1 whole with ${what} at ${ctx.frame.width} — key ${m.key.width}px, mic ${m.mic.width}px, song ${m.song.width}px${note}`
+}
+
+/** Two decimals, for a number that came out of a subtraction. */
+function round2(n) {
+  return Math.round(n * 100) / 100
+}
+
+/**
+ * Which melody to walk with, and how fast it has to be played.
+ *
+ * `mode` is 'walk' — the longest melody still short enough to play to its end
+ * inside a walk — or 'longest-name', the one whose name stresses row 1.
+ */
+async function pickMelody(page, mode = 'walk') {
+  return page.evaluate((how) => {
     const items = [...document.querySelectorAll('.fn-modal-item')]
     const read = (item) => {
       const meta = item.querySelector('.fn-item-meta')?.textContent ?? ''
@@ -1471,6 +1562,11 @@ async function pickMelody(page) {
     }
     const all = items.map(read).filter((entry) => entry.notes > 0)
     if (all.length === 0) return null
+    if (how === 'longest-name') {
+      return all.reduce((best, entry) =>
+        entry.name.length > best.name.length ? entry : best,
+      )
+    }
     // The longest melody that is still short enough to play to its end inside
     // a walk: a Stop has to land before it finishes, and later on it has to
     // finish inside the poll below.
@@ -1479,7 +1575,7 @@ async function pickMelody(page) {
     return pool.reduce((best, entry) =>
       entry.notes > best.notes ? entry : best,
     )
-  })
+  }, mode)
 }
 
 /** Drag a range input the way a finger does, and let Solid hear it. */
@@ -1703,20 +1799,32 @@ async function walkRound2(page, ctx, steps) {
   // run is slowed so a Stop can land inside it; the second is set so the
   // melody runs out on its own inside a walk's patience while still holding
   // the three seconds of voice a take needs.
+  //
+  // `melody` is the one the run below is measured against; row 1 is stressed
+  // with a different one in between and this melody is then loaded back, so
+  // the timings the walk depends on are the ones this pick chose.
+  let melody = null
   const tempoFor = (seconds) =>
-    Math.min(220, Math.max(40, Math.round((melodyBeats * 60) / seconds)))
+    Math.min(220, Math.max(40, Math.round((melody.notes * 60) / seconds)))
+  const openSongPicker = async () => {
+    await page.locator('[data-testid="shell-room-gear"]').click()
+    await page.locator('[data-testid="sing-options-song"]').click()
+    await expectVisible(page.locator('.fn-modal-content'), 'the song picker')
+  }
+  const chooseMelody = async (name) => {
+    await page.locator('.fn-modal-item', { hasText: name }).first().click()
+    await expectText(
+      page,
+      '[data-testid="sing-song-chip"]',
+      name,
+      `the song chip on "${name}"`,
+    )
+  }
 
-  await page.locator('[data-testid="shell-room-gear"]').click()
-  await page.locator('[data-testid="sing-options-song"]').click()
-  await expectVisible(page.locator('.fn-modal-content'), 'the song picker')
-  const melody = await pickMelody(page)
+  await openSongPicker()
+  melody = await pickMelody(page)
   if (melody === null) throw new Error('the song picker has no melodies in it')
-  const melodyBeats = melody.notes
-  await page.locator('.fn-modal-item', { hasText: melody.name }).first().click()
-  await expectVisible(
-    page.locator('[data-testid="sing-song-chip"]'),
-    'the song chip once a melody is loaded',
-  )
+  await chooseMelody(melody.name)
   await page.waitForFunction(
     () => window.mpSingRoom?.().melodyRun === true,
     undefined,
@@ -1726,25 +1834,45 @@ async function walkRound2(page, ctx, steps) {
     `room: the Melody row loads "${melody.name}" and the chip names it`,
   )
 
-  // The row it is in has room left at this width, with the chip in it.
-  const slack = await boxOf(page, '[data-testid="sing-hud-slack"]')
-  const song = await boxOf(page, '[data-testid="sing-song-chip"]')
-  const row = await boxOf(page, '[data-testid="sing-hud"]')
-  if (slack === null || song === null || row === null) {
-    throw new Error('the HUD row is missing a part of itself')
-  }
-  if (slack.width < 12) {
-    throw new Error(
-      `row 1 has ${slack.width}px of slack with the song chip in it, under 12`,
-    )
-  }
-  if (song.right > row.right) {
-    throw new Error('the song chip runs past the end of its row')
-  }
+  // Nothing in row 1 is clipped except, at most, the song name (R3).
   await shoot(page, ctx, 'r2-hud-with-song')
-  steps.push(
-    `room: row 1 keeps ${slack.width}px of slack at ${frame.width} with the song chip`,
+  steps.push(await assertRow1(page, ctx, `"${melody.name}"`))
+
+  // The worst key the room's own sheet can produce, with that melody still
+  // loaded. "C# harmonic minor" is the longest label `keyChipLabel` builds.
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await page.locator('[data-testid="sing-options-key"]').selectOption('C#')
+  await page
+    .locator('[data-testid="sing-options-scale"]')
+    .selectOption('harmonic-minor')
+  const keyBack = await pressBack(page)
+  if (keyBack !== 'room-overlay') {
+    throw new Error(`Back over the options sheet resolved as "${keyBack}"`)
+  }
+  await expectText(
+    page,
+    '[data-testid="sing-key-chip"]',
+    'C# harmonic minor',
+    'the key chip at its longest',
   )
+  await shoot(page, ctx, 'r2-hud-longest-key')
+  steps.push(await assertRow1(page, ctx, 'the longest key label'))
+
+  // …and the longest melody name the library can hand it, at that same key.
+  await openSongPicker()
+  const longest = await pickMelody(page, 'longest-name')
+  await chooseMelody(longest.name)
+  await shoot(page, ctx, 'r2-hud-longest-name')
+  steps.push(await assertRow1(page, ctx, `"${longest.name}"`))
+
+  // Put the room back where the rest of the walk expects it: default key, and
+  // the melody whose length the tempo below is computed from.
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await page.locator('[data-testid="sing-options-key"]').selectOption('C')
+  await page.locator('[data-testid="sing-options-scale"]').selectOption('major')
+  await pressBack(page)
+  await openSongPicker()
+  await chooseMelody(melody.name)
 
   // Slow it down, so the Stop below lands inside the melody rather than
   // after it — which would be the other test, by accident.

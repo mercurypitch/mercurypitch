@@ -78,6 +78,7 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
         <select
           class="dropdown-select-style"
           value={keyName()}
+          data-testid="sing-options-key"
           onChange={(event) => props.onChangeKey(event.currentTarget.value)}
         >
           <For each={Object.keys(KEY_OFFSETS)}>
@@ -89,6 +90,7 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
         <select
           class="dropdown-select-style"
           value={scaleType()}
+          data-testid="sing-options-scale"
           onChange={(event) => props.onChangeScale(event.currentTarget.value)}
         >
           <option value="major">Major</option>

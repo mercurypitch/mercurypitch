@@ -13,6 +13,12 @@
 // them. The pill is also the biggest thing here and the one a singer actually
 // watches, so it gets a row of its own, centred, where a glance finds it.
 //
+// AND ROW 1 WRAPS RATHER THAN SQUEEZES. The key and the microphone never give
+// width up — a clipped "C chromati…" or "Listeni…" is the room lying about
+// the two things it must be honest about — so the song name is the only thing
+// that ellipsizes, down to a floor, and below that floor it takes a second
+// line to itself. The stylesheet says how; `sing-room.module.css` `.hud`.
+//
 // THE PILL IS A BUTTON, and its tap opens "Your takes" (R4). The coach mark
 // promised a tap that did nothing; this is what it now promises instead.
 //
@@ -135,10 +141,7 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
       <Show
         when={props.micAction() !== null}
         fallback={
-          <span
-            classList={{ [styles.chip]: true, [styles.chipFixed]: true }}
-            data-testid="sing-state-chip"
-          >
+          <span class={styles.chip} data-testid="sing-state-chip">
             <Show
               when={props.micState() !== 'paused'}
               fallback={<PauseIcon size={16} />}
@@ -151,7 +154,7 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
       >
         <button
           type="button"
-          classList={{ [styles.chip]: true, [styles.chipFixed]: true }}
+          class={styles.chip}
           onClick={() => props.onToggleMic()}
           aria-label={micChipHint(props.micAction())}
           aria-pressed={
@@ -178,7 +181,7 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
         {(name) => (
           <button
             type="button"
-            class={styles.chip}
+            classList={{ [styles.chip]: true, [styles.chipSong]: true }}
             onClick={() => props.onOpenSong()}
             aria-label={`Melody: ${name()}. Tap for what to do with it`}
             data-testid="sing-song-chip"
@@ -187,12 +190,6 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
           </button>
         )}
       </Show>
-
-      {/* The room for more the row is meant to have (R3). It is a real flex
-          item with a floor rather than a `justify-content`, so the slack at
-          390pt is a number the probe can read off the layout instead of a
-          gap that only exists while the chips happen to be short. */}
-      <span class={styles.hudSlack} data-testid="sing-hud-slack" />
     </div>
 
     <div class={styles.pillRow} data-testid="sing-hud-pill-row">

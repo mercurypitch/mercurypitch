@@ -113,23 +113,26 @@
     calc(var(--tabbar-total, 64px) + 12px);
 }
 
-/* Row 1: key · mic · song · room for more (R3). The chips that can be long
-   give their width up; the microphone's one word never does. */
+/* Row 1: key · mic · song (R3).
+   NOTHING HERE SHRINKS EXCEPT THE SONG NAME, and when even its floor will not
+   fit, the song chip takes a line of its own. The first cut let the key and
+   the song both give width up, which at 390pt with a melody loaded clipped
+   BOTH — "C chromati…" and "Chromatic Sc…" — and a review measured the row
+   wanting 372px of 358 (and 427 with a longer melody name). A key nobody can
+   read is the room lying about the key; a song name that ellipsizes is a name
+   somebody can still finish in their head.
+
+   `wrap` plus the song chip's 96px flex-basis is what expresses "shrink to
+   the floor, then wrap": flexbox decides the line from the hypothetical
+   size — so with the basis AT the floor, the chip stays on row 1 whenever the
+   floor fits (and grows into whatever is left), and moves down when it does
+   not. */
 .hud {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: hidden;
-}
-
-/* The row for more, as a real item with a floor rather than a gap that only
-   exists while the chips happen to be short. At 390pt with a song chip in it
-   this is the twelve points the row was squeezed out of. */
-.hudSlack {
-  flex: 1 0 12px;
-  min-width: 12px;
-  align-self: stretch;
 }
 
 /* Row 2: the pitch pill, alone and centred, because it is the one thing on
@@ -282,9 +285,7 @@
   align-items: center;
   gap: 6px;
   height: 32px;
-  min-width: 0;
-  flex: 0 1 auto;
-  max-width: 42vw;
+  flex: 0 0 auto;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgb(230 237 243 / 10%);
@@ -307,11 +308,13 @@
   white-space: nowrap;
 }
 
-/* The state chip. It is one word and the word is the state of the
-   microphone — a clipped "Listeni…" is the room lying about the one thing it
-   has to be honest about, so this chip never gives width up. */
-.chipFixed {
-  flex: 0 0 auto;
+/* The song chip, and it is the only thing in row 1 that may give width up.
+   The floor is a name somebody can still read — about eight characters plus
+   the chip's own padding — and below it the chip wraps rather than shrinks. */
+.chipSong {
+  flex: 1 1 96px;
+  min-width: 96px;
+  max-width: max-content;
 }
 
 .chip svg {
