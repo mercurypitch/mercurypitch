@@ -10,6 +10,9 @@ import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
+import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
+import { useNightMusicImport } from '@/features/play-along/useNightMusicImport'
 import { DeferredRoomVoiceControl } from '@/features/voice-control/DeferredRoomVoiceControl'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -355,6 +358,46 @@ export function PianoNightApp(): JSX.Element {
   const [view, setView] = createSignal<PianoNightPerformanceView>('fall')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
   const [musicNavigationLocked, setMusicNavigationLocked] = createSignal(false)
+  const [requestedMusicFile, setRequestedMusicFile] = createSignal<File | null>(
+    null,
+  )
+  const musicImport = useNightMusicImport({
+    room: 'piano',
+    sourceKey: () => controller.source().id,
+    currentTitle: () => controller.stage().title,
+    blockedReason: () =>
+      performanceTakeImportBlocker(controller.performanceTakeState()) ??
+      (musicNavigationLocked()
+        ? 'Finish the current track assignment before importing another file.'
+        : null),
+    actions: (file) =>
+      file
+        ? [
+            {
+              id: 'import-midi',
+              label: 'Import MIDI and choose tracks',
+              detail:
+                'Use the existing Music editor to select the score and backing tracks. The current piece stays on stage until the import is ready.',
+              run: async (task) => {
+                task.assertCurrent()
+                setRequestedMusicFile(file)
+                openDrawer('music')
+              },
+            },
+          ]
+        : [
+            {
+              id: 'library',
+              label: 'Choose from your music',
+              detail:
+                'Open the on-device project library without leaving Piano Night.',
+              run: async (task) => {
+                task.assertCurrent()
+                openDrawer('music')
+              },
+            },
+          ],
+  })
   const [drawerSection, setDrawerSection] =
     createSignal<DrawerSection>('session')
   const [lastSettingsSection, setLastSettingsSection] =
@@ -712,6 +755,7 @@ export function PianoNightApp(): JSX.Element {
   onMount(() => {
     const uninstallSpace = installSpacePlaybackToggle({
       toggle: controller.togglePlayback,
+      ownsSpace: () => !musicImport.isOpen(),
       enabled: () => !isLoading(),
     })
     const media =
@@ -733,6 +777,7 @@ export function PianoNightApp(): JSX.Element {
       if (!landscape) setMoreOpen(false)
     }
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (musicImport.isOpen()) return
       if (event.key !== 'Escape') return
       if (closeTopSurface()) event.preventDefault()
     }
@@ -872,6 +917,7 @@ export function PianoNightApp(): JSX.Element {
               {phrase().range} · {roomLabel()}
             </span>
           </div>
+          <NightMusicImportButton onClick={musicImport.open} />
           <div class={`${styles.sessionMetric} ${styles.timeMetric}`}>
             <strong>{sessionClock()}</strong>
             <span>{controller.transport.phase()}</span>
@@ -1828,6 +1874,11 @@ export function PianoNightApp(): JSX.Element {
             }
           >
             <PianoNightMusicPanel
+              beforeSelect={() =>
+                performanceTakeImportBlocker(controller.performanceTakeState())
+              }
+              requestedFile={requestedMusicFile()}
+              onFileReceived={() => setRequestedMusicFile(null)}
               panelClass={styles.drawerPanel}
               currentSourceId={() => controller.source().id}
               legacyPianoPath={LEGACY_PIANO_PATH}
@@ -1921,6 +1972,7 @@ export function PianoNightApp(): JSX.Element {
           singing" belong to the shell's tab set, which a standalone
           document never loads — so the phone across the room was a dead
           end. */}
+      <NightMusicImport controller={musicImport} />
       <DeferredRoomVoiceControl />
     </div>
   )

@@ -182,6 +182,65 @@ function renderPanel(
 }
 
 describe('PianoNightMusicPanel', () => {
+  it('hands a route-dropped MIDI to the existing multi-track assignment editor once', async () => {
+    const project = multiTrackProject()
+    const source = musicSource({
+      importMidi: vi.fn(async () => ({
+        ok: true as const,
+        project,
+        persistence: 'saved' as const,
+      })),
+    })
+    const onSelect = vi.fn(() => true)
+    const acknowledged = vi.fn()
+    render(() => (
+      <PianoNightMusicPanel
+        currentSourceId={() => 'original'}
+        legacyPianoPath="/#/piano"
+        onSelect={onSelect}
+        musicSource={source}
+        requestedFile={new File(['midi'], 'ensemble.mid')}
+        onFileReceived={acknowledged}
+      />
+    ))
+    await waitFor(() => expect(source.importMidi).toHaveBeenCalledOnce())
+    expect(acknowledged).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: 'Arrange Night Ensemble' }),
+      ).toBeVisible(),
+    )
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('preserves the source if recording begins before a requested MIDI finishes', async () => {
+    const pending = deferred<PianoNightMidiImportResult>()
+    const source = musicSource({ importMidi: () => pending.promise })
+    let capturing = false
+    const onSelect = vi.fn(() => true)
+    render(() => (
+      <PianoNightMusicPanel
+        currentSourceId={() => 'original'}
+        legacyPianoPath="/#/piano"
+        onSelect={onSelect}
+        musicSource={source}
+        requestedFile={new File(['midi'], 'melody.mid')}
+        beforeSelect={() =>
+          capturing ? 'Stop your take before replacing music.' : null
+        }
+      />
+    ))
+    capturing = true
+    pending.resolve({
+      ok: true,
+      project: importedProject(),
+    })
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Stop your take'),
+    )
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
   it('shows truthful included, composition, and project rows and stages a choice', async () => {
     const project = importedProject()
     const source = musicSource({
@@ -475,6 +534,38 @@ describe('PianoNightMusicPanel', () => {
       expect(onNavigationLockChange).toHaveBeenLastCalledWith(false)
     })
     fireEvent.click(backButton)
+  })
+
+  it('does not replace a different piece after a pending track-assignment save', async () => {
+    const project = multiTrackProject('Pending Ensemble')
+    const pending = deferred<{ ok: true; project: PianoProject }>()
+    let sourceId = 'original'
+    const onSelect = vi.fn(() => true)
+    render(() => (
+      <PianoNightMusicPanel
+        currentSourceId={() => sourceId}
+        legacyPianoPath="/#/piano"
+        onSelect={onSelect}
+        musicSource={musicSource({
+          loadCatalog: async () =>
+            readyCatalog({ projects: [{ project, persistence: 'saved' }] }),
+          updateProjectSelection: () => pending.promise,
+        })}
+      />
+    ))
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Edit track assignment for Pending Ensemble',
+      }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Save and stage' }))
+    sourceId = 'another-piece'
+    pending.resolve({ ok: true, project })
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'piece on stage changed',
+    )
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Save and stage' })).toBeEnabled()
   })
 
   it('gives duplicate track names distinct accessible assignment labels', async () => {

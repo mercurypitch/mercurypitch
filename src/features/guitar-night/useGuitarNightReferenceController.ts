@@ -567,6 +567,8 @@ export function useGuitarNightReferenceController(
     trackId?: string,
     historyMode: HistoryMode = 'push',
     cancelPendingImport = true,
+    assertCurrent?: () => void,
+    placeOnRecording = false,
   ): Promise<void> => {
     const normalizedSongId = songId.trim()
     if (normalizedSongId === '') return
@@ -575,15 +577,17 @@ export function useGuitarNightReferenceController(
       setImportPendingFileName(null)
     }
     const generation = ++attachGeneration
-    setReadingOnRecording(null)
-    setHandPlacement(null)
     // An authored score replaces whatever was being measured: stop that work
     // rather than letting a late transcription overwrite this attachment.
-    cancelFollowStem()
-
     const loadedPort = await ensurePort()
-    if (disposed || generation !== attachGeneration) return
+    if (disposed || generation !== attachGeneration) {
+      if (assertCurrent) throw new DOMException('Cancelled', 'AbortError')
+      return
+    }
+    assertCurrent?.()
     if (loadedPort === null) {
+      if (assertCurrent)
+        throw new Error('Your tab library could not be opened.')
       setState({
         kind: 'unavailable',
         songId: normalizedSongId,
@@ -591,6 +595,21 @@ export function useGuitarNightReferenceController(
       })
       return
     }
+
+    if (assertCurrent) {
+      const probe = loadedPort.openReference(
+        normalizedSongId,
+        trackId,
+        tuning(),
+      )
+      if (!probe.ok)
+        throw new Error(
+          'This file has no playable score for this room. Your current score is unchanged.',
+        )
+    }
+    cancelFollowStem()
+    setReadingOnRecording(null)
+    setHandPlacement(null)
 
     // A bass part read on guitar rows lands on the wrong strings with frets
     // from another neck, so the instrument is settled before the notes are
@@ -625,6 +644,12 @@ export function useGuitarNightReferenceController(
         loadedPort.rememberTrack(normalizedSongId, result.reference.trackId)
       }
       setState({ kind: 'ready', reference: result.reference })
+      if (placeOnRecording)
+        beginScoreHandPlacement(
+          loadedPort,
+          normalizedSongId,
+          result.reference.trackId,
+        )
     } else {
       setState({
         kind: 'unavailable',
@@ -867,6 +892,14 @@ export function useGuitarNightReferenceController(
   ): Promise<void> => {
     const loaded = await ensurePort()
     if (loaded === null || disposed) return
+    beginScoreHandPlacement(loaded, songId, trackId)
+  }
+
+  const beginScoreHandPlacement = (
+    loaded: GuitarNightReferencePort,
+    songId: string,
+    trackId?: string,
+  ): void => {
     const source = loaded.readSource(songId)
     if (source === null) {
       setAlignStatus('That score is no longer in the library.')
@@ -1109,6 +1142,29 @@ export function useGuitarNightReferenceController(
     }
   }
 
+  /** The global importer validates a saved candidate before changing the visible reference. */
+  const importForSession = async (
+    file: File,
+    assertCurrent: () => void,
+    placeOnRecording = false,
+  ): Promise<void> => {
+    const loaded = await ensurePort()
+    assertCurrent()
+    if (loaded === null)
+      throw new Error('Your tab library could not be opened.')
+    const summary = await loaded.importReference(file)
+    assertCurrent()
+    setLibraryVersion((version) => version + 1)
+    await attachReference(
+      summary.songId,
+      undefined,
+      'replace',
+      true,
+      assertCurrent,
+      placeOnRecording,
+    )
+  }
+
   const [transcribeProgress, setTranscribeProgress] = createSignal<
     number | null
   >(null)
@@ -1306,6 +1362,7 @@ export function useGuitarNightReferenceController(
     selectTrack,
     detach,
     importFile,
+    importForSession,
     followStem,
     cancelFollowStem,
     setInstrument,

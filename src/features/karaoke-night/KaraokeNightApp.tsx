@@ -18,6 +18,10 @@ import { SyncHost } from '@/components/sync/SyncHost'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
+import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
+import { prepareNightMusicAudio } from '@/features/play-along/prepare-night-music'
+import { useNightMusicImport } from '@/features/play-along/useNightMusicImport'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/room-navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
@@ -110,6 +114,63 @@ export function KaraokeNightApp() {
   const [demos, setDemos] = createSignal<DemoSongManifest[]>([])
   const manifest = () => demos()[0] ?? null
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
+  const [musicGuard, setMusicGuard] =
+    createSignal<NightMusicSessionGuard | null>(null)
+  const musicImport = useNightMusicImport({
+    room: 'karaoke',
+    sourceKey: () => activeSong()?.sessionId ?? '',
+    currentTitle: () => activeSong()?.title ?? null,
+    blockedReason: () => musicGuard()?.blockedReason() ?? null,
+    actions: (file) =>
+      file
+        ? [
+            {
+              id: 'prepare-karaoke',
+              label: 'Prepare this song for singing',
+              detail:
+                'Separate vocals and backing on this device. Reuse an already prepared song when possible. No cloud credits.',
+              run: async (task) => {
+                const id = await prepareNightMusicAudio(file, task)
+                const [sessions, runner, playlist] = await Promise.all([
+                  import('@/stores/uvr-store'),
+                  import('@/features/stem-mixer/karaoke-playlist-runner'),
+                  import('@/stores/karaoke-playlist-store'),
+                ])
+                await sessions.initSessionStore()
+                task.assertCurrent()
+                const song = sessions.getUvrSession(id)
+                if (!song)
+                  throw new Error(
+                    'The prepared song could not be found. Retry to reopen the saved result.',
+                  )
+                task.report('Opening your prepared vocals and backing…')
+                const hydrated = await runner.ensureSessionHydrated(song)
+                task.assertCurrent()
+                if (
+                  !hydrated.outputs ||
+                  hydrated.outputs.vocal == null ||
+                  hydrated.outputs.vocal === '' ||
+                  hydrated.outputs.instrumental == null ||
+                  hydrated.outputs.instrumental === ''
+                )
+                  throw new Error(
+                    'The vocals or backing are missing on this device. Prepare the song again.',
+                  )
+                playlist.stopPlaylist()
+                setSongWithUrl({
+                  sessionId: id,
+                  title: song.originalFile?.name ?? file.name,
+                  stems: {
+                    vocal: hydrated.outputs.vocal,
+                    instrumental: hydrated.outputs.instrumental,
+                  },
+                  autoPlay: false,
+                })
+              },
+            },
+          ]
+        : [],
+  })
   const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
   const [creditsOpen, setCreditsOpen] = createSignal(false)
@@ -368,6 +429,7 @@ export function KaraokeNightApp() {
       }}
     >
       <header class="kn-topbar">
+        <NightMusicImport controller={musicImport} />
         {/* On a phone the wordmark yields to the logo: the topbar has to
             seat the stage picker, the app link and the account chip on one
             line, and eleven tracked-out capitals were the widest thing in
@@ -385,6 +447,7 @@ export function KaraokeNightApp() {
         </a>
         <span class="kn-topbar-title">Karaoke Night</span>
         <nav class="kn-topbar-links">
+          <NightMusicImportButton onClick={musicImport.open} />
           <Show when={activeSong()}>
             <label class="kn-glass" title="Stage transparency">
               <svg viewBox="0 0 24 24" width="14" height="14">
@@ -737,6 +800,8 @@ export function KaraokeNightApp() {
                     }
                   >
                     <KaraokeStageHost
+                      importOpen={musicImport.isOpen}
+                      registerMusicGuard={setMusicGuard}
                       song={song}
                       onExit={() => setSongWithUrl(null, true)}
                       onSong={(s) => setSongWithUrl(s, true)}

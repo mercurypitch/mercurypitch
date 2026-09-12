@@ -569,6 +569,12 @@ export default defineConfig(({ command, mode }) => {
             ) {
               return 'hash-routing'
             }
+            // Modal holds need no command vocabulary on a silent first paint.
+            if (
+              id.includes('/src/features/voice-control/voice-command-blockers.')
+            ) {
+              return 'voice-command-blockers'
+            }
             // The voice-command vocabulary: a Solid-only registry, the
             // command type, and the phrase lists. The app shell imports all
             // three, so left organic Rollup files them under `advanced` —

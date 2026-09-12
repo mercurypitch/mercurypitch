@@ -1,0 +1,251 @@
+/* Shared stage-import surface uses an explicit portal skin, never a room's inherited sheet styles. */
+.scrim,
+.veil,
+.panel,
+.panel * {
+  box-sizing: border-box;
+}
+
+.scrim,
+.veil {
+  --import-accent: #edbb78;
+  --import-ink: #f4eadb;
+  --import-muted: #c4b7a4;
+  position: fixed;
+  inset: 0;
+  z-index: 18000;
+  color: var(--import-ink);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+.scrim[data-room='piano'],
+.veil[data-room='piano'] {
+  --import-accent: #bfbbf4;
+}
+.scrim[data-room='karaoke'],
+.veil[data-room='karaoke'] {
+  --import-accent: #f2a7b9;
+}
+.scrim[data-room='drums'],
+.veil[data-room='drums'] {
+  --import-accent: #90d5c7;
+}
+.scrim {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(5 7 8 / 76%);
+  backdrop-filter: blur(8px);
+}
+.panel {
+  width: min(35rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: #171512;
+  border: 1px solid #65523b;
+  border-radius: 1rem;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+  color-scheme: dark;
+}
+.panel button,
+.trigger {
+  font: inherit;
+  cursor: pointer;
+}
+.panel button {
+  color: var(--import-ink);
+  min-height: 44px;
+  border: 1px solid #65523b;
+  border-radius: 0.5rem;
+  background: #24211c;
+  padding: 0.6rem 0.85rem;
+}
+.panel button:hover:not(:disabled) {
+  border-color: var(--import-accent);
+  background: #30291f;
+}
+.panel button:focus-visible,
+.trigger:focus-visible {
+  outline: 2px solid var(--import-accent, #edbb78);
+  outline-offset: 3px;
+}
+.panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.room {
+  text-transform: capitalize;
+  font-size: 0.8rem;
+  color: var(--import-accent);
+}
+.heading h2 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.8rem;
+  line-height: 1.15;
+  margin: 0.2rem 0 0;
+}
+.panel .close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+.intro {
+  color: var(--import-muted);
+  line-height: 1.5;
+  margin: 0.85rem 0 1.4rem;
+}
+.current {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--import-muted);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #433a2e;
+}
+.current strong {
+  color: var(--import-ink);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.panel .file {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+  padding: 1rem;
+  margin-top: 0.7rem;
+  border-style: dashed;
+  background: transparent;
+}
+.file svg {
+  flex-shrink: 0;
+  color: var(--import-accent);
+}
+.file span {
+  min-width: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.file strong {
+  overflow-wrap: anywhere;
+}
+.file small,
+.progress small {
+  color: var(--import-muted);
+  line-height: 1.5;
+}
+.actions {
+  display: grid;
+  margin-top: 1.2rem;
+}
+.panel .actions button {
+  text-align: left;
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid #433a2e;
+  border-radius: 0;
+  background: transparent;
+}
+.actions strong {
+  color: var(--import-accent);
+}
+.actions span {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--import-muted);
+}
+.error,
+.notice {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+}
+.error {
+  color: #ffbaad;
+}
+.notice {
+  color: var(--import-accent);
+}
+.progress {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.4rem 0;
+}
+.progress progress {
+  width: 100%;
+  accent-color: var(--import-accent);
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.footer span {
+  max-width: 18ch;
+  color: var(--import-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  color: inherit;
+  background: transparent;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.veil {
+  z-index: 18001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  background: rgb(15 14 12 / 94%);
+  outline: 2px dashed var(--import-accent);
+  outline-offset: -1.5rem;
+  pointer-events: none;
+  padding: 2rem;
+  text-align: center;
+}
+.veil strong {
+  font-family: Georgia, serif;
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  color: var(--import-accent);
+}
+@media (max-width: 36rem) {
+  .scrim {
+    align-items: end;
+    padding: 0.5rem;
+  }
+  .panel {
+    padding: 1rem;
+    max-height: calc(100dvh - 1rem);
+  }
+}
+@media (prefers-contrast: more) {
+  .panel,
+  .panel button {
+    border-color: currentColor;
+  }
+}

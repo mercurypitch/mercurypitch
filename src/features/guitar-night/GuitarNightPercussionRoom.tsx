@@ -23,6 +23,7 @@ import { percussionDurationBeats, SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, us
 interface GuitarNightPercussionRoomProps {
   reference: Accessor<GuitarNightReference>
   suspended?: Accessor<boolean>
+  importOpen?: Accessor<boolean>
   onSongs(): void
   sheetLanes: Accessor<readonly SheetLane[]>
   sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
@@ -190,7 +191,10 @@ export function GuitarNightPercussionRoom(
     onCleanup(
       installSpacePlaybackToggle({
         toggle: room.toggle,
-        ownsSpace: () => props.suspended?.() !== true && !sessionPanelOpen(),
+        ownsSpace: () =>
+          props.suspended?.() !== true &&
+          !sessionPanelOpen() &&
+          props.importOpen?.() !== true,
         enabled: () => room.status() !== 'starting',
       }),
     )

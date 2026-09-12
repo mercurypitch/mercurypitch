@@ -233,6 +233,56 @@ export function usePlayAlongSongController<
     })
   }
 
+  /** Open a candidate without unloading the current song; commit only after admission. */
+  const replaceSession = async (
+    sessionId: string,
+    task: {
+      signal: AbortSignal
+      assertCurrent: () => void
+      beforeCommit?: () => void
+    },
+  ): Promise<void> => {
+    const normalized = sessionId.trim()
+    if (!normalized) throw new Error('This song has no session identity.')
+    const generation = ++requestGeneration
+    activeAbort?.abort()
+    const abort = new AbortController()
+    activeAbort = abort
+    const cancel = () => abort.abort()
+    task.signal.addEventListener('abort', cancel, { once: true })
+    let candidate: TBacking | null = null
+    try {
+      task.signal.throwIfAborted()
+      task.assertCurrent()
+      const loaded = await ensurePort()
+      if (!loaded)
+        throw new Error('Your prepared-song library could not be opened.')
+      if (abort.signal.aborted || disposed || generation !== requestGeneration)
+        throw new DOMException('Cancelled', 'AbortError')
+      const result = await loaded.openSession(normalized, abort.signal)
+      if (result.ok) candidate = result.lease
+      task.assertCurrent()
+      if (abort.signal.aborted || disposed || generation !== requestGeneration)
+        throw new DOMException('Cancelled', 'AbortError')
+      if (!result.ok)
+        throw new Error(
+          `This song could not be opened (${result.code}). Your current music is still on stage.`,
+        )
+      // No asynchronous gap between the final admission and adoption.
+      task.beforeCommit?.()
+      releaseSelection()
+      activeLease = result.lease
+      candidate = null
+      setRouteSessionId(normalized)
+      setSelectionState({ kind: 'ready', lease: result.lease })
+      options.writeSession?.(normalized, 'push')
+    } finally {
+      task.signal.removeEventListener('abort', cancel)
+      candidate?.release()
+      if (activeAbort === abort) activeAbort = null
+    }
+  }
+
   const clearSession = (
     historyMode: PlayAlongSessionHistoryMode = 'push',
   ): void => {
@@ -266,6 +316,7 @@ export function usePlayAlongSongController<
     initialize,
     refreshLibrary,
     stageSession,
+    replaceSession,
     clearSession,
     retry,
   }

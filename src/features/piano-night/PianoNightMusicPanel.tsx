@@ -26,6 +26,9 @@ const SEARCH_THRESHOLD = 8
 const DEFAULT_MUSIC_SOURCE = createPianoNightMusicSource()
 
 interface PianoNightMusicPanelProps {
+  requestedFile?: File | null
+  onFileReceived?(): void
+  beforeSelect?(): string | null
   panelClass?: string
   currentSourceId: Accessor<string>
   legacyPianoPath: string
@@ -193,6 +196,11 @@ export function PianoNightMusicPanel(
 
   const chooseRow = (row: MusicRow): void => {
     if (row.source.id === props.currentSourceId()) return
+    const blocked = props.beforeSelect?.()
+    if (blocked != null && blocked !== '') {
+      setImportError(blocked)
+      return
+    }
     if (!props.onSelect(row.source)) {
       setImportError('This project has no playable score notes.')
     }
@@ -252,8 +260,14 @@ export function PianoNightMusicPanel(
   ): Promise<void> => {
     const target = assignmentTarget()
     if (target === null || savingSelection()) return
+    const blocked = props.beforeSelect?.()
+    if (blocked != null && blocked !== '') {
+      setSelectionError(blocked)
+      return
+    }
     const generation = ++selectionGeneration
     const source = props.musicSource ?? DEFAULT_MUSIC_SOURCE
+    const sourceId = props.currentSourceId()
     setSavingSelection(true)
     setSelectionError(null)
 
@@ -271,6 +285,17 @@ export function PianoNightMusicPanel(
 
     setAssignmentTarget({ ...target, project: result.project })
     if (target.origin === 'library') replaceCatalogProject(result.project)
+    const latestBlocker = props.beforeSelect?.()
+    if (latestBlocker != null && latestBlocker !== '') {
+      setSelectionError(latestBlocker)
+      return
+    }
+    if (props.currentSourceId() !== sourceId) {
+      setSelectionError(
+        'The piece on stage changed. Apply these saved track choices again when you are ready.',
+      )
+      return
+    }
     if (!props.onSelect(pianoProjectToPianoNightSource(result.project))) {
       setSelectionError('The selected Score track has no playable notes.')
     }
@@ -282,6 +307,7 @@ export function PianoNightMusicPanel(
   }
 
   const importFile = async (file: File): Promise<void> => {
+    const sourceId = props.currentSourceId()
     importAbort?.abort()
     const abort = new AbortController()
     importAbort = abort
@@ -298,6 +324,18 @@ export function PianoNightMusicPanel(
     setImportingName(null)
     if (!result.ok) {
       if (result.code !== 'cancelled') setImportError(result.message)
+      return
+    }
+
+    const blocked = props.beforeSelect?.()
+    if (
+      (blocked != null && blocked !== '') ||
+      props.currentSourceId() !== sourceId
+    ) {
+      setImportError(
+        blocked ??
+          'The piece on stage changed while importing. Choose the saved project from Music when you are ready.',
+      )
       return
     }
 
@@ -319,6 +357,13 @@ export function PianoNightMusicPanel(
     event.currentTarget.value = ''
     if (file !== undefined) void importFile(file)
   }
+
+  createEffect(() => {
+    const file = props.requestedFile
+    if (!file) return
+    props.onFileReceived?.()
+    void importFile(file)
+  })
 
   onMount(() => {
     void loadCatalog()
