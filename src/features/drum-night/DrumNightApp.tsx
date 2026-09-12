@@ -12,10 +12,13 @@ import type { JSX } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, For, lazy, Match, on, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
 import { AudioWave, CheckSmall, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
+import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
+import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
 import { loadUvrPlayAlongSongPort } from '@/features/play-along/song-port-loader'
 import { loadPlayAlongBandPreparationPort, usePlayAlongBandPreparationController, } from '@/features/play-along/useBandPreparationController'
+import { useNightMusicImport } from '@/features/play-along/useNightMusicImport'
 import { usePlayAlongSongController } from '@/features/play-along/useSongController'
 import { DeferredRoomVoiceControl } from '@/features/voice-control/DeferredRoomVoiceControl'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
@@ -35,6 +38,7 @@ import type { DrumNightAudioSession } from './drum-night-audio-session'
 import { createDrumNightAudioSession } from './drum-night-audio-session'
 import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNightClickSnapshot, } from './drum-night-click'
 import { createDrumNightClickController } from './drum-night-click'
+import type { createDrumNightMusicActions } from './drum-night-music-actions'
 import styles from './DrumNightApp.module.css'
 import { DrumNightTimeline } from './DrumNightTimeline'
 import type { DrumFeelSettings, HumanizeStyle } from './groove'
@@ -716,25 +720,26 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     readonly generation: number
     readonly sessionId: string
   } | null = null
+  const checkBandPreflight = async (
+    sessionId: string,
+  ): Promise<CloudSplitBlocker | null> => {
+    if (props.checkBandPreflight) return props.checkBandPreflight(sessionId)
+    const [account, preflight] = await Promise.all([
+      import('@/lib/standalone-account'),
+      import('@/lib/uvr-cloud-preflight'),
+    ])
+    if (!account.accountReady()) await account.refreshAccount()
+    const balance = account.credits()
+    return preflight.cloudSplitBlocker({
+      signedIn: account.signedIn(),
+      ...(balance === null ? {} : { balance }),
+    })
+  }
   const bandPreparation = usePlayAlongBandPreparationController({
     loadPort: () =>
       props.loadBandPreparationPort?.() ??
       loadPlayAlongBandPreparationPort(DRUM_PLAY_ALONG_POLICY),
-    checkPreflight: async (sessionId) => {
-      if (props.checkBandPreflight !== undefined) {
-        return props.checkBandPreflight(sessionId)
-      }
-      const [account, preflight] = await Promise.all([
-        import('@/lib/standalone-account'),
-        import('@/lib/uvr-cloud-preflight'),
-      ])
-      if (!account.accountReady()) await account.refreshAccount()
-      const balance = account.credits()
-      return preflight.cloudSplitBlocker({
-        signedIn: account.signedIn(),
-        ...(balance === null ? {} : { balance }),
-      })
-    },
+    checkPreflight: checkBandPreflight,
     onPrepared: async (sessionId, signal) => {
       const intent = activeBandIntent
       if (
@@ -2581,6 +2586,57 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       .catch(() => showToast('Take history could not be opened.'))
   }
 
+  let musicActions: ReturnType<typeof createDrumNightMusicActions> | null = null
+  const musicImport = useNightMusicImport({
+    room: 'drums',
+    sourceKey: () =>
+      `${sourceIntentGeneration}:${songController.routeSessionId() ?? ''}:${importedDocument()?.fileName ?? ''}:${activeProject()?.id ?? ''}`,
+    currentTitle: sessionTitle,
+    blockedReason: () =>
+      performanceTakeImportBlocker(takeCapture.state()) ??
+      (isPlaying() && transport().recording
+        ? 'Stop your take before replacing music.'
+        : bandPreparation.isPreparing() ||
+            (sessionState().status === 'loading' &&
+              musicActions?.parsing() !== true)
+          ? 'Finish or cancel the current import first.'
+          : null),
+    loadActions: async () => {
+      const { createDrumNightMusicActions } =
+        await import('./drum-night-music-actions')
+      musicActions = createDrumNightMusicActions({
+        song: songController,
+        session: sessionController,
+        project: projectController,
+        backingId: () => selectedBackingSource()?.sessionId ?? null,
+        loadBandPort: () =>
+          props.loadBandPreparationPort?.() ??
+          loadPlayAlongBandPreparationPort(DRUM_PLAY_ALONG_POLICY),
+        checkBandPreflight,
+        onResolveBlocker: (blocker) => {
+          if (blocker.cta?.section === 'account') openTopbarSignIn()
+          else if (blocker.cta?.section === 'credits')
+            window.open('/#/settings/credits', '_blank', 'noopener,noreferrer')
+        },
+        onBackingLoaded: () => {
+          invalidateSourceIntent()
+          sessionController.cancel()
+          setImportedDocument(null)
+          setView('score')
+          setDrawerOpen(false)
+        },
+        onScoreLoaded: () => {
+          invalidateSourceIntent()
+          songController.clearSession('replace')
+          setView('score')
+          setDrawerOpen(false)
+          updateUrl('score', null)
+        },
+      })
+      return musicActions.actions
+    },
+  })
+
   const importSessionFile = (file: File | undefined): void => {
     if (file === undefined) return
     const intentGeneration = invalidateSourceIntent()
@@ -3582,7 +3638,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
     const uninstallSpace = installSpacePlaybackToggle({
       toggle: togglePlaying,
-      ownsSpace: () => !drawerOpen() && !inputOpen(),
+      ownsSpace: () => !drawerOpen() && !inputOpen() && !musicImport.isOpen(),
     })
     const onPointerDown = (event: PointerEvent): void => {
       if (
@@ -3788,6 +3844,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </span>
           </div>
           <div class={styles.sessionActions}>
+            <NightMusicImportButton onClick={musicImport.open} />
             <button
               ref={inputButtonRef}
               class={styles.inputChip}
@@ -5341,6 +5398,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           somebody to Drum Night and then had nothing that left it: "go
           home" and "go to singing" belong to the shell's tab set, which a
           standalone document never loads. */}
+      <NightMusicImport controller={musicImport} />
       <DeferredRoomVoiceControl />
     </div>
   )

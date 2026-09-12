@@ -73,7 +73,14 @@ export interface DrumSessionImportController {
   state(): DrumSessionImportState
   generation(): number
   subscribe(listener: () => void): () => void
-  importFile(file: File): Promise<DrumSessionImportAttempt>
+  importFile(
+    file: File,
+    options?: {
+      signal?: AbortSignal
+      beforeApply?: (state: DrumSessionImportState) => Promise<void>
+      beforeCommit?: () => void
+    },
+  ): Promise<DrumSessionImportAttempt>
   cancel(): void
   dispose(): void
 }
@@ -272,7 +279,10 @@ export function createDrumSessionImportController(
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-    async importFile(file: File): Promise<DrumSessionImportAttempt> {
+    async importFile(
+      file: File,
+      options = {},
+    ): Promise<DrumSessionImportAttempt> {
       if (disposed) {
         return {
           status: 'stale',
@@ -281,17 +291,33 @@ export function createDrumSessionImportController(
         }
       }
       const generation = ++currentGeneration
+      const previousState = currentState
       activeImport?.abort()
       const abortController = new AbortController()
+      const cancel = () => abortController.abort()
+      options.signal?.addEventListener('abort', cancel, { once: true })
       activeImport = abortController
       commit(loadingDrumSession(file.name))
       let state: DrumSessionImportState
       try {
+        options.signal?.throwIfAborted()
         state = await importDrumSession(file, ports, {
           signal: abortController.signal,
           allowPitchedOnly: controllerOptions.allowPitchedOnly,
         })
+        abortController.signal.throwIfAborted()
+        if (!disposed && generation === currentGeneration)
+          await options.beforeApply?.(state)
+        abortController.signal.throwIfAborted()
+        if (!disposed && generation === currentGeneration)
+          options.beforeCommit?.()
       } catch (error) {
+        if (
+          options.beforeApply &&
+          !disposed &&
+          generation === currentGeneration
+        )
+          commit(previousState)
         if (
           isAbortError(error) &&
           (disposed || generation !== currentGeneration)
@@ -300,6 +326,7 @@ export function createDrumSessionImportController(
         }
         throw error
       } finally {
+        options.signal?.removeEventListener('abort', cancel)
         if (activeImport === abortController) activeImport = null
       }
       if (disposed || generation !== currentGeneration) {

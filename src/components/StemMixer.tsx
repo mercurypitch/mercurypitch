@@ -10,6 +10,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
@@ -89,6 +90,8 @@ export interface ExtraStemInput {
 }
 
 interface StemMixerProps {
+  importOpen?: () => boolean
+  registerMusicGuard?: (guard: NightMusicSessionGuard | null) => void
   stems: {
     vocal?: string
     instrumental?: string
@@ -492,6 +495,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioContext: () => audioCtxForMic.getAudioCtx() ?? null,
   })
   /* eslint-enable solid/reactivity */
+  onMount(() => {
+    props.registerMusicGuard?.({
+      blockedReason: () => {
+        const state = karaokeVoiceCapture.state()
+        if (state === 'recording' || state === 'paused')
+          return 'Stop singing and review your take before replacing music.'
+        if (state === 'saving' || state === 'processing')
+          return 'Wait for your take to finish saving or processing.'
+        return state === 'ready'
+          ? 'Keep or dismiss your take in its review before replacing music.'
+          : null
+      },
+    })
+    onCleanup(() => props.registerMusicGuard?.(null))
+  })
   useLocalSaveNavigationLock(
     () => karaokeVoiceCapture.state() === 'saving',
     'karaoke voice-take keep',
@@ -2062,6 +2080,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (props.importOpen?.() === true) return
       // The score dialog owns keyboard input while it is open. Without this
       // guard Space restarted playback and letter shortcuts mutated the mixer
       // behind the singer's keep-or-close decision.

@@ -4,6 +4,7 @@
 import { createSignal, onCleanup } from 'solid-js'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { PlayAlongBandPreparationPhase, PlayAlongBandPreparationPort, } from './band-preparation-port'
+import { prepareBandWithPreflight } from './prepare-band'
 import type { PlayAlongTargetPolicy, PlayAlongTargetStemKind, } from './song-port'
 
 export type PlayAlongBandPreparationState =
@@ -116,54 +117,9 @@ export function usePlayAlongBandPreparationController(
         return
       }
 
-      const reused =
-        (await port.reusePreparedBand?.(sessionId, {
-          signal: abort.signal,
-        })) ?? null
-      if (
-        disposed ||
-        abort.signal.aborted ||
-        currentGeneration !== generation
-      ) {
-        return
-      }
-      if (reused !== null) {
-        setState({
-          kind: 'preparing',
-          sessionId,
-          phase: 'opening-song',
-          progress: 100,
-          detail: null,
-        })
-        await options.onPrepared?.(sessionId, abort.signal)
-        if (
-          disposed ||
-          abort.signal.aborted ||
-          currentGeneration !== generation
-        ) {
-          return
-        }
-        activeAbort = null
-        setState({ kind: 'idle' })
-        return
-      }
-
-      const blocker = (await options.checkPreflight?.(sessionId)) ?? null
-      if (
-        disposed ||
-        abort.signal.aborted ||
-        currentGeneration !== generation
-      ) {
-        return
-      }
-      if (blocker !== null) {
-        activeAbort = null
-        setState({ kind: 'blocked', sessionId, blocker })
-        return
-      }
-
-      await port.prepareBand(sessionId, {
+      const blocker = await prepareBandWithPreflight(port, sessionId, {
         signal: abort.signal,
+        checkPreflight: options.checkPreflight,
         onUpdate: (update) => {
           if (
             disposed ||
@@ -186,6 +142,11 @@ export function usePlayAlongBandPreparationController(
         abort.signal.aborted ||
         currentGeneration !== generation
       ) {
+        return
+      }
+      if (blocker !== null) {
+        activeAbort = null
+        setState({ kind: 'blocked', sessionId, blocker })
         return
       }
 
