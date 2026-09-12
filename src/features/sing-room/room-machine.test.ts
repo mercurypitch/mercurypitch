@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
-import { hasUnsavedTake, initialSingRoomContext, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, } from './room-machine'
+import { hasUnsavedTake, initialSingRoomContext, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, } from './room-machine'
 
 const run = (
   ctx: SingRoomContext,
@@ -226,5 +226,41 @@ describe('the sheet setting', () => {
     expect(off.state).toBe('live')
     expect(micIntent(off)).toBe(true)
     expect(run(off, { type: 'leave' }, { type: 'enter' }).state).toBe('paused')
+  })
+})
+
+describe('what begins a take', () => {
+  it('does, when the room goes live from rest or from the priming door', () => {
+    expect(startsNewTake('resting', 'live')).toBe(true)
+    expect(startsNewTake('priming', 'live')).toBe(true)
+    expect(startsNewTake('denied', 'live')).toBe(true)
+    expect(startsNewTake('ended', 'live')).toBe(true)
+  })
+
+  it('does NOT, on a resume: that take is the one being continued', () => {
+    expect(startsNewTake('paused', 'live')).toBe(false)
+  })
+
+  it('does NOT, when the state did not move at all', () => {
+    // A mute dispatches, which hands back a new context object and wakes
+    // every effect reading it. Counting that as a take made the second take
+    // of a session report itself as the fourth.
+    expect(startsNewTake('live', 'live')).toBe(false)
+  })
+
+  it('does NOT, on the first read of a freshly mounted room', () => {
+    expect(startsNewTake(undefined, 'live')).toBe(false)
+  })
+
+  it('does NOT, for any state that is not a live run', () => {
+    for (const next of [
+      'resting',
+      'paused',
+      'ended',
+      'denied',
+      'priming',
+    ] as const) {
+      expect(startsNewTake('resting', next)).toBe(false)
+    }
   })
 })

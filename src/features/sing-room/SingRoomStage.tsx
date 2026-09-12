@@ -39,6 +39,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { haptics } from '@/lib/haptics'
 import { micManager } from '@/lib/mic-manager'
 import { buildMultiOctaveScale, scaleDegreeSet } from '@/lib/scale-data'
+import { exposeForE2E } from '@/lib/test-utils'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -47,9 +48,10 @@ import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import type { SingTake } from '@/stores/sing-takes-store'
 import { keepSingTake, lastSingTake } from '@/stores/sing-takes-store'
-import type { PitchResult, PitchSample, ScaleDegree } from '@/types'
+import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
-import { hasUnsavedTake as takeUndecided, micChipState, micIntent, runIsLive, runIsPaused, } from './room-machine'
+import type { SingRoomState } from './room-machine'
+import { hasUnsavedTake as takeUndecided, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
 import { beginTake, dispatchSingRoom, singRoomContext, takesThisSession, } from './sing-room-store'
@@ -66,6 +68,11 @@ export interface SingRoomCanvasOptions {
   pitchHistory: () => PitchSample[]
   /** The rows the trace is read against: the melody's, or the voice's own. */
   scale: () => ScaleDegree[]
+  /** EMPTY in a free run: there is no melody, and a leftover one would both
+   *  draw a target nobody asked for and pull the whole view to its own
+   *  octave, dropping the sung line off the top of the canvas as an
+   *  out-of-view artifact. */
+  melody: () => MelodyItem[]
   currentBeat: () => number
   totalBeats: () => number
   isPlaying: () => boolean
@@ -75,6 +82,8 @@ export interface SingRoomCanvasOptions {
 
 export interface SingRoomStageProps {
   picker: MidiSongPicker
+  /** The melody on the stage. A free run draws none of it. */
+  melody: () => MelodyItem[]
   /** The app's own transport position, for a melody run. */
   currentBeat: () => number
   totalBeats: () => number
@@ -117,6 +126,9 @@ export interface SingRoomStageProps {
 /** The free run's window, in the seconds it uses for beats. */
 const FREE_WINDOW_SECONDS = 17
 
+/** One shared empty array: a new one per frame is a new prop every frame. */
+const EMPTY_MELODY: MelodyItem[] = []
+
 export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const background = useBackgroundSurfaceController('sing', () => false)
 
@@ -126,7 +138,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const [takeClock, setTakeClock] = createSignal({ startedAt: 0, endedAt: 0 })
 
   const ctx = singRoomContext
-  const state = (): string => ctx().state
+  const state = (): SingRoomState => ctx().state
 
   /** A melody run: the app's transport is the thing that is running. */
   const melodyRun = (): boolean => props.isPlaying() || props.isPaused()
@@ -160,13 +172,12 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     return true
   }
 
-  // Starting a take is the move INTO a live run from anywhere that is not a
-  // pause: a resume continues the take it paused.
+  // `startsNewTake` is the whole rule, and it lives in the machine because
+  // the effect below re-runs on EVERY dispatch: the context is a new object
+  // each time, so `on(state)` fires even when the state did not move.
   createEffect(
     on(state, (next, previous) => {
-      if (next === 'live' && previous !== 'paused' && previous !== undefined) {
-        startTake()
-      }
+      if (startsNewTake(previous, next)) startTake()
     }),
   )
 
@@ -264,6 +275,19 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   onMount(() => {
     dispatchSingRoom({ type: 'enter' })
     onCleanup(props.subscribeFrames(onFrame))
+
+    // What the room thinks is happening, for the walk that drives it.
+    // A trace that is not drawing has four possible reasons and a
+    // screenshot distinguishes none of them; this says which one it is.
+    // Written only under `window.E2E_TEST_MODE`, as everything here is.
+    exposeForE2E('mpSingRoom', () => ({
+      state: ctx().state,
+      micIntent: micIntent(ctx()),
+      melodyRun: melodyRun(),
+      trail: takeRecording.trail.length,
+      frames: takeRecording.frames.length,
+      elapsedSeconds: takeRecording.elapsedSeconds,
+    }))
     onCleanup(
       registerRunControls({
         tab: TAB_SINGING,
@@ -354,6 +378,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const canvasOptions: SingRoomCanvasOptions = {
     pitchHistory: () =>
       melodyRun() ? props.pitchHistory() : takeRecording.trail,
+    melody: () => (melodyRun() ? props.melody() : EMPTY_MELODY),
     scale: () => (melodyRun() ? melodyStore.currentScale() : freeScale()),
     currentBeat: () =>
       melodyRun() ? props.currentBeat() : takeRecording.elapsedSeconds,

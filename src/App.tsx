@@ -3074,7 +3074,7 @@ const AppShell: Component<AppProps> = (props) => {
    */
   const renderSingingRoomCanvas = (options: SingRoomCanvasOptions) => (
     <PitchCanvas
-      melody={activePlaybackItems}
+      melody={options.melody}
       scale={options.scale}
       totalBeats={options.totalBeats}
       currentBeat={options.currentBeat}
@@ -3480,6 +3480,7 @@ const AppShell: Component<AppProps> = (props) => {
                   {IS_NATIVE_BUILD ? (
                     <SingRoomStage
                       picker={singingPicker}
+                      melody={activePlaybackItems}
                       currentBeat={currentBeat}
                       totalBeats={totalBeats}
                       pitchHistory={pitchHistory}

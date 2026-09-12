@@ -233,6 +233,29 @@ export function hasUnsavedTake(ctx: SingRoomContext): boolean {
   return ctx.state === 'ended'
 }
 
+/**
+ * Does this move into a live run begin a NEW take?
+ *
+ * Three of the four ways of arriving at `live` do not, and a room that got
+ * this wrong threw away the trail and restarted the take's clock on every
+ * one of them. Measured in the probe: a mute and an unmute counted as two
+ * more takes, and the second take of a session said it was the fourth.
+ *
+ *   undefined  the first read of a freshly mounted room. The context is
+ *              module-scoped, so a remount lands mid-take on purpose.
+ *   live       a mute, or any other event that left the state alone. The
+ *              context is a new object every dispatch, which is what wakes
+ *              the effect that asks this.
+ *   paused     a resume continues the take it paused.
+ */
+export function startsNewTake(
+  previous: SingRoomState | undefined,
+  next: SingRoomState,
+): boolean {
+  if (next !== 'live') return false
+  return previous !== undefined && previous !== 'live' && previous !== 'paused'
+}
+
 /** Is the room's run one the shell should draw a transport for? */
 export function runIsLive(ctx: SingRoomContext): boolean {
   return ctx.state === 'live'

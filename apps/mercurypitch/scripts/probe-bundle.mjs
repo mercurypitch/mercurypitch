@@ -870,6 +870,20 @@ async function walkRun(page, ctx) {
   }
   steps.push(`room: the note chip names a note and its cents (${chipText})`)
 
+  // Sampled once the room says it has a line to draw, not once it says it can
+  // hear: the first cut read the canvas a tenth of a second after the mic
+  // opened and found two points of trail, then reported that the trace was
+  // not drawing at all. The room exposes its own count under E2E mode.
+  await page.waitForFunction(
+    () => (window.mpSingRoom?.().trail ?? 0) > 120,
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
+  const room = await page.evaluate(() => window.mpSingRoom?.())
+  if (room?.melodyRun !== false || room?.micIntent !== true) {
+    throw new Error(`the room is not in a free run: ${JSON.stringify(room)}`)
+  }
+
   const trace = await sampleTrace(page)
   if (trace.error !== undefined) throw new Error(trace.error)
   if (trace.transparent < trace.total * 0.5) {
@@ -878,7 +892,7 @@ async function walkRun(page, ctx) {
   }
   if (trace.spectrum < 200) {
     throw new Error(
-      `only ${trace.spectrum} spectrum pixels: the trace is not drawing`,
+      `only ${trace.spectrum} spectrum pixels with ${room.trail} of trail: the trace is not drawing`,
     )
   }
   if (trace.flatGreen > trace.spectrum / 4) {
