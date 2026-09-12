@@ -87,7 +87,10 @@ const MAX_FRAME_GAP_MS = 250
  * out loud ("held within 12 cents") and has to be a value that was actually
  * measured, not one between two of them.
  */
-export function percentile(values: readonly number[], fraction: number): number {
+export function percentile(
+  values: readonly number[],
+  fraction: number,
+): number {
   if (values.length === 0) return 0
   const sorted = [...values].sort((a, b) => a - b)
   const rank = Math.ceil(fraction * sorted.length)

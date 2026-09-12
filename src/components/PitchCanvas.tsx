@@ -1108,7 +1108,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.lineTo(right, y)
       const record = results?.[index]
       if (record !== undefined) {
-        burned.push({ x1: left, x2: right, y, stroke: ratingColors(record.rating).stroke })
+        burned.push({
+          x1: left,
+          x2: right,
+          y,
+          stroke: ratingColors(record.rating).stroke,
+        })
       }
     }
     ctx.stroke()
@@ -1894,7 +1899,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       // The glowing trail-head dot only rides a LIVE run — on the preserved
       // post-run trace it read as a second "current pitch" dot next to the
       // left live marker.
-      const transportOn = props.isPlaying() || props.isPaused()
+      // Under the room look the trail only exists while a take is running —
+      // the room clears it between takes — so the head is the live end of the
+      // line there whether or not a melody transport is going.
+      const transportOn = props.isPlaying() || props.isPaused() || spectrum
       if (transportOn && last.freq !== null && last.freq > 0) {
         const ly = freqToY(last.freq, h)
         const lx = beatToHistoryX(
@@ -1904,8 +1912,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           props.totalBeats(),
         )
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
-        grad.addColorStop(0, spectrum ? 'rgba(88,166,255,0.6)' : 'rgba(63,185,80,0.55)')
-        grad.addColorStop(1, spectrum ? 'rgba(88,166,255,0)' : 'rgba(63,185,80,0)')
+        grad.addColorStop(
+          0,
+          spectrum ? 'rgba(88,166,255,0.6)' : 'rgba(63,185,80,0.55)',
+        )
+        grad.addColorStop(
+          1,
+          spectrum ? 'rgba(88,166,255,0)' : 'rgba(63,185,80,0)',
+        )
         ctx.fillStyle = grad
         ctx.beginPath()
         ctx.arc(lx, ly, 12, 0, Math.PI * 2)

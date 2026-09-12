@@ -72,6 +72,17 @@ export interface NativeRunControls {
 export interface NativeShellApi {
   /** Push the Settings screen (Back returns to the room). */
   pushSettings: () => void
+  /**
+   * Open THIS APP's row in the system Settings — the one place a refused
+   * microphone can be turned back on, because neither platform prompts twice.
+   *
+   * It lives on the shell rather than in the room for the same reason
+   * `pushSettings` does: the call is `openAppSettings()` from
+   * `@irchiinnuss/mobile-runtime/platform`, a package only the app depends
+   * on, and the web build must not so much as resolve it. Optional, so a room
+   * that finds no shell (or an older one) simply has no button to offer.
+   */
+  openAppSettings?: () => Promise<boolean>
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(

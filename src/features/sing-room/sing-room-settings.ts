@@ -37,6 +37,21 @@ export const [singPerNoteBurn, setSingPerNoteBurn] =
   })
 
 /**
+ * Whether this device has ever granted the microphone to this app.
+ *
+ * NOT `navigator.permissions.query`: iOS's WebKit does not answer for the
+ * microphone at all, so the one platform the automatic policy was designed
+ * for is the one that would always fall back to asking. A remembered yes is
+ * enough — if the permission was revoked since, the next acquisition fails
+ * and the room lands on the denied screen, which is where a revoked
+ * permission belongs anyway.
+ */
+export const [singMicGranted, setSingMicGranted] =
+  createPersistedSignal<boolean>('pitchperfect_sing_mic_granted', false, {
+    validator: (value): value is boolean => typeof value === 'boolean',
+  })
+
+/**
  * Whether the one coach mark has been dismissed.
  *
  * Dismissed BY USE, not by a close button: touching the key chip, the state

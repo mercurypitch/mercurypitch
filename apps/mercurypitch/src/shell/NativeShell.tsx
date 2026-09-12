@@ -19,6 +19,7 @@
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
+import { openAppSettings } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
@@ -102,6 +103,9 @@ export const NativeShell: Component = () => {
         pushSettings: () => {
           pushScreen('settings')
         },
+        // The Sing room's denied state (3d) is the one caller: a refused
+        // microphone can only be undone in the system's own Settings.
+        openAppSettings: () => openAppSettings(),
       }),
     )
 

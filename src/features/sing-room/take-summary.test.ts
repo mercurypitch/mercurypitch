@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { midiToFreq } from '@/lib/scale-data'
-import { formatRange, formatTakeDate, formatTakeDuration, MIN_VOICED_MS, percentile, rangeTouched, summarizeTake, takeSentence, voicedMs, } from './take-summary'
 import type { TakeFrame } from './take-summary'
+import { formatRange, formatTakeDate, formatTakeDuration, MIN_VOICED_MS, percentile, rangeTouched, summarizeTake, takeSentence, voicedMs, } from './take-summary'
 
 /** A run of frames on one note, one frame every `stepMs`. */
 function held(

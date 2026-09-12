@@ -15,7 +15,11 @@ describe('the first arrival', () => {
   })
 
   it('goes to the priming screen, not straight to the alert', () => {
-    const ctx = run(initialSingRoomContext(), { type: 'enter' }, { type: 'sing-a-note' })
+    const ctx = run(
+      initialSingRoomContext(),
+      { type: 'enter' },
+      { type: 'sing-a-note' },
+    )
     expect(ctx.state).toBe('priming')
     expect(micIntent(ctx)).toBe(false)
   })
@@ -55,9 +59,23 @@ describe('the first arrival', () => {
     const returned = run(denied, { type: 'leave' }, { type: 'enter' })
     expect(returned.state).toBe('denied')
     // The capsule does.
-    expect(run(returned, { type: 'explore' }, { type: 'sing-a-note' }).state).toBe(
-      'priming',
+    expect(
+      run(returned, { type: 'explore' }, { type: 'sing-a-note' }).state,
+    ).toBe('priming')
+  })
+})
+
+describe('a device that is busy rather than refused', () => {
+  it('rests, and does not send anybody to Settings over it', () => {
+    const ctx = run(
+      initialSingRoomContext(),
+      { type: 'enter' },
+      { type: 'sing-a-note' },
+      { type: 'mic-unavailable' },
     )
+    expect(ctx.state).toBe('resting')
+    expect(ctx.permission).toBe('unknown')
+    expect(micIntent(ctx)).toBe(false)
   })
 })
 
@@ -96,7 +114,12 @@ describe('the automatic microphone', () => {
   })
 
   it('comes back paused from the pill, and does not sound on its own', () => {
-    const ctx = run(granted, { type: 'enter' }, { type: 'leave' }, { type: 'enter' })
+    const ctx = run(
+      granted,
+      { type: 'enter' },
+      { type: 'leave' },
+      { type: 'enter' },
+    )
     expect(ctx.state).toBe('paused')
     expect(micIntent(ctx)).toBe(false)
     expect(runIsPaused(ctx)).toBe(true)
@@ -104,7 +127,11 @@ describe('the automatic microphone', () => {
   })
 
   it('does not restart itself after a deliberate stop', () => {
-    const stopped = run(granted, { type: 'enter' }, { type: 'stop', hasTake: false })
+    const stopped = run(
+      granted,
+      { type: 'enter' },
+      { type: 'stop', hasTake: false },
+    )
     expect(stopped.state).toBe('resting')
     // Even an arrival does not re-arm it: only the capsule does.
     const returned = run(stopped, { type: 'leave' }, { type: 'enter' })
@@ -158,14 +185,22 @@ describe('the end card', () => {
   const granted = initialSingRoomContext({ permission: 'granted' })
 
   it('opens on a stop with a take in it, and claims the take', () => {
-    const ended = run(granted, { type: 'enter' }, { type: 'stop', hasTake: true })
+    const ended = run(
+      granted,
+      { type: 'enter' },
+      { type: 'stop', hasTake: true },
+    )
     expect(ended.state).toBe('ended')
     expect(hasUnsavedTake(ended)).toBe(true)
     expect(micIntent(ended)).toBe(false)
   })
 
   it('never opens under three seconds — the room just rests', () => {
-    const ended = run(granted, { type: 'enter' }, { type: 'stop', hasTake: false })
+    const ended = run(
+      granted,
+      { type: 'enter' },
+      { type: 'stop', hasTake: false },
+    )
     expect(ended.state).toBe('resting')
     expect(hasUnsavedTake(ended)).toBe(false)
   })

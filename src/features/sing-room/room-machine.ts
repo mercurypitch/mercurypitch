@@ -83,6 +83,12 @@ export type SingRoomEvent =
   | { type: 'take-decided' }
   /** "Explore the rooms", from the denied state. */
   | { type: 'explore' }
+  /**
+   * The device could not be opened for a reason that is NOT a refusal — it
+   * is busy, or another tab holds it. 3d's copy ("turn on the microphone in
+   * Settings") would be a lie there, so the room simply rests.
+   */
+  | { type: 'mic-unavailable' }
   | { type: 'set-mic-on-arrival'; value: boolean }
 
 export function initialSingRoomContext(
@@ -188,6 +194,9 @@ export function singRoomReducer(
 
     case 'explore':
       return ctx.state === 'denied' ? { ...ctx, state: 'resting' } : ctx
+
+    case 'mic-unavailable':
+      return { ...ctx, armed: false, state: 'resting' }
 
     case 'set-mic-on-arrival':
       return { ...ctx, micOnArrival: event.value }

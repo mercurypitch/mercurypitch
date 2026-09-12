@@ -1,0 +1,635 @@
+// ============================================================
+// Retro Analog Studio — the Sing tab, as a room (Phase 3)
+// ============================================================
+//
+// Under `IS_NATIVE_BUILD` this replaces `SingingMobileStage` at the Sing
+// tab's swap point. It is a full-bleed cover photograph under the kit's
+// scrims, a row of glass chips on the top scrim, the pitch trace drawn on a
+// TRANSPARENT canvas as the whole middle, and nothing else: the room header
+// and the transport are the shell's, and the options sheet and the end card
+// are one gesture away. No web chrome, no second transport, no score.
+//
+// WHAT LIVES WHERE. The maths, the store and the machine are headless
+// modules beside this file, each with its own suite; this component is a
+// presentation of them and a wiring harness for four things it cannot avoid
+// owning — the frame subscription, the microphone effect, the shell
+// registration, and the free run's own time axis.
+//
+// THE FREE RUN'S TIME AXIS. `PitchCanvas` positions a trail by BEAT, which
+// is right for a melody and meaningless for a free tracker with no transport
+// running. So a free run feeds it a second-based axis: one "beat" is one
+// second, `currentBeat` is the elapsed seconds, and the canvas's existing
+// sliding-window maths gives an oscilloscope 16 seconds wide for nothing. A
+// melody run hands back the app's real beats and the app's own history.
+//
+// THE TRAIL IS A MUTATED ARRAY, not a signal. `PitchCanvas` repaints from
+// its own rAF loop whenever the history has anything in it, and rebuilding a
+// 1500-entry array sixty times a second to tell it something it is about to
+// read anyway is work nobody sees.
+
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
+import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
+import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
+import { roomName } from '@/features/rooms/room-names'
+import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { haptics } from '@/lib/haptics'
+import { micManager } from '@/lib/mic-manager'
+import { scaleDegreeSet } from '@/lib/scale-data'
+import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
+import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
+import { melodyStore } from '@/stores/melody-store'
+import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
+import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
+import type { SingTake } from '@/stores/sing-takes-store'
+import { keepSingTake, lastSingTake } from '@/stores/sing-takes-store'
+import type { PitchResult, PitchSample } from '@/types'
+import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
+import { hasUnsavedTake as takeUndecided,micChipState, micIntent, runIsLive, runIsPaused,  } from './room-machine'
+import styles from './sing-room.module.css'
+import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn,SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn,  } from './sing-room-settings'
+import { beginTake, dispatchSingRoom, singRoomContext, takesThisSession, } from './sing-room-store'
+import { SingRoomHud } from './SingRoomHud'
+import { SingRoomOptions } from './SingRoomOptions'
+import { SingTakeSheet } from './SingTakeSheet'
+import { SingPrimingArt, SingTrace } from './SingTrace'
+import type { TakeFrame, TakeSummary } from './take-summary'
+import { summarizeTake } from './take-summary'
+
+/** What the room hands the host so the host can build its `PitchCanvas`. */
+export interface SingRoomCanvasOptions {
+  pitchHistory: () => PitchSample[]
+  currentBeat: () => number
+  totalBeats: () => number
+  isPlaying: () => boolean
+  isPaused: () => boolean
+  perNoteBurn: () => boolean
+}
+
+export interface SingRoomStageProps {
+  picker: MidiSongPicker
+  /** The app's own transport position, for a melody run. */
+  currentBeat: () => number
+  totalBeats: () => number
+  /** The app's trail, for a melody run. A free run keeps its own. */
+  pitchHistory: () => PitchSample[]
+  currentPitch: () => PitchResult | null
+  targetPitch: () => number | null
+  subscribeFrames: (listener: PracticeFrameListener) => () => void
+  /** The canvas, built by the host so the room never imports PitchCanvas. */
+  renderCanvas: (options: SingRoomCanvasOptions) => JSX.Element
+
+  micActive: () => boolean
+  /** Resolves false on a refusal; `micManager` says why. Must be awaited
+   *  inside the gesture that asked, so the audio context resumes with it. */
+  startMic: () => Promise<boolean>
+  stopMic: () => void
+
+  isPlaying: () => boolean
+  isPaused: () => boolean
+  onPlay: () => void
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
+  isCountingIn: () => boolean
+  countInBeat: () => number
+
+  onSessionSkip: () => void
+  onSessionEnd: () => void
+
+  speed: () => number
+  onSpeedChange: (value: number) => void
+  volume: () => number
+  onVolumeChange: (value: number) => void
+  metronomeEnabled: () => boolean
+  onMetronomeToggle: () => void
+  onOctaveShift: (delta: number) => void
+  onAutoCalibrate: () => void
+}
+
+/** How much of the free run's trail is kept — about 25 s at 60 fps. */
+const TRAIL_SAMPLES = 1500
+
+/** The take recorder's rate. 20 Hz resolves a 150 ms hold six times over. */
+const TAKE_FRAME_INTERVAL_MS = 50
+
+/** The free run's window, in the seconds it uses for beats. */
+const FREE_WINDOW_SECONDS = 17
+
+export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
+  const background = useBackgroundSurfaceController('sing', () => false)
+
+  const [optionsOpen, setOptionsOpen] = createSignal(false)
+  const [summary, setSummary] = createSignal<TakeSummary | null>(null)
+  const [previousTake, setPreviousTake] = createSignal<SingTake | null>(null)
+  const [takeClock, setTakeClock] = createSignal({ startedAt: 0, endedAt: 0 })
+
+  // The free run's own axis and trail. Plain values, mutated in place: the
+  // canvas reads both from its own loop (see the header).
+  let trail: PitchSample[] = []
+  let elapsedSeconds = 0
+  let takeFrames: TakeFrame[] = []
+  let runStartedAtMs = 0
+  let runStartedAtEpoch = 0
+  let lastTakeFrameMs = 0
+
+  const ctx = singRoomContext
+  const state = (): string => ctx().state
+
+  /** A melody run: the app's transport is the thing that is running. */
+  const melodyRun = (): boolean => props.isPlaying() || props.isPaused()
+
+  const scalePitchClasses = createMemo(() =>
+    scaleDegreeSet(keyName(), scaleType()),
+  )
+
+  // ── The take ───────────────────────────────────────────────
+
+  const startTake = (): void => {
+    trail = []
+    takeFrames = []
+    elapsedSeconds = 0
+    lastTakeFrameMs = 0
+    runStartedAtMs = performance.now()
+    runStartedAtEpoch = Date.now()
+    beginTake()
+  }
+
+  const endTake = (): boolean => {
+    const endedAtMs = performance.now()
+    const computed = summarizeTake(takeFrames, {
+      startedAtMs: runStartedAtMs,
+      endedAtMs,
+      takeNumber: takesThisSession(),
+    })
+    setSummary(computed)
+    if (computed === null) return false
+    // Captured BEFORE Keep writes, so the line the singer is reading cannot
+    // change into a comparison with the take they are deciding about.
+    setPreviousTake(lastSingTake())
+    setTakeClock({ startedAt: runStartedAtEpoch, endedAt: Date.now() })
+    return true
+  }
+
+  // Starting a take is the move INTO a live run from anywhere that is not a
+  // pause: a resume continues the take it paused.
+  createEffect(
+    on(state, (next, previous) => {
+      if (next === 'live' && previous !== 'paused' && previous !== undefined) {
+        startTake()
+      }
+    }),
+  )
+
+  // ── The microphone, which nothing else in the room touches ──
+
+  const requestMic = async (): Promise<void> => {
+    const granted = await props.startMic()
+    if (granted) {
+      setSingMicGranted(true)
+      dispatchSingRoom({ type: 'mic-granted' })
+      return
+    }
+    const kind = micManager.getError()?.kind
+    dispatchSingRoom(
+      kind === 'permission-denied' || kind === 'no-device'
+        ? { type: 'mic-denied' }
+        : { type: 'mic-unavailable' },
+    )
+  }
+
+  createEffect(() => {
+    const want = micIntent(ctx())
+    const have = props.micActive()
+    if (want === have) return
+    if (want) {
+      void props.startMic().then((granted) => {
+        if (granted) return
+        const kind = micManager.getError()?.kind
+        dispatchSingRoom(
+          kind === 'permission-denied'
+            ? { type: 'mic-denied' }
+            : { type: 'mic-unavailable' },
+        )
+      })
+    } else {
+      props.stopMic()
+    }
+  })
+
+  // ── The frame stream ───────────────────────────────────────
+
+  const onFrame: PracticeFrameListener = (frame) => {
+    if (!micIntent(ctx())) return
+    const pitch = frame.pitch
+    const freq = pitch !== null && pitch.frequency > 0 ? pitch.frequency : 0
+
+    // The free run's trail and axis. A melody run uses the app's.
+    if (!melodyRun()) {
+      elapsedSeconds = (frame.atMs - runStartedAtMs) / 1000
+      trail.push(
+        freq > 0
+          ? { freq, cents: pitch!.cents, time: elapsedSeconds }
+          : { freq: null, time: elapsedSeconds },
+      )
+      if (trail.length > TRAIL_SAMPLES)
+        trail.splice(0, trail.length - TRAIL_SAMPLES)
+    }
+
+    if (frame.atMs - lastTakeFrameMs < TAKE_FRAME_INTERVAL_MS) return
+    lastTakeFrameMs = frame.atMs
+
+    // The reference the end card measures against: the target in a melody
+    // run, the nearest note OF THE KEY in a free one (brief §5).
+    const target = props.targetPitch()
+    if (freq === 0) {
+      takeFrames.push({ atMs: frame.atMs, freq: 0, cents: 0, midi: 0 })
+      return
+    }
+    if (melodyRun() && target !== null && target > 0) {
+      takeFrames.push({
+        atMs: frame.atMs,
+        freq,
+        cents: 1200 * Math.log2(freq / target),
+        midi:
+          pitch!.midi > 0
+            ? pitch!.midi
+            : Math.round(69 + 12 * Math.log2(freq / 440)),
+      })
+      return
+    }
+    const nearest = centsToNearestScaleNote(freq, scalePitchClasses())
+    takeFrames.push({
+      atMs: frame.atMs,
+      freq,
+      cents: nearest?.cents ?? 0,
+      midi: nearest?.midi ?? Math.round(69 + 12 * Math.log2(freq / 440)),
+    })
+  }
+
+  // ── The run, and the shell that drives it ──────────────────
+
+  const handlePause = (): void => {
+    dispatchSingRoom({ type: 'pause' })
+    if (melodyRun() && props.isPlaying()) props.onPause()
+  }
+
+  const handleResume = (): void => {
+    dispatchSingRoom({ type: 'resume' })
+    if (props.isPaused()) props.onResume()
+  }
+
+  const handleStop = (): void => {
+    if (melodyRun()) props.onStop()
+    dispatchSingRoom({ type: 'stop', hasTake: endTake() })
+  }
+
+  const handlePark = (): void => {
+    if (props.isPlaying()) props.onPause()
+    dispatchSingRoom({ type: 'leave' })
+    if (props.micActive()) props.stopMic()
+  }
+
+  onMount(() => {
+    dispatchSingRoom({ type: 'enter' })
+    onCleanup(props.subscribeFrames(onFrame))
+    onCleanup(
+      registerRunControls({
+        tab: TAB_SINGING,
+        roomLabel: roomName('sing'),
+        isPlaying: () => runIsLive(ctx()),
+        isPaused: () => runIsPaused(ctx()),
+        isCountingIn: () => props.isCountingIn(),
+        countInBeat: () => props.countInBeat(),
+        pause: handlePause,
+        resume: handleResume,
+        stop: handleStop,
+        park: handlePark,
+        openOptions: () => {
+          dismissCoachMark()
+          setOptionsOpen(true)
+        },
+        // The end card IS the decision, so the shell's Keep alert only has
+        // something to ask about while that card is open and undecided.
+        hasUnsavedTake: () => takeUndecided(ctx()),
+      }),
+    )
+    // Any unmount is a leave: the shell parks a run on its way out, and
+    // every other way of leaving the tab still has to release the room.
+    onCleanup(() => {
+      dispatchSingRoom({ type: 'leave' })
+    })
+  })
+
+  // The sheet's switch and the machine's copy of it, kept in step.
+  createEffect(() => {
+    dispatchSingRoom({ type: 'set-mic-on-arrival', value: singMicOnArrival() })
+  })
+
+  // ── Chips, copy and the coach mark ─────────────────────────
+
+  const dismissCoachMark = (): void => {
+    if (!singCoachMarkSeen()) setSingCoachMarkSeen(true)
+  }
+
+  const songName = (): string | null =>
+    melodyStore.currentMelody()?.name ?? null
+
+  const changeKey = (next: string): void => {
+    setKeyName(next)
+    melodyStore.refreshScale(next, melodyStore.getCurrentOctave(), scaleType())
+  }
+
+  const changeScale = (next: string): void => {
+    setScaleType(next)
+    melodyStore.refreshScale(keyName(), melodyStore.getCurrentOctave(), next)
+  }
+
+  /**
+   * Loading a melody IS starting the melody run (brief §3): there is no
+   * second control for it, and a loaded melody sitting silently behind a
+   * free tracker is a room that ignored what it was just asked for.
+   */
+  const startMelodyRun = (): void => {
+    dispatchSingRoom({ type: 'melody-play' })
+    props.onPlay()
+  }
+
+  const openSongPicker = (): void => {
+    setOptionsOpen(false)
+    props.picker.setIsModalOpen(true)
+  }
+
+  const canvasOptions: SingRoomCanvasOptions = {
+    pitchHistory: () => (melodyRun() ? props.pitchHistory() : trail),
+    currentBeat: () => (melodyRun() ? props.currentBeat() : elapsedSeconds),
+    totalBeats: () =>
+      melodyRun()
+        ? props.totalBeats()
+        : Math.max(FREE_WINDOW_SECONDS, elapsedSeconds + 1),
+    // A free run has no transport at all, and telling the canvas it is
+    // "playing" would start its arc physics over an empty melody. The head
+    // dot rides `traceStyle: 'spectrum'` instead.
+    isPlaying: () => melodyRun() && props.isPlaying(),
+    isPaused: () => melodyRun() && props.isPaused(),
+    perNoteBurn: () => singPerNoteBurn(),
+  }
+
+  const onCapsule = (): void => {
+    haptics.tapLight()
+    const next = dispatchSingRoom({ type: 'sing-a-note' })
+    // Granted already: the effect above opens the device. Not yet: the
+    // priming screen is on screen and its Continue does the asking, inside
+    // its own gesture.
+    if (next.state === 'live' && !props.micActive()) void props.startMic()
+  }
+
+  return (
+    <div
+      class={styles.room}
+      data-testid="sing-room"
+      style={background.resolvedStyle()}
+    >
+      <div class={styles.cover} />
+      <div class={styles.scrimDim} />
+      <div class={styles.scrimTop} />
+      <div class={styles.scrimBottom} />
+
+      <div class={styles.ui}>
+        <SingRoomHud
+          note={() => noteChipSignal(props.currentPitch())}
+          keyLabel={() => keyChipLabel(keyName(), scaleType())}
+          micState={() => micChipState(ctx(), props.micActive())}
+          songName={songName}
+          onOpenKey={() => {
+            dismissCoachMark()
+            setOptionsOpen(true)
+          }}
+          onToggleMic={() => {
+            dismissCoachMark()
+            haptics.tapLight()
+            dispatchSingRoom({ type: 'toggle-mute' })
+          }}
+          onOpenSong={() => props.picker.setIsModalOpen(true)}
+        />
+
+        <span class="sr-only" aria-live="polite">
+          {noteChipSignal(props.currentPitch()).announce}
+        </span>
+
+        <div class={styles.canvasWrap}>
+          <Show
+            when={
+              state() === 'live' || state() === 'paused' || state() === 'ended'
+            }
+            fallback={
+              <Show
+                when={state() === 'denied'}
+                fallback={<SingTrace variant="silent" />}
+              >
+                <div class={styles.traceWrap}>
+                  <span class={styles.demoChip}>
+                    This is what you would see
+                  </span>
+                  <SingTrace variant="demo" labelled />
+                </div>
+              </Show>
+            }
+          >
+            {props.renderCanvas(canvasOptions)}
+          </Show>
+        </div>
+
+        {/* R0/R1 — the silent trace asks for nothing, and one capsule is the
+            moment of intent the permission is asked inside. */}
+        <Show when={state() === 'resting'}>
+          <div class={styles.foot}>
+            <Show when={ctx().permission === 'unknown'}>
+              <p classList={{ [styles.display]: true, [styles.onCover]: true }}>
+                Hum. The line is you.
+              </p>
+              <p classList={{ [styles.body]: true, [styles.onCover]: true }}>
+                The microphone stays off until you tap. Nothing is uploaded.
+              </p>
+            </Show>
+            <button
+              type="button"
+              class={styles.capsule}
+              onClick={onCapsule}
+              data-testid="sing-capsule"
+            >
+              Sing a note
+            </button>
+          </div>
+        </Show>
+
+        {/* D — usable and honest: a labelled demo line, Settings one tap
+            away, and the rooms still open. */}
+        <Show when={state() === 'denied'}>
+          <div class={styles.foot} data-testid="sing-denied">
+            <p classList={{ [styles.head]: true, [styles.onCover]: true }}>
+              The microphone is off, so this is a demo line, not yours.
+            </p>
+            <p classList={{ [styles.body]: true, [styles.onCover]: true }}>
+              Turn on the microphone in Settings and the line becomes yours.
+              Every room still opens without it.
+            </p>
+            <button
+              type="button"
+              class={styles.capsule}
+              onClick={() => {
+                void nativeShellApi()?.openAppSettings?.()
+              }}
+              data-testid="sing-open-settings"
+            >
+              Open Settings
+            </button>
+            <div class={styles.center}>
+              <button
+                type="button"
+                class={styles.linkQuiet}
+                onClick={() => {
+                  dispatchSingRoom({ type: 'explore' })
+                  setActiveTab(TAB_HOME)
+                }}
+              >
+                Explore the rooms
+              </button>
+            </div>
+          </div>
+        </Show>
+      </div>
+
+      {/* One coach mark, dismissed by use. */}
+      <Show when={!singCoachMarkSeen() && state() === 'live'}>
+        <div class={styles.coach} data-testid="sing-coach-mark">
+          <b class={styles.coachTitle}>{SING_COACH_MARK.title}</b>
+          {SING_COACH_MARK.body}
+        </div>
+      </Show>
+
+      {/* 3b — one screen, then the system alert. Full-screen rather than a
+          sheet: it is a door, and a door with a stage behind it invites a tap
+          on the stage instead of on Continue. */}
+      <Show when={state() === 'priming'}>
+        <div class={styles.priming} data-testid="sing-priming">
+          <SingPrimingArt />
+          <p class={styles.display}>Hear your voice as a line</p>
+          <p class={styles.body}>
+            MercuryPitch listens while you sing and draws your pitch on screen.
+            Nothing is uploaded. Nobody hears you but you.
+          </p>
+          <div class={styles.grow} />
+          <button
+            type="button"
+            class={styles.capsule}
+            onClick={() => {
+              dispatchSingRoom({ type: 'priming-continue' })
+              void requestMic()
+            }}
+            data-testid="sing-priming-continue"
+          >
+            Continue
+          </button>
+        </div>
+      </Show>
+
+      <SingTakeSheet
+        isOpen={state() === 'ended' && summary() !== null}
+        summary={summary()}
+        previous={previousTake()}
+        startedAt={takeClock().startedAt}
+        endedAt={takeClock().endedAt}
+        roomLabel={roomName('sing')}
+        onKeep={() => {
+          const computed = summary()
+          if (computed !== null) {
+            keepSingTake({
+              id: `${takeClock().endedAt}-${computed.takeNumber}`,
+              startedAt: takeClock().startedAt,
+              endedAt: takeClock().endedAt,
+              durationMs: computed.durationMs,
+              takeNumber: computed.takeNumber,
+              lowNote: computed.range?.lowLabel ?? null,
+              highNote: computed.range?.highLabel ?? null,
+              heldWithinCents: computed.heldWithinCents,
+            })
+          }
+          dispatchSingRoom({ type: 'take-decided' })
+        }}
+        onDiscard={() => {
+          dispatchSingRoom({ type: 'take-decided' })
+        }}
+      />
+
+      <SingRoomOptions
+        isOpen={optionsOpen()}
+        close={() => setOptionsOpen(false)}
+        songName={() => songName() ?? 'Pick a song'}
+        onOpenSong={openSongPicker}
+        onChangeKey={changeKey}
+        onChangeScale={changeScale}
+        onOctaveShift={(delta) => props.onOctaveShift(delta)}
+        speed={props.speed}
+        onSpeedChange={props.onSpeedChange}
+        volume={props.volume}
+        onVolumeChange={props.onVolumeChange}
+        metronomeEnabled={props.metronomeEnabled}
+        onMetronomeToggle={props.onMetronomeToggle}
+        onAutoCalibrate={props.onAutoCalibrate}
+        micOnArrival={singMicOnArrival}
+        onMicOnArrivalChange={setSingMicOnArrival}
+        perNoteBurn={singPerNoteBurn}
+        onPerNoteBurnChange={setSingPerNoteBurn}
+        onSessionSkip={props.onSessionSkip}
+        onSessionEnd={props.onSessionEnd}
+      />
+
+      {/* The picker modals: the room hosts them, as the mobile stage did. */}
+      <Show when={props.picker.isModalOpen()}>
+        <MidiSongSelectModal
+          prefix="fn"
+          melodies={props.picker.melodies}
+          savedSongs={savedMidiSongs}
+          selectedId={props.picker.selectedId}
+          onClose={() => props.picker.setIsModalOpen(false)}
+          onPickMelody={(id) => {
+            props.picker.setSelectedId(id)
+            props.picker.loadMelody(id)
+            props.picker.setIsModalOpen(false)
+            startMelodyRun()
+          }}
+          onPickSaved={(song) => {
+            props.picker.loadSavedSong(song)
+            props.picker.setIsModalOpen(false)
+            startMelodyRun()
+          }}
+          onOpenTracks={(song) => props.picker.openTrackModal(song)}
+          onDeleteSaved={(id) => props.picker.deleteSong(id)}
+        />
+      </Show>
+
+      <Show when={props.picker.trackModalSong()}>
+        {(song) => (
+          <MidiTrackPickerModal
+            song={song}
+            prefix="fn"
+            radioName="sing-room-score-track"
+            pendingScoreId={props.picker.pendingScoreId}
+            setPendingScoreId={props.picker.setPendingScoreId}
+            pendingBackingIds={props.picker.pendingBackingIds}
+            setPendingBackingIds={props.picker.setPendingBackingIds}
+            onApply={() => {
+              props.picker.applyTrackSelection()
+              startMelodyRun()
+            }}
+            onClose={() => props.picker.setTrackModalSong(null)}
+            scoreHint="the track you sing against"
+          />
+        )}
+      </Show>
+    </div>
+  )
+}
