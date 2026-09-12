@@ -247,6 +247,15 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 
 ## Framework
 
+### Format CSS before verifying a standalone production build
+
+**Symptom:** a new portal had classes but looked unstyled; DOM-only checks passed.
+**Cause:** the legacy CSS fallback transform treated one-line custom-property
+rules as nested selectors, so later rules no longer matched the portal.
+**Rule:** format authored CSS before building; inspect screenshots and assert
+computed position/background, not just dialog presence or lack of overflow.
+**See:** `tools/css-legacy-fallbacks.ts`, `src/e2e/night-music-import.spec.ts`.
+
 ### Do not destructure props
 
 **Symptom:** a prop updated in the parent, the child never re-rendered.

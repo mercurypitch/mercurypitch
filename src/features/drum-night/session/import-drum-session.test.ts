@@ -54,6 +54,51 @@ function mixedMidiFile(): File {
 }
 
 describe('importDrumSession', () => {
+  it('preserves the old arrangement and allows retry after a failed save admission', async () => {
+    const controller = createDrumSessionImportController({
+      parseMidi: () => ({ status: 'parsed', song: drumSongFixture() }),
+    })
+    await controller.importFile(mixedMidiFile())
+    const old = controller.state()
+    const beforeCommit = vi.fn()
+    await expect(
+      controller.importFile(mixedMidiFile(), {
+        beforeApply: async () => {
+          throw new Error('Save failed')
+        },
+        beforeCommit,
+      }),
+    ).rejects.toThrow('Save failed')
+    expect(controller.state()).toBe(old)
+    expect(beforeCommit).not.toHaveBeenCalled()
+    expect((await controller.importFile(mixedMidiFile())).status).toBe(
+      'applied',
+    )
+    controller.dispose()
+  })
+
+  it('does not detach the saved project after cancellation while awaiting its save', async () => {
+    const controller = createDrumSessionImportController({
+      parseMidi: () => ({ status: 'parsed', song: drumSongFixture() }),
+    })
+    await controller.importFile(mixedMidiFile())
+    const old = controller.state()
+    const abort = new AbortController()
+    const beforeCommit = vi.fn()
+    await expect(
+      controller.importFile(mixedMidiFile(), {
+        signal: abort.signal,
+        beforeApply: async () => {
+          abort.abort()
+        },
+        beforeCommit,
+      }),
+    ).rejects.toThrow()
+    expect(controller.state()).toBe(old)
+    expect(beforeCommit).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
   it('opens mixed Standard MIDI through the canonical percussion projector', async () => {
     const state = await importDrumSession(mixedMidiFile(), {
       parseMidi: (bytes) => {

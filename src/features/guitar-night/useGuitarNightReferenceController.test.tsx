@@ -150,6 +150,57 @@ function mountWithTranscriptionLoader(
 }
 
 describe('useGuitarNightReferenceController', () => {
+  it('imports an attachment with manual Align marks, never guessed recording timing', async () => {
+    const { port } = fakePort()
+    const controller = mount(port, () => 'song')
+    await controller.importForSession(
+      new File(['x'], 'idea.mid'),
+      vi.fn(),
+      true,
+    )
+    expect(controller.reference()?.songId).toBe(VELVET_RIFF.id)
+    expect(controller.handPlacement()).toMatchObject({
+      songId: VELVET_RIFF.id,
+      trackId: 'track-lead',
+      marks: {},
+    })
+    expect(controller.readingOnRecording()).toBeNull()
+  })
+
+  it('keeps the old reference and URL when a candidate fails to parse or becomes stale', async () => {
+    let invalid = false
+    const { port } = fakePort({
+      importReference: async () => {
+        invalid = true
+        throw new Error('Damaged file')
+      },
+    })
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id)
+    const reference = controller.reference()
+    const url = window.location.href
+    await expect(
+      controller.importForSession(new File(['x'], 'bad.gp'), vi.fn()),
+    ).rejects.toThrow('Damaged file')
+    expect(invalid).toBe(true)
+    expect(controller.reference()).toBe(reference)
+    expect(window.location.href).toBe(url)
+    port.importReference = async () => ({
+      songId: 'new',
+      title: 'New',
+      trackCount: 1,
+      importedAt: 0,
+    })
+    let calls = 0
+    await expect(
+      controller.importForSession(new File(['x'], 'new.mid'), () => {
+        if (++calls > 1) throw new Error('Source changed')
+      }),
+    ).rejects.toThrow('Source changed')
+    expect(controller.reference()).toBe(reference)
+    expect(window.location.href).toBe(url)
+  })
+
   afterEach(() => {
     cleanup()
     window.history.replaceState(null, '', '/guitar-night')

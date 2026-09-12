@@ -50,28 +50,15 @@ function tabSeed() {
 }
 
 /** Audio that cannot be decoded, which is how a separation stops on its own. */
-async function dropAudioThatStops(
+async function chooseAudioThatStops(
   page: import('@playwright/test').Page,
 ): Promise<void> {
-  await page.evaluate(() => {
-    // On the drop zone itself: a drop dispatched on an ancestor bubbles the
-    // wrong way and never reaches the handler.
-    const zone = document.querySelector(
-      '[data-testid="guitar-night-file-drop"]',
-    )
-    if (zone === null) throw new Error('no file drop on this screen')
-    const file = new File([new Uint8Array(2048)], 'accident.wav', {
-      type: 'audio/wav',
-    })
-    const transfer = new DataTransfer()
-    transfer.items.add(file)
-    zone.dispatchEvent(
-      new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: transfer,
-      }),
-    )
+  // This regression still covers the legacy lobby picker. Route-wide drops
+  // now require an explicit action; night-music-import.spec.ts covers that path.
+  await page.getByTestId('guitar-night-file-input').setInputFiles({
+    name: 'accident.wav',
+    mimeType: 'audio/wav',
+    buffer: Buffer.alloc(2048),
   })
   // Decoding is attempted for real before it gives up, so this is slower than
   // the default expect window.
@@ -94,7 +81,7 @@ async function openTheLobby(
 
 test('a stopped separation can be put down @smoke', async ({ page }) => {
   await openTheLobby(page, `stopped-remove-${Date.now()}`)
-  await dropAudioThatStops(page)
+  await chooseAudioThatStops(page)
 
   await page.getByRole('button', { name: 'Remove this file' }).click()
 
@@ -109,7 +96,7 @@ test('the tab a stopped separation was blocking is still reachable', async ({
   page,
 }) => {
   await openTheLobby(page, `stopped-rehearse-${Date.now()}`)
-  await dropAudioThatStops(page)
+  await chooseAudioThatStops(page)
 
   // This is the whole report: the tab was attached and unreachable.
   await page.getByRole('button', { name: 'Practice with tab' }).click()

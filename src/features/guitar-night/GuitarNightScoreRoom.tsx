@@ -12,6 +12,7 @@ import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
 import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
@@ -48,8 +49,6 @@ import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
 import { scoreLiveRange } from './score-live-range'
 import { buildScoreNoteStartIndex, nextScoreNoteStart, } from './score-note-index'
-
-export { scoreLiveRange } from './score-live-range'
 import type { SheetLane } from './sheet/sheet-model'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightAmpSettings } from './useGuitarNightAmpSettings'
@@ -63,7 +62,11 @@ import { useGuitarNightTakeCapture } from './useGuitarNightTakeCapture'
 import { useGuitarNightTakeKeepPrompt } from './useGuitarNightTakeKeepPrompt'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
+export { scoreLiveRange } from './score-live-range'
+
 interface GuitarNightScoreRoomProps {
+  importOpen?: Accessor<boolean>
+  registerMusicGuard?(guard: NightMusicSessionGuard | null): void
   reference: Accessor<GuitarNightReference>
   /** The instrument the stage rows describe. */
   tuning?: Accessor<InstrumentTuning>
@@ -1368,6 +1371,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       show: () => openScore(false),
     },
     available: () =>
+      props.importOpen?.() !== true &&
       props.suspended?.() !== true &&
       !toolTransitionPending() &&
       !doctorOpen() &&
@@ -1423,11 +1427,25 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   })
 
   onMount(() => {
+    props.registerMusicGuard?.({
+      blockedReason: () => {
+        const state = scoreTakeCapture.state()
+        if (scoredCaptureActive() || assessmentCaptureActive())
+          return 'Stop your practice take before replacing music.'
+        if (state === 'processing' || state === 'saving')
+          return 'Wait for your take to finish saving or processing.'
+        return state === 'ready'
+          ? 'Keep or dismiss your take in its review before replacing music.'
+          : null
+      },
+    })
+    onCleanup(() => props.registerMusicGuard?.(null))
     roomHeading.focus({ preventScroll: true })
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
         ownsSpace: () =>
+          props.importOpen?.() !== true &&
           props.suspended?.() !== true &&
           !doctorOpen() &&
           !tunerOpen() &&

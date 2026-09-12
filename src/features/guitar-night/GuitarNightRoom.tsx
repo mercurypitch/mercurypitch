@@ -8,6 +8,8 @@ import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
+import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
@@ -59,6 +61,8 @@ import { useGuitarRecordingPlayback } from './useGuitarRecordingPlayback'
 import { useGuitarRecordingStage } from './useGuitarRecordingStage'
 
 interface GuitarNightRoomProps {
+  importOpen?: Accessor<boolean>
+  registerMusicGuard?(guard: NightMusicSessionGuard | null): void
   backing: GuitarNightBackingLease | null
   onPracticeRecording?(score: GuitarPracticeScore): Promise<void>
   onAttachRecording?(score: GuitarPracticeScore): Promise<void>
@@ -591,6 +595,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   onCleanup(
     // eslint-disable-next-line solid/reactivity
     registerVoiceCommands(() =>
+      props.importOpen?.() === true ||
       props.suspended?.() === true ||
       mixerOpen() ||
       sessionOpen() ||
@@ -782,6 +787,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   }
 
   onMount(() => {
+    props.registerMusicGuard?.({
+      blockedReason: () =>
+        recorder.busy()
+          ? 'Stop recording before replacing music.'
+          : (performanceTakeImportBlocker(freeForm.practice.capture.state()) ??
+            (freeForm.practice.running()
+              ? 'Stop your practice take before replacing music.'
+              : null)),
+    })
+    onCleanup(() => props.registerMusicGuard?.(null))
     roomHeading.focus({ preventScroll: true })
     // Space is the transport wherever the room is open — a focused mute chip
     // or slider must not steal it. Typing surfaces keep the key (see helper).
@@ -789,6 +804,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       installSpacePlaybackToggle({
         toggle: togglePlayback,
         ownsSpace: () =>
+          props.importOpen?.() !== true &&
           props.suspended?.() !== true &&
           !doctorOpen() &&
           !recorder.reviewOpen() &&

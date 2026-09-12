@@ -11,6 +11,7 @@
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { VoiceCommand } from './types'
+import { voiceCommandsBlocked } from './voice-command-blockers'
 
 type VoiceCommandSource = Accessor<readonly VoiceCommand[]>
 
@@ -33,6 +34,7 @@ export function registerVoiceCommands(source: VoiceCommandSource): () => void {
 
 /** Every live command, in registration order. */
 export function activeVoiceCommands(): VoiceCommand[] {
+  if (voiceCommandsBlocked()) return []
   return sources().flatMap((source) => [...source()])
 }
 
