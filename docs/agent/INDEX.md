@@ -74,26 +74,26 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 42.5k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.5k | Drum Night session boundary — import, score, kit, and evidence coaching. |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 42.8k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 31.7k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 16.8k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 14.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.6k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
-| `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 7.7k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
+| `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 7.8k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.2k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.1k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.0k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
+| `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.8k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
+| `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 4.3k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.5k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
-| `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 3.5k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 3.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
@@ -346,15 +346,15 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.2k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.3k |
+| [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.4k |
 | [src/App.tsx](../../src/App.tsx) | 4.7k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
+| [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
-| [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.7k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.7k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.5k |
@@ -364,8 +364,8 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.2k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 2.1k |
+| [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 2.0k |
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.9k |
-| [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.8k |
@@ -392,6 +392,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/db/services/auth-service.ts](../../src/db/services/auth-service.ts) | 1.4k |
+| [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.4k |
 | [src/features/guitar-night/useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 1.4k |
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
@@ -399,7 +400,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
-| [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
 | [src/features/progress/model.ts](../../src/features/progress/model.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |

@@ -4098,10 +4098,22 @@ describe('DrumNightApp', () => {
         files: damagedFiles,
       },
     })
+    const importDialog = await screen.findByRole('dialog', {
+      name: 'Add music',
+    })
+    expect(importSession.importFile).toHaveBeenCalledTimes(1)
+    fireEvent.click(
+      await within(importDialog).findByRole('button', {
+        name: /Load this score/,
+      }),
+    )
     await waitFor(() =>
-      expect(within(drawer).getByRole('alert')).toHaveTextContent(
+      expect(within(importDialog).getByRole('alert')).toHaveTextContent(
         'Guitar Pro data ended unexpectedly.',
       ),
+    )
+    fireEvent.click(
+      within(importDialog).getByRole('button', { name: 'Back to session' }),
     )
     expect(onReadySessionChange).toHaveBeenLastCalledWith(ready.document)
     expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(

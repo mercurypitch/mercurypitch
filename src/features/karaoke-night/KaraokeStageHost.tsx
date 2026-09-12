@@ -5,6 +5,7 @@
 // shell lazy-loads it only when a song goes on stage.
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -27,6 +28,8 @@ injectStyles('stem-mixer', StemMixerStyles)
 injectStyles('lyrics-uploader', LyricsUploaderStyles)
 
 interface KaraokeStageHostProps {
+  importOpen?: () => boolean
+  registerMusicGuard?: (guard: NightMusicSessionGuard | null) => void
   song: KaraokeSong
   onExit: () => void
   /** Stage a different song (the zen stage's song sheet picks by id). */
@@ -78,6 +81,8 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
 
   return (
     <StemMixer
+      importOpen={props.importOpen}
+      registerMusicGuard={props.registerMusicGuard}
       sessionId={props.song.sessionId}
       stems={props.song.stems}
       songTitle={props.song.title}

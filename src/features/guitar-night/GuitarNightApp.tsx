@@ -20,8 +20,11 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
+import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { songImportAcceptForDevice } from '@/features/play-along/song-import'
 import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
+import { useNightMusicImport } from '@/features/play-along/useNightMusicImport'
 import { createLeaveForStudioVoiceCommands, createVoiceHelpCommands, } from '@/features/voice-control/room-navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
@@ -47,6 +50,7 @@ import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } f
 import type { GuitarNightGoogleSeparationIntent } from './guitar-night-google-separation-intent'
 import { clearGuitarNightGoogleSeparationIntent, guitarNightBackingFingerprint, prepareGuitarNightGoogleSeparationIntent, takeGuitarNightGoogleSeparationIntent, } from './guitar-night-google-separation-intent'
 import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
+import { guitarNightMusicActions } from './guitar-night-music-actions'
 import { guitarRoomLabel } from './guitar-rooms'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightFileDrop } from './GuitarNightFileDrop'
@@ -1118,6 +1122,51 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     openCurrentGuitar()
   }
 
+  const [musicSessionGuard, setMusicSessionGuard] =
+    createSignal<NightMusicSessionGuard | null>(null)
+  const musicImport = useNightMusicImport({
+    room: 'guitar',
+    sourceKey: () =>
+      `${view()}:${activeBacking()?.sessionId ?? ''}:${attachedReference()?.songId ?? ''}:${attachedReference()?.trackId ?? ''}`,
+    currentTitle: () =>
+      view() === 'score-room'
+        ? (attachedReference()?.title ?? null)
+        : view() === 'room' && freeRoom()
+          ? null
+          : (activeBacking()?.title ?? attachedReference()?.title ?? null),
+    blockedReason: () =>
+      musicSessionGuard()?.blockedReason() ??
+      (preparationController.isPreparing() ||
+      bandPreparationController.isPreparing() ||
+      referenceController.importPendingFileName() !== null
+        ? 'Finish or cancel the current preparation before adding another file.'
+        : learnOpen()
+          ? 'Return from Learn before replacing music.'
+          : null),
+    actions: guitarNightMusicActions({
+      song: songController,
+      reference: referenceController,
+      backing: activeBacking,
+      loadPreparationPort: () =>
+        (props.loadPreparationPort ?? loadDefaultGuitarNightPreparationPort)(),
+      loadBandPort: () =>
+        (
+          props.loadBandPreparationPort ??
+          loadDefaultGuitarNightBandPreparationPort
+        )(),
+      checkBandPreflight,
+      onResolveBlocker: (blocker) => {
+        // The import sheet closes first and retains the pending file. Auth
+        // does not resume a billable job; the player chooses the action again.
+        if (blocker.cta?.section === 'account') openTopbarSignIn()
+        else if (blocker.cta?.section === 'credits')
+          window.open('/#/settings/credits', '_blank', 'noopener,noreferrer')
+      },
+      enterRoom,
+      enterScoreRoom,
+    }),
+  })
+
   const openImportPicker = (): void => {
     setFileImportError(null)
     pickImportFile()
@@ -1213,6 +1262,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   onMount(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (musicImport.isOpen()) return
       if (event.key === 'Escape' && venueMenuOpen()) {
         closeVenueMenuAndRestoreFocus()
         return
@@ -1369,6 +1419,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       data-backdrop-treatment={background.resolved().treatment}
       data-testid="guitar-night-shell"
     >
+      <NightMusicImport controller={musicImport} />
       <a class={styles.skipLink} href="#guitar-night-main">
         Skip to Guitar Night
       </a>
@@ -1409,6 +1460,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         />
 
         <div ref={venueMenuContainer} class={styles.topbarActions}>
+          <NightMusicImportButton onClick={musicImport.open} />
           <button
             ref={venueMenuButton}
             type="button"
@@ -2251,6 +2303,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
             <Match when={view() === 'room' && (freeRoom() || activeBacking())}>
               <GuitarNightRoom
+                importOpen={musicImport.isOpen}
+                registerMusicGuard={setMusicSessionGuard}
                 backing={roomBacking()}
                 initialRecordingId={pendingRecordingId()}
                 onRecordingOpened={() => setPendingRecordingId(null)}
@@ -2268,7 +2322,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   freeRoom() ? null : authoredReference()
                 }
                 onRehearseTab={enterScoreRoom}
-                onAttachTab={returnToSongs}
+                onAttachTab={musicImport.open}
                 handSync={() => (freeRoom() ? null : handSync())}
                 // Withheld for the demo. "Separate guitar" reconnects to a
                 // durable separation record and then bills a cloud GPU
@@ -2277,7 +2331,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 onSeparateGuitar={
                   activeBacking()?.source === 'demo'
                     ? undefined
-                    : prepareGuitarFreeBand
+                    : musicImport.open
                 }
               />
             </Match>
@@ -2300,6 +2354,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       when={authored().scoreMode === 'backing-only'}
                       fallback={
                         <GuitarNightScoreRoom
+                          importOpen={musicImport.isOpen}
+                          registerMusicGuard={setMusicSessionGuard}
                           reference={authored}
                           tuning={referenceController.tuning}
                           onInstrument={referenceController.setInstrument}
@@ -2355,6 +2411,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       }
                     >
                       <GuitarNightPercussionRoom
+                        importOpen={musicImport.isOpen}
                         reference={authored}
                         suspended={learnOpen}
                         onSongs={returnToSongs}

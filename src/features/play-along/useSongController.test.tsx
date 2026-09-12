@@ -30,6 +30,101 @@ function lease(
 describe('usePlayAlongSongController', () => {
   afterEach(() => cleanup())
 
+  it('keeps the working selection and URL until a replacement is ready', async () => {
+    const old = lease('old')
+    const next = lease('next')
+    let resolve!: (result: { ok: true; lease: typeof next }) => void
+    const gate = new Promise<{ ok: true; lease: typeof next }>((done) => {
+      resolve = done
+    })
+    const writeSession = vi.fn()
+    const port: PlayAlongSongPort<'drums'> = {
+      initialize: async () => undefined,
+      completedSongs: () => [],
+      openSession: async (id) =>
+        id === 'old' ? { ok: true, lease: old } : gate,
+    }
+    let controller!: ReturnType<typeof usePlayAlongSongController<'drums'>>
+    render(() => {
+      controller = usePlayAlongSongController({
+        loadSongPort: async () => port,
+        writeSession,
+      })
+      return null
+    })
+    await controller.stageSession('old')
+    const task = {
+      signal: new AbortController().signal,
+      assertCurrent: vi.fn(),
+      beforeCommit: vi.fn(),
+    }
+    const replacing = controller.replaceSession('next', task)
+    expect(controller.selectionState()).toMatchObject({
+      kind: 'ready',
+      lease: old,
+    })
+    expect(controller.routeSessionId()).toBe('old')
+    expect(old.release).not.toHaveBeenCalled()
+    resolve({ ok: true, lease: next })
+    await replacing
+    expect(task.beforeCommit).toHaveBeenCalledOnce()
+    expect(old.release).toHaveBeenCalledOnce()
+    expect(controller.selectionState()).toMatchObject({
+      kind: 'ready',
+      lease: next,
+    })
+    expect(writeSession).toHaveBeenLastCalledWith('next', 'push')
+  })
+
+  it.each(['cancel', 'missing', 'changed', 'save-failed'] as const)(
+    'retains the old source after %s and releases any rejected candidate',
+    async (failure) => {
+      const old = lease('old')
+      const next = lease('next')
+      const abort = new AbortController()
+      const port: PlayAlongSongPort<'drums'> = {
+        initialize: async () => undefined,
+        completedSongs: () => [],
+        openSession: async (id) => {
+          if (id === 'old') return { ok: true, lease: old }
+          if (failure === 'cancel') abort.abort()
+          return failure === 'missing'
+            ? { ok: false, code: 'missing-local-audio' }
+            : { ok: true, lease: next }
+        },
+      }
+      let controller!: ReturnType<typeof usePlayAlongSongController<'drums'>>
+      render(() => {
+        controller = usePlayAlongSongController({
+          loadSongPort: async () => port,
+        })
+        return null
+      })
+      await controller.stageSession('old')
+      let admissions = 0
+      await expect(
+        controller.replaceSession('next', {
+          signal: abort.signal,
+          assertCurrent: () => {
+            admissions++
+            if (failure === 'changed' && admissions > 1)
+              throw new Error('Source changed')
+          },
+          beforeCommit: () => {
+            if (failure === 'save-failed') throw new Error('Save failed')
+          },
+        }),
+      ).rejects.toThrow()
+      expect(controller.routeSessionId()).toBe('old')
+      expect(controller.selectionState()).toMatchObject({
+        kind: 'ready',
+        lease: old,
+      })
+      expect(old.release).not.toHaveBeenCalled()
+      expect(next.release).toHaveBeenCalledTimes(failure === 'missing' ? 0 : 1)
+    },
+  )
+
   it('stays lazy, then force-restages the same session and releases its lease', async () => {
     const firstRelease = vi.fn()
     const secondRelease = vi.fn()
