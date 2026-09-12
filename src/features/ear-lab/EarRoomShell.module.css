@@ -129,8 +129,32 @@
   border-bottom: 1px solid var(--ear-line);
 }
 
+/* Under the native shell the prose is gone and only the chips are left, so
+   the bar stops being a bar: no ground of its own, no rule under it, and no
+   60 px floor holding a row of 44 px chips apart from the room. */
+.sessionBarBare {
+  min-height: 0;
+  padding: 10px 16px 0;
+  background: none;
+  border-bottom: 0;
+}
+
 .sessionCopy {
   min-width: 0;
+}
+
+/* Read, not drawn. Every room needs a heading even where the design has no
+   room for one to be visible. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .sessionTitle {

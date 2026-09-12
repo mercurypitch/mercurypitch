@@ -187,14 +187,32 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
         <div class={styles.roomShade} aria-hidden="true" />
         <div class={styles.roomVignette} aria-hidden="true" />
 
-        {/* NOT IN THE APP. The room opens on its own art with the shell's
-            header over it; a title, a date line and three chips under that is
-            a second header the native design does not have (device round 1,
-            P5). The constant folds to a literal, so the web keeps the bar and
-            the native bundle drops it. The Ear Lab room proper is Phase 7. */}
-        <Show when={!IS_NATIVE_BUILD}>
-          <div class={styles.sessionBar} data-testid="ear-session-bar">
-            <div class={styles.sessionCopy}>
+        {/* THE INFORMATION GOES, THE CONTROLS STAY.
+            What the owner asked to lose is the band of prose at the top: a
+            title, the room's name, the index and two dates, over a room that
+            already shows what it is (device round 1, P5). The three chips
+            beside it are not information — they are the only way to the
+            readiness panel that every tap drill subtracts from, to the rulers,
+            and to the room picker — so they stay, and the bar keeps its own
+            paint only on the web, where the prose is still beside them.
+
+            A heading stays too, read but not drawn: a room with no <h1> and no
+            <h2> is a document whose landmark list is empty.
+
+            The constant folds to a literal, so the branch the native build
+            takes is fixed at build time — though both branches are still in
+            the module, since a `Show` chooses which to RENDER and does not
+            remove either. The Ear Lab room proper is Phase 7. */}
+        <div
+          class={styles.sessionBar}
+          classList={{ [styles.sessionBarBare]: IS_NATIVE_BUILD }}
+          data-testid="ear-session-bar"
+        >
+          <Show
+            when={!IS_NATIVE_BUILD}
+            fallback={<h2 class={styles.srOnly}>Ear Lab</h2>}
+          >
+            <div class={styles.sessionCopy} data-testid="ear-session-copy">
               <h2 class={styles.sessionTitle}>Ear Lab</h2>
               <p class={styles.sessionMeta}>
                 <span>{roomLabel()}</span>
@@ -213,73 +231,74 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
                 </Show>
               </p>
             </div>
+          </Show>
 
-            <div class={styles.sessionChips}>
-              <button
-                type="button"
-                class={styles.chip}
-                data-tour="ear.latency"
-                onClick={() => open('readiness')}
-                aria-label={
-                  measured()
-                    ? `Round trip ${latencyMs()} milliseconds, ${latencyWord()}. Open the readiness panel`
-                    : 'Round trip not measured. Open the readiness panel'
-                }
-              >
-                <span
-                  class={styles.chipDot}
-                  classList={{
-                    [styles.chipDotOn]: measured() && latencySteady() !== false,
-                    [styles.chipDotWarn]:
-                      measured() && latencySteady() === false,
-                  }}
-                />
-                <span class={styles.chipCopy}>
-                  <b>
-                    <Show when={measured()} fallback="Round trip">
-                      {latencyMs()} ms
-                    </Show>
-                  </b>
-                  <small>
-                    <Show when={measured()} fallback="unmeasured">
-                      round trip · {latencyWord()}
-                    </Show>
-                  </small>
-                </span>
-              </button>
+          <div class={styles.sessionChips}>
+            <button
+              type="button"
+              class={styles.chip}
+              data-tour="ear.latency"
+              data-testid="ear-readiness-chip"
+              onClick={() => open('readiness')}
+              aria-label={
+                measured()
+                  ? `Round trip ${latencyMs()} milliseconds, ${latencyWord()}. Open the readiness panel`
+                  : 'Round trip not measured. Open the readiness panel'
+              }
+            >
+              <span
+                class={styles.chipDot}
+                classList={{
+                  [styles.chipDotOn]: measured() && latencySteady() !== false,
+                  [styles.chipDotWarn]: measured() && latencySteady() === false,
+                }}
+              />
+              <span class={styles.chipCopy}>
+                <b>
+                  <Show when={measured()} fallback="Round trip">
+                    {latencyMs()} ms
+                  </Show>
+                </b>
+                <small>
+                  <Show when={measured()} fallback="unmeasured">
+                    round trip · {latencyWord()}
+                  </Show>
+                </small>
+              </span>
+            </button>
 
-              <button
-                type="button"
-                class={styles.chip}
-                data-tour="ear.rulers"
-                onClick={() => open('rulers')}
-                aria-label="Why there is no percent here"
-                title="Why there is no percent here"
-              >
-                <IconInfo size={18} class={styles.chipIcon} />
-                <span class={styles.chipText}>No percent</span>
-              </button>
+            <button
+              type="button"
+              class={styles.chip}
+              data-tour="ear.rulers"
+              data-testid="ear-rulers-chip"
+              onClick={() => open('rulers')}
+              aria-label="Why there is no percent here"
+              title="Why there is no percent here"
+            >
+              <IconInfo size={18} class={styles.chipIcon} />
+              <span class={styles.chipText}>No percent</span>
+            </button>
 
-              <button
-                type="button"
-                class={`${styles.chip} ${styles.roomChip}`}
-                onClick={() => open('room')}
-                aria-label={`Room: ${roomLabel()}. Choose the room`}
-                data-testid="ear-room-chip"
-              >
-                <span
-                  class={styles.roomThumb}
-                  style={background.resolvedStyle()}
-                  aria-hidden="true"
-                />
-                <span class={styles.chipCopy}>
-                  <b>{roomLabel()}</b>
-                  <small>{roomAccess()}</small>
-                </span>
-              </button>
-            </div>
+            <button
+              type="button"
+              class={`${styles.chip} ${styles.roomChip}`}
+              onClick={() => open('room')}
+              aria-label={`Room: ${roomLabel()}. Choose the room`}
+              data-testid="ear-room-chip"
+            >
+              <span
+                class={styles.roomThumb}
+                style={background.resolvedStyle()}
+                aria-hidden="true"
+              />
+              <span class={styles.chipCopy}>
+                <b>{roomLabel()}</b>
+                <small>{roomAccess()}</small>
+              </span>
+            </button>
           </div>
-        </Show>
+        </div>
 
         <div class={styles.stage}>{props.children}</div>
 
