@@ -6,6 +6,7 @@ import { createHash, webcrypto } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumKitPlayerPort } from '../runtime/drum-runtime-types'
 import { velocityGain } from './drum-hit-dynamics'
+import type { DrumKitId } from './drum-kit-catalog-schema'
 import { DRUM_KIT_CATALOG, drumKitManifest, drumKitResourcesForHit, } from './drum-kit-manifest'
 import opusCatalog from './drum-kit-opus.generated.json'
 import { createDrumKitPlayer, drumKitPlaybackResources, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
@@ -250,12 +251,7 @@ function harness(
   options: {
     decodedLength?: number
     failFetch?: boolean
-    initialKitId?:
-      | 'circuit'
-      | 'classic-gm'
-      | 'live'
-      | 'mercury-synth'
-      | 'studio'
+    initialKitId?: DrumKitId
     maxDecodedBytes?: number
     maxVoices?: number
     opusSupported?: boolean
@@ -315,6 +311,38 @@ function baselinePlaybackResourceCount(
 }
 
 describe('createDrumKitPlayer', () => {
+  it.each(['muldjord', 'crocell'] as const)(
+    'plays expanded %s resources without disguising missing pedal hats',
+    async (kitId) => {
+      const { player } = harness({ initialKitId: kitId })
+      await player.activate()
+      const keys = [
+        35,
+        43,
+        45,
+        47,
+        50,
+        52,
+        53,
+        57,
+        59,
+        ...(kitId === 'crocell' ? [37, 40, 44, 55] : []),
+      ]
+      await player.prewarm(keys.map((gmKey) => ({ gmKey, velocity: 100 })))
+      for (const gmKey of keys)
+        expect(player.trigger({ gmKey, velocity: 100 })).toBe('sampled')
+      if (kitId === 'muldjord') {
+        expect(player.trigger({ gmKey: 44, velocity: 100 })).toBe(
+          'synth-fallback',
+        )
+        expect(player.snapshot().sampledReady).toBe(false)
+      } else {
+        expect(player.snapshot().sampledReady).toBe(true)
+      }
+      player.dispose()
+    },
+  )
+
   it('is silent and network-inert until activate is gesture-owned', async () => {
     const { context, fetchArrayBuffer, getAudioContext, getOutput, player } =
       harness({ initialKitId: 'studio' })

@@ -10,7 +10,7 @@ SFZ mapping and FLAC conversion by **kinwie**. This bank uses the old
 - [Full licence text, including warranty disclaimer](CC-BY-4.0.txt)
 - [Selected strikes, source hashes and microphone recipes](selected-mixes.json)
 
-MercuryPitch modifications: selected eight core GM voices and recorded velocity
+MercuryPitch modifications: selected and expanded GM acoustic voices and recorded velocity
 layers/repeat variants; mixed close and overhead microphones offline; cropped
 leading silence, retained short attack pre-roll and applied tail fades; resampled
 and encoded MP3/Opus; mapped velocity bands and applied a common kit level.
@@ -18,6 +18,8 @@ No per-hit normalization, artificial room reverb, or replacement synthesis is
 baked into these samples. The original SFZ mapping and FLAC conversion are prior
 modifications, retained in the accompanying provenance. Unsupported articulations
 use the application's separately identified synth fallback, not invented samples.
+Four physical toms cover six GM notes through documented shared mappings. The
+v1 source has no recorded pedal hi-hat; that articulation remains fallback.
 
 These sample derivatives are also offered under **CC BY 4.0**, separately from
 the application's software licence. Retain creator credits, source and licence

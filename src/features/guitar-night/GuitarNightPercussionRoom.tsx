@@ -337,6 +337,7 @@ export function GuitarNightPercussionRoom(
           drumSoundControls={
             <GuitarNightDrumSoundControls
               liveKit
+              playback={room.drumPlayback}
               onKitChange={room.setDrumKit}
             />
           }

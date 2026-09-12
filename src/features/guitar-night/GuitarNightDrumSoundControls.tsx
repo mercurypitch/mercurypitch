@@ -40,8 +40,13 @@ export function GuitarNightDrumSoundControls(
     }
     const routed = playback.routingCounts
     const routingNote =
-      routed.synthFallback + routed.unmapped + routed.dropped > 0
-        ? ` ${routed.synthFallback} fallback, ${routed.unmapped} unmapped, ${routed.dropped} dropped routing decisions.`
+      routed.sampled +
+        routed.synthesized +
+        routed.synthFallback +
+        routed.unmapped +
+        routed.dropped >
+      0
+        ? ` ${routed.sampled} sampled, ${routed.synthFallback} fallback, ${routed.unmapped} unmapped, ${routed.dropped} dropped routing decisions.${routed.synthesized > 0 ? ` ${routed.synthesized} synth-kit hits.` : ''}`
         : ''
     if (playback.status === 'error') {
       return `Sample preparation failed; Mercury fallback remains ready.${routingNote}`
@@ -67,7 +72,9 @@ export function GuitarNightDrumSoundControls(
       return `Reduced sampled kit ready; Mercury fallback covers unavailable articulations.${routingNote}`
     }
     if (playback.status === 'ready' && playback.fallbackReady) {
-      return `Synth kit ready.${routingNote}`
+      return playback.sampledPlayerCount > 0
+        ? `Sampled kit active; unavailable articulations use Mercury fallback.${routingNote}`
+        : `Synth kit ready.${routingNote}`
     }
     return `Kit activates on Play.${routingNote}`
   }
@@ -124,7 +131,9 @@ export function GuitarNightDrumSoundControls(
       <small>{readinessCopy()}</small>
       <Show when={kitId() === 'muldjord' || kitId() === 'crocell'}>
         <small>
-          Eight sampled core voices; other articulations use Mercury fallback.{' '}
+          {kitId() === 'muldjord'
+            ? 'Expanded acoustic kit. Pedal hi-hat and unsupported articulations use Mercury fallback.'
+            : 'Expanded acoustic kit with pedal hi-hat, rim, bell, china and splash. Unsupported percussion uses Mercury fallback.'}{' '}
           <a
             href={`/drum-night/kits/${kitId()}/LICENSE.md`}
             target="_blank"

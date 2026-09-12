@@ -39,6 +39,10 @@ export const SCORE_ROOM_MAX_COUNT_IN = GUITAR_NIGHT_SCORE_MAX_COUNT_IN_BEATS
 export const GUITAR_NIGHT_SCORE_CHANNEL = 'guitar-night-score'
 export const GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY =
   'mercurypitch.guitar-night.score-mix-volume.v1'
+export const GUITAR_NIGHT_SCORE_COUNT_IN_KEY =
+  'mercurypitch.guitar-night.score-count-in.v1'
+export const GUITAR_NIGHT_SCORE_CLICK_KEY =
+  'mercurypitch.guitar-night.score-click.v1'
 const MASTER_VOLUME_PERSIST_IDLE_MS = 180
 
 interface GuitarNightScoreRoomControllerOptions {
@@ -266,7 +270,14 @@ export function useGuitarNightScoreRoomController(
   const [countInRemaining, setCountInRemaining] = createSignal(0)
   const [positionSeconds, setPositionSeconds] = createSignal(0)
   const [parkedBeat, setParkedBeat] = createSignal(0)
-  const [configuredCountInBeats, setCountInBeatsSignal] = createSignal(4)
+  const [configuredCountInBeats, setCountInBeatsSignal] =
+    createPersistedSignal<number>(GUITAR_NIGHT_SCORE_COUNT_IN_KEY, 4, {
+      validator: (value): value is number =>
+        typeof value === 'number' &&
+        Number.isInteger(value) &&
+        value >= 0 &&
+        value <= SCORE_ROOM_MAX_COUNT_IN,
+    })
   const [tempoOverride, setTempoOverride] = createSignal<number | null>(null)
   const [error, setError] = createSignal<string | null>(null)
   const [runningTake, setRunningTake] =
@@ -507,7 +518,11 @@ export function useGuitarNightScoreRoomController(
    * The click. It used to run whenever the room did, with no way to quiet it —
    * reported as "it plays in background and cannot be adjusted, muted etc."
    */
-  const [hearClick, setHearClick] = createSignal(true)
+  const [hearClick, setHearClick] = createPersistedSignal<boolean>(
+    GUITAR_NIGHT_SCORE_CLICK_KEY,
+    true,
+    { validator: (value): value is boolean => typeof value === 'boolean' },
+  )
   // A bass part played through a guitar voice reads as the wrong instrument
   // even when every note is right, so the tuning the room is already showing
   // decides the voice.
@@ -1278,6 +1293,7 @@ export function useGuitarNightScoreRoomController(
   }
 
   const setCountInBeats = (value: number): void => {
+    if (!Number.isFinite(value)) return
     if (status() === 'paused') parkForConfiguration()
     setCountInBeatsSignal(
       Math.min(SCORE_ROOM_MAX_COUNT_IN, Math.max(0, Math.round(value))),

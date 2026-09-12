@@ -456,7 +456,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       id: 'muldjord',
       name: 'Muldjord',
       character:
-        'Rock and metal acoustic kit · 8 sampled core voices; other hits use synth fallback',
+        'Rock and metal · dual kicks, four toms, china, dual rides and bell; pedal hat uses fallback',
       engine: 'sampled',
       synthModel: null,
       version: GENERATED.kits.muldjord.version,
@@ -471,7 +471,7 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       id: 'crocell',
       name: 'Crocell',
       character:
-        'Studio metal acoustic kit · 8 sampled core voices; other hits use synth fallback',
+        'Studio metal · dual kicks, four toms, rim, pedal hat, bell, china and splash',
       engine: 'sampled',
       synthModel: null,
       version: GENERATED.kits.crocell.version,

@@ -12,6 +12,7 @@ import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, on
 import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ChevronLeft, GuitarTab, Info, LinkChain, MusicNote, ScoreDocument, Split, X, } from '@/components/icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import { Notifications } from '@/components/Notifications'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
@@ -2108,31 +2109,54 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                             aria-label="Visible part"
                           >
                             <For each={attached().tracks}>
-                              {(track) => (
-                                <button
-                                  type="button"
-                                  classList={{
-                                    [styles.referenceTrackActive]:
-                                      track.id === attached().trackId,
-                                  }}
-                                  aria-pressed={track.id === attached().trackId}
-                                  disabled={track.kind === 'percussion'}
-                                  title={
-                                    track.kind === 'percussion'
-                                      ? `${track.name} is readable backing, not a guitar scoring target`
-                                      : undefined
-                                  }
-                                  onClick={() =>
-                                    track.kind === 'percussion'
-                                      ? undefined
-                                      : void referenceController.selectTrack(
+                              {(track) => {
+                                let helpAnchor: HTMLSpanElement | undefined
+                                return (
+                                  <Show
+                                    when={track.kind !== 'percussion'}
+                                    fallback={
+                                      <span
+                                        ref={helpAnchor}
+                                        class={styles.referenceTrackHelpAnchor}
+                                      >
+                                        <InfoPopover
+                                          label={`${track.name} — backing only. Why can't I score this part?`}
+                                          triggerLabel={`${track.name} · Backing only`}
+                                          class={
+                                            styles.referenceTrackUnavailable
+                                          }
+                                          hoverAnchor={() => helpAnchor}
+                                        >
+                                          Drum tracks cannot be scored in Guitar
+                                          Night. You can still hear them as
+                                          backing and follow their notation in
+                                          the track mixer. Open this file in
+                                          Drum Night to practise and score
+                                          drums.
+                                        </InfoPopover>
+                                      </span>
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      classList={{
+                                        [styles.referenceTrackActive]:
+                                          track.id === attached().trackId,
+                                      }}
+                                      aria-pressed={
+                                        track.id === attached().trackId
+                                      }
+                                      onClick={() =>
+                                        void referenceController.selectTrack(
                                           track.id,
                                         )
-                                  }
-                                >
-                                  {track.name}
-                                </button>
-                              )}
+                                      }
+                                    >
+                                      {track.name}
+                                    </button>
+                                  </Show>
+                                )
+                              }}
                             </For>
                           </div>
                         </Show>
