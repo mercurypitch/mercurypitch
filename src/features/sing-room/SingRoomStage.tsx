@@ -46,7 +46,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
-import { keepSingTake, lastSingTake } from '@/stores/sing-takes-store'
+import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
 import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
 import type { SingRoomState } from './room-machine'
@@ -57,6 +57,7 @@ import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSin
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
 import { SingTakeSheet } from './SingTakeSheet'
+import { SingTakesSheet } from './SingTakesSheet'
 import { SingPrimingArt, SingTrace } from './SingTrace'
 import { recordTakeFrame, startTakeRecording, takeElapsedSeconds, takeRecording, } from './take-recorder'
 
@@ -143,6 +144,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const background = useBackgroundSurfaceController('sing', () => false)
 
   const [optionsOpen, setOptionsOpen] = createSignal(false)
+  /** "Your takes", from the pitch pill (R4). */
+  const [takesOpen, setTakesOpen] = createSignal(false)
 
   // The take on the card is the STORE's, not this component's. Both halves of
   // it — the state that says a card is open and the summary the card draws —
@@ -353,7 +356,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * and closes by KEEPING: a summary is four numbers that never leave the
    * phone, and losing one to a Back is worse than storing one nobody wanted.
    */
-  /** Shut every sheet and modal the room is holding. */
+  /** Shut every sheet and modal the room is holding, topmost first. */
   const closeRoomSheets = (): boolean => {
     if (props.picker.trackModalSong() !== null) {
       props.picker.setTrackModalSong(null)
@@ -361,6 +364,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     }
     if (props.picker.isModalOpen()) {
       props.picker.setIsModalOpen(false)
+      return true
+    }
+    if (takesOpen()) {
+      setTakesOpen(false)
       return true
     }
     if (optionsOpen()) {
@@ -576,9 +583,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             dispatchSingRoom({ type: 'toggle-mute' })
           }}
           onOpenSong={() => props.picker.setIsModalOpen(true)}
+          onOpenTakes={() => {
+            dismissCoachMark()
+            haptics.tapLight()
+            setTakesOpen(true)
+          }}
         />
 
-        <span class="sr-only" aria-live="polite">
+        {/* THE ROOM'S OWN VISUALLY-HIDDEN CLASS, not `sr-only`: that class is
+            defined in no stylesheet this repository ships, so this live
+            region rendered as ordinary text right under the HUD — the second
+            "No voice" the owner reported under native (R3). */}
+        <span class={styles.srOnly} aria-live="polite">
           {noteChipSignal(props.currentPitch()).announce}
         </span>
 
@@ -713,6 +729,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onDiscard={() => {
           clearSingTakeResult()
           dispatchSingRoom({ type: 'take-decided' })
+        }}
+      />
+
+      <SingTakesSheet
+        isOpen={takesOpen()}
+        close={() => setTakesOpen(false)}
+        takes={singTakes}
+        onRemove={(id) => {
+          haptics.tapLight()
+          removeSingTake(id)
         }}
       />
 

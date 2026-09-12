@@ -103,12 +103,31 @@
     calc(var(--tabbar-total, 64px) + 12px);
 }
 
+/* Row 1: key · mic · song · room for more (R3). The chips that can be long
+   give their width up; the microphone's one word never does. */
 .hud {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: nowrap;
   overflow: hidden;
+}
+
+/* The row for more, as a real item with a floor rather than a gap that only
+   exists while the chips happen to be short. At 390pt with a song chip in it
+   this is the twelve points the row was squeezed out of. */
+.hudSlack {
+  flex: 1 0 12px;
+  min-width: 12px;
+  align-self: stretch;
+}
+
+/* Row 2: the pitch pill, alone and centred, because it is the one thing on
+   this screen a singer actually watches. */
+.pillRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .canvasWrap {
@@ -162,6 +181,25 @@
 
 .center {
   text-align: center;
+}
+
+/* Spoken, never drawn.
+   THE ROOM HAS TO BRING ITS OWN: `sr-only` is a class this repository defines
+   in no stylesheet at all, so the room's live region — which says the note
+   and its cents, or "No voice" — rendered as ordinary text under the HUD. On
+   the web that never showed up, because the web Sing tab is a different
+   component; under the native shell it was the duplicate pitch readout the
+   owner reported (device round 2, R3). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .grow {
@@ -226,7 +264,9 @@
   align-items: center;
   gap: 6px;
   height: 32px;
-  max-width: 46vw;
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 42vw;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgb(230 237 243 / 10%);
@@ -237,8 +277,23 @@
   font: 500 13px/1 var(--font-body, sans-serif);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
+}
+
+/* The ellipsis belongs to the text, not to the chip: a chip is a flex box,
+   and `text-overflow` on a flex container truncates nothing. */
+.chipText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The state chip. It is one word and the word is the state of the
+   microphone — a clipped "Listeni…" is the room lying about the one thing it
+   has to be honest about, so this chip never gives width up. */
+.chipFixed {
+  flex: 0 0 auto;
 }
 
 .chip svg {
@@ -247,14 +302,20 @@
   flex: 0 0 auto;
 }
 
-/* ── The note chip (kit `note-chip`, every variant) ──────── */
+/* ── The pitch pill (kit `note-chip`, every variant) ─────── */
 
+/* TALLER, CENTRED, AND ITS CONTENT CENTRED WITH IT (R3). The pill used to be
+   one flex row at `align-items: baseline`: that lines the note, the mark and
+   the cents up with each other and then leaves the whole group wherever the
+   tallest of them puts it, which at `line-height: 1` is hard against the top
+   of a 40px pill. The pieces still share a baseline — inside `.noteChipBox` —
+   and the pill centres the box. */
 .noteChip {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  height: 40px;
-  padding: 0 14px;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 20px;
   border-radius: 999px;
   background: var(--glass-bg, rgb(22 27 34 / 72%));
   backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
@@ -263,6 +324,13 @@
   color: var(--text-primary, #e6edf3);
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.noteChipBox {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .noteChipNote {
@@ -494,6 +562,66 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* ── "Your takes" — the kept summaries (R4) ──────────────── */
+
+.takeList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.takeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  background: var(--bg-secondary, #161b22);
+}
+
+.takeRowText {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.takeRowWhen {
+  font: 600 14px/18px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.takeRowStats {
+  font: 400 12px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  font-variant-numeric: tabular-nums;
+}
+
+.takeRowRemove {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgb(230 237 243 / 16%);
+  border-radius: 10px;
+  background: none;
+  color: var(--text-secondary, #a8b3bf);
+  font: 500 13px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.takeRowRemove svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── The options sheet's toggle ──────────────────────────── */

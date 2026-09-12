@@ -86,8 +86,15 @@ export const [singCoachMarkSeen, setSingCoachMarkSeen] = lazyFlag(
   false,
 )
 
-/** The coach mark's copy, from brief §4. One string, written once. */
+/**
+ * The coach mark's copy. One string, written once.
+ *
+ * It now says what a tap DOES (device round 2, R4). The first version
+ * described three chips and promised nothing about touching them, while the
+ * pill — the thing the mark points at — did nothing at all when pressed. The
+ * pill opens "Your takes"; the sentence says so.
+ */
 export const SING_COACH_MARK = {
   title: 'Your note',
-  body: 'The chip says the note and how far from it you are, in cents. Tap the key chip to change the key; range and what you hear live under the gear.',
+  body: 'The pill says the note and how far from it you are, in cents. Tap it for your takes. The key chip changes the key; range and what you hear live under the gear.',
 } as const
