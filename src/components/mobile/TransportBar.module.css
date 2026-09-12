@@ -29,12 +29,17 @@
    `10px + --safe-bottom` on top of that reserve, which on a notched phone
    left 52 px of nothing between the last control and the rail — the dead
    space the owner photographed in device round 1 (P2). Without the bottom
-   inset the controls sit where the box does: the scroller's single 8 px above
-   the band.
+   inset the box sits where it should: the scroller's single 8 px above the
+   band.
+
+   10px rather than 0 — the same as the top — because the row is what the eye
+   reads, and a row flush with the bottom of its own box next to 10 px of air
+   above it is off-centre. The 8 px seam is the BOX's, and the box is where it
+   was; what went is the safe-area half, which was never this bar's to add.
 
    `:global` on the attribute only, so the class stays module-scoped. The
    attribute is set by the shell in `apps/mercurypitch` and by nothing else,
    so this rule cannot match in a browser. */
 :global(:root[data-native-shell]) .bar {
-  padding-bottom: 0;
+  padding-bottom: 10px;
 }
