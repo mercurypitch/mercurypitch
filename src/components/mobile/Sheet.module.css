@@ -47,19 +47,35 @@
   transition: none;
 }
 
-/* The whole area around the handle drags — a 4px bar alone is not a
-   44px touch target. Negative margins re-cover the panel's top padding. */
+/* The whole top band drags — a 4px bar alone is not a touch target at all,
+   and the 28px band this replaces was reported as hard to grab on iOS
+   (device round 2, R7). It is a full-width strip at least 44pt tall; the
+   negative margins re-cover the panel's own top padding, so the band really
+   does begin at the panel's edge rather than 8px inside it. */
 .handleZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   margin: -8px -16px 0;
-  padding: 8px 16px 0;
+  padding: 0 16px;
   touch-action: none;
   cursor: grab;
+}
+
+/* The grabber's own 44x44 — what a tap-to-close is measured against. The bar
+   itself stays 38x4; only the target around it is finger-sized. */
+.handleHit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
 }
 
 .handle {
   width: 38px;
   height: 4px;
-  margin: 4px auto 12px;
   border-radius: 2px;
   background: var(
     --sheet-handle,

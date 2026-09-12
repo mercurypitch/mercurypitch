@@ -40,6 +40,17 @@
 // down; at rest there is no transform, so iOS <select> pickers inside
 // sheets are safe from the WebKit transformed-ancestor bug (see
 // AppSidebar.module.css).
+//
+// THE DRAG REGION IS THE PANEL'S WHOLE TOP BAND, at least 44pt tall, with a
+// 44x44 target around the grabber inside it, and a tap on that target closes
+// (device round 2, R7: "the sheet's top handle is hard to grab on iOS"). The
+// physics below are untouched — the same distance, the same flick velocity —
+// so every existing sheet behaves as it did, with a bigger thing to hold.
+//
+// The band does NOT swallow the caller's own title row. Sheets put real
+// controls up there (OptionsSheet's rows, the Jam picker's close), and a
+// drag region over them would take their taps; `touch-action: none` on the
+// band would also stop a scroll that started on one.
 
 import type { Component, JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
@@ -63,6 +74,16 @@ interface SheetProps {
 const DISMISS_DISTANCE = 90
 /** Flick speed (px/ms) that dismisses regardless of distance. */
 const DISMISS_VELOCITY = 0.55
+/**
+ * Travel (px) under which a press on the grabber is a TAP, not a drag.
+ *
+ * A tap closes, which is the second half of R7: the grabber is the one thing
+ * on a sheet that looks like a control and did nothing at all when pressed.
+ * The slop is deliberately small — a finger that moved further than this was
+ * dragging, and a drag that stopped short must not close a sheet somebody was
+ * only nudging.
+ */
+const TAP_SLOP = 8
 
 export const Sheet: Component<SheetProps> = (props) => {
   const [dragY, setDragY] = createSignal(0)
@@ -75,6 +96,8 @@ export const Sheet: Component<SheetProps> = (props) => {
   let lastY = 0
   let lastT = 0
   let velocity = 0
+  /** Did this press start on the grabber, and has it stayed still since? */
+  let tapping = false
 
   useFocusTrap(() => panelRef, {
     isOpen: () => props.isOpen,
@@ -86,12 +109,24 @@ export const Sheet: Component<SheetProps> = (props) => {
     initialFocus: () => panelRef,
   })
 
+  /**
+   * Only a press that landed on the grabber can become a tap.
+   *
+   * The drag band is the panel's whole top strip, which is wide enough to
+   * catch a thumb resting on the sheet — a tap-to-close anywhere in it would
+   * dismiss sheets nobody meant to dismiss. The grabber is the part that
+   * looks like a control, so it is the part that behaves like one.
+   */
+  const onGrabber = (target: EventTarget | null): boolean =>
+    target instanceof Element && target.closest(`.${styles.handleHit}`) !== null
+
   const onHandleDown = (e: PointerEvent): void => {
     pointerId = e.pointerId
     startY = e.clientY
     lastY = e.clientY
     lastT = e.timeStamp
     velocity = 0
+    tapping = onGrabber(e.target)
     setDragging(true)
     try {
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -106,6 +141,10 @@ export const Sheet: Component<SheetProps> = (props) => {
     if (dt > 0) velocity = (e.clientY - lastY) / dt
     lastY = e.clientY
     lastT = e.timeStamp
+    // Travel in EITHER direction ends the tap: a sheet cannot be dragged up,
+    // so an upward nudge shows no movement at all and would otherwise still
+    // release as a tap.
+    if (Math.abs(e.clientY - startY) > TAP_SLOP) tapping = false
     setDragY(Math.max(0, e.clientY - startY))
   }
 
@@ -117,8 +156,11 @@ export const Sheet: Component<SheetProps> = (props) => {
     } catch {
       /* capture never took */
     }
+    const tapped = tapping && dragY() <= TAP_SLOP
+    tapping = false
     const shouldClose =
-      !cancelled && (dragY() > DISMISS_DISTANCE || velocity > DISMISS_VELOCITY)
+      !cancelled &&
+      (tapped || dragY() > DISMISS_DISTANCE || velocity > DISMISS_VELOCITY)
     setDragging(false)
     setDragY(0)
     if (shouldClose) props.close()
@@ -159,14 +201,26 @@ export const Sheet: Component<SheetProps> = (props) => {
               }
               onClick={(e) => e.stopPropagation()}
             >
+              {/* The drag band, and the grabber's own target inside it. The
+                  grabber stays out of the accessibility tree on purpose: a
+                  focusable close control here would change the focus order of
+                  every sheet in the app, and Escape already closes one
+                  (useFocusTrap, above). The tap is a touch affordance. */}
               <div
                 class={styles.handleZone}
+                data-testid="sheet-handle-zone"
                 onPointerDown={onHandleDown}
                 onPointerMove={onHandleMove}
                 onPointerUp={(e) => endDrag(e, false)}
                 onPointerCancel={(e) => endDrag(e, true)}
               >
-                <div class={styles.handle} aria-hidden="true" />
+                <div
+                  class={styles.handleHit}
+                  data-testid="sheet-handle"
+                  aria-hidden="true"
+                >
+                  <div class={styles.handle} />
+                </div>
               </div>
               {props.children}
             </div>
