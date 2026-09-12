@@ -27,6 +27,7 @@ import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { navigateTo } from '@/lib/hash-router'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { openLearningWalkthrough } from '@/stores/app-store'
 import { exerciseHistory } from '@/stores/exercise-history-store'
@@ -137,41 +138,50 @@ const HomePage: Component = () => {
   return (
     <div class={styles.page}>
       {/* A <div>, not <header>: the global app-bar CSS targets header and
-          adds padding plus a doubled safe-area inset on phones. */}
-      <div class={styles.head}>
-        <div class={styles.headText}>
-          <h1 class={styles.greeting}>{greeting()}</h1>
-          <p class={styles.date}>
-            {new Date().toLocaleDateString(undefined, {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
+          adds padding plus a doubled safe-area inset on phones.
+
+          NOT IN THE APP. Rooms opens on a gallery of places to be, and a
+          greeting, a date and two links above it is an information band the
+          native design does not have — the owner's first word on it was that
+          it should not be there (device round 1, P5). The constant folds to a
+          literal, so the web keeps the band and the native bundle drops it.
+          The real Rooms layout is Phase 1b. */}
+      <Show when={!IS_NATIVE_BUILD}>
+        <div class={styles.head}>
+          <div class={styles.headText}>
+            <h1 class={styles.greeting}>{greeting()}</h1>
+            <p class={styles.date}>
+              {new Date().toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
+          {/* Learn and What's new sat in the sidebar, where four controls no
+              longer fit a phone and neither had anything to do with the page
+              you were on. Home is where you arrive, which is where "what is
+              this" and "what changed" belong. */}
+          <div class={styles.headActions}>
+            <button
+              type="button"
+              class={styles.headAction}
+              onClick={() => openLearningWalkthrough()}
+              data-testid="home-learn"
+            >
+              Learn
+            </button>
+            <button
+              type="button"
+              class={`${styles.headAction} ${styles.headActionAccent}`}
+              onClick={() => navigateTo({ type: 'whats-new' })}
+              data-testid="home-whats-new"
+            >
+              What's new
+            </button>
+          </div>
         </div>
-        {/* Learn and What's new sat in the sidebar, where four controls no
-            longer fit a phone and neither had anything to do with the page
-            you were on. Home is where you arrive, which is where "what is
-            this" and "what changed" belong. */}
-        <div class={styles.headActions}>
-          <button
-            type="button"
-            class={styles.headAction}
-            onClick={() => openLearningWalkthrough()}
-            data-testid="home-learn"
-          >
-            Learn
-          </button>
-          <button
-            type="button"
-            class={`${styles.headAction} ${styles.headActionAccent}`}
-            onClick={() => navigateTo({ type: 'whats-new' })}
-            data-testid="home-whats-new"
-          >
-            What's new
-          </button>
-        </div>
-      </div>
+      </Show>
 
       {/* Only ever visible to somebody signed out who has signed in on this
           device before, after onboarding, and only until they dismiss it.
