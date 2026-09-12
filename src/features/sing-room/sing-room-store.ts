@@ -11,7 +11,7 @@
 // The machine and its mic policy are in `room-machine.ts`; this is the
 // living copy of one context plus the two counters a session keeps.
 
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
 import { initialSingRoomContext, singRoomReducer } from './room-machine'
 import { singMicGranted, singMicOnArrival } from './sing-room-settings'
@@ -28,9 +28,17 @@ const [context, setContext] = createSignal<SingRoomContext>(fresh())
 /** The room's whole state, as one reactive value. */
 export const singRoomContext = context
 
-/** Apply an event and return what the context became. */
+/**
+ * Apply an event and return what the context became.
+ *
+ * UNTRACKED. Reading the context here is how the reducer works, not a
+ * subscription — and an effect that dispatches would otherwise depend on the
+ * very signal its dispatch writes. Measured: the sheet's "microphone on
+ * arrival" effect dispatched, the dispatch read the context, the write woke
+ * the effect, and the app crashed on its own stack.
+ */
 export function dispatchSingRoom(event: SingRoomEvent): SingRoomContext {
-  const next = singRoomReducer(context(), event)
+  const next = singRoomReducer(untrack(context), event)
   setContext(next)
   return next
 }

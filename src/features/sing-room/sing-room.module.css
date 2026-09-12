@@ -24,7 +24,6 @@
   z-index: var(--z-stage, 450);
   overflow: hidden;
   background: var(--bg-primary, #0d1117);
-  contain: strict;
 }
 
 /* The room takes the viewport, so the scroller it was rendered into has
@@ -430,6 +429,11 @@
 
 /* ── The priming screen (3b) ─────────────────────────────── */
 
+/* PORTALLED TO <body>, and it has to be. `.room` is a fixed, z-indexed
+   element, which makes it a stacking context: a child at `--z-sheet` (600)
+   is still only 600 INSIDE a room painted at 450, so the shell's rail (470)
+   drew straight over the door and took its Continue tap. Measured in the
+   probe, where the click was intercepted by the rail's own microphone glyph. */
 .priming {
   position: fixed;
   inset: 0;

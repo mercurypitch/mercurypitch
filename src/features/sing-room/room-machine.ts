@@ -199,7 +199,11 @@ export function singRoomReducer(
       return { ...ctx, armed: false, state: 'resting' }
 
     case 'set-mic-on-arrival':
-      return { ...ctx, micOnArrival: event.value }
+      // Identity matters: the context is a signal, and handing back a new
+      // object for a value that did not change wakes everything reading it.
+      return ctx.micOnArrival === event.value
+        ? ctx
+        : { ...ctx, micOnArrival: event.value }
   }
 }
 

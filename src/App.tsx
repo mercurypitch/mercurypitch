@@ -3075,7 +3075,7 @@ const AppShell: Component<AppProps> = (props) => {
   const renderSingingRoomCanvas = (options: SingRoomCanvasOptions) => (
     <PitchCanvas
       melody={activePlaybackItems}
-      scale={() => melodyStore.currentScale()}
+      scale={options.scale}
       totalBeats={options.totalBeats}
       currentBeat={options.currentBeat}
       pitchHistory={options.pitchHistory}

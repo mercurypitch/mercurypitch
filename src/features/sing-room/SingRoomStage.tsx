@@ -29,6 +29,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
@@ -37,30 +38,34 @@ import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { haptics } from '@/lib/haptics'
 import { micManager } from '@/lib/mic-manager'
-import { scaleDegreeSet } from '@/lib/scale-data'
+import { buildMultiOctaveScale, scaleDegreeSet } from '@/lib/scale-data'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
+import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import type { SingTake } from '@/stores/sing-takes-store'
 import { keepSingTake, lastSingTake } from '@/stores/sing-takes-store'
-import type { PitchResult, PitchSample } from '@/types'
+import type { PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
-import { hasUnsavedTake as takeUndecided,micChipState, micIntent, runIsLive, runIsPaused,  } from './room-machine'
+import { hasUnsavedTake as takeUndecided, micChipState, micIntent, runIsLive, runIsPaused, } from './room-machine'
 import styles from './sing-room.module.css'
-import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn,SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn,  } from './sing-room-settings'
+import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
 import { beginTake, dispatchSingRoom, singRoomContext, takesThisSession, } from './sing-room-store'
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
 import { SingTakeSheet } from './SingTakeSheet'
 import { SingPrimingArt, SingTrace } from './SingTrace'
-import type { TakeFrame, TakeSummary } from './take-summary'
+import { recordTakeFrame, startTakeRecording, takeRecording, } from './take-recorder'
+import type { TakeSummary } from './take-summary'
 import { summarizeTake } from './take-summary'
 
 /** What the room hands the host so the host can build its `PitchCanvas`. */
 export interface SingRoomCanvasOptions {
   pitchHistory: () => PitchSample[]
+  /** The rows the trace is read against: the melody's, or the voice's own. */
+  scale: () => ScaleDegree[]
   currentBeat: () => number
   totalBeats: () => number
   isPlaying: () => boolean
@@ -109,12 +114,6 @@ export interface SingRoomStageProps {
   onAutoCalibrate: () => void
 }
 
-/** How much of the free run's trail is kept — about 25 s at 60 fps. */
-const TRAIL_SAMPLES = 1500
-
-/** The take recorder's rate. 20 Hz resolves a 150 ms hold six times over. */
-const TAKE_FRAME_INTERVAL_MS = 50
-
 /** The free run's window, in the seconds it uses for beats. */
 const FREE_WINDOW_SECONDS = 17
 
@@ -125,15 +124,6 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const [summary, setSummary] = createSignal<TakeSummary | null>(null)
   const [previousTake, setPreviousTake] = createSignal<SingTake | null>(null)
   const [takeClock, setTakeClock] = createSignal({ startedAt: 0, endedAt: 0 })
-
-  // The free run's own axis and trail. Plain values, mutated in place: the
-  // canvas reads both from its own loop (see the header).
-  let trail: PitchSample[] = []
-  let elapsedSeconds = 0
-  let takeFrames: TakeFrame[] = []
-  let runStartedAtMs = 0
-  let runStartedAtEpoch = 0
-  let lastTakeFrameMs = 0
 
   const ctx = singRoomContext
   const state = (): string => ctx().state
@@ -148,20 +138,14 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   // ── The take ───────────────────────────────────────────────
 
   const startTake = (): void => {
-    trail = []
-    takeFrames = []
-    elapsedSeconds = 0
-    lastTakeFrameMs = 0
-    runStartedAtMs = performance.now()
-    runStartedAtEpoch = Date.now()
+    startTakeRecording()
     beginTake()
   }
 
   const endTake = (): boolean => {
-    const endedAtMs = performance.now()
-    const computed = summarizeTake(takeFrames, {
-      startedAtMs: runStartedAtMs,
-      endedAtMs,
+    const computed = summarizeTake(takeRecording.frames, {
+      startedAtMs: takeRecording.startedAtMs,
+      endedAtMs: performance.now(),
       takeNumber: takesThisSession(),
     })
     setSummary(computed)
@@ -169,7 +153,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // Captured BEFORE Keep writes, so the line the singer is reading cannot
     // change into a comparison with the take they are deciding about.
     setPreviousTake(lastSingTake())
-    setTakeClock({ startedAt: runStartedAtEpoch, endedAt: Date.now() })
+    setTakeClock({
+      startedAt: takeRecording.startedAtEpoch,
+      endedAt: Date.now(),
+    })
     return true
   }
 
@@ -225,47 +212,29 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     if (!micIntent(ctx())) return
     const pitch = frame.pitch
     const freq = pitch !== null && pitch.frequency > 0 ? pitch.frequency : 0
-
-    // The free run's trail and axis. A melody run uses the app's.
-    if (!melodyRun()) {
-      elapsedSeconds = (frame.atMs - runStartedAtMs) / 1000
-      trail.push(
-        freq > 0
-          ? { freq, cents: pitch!.cents, time: elapsedSeconds }
-          : { freq: null, time: elapsedSeconds },
-      )
-      if (trail.length > TRAIL_SAMPLES)
-        trail.splice(0, trail.length - TRAIL_SAMPLES)
-    }
-
-    if (frame.atMs - lastTakeFrameMs < TAKE_FRAME_INTERVAL_MS) return
-    lastTakeFrameMs = frame.atMs
+    const melody = melodyRun()
 
     // The reference the end card measures against: the target in a melody
     // run, the nearest note OF THE KEY in a free one (brief §5).
     const target = props.targetPitch()
-    if (freq === 0) {
-      takeFrames.push({ atMs: frame.atMs, freq: 0, cents: 0, midi: 0 })
-      return
-    }
-    if (melodyRun() && target !== null && target > 0) {
-      takeFrames.push({
-        atMs: frame.atMs,
-        freq,
-        cents: 1200 * Math.log2(freq / target),
-        midi:
-          pitch!.midi > 0
-            ? pitch!.midi
-            : Math.round(69 + 12 * Math.log2(freq / 440)),
-      })
-      return
-    }
-    const nearest = centsToNearestScaleNote(freq, scalePitchClasses())
-    takeFrames.push({
+    const against =
+      freq === 0
+        ? null
+        : melody && target !== null && target > 0
+          ? {
+              cents: 1200 * Math.log2(freq / target),
+              midi: Math.round(69 + 12 * Math.log2(freq / 440)),
+            }
+          : centsToNearestScaleNote(freq, scalePitchClasses())
+
+    recordTakeFrame({
       atMs: frame.atMs,
       freq,
-      cents: nearest?.cents ?? 0,
-      midi: nearest?.midi ?? Math.round(69 + 12 * Math.log2(freq / 440)),
+      cents: against?.cents ?? 0,
+      midi: against?.midi ?? 0,
+      // A melody run draws from the app's own history, which the app fills
+      // only while its transport is running. A free run has none.
+      trail: !melody,
     })
   }
 
@@ -362,13 +331,36 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     props.picker.setIsModalOpen(true)
   }
 
+  /**
+   * The rows the free tracker is read against.
+   *
+   * NOT the melody's scale. With no melody loaded that scale is one octave
+   * somewhere around middle C, and the canvas fits its view to it — so a
+   * voice an octave above sat off the top of the canvas and its line was
+   * dropped as an out-of-view artifact. The singer's own declared range is
+   * the right window for a tracker with nothing to track against, and it is
+   * the same answer Zen uses.
+   */
+  const freeScale = createMemo(() => {
+    const range = VOCAL_RANGES[vocalRangePreset()]
+    return buildMultiOctaveScale(
+      keyName(),
+      range.minOctave,
+      Math.max(1, range.maxOctave - range.minOctave + 1),
+      scaleType(),
+    )
+  })
+
   const canvasOptions: SingRoomCanvasOptions = {
-    pitchHistory: () => (melodyRun() ? props.pitchHistory() : trail),
-    currentBeat: () => (melodyRun() ? props.currentBeat() : elapsedSeconds),
+    pitchHistory: () =>
+      melodyRun() ? props.pitchHistory() : takeRecording.trail,
+    scale: () => (melodyRun() ? melodyStore.currentScale() : freeScale()),
+    currentBeat: () =>
+      melodyRun() ? props.currentBeat() : takeRecording.elapsedSeconds,
     totalBeats: () =>
       melodyRun()
         ? props.totalBeats()
-        : Math.max(FREE_WINDOW_SECONDS, elapsedSeconds + 1),
+        : Math.max(FREE_WINDOW_SECONDS, takeRecording.elapsedSeconds + 1),
     // A free run has no transport at all, and telling the canvas it is
     // "playing" would start its arc physics over an empty melody. The head
     // dot rides `traceStyle: 'spectrum'` instead.
@@ -514,26 +506,28 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           sheet: it is a door, and a door with a stage behind it invites a tap
           on the stage instead of on Continue. */}
       <Show when={state() === 'priming'}>
-        <div class={styles.priming} data-testid="sing-priming">
-          <SingPrimingArt />
-          <p class={styles.display}>Hear your voice as a line</p>
-          <p class={styles.body}>
-            MercuryPitch listens while you sing and draws your pitch on screen.
-            Nothing is uploaded. Nobody hears you but you.
-          </p>
-          <div class={styles.grow} />
-          <button
-            type="button"
-            class={styles.capsule}
-            onClick={() => {
-              dispatchSingRoom({ type: 'priming-continue' })
-              void requestMic()
-            }}
-            data-testid="sing-priming-continue"
-          >
-            Continue
-          </button>
-        </div>
+        <Portal>
+          <div class={styles.priming} data-testid="sing-priming">
+            <SingPrimingArt />
+            <p class={styles.display}>Hear your voice as a line</p>
+            <p class={styles.body}>
+              MercuryPitch listens while you sing and draws your pitch on
+              screen. Nothing is uploaded. Nobody hears you but you.
+            </p>
+            <div class={styles.grow} />
+            <button
+              type="button"
+              class={styles.capsule}
+              onClick={() => {
+                dispatchSingRoom({ type: 'priming-continue' })
+                void requestMic()
+              }}
+              data-testid="sing-priming-continue"
+            >
+              Continue
+            </button>
+          </div>
+        </Portal>
       </Show>
 
       <SingTakeSheet
