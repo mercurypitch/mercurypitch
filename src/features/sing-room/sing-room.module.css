@@ -27,11 +27,14 @@
 }
 
 /* The room takes the viewport, so the scroller it was rendered into has
-   nothing left to lay out. Without this it keeps the room header's top
+   nothing left to lay out: without this it keeps the room header's top
    reservation and the rail's bottom one as empty space, which is a scrollbar
-   over an empty column. */
+   over an empty column.
+
+   `overflow` alone. The `padding: 0` that used to sit here changed nothing —
+   the room is `position: fixed` and does not read its parent's box at all —
+   and a rule that does nothing is a rule somebody later has to disprove. */
 :global(.main-content):has(.room) {
-  padding: 0;
   overflow: hidden;
 }
 

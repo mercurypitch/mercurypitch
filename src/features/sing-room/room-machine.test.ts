@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
-import { hasUnsavedTake, initialSingRoomContext, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, } from './room-machine'
+import { hasUnsavedTake, initialSingRoomContext, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, } from './room-machine'
 
 const run = (
   ctx: SingRoomContext,
@@ -9,7 +9,10 @@ const run = (
 
 describe('the first arrival', () => {
   it('rests with the mic off until the capsule is tapped', () => {
-    const ctx = run(initialSingRoomContext(), { type: 'enter', hasSummary: false })
+    const ctx = run(initialSingRoomContext(), {
+      type: 'enter',
+      hasSummary: false,
+    })
     expect(ctx.state).toBe('resting')
     expect(micIntent(ctx)).toBe(false)
   })
@@ -56,7 +59,11 @@ describe('the first arrival', () => {
       { type: 'mic-denied' },
     )
     // Leaving and coming back does NOT re-ask: that would be the nag.
-    const returned = run(denied, { type: 'leave' }, { type: 'enter', hasSummary: false })
+    const returned = run(
+      denied,
+      { type: 'leave' },
+      { type: 'enter', hasSummary: false },
+    )
     expect(returned.state).toBe('denied')
     // The capsule does.
     expect(
@@ -108,7 +115,11 @@ describe('the automatic microphone', () => {
   })
 
   it('releases it the moment the tab stops being the one on screen', () => {
-    const ctx = run(granted, { type: 'enter', hasSummary: false }, { type: 'leave' })
+    const ctx = run(
+      granted,
+      { type: 'enter', hasSummary: false },
+      { type: 'leave' },
+    )
     expect(ctx.state).toBe('paused')
     expect(micIntent(ctx)).toBe(false)
   })
@@ -134,14 +145,22 @@ describe('the automatic microphone', () => {
     )
     expect(stopped.state).toBe('resting')
     // Even an arrival does not re-arm it: only the capsule does.
-    const returned = run(stopped, { type: 'leave' }, { type: 'enter', hasSummary: false })
+    const returned = run(
+      stopped,
+      { type: 'leave' },
+      { type: 'enter', hasSummary: false },
+    )
     expect(returned.state).toBe('resting')
     expect(micIntent(returned)).toBe(false)
     expect(micIntent(run(returned, { type: 'sing-a-note' }))).toBe(true)
   })
 
   it('turns on for Play on a melody', () => {
-    const ctx = run(granted, { type: 'enter', hasSummary: false }, { type: 'toggle-mute' })
+    const ctx = run(
+      granted,
+      { type: 'enter', hasSummary: false },
+      { type: 'toggle-mute' },
+    )
     expect(micIntent(ctx)).toBe(false)
     const playing = run(ctx, { type: 'melody-play' })
     expect(micIntent(playing)).toBe(true)
@@ -165,13 +184,25 @@ describe('the state chip', () => {
   })
 
   it('says Paused while the run is paused, mute or not', () => {
-    const paused = run(granted, { type: 'enter', hasSummary: false }, { type: 'pause' })
+    const paused = run(
+      granted,
+      { type: 'enter', hasSummary: false },
+      { type: 'pause' },
+    )
     expect(micChipState(paused, false)).toBe('paused')
   })
 
   it('clears a mute on the next arrival', () => {
-    const muted = run(granted, { type: 'enter', hasSummary: false }, { type: 'toggle-mute' })
-    const returned = run(muted, { type: 'leave' }, { type: 'enter', hasSummary: false })
+    const muted = run(
+      granted,
+      { type: 'enter', hasSummary: false },
+      { type: 'toggle-mute' },
+    )
+    const returned = run(
+      muted,
+      { type: 'leave' },
+      { type: 'enter', hasSummary: false },
+    )
     expect(returned.muted).toBe(false)
   })
 
@@ -226,7 +257,9 @@ describe('the sheet setting', () => {
     const off = run(live, { type: 'set-mic-on-arrival', value: false })
     expect(off.state).toBe('live')
     expect(micIntent(off)).toBe(true)
-    expect(run(off, { type: 'leave' }, { type: 'enter', hasSummary: false }).state).toBe('paused')
+    expect(
+      run(off, { type: 'leave' }, { type: 'enter', hasSummary: false }).state,
+    ).toBe('paused')
   })
 })
 
@@ -347,5 +380,26 @@ describe('a melody, once one is chosen', () => {
     )
     expect(ctx.melodyLoaded).toBe(true)
     expect(ctx.melody).toBe(false)
+  })
+})
+
+describe('what a tap on the state chip does', () => {
+  const at = (state: SingRoomContext['state'], muted = false) =>
+    micChipAction(initialSingRoomContext({ state, muted, active: true }))
+
+  it('mutes and unmutes a live run', () => {
+    expect(at('live')).toBe('mute')
+    expect(at('live', true)).toBe('listen')
+  })
+
+  it('is the capsule while the room rests', () => {
+    expect(at('resting')).toBe('start')
+  })
+
+  it('does nothing at all where there is nothing to do', () => {
+    expect(at('paused')).toBeNull()
+    expect(at('ended')).toBeNull()
+    expect(at('denied')).toBeNull()
+    expect(at('priming')).toBeNull()
   })
 })

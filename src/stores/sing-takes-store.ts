@@ -17,7 +17,14 @@
 // port is for the three identity keys whose loss orphans an account
 // (`src/lib/storage-port.ts` says so in its own header), and a take summary
 // is a preference-shaped thing — losing it costs one comparison line.
+//
+// BUILT ON FIRST USE. Only the native Sing room reads this, and `App.tsx`
+// imports that room in both bundles and folds it away with `IS_NATIVE_BUILD`.
+// A top-level `createPersistedSignal` is a side effect the bundler has to
+// keep, so the web build shipped this key and a `localStorage` read for a
+// room it does not contain. Nothing here runs on import now.
 
+import type { Signal } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
 export interface SingTake {
@@ -49,31 +56,44 @@ function isSingTake(value: unknown): value is SingTake {
     typeof take.endedAt === 'number' &&
     typeof take.durationMs === 'number' &&
     typeof take.takeNumber === 'number' &&
-    typeof take.heldWithinCents === 'number'
+    typeof take.heldWithinCents === 'number' &&
+    // The two that are allowed to be absent are not allowed to be anything:
+    // the history line interpolates them straight into a sentence, so an
+    // object from an older build (or a hand-edited one) would read
+    // "you touched [object Object] to undefined".
+    (take.lowNote === null || typeof take.lowNote === 'string') &&
+    (take.highNote === null || typeof take.highNote === 'string')
   )
 }
 
-const [takes, setTakes] = createPersistedSignal<SingTake[]>(STORAGE_KEY, [], {
-  validator: (value): value is SingTake[] =>
-    Array.isArray(value) && value.every(isSingTake),
-})
+let stored: Signal<SingTake[]> | undefined
 
-/** Every kept take, newest last. */
-export const singTakes = takes
+function takesSignal(): Signal<SingTake[]> {
+  stored ??= createPersistedSignal<SingTake[]>(STORAGE_KEY, [], {
+    validator: (value): value is SingTake[] =>
+      Array.isArray(value) && value.every(isSingTake),
+  })
+  return stored
+}
+
+/** Every kept take, oldest first — the newest is the last one. */
+export function singTakes(): SingTake[] {
+  return takesSignal()[0]()
+}
 
 /** The take the end card compares against, or null on a first ever take. */
 export function lastSingTake(): SingTake | null {
-  const all = takes()
+  const all = singTakes()
   return all.length === 0 ? null : all[all.length - 1]
 }
 
 /** Keep one. Returns it, so a caller can show what it stored. */
 export function keepSingTake(take: SingTake): SingTake {
-  setTakes((current) => [...current, take].slice(-SING_TAKES_KEPT))
+  takesSignal()[1]((current) => [...current, take].slice(-SING_TAKES_KEPT))
   return take
 }
 
 /** Tests only — and the one place a "forget my takes" control would call. */
 export function clearSingTakes(): void {
-  setTakes([])
+  takesSignal()[1]([])
 }

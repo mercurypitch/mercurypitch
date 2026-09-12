@@ -10,6 +10,11 @@
 // record, it writes nothing at all — which is what makes the footer's
 // promise checkable rather than a claim. There is no audio in either path;
 // the room never recorded any.
+//
+// DISMISSING IS KEEPING, NOT DISCARDING. Dragging the sheet away, pressing
+// Back, leaving the room — none of those is somebody choosing to throw a take
+// away, and the thing at stake is four numbers and two timestamps that never
+// leave the phone. Discard is a button you have to mean.
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
@@ -41,16 +46,17 @@ interface SingTakeSheetProps {
   endedAt: number
   roomLabel: string
   onKeep: () => void
+  /** Dragged away, Back, or the room being left — anything but the buttons. */
+  onDismiss: () => void
   onDiscard: () => void
 }
 
 export const SingTakeSheet: Component<SingTakeSheetProps> = (props) => (
   <Sheet
     isOpen={props.isOpen}
-    // Dragging the sheet away is a decision not to keep, and silently
-    // storing a take somebody dismissed is the one thing the footer promises
-    // does not happen.
-    close={() => props.onDiscard()}
+    // Dragging it away is not a decision to throw the take away: only the
+    // Discard button is. See the header.
+    close={() => props.onDismiss()}
     ariaLabel="Your take"
   >
     <Show when={props.summary}>

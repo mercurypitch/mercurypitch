@@ -154,10 +154,7 @@ describe('summarizeTake', () => {
     // Seven seconds of singing with a forty-second park in the middle. The
     // room is unmounted across a park, so no frame arrives for it — and a
     // duration read off the wall clock called this a forty-nine second take.
-    const frames = [
-      ...held(69, 0, 3500),
-      ...held(69, 45_000, 3500),
-    ]
+    const frames = [...held(69, 0, 3500), ...held(69, 45_000, 3500)]
     const summary = summarizeTake(frames, 1)
     expect(summary!.durationMs).toBeLessThan(7500)
     expect(summary!.durationMs).toBeGreaterThan(6800)
@@ -187,7 +184,9 @@ describe('summarizeTake', () => {
 })
 
 describe('the accumulator', () => {
-  const feed = (frames: TakeFrame[]): ReturnType<typeof createTakeAccumulator> => {
+  const feed = (
+    frames: TakeFrame[],
+  ): ReturnType<typeof createTakeAccumulator> => {
     const accumulator = createTakeAccumulator()
     for (const frame of frames) accumulator.push(frame)
     return accumulator

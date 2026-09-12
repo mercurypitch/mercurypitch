@@ -41,6 +41,7 @@ function mount(over: Partial<Parameters<typeof SingRoomHud>[0]> = {}) {
       note={() => noteChipSignal(pitch(2))}
       keyLabel={() => 'C major'}
       micState={() => 'listening'}
+      micAction={() => 'mute'}
       songName={() => null}
       {...handlers}
       {...over}
@@ -85,7 +86,10 @@ describe('the note chip', () => {
 
 describe('the state chip', () => {
   it('is the microphone control, and says which way it will go', () => {
-    const handlers = mount({ micState: () => 'listening' })
+    const handlers = mount({
+      micState: () => 'listening',
+      micAction: () => 'mute',
+    })
     const chip = screen.getByTestId('sing-state-chip')
     expect(chip.textContent).toContain('Listening')
     expect(chip.getAttribute('aria-label')).toBe(
@@ -97,22 +101,46 @@ describe('the state chip', () => {
   })
 
   it('says Mic off for a mute and for a mic that never started', () => {
-    mount({ micState: () => 'muted' })
-    expect(screen.getByTestId('sing-state-chip').textContent).toContain(
-      'Mic off',
+    mount({ micState: () => 'muted', micAction: () => 'listen' })
+    const muted = screen.getByTestId('sing-state-chip')
+    expect(muted.textContent).toContain('Mic off')
+    expect(muted.getAttribute('aria-label')).toBe(
+      'Microphone off. Tap to listen again',
     )
     cleanup()
-    mount({ micState: () => 'off' })
-    expect(screen.getByTestId('sing-state-chip').textContent).toContain(
-      'Mic off',
+    mount({ micState: () => 'off', micAction: () => 'start' })
+    const resting = screen.getByTestId('sing-state-chip')
+    expect(resting.textContent).toContain('Mic off')
+    expect(resting.getAttribute('aria-label')).toBe(
+      'Microphone off. Tap to sing a note',
     )
   })
 
   it('says Paused while the run is', () => {
-    mount({ micState: () => 'paused' })
+    mount({ micState: () => 'paused', micAction: () => null })
     expect(screen.getByTestId('sing-state-chip').textContent).toContain(
       'Paused',
     )
+  })
+
+  it('is not a button where a tap would do nothing', () => {
+    // `ended` and `denied` have no microphone to listen with. A chip that
+    // still said "Tap to listen again" promised what it could not do.
+    const handlers = mount({ micState: () => 'off', micAction: () => null })
+    const chip = screen.getByTestId('sing-state-chip')
+    expect(chip.tagName).toBe('SPAN')
+    expect(chip.getAttribute('aria-label')).toBeNull()
+    fireEvent.click(chip)
+    expect(handlers.onToggleMic).not.toHaveBeenCalled()
+  })
+
+  it('is the capsule while the room rests', () => {
+    const handlers = mount({ micState: () => 'off', micAction: () => 'start' })
+    const chip = screen.getByTestId('sing-state-chip')
+    expect(chip.tagName).toBe('BUTTON')
+    expect(chip.getAttribute('aria-pressed')).toBeNull()
+    fireEvent.click(chip)
+    expect(handlers.onToggleMic).toHaveBeenCalledTimes(1)
   })
 })
 

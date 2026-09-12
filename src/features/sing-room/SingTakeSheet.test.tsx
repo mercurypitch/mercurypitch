@@ -35,7 +35,11 @@ const PREVIOUS: SingTake = {
 }
 
 function mount(over: Partial<Parameters<typeof SingTakeSheet>[0]> = {}) {
-  const handlers = { onKeep: vi.fn(), onDiscard: vi.fn() }
+  const handlers = {
+    onKeep: vi.fn(),
+    onDismiss: vi.fn(),
+    onDiscard: vi.fn(),
+  }
   render(() => (
     <SingTakeSheet
       isOpen
@@ -118,6 +122,18 @@ describe('the two answers', () => {
     fireEvent.click(screen.getByTestId('sing-take-discard'))
     expect(handlers.onDiscard).toHaveBeenCalledTimes(1)
     expect(handlers.onKeep).not.toHaveBeenCalled()
+  })
+
+  it('treats being dismissed as keeping, never as a silent discard', () => {
+    // Back, a drag, leaving the room. None of them is somebody choosing to
+    // throw four numbers away, and the take used to vanish on all three.
+    const handlers = mount()
+    // The kit's backdrop is the dialog's own parent; a tap on it closes.
+    const backdrop = screen.getByRole('dialog').parentElement
+    expect(backdrop).not.toBeNull()
+    fireEvent.click(backdrop!)
+    expect(handlers.onDismiss).toHaveBeenCalledTimes(1)
+    expect(handlers.onDiscard).not.toHaveBeenCalled()
   })
 
   it('says what Keep does with it, in the footer', () => {

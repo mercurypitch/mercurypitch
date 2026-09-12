@@ -16,6 +16,7 @@ import { Show } from 'solid-js'
 import { MicIcon, PauseIcon } from '@/components/mobile/icons'
 import type { MicChipState, NoteChipSignal } from './hud-signals'
 import { stateChipLabel } from './hud-signals'
+import type { MicChipAction } from './room-machine'
 import styles from './sing-room.module.css'
 
 /** The kit's key glyph: two barlines and the two slanted staff strokes. */
@@ -63,10 +64,20 @@ interface SingRoomHudProps {
   note: () => NoteChipSignal
   keyLabel: () => string
   micState: () => MicChipState
+  /** What a tap does, or null where it would do nothing. */
+  micAction: () => MicChipAction
   songName: () => string | null
   onOpenKey: () => void
   onToggleMic: () => void
   onOpenSong: () => void
+}
+
+/** What the state chip promises a tap will do. Null is not a promise. */
+function micChipHint(action: MicChipAction): string | undefined {
+  if (action === 'mute') return 'Listening. Tap to mute the microphone'
+  if (action === 'listen') return 'Microphone off. Tap to listen again'
+  if (action === 'start') return 'Microphone off. Tap to sing a note'
+  return undefined
 }
 
 export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
@@ -86,28 +97,51 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
 
     {/* The only visible microphone control in the whole room (owner answer 8):
         it says what the mic is doing and a tap mutes or resumes it. A mute is
-        not a stop — the take keeps running underneath. */}
-    <button
-      type="button"
-      class={styles.chip}
-      onClick={() => props.onToggleMic()}
-      aria-label={
-        props.micState() === 'listening'
-          ? 'Listening. Tap to mute the microphone'
-          : 'Microphone off. Tap to listen again'
-      }
-      aria-pressed={props.micState() === 'listening'}
-      data-testid="sing-state-chip"
-    >
-      <Show
-        when={props.micState() !== 'paused'}
-        fallback={<PauseIcon size={16} />}
-      >
-        <MicIcon size={16} />
-      </Show>
-      {stateChipLabel(props.micState())}
-    </button>
+        not a stop — the take keeps running underneath.
 
+        Where a tap would do NOTHING it is not a button at all. The chip used
+        to read "Microphone off. Tap to listen again" in `ended` and `denied`,
+        where there is no microphone to listen with and the tap was ignored —
+        a promise the room could not keep, announced to a screen reader. */}
+    <Show
+      when={props.micAction() !== null}
+      fallback={
+        <span class={styles.chip} data-testid="sing-state-chip">
+          <Show
+            when={props.micState() !== 'paused'}
+            fallback={<PauseIcon size={16} />}
+          >
+            <MicIcon size={16} />
+          </Show>
+          {stateChipLabel(props.micState())}
+        </span>
+      }
+    >
+      <button
+        type="button"
+        class={styles.chip}
+        onClick={() => props.onToggleMic()}
+        aria-label={micChipHint(props.micAction())}
+        aria-pressed={
+          props.micAction() === 'start'
+            ? undefined
+            : props.micState() === 'listening'
+        }
+        data-testid="sing-state-chip"
+      >
+        <Show
+          when={props.micState() !== 'paused'}
+          fallback={<PauseIcon size={16} />}
+        >
+          <MicIcon size={16} />
+        </Show>
+        {stateChipLabel(props.micState())}
+      </button>
+    </Show>
+
+    {/* Only once a melody has been chosen IN THE ROOM. The app always has
+        one loaded, and a chip naming it on a fresh boot is a melody run
+        announced to somebody the brief opens as a free tracker. */}
     <Show when={props.songName()}>
       {(name) => (
         <button

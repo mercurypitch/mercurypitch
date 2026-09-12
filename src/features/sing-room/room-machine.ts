@@ -269,6 +269,26 @@ export function micIntent(ctx: SingRoomContext): boolean {
   return ctx.active && !ctx.muted && ctx.state === 'live'
 }
 
+/**
+ * What a tap on the state chip DOES, or nothing.
+ *
+ * The chip is the room's one microphone control, and in three of the six
+ * states it controls nothing: resting has no run to mute, and `ended` and
+ * `denied` have no microphone at all. It used to invite the tap anyway —
+ * "Microphone off. Tap to listen again", on a chip whose tap did nothing.
+ *
+ * Resting is the exception that is not dead: there the chip is the capsule,
+ * because "tap the thing that says the mic is off to turn it on" is what
+ * anybody would expect it to be.
+ */
+export type MicChipAction = 'mute' | 'listen' | 'start' | null
+
+export function micChipAction(ctx: SingRoomContext): MicChipAction {
+  if (ctx.state === 'resting') return 'start'
+  if (ctx.state !== 'live') return null
+  return ctx.muted ? 'listen' : 'mute'
+}
+
 /** What the state chip says, given the whole context. */
 export function micChipState(
   ctx: SingRoomContext,

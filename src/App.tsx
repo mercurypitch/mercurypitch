@@ -269,6 +269,7 @@ import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
@@ -3093,6 +3094,7 @@ const AppShell: Component<AppProps> = (props) => {
       traceStyle={() => 'spectrum'}
       targetStyle={() => 'line'}
       perNoteBurn={options.perNoteBurn}
+      frozen={options.frozen}
     />
   )
 
@@ -3491,6 +3493,17 @@ const AppShell: Component<AppProps> = (props) => {
                       micActive={micActive}
                       startMic={() => practiceEngine.startMic()}
                       stopMic={() => practiceEngine.stopMic()}
+                      primeAudio={() => {
+                        // Inside the room's own gesture, before its first
+                        // await: iOS resumes a context, and promotes the page
+                        // out of the silent-switch session, only from one.
+                        void activateAudioPlayback(audioEngine).catch(() => {
+                          // Not a gesture iOS accepted — the next tap retries.
+                        })
+                      }}
+                      audioRunning={() =>
+                        audioEngine.getAudioContext()?.state === 'running'
+                      }
                       isPlaying={isPlaying}
                       isPaused={isPaused}
                       onPlay={handlePracticePlay}
