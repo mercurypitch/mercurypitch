@@ -72,6 +72,40 @@ interface PitchCanvasProps {
    *  markers, so both editors share App's clamp/min-gap handlers. */
   onMoveLoopA?: (beat: number) => void
   onMoveLoopB?: (beat: number) => void
+
+  // ── The room look (native Sing room, Phase 3) ──────────────
+  //
+  // Four opt-in switches, each defaulting to exactly what this canvas has
+  // always drawn. The web stage passes none of them and is pixel-identical;
+  // the native room passes all four and gets the mock's trace over a
+  // photograph. One canvas, two looks, no second renderer to keep in step.
+  /**
+   * Draw over whatever is behind the canvas.
+   *
+   * Skips every opaque thing that only makes sense on a plate of its own —
+   * the stage gradient, the alternating pitch lanes, the beat ruler's bar
+   * and its vertical lines — and moves the grid to the kit's own faint line
+   * with the note labels on the left. Without it the room's photograph is
+   * behind an opaque rectangle and might as well not be there.
+   */
+  transparent?: () => boolean
+  /**
+   * `flat` (today's green trail) or `spectrum` — the kit's horizontal
+   * #58a6ff → #2dd4bf → #bc8cff gradient, round caps, and a glow that is ONE
+   * wide low-alpha underpass rather than `shadowBlur`. Shadow blur is
+   * per-frame work a phone pays for sixty times a second.
+   */
+  traceStyle?: () => 'flat' | 'spectrum'
+  /**
+   * `boxes` (today's note blocks) or `line` — the mock's stepped dashed
+   * target, drawn over a photograph where a wall of filled boxes would bury
+   * the room. `line` also drops the accuracy heatmap and the horizontal
+   * target band, which are the same information in the same place.
+   */
+  targetStyle?: () => 'boxes' | 'line'
+  /** With `targetStyle: 'line'`, burn each note's accuracy onto its own
+   *  segment of the target. Off by default (owner answer 6). */
+  perNoteBurn?: () => boolean
 }
 
 /** Map a per-note rating to (fill, stroke, text) triple for the
@@ -1034,6 +1068,63 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
   }
 
+  /**
+   * The mock's target: one dashed horizontal segment per note, stepping.
+   *
+   * Everything the note boxes say about WHERE to sing, and nothing they say
+   * about anything else. Over a photograph a wall of filled blocks is the
+   * room gone; a dashed line at 28% is a guide you can see through.
+   *
+   * `perNoteBurn` paints the result back onto the segment that earned it —
+   * off by default, and the only per-note read the room offers during a run.
+   */
+  const drawSteppedTarget = (w: number, h: number) => {
+    if (!ctx) return
+    const melody = props.melody()
+    if (melody.length === 0) return
+    const burn = props.perNoteBurn?.() === true
+    const results = burn ? props.noteResults?.() : undefined
+
+    ctx.save()
+    ctx.lineCap = 'round'
+
+    ctx.strokeStyle = 'rgba(230,237,243,0.28)'
+    ctx.lineWidth = 2
+    ctx.setLineDash([2, 6])
+    ctx.beginPath()
+    let resultIndex = 0
+    const burned: { x1: number; x2: number; y: number; stroke: string }[] = []
+    for (const item of melody) {
+      if (item.isRest === true) continue
+      const index = resultIndex++
+      const x1 = beatToX(item.startBeat, w)
+      const x2 = beatToX(item.startBeat + item.duration, w)
+      if (x2 < 0 || x1 > w) continue
+      const y = freqToY(item.note.freq, h)
+      const left = Math.max(0, x1)
+      const right = Math.min(w, x2)
+      if (right <= left) continue
+      ctx.moveTo(left, y)
+      ctx.lineTo(right, y)
+      const record = results?.[index]
+      if (record !== undefined) {
+        burned.push({ x1: left, x2: right, y, stroke: ratingColors(record.rating).stroke })
+      }
+    }
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    for (const segment of burned) {
+      ctx.strokeStyle = segment.stroke
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.moveTo(segment.x1, segment.y)
+      ctx.lineTo(segment.x2, segment.y)
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+
   // A-B loop boundaries drawn straight on the note canvas — vertical markers
   // positioned by beat within the visible scrolling window (via beatToX), with
   // a subtle region fill between them. Shared draw helper (see ab-loop-canvas).
@@ -1058,12 +1149,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const h = canvasRef.clientHeight
 
     ctx.clearRect(0, 0, w, h)
-    const stageGradient = ctx.createLinearGradient(0, 0, 0, h)
-    stageGradient.addColorStop(0, '#111927')
-    stageGradient.addColorStop(0.52, '#0d141f')
-    stageGradient.addColorStop(1, '#0a1019')
-    ctx.fillStyle = stageGradient
-    ctx.fillRect(0, 0, w, h)
+    // The one line that decides whether a room is visible behind this canvas.
+    const overRoom = props.transparent?.() === true
+    const spectrum = props.traceStyle?.() === 'spectrum'
+    const steppedTarget = props.targetStyle?.() === 'line'
+    if (!overRoom) {
+      const stageGradient = ctx.createLinearGradient(0, 0, 0, h)
+      stageGradient.addColorStop(0, '#111927')
+      stageGradient.addColorStop(0.52, '#0d141f')
+      stageGradient.addColorStop(1, '#0a1019')
+      ctx.fillStyle = stageGradient
+      ctx.fillRect(0, 0, w, h)
+    }
 
     ctx.save()
     // Sliding window translation is handled per-element via beatToX.
@@ -1085,7 +1182,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const laneYs = gridRows
       .map((note) => freqToY(note.freq, h))
       .sort((a, b) => a - b)
-    for (let i = 0; i < laneYs.length; i++) {
+    for (let i = 0; overRoom === false && i < laneYs.length; i++) {
       const y = laneYs[i]
       const top = i === 0 ? 0 : (laneYs[i - 1] + y) / 2
       const bottom = i === laneYs.length - 1 ? h : (y + laneYs[i + 1]) / 2
@@ -1142,7 +1239,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const y = freqToY(note.freq, h)
 
       if (gridLinesVisible()) {
-        ctx.strokeStyle = 'rgba(91,111,139,0.3)'
+        // The kit's own grid value over a room; the stage's own otherwise.
+        ctx.strokeStyle = overRoom
+          ? 'rgba(230,237,243,0.08)'
+          : 'rgba(91,111,139,0.3)'
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(0, y)
@@ -1151,15 +1251,31 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
 
       if (i % labelStep === 0) {
-        ctx.fillStyle = 'rgba(172,188,208,0.58)'
-        ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace'
-        ctx.textAlign = 'right'
-        ctx.fillText(note.name + note.octave, w - 6, y - 3)
+        if (overRoom) {
+          // Left, as every trace in the mock has them: the newest pixels of
+          // the line are on the right, and that is where the shell's corner
+          // chip already is.
+          ctx.fillStyle = 'rgba(230,237,243,0.55)'
+          ctx.font = '500 10px ui-monospace, SFMono-Regular, Menlo, monospace'
+          ctx.textAlign = 'left'
+          ctx.fillText(note.name + note.octave, 4, y - 3)
+        } else {
+          ctx.fillStyle = 'rgba(172,188,208,0.58)'
+          ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace'
+          ctx.textAlign = 'right'
+          ctx.fillText(note.name + note.octave, w - 6, y - 3)
+        }
       }
     }
 
-    drawAccuracyHeatmap(h)
-    drawTargetPitch(h)
+    if (steppedTarget) {
+      // The stepped line IS the target; the band and the heatmap are the
+      // same information painted over the room a second time.
+      drawSteppedTarget(w, h)
+    } else {
+      drawAccuracyHeatmap(h)
+      drawTargetPitch(h)
+    }
 
     // Dense scenes (large MIDI imports put hundreds of notes in the visible
     // window at once) drop the per-note gradient/label treatment below —
@@ -1177,7 +1293,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const dense = visibleCount > 120
 
     let playableResultIndex = 0
-    for (let j = 0; j < melody.length; j++) {
+    for (let j = 0; steppedTarget === false && j < melody.length; j++) {
       const item = melody[j]
       const x1 = beatToX(item.startBeat, w)
       const x2 = beatToX(item.startBeat + item.duration, w)
@@ -1715,39 +1831,64 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     const history = props.pitchHistory()
     if (history.length > 1) {
-      ctx.lineWidth = 2
-      ctx.strokeStyle = 'rgba(63,185,80,0.75)'
       ctx.lineJoin = 'round'
       ctx.lineCap = 'round'
-      ctx.beginPath()
-      let started = false
-      for (const pt of history) {
-        if (pt.freq === null || pt.freq === 0) {
-          started = false
-          continue
+      // Issued twice under `spectrum` — once wide and faint as the glow, once
+      // at width 3 as the line. Two strokes of one path cost nothing next to
+      // a per-frame `shadowBlur`, which is what a phone cannot afford.
+      const tracePath = (): void => {
+        ctx!.beginPath()
+        let started = false
+        for (const pt of history) {
+          if (pt.freq === null || pt.freq === 0) {
+            started = false
+            continue
+          }
+          const beat = pt.time
+          const px = beatToHistoryX(
+            beat,
+            w,
+            props.currentBeat(),
+            props.totalBeats(),
+          )
+          const py = freqToY(pt.freq, h)
+          // Skip detections far outside the fitted view (breath/rumble
+          // artifacts at the detector's range extremes) and break the line
+          // there — since the view fits the melody tightly, an off-view
+          // point would otherwise drag a violent spike across the canvas.
+          if (py < -h * 0.25 || py > h * 1.25) {
+            started = false
+            continue
+          }
+          if (!started) {
+            ctx!.moveTo(px, py)
+            started = true
+          } else ctx!.lineTo(px, py)
         }
-        const beat = pt.time
-        const px = beatToHistoryX(
-          beat,
-          w,
-          props.currentBeat(),
-          props.totalBeats(),
-        )
-        const py = freqToY(pt.freq, h)
-        // Skip detections far outside the fitted view (breath/rumble
-        // artifacts at the detector's range extremes) and break the line
-        // there — since the view fits the melody tightly, an off-view
-        // point would otherwise drag a violent spike across the canvas.
-        if (py < -h * 0.25 || py > h * 1.25) {
-          started = false
-          continue
-        }
-        if (!started) {
-          ctx.moveTo(px, py)
-          started = true
-        } else ctx.lineTo(px, py)
       }
-      ctx.stroke()
+
+      if (spectrum) {
+        const spectrumStroke = ctx.createLinearGradient(0, 0, w, 0)
+        spectrumStroke.addColorStop(0, '#58a6ff')
+        spectrumStroke.addColorStop(0.5, '#2dd4bf')
+        spectrumStroke.addColorStop(1, '#bc8cff')
+        ctx.save()
+        ctx.strokeStyle = spectrumStroke
+        ctx.globalAlpha = 0.18
+        ctx.lineWidth = 11
+        tracePath()
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.lineWidth = 3
+        tracePath()
+        ctx.stroke()
+        ctx.restore()
+      } else {
+        ctx.lineWidth = 2
+        ctx.strokeStyle = 'rgba(63,185,80,0.75)'
+        tracePath()
+        ctx.stroke()
+      }
 
       const last = history[history.length - 1]
       // The glowing trail-head dot only rides a LIVE run — on the preserved
@@ -1763,13 +1904,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           props.totalBeats(),
         )
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
-        grad.addColorStop(0, 'rgba(63,185,80,0.55)')
-        grad.addColorStop(1, 'rgba(63,185,80,0)')
+        grad.addColorStop(0, spectrum ? 'rgba(88,166,255,0.6)' : 'rgba(63,185,80,0.55)')
+        grad.addColorStop(1, spectrum ? 'rgba(88,166,255,0)' : 'rgba(63,185,80,0)')
         ctx.fillStyle = grad
         ctx.beginPath()
         ctx.arc(lx, ly, 12, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = '#3fb950'
+        ctx.fillStyle = spectrum ? '#ffffff' : '#3fb950'
         ctx.beginPath()
         ctx.arc(lx, ly, 5, 0, Math.PI * 2)
         ctx.fill()
@@ -1787,8 +1928,16 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const live = props.livePitch?.()
     if (live && live.frequency > 0) {
       const ly = freqToY(live.frequency, h)
+      // The marker stays under the room look — it is the "you are here" the
+      // whole trace is read against — but flat green over a warm photograph
+      // reads as a fault light, so it takes the spectrum's own blue.
+      const markerCore = spectrum ? '#ffffff' : '#3fb950'
+      const markerGlow = spectrum ? '88,166,255' : '63,185,80'
+      const markerRule = spectrum
+        ? 'rgba(230,237,243,0.16)'
+        : 'rgba(63,185,80,0.16)'
       ctx.save()
-      ctx.strokeStyle = 'rgba(63,185,80,0.16)'
+      ctx.strokeStyle = markerRule
       ctx.lineWidth = 1
       ctx.setLineDash([4, 6])
       ctx.beginPath()
@@ -1797,13 +1946,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.stroke()
       ctx.setLineDash([])
       const grad = ctx.createRadialGradient(14, ly, 0, 14, ly, 13)
-      grad.addColorStop(0, 'rgba(63,185,80,0.5)')
-      grad.addColorStop(1, 'rgba(63,185,80,0)')
+      grad.addColorStop(0, `rgba(${markerGlow},0.5)`)
+      grad.addColorStop(1, `rgba(${markerGlow},0)`)
       ctx.fillStyle = grad
       ctx.beginPath()
       ctx.arc(14, ly, 13, 0, Math.PI * 2)
       ctx.fill()
-      ctx.fillStyle = '#3fb950'
+      ctx.fillStyle = markerCore
       ctx.beginPath()
       ctx.arc(14, ly, 5.5, 0, Math.PI * 2)
       ctx.fill()
@@ -1824,7 +1973,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.beginPath()
         ctx.roundRect(px, ly - ph / 2, tw + pad * 2, ph, 5)
         ctx.fill()
-        ctx.fillStyle = '#3fb950'
+        ctx.fillStyle = spectrum ? '#e6edf3' : '#3fb950'
         ctx.fillText(label, px + pad, ly + 0.5)
       }
       ctx.restore()
@@ -1964,17 +2113,22 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    // Beat ruler at the bottom — timeline with beat numbers and vertical grid
-    const rulerH = 22
+    // Beat ruler at the bottom — timeline with beat numbers and vertical grid.
+    // Over a room it is gone entirely: it is a second opaque bar across the
+    // photograph, and in a free run (no melody, no transport) its numbers
+    // count beats nothing is playing.
+    const rulerH = overRoom ? 0 : 22
     const rulerY = h - rulerH
-    ctx.fillStyle = 'rgba(22,27,34,0.92)'
-    ctx.fillRect(0, rulerY, w, rulerH)
-    ctx.strokeStyle = 'rgba(48,54,61,0.7)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(0, rulerY)
-    ctx.lineTo(w, rulerY)
-    ctx.stroke()
+    if (!overRoom) {
+      ctx.fillStyle = 'rgba(22,27,34,0.92)'
+      ctx.fillRect(0, rulerY, w, rulerH)
+      ctx.strokeStyle = 'rgba(48,54,61,0.7)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(0, rulerY)
+      ctx.lineTo(w, rulerY)
+      ctx.stroke()
+    }
 
     const totalBeats = props.totalBeats()
     const ci = props.countInBeats?.() ?? 0
@@ -2017,7 +2171,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const lastBeat = Math.floor(windowEnd)
 
     // Vertical beat grid lines (faint, span full height, gated on gridLinesVisible)
-    if (gridLinesVisible()) {
+    if (gridLinesVisible() && !overRoom) {
       for (let b = firstBeat; b <= lastBeat; b++) {
         const bx = ((b - windowStart) / effectiveWindowBeats) * w
         if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
@@ -2038,7 +2192,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-    for (let b = firstBeat; b <= lastBeat; b++) {
+    for (let b = firstBeat; overRoom === false && b <= lastBeat; b++) {
       const bx = ((b - windowStart) / effectiveWindowBeats) * w
       if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
       const isMajorBeat = b % 4 === 0
