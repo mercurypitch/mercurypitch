@@ -1,4 +1,4 @@
-// Curate and verify the four Drum Night kit flavors.
+// Curate and verify Drum Night's licensed kit flavors.
 //
 // The default mode downloads only pinned, redistributable source recordings,
 // renders the bundled SONiVOX bank, and emits content-hashed MP3 one-shots.
@@ -9,6 +9,7 @@
 //   node scripts/curate-drum-night-kits.mjs --check
 //   node scripts/curate-drum-night-kits.mjs --recalibrate-existing
 //   node scripts/curate-drum-night-kits.mjs --publish-plan
+//   DRUM_AUDITION_ROOT=<approved-audition> node scripts/curate-drum-night-kits.mjs --update-recorded
 
 import { Buffer } from 'node:buffer'
 import { execFileSync } from 'node:child_process'
@@ -20,7 +21,8 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { calibrateDrumKitResources, drumKitCalibrationMetadata, projectCalibratedResources, } from './drum-kit-calibration.mjs'
 import { serializeDrumKitCatalogProjections, serializeDrumKitGeneratedJson, } from './drum-kit-catalog-projections.mjs'
-import { DRUM_KIT_OPUS_BITRATE, DRUM_KIT_OPUS_CHANNELS, DRUM_KIT_OPUS_MIME_TYPE, DRUM_KIT_OPUS_SAMPLE_RATE, encodeDrumKitOpusCatalog, verifyDrumKitOpusCatalog, } from './drum-kit-opus.mjs'
+import { DRUM_KIT_OPUS_BITRATE, DRUM_KIT_OPUS_KIT_BITRATES, DRUM_KIT_OPUS_CHANNELS, DRUM_KIT_OPUS_MIME_TYPE, DRUM_KIT_OPUS_SAMPLE_RATE, encodeDrumKitOpusCatalog, verifyDrumKitOpusCatalog, } from './drum-kit-opus.mjs'
+import { assertRecordedKitNotices, RECORDED_KIT_CALIBRATION, RECORDED_KIT_IDS, RECORDED_KIT_ZONES, resolveRecordedMix, } from './drum-kit-recorded-banks.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repo = resolve(scriptDir, '..')
@@ -77,24 +79,35 @@ const STATIC_PUBLIC_FILES = Object.freeze([
   'classic-gm/LICENSE.md',
   'live/LICENSE.md',
   'studio/LICENSE.md',
+  ...RECORDED_KIT_IDS.flatMap((kitId) =>
+    [
+      'LICENSE.md',
+      'CC-BY-4.0.txt',
+      'UPSTREAM-README.txt',
+      'selected-mixes.json',
+    ].map((file) => `${kitId}/${file}`),
+  ),
 ])
 
 const args = new Set(process.argv.slice(2))
 const checkOnly = args.has('--check')
 const planOnly = args.has('--publish-plan')
 const recalibrateOnly = args.has('--recalibrate-existing')
+const updateRecordedOnly = args.has('--update-recorded')
 const unknownArgs = [...args].filter(
   (argument) =>
     argument !== '--check' &&
     argument !== '--publish-plan' &&
-    argument !== '--recalibrate-existing',
+    argument !== '--recalibrate-existing' &&
+    argument !== '--update-recorded',
 )
 if (
   unknownArgs.length > 0 ||
-  [checkOnly, planOnly, recalibrateOnly].filter(Boolean).length > 1
+  [checkOnly, planOnly, recalibrateOnly, updateRecordedOnly].filter(Boolean)
+    .length > 1
 ) {
   throw new Error(
-    'Usage: node scripts/curate-drum-night-kits.mjs [--check|--recalibrate-existing|--publish-plan]',
+    'Usage: node scripts/curate-drum-night-kits.mjs [--check|--recalibrate-existing|--publish-plan|--update-recorded]',
   )
 }
 
@@ -554,7 +567,12 @@ const classicZones = classicVoices.flatMap(
     })),
 )
 
-const allZones = Object.freeze([...classicZones, ...studioZones, ...liveZones])
+const allZones = Object.freeze([
+  ...classicZones,
+  ...studioZones,
+  ...liveZones,
+  ...RECORDED_KIT_ZONES,
+])
 
 function variableLength(value) {
   const bytes = [value & 0x7f]
@@ -863,9 +881,11 @@ function encodeSample(inputPath, outputPath, trimStartMs) {
 
 async function curateZone(zone, workDirectory, outputRoot) {
   const sourcePath =
-    zone.sourceKind === 'sonivox'
-      ? renderSonivox(zone, workDirectory)
-      : await downloadSource(zone, workDirectory)
+    zone.sourceKind === 'approved-mix'
+      ? resolveRecordedMix(zone, process.env.DRUM_AUDITION_ROOT)
+      : zone.sourceKind === 'sonivox'
+        ? renderSonivox(zone, workDirectory)
+        : await downloadSource(zone, workDirectory)
   const sourceData = readFileSync(sourcePath)
   const sourceSha256 =
     zone.sourceKind === 'sonivox' ? SONIVOX_SHA256 : sha256(sourceData)
@@ -940,7 +960,11 @@ async function curateZone(zone, workDirectory, outputRoot) {
 }
 
 function calibrateResources(resources) {
-  return calibrateDrumKitResources(resources)
+  return calibrateDrumKitResources(
+    resources,
+    undefined,
+    RECORDED_KIT_CALIBRATION,
+  )
 }
 
 function sampleStatus(resources) {
@@ -1019,6 +1043,21 @@ function generatedCatalog(resources) {
         ),
         resources: grouped.live ?? [],
       },
+      ...Object.fromEntries(
+        RECORDED_KIT_IDS.map((kitId) => [
+          kitId,
+          {
+            version: KIT_VERSION,
+            sampleStatus: sampleStatus(grouped[kitId] ?? []),
+            publishedEncodedBytes: (grouped[kitId] ?? []).reduce(
+              (sum, resource) => sum + resource.encodedBytes,
+              0,
+            ),
+            resources: grouped[kitId] ?? [],
+            velcurve: { default: RECORDED_KIT_CALIBRATION[kitId].velcurve },
+          },
+        ]),
+      ),
     },
   }
 }
@@ -1125,10 +1164,15 @@ function assertPublishableObjectKey(objectKey) {
   if (
     objectKey === 'catalog.json' ||
     objectKey === 'README.md' ||
-    /^(classic-gm|studio|live)\/LICENSE\.md$/.test(objectKey) ||
+    /^(classic-gm|studio|live|muldjord|crocell)\/LICENSE\.md$/.test(
+      objectKey,
+    ) ||
     objectKey === 'classic-gm/APACHE-2.0.txt' ||
     objectKey === 'classic-gm/SONIVOX-NOTICE.txt' ||
-    /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:mp3|opus)$/.test(
+    /^(muldjord|crocell)\/(?:CC-BY-4\.0\.txt|UPSTREAM-README\.txt|selected-mixes\.json)$/.test(
+      objectKey,
+    ) ||
+    /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:mp3|opus)$/.test(
       objectKey,
     )
   ) {
@@ -1326,6 +1370,8 @@ function assertResourceProvenance(resource, zone) {
     /^[a-f0-9]{64}$/.test(resource.source.sha256) !== true ||
     (zone.sourceKind === 'sonivox' &&
       resource.source.sha256 !== SONIVOX_SHA256) ||
+    (zone.sourceKind === 'approved-mix' &&
+      resource.source.sha256 !== zone.sourceSha256) ||
     resource.source.transforms.startsWith(transformPrefix) !== true ||
     resource.source.transforms.endsWith(transformSuffix) !== true ||
     trimMatch === null ||
@@ -1497,6 +1543,13 @@ function assertCatalogCalibrationMatches(catalog, calibration) {
     if (kit.sampleStatus !== expectedStatus) {
       throw new Error(`Drum Night sample status drifted: ${kitId}`)
     }
+    if (
+      RECORDED_KIT_IDS.includes(kitId) &&
+      JSON.stringify(kit.velcurve) !==
+        JSON.stringify({ default: RECORDED_KIT_CALIBRATION[kitId].velcurve })
+    ) {
+      throw new Error(`Recorded dynamics curve drifted: ${kitId}`)
+    }
   }
 }
 
@@ -1509,6 +1562,7 @@ async function verifyCatalog({
   requirePublishPlan = true,
 } = {}) {
   assertRequiredPublicFiles(outputRoot)
+  assertRecordedKitNotices(outputRoot)
   const outputCatalogPath = resolve(outputRoot, 'catalog.json')
   const outputApacheLicensePath = resolve(
     outputRoot,
@@ -1565,6 +1619,8 @@ async function verifyCatalog({
     catalog.audio?.formats?.opus?.sampleRate !== DRUM_KIT_OPUS_SAMPLE_RATE ||
     catalog.audio?.formats?.opus?.channels !== DRUM_KIT_OPUS_CHANNELS ||
     catalog.audio?.formats?.opus?.bitrate !== DRUM_KIT_OPUS_BITRATE ||
+    JSON.stringify(catalog.audio?.formats?.opus?.kitBitrates) !==
+      JSON.stringify(DRUM_KIT_OPUS_KIT_BITRATES) ||
     catalog.audio?.formats?.opus?.vbr !== true ||
     catalog.audio?.formats?.opus?.application !== 'audio' ||
     catalog.audio?.formats?.opus?.frameDurationMs !== 20 ||
@@ -1663,7 +1719,7 @@ if (checkOnly) {
   assertExpectedToolchain()
   const result = await verifyCatalog()
   globalThis.console.log(
-    `verified ${result.totalBytes} encoded bytes across four Drum Night kit manifests`,
+    `verified ${result.totalBytes} encoded bytes across Drum Night kit manifests`,
   )
   process.exit(0)
 }
@@ -1725,16 +1781,42 @@ const stagedCalibrationReportPath = resolve(
 try {
   copyStaticPublicFiles(stagedPublicRoot)
   const resources = []
-  for (let index = 0; index < allZones.length; index += 1) {
-    const zone = allZones[index]
+  const preservedResources = []
+  if (updateRecordedOnly) {
+    const existing = JSON.parse(readFileSync(generatedCatalogPath, 'utf8'))
+    for (const [kitId, kit] of Object.entries(existing.kits)) {
+      if (RECORDED_KIT_IDS.includes(kitId)) continue
+      for (const resource of kit.resources) {
+        // Preserve the existing compatibility bytes; the complete staged catalogue
+        // is still re-decoded, recalibrated and integrity-checked before installation.
+        const source = resolve(publicRoot, resource.path)
+        const destination = resolve(stagedPublicRoot, resource.path)
+        if (
+          !source.startsWith(`${publicRoot}/`) ||
+          !destination.startsWith(`${stagedPublicRoot}/`) ||
+          sha256(readFileSync(source)) !== resource.sha256
+        )
+          throw new Error(`Unsafe existing resource: ${resource.id}`)
+        ensureDirectory(dirname(destination))
+        copyFileSync(source, destination)
+        preservedResources.push(resource)
+      }
+    }
+  }
+  const zonesToCurate = updateRecordedOnly ? RECORDED_KIT_ZONES : allZones
+  for (let index = 0; index < zonesToCurate.length; index += 1) {
+    const zone = zonesToCurate[index]
     globalThis.console.log(
-      `[${index + 1}/${allZones.length}] ${zone.kitId} ${slugForZone(zone)}`,
+      `[${index + 1}/${zonesToCurate.length}] ${zone.kitId} ${slugForZone(zone)}`,
     )
     resources.push(await curateZone(zone, workDirectory, stagedPublicRoot))
   }
   const initialCalibration = calibrateResources(resources)
   const encoded = encodeDrumKitOpusCatalog(
-    generatedCatalog(projectCalibratedResources(initialCalibration.resources)),
+    generatedCatalog([
+      ...preservedResources,
+      ...projectCalibratedResources(initialCalibration.resources),
+    ]),
     {
       inputRoot: stagedPublicRoot,
       outputRoot: stagedPublicRoot,

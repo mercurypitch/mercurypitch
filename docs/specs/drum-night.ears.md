@@ -176,8 +176,8 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Drum sound catalog — `DN-KIT-*`
 
-- **REQ-DN-KIT-001 — Five flavors:** The sound catalog shall offer Mercury
-  Synth, Circuit, Classic GM, Studio, and Live as independently selectable kit
+- **REQ-DN-KIT-001 — Seven flavors:** The sound catalog shall offer Mercury
+  Synth, Circuit, Classic GM, Studio, Live, Muldjord, and Crocell as independently selectable kit
   flavors. Mercury Synth and Circuit shall remain zero-download synthesis;
   the other flavors may use optional gesture-loaded samples.
 - **REQ-DN-KIT-002 — Zero-byte floor:** Mercury Synth shall remain an
@@ -248,6 +248,14 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   bounded-power resolver as runtime playback. Resource power metadata shall remain absent
   unless the complete articulation passes readiness, layer-boundary,
   round-robin, and power-spread gates.
+- **REQ-DN-KIT-015 — Recorded-dynamic banks:** Muldjord and Crocell shall retain
+  their approved offline microphone mixtures, recorded velocity layers, and
+  distinct repeated strikes. They shall use one pinned kit-wide gain and a
+  flat runtime velocity curve, without per-hit normalization or power correction
+  that would erase their recorded dynamics. Both decoded codecs must still pass
+  onset, noise, headroom and codec-drift safety checks; quiet layers alone shall
+  not be classified as unusable. Their eight-core-voice scope and missing-voice
+  fallback shall be disclosed, along with source, creator and CC BY 4.0 credits.
 
 ## Session import and canonical truth — `DN-IMPORT-*`
 
