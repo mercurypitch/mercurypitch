@@ -180,6 +180,67 @@ describe('the order of Back', () => {
     expect(controls.park).toHaveBeenCalledTimes(1)
   })
 
+  it('gives the room its own overlay before falling through to history', () => {
+    // The failure: the Sing room's end card is the room's, not the shell's,
+    // so Back went to history and the room unmounted with the take undecided.
+    const closeRoomOverlay = vi.fn(() => true)
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => false,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+      closeRoomOverlay,
+    })
+    const back = host(true)
+
+    expect(performBack(back)).toBe('room-overlay')
+    expect(closeRoomOverlay).toHaveBeenCalledTimes(1)
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('is not asked while the shell has a layer of its own open', () => {
+    const closeRoomOverlay = vi.fn(() => true)
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => false,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+      closeRoomOverlay,
+    })
+    openMore()
+
+    expect(performBack(host(true))).toBe('sheet')
+    expect(closeRoomOverlay).not.toHaveBeenCalled()
+  })
+
+  it('falls through when the room has nothing open', () => {
+    const closeRoomOverlay = vi.fn(() => false)
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => false,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+      closeRoomOverlay,
+    })
+    const back = host(true)
+
+    expect(performBack(back)).toBe('history')
+    expect(closeRoomOverlay).toHaveBeenCalledTimes(1)
+    expect(back.back).toHaveBeenCalledTimes(1)
+  })
+
   it('resolves without doing anything', () => {
     expect(resolveBack(false)).toBe('minimize')
     expect(resolveBack(true)).toBe('history')

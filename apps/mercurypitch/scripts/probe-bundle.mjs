@@ -99,6 +99,32 @@ function seed(theme) {
   }
 }
 
+/**
+ * Count what the canvas actually does, not what it says it does.
+ *
+ * Every frame `PitchCanvas` draws begins with one `clearRect` of the whole
+ * buffer, so counting those counts repaints. A still picture that repaints is
+ * invisible in a screenshot and expensive on a phone: measured at 120 clears
+ * a second while paused and 56 behind the end card, for a trace that had not
+ * moved in minutes.
+ */
+function installRepaintCounter() {
+  window.__mpClears = 0
+  const clear = CanvasRenderingContext2D.prototype.clearRect
+  CanvasRenderingContext2D.prototype.clearRect = function counted(...args) {
+    window.__mpClears += 1
+    return clear.apply(this, args)
+  }
+}
+
+/** Repaints over `ms`, as a rate per second. */
+async function repaintRate(page, ms = 1000) {
+  const before = await page.evaluate(() => window.__mpClears ?? 0)
+  await page.waitForTimeout(ms)
+  const after = await page.evaluate(() => window.__mpClears ?? 0)
+  return ((after - before) * 1000) / ms
+}
+
 const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
 
 /**
@@ -769,6 +795,19 @@ function writeToneWav(path) {
  * perfectly fine in a picture, and a trace that is still the stage's flat
  * green still looks like a trace. So the pixels are read.
  */
+/** How many takes this phone has kept. Keep writes one; Discard writes none. */
+async function storedTakes(page) {
+  return page.evaluate(() => {
+    try {
+      const raw = localStorage.getItem('pitchperfect_sing_takes')
+      const parsed = raw === null ? [] : JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed.length : -1
+    } catch {
+      return -1
+    }
+  })
+}
+
 async function sampleTrace(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector('[data-testid="sing-room"] canvas')
@@ -1002,6 +1041,14 @@ async function walkRun(page, ctx) {
   await shoot(page, ctx, 'run-paused')
   steps.push('run: paused, the chip says so, and the rail stayed away')
 
+  const pausedRate = await repaintRate(page)
+  if (pausedRate > 4) {
+    throw new Error(
+      `the canvas repaints ${pausedRate}/s while paused, over a still trace`,
+    )
+  }
+  steps.push(`run: a paused canvas stops repainting (${pausedRate}/s)`)
+
   await page
     .locator('[data-testid="shell-transport"] [aria-label="Play"]')
     .click()
@@ -1050,6 +1097,13 @@ async function walkRun(page, ctx) {
     'the session pill',
   )
   await shoot(page, ctx, 'run-parked')
+  // Five seconds on another tab. The room is unmounted, no frame arrives,
+  // and the take's clock must not count any of it — a seven-second take used
+  // to come back claiming forty-nine.
+  const parkedAt = await page.evaluate(
+    () => window.mpSingRoom?.().elapsedSeconds ?? 0,
+  )
+  await page.waitForTimeout(5000)
   for (const tab of ['ear', 'rooms']) {
     await page.locator(`[data-rail-item="${tab}"]`).click()
     await page
@@ -1075,6 +1129,18 @@ async function walkRun(page, ctx) {
   )
   await shoot(page, ctx, 'run-returned')
   steps.push('run: returned paused, the microphone released')
+
+  const returnedAt = await page.evaluate(
+    () => window.mpSingRoom?.().elapsedSeconds ?? 0,
+  )
+  if (returnedAt - parkedAt > 1) {
+    throw new Error(
+      `the take's clock ran ${(returnedAt - parkedAt).toFixed(1)}s while parked`,
+    )
+  }
+  steps.push(
+    `run: five seconds parked cost the take ${(returnedAt - parkedAt).toFixed(2)}s`,
+  )
 
   // ── The end card ──
   await page
@@ -1105,6 +1171,14 @@ async function walkRun(page, ctx) {
   steps.push(
     'room: Stop opens the end card with four counts and no history yet',
   )
+
+  const endedRate = await repaintRate(page)
+  if (endedRate > 4) {
+    throw new Error(
+      `the canvas repaints ${endedRate}/s behind the end card, over a frozen trace`,
+    )
+  }
+  steps.push(`room: the canvas behind the card is still (${endedRate}/s)`)
 
   await page.locator('[data-testid="sing-take-keep"]').click()
   await expectGone(
@@ -1160,8 +1234,66 @@ async function walkRun(page, ctx) {
     page.locator('[data-testid="sing-trace-silent"]'),
     'the silent trace after a discarded take',
   )
+  const afterDiscard = await storedTakes(page)
+  if (afterDiscard !== 1) {
+    throw new Error(`Discard left ${afterDiscard} takes stored, not 1`)
+  }
   await shoot(page, ctx, 'room-resting-returning')
   steps.push('room: Discard stores nothing and the room rests')
+
+  // ── A third take, dismissed with Back rather than decided ──
+  //
+  // The blocker this exists for: the card is the room's, so Back fell through
+  // to history, the room unmounted with `ended` and no summary, and what came
+  // back was a frozen canvas with no capsule, no card and no way out — for
+  // good. And the take went with it.
+  await page.locator('[data-testid="sing-capsule"]').click()
+  await expectText(
+    page,
+    '[data-testid="sing-state-chip"]',
+    'Listening',
+    'the state chip on a third take',
+  )
+  await page.waitForTimeout(TAKE_MS)
+  await page
+    .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
+    .click()
+  await expectVisible(
+    page.locator('[data-testid="sing-take-sheet"]'),
+    'the end card on a third take',
+  )
+  const backOutcome = await pressBack(page)
+  if (backOutcome !== 'room-overlay') {
+    throw new Error(`Back over the end card resolved as "${backOutcome}"`)
+  }
+  await expectGone(
+    page.locator('[data-testid="sing-take-sheet"]'),
+    'the end card after Back',
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule after Back over the card',
+  )
+  const afterBack = await storedTakes(page)
+  if (afterBack !== 2) {
+    throw new Error(
+      `Back over the card stored ${afterBack} takes: a dismissal is a keep`,
+    )
+  }
+  steps.push('room: Back over the end card rests the room and keeps the take')
+
+  // …and the room still works when it is entered again.
+  await page.locator('[data-rail-item="rooms"]').click()
+  await page.locator('[data-rail-item="stage"]').click()
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule on re-entering after a Back',
+  )
+  await expectVisible(
+    page.locator('[data-testid="sing-trace-silent"]'),
+    'the silent trace on re-entering after a Back',
+  )
+  steps.push('room: re-entering after that Back finds a usable room')
 
   // ── A take under three seconds has nothing to keep ──
   await page.locator('[data-testid="sing-capsule"]').click()
@@ -1183,6 +1315,43 @@ async function walkRun(page, ctx) {
     'the capsule after a short take',
   )
   steps.push('room: a run under three seconds shows no card at all')
+
+  // ── The song picker is above the dock, not trapped under it ──
+  //
+  // The room is `position: fixed` with a z-index, which makes it a stacking
+  // context: a modal rendered inside it cannot climb above the rail whatever
+  // z-index it asks for. Measured before the portal: a tap on the rail behind
+  // the open picker changed tab, straight through the backdrop.
+  await page.locator('[data-testid="shell-room-gear"]').click()
+  await page.locator('[data-testid="sing-options-song"]').click()
+  const picker = page.locator('.fn-modal-content')
+  await expectVisible(picker, 'the song picker')
+  const railBox = await page.locator('[data-rail-item="rooms"]').boundingBox()
+  if (railBox === null) throw new Error('no rail to tap behind the picker')
+  const hashBefore = await page.evaluate(() => window.location.hash)
+  // The mouse, not the locator: a locator click refuses to hit a covered
+  // element, and whether it IS covered is the whole question.
+  await page.mouse.click(
+    railBox.x + railBox.width / 2,
+    railBox.y + railBox.height / 2,
+  )
+  await page.waitForTimeout(250)
+  const hashAfter = await page.evaluate(() => window.location.hash)
+  if (hashAfter !== hashBefore) {
+    throw new Error(
+      `a tap behind the picker changed the tab (${hashBefore} to ${hashAfter})`,
+    )
+  }
+  await expectVisible(picker, 'the song picker after a tap on the rail')
+  await shoot(page, ctx, 'room-song-picker')
+  steps.push('room: the song picker is above the dock and swallows its taps')
+
+  const pickerBack = await pressBack(page)
+  if (pickerBack !== 'room-overlay') {
+    throw new Error(`Back over the song picker resolved as "${pickerBack}"`)
+  }
+  await expectGone(picker, 'the song picker after Back')
+  steps.push('room: Back closes the picker rather than leaving the room')
 
   // ── And a leave that is NOT a park leaves the room usable ──
   await page.locator('[data-rail-item="rooms"]').click()
@@ -1268,6 +1437,107 @@ async function walkDenied(browser, args, frame) {
     steps.push('room: "Explore the rooms" leaves, so the app stays usable')
   } finally {
     await context.close()
+  }
+  const at = `${frame.width}x${frame.height}`
+  return steps.map((step) => `[${at}] ${step}`)
+}
+
+/**
+ * The remembered grant, in a browser that has NOT been told to ignore the
+ * autoplay policy.
+ *
+ * Its own browser, because the flag is a launch argument: every other walk
+ * runs with `--autoplay-policy=no-user-gesture-required` so the take's audio
+ * works without a tap, and that is exactly the thing this has to do without.
+ * A room that trusts a remembered grant reaches for the microphone with no
+ * gesture behind it, and iOS will hand over the device while leaving the
+ * audio clock suspended — a chip saying "Listening" over a line that can
+ * never move. The invariant is the assertion: Listening implies a running
+ * clock, whatever this browser decides to do about the policy.
+ */
+async function walkSuspended(args, frame) {
+  const tone = resolve(tmpdir(), 'mp-probe-voice.wav')
+  const browser = await chromium.launch({
+    headless: !args.headed,
+    args: [
+      '--class=agent-browser',
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
+      `--use-file-for-fake-audio-capture=${tone}`,
+      '--mute-audio',
+    ],
+  })
+  const ctx = { ...args, frame }
+  const steps = []
+  try {
+    const context = await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: ['microphone'],
+    })
+    const page = await context.newPage()
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      // This phone has said yes before. That is the whole premise.
+      try {
+        localStorage.setItem('pitchperfect_sing_mic_granted', 'true')
+      } catch {
+        /* storage blocked */
+      }
+    })
+    try {
+      await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+      await page
+        .locator('#root.loaded')
+        .waitFor({ state: 'attached', timeout: BOOT_TIMEOUT_MS })
+      await page.locator('[data-rail-item="stage"]').click()
+      await expectVisible(
+        page.locator('[data-testid="sing-room"]'),
+        'the Sing room',
+      )
+
+      // Two seconds of watching. Every sample has to hold the invariant.
+      let sawSuspended = false
+      for (let i = 0; i < 20; i += 1) {
+        const room = await page.evaluate(() => window.mpSingRoom?.())
+        if (room === undefined) throw new Error('the room says nothing')
+        if (room.chip === 'listening' && room.audioRunning !== true) {
+          throw new Error(
+            'the chip says Listening while the audio clock is suspended',
+          )
+        }
+        if (room.audioRunning !== true) sawSuspended = true
+        await page.waitForTimeout(100)
+      }
+      await shoot(page, ctx, 'room-remembered-grant')
+      steps.push(
+        `room: a remembered grant never claims Listening over a suspended clock (${sawSuspended ? 'clock was suspended' : 'clock ran'})`,
+      )
+
+      // And the chip is the way back in: a tap is a gesture, and a gesture is
+      // the one thing that resumes a context.
+      const chip = page.locator('[data-testid="sing-state-chip"]')
+      if ((await chip.textContent())?.includes('Mic off') === true) {
+        await chip.click()
+      }
+      await page.waitForFunction(
+        () => window.mpSingRoom?.().chip === 'listening',
+        undefined,
+        { timeout: RUN_TIMEOUT_MS },
+      )
+      const after = await page.evaluate(() => window.mpSingRoom?.())
+      if (after?.audioRunning !== true) {
+        throw new Error('the chip listens with the audio clock still suspended')
+      }
+      steps.push('room: a tap on the chip is the gesture that starts it')
+    } finally {
+      await context.close()
+    }
+  } finally {
+    await browser.close()
   }
   const at = `${frame.width}x${frame.height}`
   return steps.map((step) => `[${at}] ${step}`)
@@ -1363,6 +1633,7 @@ async function walkFrame(browser, args, frame) {
 
   const page = await context.newPage()
   await page.addInitScript(seed, args.theme)
+  await page.addInitScript(installRepaintCounter)
 
   let steps = []
   try {
@@ -1431,6 +1702,13 @@ async function main() {
       } catch (error) {
         failures.push(
           `[${frame.width}x${frame.height}] denied: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkSuspended(args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] suspended: ${error.message}`,
         )
       }
     }
