@@ -16,6 +16,8 @@ export const GUITAR_NIGHT_DRUM_KIT_IDS = Object.freeze([
   'studio',
   'live',
   'circuit',
+  'muldjord',
+  'crocell',
 ] as const)
 
 export type GuitarNightDrumKitId = (typeof GUITAR_NIGHT_DRUM_KIT_IDS)[number]
@@ -50,6 +52,8 @@ export const GUITAR_NIGHT_DRUM_KIT_OPTIONS: readonly GuitarNightDrumSoundOption<
     Object.freeze({ id: 'studio', label: 'Studio' }),
     Object.freeze({ id: 'live', label: 'Live' }),
     Object.freeze({ id: 'circuit', label: 'Circuit' }),
+    Object.freeze({ id: 'muldjord', label: 'Muldjord' }),
+    Object.freeze({ id: 'crocell', label: 'Crocell' }),
   ])
 
 export const GUITAR_NIGHT_DRUM_FEEL_OPTIONS: readonly GuitarNightDrumSoundOption<GuitarNightDrumFeelId>[] =

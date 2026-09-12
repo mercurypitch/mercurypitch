@@ -27,6 +27,7 @@
         "sampleRate": 48000,
         "channels": 2,
         "bitrate": "64k",
+        "kitBitrates": { "muldjord": "128k", "crocell": "128k" },
         "vbr": true,
         "application": "audio",
         "frameDurationMs": 20
@@ -3708,6 +3709,3843 @@
           }
         }
       ]
+    },
+    "muldjord": {
+      "version": "v1",
+      "sampleStatus": "ready",
+      "publishedEncodedBytes": 1877057,
+      "resources": [
+        {
+          "id": "muldjord:crash-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/7acb8115a764158e-crash-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 72089,
+          "sha256": "7acb8115a764158e31e1429f368b37fb112bbf62bd8495b11ad538dac1236561",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/7acb8115a764158e-crash-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 72089,
+              "sha256": "7acb8115a764158e31e1429f368b37fb112bbf62bd8495b11ad538dac1236561"
+            },
+            "opus": {
+              "path": "muldjord/v1/e87f9e240dcb89cf-crash-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 78368,
+              "sha256": "e87f9e240dcb89cf18a01347dcc86dc90fc2b8a8983e2b1a459bbbc1fef3c99d"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l1-rr1",
+            "sha256": "ec11d6398737c0e20a286f86cce0225f7ff52ee45034c0f4797ae0c67d58413e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:crash-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/a08165900df25ff4-crash-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 75014,
+          "sha256": "a08165900df25ff410d786645cdc3c1cbdecab912c14a7dd34a3271c0b4948db",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/a08165900df25ff4-crash-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 75014,
+              "sha256": "a08165900df25ff410d786645cdc3c1cbdecab912c14a7dd34a3271c0b4948db"
+            },
+            "opus": {
+              "path": "muldjord/v1/cd41ffcad9279b4f-crash-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 81266,
+              "sha256": "cd41ffcad9279b4f4bbd5d6d5b3d2bd4b2e72dc0d3689774a7c653b6c58816da"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l1-rr2",
+            "sha256": "b9bb396040d50aef728a8031e1737fe81fed50b3b7310610a28608a66819d917",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:crash-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/6b59167e1dc005a1-crash-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 72089,
+          "sha256": "6b59167e1dc005a18f065a2e5b1ed8108041f0aced184d6ed8d0c0e3ec12dedd",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/6b59167e1dc005a1-crash-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 72089,
+              "sha256": "6b59167e1dc005a18f065a2e5b1ed8108041f0aced184d6ed8d0c0e3ec12dedd"
+            },
+            "opus": {
+              "path": "muldjord/v1/610f6c5aa8e288f6-crash-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 77276,
+              "sha256": "610f6c5aa8e288f62b63b631f7d4c4c3e8ee7d7f8be7d3535ed5083a5e9520e6"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l2-rr1",
+            "sha256": "259631b93eb9493b7be02264dc66bf20adeed0032a2fc38ef58062faa57e359d",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:crash-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/7a198cdb4263a362-crash-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 78672,
+          "sha256": "7a198cdb4263a3628eeac15113f455eac968ccf45051d1c79170e8679168e3de",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/7a198cdb4263a362-crash-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 78672,
+              "sha256": "7a198cdb4263a3628eeac15113f455eac968ccf45051d1c79170e8679168e3de"
+            },
+            "opus": {
+              "path": "muldjord/v1/160ed5fd0bfe3134-crash-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 83637,
+              "sha256": "160ed5fd0bfe31342796c0183c8985620c20bc826266a846c930d2827b2b08e8"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l2-rr2",
+            "sha256": "609f5f98f6b928821cf97b03e9c3e7697dcd1f728ba5a5e2efdd99d493d8db1c",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:crash-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/6d46c0cf697d39e2-crash-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 80134,
+          "sha256": "6d46c0cf697d39e2465e21de30a669ee28a9dc29032c3d324f3ff24231266a30",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/6d46c0cf697d39e2-crash-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 80134,
+              "sha256": "6d46c0cf697d39e2465e21de30a669ee28a9dc29032c3d324f3ff24231266a30"
+            },
+            "opus": {
+              "path": "muldjord/v1/8b5bac4c22c71789-crash-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 85363,
+              "sha256": "8b5bac4c22c7178911dc354a12e5db5093c9bb6cf5b25fb31f1280a6b536492e"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l3-rr1",
+            "sha256": "3ceccbf6838ced492477a1f3b2bdede29c00465e23a92466badeaf3b6c28e3f6",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:crash-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/4f43d888667bde82-crash-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 73552,
+          "sha256": "4f43d888667bde8237c4c059daa40f4a33db679c97234c42c3bf467cfebff388",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/4f43d888667bde82-crash-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 73552,
+              "sha256": "4f43d888667bde8237c4c059daa40f4a33db679c97234c42c3bf467cfebff388"
+            },
+            "opus": {
+              "path": "muldjord/v1/a7dbb874462f8a4e-crash-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 78613,
+              "sha256": "a7dbb874462f8a4e8ac3c60f647c94a62b91ec0fc417923b16669f20639e5125"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#crash-l3-rr2",
+            "sha256": "9429ee10304d1cf35bb73e7177e10469e18b5a09434b75b2eccea98e4f1dc229",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/eea244dce440b2a2-hh-closed-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 5163,
+          "sha256": "eea244dce440b2a2a32f7b744f208a10322da1f279599c22db4dac5a1e067be3",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/eea244dce440b2a2-hh-closed-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 5163,
+              "sha256": "eea244dce440b2a2a32f7b744f208a10322da1f279599c22db4dac5a1e067be3"
+            },
+            "opus": {
+              "path": "muldjord/v1/a0c9eb1b8daf1495-hh-closed-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5177,
+              "sha256": "a0c9eb1b8daf1495f414ff0416fafd6bb5609fd4d5eab796459e97986908aae9"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l1-rr1",
+            "sha256": "ffc4c57feaec5294594c04504392d0dfda5db138dfb960178c57f2cd69abe06e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/283e773d46cdbfab-hh-closed-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 4797,
+          "sha256": "283e773d46cdbfab083d17170eab2f94b634eb5796ff5906b9ad31e1d487c635",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/283e773d46cdbfab-hh-closed-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 4797,
+              "sha256": "283e773d46cdbfab083d17170eab2f94b634eb5796ff5906b9ad31e1d487c635"
+            },
+            "opus": {
+              "path": "muldjord/v1/114cbc611eefd2dc-hh-closed-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 4399,
+              "sha256": "114cbc611eefd2dc12b14ec544282a579865b658259965082e69a366c860988d"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l1-rr2",
+            "sha256": "d12270f8ea86431ad64d5fd6c9f9b08320e786a8dd6972e5a2b7e8e3a3d26ea9",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/d770b3b14e82b8ed-hh-closed-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6626,
+          "sha256": "d770b3b14e82b8ed14212f4fd1178f12a1bb3ba44fdc26ce23694f2887c0eb7e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/d770b3b14e82b8ed-hh-closed-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6626,
+              "sha256": "d770b3b14e82b8ed14212f4fd1178f12a1bb3ba44fdc26ce23694f2887c0eb7e"
+            },
+            "opus": {
+              "path": "muldjord/v1/e2c1b018c7c9eb4d-hh-closed-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6995,
+              "sha256": "e2c1b018c7c9eb4d1b016957c0401d19618623a64eca29b4a767077cc69e65ee"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l2-rr1",
+            "sha256": "38e6432eb8b079afd631a350a2a7d2d0b170c21e77450343fd148183276ea517",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/f95441dd0d2fe403-hh-closed-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6260,
+          "sha256": "f95441dd0d2fe4030baaf05a10048deb2b809d8cf74262c552b7fc101a1d8f84",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/f95441dd0d2fe403-hh-closed-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6260,
+              "sha256": "f95441dd0d2fe4030baaf05a10048deb2b809d8cf74262c552b7fc101a1d8f84"
+            },
+            "opus": {
+              "path": "muldjord/v1/64a8d9b5bbb0ed87-hh-closed-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6390,
+              "sha256": "64a8d9b5bbb0ed87f356e15debb783848cb4cad00d3312064f8b8da4c65d7cb7"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l2-rr2",
+            "sha256": "de1a3a4956a83b71e9476664e5515e5a60d74d9177ff2760625c02a00844d5f7",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/5b8e2cd0b2536b58-hh-closed-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6626,
+          "sha256": "5b8e2cd0b2536b58040ce0317f0f6caab5536fa8554a03409ea64bdbcd50595f",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/5b8e2cd0b2536b58-hh-closed-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6626,
+              "sha256": "5b8e2cd0b2536b58040ce0317f0f6caab5536fa8554a03409ea64bdbcd50595f"
+            },
+            "opus": {
+              "path": "muldjord/v1/d915b3b323ded44f-hh-closed-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7004,
+              "sha256": "d915b3b323ded44fae036649ce4379ad7cb5462c2db656bb443c15b1f3459933"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l3-rr1",
+            "sha256": "d28af49df2a7dee57298963546e3a5e5f422472d9c4202e1ea92374f3ee3093b",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/10995a9090ffa7d5-hh-closed-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 7357,
+          "sha256": "10995a9090ffa7d5ee4a208f3e83fd0f4c3ef5b848d864925b2846224de1100b",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/10995a9090ffa7d5-hh-closed-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 7357,
+              "sha256": "10995a9090ffa7d5ee4a208f3e83fd0f4c3ef5b848d864925b2846224de1100b"
+            },
+            "opus": {
+              "path": "muldjord/v1/3b8cf7d62ba26e29-hh-closed-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7137,
+              "sha256": "3b8cf7d62ba26e2972b2ec48116c6e548f3849a7fed5d167c384efe544a900c1"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l3-rr2",
+            "sha256": "527f3bd361b3f15bd7c8741fb683bd8df21019fe8767ae2037545a0152622526",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l4-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/fa506a1557093951-hh-closed-l4-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8454,
+          "sha256": "fa506a1557093951b7f8f1ebdbe01fd821c8d4631bb07943c409db3054378a63",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/fa506a1557093951-hh-closed-l4-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8454,
+              "sha256": "fa506a1557093951b7f8f1ebdbe01fd821c8d4631bb07943c409db3054378a63"
+            },
+            "opus": {
+              "path": "muldjord/v1/1b4b4b8b05da8611-hh-closed-l4-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7562,
+              "sha256": "1b4b4b8b05da8611508c45de3d2d8df6d39bafe1b13776d3c450e2b2d436e50b"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l4-rr1",
+            "sha256": "205edcb2c0c5b9bab303c05ce3aeb0e43f073b65861766b4083a61ce688249cc",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-closed-l4-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "muldjord/v1/b04293d437a16116-hh-closed-l4-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6992,
+          "sha256": "b04293d437a161161f2ce514cead76ed25df03d3c509c774af30846623d5079d",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/b04293d437a16116-hh-closed-l4-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6992,
+              "sha256": "b04293d437a161161f2ce514cead76ed25df03d3c509c774af30846623d5079d"
+            },
+            "opus": {
+              "path": "muldjord/v1/fce69d660425d96d-hh-closed-l4-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6383,
+              "sha256": "fce69d660425d96da0a65fa761a4c4d045e5ddfaf9293fdaeec523ac4317adf3"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-closed-l4-rr2",
+            "sha256": "5614391d443cb8d6dc20447a6cdf17458e99a304f6c83169382c8d8d50ff2337",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/7eeade771f9d1886-hh-open-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 13940,
+          "sha256": "7eeade771f9d188696c0c25d77290aaa766019861c0a074fccd885750afa0395",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/7eeade771f9d1886-hh-open-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 13940,
+              "sha256": "7eeade771f9d188696c0c25d77290aaa766019861c0a074fccd885750afa0395"
+            },
+            "opus": {
+              "path": "muldjord/v1/a64aac31094dc7f9-hh-open-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 12313,
+              "sha256": "a64aac31094dc7f965f96656d3aead19791d4beaecfdb21ea13c308b22140d97"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l1-rr1",
+            "sha256": "c440039ee28ca1919f04365e4b77a2da8d730dc0f153b3208afa3cc1f9ae610e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/d7a6671a8132ef09-hh-open-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 12112,
+          "sha256": "d7a6671a8132ef093371e853bf4b1292de4bdcf4dca97b29a2bd48c86d8247d1",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/d7a6671a8132ef09-hh-open-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 12112,
+              "sha256": "d7a6671a8132ef093371e853bf4b1292de4bdcf4dca97b29a2bd48c86d8247d1"
+            },
+            "opus": {
+              "path": "muldjord/v1/572033bbde1448eb-hh-open-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10535,
+              "sha256": "572033bbde1448ebcec5ba2bf6f7b5bbb16110df6ddbbb5bb1fb444a0c8668f3"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l1-rr2",
+            "sha256": "dbc4ad7c794bf95ab827e7b63e741319c4cbca0dacd12577ba05704a667c4024",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/c6c4f1b46a2e8a5b-hh-open-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 16134,
+          "sha256": "c6c4f1b46a2e8a5b7b4870c8cb82dac9fe156f6f683a3924a9df5c2ef9e51fe0",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/c6c4f1b46a2e8a5b-hh-open-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16134,
+              "sha256": "c6c4f1b46a2e8a5b7b4870c8cb82dac9fe156f6f683a3924a9df5c2ef9e51fe0"
+            },
+            "opus": {
+              "path": "muldjord/v1/36da4259dd6d80f8-hh-open-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13788,
+              "sha256": "36da4259dd6d80f82b1aa4b4e9df71a64d5cb93c2b77224c12a9fb2e94dd8a70"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l2-rr1",
+            "sha256": "a68570516cfef1711e4f7458d7b4c661b2c39373d67dd7d2f24dd56d464796cd",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/9d9cffa9a926a5e2-hh-open-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 16134,
+          "sha256": "9d9cffa9a926a5e2d2352ca2fbc1b00c66ed7fdc4469524b50c7e50df24b009e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/9d9cffa9a926a5e2-hh-open-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16134,
+              "sha256": "9d9cffa9a926a5e2d2352ca2fbc1b00c66ed7fdc4469524b50c7e50df24b009e"
+            },
+            "opus": {
+              "path": "muldjord/v1/275ae6c30a77efc8-hh-open-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13580,
+              "sha256": "275ae6c30a77efc88dba7871a98a546ef94e3641ea4eba8202c28076277991cb"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l2-rr2",
+            "sha256": "a2eaeef1dbdb510e52930fcf80df49ba5397d3c6f9857c45d0e018f04b1aa3e7",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/e35627e8cb121f87-hh-open-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 15037,
+          "sha256": "e35627e8cb121f87a99ea54f705d0cdac02c6853564e394270d2e34e08cc161e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/e35627e8cb121f87-hh-open-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 15037,
+              "sha256": "e35627e8cb121f87a99ea54f705d0cdac02c6853564e394270d2e34e08cc161e"
+            },
+            "opus": {
+              "path": "muldjord/v1/d0e1e77bfc7a6554-hh-open-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11989,
+              "sha256": "d0e1e77bfc7a655468ad10bd8decca3cd614240761bddaaf6e34084eed147ebf"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l3-rr1",
+            "sha256": "3566fd6806f8018e736c31ab54886c8c7ee49d2f83a172d708c0966e48838699",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/c1d321b2a26bcaeb-hh-open-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 16866,
+          "sha256": "c1d321b2a26bcaeb6f6844ed2cb0055872018248f44bfbec5924428d3bce0033",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/c1d321b2a26bcaeb-hh-open-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16866,
+              "sha256": "c1d321b2a26bcaeb6f6844ed2cb0055872018248f44bfbec5924428d3bce0033"
+            },
+            "opus": {
+              "path": "muldjord/v1/d7917e891790f7a8-hh-open-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 14704,
+              "sha256": "d7917e891790f7a848814385ea83bc78279027aa7ee1e03ec480995a47d692d2"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l3-rr2",
+            "sha256": "718d6faa0cff6703df4f3953c94fb21c3406114a0627382ac8ac62da28d831b8",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l4-rr1",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/2132b76826fd7e10-hh-open-l4-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 15403,
+          "sha256": "2132b76826fd7e108344cd65dc17cd2262d67d5a389d7a134722899a425d2577",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/2132b76826fd7e10-hh-open-l4-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 15403,
+              "sha256": "2132b76826fd7e108344cd65dc17cd2262d67d5a389d7a134722899a425d2577"
+            },
+            "opus": {
+              "path": "muldjord/v1/d6267b8220e7e5b3-hh-open-l4-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 12389,
+              "sha256": "d6267b8220e7e5b38604663107110c01a5d9ac962458668249d645c81728c2a2"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l4-rr1",
+            "sha256": "cee889ec9bcaa5c4b398461d3a9fa3193fd6fe25bfc90a4ff7f7eb857bd969ca",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:hh-open-l4-rr2",
+          "kitId": "muldjord",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "muldjord/v1/1197d324df8e7305-hh-open-l4-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 21254,
+          "sha256": "1197d324df8e730599cc94c230420fb49b6f5f4e991501bcbd9e0a301631db12",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/1197d324df8e7305-hh-open-l4-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 21254,
+              "sha256": "1197d324df8e730599cc94c230420fb49b6f5f4e991501bcbd9e0a301631db12"
+            },
+            "opus": {
+              "path": "muldjord/v1/676f483f67fa93fb-hh-open-l4-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 18688,
+              "sha256": "676f483f67fa93fbe7e231f5cad58066775568192861349f2e93d13ed7e7c8d2"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#hh-open-l4-rr2",
+            "sha256": "85229e696b7c0412f7fceeb5b7d9561b469d1e25a636ff44807d09f1e514d50a",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/34333b0e66987ff2-kick-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6260,
+          "sha256": "34333b0e66987ff2b688624681fbfdf4266cd8be43d484ff8ce9cf4af22e73a4",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/34333b0e66987ff2-kick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6260,
+              "sha256": "34333b0e66987ff2b688624681fbfdf4266cd8be43d484ff8ce9cf4af22e73a4"
+            },
+            "opus": {
+              "path": "muldjord/v1/4d9ba69582a981b3-kick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5131,
+              "sha256": "4d9ba69582a981b3d948d9e1e12250ca749466a2b93f72f0de4f9cd06c16b075"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l1-rr1",
+            "sha256": "6bb845f9c36a4f5604a0eb6564f9b4aaa0c68303c47c39e43dc806031a41094a",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/42b49290470aa7ec-kick-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6260,
+          "sha256": "42b49290470aa7ec83870492bdbd96c1be65f37f13cde0549576948067f029c0",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/42b49290470aa7ec-kick-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6260,
+              "sha256": "42b49290470aa7ec83870492bdbd96c1be65f37f13cde0549576948067f029c0"
+            },
+            "opus": {
+              "path": "muldjord/v1/1153f3377f7562b6-kick-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5366,
+              "sha256": "1153f3377f7562b66b35c56ae11393f3b92b7d3e56e3c561681b5447736825dd"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l1-rr2",
+            "sha256": "e8a751df185ac8fe67b6f893922692b501d0580ff099f8c797ee1b1ce96cbc3c",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/958c588bf2c3d65a-kick-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 9917,
+          "sha256": "958c588bf2c3d65a3db380d6a471d9434c6757178c09861f0712a70e95f44c26",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/958c588bf2c3d65a-kick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9917,
+              "sha256": "958c588bf2c3d65a3db380d6a471d9434c6757178c09861f0712a70e95f44c26"
+            },
+            "opus": {
+              "path": "muldjord/v1/5820fc371c49198b-kick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7789,
+              "sha256": "5820fc371c49198b4464b770106041989f4823811c5088aa3ad538388b6ea0d5"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l2-rr1",
+            "sha256": "54b25f6723c4c2d72e78425d609ce2a2d0639a62e9042fc5ad9b9c5ab6e7e4e9",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/4bcc406fbcb5c0e6-kick-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 5529,
+          "sha256": "4bcc406fbcb5c0e6b27fe24bb0a3442dfb966ac0982433c0e9ccd94e8ef3ca93",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/4bcc406fbcb5c0e6-kick-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 5529,
+              "sha256": "4bcc406fbcb5c0e6b27fe24bb0a3442dfb966ac0982433c0e9ccd94e8ef3ca93"
+            },
+            "opus": {
+              "path": "muldjord/v1/70573862406bccc7-kick-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 4947,
+              "sha256": "70573862406bccc71f99aa0cd0929e3fc698d5655ed29bc6dfbd47c7830aeaef"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l2-rr2",
+            "sha256": "c237f2419e823efceadc1dea5c879c43f5872f1f3fcd817853f8778193a310bd",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/6fbc9b67e36355e0-kick-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 12477,
+          "sha256": "6fbc9b67e36355e0b1581484542e6360cd5bbf2062f664458ecc8c790dae193d",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/6fbc9b67e36355e0-kick-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 12477,
+              "sha256": "6fbc9b67e36355e0b1581484542e6360cd5bbf2062f664458ecc8c790dae193d"
+            },
+            "opus": {
+              "path": "muldjord/v1/786b230b39a1cf55-kick-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9797,
+              "sha256": "786b230b39a1cf55c1a556aa2b1be28b97e26ae22aa518051a7700b511f4ec56"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l3-rr1",
+            "sha256": "2f6d710197071c5ee190d55fc41882144668394e61132dc92a6278c5f508f1f7",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/85ac0133613dcb80-kick-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 9917,
+          "sha256": "85ac0133613dcb800a4a49425048c4bb6c5eb424272237ee03436f6f74564d13",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/85ac0133613dcb80-kick-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9917,
+              "sha256": "85ac0133613dcb800a4a49425048c4bb6c5eb424272237ee03436f6f74564d13"
+            },
+            "opus": {
+              "path": "muldjord/v1/55d54df869811b7f-kick-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8517,
+              "sha256": "55d54df869811b7f4cbf62518204cfd5c3f3c6d9a4503a3ad89b88111390ce0c"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l3-rr2",
+            "sha256": "d6eabae429e251883b918fc73c6632a0d7f5c5a5d19f4cea60f0afc39b28c29a",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l4-rr1",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/c44aea523d63f360-kick-l4-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 9552,
+          "sha256": "c44aea523d63f36082508700806fe74d69415b2d6c253e2afe80c8c000cb4bfd",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/c44aea523d63f360-kick-l4-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9552,
+              "sha256": "c44aea523d63f36082508700806fe74d69415b2d6c253e2afe80c8c000cb4bfd"
+            },
+            "opus": {
+              "path": "muldjord/v1/ea3d414c33866fa3-kick-l4-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7952,
+              "sha256": "ea3d414c33866fa30ec00e0b3e1c8616efd60b3b8a740b8ea0cab8b9ac4c7f59"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l4-rr1",
+            "sha256": "2afb85c3a1cbc2f6ffd1fb7e8a0dfac65021c264753b95c4bc2dd6bfabb6909d",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:kick-l4-rr2",
+          "kitId": "muldjord",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/43a75c42a21679d8-kick-l4-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8454,
+          "sha256": "43a75c42a21679d846b9d50cf2e271e0541b2226ad48a458ab5d999e40488a08",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/43a75c42a21679d8-kick-l4-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8454,
+              "sha256": "43a75c42a21679d846b9d50cf2e271e0541b2226ad48a458ab5d999e40488a08"
+            },
+            "opus": {
+              "path": "muldjord/v1/1f2437aaa27a5187-kick-l4-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7242,
+              "sha256": "1f2437aaa27a5187c893a1748d9e31e8289b0f6126eb05af1205c1a671fba74e"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#kick-l4-rr2",
+            "sha256": "e3162197da759678cd901c5777a1b32425d560588c960bc0ec22f5a53435e468",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/96223c9c021dde8f-ride-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 87083,
+          "sha256": "96223c9c021dde8f4e24ead618663e85f4e4ee80828cf0e0aa20361b8d787ae7",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/96223c9c021dde8f-ride-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 87083,
+              "sha256": "96223c9c021dde8f4e24ead618663e85f4e4ee80828cf0e0aa20361b8d787ae7"
+            },
+            "opus": {
+              "path": "muldjord/v1/bddd0eec6a30d949-ride-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 104022,
+              "sha256": "bddd0eec6a30d9492e0eb643b6d5e8f0c25a24f6213b39b6329d342da30d3d15"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l1-rr1",
+            "sha256": "7b2ca3782544e709c864f8f6d85a833797c46b5359cc226d2f522dcffdae8a97",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/3a447d1596165ee8-ride-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 103906,
+          "sha256": "3a447d1596165ee81b6eebc201689e0081c2b7fd90d1235b62ed44a70c89daac",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/3a447d1596165ee8-ride-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 103906,
+              "sha256": "3a447d1596165ee81b6eebc201689e0081c2b7fd90d1235b62ed44a70c89daac"
+            },
+            "opus": {
+              "path": "muldjord/v1/c7caefa111883f3e-ride-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 124069,
+              "sha256": "c7caefa111883f3e42b994547263a683eb131f7f753a81f0b25c38798efb9115"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l1-rr2",
+            "sha256": "2d90dce1928fe2369d2ea565a02e412fa33b54d291f16fc180025c757fbd0825",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/624117bcf2c7cae5-ride-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 93666,
+          "sha256": "624117bcf2c7cae545692e4202e175a372064df8542a5e6687cc1a2ab0a1d2d7",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/624117bcf2c7cae5-ride-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 93666,
+              "sha256": "624117bcf2c7cae545692e4202e175a372064df8542a5e6687cc1a2ab0a1d2d7"
+            },
+            "opus": {
+              "path": "muldjord/v1/4aa7038671a489c4-ride-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 113240,
+              "sha256": "4aa7038671a489c478d6194380acd79cdbbbff740647fa3b8759435f1edddf08"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l2-rr1",
+            "sha256": "836aaf3d79a02e1c7c20b36320aebfcac418a33c0122ab169a5cc66be8627a9f",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/3912a0250fcf8470-ride-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 107929,
+          "sha256": "3912a0250fcf8470b2d0b3985f6d4436fd3b513cc36ae70dd79fddb33d525c08",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/3912a0250fcf8470-ride-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 107929,
+              "sha256": "3912a0250fcf8470b2d0b3985f6d4436fd3b513cc36ae70dd79fddb33d525c08"
+            },
+            "opus": {
+              "path": "muldjord/v1/4ee3b62d3e4bc655-ride-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 129607,
+              "sha256": "4ee3b62d3e4bc655453f8646bad23bd614bdfd14261579c77df656322da05766"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l2-rr2",
+            "sha256": "52923d55fc4980a9f54cb8b2f8914dd2d1ec3228b799b9ee6ddd16dd973b60ff",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/d1215fd1903f326d-ride-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 119997,
+          "sha256": "d1215fd1903f326dbdf8d78250651377409035d7d54dc3399d0334a38cecc3af",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/d1215fd1903f326d-ride-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 119997,
+              "sha256": "d1215fd1903f326dbdf8d78250651377409035d7d54dc3399d0334a38cecc3af"
+            },
+            "opus": {
+              "path": "muldjord/v1/ce64912a0901a89a-ride-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 143183,
+              "sha256": "ce64912a0901a89ade2aae7a2cf71e539305ae11145ef3ec08c9545692f98534"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l3-rr1",
+            "sha256": "2b83cc022e2dd8c941369eb2adf1ad59ab7d0f20b79e8cf606c5be9762f933b9",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:ride-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/302f8c638a7d0cf5-ride-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 106832,
+          "sha256": "302f8c638a7d0cf5b0bb1627fdb2ef9c3436e6c8228710f1dd0e212dcc1947b1",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/302f8c638a7d0cf5-ride-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 106832,
+              "sha256": "302f8c638a7d0cf5b0bb1627fdb2ef9c3436e6c8228710f1dd0e212dcc1947b1"
+            },
+            "opus": {
+              "path": "muldjord/v1/b05723725f161c55-ride-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 126068,
+              "sha256": "b05723725f161c5536f7da884945326821ab3ac80b785b1e2a9e1894cadc9cea"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#ride-l3-rr2",
+            "sha256": "916803ed206a01ced7a7cc2428a75f665c109b50209497ef4e01ad163b199636",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/72b6bba6a14eaa70-snare-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8089,
+          "sha256": "72b6bba6a14eaa709683b7b22743d34b1b433645f12acd2dd850bb0fb5e55423",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/72b6bba6a14eaa70-snare-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8089,
+              "sha256": "72b6bba6a14eaa709683b7b22743d34b1b433645f12acd2dd850bb0fb5e55423"
+            },
+            "opus": {
+              "path": "muldjord/v1/37c863e5c36a2140-snare-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6610,
+              "sha256": "37c863e5c36a21401061634a63346d1630ad9aec984533b522cdb5d5309504a7"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l1-rr1",
+            "sha256": "0916bafb804da6823e3be11a23eaaed78aef1a0204757d7ce4d2315075901cbd",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 1,
+          "velocityMax": 50,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/3a6272c84244d1bd-snare-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8454,
+          "sha256": "3a6272c84244d1bdf8843f00a9089383cf395b228c84718b722462976c0a76d5",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/3a6272c84244d1bd-snare-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8454,
+              "sha256": "3a6272c84244d1bdf8843f00a9089383cf395b228c84718b722462976c0a76d5"
+            },
+            "opus": {
+              "path": "muldjord/v1/0c704b3a92c461e0-snare-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7061,
+              "sha256": "0c704b3a92c461e0881f3b01a1538f00eede835a002c68db9b56074bdd7750bc"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l1-rr2",
+            "sha256": "d70cca937e9f464fd13861926a00acfdb74de1b4ebd77392d10626d655c38a3e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/d0f2bf680bde6b2d-snare-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 9917,
+          "sha256": "d0f2bf680bde6b2d310e6939553f0021de0e6c879807ff27f91a9762b5e161ee",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/d0f2bf680bde6b2d-snare-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9917,
+              "sha256": "d0f2bf680bde6b2d310e6939553f0021de0e6c879807ff27f91a9762b5e161ee"
+            },
+            "opus": {
+              "path": "muldjord/v1/b7b4b1a29a3a58c6-snare-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8190,
+              "sha256": "b7b4b1a29a3a58c617f7e4ce0bbc9a5d3586bfdfe295d763748124dd70950b2c"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l2-rr1",
+            "sha256": "85587335419f37e03899f948e02d114131cbe3d480034d7ab97106e0d92db0de",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 51,
+          "velocityMax": 76,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/6f501f82f78b9f83-snare-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8454,
+          "sha256": "6f501f82f78b9f839761e760b6a27a833138ef2bb4e9e70c9e826880972dd471",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/6f501f82f78b9f83-snare-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8454,
+              "sha256": "6f501f82f78b9f839761e760b6a27a833138ef2bb4e9e70c9e826880972dd471"
+            },
+            "opus": {
+              "path": "muldjord/v1/8c6466a8c5bc0cb9-snare-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7085,
+              "sha256": "8c6466a8c5bc0cb99e208d4afe0e504e34ae7f1b98083e440287203e6e0578a3"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l2-rr2",
+            "sha256": "c579d6be6b6f1bf7bdb82b6eb26e49758dff5394dfbab94eaa45e1daa2ad51d6",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/8a26059ae2c9acf9-snare-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 12843,
+          "sha256": "8a26059ae2c9acf9dfed612019c57ce2b18cc63dbd0b86b3076a8d14d1edbe84",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/8a26059ae2c9acf9-snare-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 12843,
+              "sha256": "8a26059ae2c9acf9dfed612019c57ce2b18cc63dbd0b86b3076a8d14d1edbe84"
+            },
+            "opus": {
+              "path": "muldjord/v1/1b3106db8ce43320-snare-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10963,
+              "sha256": "1b3106db8ce43320fbb2298c187e088d62d4a13568f14ad8436afd09433991ff"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l3-rr1",
+            "sha256": "c951e350aea78e963a3117696011b2d07875638955638cb87142dd82c44eb633",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 77,
+          "velocityMax": 101,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/371a4ec402d39b81-snare-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 10283,
+          "sha256": "371a4ec402d39b810608b7fd89e398e0aac8e11a7c96f01889a1ef302e353132",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/371a4ec402d39b81-snare-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 10283,
+              "sha256": "371a4ec402d39b810608b7fd89e398e0aac8e11a7c96f01889a1ef302e353132"
+            },
+            "opus": {
+              "path": "muldjord/v1/69cbe8666536828e-snare-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8809,
+              "sha256": "69cbe8666536828e6dccd9dd37e5ecdd0fc733ae9ff4fab3697d7d1ec191103e"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l3-rr2",
+            "sha256": "e13ecb07ce78530452e9d34b729ed99b4c549e5a7ed4bb5b813820ba228625c0",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l4-rr1",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/fa45ef40f9504564-snare-l4-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 15403,
+          "sha256": "fa45ef40f95045642a7ca30c14ee6c55347098a19d2dee33f7cceef83080878c",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/fa45ef40f9504564-snare-l4-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 15403,
+              "sha256": "fa45ef40f95045642a7ca30c14ee6c55347098a19d2dee33f7cceef83080878c"
+            },
+            "opus": {
+              "path": "muldjord/v1/df9a40844c3a3ae3-snare-l4-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 13067,
+              "sha256": "df9a40844c3a3ae30719864713579c9347344f08b7701c6ba650ad9990c58a46"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l4-rr1",
+            "sha256": "817374f7a80abc0d5e43fc932a1240694fe8616a854bef67c8481862d126edcb",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:snare-l4-rr2",
+          "kitId": "muldjord",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 102,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/c1ae2ffd3517b1c0-snare-l4-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 19426,
+          "sha256": "c1ae2ffd3517b1c027fd039a350814e5b8231e12c690a2130226e01d21121ff1",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/c1ae2ffd3517b1c0-snare-l4-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 19426,
+              "sha256": "c1ae2ffd3517b1c027fd039a350814e5b8231e12c690a2130226e01d21121ff1"
+            },
+            "opus": {
+              "path": "muldjord/v1/6142cd0d3e9758eb-snare-l4-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16782,
+              "sha256": "6142cd0d3e9758eb938876008ed65e2af4031e47027403c94d66aaca20c5ff61"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#snare-l4-rr2",
+            "sha256": "3052c89e2358c7288d2cf1e7f5b81162f5a67e9058aa27dddde79bdaf91c342c",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/2e490f1532fd6566-tom-high-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 54900,
+          "sha256": "2e490f1532fd65660580499318b257ffe1e7f2f4ab9e5d6889cd5012f2946193",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/2e490f1532fd6566-tom-high-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 54900,
+              "sha256": "2e490f1532fd65660580499318b257ffe1e7f2f4ab9e5d6889cd5012f2946193"
+            },
+            "opus": {
+              "path": "muldjord/v1/db03d3c85ce29931-tom-high-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39065,
+              "sha256": "db03d3c85ce29931838877ff9a56013d964d8da2d1cf7beb9d1de16455b9d493"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l1-rr1",
+            "sha256": "69105b741a401ad3bb007d87973b0af42d8233da793d7a6532245890027afa58",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/b3f9589ecc8d0c06-tom-high-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 55632,
+          "sha256": "b3f9589ecc8d0c0649c4b38d1a847efae5525913ef24b1b504ba7cf73c653f3e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/b3f9589ecc8d0c06-tom-high-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 55632,
+              "sha256": "b3f9589ecc8d0c0649c4b38d1a847efae5525913ef24b1b504ba7cf73c653f3e"
+            },
+            "opus": {
+              "path": "muldjord/v1/6af1dc83c03b2443-tom-high-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39101,
+              "sha256": "6af1dc83c03b2443d9ce4650e1d4f49962b1e52322d4698cd7bcc74d57008b76"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l1-rr2",
+            "sha256": "eac41d39bb4a6baa84e9032cfd0c951b08d64108f9e57565d583578572663587",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/3a94398623151ed1-tom-high-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 55997,
+          "sha256": "3a94398623151ed163f7ffef53c0ed8feb9cb512d6cb4ee619671d4dfe713fae",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/3a94398623151ed1-tom-high-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 55997,
+              "sha256": "3a94398623151ed163f7ffef53c0ed8feb9cb512d6cb4ee619671d4dfe713fae"
+            },
+            "opus": {
+              "path": "muldjord/v1/8b9ca51152cbf4cb-tom-high-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39523,
+              "sha256": "8b9ca51152cbf4cbe6a2403d1b9d362967e68c8fcd103b87c2a6bdf3b7108844"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l2-rr1",
+            "sha256": "c7426a143e7902b0fc4ddcf2e9cc67d8825198436425ba722df3c9c6a7e34374",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/a9b2f894f39d4b43-tom-high-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 57094,
+          "sha256": "a9b2f894f39d4b43e63bc0a00dbfcb5ec002258c0fc7a31572f3089af5309bdd",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/a9b2f894f39d4b43-tom-high-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 57094,
+              "sha256": "a9b2f894f39d4b43e63bc0a00dbfcb5ec002258c0fc7a31572f3089af5309bdd"
+            },
+            "opus": {
+              "path": "muldjord/v1/62111edf2c7fd44f-tom-high-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39815,
+              "sha256": "62111edf2c7fd44f0c7191a84ae714989503f1b7830a038e897f4c0a4d945aa9"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l2-rr2",
+            "sha256": "08a31d32d2e56288d49455d69933c9b386c1ecf01eafd91371b07dda73529121",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/9696bc2c059d938f-tom-high-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 56363,
+          "sha256": "9696bc2c059d938fc1ebd05b035958b28ab11229ecda011837eaff8f91a7fec8",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/9696bc2c059d938f-tom-high-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 56363,
+              "sha256": "9696bc2c059d938fc1ebd05b035958b28ab11229ecda011837eaff8f91a7fec8"
+            },
+            "opus": {
+              "path": "muldjord/v1/ac5b426691336313-tom-high-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 40253,
+              "sha256": "ac5b426691336313572b926cbacfc4dde76e2a5d2c280fc45e58eb38168638b3"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l3-rr1",
+            "sha256": "eea31b536634be6bd1348e7630572c5a30a989222ad75af5ad1332b314e71996",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-high-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/f0e8fb3f30d2337c-tom-high-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 54900,
+          "sha256": "f0e8fb3f30d2337cf61bcef1cc6798d5f99f8f2fbfb28de1496015f7e1ce5e39",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/f0e8fb3f30d2337c-tom-high-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 54900,
+              "sha256": "f0e8fb3f30d2337cf61bcef1cc6798d5f99f8f2fbfb28de1496015f7e1ce5e39"
+            },
+            "opus": {
+              "path": "muldjord/v1/677167e5d6584287-tom-high-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 39051,
+              "sha256": "677167e5d65842875782471bb69da50e921a95611a63279f68fec94074be80c8"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-high-l3-rr2",
+            "sha256": "f81151e086d4ae1a0312a403041973a898c16332831d4623f6b7b39af9ca143e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l1-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/93a75e00bc978e84-tom-low-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 21986,
+          "sha256": "93a75e00bc978e84fec7e360c01d64204543161cae5e1c52dba3d950c8852219",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/93a75e00bc978e84-tom-low-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 21986,
+              "sha256": "93a75e00bc978e84fec7e360c01d64204543161cae5e1c52dba3d950c8852219"
+            },
+            "opus": {
+              "path": "muldjord/v1/fb84a94a72bfda80-tom-low-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 15230,
+              "sha256": "fb84a94a72bfda80c20b7577ddf014569b0bfb7e20c58f40632d9d4ded54b8de"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l1-rr1",
+            "sha256": "d96053fcf6cc2b2acd9ef1e5875b012f535396fbad4af31445b213a0100e9ae0",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l1-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/588f5acf8ebe7703-tom-low-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 24912,
+          "sha256": "588f5acf8ebe770334a0d32a3cef1da517743567f4089db6621187bdc3cc806e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/588f5acf8ebe7703-tom-low-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 24912,
+              "sha256": "588f5acf8ebe770334a0d32a3cef1da517743567f4089db6621187bdc3cc806e"
+            },
+            "opus": {
+              "path": "muldjord/v1/08c2dfc1391c9410-tom-low-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16730,
+              "sha256": "08c2dfc1391c9410e6b70751b9a480000322d4948851447e1ba63a8ec8079b21"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l1-rr2",
+            "sha256": "4268a692919c9daa3b375b618968bf8bdef4641887820d4439461ba390598719",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l2-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/4d0a6feb6f8bec01-tom-low-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 15037,
+          "sha256": "4d0a6feb6f8bec017cff87c627f4b3772dd6a9287e312d14a7cdb22e76e52b8a",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/4d0a6feb6f8bec01-tom-low-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 15037,
+              "sha256": "4d0a6feb6f8bec017cff87c627f4b3772dd6a9287e312d14a7cdb22e76e52b8a"
+            },
+            "opus": {
+              "path": "muldjord/v1/9740ccbd21f36447-tom-low-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 10150,
+              "sha256": "9740ccbd21f364475fc502212f2460dbbc062960d98f504b4b1c56e2d4562345"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l2-rr1",
+            "sha256": "5f242b8d31f374a6795035bb184e8010fe340cfc2333e17fcb4dcd4fa78aa742",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l2-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/62b7ce684859b8b0-tom-low-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 16866,
+          "sha256": "62b7ce684859b8b06b22639a919b46bf0ff87d15893b569e745add400b250a03",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/62b7ce684859b8b0-tom-low-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16866,
+              "sha256": "62b7ce684859b8b06b22639a919b46bf0ff87d15893b569e745add400b250a03"
+            },
+            "opus": {
+              "path": "muldjord/v1/86b0580e8d4bb2ca-tom-low-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11779,
+              "sha256": "86b0580e8d4bb2ca7f216eeb60f5d81f2efa3380e541eddedbf725f71d4bbdbb"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l2-rr2",
+            "sha256": "da8f0412e99113b8b05a2d80497c94623bf1b58c112f96071a55f7e25b11a2a9",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l3-rr1",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/0318afa1aa592400-tom-low-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 22717,
+          "sha256": "0318afa1aa592400645b3f4c5ab02009eece64e65f4e756b4c92f1f50875d90f",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/0318afa1aa592400-tom-low-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 22717,
+              "sha256": "0318afa1aa592400645b3f4c5ab02009eece64e65f4e756b4c92f1f50875d90f"
+            },
+            "opus": {
+              "path": "muldjord/v1/6e1680b5e6e62d26-tom-low-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16077,
+              "sha256": "6e1680b5e6e62d26822de811dc48fa8fdbfabb4b9253726886ffb07817c95fc1"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l3-rr1",
+            "sha256": "9169329bbc43c1a75f03d6e1c12bddb36383f75c3084fde2a87309c3f09602f6",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "muldjord:tom-low-l3-rr2",
+          "kitId": "muldjord",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "muldjord/v1/a5f99b52518a87b9-tom-low-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 29300,
+          "sha256": "a5f99b52518a87b9af92062fe34a71e8de5901eadfdfa8e1e16a412d64976bcf",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "muldjord/v1/a5f99b52518a87b9-tom-low-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 29300,
+              "sha256": "a5f99b52518a87b9af92062fe34a71e8de5901eadfdfa8e1e16a412d64976bcf"
+            },
+            "opus": {
+              "path": "muldjord/v1/6d3b9b368743e4ab-tom-low-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 20480,
+              "sha256": "6d3b9b368743e4ab5e348063608bb538a472f6960e116dc384824fd65ea9e16c"
+            }
+          },
+          "playbackGain": 0.56234133,
+          "source": {
+            "commit": "fc165714974aa843125ce88597f341b31376e1d5",
+            "path": "muldjord/selected-mixes.json#tom-low-l3-rr2",
+            "sha256": "3155a5aadb09dcd7a9fb043f48623930ca5fe31561d6fb43decb4415242276ea",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        }
+      ],
+      "velcurve": {
+        "default": [
+          [1, 1],
+          [127, 1]
+        ]
+      }
+    },
+    "crocell": {
+      "version": "v1",
+      "sampleStatus": "ready",
+      "publishedEncodedBytes": 3771436,
+      "resources": [
+        {
+          "id": "crocell:crash-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/86d23a95f7f11a2b-crash-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 139380,
+          "sha256": "86d23a95f7f11a2b0c2ff2f0a64861f9017e7ceeccf599eb93caf4fde8e06003",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/86d23a95f7f11a2b-crash-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 139380,
+              "sha256": "86d23a95f7f11a2b0c2ff2f0a64861f9017e7ceeccf599eb93caf4fde8e06003"
+            },
+            "opus": {
+              "path": "crocell/v1/579f7a2c1efe22ac-crash-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 160241,
+              "sha256": "579f7a2c1efe22acf03c55c6afd134435ce93715a43b01d9dfb4002728f9492f"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l1-rr1",
+            "sha256": "1bed287b0ef2aa6f9fea9a44853c3408f8a6dd7c03b6f619ba191d5f227149a4",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:crash-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/28fea772c1f875c2-crash-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 107197,
+          "sha256": "28fea772c1f875c20becdc398d6316e964bdbd2356a2bb6d250e4e03386b8561",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/28fea772c1f875c2-crash-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 107197,
+              "sha256": "28fea772c1f875c20becdc398d6316e964bdbd2356a2bb6d250e4e03386b8561"
+            },
+            "opus": {
+              "path": "crocell/v1/dbc5b04bb6d04a65-crash-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 125683,
+              "sha256": "dbc5b04bb6d04a65937d3b34ad7102bc8153c4a5b610d3fe9192e8b90f455a62"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l1-rr2",
+            "sha256": "343c768814590f4ba8f31b14ff42dbf791271bcdb1cc7978199da6e01a1ed452",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:crash-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/28d8239d73ad1c19-crash-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 117072,
+          "sha256": "28d8239d73ad1c196628f6c74d42d9f54d80171c988dab2aee766b241b21ee76",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/28d8239d73ad1c19-crash-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 117072,
+              "sha256": "28d8239d73ad1c196628f6c74d42d9f54d80171c988dab2aee766b241b21ee76"
+            },
+            "opus": {
+              "path": "crocell/v1/00118ab5b9752df0-crash-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 134560,
+              "sha256": "00118ab5b9752df0fd9585d91bc80ab481d51e4472faa2f28c39c723c37872d3"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l2-rr1",
+            "sha256": "427b562b5ed4f725fe17f5e4da16d0585a7221afb331f11f9ffd008538100f71",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:crash-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/eafb3b5f44f02e6d-crash-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 117072,
+          "sha256": "eafb3b5f44f02e6d25591954db996a88eb4280ace3ca3aa8a4bbe861853fdbb0",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/eafb3b5f44f02e6d-crash-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 117072,
+              "sha256": "eafb3b5f44f02e6d25591954db996a88eb4280ace3ca3aa8a4bbe861853fdbb0"
+            },
+            "opus": {
+              "path": "crocell/v1/dc991a3e8c6abd9c-crash-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 134774,
+              "sha256": "dc991a3e8c6abd9cb14ff4a192158f05fb62268fb8f602c3c0dceb1fa7cd0f4a"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l2-rr2",
+            "sha256": "bc8674770c5587803c2cba9afb04620c2b60df09f4695b3b11f21604f9313ad1",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:crash-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/4dc0518ac8a5b0f4-crash-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 118534,
+          "sha256": "4dc0518ac8a5b0f4648396f5d06f0826a6413fb8d8191b56908683bae1352ba9",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/4dc0518ac8a5b0f4-crash-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 118534,
+              "sha256": "4dc0518ac8a5b0f4648396f5d06f0826a6413fb8d8191b56908683bae1352ba9"
+            },
+            "opus": {
+              "path": "crocell/v1/05c6774e57263012-crash-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 138302,
+              "sha256": "05c6774e572630122d4ef36f03dcf3477e3fcbea99e496cfb5382bfe17db88b4"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l3-rr1",
+            "sha256": "7b0d4e36750c72a081d9d8019e03572e98bdc189a93d2ba74f148721ec659237",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:crash-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "crash",
+          "gmKeys": [49],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/5cff3214e9232b6f-crash-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 121460,
+          "sha256": "5cff3214e9232b6f32ce876ada56ebce29d9cf5bd0afec88406f24a0984a607c",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/5cff3214e9232b6f-crash-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 121460,
+              "sha256": "5cff3214e9232b6f32ce876ada56ebce29d9cf5bd0afec88406f24a0984a607c"
+            },
+            "opus": {
+              "path": "crocell/v1/6eb5fc9f5d26ab55-crash-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 141414,
+              "sha256": "6eb5fc9f5d26ab551a416550f6ed83ed51c178a77c23bb3a95aaa8407f855b9b"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#crash-l3-rr2",
+            "sha256": "b85a04f7188f3942ec4b2a4e1e0f87bf986b777efb4ac47ec20c652c71655096",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/83a0a7c9407dc5b4-hh-closed-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6260,
+          "sha256": "83a0a7c9407dc5b42736e9df3a081074a3f83e57fe0acee63e4aa00fcddd2fba",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/83a0a7c9407dc5b4-hh-closed-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6260,
+              "sha256": "83a0a7c9407dc5b42736e9df3a081074a3f83e57fe0acee63e4aa00fcddd2fba"
+            },
+            "opus": {
+              "path": "crocell/v1/87ea25fac942edff-hh-closed-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 5995,
+              "sha256": "87ea25fac942edff7ddda0b135ccac88ed33dd8a83dd685d03dbf3651f8d426b"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l1-rr1",
+            "sha256": "d4c233b5c13073ac64c9683919dbe358c38ad56d1cc3f27a5d90511ff172e604",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/aeb0d8cf32fd2c94-hh-closed-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 6260,
+          "sha256": "aeb0d8cf32fd2c943bea299357237373664850d1366b123fc620464369f417bf",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/aeb0d8cf32fd2c94-hh-closed-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 6260,
+              "sha256": "aeb0d8cf32fd2c943bea299357237373664850d1366b123fc620464369f417bf"
+            },
+            "opus": {
+              "path": "crocell/v1/0eb04f0fd7577b7b-hh-closed-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 6233,
+              "sha256": "0eb04f0fd7577b7b64e25a846e3f46e8446d1c6099dc268d6bebbbe691f25b3e"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l1-rr2",
+            "sha256": "edcaad05e32282479d3c4e5bbbd4c5092c2040efc6a1260c6eac6d2b8f1b527e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/58db926139da6cc9-hh-closed-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8089,
+          "sha256": "58db926139da6cc9a9c3ceab547817112d203c7c0425d86116fa2481a1232f75",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/58db926139da6cc9-hh-closed-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8089,
+              "sha256": "58db926139da6cc9a9c3ceab547817112d203c7c0425d86116fa2481a1232f75"
+            },
+            "opus": {
+              "path": "crocell/v1/8bf01cadd0a67656-hh-closed-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8231,
+              "sha256": "8bf01cadd0a676565a3f131332639f3aa099eef936dc15ae0ba109c07e03e380"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l2-rr1",
+            "sha256": "77f819e7d5e7fd4c027d986271183d045bf8d6ad1c836c347fe2a697fb886813",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/36e2674499c68b75-hh-closed-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8089,
+          "sha256": "36e2674499c68b755f50fa458aa85474754583d3a3de31fd108b2d6d622ba607",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/36e2674499c68b75-hh-closed-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8089,
+              "sha256": "36e2674499c68b755f50fa458aa85474754583d3a3de31fd108b2d6d622ba607"
+            },
+            "opus": {
+              "path": "crocell/v1/4990acf68f55243c-hh-closed-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 7749,
+              "sha256": "4990acf68f55243c3b55892e4468f6f283f11d9558cfcf81338cffec0ca55489"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l2-rr2",
+            "sha256": "b92fb908473decc12da16c28fbb2427fbe113d96dc7f3f3c58a9682a5da40c97",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/e2a98cba1a650803-hh-closed-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8820,
+          "sha256": "e2a98cba1a650803406c85e6c26b9254b922e9aab18a3dc6581e31f64580e0ed",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/e2a98cba1a650803-hh-closed-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8820,
+              "sha256": "e2a98cba1a650803406c85e6c26b9254b922e9aab18a3dc6581e31f64580e0ed"
+            },
+            "opus": {
+              "path": "crocell/v1/c80ad36cee0e1eca-hh-closed-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 8935,
+              "sha256": "c80ad36cee0e1eca300276a0a2a3d75ea889ab3065b25689ccdbb3b1a275681f"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l3-rr1",
+            "sha256": "ad668f6385b387af07ed283e0aa5048bb837ac84412acfc8dd7d3c66825ffed2",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-closed-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-closed",
+          "gmKeys": [42],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": ["hi-hat-open"],
+          "path": "crocell/v1/ee6e3f84b06d1647-hh-closed-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 8820,
+          "sha256": "ee6e3f84b06d164770ec80ab75b1cde577633405c38a43c00cf823fa6d4fcf30",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/ee6e3f84b06d1647-hh-closed-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 8820,
+              "sha256": "ee6e3f84b06d164770ec80ab75b1cde577633405c38a43c00cf823fa6d4fcf30"
+            },
+            "opus": {
+              "path": "crocell/v1/c34781a7798ae823-hh-closed-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9489,
+              "sha256": "c34781a7798ae823eb47e40976cc74e9323595d5c5bab1186dba319aec1208ff"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-closed-l3-rr2",
+            "sha256": "6362600b0270fb09386b10c6666caef708994f4fbff551fa7e402c9359bfce17",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/4971de2126790be3-hh-open-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 29300,
+          "sha256": "4971de2126790be3e36dcc3880fd398a8dec7ff559e76183cecc4609afcd35f9",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/4971de2126790be3-hh-open-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 29300,
+              "sha256": "4971de2126790be3e36dcc3880fd398a8dec7ff559e76183cecc4609afcd35f9"
+            },
+            "opus": {
+              "path": "crocell/v1/30dca556ae22d6de-hh-open-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 27672,
+              "sha256": "30dca556ae22d6def4376388679417d1195160e1cb0deb66dc3ba60a5e7364a1"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l1-rr1",
+            "sha256": "ab74b944d66d0943e2b77b74932b005d1bed181dcd7480ecf5fde3033ebf47f4",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/45c0acba20d3306a-hh-open-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 28203,
+          "sha256": "45c0acba20d3306a7cd82992f7fe28b5f24391fb943c5179d364acd84c4b6a39",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/45c0acba20d3306a-hh-open-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 28203,
+              "sha256": "45c0acba20d3306a7cd82992f7fe28b5f24391fb943c5179d364acd84c4b6a39"
+            },
+            "opus": {
+              "path": "crocell/v1/75c2b5c01aa4847b-hh-open-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 25416,
+              "sha256": "75c2b5c01aa4847bd34a8f61f145e491599cd1c1735892babd4462582a9a1b81"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l1-rr2",
+            "sha256": "d25783a0817aa86ab662bf4b711ab7bba36dcc5719d66c647751c844a8e11c93",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/55ae6b9210a383bf-hh-open-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 41734,
+          "sha256": "55ae6b9210a383bf57bbbc16e0f329df785ebb5f9f4ee24f7bf8c6776d9ddb2a",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/55ae6b9210a383bf-hh-open-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 41734,
+              "sha256": "55ae6b9210a383bf57bbbc16e0f329df785ebb5f9f4ee24f7bf8c6776d9ddb2a"
+            },
+            "opus": {
+              "path": "crocell/v1/51a918226e0ecdab-hh-open-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 42498,
+              "sha256": "51a918226e0ecdab0ca063e66b48b0266924b2f6a34f450b0e9268c54155b4fc"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l2-rr1",
+            "sha256": "60146033a1f471aa757d1b8f4a86fecc58c5c96051f235e78827906dfd2eeeb1",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/20133bea3a71e51d-hh-open-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 38077,
+          "sha256": "20133bea3a71e51dfda543055d5ef18c656d39a7154d25d95bea4baf2ecbed2e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/20133bea3a71e51d-hh-open-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 38077,
+              "sha256": "20133bea3a71e51dfda543055d5ef18c656d39a7154d25d95bea4baf2ecbed2e"
+            },
+            "opus": {
+              "path": "crocell/v1/f23d9ec83cd6b6ad-hh-open-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 37225,
+              "sha256": "f23d9ec83cd6b6ade51e281074008e93666705354ce9959f88102493cc228754"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l2-rr2",
+            "sha256": "b177e3ab7fc61a1a1267dd7a8a45e336afc58d63001dcb746dab420130760c92",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/40041e0290407536-hh-open-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 42466,
+          "sha256": "40041e029040753669d21b79210e3fdc28c7223e81387f47cf441f35974e62b0",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/40041e0290407536-hh-open-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 42466,
+              "sha256": "40041e029040753669d21b79210e3fdc28c7223e81387f47cf441f35974e62b0"
+            },
+            "opus": {
+              "path": "crocell/v1/b29288811b9bf2d8-hh-open-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 41776,
+              "sha256": "b29288811b9bf2d871dfdecb5af961cde76022494a997056205137fac647d6a5"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l3-rr1",
+            "sha256": "3abd5847536f5506cf4c73524e44d273e5cf90c24bc96f4e2e8dfe105ab18a4c",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:hh-open-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "hh-open",
+          "gmKeys": [46],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": "hi-hat-open",
+          "chokes": [],
+          "path": "crocell/v1/522372686d0b398c-hh-open-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 36980,
+          "sha256": "522372686d0b398cf5ceca7e90d77341983f1bea9c4ca4b9aa41e9ce130bd16e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/522372686d0b398c-hh-open-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 36980,
+              "sha256": "522372686d0b398cf5ceca7e90d77341983f1bea9c4ca4b9aa41e9ce130bd16e"
+            },
+            "opus": {
+              "path": "crocell/v1/18236fa1b15ab7f9-hh-open-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 34973,
+              "sha256": "18236fa1b15ab7f9786cb25091236dc20583de437b80eeaf8fc6949dbd30284b"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#hh-open-l3-rr2",
+            "sha256": "c8a201a44caaade9ca21595a8507851f7dc2c4bf153b9ac5293d43e322a4e64a",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/9383ae4542afeee2-kick-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 13209,
+          "sha256": "9383ae4542afeee2566c767ec5a4ea93c8f397ae33fab62b09d01d1bfb2eea83",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/9383ae4542afeee2-kick-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 13209,
+              "sha256": "9383ae4542afeee2566c767ec5a4ea93c8f397ae33fab62b09d01d1bfb2eea83"
+            },
+            "opus": {
+              "path": "crocell/v1/2ebb6b1bb4472dea-kick-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11707,
+              "sha256": "2ebb6b1bb4472deab493cf5184b889cb2d2260ddf972a376ac2769b636643632"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l1-rr1",
+            "sha256": "d2749a82829d14f66d3aadb83afff9c3b06e13b2659a812039ccff8813f68a2c",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/b450bb5e9496ea46-kick-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 13209,
+          "sha256": "b450bb5e9496ea46d46e40a88de7d4a1dc8a62dfbc2a2b79fceeaee16fe2c19b",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/b450bb5e9496ea46-kick-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 13209,
+              "sha256": "b450bb5e9496ea46d46e40a88de7d4a1dc8a62dfbc2a2b79fceeaee16fe2c19b"
+            },
+            "opus": {
+              "path": "crocell/v1/653db2008cb0da9d-kick-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11588,
+              "sha256": "653db2008cb0da9d6295898c90e6876fd4e162f9ad010385ba3dbec57c7e2656"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l1-rr2",
+            "sha256": "b7cf507622f2d9bc98e4d70463321987d563c0198b60fa513708ac79c40ae267",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/e517c93c3f98bd25-kick-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 18694,
+          "sha256": "e517c93c3f98bd2562b5cd03eaf12249d1be7a3712fbec78230febe977801b73",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/e517c93c3f98bd25-kick-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 18694,
+              "sha256": "e517c93c3f98bd2562b5cd03eaf12249d1be7a3712fbec78230febe977801b73"
+            },
+            "opus": {
+              "path": "crocell/v1/b7dbbf7c5363c757-kick-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16519,
+              "sha256": "b7dbbf7c5363c7571ec9631bdfd2611161a07e976ec158c57b61f397e2646380"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l2-rr1",
+            "sha256": "d33c7bcdf2859d5985461f80b8b133444bf4bd5e2fd6f225800d6ecb5610d47e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/202d401f0faeca48-kick-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 19426,
+          "sha256": "202d401f0faeca48effec70d34d853ca528ba3cb38abe537b5ef5da822133721",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/202d401f0faeca48-kick-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 19426,
+              "sha256": "202d401f0faeca48effec70d34d853ca528ba3cb38abe537b5ef5da822133721"
+            },
+            "opus": {
+              "path": "crocell/v1/8aec3f2d923c1c47-kick-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17220,
+              "sha256": "8aec3f2d923c1c47376fe77397992bdd559321d8bb9f1acc00b4f8a5b68ce214"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l2-rr2",
+            "sha256": "e26fe107f90e76e9aedd250e4ddf2211e022945da7164ed938b8e2f371caac3b",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/ab3df5f48dc2c687-kick-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 14306,
+          "sha256": "ab3df5f48dc2c687f15e80bc75ccb90814e39d25ab38dd267069a8baa2900e72",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/ab3df5f48dc2c687-kick-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 14306,
+              "sha256": "ab3df5f48dc2c687f15e80bc75ccb90814e39d25ab38dd267069a8baa2900e72"
+            },
+            "opus": {
+              "path": "crocell/v1/78ebc6619f04c152-kick-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 12905,
+              "sha256": "78ebc6619f04c152cd72aa12a5e72d1ed0e8880834711f17a6fe6c7129ddb72a"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l3-rr1",
+            "sha256": "db32a09a9d5038d41539512d7fcc56659f496b30cb5f73dfaeae83dc6e5fa6f4",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:kick-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "kick",
+          "gmKeys": [36],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/8fe2f8ae3084c768-kick-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 25277,
+          "sha256": "8fe2f8ae3084c768a1a8da0f00c7f5a34749ba06db45b55be5724f8828decf2c",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/8fe2f8ae3084c768-kick-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 25277,
+              "sha256": "8fe2f8ae3084c768a1a8da0f00c7f5a34749ba06db45b55be5724f8828decf2c"
+            },
+            "opus": {
+              "path": "crocell/v1/7c29336f32bf0963-kick-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 22386,
+              "sha256": "7c29336f32bf096339aa6accb7a2cc09dc44f494b785e3b297b4f2106bf57316"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#kick-l3-rr2",
+            "sha256": "e6cb493d044649e6b6dd584dc09d8deacd3a6ef8b5b5377020c8191d3a496604",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:ride-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/2cc5240b7ce1cd0d-ride-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 223494,
+          "sha256": "2cc5240b7ce1cd0dd00218212b9e77bb9c691151c4920f4265acfbf90cf72356",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/2cc5240b7ce1cd0d-ride-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 223494,
+              "sha256": "2cc5240b7ce1cd0dd00218212b9e77bb9c691151c4920f4265acfbf90cf72356"
+            },
+            "opus": {
+              "path": "crocell/v1/778635be00c275a4-ride-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 212548,
+              "sha256": "778635be00c275a469433e7bfeb07f54fce8f5d1f1ea619a0fdbb12f93429d88"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#ride-l1-rr1",
+            "sha256": "68f782552fd74d6f193fbac5a76e1be7e384a985db4557e928d3814e39711819",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:ride-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/8786af9a456e47f9-ride-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 344180,
+          "sha256": "8786af9a456e47f9615cf8fdf383de4eee7d880997e0dea1ffc640bf80531ace",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/8786af9a456e47f9-ride-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 344180,
+              "sha256": "8786af9a456e47f9615cf8fdf383de4eee7d880997e0dea1ffc640bf80531ace"
+            },
+            "opus": {
+              "path": "crocell/v1/c8182e0604f4a4a9-ride-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 322256,
+              "sha256": "c8182e0604f4a4a922e1c3a0501b0b010e9cd1371652e1dc0f8f4c20d5d3de60"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#ride-l1-rr2",
+            "sha256": "a1e1491c9b24fb4487c695373f7174eac406cae58b2275be07f3f66d308a2910",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:ride-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/30f6dc25a55d7229-ride-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 204843,
+          "sha256": "30f6dc25a55d7229174ee036b2b3126bf94c4171c966b6c0fb4f82a0411624cb",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/30f6dc25a55d7229-ride-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 204843,
+              "sha256": "30f6dc25a55d7229174ee036b2b3126bf94c4171c966b6c0fb4f82a0411624cb"
+            },
+            "opus": {
+              "path": "crocell/v1/a16e8e1234a1d431-ride-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 202770,
+              "sha256": "a16e8e1234a1d431c9a93d3099bebe6ee76e4c456dce71b934212f968df78a71"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#ride-l2-rr1",
+            "sha256": "e1405d4e9959ee37943d49b1bfe48a40712c5e14b76a49b7f897241f0b6a7a9b",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:ride-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/a5669fde5e9ef248-ride-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 352957,
+          "sha256": "a5669fde5e9ef248c47f36383a5061d397b443381d1eb82638adde0092a81551",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/a5669fde5e9ef248-ride-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 352957,
+              "sha256": "a5669fde5e9ef248c47f36383a5061d397b443381d1eb82638adde0092a81551"
+            },
+            "opus": {
+              "path": "crocell/v1/d45865cedc1a54ba-ride-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 330875,
+              "sha256": "d45865cedc1a54ba3f5d9815dbd455851d078fd943d34922152077abbe60f156"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#ride-l2-rr2",
+            "sha256": "7e19c83bb07a6525ead26c1eee88a7a93a43cd9827f803ee2d7d6285695c69ab",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:ride-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "ride",
+          "gmKeys": [51],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/6bf36e644e59b2de-ride-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 291152,
+          "sha256": "6bf36e644e59b2de84257c90abffc5ad615f5df1bd2222e95551adb6b00d5397",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/6bf36e644e59b2de-ride-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 291152,
+              "sha256": "6bf36e644e59b2de84257c90abffc5ad615f5df1bd2222e95551adb6b00d5397"
+            },
+            "opus": {
+              "path": "crocell/v1/d01ac6925cc1298e-ride-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 275890,
+              "sha256": "d01ac6925cc1298e91384e38e00374e92f787e24db5eb94d682e10a094566bce"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#ride-l3-rr1",
+            "sha256": "2159cf199bf4f9788ca1c01414e409a6a38c57ce7d7eb6813c587a85484ab32a",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/557ad1597992d235-snare-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 9186,
+          "sha256": "557ad1597992d2350cfa3b5be049e24e030d64297a1770df1cfd031e10644eac",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/557ad1597992d235-snare-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 9186,
+              "sha256": "557ad1597992d2350cfa3b5be049e24e030d64297a1770df1cfd031e10644eac"
+            },
+            "opus": {
+              "path": "crocell/v1/de9c35f964bdaadf-snare-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 9015,
+              "sha256": "de9c35f964bdaadf6978e8a2d303adf72a4150f274faaf4d6e5d6845901f25f2"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l1-rr1",
+            "sha256": "668527f97f73936e1b27070b910ce278fc6d827d9e30fcaf84f4adecec738f4b",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/149333512ef642b5-snare-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 11380,
+          "sha256": "149333512ef642b5131f8df6d76886e5dfc55b2bbecb5e7eccd7fa2e303816ac",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/149333512ef642b5-snare-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 11380,
+              "sha256": "149333512ef642b5131f8df6d76886e5dfc55b2bbecb5e7eccd7fa2e303816ac"
+            },
+            "opus": {
+              "path": "crocell/v1/a774a1eef91325bc-snare-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 11276,
+              "sha256": "a774a1eef91325bc2c53203e7d776e806a4ac8e72529c0eef9effb4ec73cbf6b"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l1-rr2",
+            "sha256": "d8ffe04e016264a1de9fbaf28148f660325ffe968e0265e8afec35dca8c404fc",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/efd05c7aec521b95-snare-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 16500,
+          "sha256": "efd05c7aec521b95fbca79bc9a7eefb39c5b24ada25fcce6c168d6931a61b59a",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/efd05c7aec521b95-snare-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 16500,
+              "sha256": "efd05c7aec521b95fbca79bc9a7eefb39c5b24ada25fcce6c168d6931a61b59a"
+            },
+            "opus": {
+              "path": "crocell/v1/cdc15e3a7bbf73be-snare-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 16380,
+              "sha256": "cdc15e3a7bbf73be92b5c04e06738cf28fe1c2ccd08fd609c7e61eb618eb4e64"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l2-rr1",
+            "sha256": "4873e9e5c47c41bd912c80d9acb8cf76245b67f74f98229a8ac507298aae2c09",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/61c92d96c5e7a105-snare-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 17597,
+          "sha256": "61c92d96c5e7a105a519d34d68544e606b3cd5a628a49f999be920bc6c305f39",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/61c92d96c5e7a105-snare-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 17597,
+              "sha256": "61c92d96c5e7a105a519d34d68544e606b3cd5a628a49f999be920bc6c305f39"
+            },
+            "opus": {
+              "path": "crocell/v1/4753ebbf1d5b0c20-snare-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 17384,
+              "sha256": "4753ebbf1d5b0c20536d47e64d1b21d5c06ccb80aed6d13332009567e0af6665"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l2-rr2",
+            "sha256": "a10264416644b47feeea2054e9a188aff74a1b47fb962c955a267186140168d3",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/a43637efc84828bd-snare-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 19060,
+          "sha256": "a43637efc84828bdd9f57ccf746077353ce82ad0f32df31c453aafb2ab7e5f67",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/a43637efc84828bd-snare-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 19060,
+              "sha256": "a43637efc84828bdd9f57ccf746077353ce82ad0f32df31c453aafb2ab7e5f67"
+            },
+            "opus": {
+              "path": "crocell/v1/752ff2439d5f1039-snare-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 18526,
+              "sha256": "752ff2439d5f103948ca6fc3557cb48b80f153f603754f84128de8550279a2ff"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l3-rr1",
+            "sha256": "819f69ade932b5277700ffb451b6a9c307314acfd74ce77b490a73d7ceaafc05",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:snare-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "snare",
+          "gmKeys": [38],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/50c089e8191e2a27-snare-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 12477,
+          "sha256": "50c089e8191e2a27c591cd53330e5c0bd911c5a9eff868a5e3a046d3ff113abf",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/50c089e8191e2a27-snare-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 12477,
+              "sha256": "50c089e8191e2a27c591cd53330e5c0bd911c5a9eff868a5e3a046d3ff113abf"
+            },
+            "opus": {
+              "path": "crocell/v1/c9cc18725fcd4443-snare-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 12377,
+              "sha256": "c9cc18725fcd444364eb3d05c6ddf1ca0f20fa0b2c48d6a0ae6e65e8aa4bcbfd"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#snare-l3-rr2",
+            "sha256": "1b03f9f130e6484c25418452460102d3c1782cf50c7b36454c2ef82f397cf6d1",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/5818e633272a283d-tom-high-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 60386,
+          "sha256": "5818e633272a283dd755420b6ed747ffc0ae49e8c98e16e42309c7b9af892f46",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/5818e633272a283d-tom-high-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 60386,
+              "sha256": "5818e633272a283dd755420b6ed747ffc0ae49e8c98e16e42309c7b9af892f46"
+            },
+            "opus": {
+              "path": "crocell/v1/234cb228dd203e5d-tom-high-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 46763,
+              "sha256": "234cb228dd203e5de8f3da70683d92622f8bf0213fada603df4749ef4df19bc2"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l1-rr1",
+            "sha256": "08b102edd43e247d01bbaf0a661d1182b9397e13535f9e79ff5a945c78d9a4dd",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/50d52c68e5023432-tom-high-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 57094,
+          "sha256": "50d52c68e5023432f4333e5ccc50d82cad0de0b522de6725a3bd48ccacf706ce",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/50d52c68e5023432-tom-high-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 57094,
+              "sha256": "50d52c68e5023432f4333e5ccc50d82cad0de0b522de6725a3bd48ccacf706ce"
+            },
+            "opus": {
+              "path": "crocell/v1/0dfd7693b800202f-tom-high-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 44392,
+              "sha256": "0dfd7693b800202fd0cc4a66a7bfe52519e7513c25d8d546d44ab2d00452ae30"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l1-rr2",
+            "sha256": "04945b5668b3001bb4bad4a20a03416dcecf54bec15a11ba68c14f33a3376ae4",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/b92a9b9535005a04-tom-high-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 60752,
+          "sha256": "b92a9b9535005a047414c9622a36564596706842a678e3ef2c1804e6afb0a02e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/b92a9b9535005a04-tom-high-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 60752,
+              "sha256": "b92a9b9535005a047414c9622a36564596706842a678e3ef2c1804e6afb0a02e"
+            },
+            "opus": {
+              "path": "crocell/v1/3b8329ada27ffa36-tom-high-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 50100,
+              "sha256": "3b8329ada27ffa3631940801188868645f2d8e2e0bfa502dd9bcf0c01e5eee3e"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l2-rr1",
+            "sha256": "f7c4ff3ea1c4f79a92838cb056caecb1f0b621b24e8d2f658c906c2e7cc858c7",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/b326cf02aca8d599-tom-high-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 59289,
+          "sha256": "b326cf02aca8d599c68e7b37698623d6a0eb90581983781327eac88eb0503bd6",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/b326cf02aca8d599-tom-high-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 59289,
+              "sha256": "b326cf02aca8d599c68e7b37698623d6a0eb90581983781327eac88eb0503bd6"
+            },
+            "opus": {
+              "path": "crocell/v1/0c7585d71cadf890-tom-high-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 48097,
+              "sha256": "0c7585d71cadf8900fecd46276a63b6fb540cbcd0678130e629bd5ef74795917"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l2-rr2",
+            "sha256": "aa9b4179d32abc228ae8372ab59cef2e6eb97c8c7daa6d52d7826857c4484491",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/a044f5a16175c98e-tom-high-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 62214,
+          "sha256": "a044f5a16175c98e485046e6355eea4bb47adcd3d7dc3cbbc0c13e1fc7ac571d",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/a044f5a16175c98e-tom-high-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 62214,
+              "sha256": "a044f5a16175c98e485046e6355eea4bb47adcd3d7dc3cbbc0c13e1fc7ac571d"
+            },
+            "opus": {
+              "path": "crocell/v1/a329dbe01c1a4ef0-tom-high-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 52072,
+              "sha256": "a329dbe01c1a4ef080062c4143d738f4304c62f091041b6888612767f8b82849"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l3-rr1",
+            "sha256": "5735d19362203eb982970de35b5f30d3e7c4c62971c52162e3bd477615d11718",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-high-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-high",
+          "gmKeys": [48],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/106afd7eb32e2093-tom-high-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 61849,
+          "sha256": "106afd7eb32e209306d1f20f5ef0e587f6926b7921a8d2a4e2d275866d27c6dd",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/106afd7eb32e2093-tom-high-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 61849,
+              "sha256": "106afd7eb32e209306d1f20f5ef0e587f6926b7921a8d2a4e2d275866d27c6dd"
+            },
+            "opus": {
+              "path": "crocell/v1/bd90fe40b9b324c1-tom-high-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 51491,
+              "sha256": "bd90fe40b9b324c1b0e2cac542f420194860756329a72e11e9c39a7b359e1bdf"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-high-l3-rr2",
+            "sha256": "3036e9585e2b59feb9793d7c6a4392a1eff4252120d423f646ceaa2ce0fb60e6",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l1-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/b7838ba04f494272-tom-low-l1-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 118169,
+          "sha256": "b7838ba04f4942728edf3456dbaf49e50e89db86292e1d5050be4bd285f30d65",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/b7838ba04f494272-tom-low-l1-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 118169,
+              "sha256": "b7838ba04f4942728edf3456dbaf49e50e89db86292e1d5050be4bd285f30d65"
+            },
+            "opus": {
+              "path": "crocell/v1/74541804ad2b585b-tom-low-l1-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 82898,
+              "sha256": "74541804ad2b585b12220117a33bdc9945afe2f77da275391533739a75b6bcab"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l1-rr1",
+            "sha256": "f630ad8c5b52c5407bda53496b32039c246b8d998f241e3aedf030bc1b17ce6e",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l1-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 1,
+          "velocityMax": 62,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/9c9215e92695b7cb-tom-low-l1-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 122923,
+          "sha256": "9c9215e92695b7cba373d529607bb1633e5ebb20c2e2f7033fd757d5c76d1dee",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/9c9215e92695b7cb-tom-low-l1-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 122923,
+              "sha256": "9c9215e92695b7cba373d529607bb1633e5ebb20c2e2f7033fd757d5c76d1dee"
+            },
+            "opus": {
+              "path": "crocell/v1/ee307a8417f41d7d-tom-low-l1-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 86294,
+              "sha256": "ee307a8417f41d7d642fda13b3f934f92fcc22b326283563136322115313c687"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l1-rr2",
+            "sha256": "d8a39a1e93771c3dea4eeedc330a0de61b408a26284c7ed1e651869afdcabbda",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l2-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/4b0077545285a9d1-tom-low-l2-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 136454,
+          "sha256": "4b0077545285a9d15844f537b86724653eacf3c85933ab304a76229996e219ab",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/4b0077545285a9d1-tom-low-l2-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 136454,
+              "sha256": "4b0077545285a9d15844f537b86724653eacf3c85933ab304a76229996e219ab"
+            },
+            "opus": {
+              "path": "crocell/v1/7d4eb0faac244aa1-tom-low-l2-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 99253,
+              "sha256": "7d4eb0faac244aa1a3a56ae0626f17c5423b071fcaed353895b83e3b0d22792e"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l2-rr1",
+            "sha256": "e877fe3c73d5dfba509b0b014e6e86e5db5e61ce43fe2f96457537d8549fabf4",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l2-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 63,
+          "velocityMax": 102,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/cbd95fb671aebc98-tom-low-l2-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 143769,
+          "sha256": "cbd95fb671aebc98078412ce309add00d03ae9fd11f1c61e8825fde2e54dd8ec",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/cbd95fb671aebc98-tom-low-l2-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 143769,
+              "sha256": "cbd95fb671aebc98078412ce309add00d03ae9fd11f1c61e8825fde2e54dd8ec"
+            },
+            "opus": {
+              "path": "crocell/v1/dfecaa88936fd499-tom-low-l2-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 104355,
+              "sha256": "dfecaa88936fd499aaa75bc42008b0b17fba0abf61e14a8e0a2f29f7542f8fd0"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l2-rr2",
+            "sha256": "5c3dda6a553cff4dcdc6bc82f730dd3184015a855744e022b3991782ceae199f",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l3-rr1",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 1,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/27ff4caad181f716-tom-low-l3-rr1.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 151083,
+          "sha256": "27ff4caad181f716afcdbd3f959e3b7e55830001873accb49d2e4b2ec9d04183",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/27ff4caad181f716-tom-low-l3-rr1.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 151083,
+              "sha256": "27ff4caad181f716afcdbd3f959e3b7e55830001873accb49d2e4b2ec9d04183"
+            },
+            "opus": {
+              "path": "crocell/v1/97962120de245757-tom-low-l3-rr1.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 111100,
+              "sha256": "97962120de2457575747a211c462503dbb767ce2d3bd1359a5b6be8c113f8b31"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l3-rr1",
+            "sha256": "da5f32cbb26a6f08810d57aa9e26e93279744ac24e2ffe0eb7614c695b44b3a3",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        },
+        {
+          "id": "crocell:tom-low-l3-rr2",
+          "kitId": "crocell",
+          "articulation": "tom-low",
+          "gmKeys": [41],
+          "velocityMin": 103,
+          "velocityMax": 127,
+          "roundRobin": 2,
+          "chokeGroup": null,
+          "chokes": [],
+          "path": "crocell/v1/ba4fa811a3b50c2b-tom-low-l3-rr2.mp3",
+          "mimeType": "audio/mpeg",
+          "encodedBytes": 146694,
+          "sha256": "ba4fa811a3b50c2b23a75cf13f722c8021f66d140714896f411fbfa43d15347e",
+          "readiness": "ready",
+          "formats": {
+            "mp3": {
+              "path": "crocell/v1/ba4fa811a3b50c2b-tom-low-l3-rr2.mp3",
+              "mimeType": "audio/mpeg",
+              "encodedBytes": 146694,
+              "sha256": "ba4fa811a3b50c2b23a75cf13f722c8021f66d140714896f411fbfa43d15347e"
+            },
+            "opus": {
+              "path": "crocell/v1/d25d0f9b5e41df13-tom-low-l3-rr2.opus",
+              "mimeType": "audio/ogg; codecs=opus",
+              "encodedBytes": 108754,
+              "sha256": "d25d0f9b5e41df13c93be94c95686ba7dd2907e6c6ee1acc05a90d9048184378"
+            }
+          },
+          "playbackGain": 1.77827941,
+          "source": {
+            "commit": "CrocellKit1_1",
+            "path": "crocell/selected-mixes.json#tom-low-l3-rr2",
+            "sha256": "0bd98d8b0fa2c6e370080ee4a2130644fbb98dd67c4e077e32dc867d4e51a4ea",
+            "transforms": "Decoded by FFmpeg n9.0.1; onset-aligned with 0.000 ms removed and 2 ms transient pre-roll retained, resampled to 44100 Hz stereo, and encoded as 112k MP3. The decay tail is preserved and no dynamic normalization is baked into the audio."
+          }
+        }
+      ],
+      "velcurve": {
+        "default": [
+          [1, 1],
+          [127, 1]
+        ]
+      }
     }
   }
 }

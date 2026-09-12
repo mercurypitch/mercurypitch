@@ -86,9 +86,9 @@ let generatedOpusFormats: Promise<
 > | null = null
 
 const OPUS_RESOURCE_ID =
-  /^(classic-gm|studio|live):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
+  /^(classic-gm|studio|live|muldjord|crocell):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
 const OPUS_RESOURCE_PATH =
-  /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:opus|ogg)$/
+  /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:opus|ogg)$/
 const SHA256 = /^[a-f0-9]{64}$/
 
 function isRecord(value: unknown): value is Record<string, unknown> {

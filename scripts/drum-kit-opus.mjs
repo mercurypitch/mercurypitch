@@ -14,15 +14,19 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 
 export const DRUM_KIT_OPUS_MIME_TYPE = 'audio/ogg; codecs=opus'
 export const DRUM_KIT_OPUS_BITRATE = '64k'
+export const DRUM_KIT_OPUS_KIT_BITRATES = Object.freeze({
+  muldjord: '128k',
+  crocell: '128k',
+})
 export const DRUM_KIT_OPUS_SAMPLE_RATE = 48_000
 export const DRUM_KIT_OPUS_CHANNELS = 2
 export const DRUM_KIT_OPUS_FFMPEG_VERSION = 'n9.0.1'
 
 const OPUS_EXTENSION = '.opus'
 const HASHED_MP3_PATH =
-  /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-([a-z0-9-]+)\.mp3$/
+  /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-([a-z0-9-]+)\.mp3$/
 const HASHED_OPUS_PATH =
-  /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.opus$/
+  /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.opus$/
 const SHA256 = /^[a-f0-9]{64}$/
 const MAXIMUM_ENCODED_RESOURCE_BYTES = 2 * 1024 * 1024
 
@@ -71,7 +75,7 @@ function assertRegularFile(path, label) {
   }
 }
 
-function encodeOpus(inputPath, outputPath) {
+function encodeOpus(inputPath, outputPath, kitId) {
   execFileSync(
     'ffmpeg',
     [
@@ -100,7 +104,7 @@ function encodeOpus(inputPath, outputPath) {
       '-compression_level',
       '10',
       '-b:a',
-      DRUM_KIT_OPUS_BITRATE,
+      DRUM_KIT_OPUS_KIT_BITRATES[kitId] ?? DRUM_KIT_OPUS_BITRATE,
       '-fflags',
       '+bitexact',
       '-flags:a',
@@ -204,6 +208,7 @@ function withFormatMetadata(catalog) {
           sampleRate: DRUM_KIT_OPUS_SAMPLE_RATE,
           channels: DRUM_KIT_OPUS_CHANNELS,
           bitrate: DRUM_KIT_OPUS_BITRATE,
+          kitBitrates: DRUM_KIT_OPUS_KIT_BITRATES,
           vbr: true,
           application: 'audio',
           frameDurationMs: 20,
@@ -269,7 +274,7 @@ export function encodeDrumKitOpusCatalog(
       const { kitId, resource } = entries[index]
       const { path: inputPath } = assertMp3Bytes(resource, inputRoot)
       const stagedPath = resolve(workDirectory, `${index}.opus`)
-      encodeOpus(inputPath, stagedPath)
+      encodeOpus(inputPath, stagedPath, kitId)
       const encoded = readFileSync(stagedPath)
       if (
         encoded.byteLength <= 0 ||

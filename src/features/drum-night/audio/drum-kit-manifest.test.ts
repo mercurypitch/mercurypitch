@@ -85,13 +85,29 @@ function schemaOneCatalog(): MutableGeneratedCatalog {
 }
 
 describe('Drum Night kit catalog', () => {
-  it('offers five distinct flavors with two explicit zero-byte synth models', () => {
+  it('expands compact rows to the exact canonical playback metadata for every kit', () => {
+    for (const kit of DRUM_KIT_CATALOG) {
+      if (kit.engine === 'synth') continue
+      const canonical =
+        generatedCatalog.kits[kit.id as keyof typeof generatedCatalog.kits]
+      expect(kit.resources).toEqual(
+        canonical.resources.map((resource) => {
+          const { source, formats, ...playback } = resource
+          expect(source.sha256).toMatch(/^[a-f0-9]{64}$/)
+          return { ...playback, formats: { mp3: formats.mp3 } }
+        }),
+      )
+    }
+  })
+  it('offers seven distinct flavors with two explicit zero-byte synth models', () => {
     expect(DRUM_KIT_IDS).toEqual([
       'mercury-synth',
       'circuit',
       'classic-gm',
       'studio',
       'live',
+      'muldjord',
+      'crocell',
     ])
     expect(DRUM_KIT_CATALOG.map((kit) => kit.name)).toEqual([
       'Mercury Synth',
@@ -99,6 +115,8 @@ describe('Drum Night kit catalog', () => {
       'Classic GM',
       'Studio',
       'Live',
+      'Muldjord',
+      'Crocell',
     ])
     expect(drumKitManifest('mercury-synth')).toMatchObject({
       engine: 'synth',
@@ -120,7 +138,9 @@ describe('Drum Night kit catalog', () => {
     expect(drumKitManifest('studio').publishedEncodedBytes).toBe(2_318_633)
     expect(drumKitManifest('live').publishedEncodedBytes).toBe(2_625_351)
     expect(
-      DRUM_KIT_CATALOG.reduce((sum, kit) => sum + kit.publishedEncodedBytes, 0),
+      DRUM_KIT_CATALOG.filter(
+        (kit) => kit.id !== 'muldjord' && kit.id !== 'crocell',
+      ).reduce((sum, kit) => sum + kit.publishedEncodedBytes, 0),
     ).toBe(6_647_780)
   })
 
@@ -363,7 +383,7 @@ describe('Drum Night kit catalog', () => {
       let kitBytes = 0
       for (const resource of kit.resources) {
         expect(resource.path).toMatch(
-          /^(classic-gm|studio|live)\/v1\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/,
+          /^(classic-gm|studio|live|muldjord|crocell)\/v1\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/,
         )
         const path = resolve('public/drum-night/kits', resource.path)
         expect(existsSync(path)).toBe(true)

@@ -369,7 +369,14 @@ describe('createDrumKitFormatSession', () => {
 
 describe('parseDrumKitOpusCatalog', () => {
   it('loads every committed generated Opus encoding', async () => {
-    await expect(loadDrumKitOpusFormats()).resolves.toHaveProperty('size', 98)
+    const formats = await loadDrumKitOpusFormats()
+    expect(formats.size).toBe(201)
+    expect(
+      [...formats.keys()].filter((id) => id.startsWith('muldjord:')),
+    ).toHaveLength(56)
+    expect(
+      [...formats.keys()].filter((id) => id.startsWith('crocell:')),
+    ).toHaveLength(47)
   })
 
   it('accepts a bounded generated encoding and rejects unsafe metadata', () => {

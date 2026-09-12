@@ -16,6 +16,8 @@ export const DRUM_KIT_IDS = Object.freeze([
   'classic-gm',
   'studio',
   'live',
+  'muldjord',
+  'crocell',
 ] as const)
 
 export type DrumKitId = (typeof DRUM_KIT_IDS)[number]
@@ -114,11 +116,11 @@ export interface GeneratedDrumKitCatalog {
 
 const MAX_ENCODED_RESOURCE_BYTES = 2 * 1024 * 1024
 const HASHED_RESOURCE_PATH =
-  /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
+  /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
 const HASHED_FORMAT_PATH = Object.freeze({
-  mp3: /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/,
-  opus: /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:opus|ogg)$/,
-  flac: /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.flac$/,
+  mp3: /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/,
+  opus: /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.(?:opus|ogg)$/,
+  flac: /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.flac$/,
 }) satisfies Readonly<Record<DrumKitEncodedFormat, RegExp>>
 const FORMAT_MIME_TYPES = Object.freeze({
   mp3: 'audio/mpeg',
@@ -128,7 +130,8 @@ const FORMAT_MIME_TYPES = Object.freeze({
   Record<DrumKitEncodedFormat, DrumKitResourceEncoding['mimeType']>
 >
 const SHA256 = /^[a-f0-9]{64}$/
-const RESOURCE_ID = /^(classic-gm|studio|live):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
+const RESOURCE_ID =
+  /^(classic-gm|studio|live|muldjord|crocell):[a-z0-9-]+-l[1-9]\d*-rr[1-9]\d*$/
 const MIN_PLAYBACK_GAIN = 10 ** (-12 / 20)
 const MAX_PLAYBACK_GAIN = 10 ** (12 / 20)
 const PLAYBACK_GAIN_ROUNDING_TOLERANCE = 1e-8
@@ -158,6 +161,8 @@ const GENERATED_KIT_IDS = Object.freeze([
   'classic-gm',
   'studio',
   'live',
+  'muldjord',
+  'crocell',
 ] as const)
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -371,6 +376,7 @@ function assertCatalogAudioFormat(
             'vbr',
             'application',
             'frameDurationMs',
+            'kitBitrates',
           ],
     ),
     `catalog ${format} audio metadata`,
@@ -391,6 +397,18 @@ function assertCatalogAudioFormat(
         (value.frameDurationMs as number) <= 0))
   ) {
     throw new Error(`Invalid Drum Night catalog ${format} audio metadata`)
+  }
+  if (
+    value.kitBitrates !== undefined &&
+    (!isRecord(value.kitBitrates) ||
+      Object.entries(value.kitBitrates).some(
+        ([kitId, bitrate]) =>
+          !['muldjord', 'crocell'].includes(kitId) ||
+          typeof bitrate !== 'string' ||
+          !/^[1-9]\d*k$/.test(bitrate),
+      ))
+  ) {
+    throw new Error('Invalid Drum Night kit bitrate metadata')
   }
 }
 

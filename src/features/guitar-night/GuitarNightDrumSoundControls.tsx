@@ -6,7 +6,7 @@
 // audio-inert; the room imports its player and requests bytes from Play.
 
 import type { Accessor } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import type { GuitarRoomDrumPlaybackSnapshot } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarNightDrumFeelId, GuitarNightDrumKitId, } from './guitar-night-drum-sound'
 import { GUITAR_NIGHT_DRUM_FEEL_OPTIONS, GUITAR_NIGHT_DRUM_KIT_OPTIONS, readGuitarNightDrumSound, writeGuitarNightDrumSound, } from './guitar-night-drum-sound'
@@ -122,6 +122,18 @@ export function GuitarNightDrumSoundControls(
         </select>
       </label>
       <small>{readinessCopy()}</small>
+      <Show when={kitId() === 'muldjord' || kitId() === 'crocell'}>
+        <small>
+          Eight sampled core voices; other articulations use Mercury fallback.{' '}
+          <a
+            href={`/drum-night/kits/${kitId()}/LICENSE.md`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Credits and sample licence (CC BY 4.0)
+          </a>
+        </small>
+      </Show>
     </fieldset>
   )
 }
