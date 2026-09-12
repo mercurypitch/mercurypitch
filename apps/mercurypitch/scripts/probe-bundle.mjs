@@ -126,6 +126,12 @@ const WEB_PAGE_HEADER = {
       '[data-testid="ear-rulers-chip"]',
       '[data-testid="ear-room-chip"]',
     ],
+    // Presence is not function: the original Console tile was present and
+    // wired to nothing. One kept control is tapped and must open its panel.
+    tap: {
+      selector: '[data-testid="ear-readiness-chip"]',
+      opens: '#ear-rack-title',
+    },
   },
 }
 
@@ -232,7 +238,7 @@ const RAIL_SPEC = {
   iconSize: 26,
   textSizeAdjust: '100%',
   /** Px of item width a label must leave over. Below this it only looks fine. */
-  headroom: 6,
+  headroom: 12, // the shipped rail has ~30 px spare; the 16 px bug leaves 5.7-6.4, so 6 was a boundary, not a margin
 }
 
 async function measureRail(page, ctx) {
@@ -398,8 +404,25 @@ async function walkChrome(page, ctx) {
           throw new Error(`${id} lost ${selector} along with its band`)
         }
       }
+      if (rule.tap !== undefined) {
+        await page.locator(rule.tap.selector).first().click()
+        await page
+          .locator(rule.tap.opens)
+          .first()
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .catch(() => {
+            throw new Error(
+              `${id}: ${rule.tap.selector} is present but opens nothing (${rule.tap.opens})`,
+            )
+          })
+        await page.keyboard.press('Escape')
+        await page
+          .locator(rule.tap.opens)
+          .first()
+          .waitFor({ state: 'hidden', timeout: 10_000 })
+      }
       steps.push(
-        `${id}: no page band, ${rule.kept.length} control(s)/heading kept`,
+        `${id}: no page band, ${rule.kept.length} control(s)/heading kept${rule.tap === undefined ? '' : ', one tapped and working'}`,
       )
     }
   }
