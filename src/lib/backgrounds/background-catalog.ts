@@ -13,6 +13,7 @@ export type BackgroundSurface =
   | 'guitar'
   | 'ear'
   | 'drum'
+  | 'sing'
 
 export function isBackgroundSurface(
   value: unknown,
@@ -23,7 +24,8 @@ export function isBackgroundSurface(
     value === 'piano' ||
     value === 'guitar' ||
     value === 'ear' ||
-    value === 'drum'
+    value === 'drum' ||
+    value === 'sing'
   )
 }
 
@@ -62,6 +64,10 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   // Phase 6). A ~1K stand-in pair, not a master.
   'ear-regulator-room',
   'ear-glasshouse-bench',
+  // The Sing room's one cover. Free and public, because the native Sing tab
+  // IS this room — there is no version of it without a photograph behind the
+  // trace, so it can never sit behind a supporter check.
+  'sing-retro-analog-studio',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -1374,6 +1380,25 @@ export const BACKGROUND_CATALOG = [
     assetSource: protectedSource('ear', 'ear-anechoic-booth'),
     focalPoint: { x: 0.5, y: 0.45 },
   },
+  {
+    id: 'sing-retro-analog-studio',
+    surface: 'sing',
+    label: 'Retro Analog Studio',
+    description: 'A walnut control room, the console lit under one pendant',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/sing/retro-analog-studio.webp',
+      '/sing/retro-analog-studio-4k.webp',
+      '/sing/retro-analog-studio-portrait.webp',
+      '/sing/retro-analog-studio-portrait-2x.webp',
+    ),
+    // The console sits in the lower third and the pendant is outside the
+    // middle 60%, so the focus is low: the calm band the pitch trace lives in
+    // (landscape y 0.13-0.58, portrait y 0.08-0.56) stays an empty slat wall.
+    focalPoint: { x: 0.5, y: 0.68 },
+  },
 ] as const satisfies readonly BackgroundDefinition[]
 
 export const DEFAULT_BACKGROUND_IDS = {
@@ -1383,6 +1408,7 @@ export const DEFAULT_BACKGROUND_IDS = {
   guitar: 'velvet-rehearsal',
   ear: 'ear-regulator-room',
   drum: 'drum-pocket-console',
+  sing: 'sing-retro-analog-studio',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

@@ -15,6 +15,7 @@ export const BACKGROUND_SELECTION_KEYS = {
   guitar: 'pitchperfect_guitar_background',
   ear: 'pitchperfect_ear_background',
   drum: 'pitchperfect_drum_background',
+  sing: 'pitchperfect_sing_background',
 } as const satisfies Record<BackgroundSurface, string>
 
 /**

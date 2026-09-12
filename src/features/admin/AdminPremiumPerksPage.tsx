@@ -165,6 +165,8 @@ function backgroundSurfaceLabel(surface: BackgroundSurface): string {
       return 'Ear Lab'
     case 'drum':
       return 'Drum Night'
+    case 'sing':
+      return 'Sing'
   }
 }
 
