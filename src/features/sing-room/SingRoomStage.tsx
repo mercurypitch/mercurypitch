@@ -50,7 +50,8 @@ import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores
 import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
 import type { SingRoomState } from './room-machine'
-import { hasUnsavedTake as takeUndecided, melodyRanOut, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, transportPhase, } from './room-machine'
+import { hasUnsavedTake as takeUndecided, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
+import { createRunOutWatch } from './run-out-watch'
 import { loadSingGlass, persistSingGlass, SING_GLASS_VAR } from './sing-glass'
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
@@ -352,6 +353,11 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   const handleStop = (): void => {
     if (melodyRun()) props.onStop()
+    // The run is over by a decision, so nothing about it can "run out" any
+    // more — and the next run has to be seen running again before it can.
+    // Without this the latch survived a Stop, and the first frames of the
+    // run after it read (live, stopped) with the latch already set.
+    runOut.cancel()
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }
 
@@ -363,49 +369,54 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * there was one — the failure it replaces is a run that just vanished,
    * leaving the room in `live` over a transport that had finished.
    *
-   * `transportRan` is what keeps the FIRST frames of a melody run from
-   * reading as the last: `melody-play` puts the room in `live` before the
-   * app's transport reports anything, so the pair says "stopped" until it
-   * starts. Only a transport that was seen running can run out.
+   * EVERY SHEET GOES FIRST, for the reason a park shuts them. Until this path
+   * existed a card could only open from the shell's Stop, and a sheet covers
+   * the band the Stop is on; now the pill (R4), the gear and the song sheet
+   * are all reachable during a run, and the card opened ON TOP of whichever
+   * was open — two `aria-modal` dialogs, two focus traps, and the sheet still
+   * there after Keep or Discard (review F4).
    */
-  let transportRan = false
-  let endWatch = 0
-
   const handleMelodyRanOut = (): void => {
-    transportRan = false
+    closeAllRoomSheets()
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }
 
+  /**
+   * Is the transport's silence the melody finishing, or something else?
+   *
+   * The latch and the microtask settle that answer that are in
+   * `run-out-watch`, where a run is an array of transport frames instead of a
+   * component nothing renders in a test. Both were deleted by the reviewer
+   * against a green suite (review F8); both are now a failing test.
+   */
+  const runOut = createRunOutWatch({
+    ctx,
+    transport: () => ({
+      isPlaying: props.isPlaying(),
+      isPaused: props.isPaused(),
+    }),
+    // A microtask already runs outside the effect that queued it, so these
+    // reads are untracked anyway; saying so keeps it that way if the settle
+    // ever grows a reader that matters.
+    settle: (decide) => queueMicrotask(() => untrack(decide)),
+    onRanOut: handleMelodyRanOut,
+  })
+
   createEffect(() => {
-    const phase = transportPhase(props.isPlaying(), props.isPaused())
-    const context = ctx()
-    if (phase === 'running') {
-      transportRan = true
-      return
-    }
-    if (phase === 'held' || !transportRan) return
-    if (!melodyRanOut(context, phase)) return
-    // A pause writes `isPlaying(false)` before it writes `isPaused(true)`, so
-    // for one moment the pair reads exactly like a transport that ended. The
-    // decision waits a microtask and asks again — the same shape the shell's
-    // own run store uses for the same two signals.
-    const token = ++endWatch
-    queueMicrotask(() => {
-      if (token !== endWatch) return
-      const settled = transportPhase(
-        untrack(() => props.isPlaying()),
-        untrack(() => props.isPaused()),
-      )
-      if (!melodyRanOut(untrack(ctx), settled)) return
-      handleMelodyRanOut()
-    })
+    // The three signals the decision reads, read HERE: the watch itself
+    // short-circuits, and an effect subscribed to only the signals a given
+    // frame happened to reach is an effect that misses the next one.
+    void props.isPlaying()
+    void props.isPaused()
+    void ctx()
+    runOut.observe()
   })
 
   const handlePark = (): void => {
     if (props.isPlaying()) props.onPause()
     // A sheet or a picker left open outlives the park otherwise: the room
     // unmounts with it open and comes back with a modal over a paused run.
-    closeRoomSheets()
+    closeAllRoomSheets()
     if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
     if (takeUndecided(ctx())) keepTake()
     dispatchSingRoom({ type: 'leave' })
@@ -448,18 +459,40 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     return false
   }
 
+  /**
+   * Shut ALL of them, not just the topmost.
+   *
+   * A Back closes one thing; leaving the room, or ending a run, has to leave
+   * nothing behind. Two of these can be open at once — the song picker's
+   * modal with the track modal on top of it — so one step is not enough.
+   */
+  const closeAllRoomSheets = (): void => {
+    // Bounded, because a step that closes nothing returns false and a step
+    // that closes something removes one of a fixed list.
+    for (let step = 0; step < 8; step += 1) {
+      if (!closeRoomSheets()) return
+    }
+  }
+
   const closeRoomOverlay = (): boolean => {
+    // THE CARD FIRST, because it is the topmost thing the room draws and the
+    // comment above has always claimed to go topmost first. It asked the
+    // sheets before it, so in the one case where two overlays could coexist
+    // Back closed the one underneath and left the card on screen (F4). It
+    // closes by KEEPING: a summary is four numbers that never leave the
+    // phone, and losing one to a Back is worse than storing one nobody
+    // wanted.
+    if (takeUndecided(ctx())) {
+      keepTake()
+      return true
+    }
     if (closeRoomSheets()) return true
-    // The priming door, above the card and below the sheets. It is a portal
+    // The priming door, below the card and below the sheets. It is a portal
     // with one button on it, so a press that is not Continue has to be able
     // to close it — otherwise `priming` sticks and the room comes back with
     // a door over it and no way past.
     if (state() === 'priming') {
       dispatchSingRoom({ type: 'priming-cancel' })
-      return true
-    }
-    if (takeUndecided(ctx())) {
-      keepTake()
       return true
     }
     return false
@@ -521,6 +554,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // every other way of leaving the tab still has to release the room.
     // A card still open at that point is kept, never dropped.
     onCleanup(() => {
+      // The last frame of a run can have queued a decision; without this it
+      // lands a microtask later on a room that is no longer here, dispatching
+      // into a store the next arrival will read (review F12).
+      runOut.cancel()
       if (takeUndecided(ctx())) keepTake()
       dispatchSingRoom({ type: 'leave' })
     })
@@ -875,6 +912,13 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         songName={() => songName() ?? 'The melody'}
         onPlayAgain={() => {
           setSongOpen(false)
+          // A run in flight ends first, the same two lines Remove uses.
+          // Without them "Play again" dispatched `melody-play` into a room
+          // already `live`, which the machine ignores — the button did
+          // nothing during a run — and into a `paused` one, where it read as
+          // a resume and carried on from where the pause left it instead of
+          // starting the melody again (review F5).
+          if (melodyRun() || ctx().melody) handleStop()
           startMelodyRun()
         }}
         onChangeSong={openSongPicker}
