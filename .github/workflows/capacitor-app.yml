@@ -95,6 +95,15 @@ on:
         description: 'ERE matched against changed files to decide whether a push to main is worth a native build'
         required: true
         type: string
+      # A store reviewer cannot buy the paid tier on Play, and an app with no
+      # login has no account to hand them. The SHA-256 of that app's review
+      # unlock code is compiled in here; the code itself never touches this
+      # repository. Empty means the build has no review unlock at all.
+      review-unlock-sha256:
+        type: string
+        required: false
+        default: ''
+
       distribution-env-name:
         description: 'Vite env var naming the distribution channel, e.g. "VITE_BESIDE_CUE_DISTRIBUTION"'
         required: true
@@ -293,6 +302,7 @@ jobs:
       PREFIX: ${{ inputs.signing-env-prefix }}
       DIST_ENV: ${{ inputs.distribution-env-name }}
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
+      REVIEW_UNLOCK_SHA256: ${{ inputs.review-unlock-sha256 }}
       VERIFY_ASSETS: ${{ inputs.verify-assets }}
 
     steps:
@@ -369,6 +379,7 @@ jobs:
           export "$DIST_ENV=$DIST_VALUE"
           export "$PLATFORM_ENV=android"
           export VITE_MOCK_PURCHASES=0
+          export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE="$ALLOW_TEST_STORE"
           export VITE_REVENUECAT_ANDROID_KEY="$RC_ANDROID_KEY"
           pnpm --filter "$PKG" exec vite build
@@ -450,6 +461,7 @@ jobs:
           export "$DIST_ENV=store"
           export "$PLATFORM_ENV=android"
           export VITE_MOCK_PURCHASES=0
+          export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE=0
           export VITE_REVENUECAT_ANDROID_KEY="$RC_ANDROID_KEY"
           pnpm --filter "$PKG" exec vite build
@@ -556,6 +568,7 @@ jobs:
       PKG: ${{ inputs.package-name }}
       DIST_ENV: ${{ inputs.distribution-env-name }}
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
+      REVIEW_UNLOCK_SHA256: ${{ inputs.review-unlock-sha256 }}
       APP_SLUG: ${{ inputs.app-slug }}
 
     steps:
@@ -598,6 +611,7 @@ jobs:
             export VITE_MOCK_PURCHASES=0
           fi
           export "$PLATFORM_ENV=ios"
+          export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE=0
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
           pnpm --filter "$PKG" exec vite build
@@ -805,6 +819,7 @@ jobs:
       PKG: ${{ inputs.package-name }}
       DIST_ENV: ${{ inputs.distribution-env-name }}
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
+      REVIEW_UNLOCK_SHA256: ${{ inputs.review-unlock-sha256 }}
       APP_SLUG: ${{ inputs.app-slug }}
 
     steps:
@@ -838,6 +853,7 @@ jobs:
           export "$DIST_ENV=$DIST_VALUE"
           export "$PLATFORM_ENV=ios"
           export VITE_MOCK_PURCHASES=0
+          export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE="$ALLOW_TEST_STORE"
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
           pnpm --filter "$PKG" exec vite build
@@ -914,6 +930,7 @@ jobs:
           export "$DIST_ENV=store"
           export "$PLATFORM_ENV=ios"
           export VITE_MOCK_PURCHASES=0
+          export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE=0
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
           pnpm --filter "$PKG" exec vite build
