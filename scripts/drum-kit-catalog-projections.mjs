@@ -8,8 +8,9 @@
 
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
+import { packDrumKitRuntimeResource } from '../src/features/drum-night/audio/drum-kit-runtime-codec.mjs'
 
-export const DRUM_KIT_RUNTIME_PROJECTION_SCHEMA_VERSION = 1
+export const DRUM_KIT_RUNTIME_PROJECTION_SCHEMA_VERSION = 2
 export const DRUM_KIT_OPUS_PROJECTION_SCHEMA_VERSION = 1
 export const DRUM_KIT_CANONICAL_SCHEMA_VERSION = 2
 export const DRUM_KIT_OPUS_PROJECTION_MIME_TYPE = 'audio/ogg; codecs=opus'
@@ -19,8 +20,16 @@ const GENERATED_KIT_IDS = Object.freeze([
   'classic-gm',
   'studio',
   'live',
+  'muldjord',
+  'crocell',
 ])
-const SAMPLED_KIT_IDS = new Set(['classic-gm', 'studio', 'live'])
+const SAMPLED_KIT_IDS = new Set([
+  'classic-gm',
+  'studio',
+  'live',
+  'muldjord',
+  'crocell',
+])
 const SAMPLE_STATUSES = new Set(['ready', 'reduced', 'fallback'])
 const SHA256 = /^[a-f0-9]{64}$/
 const GENERATED_JSON_CONFIG_TARGET = fileURLToPath(
@@ -168,7 +177,9 @@ function projectKit(catalog, kitId, resourceIds, opusByResourceId) {
     version: kit.version,
     sampleStatus: kit.sampleStatus,
     publishedEncodedBytes: kit.publishedEncodedBytes,
-    resources,
+    resources: resources.map((resource) =>
+      packDrumKitRuntimeResource(resource, kitId, kit.version),
+    ),
     ...(kit.velcurve === undefined ? {} : { velcurve: kit.velcurve }),
   }
 }

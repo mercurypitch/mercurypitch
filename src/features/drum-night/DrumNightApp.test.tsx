@@ -2638,7 +2638,31 @@ describe('DrumNightApp', () => {
     expect(room.requestAccess).not.toHaveBeenCalled()
   })
 
-  it('persists all five kit choices and exposes loading fallback, attribution, and retry', async () => {
+  it.each(['muldjord', 'crocell'] as const)(
+    'selects %s without activating audio and exposes its sample credits',
+    (kitId) => {
+      const room = renderRoom()
+      fireEvent.click(screen.getAllByRole('button', { name: 'Kit' })[0])
+      const drawer = screen.getByRole('region', { name: 'Choose the kit' })
+
+      fireEvent.click(
+        within(drawer).getByRole('radio', { name: new RegExp(kitId, 'i') }),
+      )
+
+      expect(localStorage.getItem('mp.drumNight.kit.v1')).toBe(kitId)
+      expect(room.player.selectKit).toHaveBeenCalledWith(kitId)
+      expect(room.player.activate).not.toHaveBeenCalled()
+      expect(room.session.contextForGesture).not.toHaveBeenCalled()
+      expect(
+        within(drawer).getByRole('link', {
+          name: 'Credits and sample licence',
+        }),
+      ).toHaveAttribute('href', `/drum-night/kits/${kitId}/LICENSE.md`)
+      expect(within(drawer).getByText(/Lars Muldjord/)).toBeVisible()
+    },
+  )
+
+  it('persists kit choices and exposes loading fallback, attribution, and retry', async () => {
     const room = renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Kit' })[0])
     const drawer = screen.getByRole('region', { name: 'Choose the kit' })
@@ -3637,10 +3661,10 @@ describe('DrumNightApp', () => {
     expect(room.player.selectKit).toHaveBeenLastCalledWith('classic-gm')
 
     fireEvent.keyDown(classic, { key: 'End' })
-    const live = within(drawer).getByRole('radio', { name: /Live/i })
-    expect(live).toHaveFocus()
-    expect(live).toHaveAttribute('aria-checked', 'true')
-    expect(room.player.selectKit).toHaveBeenLastCalledWith('live')
+    const crocell = within(drawer).getByRole('radio', { name: /Crocell/i })
+    expect(crocell).toHaveFocus()
+    expect(crocell).toHaveAttribute('aria-checked', 'true')
+    expect(room.player.selectKit).toHaveBeenLastCalledWith('crocell')
 
     fireEvent.keyDown(kitTab, { key: 'End' })
     const roomTab = within(drawer).getByRole('tab', { name: 'Room' })

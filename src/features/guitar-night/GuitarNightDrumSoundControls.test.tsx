@@ -75,6 +75,36 @@ describe('GuitarNightDrumSoundControls', () => {
     expect(screen.getByText(/Feel starts on next Play/)).toBeInTheDocument()
   })
 
+  it.each(['muldjord', 'crocell'] as const)(
+    'persists %s and exposes its sample credits and limited coverage',
+    (kitId) => {
+      const onKitChange = vi.fn()
+      const view = render(() => (
+        <GuitarNightDrumSoundControls liveKit onKitChange={onKitChange} />
+      ))
+
+      fireEvent.change(
+        screen.getByRole('combobox', { name: 'Guitar Night drum kit' }),
+        { target: { value: kitId } },
+      )
+
+      expect(onKitChange).toHaveBeenCalledWith(kitId)
+      expect(
+        screen.getByRole('link', {
+          name: 'Credits and sample licence (CC BY 4.0)',
+        }),
+      ).toHaveAttribute('href', `/drum-night/kits/${kitId}/LICENSE.md`)
+      expect(screen.getByText(/Eight sampled core voices/)).toHaveTextContent(
+        'other articulations use Mercury fallback',
+      )
+      view.unmount()
+      render(() => <GuitarNightDrumSoundControls />)
+      expect(
+        screen.getByRole('combobox', { name: 'Guitar Night drum kit' }),
+      ).toHaveValue(kitId)
+    },
+  )
+
   it('states sampled-core readiness and bounded routing truth without claiming audibility', () => {
     render(() => (
       <GuitarNightDrumSoundControls

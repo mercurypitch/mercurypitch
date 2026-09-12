@@ -123,6 +123,241 @@
       "encodedBytes": 20058,
       "sha256": "5b8b6efb64ada440dba5c9a021137f1bbaea2d74f6b6d8dc66d4c994b4360256"
     },
+    "crocell:crash-l1-rr1": {
+      "path": "crocell/v1/579f7a2c1efe22ac-crash-l1-rr1.opus",
+      "encodedBytes": 160241,
+      "sha256": "579f7a2c1efe22acf03c55c6afd134435ce93715a43b01d9dfb4002728f9492f"
+    },
+    "crocell:crash-l1-rr2": {
+      "path": "crocell/v1/dbc5b04bb6d04a65-crash-l1-rr2.opus",
+      "encodedBytes": 125683,
+      "sha256": "dbc5b04bb6d04a65937d3b34ad7102bc8153c4a5b610d3fe9192e8b90f455a62"
+    },
+    "crocell:crash-l2-rr1": {
+      "path": "crocell/v1/00118ab5b9752df0-crash-l2-rr1.opus",
+      "encodedBytes": 134560,
+      "sha256": "00118ab5b9752df0fd9585d91bc80ab481d51e4472faa2f28c39c723c37872d3"
+    },
+    "crocell:crash-l2-rr2": {
+      "path": "crocell/v1/dc991a3e8c6abd9c-crash-l2-rr2.opus",
+      "encodedBytes": 134774,
+      "sha256": "dc991a3e8c6abd9cb14ff4a192158f05fb62268fb8f602c3c0dceb1fa7cd0f4a"
+    },
+    "crocell:crash-l3-rr1": {
+      "path": "crocell/v1/05c6774e57263012-crash-l3-rr1.opus",
+      "encodedBytes": 138302,
+      "sha256": "05c6774e572630122d4ef36f03dcf3477e3fcbea99e496cfb5382bfe17db88b4"
+    },
+    "crocell:crash-l3-rr2": {
+      "path": "crocell/v1/6eb5fc9f5d26ab55-crash-l3-rr2.opus",
+      "encodedBytes": 141414,
+      "sha256": "6eb5fc9f5d26ab551a416550f6ed83ed51c178a77c23bb3a95aaa8407f855b9b"
+    },
+    "crocell:hh-closed-l1-rr1": {
+      "path": "crocell/v1/87ea25fac942edff-hh-closed-l1-rr1.opus",
+      "encodedBytes": 5995,
+      "sha256": "87ea25fac942edff7ddda0b135ccac88ed33dd8a83dd685d03dbf3651f8d426b"
+    },
+    "crocell:hh-closed-l1-rr2": {
+      "path": "crocell/v1/0eb04f0fd7577b7b-hh-closed-l1-rr2.opus",
+      "encodedBytes": 6233,
+      "sha256": "0eb04f0fd7577b7b64e25a846e3f46e8446d1c6099dc268d6bebbbe691f25b3e"
+    },
+    "crocell:hh-closed-l2-rr1": {
+      "path": "crocell/v1/8bf01cadd0a67656-hh-closed-l2-rr1.opus",
+      "encodedBytes": 8231,
+      "sha256": "8bf01cadd0a676565a3f131332639f3aa099eef936dc15ae0ba109c07e03e380"
+    },
+    "crocell:hh-closed-l2-rr2": {
+      "path": "crocell/v1/4990acf68f55243c-hh-closed-l2-rr2.opus",
+      "encodedBytes": 7749,
+      "sha256": "4990acf68f55243c3b55892e4468f6f283f11d9558cfcf81338cffec0ca55489"
+    },
+    "crocell:hh-closed-l3-rr1": {
+      "path": "crocell/v1/c80ad36cee0e1eca-hh-closed-l3-rr1.opus",
+      "encodedBytes": 8935,
+      "sha256": "c80ad36cee0e1eca300276a0a2a3d75ea889ab3065b25689ccdbb3b1a275681f"
+    },
+    "crocell:hh-closed-l3-rr2": {
+      "path": "crocell/v1/c34781a7798ae823-hh-closed-l3-rr2.opus",
+      "encodedBytes": 9489,
+      "sha256": "c34781a7798ae823eb47e40976cc74e9323595d5c5bab1186dba319aec1208ff"
+    },
+    "crocell:hh-open-l1-rr1": {
+      "path": "crocell/v1/30dca556ae22d6de-hh-open-l1-rr1.opus",
+      "encodedBytes": 27672,
+      "sha256": "30dca556ae22d6def4376388679417d1195160e1cb0deb66dc3ba60a5e7364a1"
+    },
+    "crocell:hh-open-l1-rr2": {
+      "path": "crocell/v1/75c2b5c01aa4847b-hh-open-l1-rr2.opus",
+      "encodedBytes": 25416,
+      "sha256": "75c2b5c01aa4847bd34a8f61f145e491599cd1c1735892babd4462582a9a1b81"
+    },
+    "crocell:hh-open-l2-rr1": {
+      "path": "crocell/v1/51a918226e0ecdab-hh-open-l2-rr1.opus",
+      "encodedBytes": 42498,
+      "sha256": "51a918226e0ecdab0ca063e66b48b0266924b2f6a34f450b0e9268c54155b4fc"
+    },
+    "crocell:hh-open-l2-rr2": {
+      "path": "crocell/v1/f23d9ec83cd6b6ad-hh-open-l2-rr2.opus",
+      "encodedBytes": 37225,
+      "sha256": "f23d9ec83cd6b6ade51e281074008e93666705354ce9959f88102493cc228754"
+    },
+    "crocell:hh-open-l3-rr1": {
+      "path": "crocell/v1/b29288811b9bf2d8-hh-open-l3-rr1.opus",
+      "encodedBytes": 41776,
+      "sha256": "b29288811b9bf2d871dfdecb5af961cde76022494a997056205137fac647d6a5"
+    },
+    "crocell:hh-open-l3-rr2": {
+      "path": "crocell/v1/18236fa1b15ab7f9-hh-open-l3-rr2.opus",
+      "encodedBytes": 34973,
+      "sha256": "18236fa1b15ab7f9786cb25091236dc20583de437b80eeaf8fc6949dbd30284b"
+    },
+    "crocell:kick-l1-rr1": {
+      "path": "crocell/v1/2ebb6b1bb4472dea-kick-l1-rr1.opus",
+      "encodedBytes": 11707,
+      "sha256": "2ebb6b1bb4472deab493cf5184b889cb2d2260ddf972a376ac2769b636643632"
+    },
+    "crocell:kick-l1-rr2": {
+      "path": "crocell/v1/653db2008cb0da9d-kick-l1-rr2.opus",
+      "encodedBytes": 11588,
+      "sha256": "653db2008cb0da9d6295898c90e6876fd4e162f9ad010385ba3dbec57c7e2656"
+    },
+    "crocell:kick-l2-rr1": {
+      "path": "crocell/v1/b7dbbf7c5363c757-kick-l2-rr1.opus",
+      "encodedBytes": 16519,
+      "sha256": "b7dbbf7c5363c7571ec9631bdfd2611161a07e976ec158c57b61f397e2646380"
+    },
+    "crocell:kick-l2-rr2": {
+      "path": "crocell/v1/8aec3f2d923c1c47-kick-l2-rr2.opus",
+      "encodedBytes": 17220,
+      "sha256": "8aec3f2d923c1c47376fe77397992bdd559321d8bb9f1acc00b4f8a5b68ce214"
+    },
+    "crocell:kick-l3-rr1": {
+      "path": "crocell/v1/78ebc6619f04c152-kick-l3-rr1.opus",
+      "encodedBytes": 12905,
+      "sha256": "78ebc6619f04c152cd72aa12a5e72d1ed0e8880834711f17a6fe6c7129ddb72a"
+    },
+    "crocell:kick-l3-rr2": {
+      "path": "crocell/v1/7c29336f32bf0963-kick-l3-rr2.opus",
+      "encodedBytes": 22386,
+      "sha256": "7c29336f32bf096339aa6accb7a2cc09dc44f494b785e3b297b4f2106bf57316"
+    },
+    "crocell:ride-l1-rr1": {
+      "path": "crocell/v1/778635be00c275a4-ride-l1-rr1.opus",
+      "encodedBytes": 212548,
+      "sha256": "778635be00c275a469433e7bfeb07f54fce8f5d1f1ea619a0fdbb12f93429d88"
+    },
+    "crocell:ride-l1-rr2": {
+      "path": "crocell/v1/c8182e0604f4a4a9-ride-l1-rr2.opus",
+      "encodedBytes": 322256,
+      "sha256": "c8182e0604f4a4a922e1c3a0501b0b010e9cd1371652e1dc0f8f4c20d5d3de60"
+    },
+    "crocell:ride-l2-rr1": {
+      "path": "crocell/v1/a16e8e1234a1d431-ride-l2-rr1.opus",
+      "encodedBytes": 202770,
+      "sha256": "a16e8e1234a1d431c9a93d3099bebe6ee76e4c456dce71b934212f968df78a71"
+    },
+    "crocell:ride-l2-rr2": {
+      "path": "crocell/v1/d45865cedc1a54ba-ride-l2-rr2.opus",
+      "encodedBytes": 330875,
+      "sha256": "d45865cedc1a54ba3f5d9815dbd455851d078fd943d34922152077abbe60f156"
+    },
+    "crocell:ride-l3-rr1": {
+      "path": "crocell/v1/d01ac6925cc1298e-ride-l3-rr1.opus",
+      "encodedBytes": 275890,
+      "sha256": "d01ac6925cc1298e91384e38e00374e92f787e24db5eb94d682e10a094566bce"
+    },
+    "crocell:snare-l1-rr1": {
+      "path": "crocell/v1/de9c35f964bdaadf-snare-l1-rr1.opus",
+      "encodedBytes": 9015,
+      "sha256": "de9c35f964bdaadf6978e8a2d303adf72a4150f274faaf4d6e5d6845901f25f2"
+    },
+    "crocell:snare-l1-rr2": {
+      "path": "crocell/v1/a774a1eef91325bc-snare-l1-rr2.opus",
+      "encodedBytes": 11276,
+      "sha256": "a774a1eef91325bc2c53203e7d776e806a4ac8e72529c0eef9effb4ec73cbf6b"
+    },
+    "crocell:snare-l2-rr1": {
+      "path": "crocell/v1/cdc15e3a7bbf73be-snare-l2-rr1.opus",
+      "encodedBytes": 16380,
+      "sha256": "cdc15e3a7bbf73be92b5c04e06738cf28fe1c2ccd08fd609c7e61eb618eb4e64"
+    },
+    "crocell:snare-l2-rr2": {
+      "path": "crocell/v1/4753ebbf1d5b0c20-snare-l2-rr2.opus",
+      "encodedBytes": 17384,
+      "sha256": "4753ebbf1d5b0c20536d47e64d1b21d5c06ccb80aed6d13332009567e0af6665"
+    },
+    "crocell:snare-l3-rr1": {
+      "path": "crocell/v1/752ff2439d5f1039-snare-l3-rr1.opus",
+      "encodedBytes": 18526,
+      "sha256": "752ff2439d5f103948ca6fc3557cb48b80f153f603754f84128de8550279a2ff"
+    },
+    "crocell:snare-l3-rr2": {
+      "path": "crocell/v1/c9cc18725fcd4443-snare-l3-rr2.opus",
+      "encodedBytes": 12377,
+      "sha256": "c9cc18725fcd444364eb3d05c6ddf1ca0f20fa0b2c48d6a0ae6e65e8aa4bcbfd"
+    },
+    "crocell:tom-high-l1-rr1": {
+      "path": "crocell/v1/234cb228dd203e5d-tom-high-l1-rr1.opus",
+      "encodedBytes": 46763,
+      "sha256": "234cb228dd203e5de8f3da70683d92622f8bf0213fada603df4749ef4df19bc2"
+    },
+    "crocell:tom-high-l1-rr2": {
+      "path": "crocell/v1/0dfd7693b800202f-tom-high-l1-rr2.opus",
+      "encodedBytes": 44392,
+      "sha256": "0dfd7693b800202fd0cc4a66a7bfe52519e7513c25d8d546d44ab2d00452ae30"
+    },
+    "crocell:tom-high-l2-rr1": {
+      "path": "crocell/v1/3b8329ada27ffa36-tom-high-l2-rr1.opus",
+      "encodedBytes": 50100,
+      "sha256": "3b8329ada27ffa3631940801188868645f2d8e2e0bfa502dd9bcf0c01e5eee3e"
+    },
+    "crocell:tom-high-l2-rr2": {
+      "path": "crocell/v1/0c7585d71cadf890-tom-high-l2-rr2.opus",
+      "encodedBytes": 48097,
+      "sha256": "0c7585d71cadf8900fecd46276a63b6fb540cbcd0678130e629bd5ef74795917"
+    },
+    "crocell:tom-high-l3-rr1": {
+      "path": "crocell/v1/a329dbe01c1a4ef0-tom-high-l3-rr1.opus",
+      "encodedBytes": 52072,
+      "sha256": "a329dbe01c1a4ef080062c4143d738f4304c62f091041b6888612767f8b82849"
+    },
+    "crocell:tom-high-l3-rr2": {
+      "path": "crocell/v1/bd90fe40b9b324c1-tom-high-l3-rr2.opus",
+      "encodedBytes": 51491,
+      "sha256": "bd90fe40b9b324c1b0e2cac542f420194860756329a72e11e9c39a7b359e1bdf"
+    },
+    "crocell:tom-low-l1-rr1": {
+      "path": "crocell/v1/74541804ad2b585b-tom-low-l1-rr1.opus",
+      "encodedBytes": 82898,
+      "sha256": "74541804ad2b585b12220117a33bdc9945afe2f77da275391533739a75b6bcab"
+    },
+    "crocell:tom-low-l1-rr2": {
+      "path": "crocell/v1/ee307a8417f41d7d-tom-low-l1-rr2.opus",
+      "encodedBytes": 86294,
+      "sha256": "ee307a8417f41d7d642fda13b3f934f92fcc22b326283563136322115313c687"
+    },
+    "crocell:tom-low-l2-rr1": {
+      "path": "crocell/v1/7d4eb0faac244aa1-tom-low-l2-rr1.opus",
+      "encodedBytes": 99253,
+      "sha256": "7d4eb0faac244aa1a3a56ae0626f17c5423b071fcaed353895b83e3b0d22792e"
+    },
+    "crocell:tom-low-l2-rr2": {
+      "path": "crocell/v1/dfecaa88936fd499-tom-low-l2-rr2.opus",
+      "encodedBytes": 104355,
+      "sha256": "dfecaa88936fd499aaa75bc42008b0b17fba0abf61e14a8e0a2f29f7542f8fd0"
+    },
+    "crocell:tom-low-l3-rr1": {
+      "path": "crocell/v1/97962120de245757-tom-low-l3-rr1.opus",
+      "encodedBytes": 111100,
+      "sha256": "97962120de2457575747a211c462503dbb767ce2d3bd1359a5b6be8c113f8b31"
+    },
+    "crocell:tom-low-l3-rr2": {
+      "path": "crocell/v1/d25d0f9b5e41df13-tom-low-l3-rr2.opus",
+      "encodedBytes": 108754,
+      "sha256": "d25d0f9b5e41df13c93be94c95686ba7dd2907e6c6ee1acc05a90d9048184378"
+    },
     "live:crash-l1-rr1": {
       "path": "live/v1/dddc98362ab272d8-crash-l1-rr1.opus",
       "encodedBytes": 45563,
@@ -322,6 +557,286 @@
       "path": "live/v1/fe658b5363f0019d-tom-mid-l2-rr2.opus",
       "encodedBytes": 22522,
       "sha256": "fe658b5363f0019dfe618754cfbdd62550c09e877390d2a5070fbaafe78b987b"
+    },
+    "muldjord:crash-l1-rr1": {
+      "path": "muldjord/v1/e87f9e240dcb89cf-crash-l1-rr1.opus",
+      "encodedBytes": 78368,
+      "sha256": "e87f9e240dcb89cf18a01347dcc86dc90fc2b8a8983e2b1a459bbbc1fef3c99d"
+    },
+    "muldjord:crash-l1-rr2": {
+      "path": "muldjord/v1/cd41ffcad9279b4f-crash-l1-rr2.opus",
+      "encodedBytes": 81266,
+      "sha256": "cd41ffcad9279b4f4bbd5d6d5b3d2bd4b2e72dc0d3689774a7c653b6c58816da"
+    },
+    "muldjord:crash-l2-rr1": {
+      "path": "muldjord/v1/610f6c5aa8e288f6-crash-l2-rr1.opus",
+      "encodedBytes": 77276,
+      "sha256": "610f6c5aa8e288f62b63b631f7d4c4c3e8ee7d7f8be7d3535ed5083a5e9520e6"
+    },
+    "muldjord:crash-l2-rr2": {
+      "path": "muldjord/v1/160ed5fd0bfe3134-crash-l2-rr2.opus",
+      "encodedBytes": 83637,
+      "sha256": "160ed5fd0bfe31342796c0183c8985620c20bc826266a846c930d2827b2b08e8"
+    },
+    "muldjord:crash-l3-rr1": {
+      "path": "muldjord/v1/8b5bac4c22c71789-crash-l3-rr1.opus",
+      "encodedBytes": 85363,
+      "sha256": "8b5bac4c22c7178911dc354a12e5db5093c9bb6cf5b25fb31f1280a6b536492e"
+    },
+    "muldjord:crash-l3-rr2": {
+      "path": "muldjord/v1/a7dbb874462f8a4e-crash-l3-rr2.opus",
+      "encodedBytes": 78613,
+      "sha256": "a7dbb874462f8a4e8ac3c60f647c94a62b91ec0fc417923b16669f20639e5125"
+    },
+    "muldjord:hh-closed-l1-rr1": {
+      "path": "muldjord/v1/a0c9eb1b8daf1495-hh-closed-l1-rr1.opus",
+      "encodedBytes": 5177,
+      "sha256": "a0c9eb1b8daf1495f414ff0416fafd6bb5609fd4d5eab796459e97986908aae9"
+    },
+    "muldjord:hh-closed-l1-rr2": {
+      "path": "muldjord/v1/114cbc611eefd2dc-hh-closed-l1-rr2.opus",
+      "encodedBytes": 4399,
+      "sha256": "114cbc611eefd2dc12b14ec544282a579865b658259965082e69a366c860988d"
+    },
+    "muldjord:hh-closed-l2-rr1": {
+      "path": "muldjord/v1/e2c1b018c7c9eb4d-hh-closed-l2-rr1.opus",
+      "encodedBytes": 6995,
+      "sha256": "e2c1b018c7c9eb4d1b016957c0401d19618623a64eca29b4a767077cc69e65ee"
+    },
+    "muldjord:hh-closed-l2-rr2": {
+      "path": "muldjord/v1/64a8d9b5bbb0ed87-hh-closed-l2-rr2.opus",
+      "encodedBytes": 6390,
+      "sha256": "64a8d9b5bbb0ed87f356e15debb783848cb4cad00d3312064f8b8da4c65d7cb7"
+    },
+    "muldjord:hh-closed-l3-rr1": {
+      "path": "muldjord/v1/d915b3b323ded44f-hh-closed-l3-rr1.opus",
+      "encodedBytes": 7004,
+      "sha256": "d915b3b323ded44fae036649ce4379ad7cb5462c2db656bb443c15b1f3459933"
+    },
+    "muldjord:hh-closed-l3-rr2": {
+      "path": "muldjord/v1/3b8cf7d62ba26e29-hh-closed-l3-rr2.opus",
+      "encodedBytes": 7137,
+      "sha256": "3b8cf7d62ba26e2972b2ec48116c6e548f3849a7fed5d167c384efe544a900c1"
+    },
+    "muldjord:hh-closed-l4-rr1": {
+      "path": "muldjord/v1/1b4b4b8b05da8611-hh-closed-l4-rr1.opus",
+      "encodedBytes": 7562,
+      "sha256": "1b4b4b8b05da8611508c45de3d2d8df6d39bafe1b13776d3c450e2b2d436e50b"
+    },
+    "muldjord:hh-closed-l4-rr2": {
+      "path": "muldjord/v1/fce69d660425d96d-hh-closed-l4-rr2.opus",
+      "encodedBytes": 6383,
+      "sha256": "fce69d660425d96da0a65fa761a4c4d045e5ddfaf9293fdaeec523ac4317adf3"
+    },
+    "muldjord:hh-open-l1-rr1": {
+      "path": "muldjord/v1/a64aac31094dc7f9-hh-open-l1-rr1.opus",
+      "encodedBytes": 12313,
+      "sha256": "a64aac31094dc7f965f96656d3aead19791d4beaecfdb21ea13c308b22140d97"
+    },
+    "muldjord:hh-open-l1-rr2": {
+      "path": "muldjord/v1/572033bbde1448eb-hh-open-l1-rr2.opus",
+      "encodedBytes": 10535,
+      "sha256": "572033bbde1448ebcec5ba2bf6f7b5bbb16110df6ddbbb5bb1fb444a0c8668f3"
+    },
+    "muldjord:hh-open-l2-rr1": {
+      "path": "muldjord/v1/36da4259dd6d80f8-hh-open-l2-rr1.opus",
+      "encodedBytes": 13788,
+      "sha256": "36da4259dd6d80f82b1aa4b4e9df71a64d5cb93c2b77224c12a9fb2e94dd8a70"
+    },
+    "muldjord:hh-open-l2-rr2": {
+      "path": "muldjord/v1/275ae6c30a77efc8-hh-open-l2-rr2.opus",
+      "encodedBytes": 13580,
+      "sha256": "275ae6c30a77efc88dba7871a98a546ef94e3641ea4eba8202c28076277991cb"
+    },
+    "muldjord:hh-open-l3-rr1": {
+      "path": "muldjord/v1/d0e1e77bfc7a6554-hh-open-l3-rr1.opus",
+      "encodedBytes": 11989,
+      "sha256": "d0e1e77bfc7a655468ad10bd8decca3cd614240761bddaaf6e34084eed147ebf"
+    },
+    "muldjord:hh-open-l3-rr2": {
+      "path": "muldjord/v1/d7917e891790f7a8-hh-open-l3-rr2.opus",
+      "encodedBytes": 14704,
+      "sha256": "d7917e891790f7a848814385ea83bc78279027aa7ee1e03ec480995a47d692d2"
+    },
+    "muldjord:hh-open-l4-rr1": {
+      "path": "muldjord/v1/d6267b8220e7e5b3-hh-open-l4-rr1.opus",
+      "encodedBytes": 12389,
+      "sha256": "d6267b8220e7e5b38604663107110c01a5d9ac962458668249d645c81728c2a2"
+    },
+    "muldjord:hh-open-l4-rr2": {
+      "path": "muldjord/v1/676f483f67fa93fb-hh-open-l4-rr2.opus",
+      "encodedBytes": 18688,
+      "sha256": "676f483f67fa93fbe7e231f5cad58066775568192861349f2e93d13ed7e7c8d2"
+    },
+    "muldjord:kick-l1-rr1": {
+      "path": "muldjord/v1/4d9ba69582a981b3-kick-l1-rr1.opus",
+      "encodedBytes": 5131,
+      "sha256": "4d9ba69582a981b3d948d9e1e12250ca749466a2b93f72f0de4f9cd06c16b075"
+    },
+    "muldjord:kick-l1-rr2": {
+      "path": "muldjord/v1/1153f3377f7562b6-kick-l1-rr2.opus",
+      "encodedBytes": 5366,
+      "sha256": "1153f3377f7562b66b35c56ae11393f3b92b7d3e56e3c561681b5447736825dd"
+    },
+    "muldjord:kick-l2-rr1": {
+      "path": "muldjord/v1/5820fc371c49198b-kick-l2-rr1.opus",
+      "encodedBytes": 7789,
+      "sha256": "5820fc371c49198b4464b770106041989f4823811c5088aa3ad538388b6ea0d5"
+    },
+    "muldjord:kick-l2-rr2": {
+      "path": "muldjord/v1/70573862406bccc7-kick-l2-rr2.opus",
+      "encodedBytes": 4947,
+      "sha256": "70573862406bccc71f99aa0cd0929e3fc698d5655ed29bc6dfbd47c7830aeaef"
+    },
+    "muldjord:kick-l3-rr1": {
+      "path": "muldjord/v1/786b230b39a1cf55-kick-l3-rr1.opus",
+      "encodedBytes": 9797,
+      "sha256": "786b230b39a1cf55c1a556aa2b1be28b97e26ae22aa518051a7700b511f4ec56"
+    },
+    "muldjord:kick-l3-rr2": {
+      "path": "muldjord/v1/55d54df869811b7f-kick-l3-rr2.opus",
+      "encodedBytes": 8517,
+      "sha256": "55d54df869811b7f4cbf62518204cfd5c3f3c6d9a4503a3ad89b88111390ce0c"
+    },
+    "muldjord:kick-l4-rr1": {
+      "path": "muldjord/v1/ea3d414c33866fa3-kick-l4-rr1.opus",
+      "encodedBytes": 7952,
+      "sha256": "ea3d414c33866fa30ec00e0b3e1c8616efd60b3b8a740b8ea0cab8b9ac4c7f59"
+    },
+    "muldjord:kick-l4-rr2": {
+      "path": "muldjord/v1/1f2437aaa27a5187-kick-l4-rr2.opus",
+      "encodedBytes": 7242,
+      "sha256": "1f2437aaa27a5187c893a1748d9e31e8289b0f6126eb05af1205c1a671fba74e"
+    },
+    "muldjord:ride-l1-rr1": {
+      "path": "muldjord/v1/bddd0eec6a30d949-ride-l1-rr1.opus",
+      "encodedBytes": 104022,
+      "sha256": "bddd0eec6a30d9492e0eb643b6d5e8f0c25a24f6213b39b6329d342da30d3d15"
+    },
+    "muldjord:ride-l1-rr2": {
+      "path": "muldjord/v1/c7caefa111883f3e-ride-l1-rr2.opus",
+      "encodedBytes": 124069,
+      "sha256": "c7caefa111883f3e42b994547263a683eb131f7f753a81f0b25c38798efb9115"
+    },
+    "muldjord:ride-l2-rr1": {
+      "path": "muldjord/v1/4aa7038671a489c4-ride-l2-rr1.opus",
+      "encodedBytes": 113240,
+      "sha256": "4aa7038671a489c478d6194380acd79cdbbbff740647fa3b8759435f1edddf08"
+    },
+    "muldjord:ride-l2-rr2": {
+      "path": "muldjord/v1/4ee3b62d3e4bc655-ride-l2-rr2.opus",
+      "encodedBytes": 129607,
+      "sha256": "4ee3b62d3e4bc655453f8646bad23bd614bdfd14261579c77df656322da05766"
+    },
+    "muldjord:ride-l3-rr1": {
+      "path": "muldjord/v1/ce64912a0901a89a-ride-l3-rr1.opus",
+      "encodedBytes": 143183,
+      "sha256": "ce64912a0901a89ade2aae7a2cf71e539305ae11145ef3ec08c9545692f98534"
+    },
+    "muldjord:ride-l3-rr2": {
+      "path": "muldjord/v1/b05723725f161c55-ride-l3-rr2.opus",
+      "encodedBytes": 126068,
+      "sha256": "b05723725f161c5536f7da884945326821ab3ac80b785b1e2a9e1894cadc9cea"
+    },
+    "muldjord:snare-l1-rr1": {
+      "path": "muldjord/v1/37c863e5c36a2140-snare-l1-rr1.opus",
+      "encodedBytes": 6610,
+      "sha256": "37c863e5c36a21401061634a63346d1630ad9aec984533b522cdb5d5309504a7"
+    },
+    "muldjord:snare-l1-rr2": {
+      "path": "muldjord/v1/0c704b3a92c461e0-snare-l1-rr2.opus",
+      "encodedBytes": 7061,
+      "sha256": "0c704b3a92c461e0881f3b01a1538f00eede835a002c68db9b56074bdd7750bc"
+    },
+    "muldjord:snare-l2-rr1": {
+      "path": "muldjord/v1/b7b4b1a29a3a58c6-snare-l2-rr1.opus",
+      "encodedBytes": 8190,
+      "sha256": "b7b4b1a29a3a58c617f7e4ce0bbc9a5d3586bfdfe295d763748124dd70950b2c"
+    },
+    "muldjord:snare-l2-rr2": {
+      "path": "muldjord/v1/8c6466a8c5bc0cb9-snare-l2-rr2.opus",
+      "encodedBytes": 7085,
+      "sha256": "8c6466a8c5bc0cb99e208d4afe0e504e34ae7f1b98083e440287203e6e0578a3"
+    },
+    "muldjord:snare-l3-rr1": {
+      "path": "muldjord/v1/1b3106db8ce43320-snare-l3-rr1.opus",
+      "encodedBytes": 10963,
+      "sha256": "1b3106db8ce43320fbb2298c187e088d62d4a13568f14ad8436afd09433991ff"
+    },
+    "muldjord:snare-l3-rr2": {
+      "path": "muldjord/v1/69cbe8666536828e-snare-l3-rr2.opus",
+      "encodedBytes": 8809,
+      "sha256": "69cbe8666536828e6dccd9dd37e5ecdd0fc733ae9ff4fab3697d7d1ec191103e"
+    },
+    "muldjord:snare-l4-rr1": {
+      "path": "muldjord/v1/df9a40844c3a3ae3-snare-l4-rr1.opus",
+      "encodedBytes": 13067,
+      "sha256": "df9a40844c3a3ae30719864713579c9347344f08b7701c6ba650ad9990c58a46"
+    },
+    "muldjord:snare-l4-rr2": {
+      "path": "muldjord/v1/6142cd0d3e9758eb-snare-l4-rr2.opus",
+      "encodedBytes": 16782,
+      "sha256": "6142cd0d3e9758eb938876008ed65e2af4031e47027403c94d66aaca20c5ff61"
+    },
+    "muldjord:tom-high-l1-rr1": {
+      "path": "muldjord/v1/db03d3c85ce29931-tom-high-l1-rr1.opus",
+      "encodedBytes": 39065,
+      "sha256": "db03d3c85ce29931838877ff9a56013d964d8da2d1cf7beb9d1de16455b9d493"
+    },
+    "muldjord:tom-high-l1-rr2": {
+      "path": "muldjord/v1/6af1dc83c03b2443-tom-high-l1-rr2.opus",
+      "encodedBytes": 39101,
+      "sha256": "6af1dc83c03b2443d9ce4650e1d4f49962b1e52322d4698cd7bcc74d57008b76"
+    },
+    "muldjord:tom-high-l2-rr1": {
+      "path": "muldjord/v1/8b9ca51152cbf4cb-tom-high-l2-rr1.opus",
+      "encodedBytes": 39523,
+      "sha256": "8b9ca51152cbf4cbe6a2403d1b9d362967e68c8fcd103b87c2a6bdf3b7108844"
+    },
+    "muldjord:tom-high-l2-rr2": {
+      "path": "muldjord/v1/62111edf2c7fd44f-tom-high-l2-rr2.opus",
+      "encodedBytes": 39815,
+      "sha256": "62111edf2c7fd44f0c7191a84ae714989503f1b7830a038e897f4c0a4d945aa9"
+    },
+    "muldjord:tom-high-l3-rr1": {
+      "path": "muldjord/v1/ac5b426691336313-tom-high-l3-rr1.opus",
+      "encodedBytes": 40253,
+      "sha256": "ac5b426691336313572b926cbacfc4dde76e2a5d2c280fc45e58eb38168638b3"
+    },
+    "muldjord:tom-high-l3-rr2": {
+      "path": "muldjord/v1/677167e5d6584287-tom-high-l3-rr2.opus",
+      "encodedBytes": 39051,
+      "sha256": "677167e5d65842875782471bb69da50e921a95611a63279f68fec94074be80c8"
+    },
+    "muldjord:tom-low-l1-rr1": {
+      "path": "muldjord/v1/fb84a94a72bfda80-tom-low-l1-rr1.opus",
+      "encodedBytes": 15230,
+      "sha256": "fb84a94a72bfda80c20b7577ddf014569b0bfb7e20c58f40632d9d4ded54b8de"
+    },
+    "muldjord:tom-low-l1-rr2": {
+      "path": "muldjord/v1/08c2dfc1391c9410-tom-low-l1-rr2.opus",
+      "encodedBytes": 16730,
+      "sha256": "08c2dfc1391c9410e6b70751b9a480000322d4948851447e1ba63a8ec8079b21"
+    },
+    "muldjord:tom-low-l2-rr1": {
+      "path": "muldjord/v1/9740ccbd21f36447-tom-low-l2-rr1.opus",
+      "encodedBytes": 10150,
+      "sha256": "9740ccbd21f364475fc502212f2460dbbc062960d98f504b4b1c56e2d4562345"
+    },
+    "muldjord:tom-low-l2-rr2": {
+      "path": "muldjord/v1/86b0580e8d4bb2ca-tom-low-l2-rr2.opus",
+      "encodedBytes": 11779,
+      "sha256": "86b0580e8d4bb2ca7f216eeb60f5d81f2efa3380e541eddedbf725f71d4bbdbb"
+    },
+    "muldjord:tom-low-l3-rr1": {
+      "path": "muldjord/v1/6e1680b5e6e62d26-tom-low-l3-rr1.opus",
+      "encodedBytes": 16077,
+      "sha256": "6e1680b5e6e62d26822de811dc48fa8fdbfabb4b9253726886ffb07817c95fc1"
+    },
+    "muldjord:tom-low-l3-rr2": {
+      "path": "muldjord/v1/6d3b9b368743e4ab-tom-low-l3-rr2.opus",
+      "encodedBytes": 20480,
+      "sha256": "6d3b9b368743e4ab5e348063608bb538a472f6960e116dc384824fd65ea9e16c"
     },
     "studio:crash-l1-rr1": {
       "path": "studio/v1/5338ca4a4c96e925-crash-l1-rr1.opus",

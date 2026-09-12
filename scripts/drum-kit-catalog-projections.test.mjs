@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createDrumKitCatalogProjections, serializeDrumKitCatalogProjections, } from './drum-kit-catalog-projections.mjs'
+import { packDrumKitRuntimeResource, unpackDrumKitRuntimeResource, } from '../src/features/drum-night/audio/drum-kit-runtime-codec.mjs'
 
 const MP3_HASH = 'a'.repeat(64)
 const OPUS_HASH = 'b'.repeat(64)
@@ -56,6 +57,18 @@ function catalog() {
     audio: { sampleRate: 44_100 },
     calibration: { maximumOnsetMs: 5 },
     kits: {
+      muldjord: {
+        version: 'v1',
+        sampleStatus: 'ready',
+        publishedEncodedBytes: 0,
+        resources: [],
+      },
+      crocell: {
+        version: 'v1',
+        sampleStatus: 'ready',
+        publishedEncodedBytes: 0,
+        resources: [],
+      },
       live: {
         version: 'v1',
         sampleStatus: 'ready',
@@ -92,15 +105,21 @@ function catalog() {
 
 test('runtime projection retains playback metadata but excludes audit and format data', () => {
   const projections = createDrumKitCatalogProjections(catalog())
-  const projected = projections.runtime.kits.live.resources[0]
+  const projected = unpackDrumKitRuntimeResource(
+    projections.runtime.kits.live.resources[0],
+    'live',
+    'v1',
+  )
 
   assert.deepEqual(Object.keys(projections.runtime.kits), [
     'mercury-synth',
     'classic-gm',
     'studio',
     'live',
+    'muldjord',
+    'crocell',
   ])
-  assert.equal(projections.runtime.schemaVersion, 1)
+  assert.equal(projections.runtime.schemaVersion, 2)
   assert.equal(projections.runtime.catalogSchemaVersion, 2)
   assert.equal(projected.power, 0.8)
   assert.equal(projected.readiness, 'ready')
@@ -142,7 +161,8 @@ test('projection serialization matches Prettier and is deterministic', async () 
   assert.deepEqual(first, second)
   assert.equal(first.runtime.endsWith('\n'), true)
   assert.equal(first.opus.endsWith('\n'), true)
-  assert.match(first.runtime, /"gmKeys": \[36\]/u)
+  assert.equal(first.runtime.includes('"gmKeys"'), false)
+  assert.deepEqual(JSON.parse(first.runtime).kits.live.resources[0][2], [36])
 })
 
 test('projection rejects missing Opus and drifted MP3 aliases', () => {
@@ -159,4 +179,39 @@ test('projection rejects missing Opus and drifted MP3 aliases', () => {
     () => createDrumKitCatalogProjections(driftedMp3),
     /MP3 projection alias drifted/u,
   )
+})
+
+test('compact rows round-trip every playback field and reject unsafe identity or shape', () => {
+  for (const power of [undefined, 0.8]) {
+    const { source, formats, ...original } = resource(
+      'live:kick-l1-rr1',
+      'live',
+      { power },
+    )
+    const row = packDrumKitRuntimeResource(original, 'live', 'v1')
+    assert.deepEqual(unpackDrumKitRuntimeResource(row, 'live', 'v1'), original)
+    assert.throws(
+      () => unpackDrumKitRuntimeResource(row.slice(1), 'live', 'v1'),
+      /resource row/,
+    )
+    assert.throws(
+      () =>
+        unpackDrumKitRuntimeResource(
+          ['../escape', ...row.slice(1)],
+          'live',
+          'v1',
+        ),
+      /identity/,
+    )
+    assert.throws(
+      () =>
+        packDrumKitRuntimeResource(
+          { ...original, path: 'other.mp3' },
+          'live',
+          'v1',
+        ),
+      /cannot be compacted/,
+    )
+    assert.ok(source && formats)
+  }
 })
