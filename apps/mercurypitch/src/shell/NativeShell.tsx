@@ -215,6 +215,9 @@ export const NativeShell: Component = () => {
                   performBack(shellBackHost())
                 }}
                 onGear={controls().openOptions}
+                // The chip is a button only where the room answers for one:
+                // the shell owns no picker of its own (R5).
+                onChip={controls().openRoomPicker}
               />
             )}
           </Show>

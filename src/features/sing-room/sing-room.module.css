@@ -49,16 +49,26 @@
 
 /* The kit's three scrims. The dim is LIGHTER than the kit's 35% in portrait:
    this room's own luminance is 12% there, and the kit value takes it to black
-   on a phone (brief §7). Landscape keeps the kit's value. */
+   on a phone (brief §7). Landscape keeps the kit's value.
+
+   AND IT IS THE ONE THE VEIL SLIDER MOVES (device round 2, R5). The slider's
+   own value is `--mp-sing-glass`, 0 to 1, and the scrim is painted at its
+   heaviest with the ELEMENT's opacity carrying the number — a computed
+   opacity is a thing a probe can read off the layout, where an alpha inside
+   a `background` shorthand is not. At the default 0.5 that is exactly the
+   25% portrait / 35% landscape the room shipped with; at 1 the veil is gone.
+   The top and bottom gradients are deliberately not touched: they are what
+   keeps the shell's own chrome legible over any photograph. */
 .scrimDim {
   position: absolute;
   inset: 0;
-  background: rgb(0 0 0 / 25%);
+  background: rgb(0 0 0 / 50%);
+  opacity: calc(1 - var(--mp-sing-glass, 0.5));
 }
 
 @media (orientation: landscape) {
   .scrimDim {
-    background: rgb(0 0 0 / 35%);
+    background: rgb(0 0 0 / 70%);
   }
 }
 
@@ -103,18 +113,48 @@
     calc(var(--tabbar-total, 64px) + 12px);
 }
 
+/* Row 1: key · mic · song (R3).
+   NOTHING HERE SHRINKS EXCEPT THE SONG NAME, and when even its floor will not
+   fit, the song chip takes a line of its own. The first cut let the key and
+   the song both give width up, which at 390pt with a melody loaded clipped
+   BOTH — "C chromati…" and "Chromatic Sc…" — and a review measured the row
+   wanting 372px of 358 (and 427 with a longer melody name). A key nobody can
+   read is the room lying about the key; a song name that ellipsizes is a name
+   somebody can still finish in their head.
+
+   `wrap` plus the song chip's 96px flex-basis is what expresses "shrink to
+   the floor, then wrap": flexbox decides the line from the hypothetical
+   size — so with the basis AT the floor, the chip stays on row 1 whenever the
+   floor fits (and grows into whatever is left), and moves down when it does
+   not. */
 .hud {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: hidden;
+}
+
+/* Row 2: the pitch pill, alone and centred, because it is the one thing on
+   this screen a singer actually watches. */
+.pillRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .canvasWrap {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Resting with a melody loaded (R1): the same canvas, drawing the same target
+   line, dimmed — "this is where you will be singing", not "this is where you
+   are". Nothing on it moves, so the dim is a static opacity rather than a
+   second set of colours to keep in step with the live ones. */
+.canvasResting {
+  opacity: 0.55;
 }
 
 /* The shell's corner chip floats over the room's bottom-right while a run is
@@ -162,6 +202,25 @@
 
 .center {
   text-align: center;
+}
+
+/* Spoken, never drawn.
+   THE ROOM HAS TO BRING ITS OWN: `sr-only` is a class this repository defines
+   in no stylesheet at all, so the room's live region — which says the note
+   and its cents, or "No voice" — rendered as ordinary text under the HUD. On
+   the web that never showed up, because the web Sing tab is a different
+   component; under the native shell it was the duplicate pitch readout the
+   owner reported (device round 2, R3). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .grow {
@@ -226,7 +285,7 @@
   align-items: center;
   gap: 6px;
   height: 32px;
-  max-width: 46vw;
+  flex: 0 0 auto;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgb(230 237 243 / 10%);
@@ -237,8 +296,25 @@
   font: 500 13px/1 var(--font-body, sans-serif);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
+}
+
+/* The ellipsis belongs to the text, not to the chip: a chip is a flex box,
+   and `text-overflow` on a flex container truncates nothing. */
+.chipText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The song chip, and it is the only thing in row 1 that may give width up.
+   The floor is a name somebody can still read — about eight characters plus
+   the chip's own padding — and below it the chip wraps rather than shrinks. */
+.chipSong {
+  flex: 1 1 96px;
+  min-width: 96px;
+  max-width: max-content;
 }
 
 .chip svg {
@@ -247,14 +323,20 @@
   flex: 0 0 auto;
 }
 
-/* ── The note chip (kit `note-chip`, every variant) ──────── */
+/* ── The pitch pill (kit `note-chip`, every variant) ─────── */
 
+/* TALLER, CENTRED, AND ITS CONTENT CENTRED WITH IT (R3). The pill used to be
+   one flex row at `align-items: baseline`: that lines the note, the mark and
+   the cents up with each other and then leaves the whole group wherever the
+   tallest of them puts it, which at `line-height: 1` is hard against the top
+   of a 40px pill. The pieces still share a baseline — inside `.noteChipBox` —
+   and the pill centres the box. */
 .noteChip {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  height: 40px;
-  padding: 0 14px;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 20px;
   border-radius: 999px;
   background: var(--glass-bg, rgb(22 27 34 / 72%));
   backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
@@ -263,6 +345,13 @@
   color: var(--text-primary, #e6edf3);
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.noteChipBox {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .noteChipNote {
@@ -494,6 +583,108 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* ── "Your takes" — the kept summaries (R4) ──────────────── */
+
+.takeList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.takeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  background: var(--bg-secondary, #161b22);
+}
+
+.takeRowText {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.takeRowWhen {
+  font: 600 14px/18px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.takeRowStats {
+  font: 400 12px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  font-variant-numeric: tabular-nums;
+}
+
+.takeRowRemove {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgb(230 237 243 / 16%);
+  border-radius: 10px;
+  background: none;
+  color: var(--text-secondary, #a8b3bf);
+  font: 500 13px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.takeRowRemove svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── The room sheet's veil slider (R5) ───────────────────── */
+
+.glass {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.glassLabel {
+  grid-column: 1 / -1;
+  font: 500 12px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.glassSlider {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent-primary, #58a6ff);
+  cursor: pointer;
+}
+
+.glassValue {
+  min-width: 7ch;
+  text-align: right;
+  font: 500 13px/1 var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+/* The one line under the slider that says what the number does. Piano
+   Night's picker has carried one since it shipped; this one had a label and
+   a percentage and nothing that said what was being thinned (review F11). */
+.glassNote {
+  margin: 8px 2px 0;
+  font: 400 12px/17px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
 }
 
 /* ── The options sheet's toggle ──────────────────────────── */

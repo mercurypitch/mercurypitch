@@ -432,7 +432,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
     }
     if (!announcedThisRun) {
       announcedThisRun = true
-      setAnnouncement('Tabs hidden while you practise')
+      setAnnouncement('Tabs hidden while you practice')
     }
     return
   }

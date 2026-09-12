@@ -290,7 +290,7 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
                 and match them against the classical voice types.
               </p>
               <p class={styles.helperText}>
-                Everything runs locally on this device; no audio is uploaded.
+                Everything runs on this device, and the sound stays here.
               </p>
               <button
                 type="button"

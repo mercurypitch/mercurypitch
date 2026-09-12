@@ -672,9 +672,13 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         <Show
           when={syncSummary()}
           fallback={
+            /* Where the stems go, not where they do not: the owner's rule is
+               that the UI never names the thing that does not happen (device
+               round 2, R6). "Your own devices" and "the local network" already
+               say it; this says where they stay. */
             <p class="kn-card-sub">
               Move a song between two of your own devices over the local
-              network. Nothing is uploaded.
+              network. The stems stay on the two of them.
             </p>
           }
         >

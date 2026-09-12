@@ -6,6 +6,12 @@
 // the half a pure function cannot answer — that the kit's variant really
 // reaches the chip, that the state chip is the ONE microphone control the
 // room has, and that a chip nobody can name is not a chip anybody can use.
+//
+// Since device round 2 it is TWO rows: the chips, and the pitch pill on its
+// own below them. The geometry of that (the slack at 390pt, the pill's
+// content centred inside it) is a stylesheet's job and is measured against
+// the built bundle by `probe-bundle.mjs` — jsdom loads no CSS module, so a
+// test asserting either here would pass against any layout at all.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -35,6 +41,7 @@ function mount(over: Partial<Parameters<typeof SingRoomHud>[0]> = {}) {
     onOpenKey: vi.fn(),
     onToggleMic: vi.fn(),
     onOpenSong: vi.fn(),
+    onOpenTakes: vi.fn(),
   }
   render(() => (
     <SingRoomHud
@@ -81,6 +88,57 @@ describe('the note chip', () => {
   it('shows no percentage anywhere — numbers come at the end', () => {
     mount()
     expect(screen.getByTestId('sing-hud').textContent).not.toContain('%')
+    expect(screen.getByTestId('sing-hud-pill-row').textContent).not.toContain(
+      '%',
+    )
+  })
+
+  it('sits on a row of its own, below the chips', () => {
+    // R3: one row held all four and at 390pt they were edge to edge. The pill
+    // is the thing a singer watches, so it gets the second row to itself.
+    mount({ songName: () => 'Twinkle' })
+    const row = screen.getByTestId('sing-hud-pill-row')
+    expect(row.contains(screen.getByTestId('sing-note-chip'))).toBe(true)
+    const chips = screen.getByTestId('sing-hud')
+    expect(chips.contains(screen.getByTestId('sing-note-chip'))).toBe(false)
+    for (const chip of ['sing-key-chip', 'sing-state-chip', 'sing-song-chip']) {
+      expect(chips.contains(screen.getByTestId(chip)), chip).toBe(true)
+    }
+  })
+
+  it('keeps the note and the cents in one box, for the pill to centre', () => {
+    // The "—" and the note used to sit at the top of the pill: the pill was
+    // baseline-aligned, which positions the pieces against each other and
+    // leaves the group where the tallest one puts it. The box is what the
+    // pill centres now.
+    mount()
+    const box = screen.getByTestId('sing-note-chip-box')
+    expect(box.parentElement).toBe(screen.getByTestId('sing-note-chip'))
+    expect(box.textContent).toContain('A')
+    expect(box.textContent).toContain('+2 cents')
+  })
+
+  it('opens Your takes on a tap, and says so', () => {
+    const handlers = mount()
+    const pill = screen.getByTestId('sing-note-chip')
+    expect(pill.tagName).toBe('BUTTON')
+    // Label in Name: a button's name starts with the words printed on it,
+    // or a voice-control user cannot speak the control they can see. The
+    // name used to open with the paraphrase and never said "+2 cents" at
+    // all, which is the one string the pill actually shows (review F7).
+    const label = pill.getAttribute('aria-label') ?? ''
+    // The note and the octave are said twice — the live region's line
+    // already opens with them — and that is the prescribed shape: the name
+    // has to LEAD with what is printed, and the spoken line has to stay
+    // whole behind it.
+    expect(label).toBe('A3, +2 cents. A3, in tune. Tap for your takes')
+    const box = screen.getByTestId('sing-note-chip-box')
+    for (const word of ['A', '3', '+2 cents']) {
+      expect(box.textContent).toContain(word)
+      expect(label).toContain(word)
+    }
+    fireEvent.click(pill)
+    expect(handlers.onOpenTakes).toHaveBeenCalledTimes(1)
   })
 })
 

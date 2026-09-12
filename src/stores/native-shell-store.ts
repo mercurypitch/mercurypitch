@@ -58,6 +58,16 @@ export interface NativeRunControls {
   /** Open the room's own options sheet (the shell's gear). */
   openOptions?: () => void
   /**
+   * Open the room's background picker (the shell's room-name chip).
+   *
+   * Absent means the chip is a label, exactly as it was: a room with no
+   * picker of its own must not grow a button that does nothing. The chip is
+   * the one piece of chrome on a room that names it, which is why the owner
+   * asked for the picker to live behind it (device round 2, R5) — but the
+   * shell cannot open a picker it does not own, so the room hands it one.
+   */
+  openRoomPicker?: () => void
+  /**
    * Close the topmost thing the ROOM has over its own stage, if there is
    * one, and say whether anything closed.
    *

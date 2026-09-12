@@ -64,10 +64,13 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   // Phase 6). A ~1K stand-in pair, not a master.
   'ear-regulator-room',
   'ear-glasshouse-bench',
-  // The Sing room's one cover. Free and public, because the native Sing tab
-  // IS this room — there is no version of it without a photograph behind the
-  // trace, so it can never sit behind a supporter check.
+  // The Sing room's three covers. Free and public, because the native Sing
+  // tab IS this room — there is no version of it without a photograph behind
+  // the trace, so it can never sit behind a supporter check. Three of them
+  // for the test period (device round 2, R5): the owner is choosing.
   'sing-retro-analog-studio',
+  'sing-retro-analog-studio-b',
+  'sing-retro-analog-studio-mock',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -1397,6 +1400,43 @@ export const BACKGROUND_CATALOG = [
     // The console sits in the lower third and the pendant is outside the
     // middle 60%, so the focus is low: the calm band the pitch trace lives in
     // (landscape y 0.13-0.58, portrait y 0.08-0.56) stays an empty slat wall.
+    focalPoint: { x: 0.5, y: 0.68 },
+  },
+  // The other two takes on the same room (device round 2, R5). The owner
+  // asked why the photograph had changed from the mock's and for a picker
+  // with the examples in it, so all three ship for the test period and the
+  // room chooses between them. Same four variants, same focal band, same
+  // free access — they are three renderings of one brief, not three rooms.
+  {
+    id: 'sing-retro-analog-studio-b',
+    surface: 'sing',
+    label: 'Retro Analog Studio B',
+    description: 'The same control room, warmer, with the desk further back',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/sing/retro-analog-studio-b.webp',
+      '/sing/retro-analog-studio-b-4k.webp',
+      '/sing/retro-analog-studio-b-portrait.webp',
+      '/sing/retro-analog-studio-b-portrait-2x.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.68 },
+  },
+  {
+    id: 'sing-retro-analog-studio-mock',
+    surface: 'sing',
+    label: 'Retro Analog Studio (mock)',
+    description: 'The approved mock tile, upscaled — the room as it was drawn',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/sing/retro-analog-studio-mock.webp',
+      '/sing/retro-analog-studio-mock-4k.webp',
+      '/sing/retro-analog-studio-mock-portrait.webp',
+      '/sing/retro-analog-studio-mock-portrait-2x.webp',
+    ),
     focalPoint: { x: 0.5, y: 0.68 },
   },
 ] as const satisfies readonly BackgroundDefinition[]

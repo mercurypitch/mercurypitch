@@ -785,7 +785,7 @@ _"cancel"_ or _"never mind"_ stops it listening.
 
 - Commands begin with **"Mercury"** — _"Mercury, from the top"_.
 - **Why:** a backing track singing the word "stop" through your speakers must not stop your take.
-- Practising on headphones? Turn it off in **Settings → Voice Control**.
+- Practicing on headphones? Turn it off in **Settings → Voice Control**.
 
 > **Tip:** if a phrase is not landing, say it as the whole sentence and nothing
 > else. "Play" works; "okay let's play now" does not — the app would rather

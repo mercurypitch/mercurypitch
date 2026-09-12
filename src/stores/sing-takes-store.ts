@@ -3,10 +3,10 @@
 // ============================================================
 //
 // A kept take is four numbers and two timestamps. NO AUDIO: the end card's
-// footer promises "Keep stores it on this phone. Nothing uploaded", and the
-// cheapest way to keep that promise is to have nothing to upload. Discard
-// writes nothing at all, which is why keeping is a call and discarding is
-// the absence of one.
+// footer promises "Keep stores it on this phone", and the cheapest way to
+// keep that promise is to have nothing to send anywhere. Discard writes
+// nothing at all, which is why keeping is a call and discarding is the
+// absence of one.
 //
 // The store exists for one reader today — "Against your own history", the
 // line the end card draws from the PREVIOUS kept take — and it is capped,
@@ -91,6 +91,25 @@ export function lastSingTake(): SingTake | null {
 export function keepSingTake(take: SingTake): SingTake {
   takesSignal()[1]((current) => [...current, take].slice(-SING_TAKES_KEPT))
   return take
+}
+
+/**
+ * Forget one, by id. Answers whether there was one to forget.
+ *
+ * The "Your takes" sheet's Remove (device round 2, R4). No confirmation: a
+ * take is four numbers, the list is the only place they are ever read, and a
+ * dialog over a row somebody deliberately swiped to is more friction than the
+ * thing it guards. Unknown ids are a no-op rather than a throw — a list and a
+ * store can disagree for one frame after a removal.
+ */
+export function removeSingTake(id: string): boolean {
+  let removed = false
+  takesSignal()[1]((current) => {
+    const next = current.filter((take) => take.id !== id)
+    removed = next.length !== current.length
+    return removed ? next : current
+  })
+  return removed
 }
 
 /** Tests only — and the one place a "forget my takes" control would call. */

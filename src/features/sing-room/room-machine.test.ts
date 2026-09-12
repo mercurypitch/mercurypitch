@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
-import { hasUnsavedTake, initialSingRoomContext, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, } from './room-machine'
+import { hasUnsavedTake, initialSingRoomContext, melodyRanOut, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, transportPhase, } from './room-machine'
 
 const run = (
   ctx: SingRoomContext,
@@ -380,6 +380,75 @@ describe('a melody, once one is chosen', () => {
     )
     expect(ctx.melodyLoaded).toBe(true)
     expect(ctx.melody).toBe(false)
+  })
+
+  it('is put down only by Remove, which is the way back to the tracker', () => {
+    const loaded = run(
+      initialSingRoomContext({ permission: 'granted' }),
+      { type: 'enter', hasSummary: false },
+      { type: 'melody-play' },
+      { type: 'stop', hasTake: false },
+    )
+    const unloaded = run(loaded, { type: 'melody-unload' })
+    expect(unloaded.melodyLoaded).toBe(false)
+    expect(unloaded.melody).toBe(false)
+    // The state is not what Remove is about: a room resting stays resting.
+    expect(unloaded.state).toBe(loaded.state)
+  })
+
+  it('hands back the same context when there was nothing loaded', () => {
+    // Identity matters: the context is a signal, and a new object for a value
+    // that did not change wakes everything reading it.
+    const empty = run(initialSingRoomContext(), {
+      type: 'enter',
+      hasSummary: false,
+    })
+    expect(run(empty, { type: 'melody-unload' })).toBe(empty)
+  })
+})
+
+describe('a melody that reaches its own end', () => {
+  const live = run(
+    initialSingRoomContext({ permission: 'granted' }),
+    { type: 'enter', hasSummary: false },
+    { type: 'melody-play' },
+  )
+
+  it('reads a transport that stopped by itself as the end of the take', () => {
+    expect(transportPhase(false, false)).toBe('stopped')
+    expect(melodyRanOut(live, transportPhase(false, false))).toBe(true)
+  })
+
+  it('is not a running transport, and not a held one', () => {
+    expect(transportPhase(true, false)).toBe('running')
+    expect(transportPhase(false, true)).toBe('held')
+    expect(melodyRanOut(live, 'running')).toBe(false)
+    expect(melodyRanOut(live, 'held')).toBe(false)
+  })
+
+  it('is not a pause: the room moves itself out of live first', () => {
+    const paused = run(live, { type: 'pause' })
+    expect(melodyRanOut(paused, 'stopped')).toBe(false)
+  })
+
+  it('is not a park: leaving pauses the run on the way out', () => {
+    const parked = run(live, { type: 'leave' })
+    expect(melodyRanOut(parked, 'stopped')).toBe(false)
+  })
+
+  it('is not a free run, which has no transport to run out', () => {
+    const free = run(
+      initialSingRoomContext({ permission: 'granted' }),
+      { type: 'enter', hasSummary: false },
+      { type: 'sing-a-note' },
+    )
+    expect(free.state).toBe('live')
+    expect(melodyRanOut(free, 'stopped')).toBe(false)
+  })
+
+  it('cannot happen twice: the stop it causes takes the melody with it', () => {
+    const ended = run(live, { type: 'stop', hasTake: true })
+    expect(melodyRanOut(ended, 'stopped')).toBe(false)
   })
 })
 

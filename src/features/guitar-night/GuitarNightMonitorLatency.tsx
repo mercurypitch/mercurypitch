@@ -271,8 +271,8 @@ export function GuitarNightMonitorLatency(
           Download report
         </button>
         <p class={styles.note}>
-          No audio, device identifiers or uploads. The report contains browser
-          estimates, not a latency calibration.
+          The report is this browser's own estimates and nothing else — no
+          audio, and no device identifiers. It is not a latency calibration.
         </p>
         <Show when={downloadError()}>
           <p class={styles.warning} role="status">

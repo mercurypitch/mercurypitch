@@ -1640,7 +1640,7 @@ function TrustInfo() {
       </button>
       <div class="mirror-info-pop" role="note" data-open={open()}>
         Private by design: your audio never leaves this device — analysis runs
-        right here in your browser. No recording is uploaded, ever.
+        right here in your browser, and the recording stays with you.
       </div>
     </div>
   )

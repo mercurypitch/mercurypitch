@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { SingTake } from './sing-takes-store'
-import { clearSingTakes, keepSingTake, lastSingTake, SING_TAKES_KEPT, singTakes, } from './sing-takes-store'
+import { clearSingTakes, keepSingTake, lastSingTake, removeSingTake, SING_TAKES_KEPT, singTakes, } from './sing-takes-store'
 
 function take(overrides: Partial<SingTake> = {}): SingTake {
   return {
@@ -60,6 +60,32 @@ describe('sing takes', () => {
     expect(singTakes()).toHaveLength(SING_TAKES_KEPT)
     expect(singTakes()[0].id).toBe('take-5')
     expect(lastSingTake()?.id).toBe(`take-${SING_TAKES_KEPT + 4}`)
+  })
+
+  it('forgets one by id, and leaves the rest in order', () => {
+    keepSingTake(take())
+    keepSingTake(take({ id: 'take-2', takeNumber: 2 }))
+    keepSingTake(take({ id: 'take-3', takeNumber: 3 }))
+
+    expect(removeSingTake('take-2')).toBe(true)
+    expect(singTakes().map((entry) => entry.id)).toEqual(['take-1', 'take-3'])
+    // The card's comparison line reads the newest, so removing a middle take
+    // must not move it.
+    expect(lastSingTake()?.id).toBe('take-3')
+  })
+
+  it('says so, and changes nothing, for an id it does not hold', () => {
+    keepSingTake(take())
+    expect(removeSingTake('never-kept')).toBe(false)
+    expect(singTakes()).toHaveLength(1)
+  })
+
+  it('writes the removal through to storage', () => {
+    keepSingTake(take())
+    keepSingTake(take({ id: 'take-2' }))
+    removeSingTake('take-1')
+    const raw = localStorage.getItem('pitchperfect_sing_takes')
+    expect(JSON.parse(raw!)).toHaveLength(1)
   })
 
   it('writes through to storage, so the next launch still compares', () => {
