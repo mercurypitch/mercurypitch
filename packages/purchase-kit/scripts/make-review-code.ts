@@ -13,15 +13,13 @@
 // different digest rejects every grant made against the previous code.
 
 import { createHash, randomInt } from 'node:crypto'
-import {
-  normalizeReviewCode,
-  REVIEW_CODE_ALPHABET,
-  reviewUnlockDigestInput,
-} from '../src/review-unlock.ts'
+import { normalizeReviewCode, REVIEW_CODE_ALPHABET, reviewUnlockDigestInput, } from '../src/review-unlock.ts'
 
 const appId = process.argv[2]
 if (appId === undefined || appId.trim() === '') {
-  console.error('Usage: make-review-code.ts <app-id>   (for example beside-cue)')
+  console.error(
+    'Usage: make-review-code.ts <app-id>   (for example beside-cue)',
+  )
   process.exit(2)
 }
 
@@ -48,5 +46,7 @@ console.log(`app     ${appId}`)
 console.log(`code    ${code}`)
 console.log(`digest  ${digest}`)
 console.log('')
-console.log('Put the code in the vault. Put the digest in the app\'s')
-console.log('<APP>_REVIEW_UNLOCK_SHA256 repository variable. Never commit the code.')
+console.log("Put the code in the vault. Put the digest in the app's")
+console.log(
+  '<APP>_REVIEW_UNLOCK_SHA256 repository variable. Never commit the code.',
+)

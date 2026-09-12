@@ -178,7 +178,9 @@ export function createReviewUnlock(options: ReviewUnlockOptions): ReviewUnlock {
     if (code === '') return { outcome: 'rejected' }
     let digest: string
     try {
-      digest = await options.digest(reviewUnlockDigestInput(options.appId, code))
+      digest = await options.digest(
+        reviewUnlockDigestInput(options.appId, code),
+      )
     } catch {
       return { outcome: 'unavailable' }
     }

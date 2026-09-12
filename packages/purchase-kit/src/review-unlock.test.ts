@@ -4,14 +4,7 @@
 
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  createReviewUnlock,
-  REVIEW_CODE_ALPHABET,
-  normalizeReviewCode,
-  readReviewGrant,
-  reviewUnlockDigestInput,
-  serializeReviewGrant,
-} from './review-unlock.ts'
+import { createReviewUnlock, REVIEW_CODE_ALPHABET, normalizeReviewCode, readReviewGrant, reviewUnlockDigestInput, serializeReviewGrant, } from './review-unlock.ts'
 
 const APP_ID = 'beside-cue'
 const CODE = 'REVIEW-7K4M-93XQ'
@@ -190,8 +183,27 @@ describe('readReviewGrant', () => {
     expect(readReviewGrant(null, expected)).toBeUndefined()
     expect(readReviewGrant('not json', expected)).toBeUndefined()
     expect(readReviewGrant('"a string"', expected)).toBeUndefined()
-    expect(readReviewGrant(JSON.stringify({ v: 2, digest: expected, grantedAt: '2026-09-12T19:30:00.000Z' }), expected)).toBeUndefined()
-    expect(readReviewGrant(JSON.stringify({ v: 1, digest: expected, grantedAt: 'whenever' }), expected)).toBeUndefined()
-    expect(readReviewGrant(JSON.stringify({ v: 1, grantedAt: '2026-09-12T19:30:00.000Z' }), expected)).toBeUndefined()
+    expect(
+      readReviewGrant(
+        JSON.stringify({
+          v: 2,
+          digest: expected,
+          grantedAt: '2026-09-12T19:30:00.000Z',
+        }),
+        expected,
+      ),
+    ).toBeUndefined()
+    expect(
+      readReviewGrant(
+        JSON.stringify({ v: 1, digest: expected, grantedAt: 'whenever' }),
+        expected,
+      ),
+    ).toBeUndefined()
+    expect(
+      readReviewGrant(
+        JSON.stringify({ v: 1, grantedAt: '2026-09-12T19:30:00.000Z' }),
+        expected,
+      ),
+    ).toBeUndefined()
   })
 })
