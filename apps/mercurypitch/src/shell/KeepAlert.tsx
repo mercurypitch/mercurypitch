@@ -45,7 +45,7 @@ export const KeepAlert: Component<KeepAlertProps> = (props) => {
               Keep this take?
             </div>
             <div class="mp-alert__text" id="shell-keep-text">
-              Keep stores it on this phone. Nothing uploaded.
+              Keep stores it on this phone.
             </div>
           </div>
           <div class="mp-alert__actions">

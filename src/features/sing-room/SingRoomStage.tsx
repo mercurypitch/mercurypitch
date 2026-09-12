@@ -614,7 +614,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
                 Hum. The line is you.
               </p>
               <p classList={{ [styles.body]: true, [styles.onCover]: true }}>
-                The microphone stays off until you tap. Nothing is uploaded.
+                The microphone stays off until you tap.
               </p>
             </Show>
             <button
@@ -683,7 +683,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             <p class={styles.display}>Hear your voice as a line</p>
             <p class={styles.body}>
               MercuryPitch listens while you sing and draws your pitch on
-              screen. Nothing is uploaded. Nobody hears you but you.
+              screen. Only you can hear you.
             </p>
             <div class={styles.grow} />
             <button

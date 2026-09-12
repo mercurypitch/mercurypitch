@@ -3,10 +3,10 @@
 // ============================================================
 //
 // A kept take is four numbers and two timestamps. NO AUDIO: the end card's
-// footer promises "Keep stores it on this phone. Nothing uploaded", and the
-// cheapest way to keep that promise is to have nothing to upload. Discard
-// writes nothing at all, which is why keeping is a call and discarding is
-// the absence of one.
+// footer promises "Keep stores it on this phone", and the cheapest way to
+// keep that promise is to have nothing to send anywhere. Discard writes
+// nothing at all, which is why keeping is a call and discarding is the
+// absence of one.
 //
 // The store exists for one reader today — "Against your own history", the
 // line the end card draws from the PREVIOUS kept take — and it is capped,

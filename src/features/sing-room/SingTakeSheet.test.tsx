@@ -138,9 +138,12 @@ describe('the two answers', () => {
 
   it('says what Keep does with it, in the footer', () => {
     mount()
-    expect(screen.getByTestId('sing-take-sheet').textContent).toContain(
-      'Keep stores it on this phone. Nothing uploaded.',
-    )
+    const text = screen.getByTestId('sing-take-sheet').textContent ?? ''
+    expect(text).toContain('Keep stores it on this phone.')
+    // R6: the promise is kept by saying where the take goes, not by naming
+    // the thing that does not happen to it. "Nothing uploaded" reads as a
+    // denial, and a denial is what puts the idea there in the first place.
+    expect(text).not.toContain('uploaded')
   })
 
   it('shows nothing at all when there is no summary', () => {
