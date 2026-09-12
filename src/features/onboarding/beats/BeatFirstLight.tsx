@@ -331,14 +331,14 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
             <p class={styles.sub}>
               Sing any note you like and hold it for a few seconds. Your browser
               will ask for the microphone first — choose Allow. We listen on
-              your device; no audio is uploaded, and none of it is stored.
+              your device, and the sound stays there.
             </p>
           }
         >
           <p class={styles.sub}>
             Your microphone is already allowed. Sing any note you like and hold
             it — we start recording the moment we hear you. It all happens on
-            your device; no audio is uploaded, and none of it is stored.
+            your device, and the sound stays there.
           </p>
         </Show>
         <div class={styles.actions}>

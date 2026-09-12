@@ -768,7 +768,7 @@ export const TranscriptionBench: Component = () => {
         Runs the shipping transcriber over a separated stem and scores it
         against a tab, with the same arithmetic as{' '}
         <code>node scripts/transcribe-bench.mjs</code>. Files stay on this
-        device — nothing is uploaded.
+        device.
       </p>
 
       <div class={styles.sources}>

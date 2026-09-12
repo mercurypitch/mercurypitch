@@ -91,7 +91,11 @@ const PROMISES: readonly { icon: () => JSX.Element; text: string }[] = [
         />
       </svg>
     ),
-    text: 'It all happens on your device. Nothing is uploaded.',
+    // The owner's standing rule (device round 2, R6): never name the thing
+    // that does not happen. "Nothing is uploaded" puts the idea of an upload
+    // in front of somebody who was not thinking about one; where the voice
+    // stays is the whole answer.
+    text: 'It all happens on your device.',
   },
 ]
 

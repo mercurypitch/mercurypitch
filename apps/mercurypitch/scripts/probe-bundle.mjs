@@ -2320,22 +2320,122 @@ async function walkFrame(browser, args, frame) {
  * that replaced them — without the second half this would pass just as
  * happily against a bundle with no Sing room in it at all.
  */
+/**
+ * Saying an upload does not happen is the one thing the UI may never do.
+ *
+ * The owner's rule, twice now (device round 2, R6): never name the thing that
+ * does not happen — "Nothing is uploaded" puts the idea of an upload in front
+ * of somebody who was not thinking about one. What is banned is the
+ * REASSURANCE BY DENIAL, not the word: a feature that really does upload a
+ * file the singer chose is allowed to say so, and several do.
+ *
+ * NO ALLOWLIST. Every `.js` in the bundle is read, including the app chunk
+ * everything the singer can reach is compiled into. The first version of this
+ * check named four dead sentences instead, which is how R6 shipped with
+ * "Nothing is uploaded." still in the onboarding sky beat and the karaoke
+ * rail: a tripwire scoped to the directory the author was editing.
+ */
+const UPLOAD_DENIAL =
+  /\b(?:nothing|no audio|no recording|none of it)\b[^<>{};]{0,40}?\bupload(?:ed|s|ing)?\b|\bnever\s+upload(?:ed|s)?\b/giu
+
+/**
+ * Chunks that may contain the WORD at all, and why.
+ *
+ * The second, weaker rule: a chunk that starts talking about uploads has to
+ * be named here before it ships. Matched on the name Rollup gives the chunk,
+ * without its content hash. The app chunk is on the list because three real
+ * upload flows compile into it — and it is covered by the denial rule above,
+ * which has no allowlist at all, so naming it here weakens nothing.
+ */
+const UPLOAD_CHUNKS = [
+  [
+    'index',
+    "the app chunk: the vocal separator's own upload box, the voiceprint sync and the MIDI library import all upload a file the singer chose. Covered by the denial rule, which allowlists nothing.",
+  ],
+  [
+    'AdminContentStudio',
+    "the owner's studio: managed uploads of demo audio, and the states of one in flight.",
+  ],
+  [
+    'ShazamListen',
+    'the "Upload audio instead" path — identifying a file the singer picks rather than one of ours.',
+  ],
+  [
+    'ShazamResults',
+    "names the source of a match: the singer's own upload, or the library.",
+  ],
+  ['ShazamDebugPanel', 'the same source label, in the debug read-out.'],
+  [
+    'KaraokeGroupsPanel',
+    '"No songs yet — upload one to get started." — the empty state of a real upload.',
+  ],
+  [
+    'SheetMusicView',
+    'a font glyph name in the notation renderer (`elecUpload`), not copy.',
+  ],
+  [
+    'ort.bundle.min',
+    'the ONNX runtime: WebGPU errors about uploading to an MLTensor. Not UI.',
+  ],
+  ['whisper-worker', 'the same runtime, in the transcription worker. Not UI.'],
+  ['voice-stt-worker', 'the same runtime, in the speech worker. Not UI.'],
+]
+
+/** The chunk's name without Rollup's content hash: `index-DGNfDjFf.js` -> `index`. */
+function chunkName(file) {
+  return file
+    .split('/')
+    .pop()
+    .replace(/\.js$/u, '')
+    .replace(/-[A-Za-z0-9_-]{8}$/u, '')
+}
+
 function checkNativeCopy(dir) {
   const files = listJs(dir)
   if (files.length === 0) {
     throw new Error(`no .js under ${dir} to read the room's copy out of`)
   }
-  const source = files.map((file) => readFileSync(file, 'utf8')).join('\n')
 
-  const gone = [
-    'Keep stores it on this phone. Nothing uploaded',
-    'The microphone stays off until you tap. Nothing is uploaded',
-    'Nothing is uploaded. Nobody hears you but you',
-  ].filter((sentence) => source.includes(sentence))
-  if (gone.length > 0) {
-    throw new Error(`the native bundle still says: ${gone.join(' / ')}`)
+  // ── The rule with no allowlist ──
+  const denials = []
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    UPLOAD_DENIAL.lastIndex = 0
+    let match
+    while ((match = UPLOAD_DENIAL.exec(text)) !== null) {
+      const around = text
+        .slice(
+          Math.max(0, match.index - 60),
+          match.index + match[0].length + 40,
+        )
+        .replace(/\s+/gu, ' ')
+      denials.push(`${chunkName(file)}: …${around}…`)
+    }
+  }
+  if (denials.length > 0) {
+    throw new Error(
+      `${denials.length} place(s) in the native bundle say an upload does not happen:\n  ${denials.join('\n  ')}`,
+    )
   }
 
+  // ── The rule with one ──
+  const allowed = new Set(UPLOAD_CHUNKS.map(([name]) => name))
+  const unnamed = [
+    ...new Set(
+      files
+        .filter((file) => /upload/iu.test(readFileSync(file, 'utf8')))
+        .map(chunkName)
+        .filter((name) => !allowed.has(name)),
+    ),
+  ]
+  if (unnamed.length > 0) {
+    throw new Error(
+      `${unnamed.join(', ')} talk(s) about uploads and is not named in UPLOAD_CHUNKS. Say why it may, or take the word out.`,
+    )
+  }
+
+  // ── …and the room's own sentences really are in there ──
+  const source = files.map((file) => readFileSync(file, 'utf8')).join('\n')
   const missing = [
     'Keep stores it on this phone.',
     'The microphone stays off until you tap.',
@@ -2343,12 +2443,12 @@ function checkNativeCopy(dir) {
   ].filter((sentence) => !source.includes(sentence))
   if (missing.length > 0) {
     throw new Error(
-      `the sentences that replaced them are not in the bundle: ${missing.join(' / ')}`,
+      `the sentences that replaced the denials are not in the bundle: ${missing.join(' / ')}`,
     )
   }
 
-  const elsewhere = (source.match(/uploaded/gu) ?? []).length
-  return `dist: no "uploaded" in any sing-room or shell string (${elsewhere} left elsewhere in the bundle)`
+  const words = (source.match(/upload/giu) ?? []).length
+  return `dist: nothing in ${files.length} chunks denies an upload; the word appears ${words} times, all in the ${UPLOAD_CHUNKS.length} chunks that say why`
 }
 
 /** Every .js under `dir`, recursively. */
