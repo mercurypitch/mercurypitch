@@ -13,6 +13,11 @@
 // pauses (`parkRun`), so the run behind it is paused by construction. The
 // label it is handed is the ROOM's name — "Retro Analog Studio", not "Sing"
 // (device round 1, P4).
+//
+// THE ACCESSIBLE NAME OPENS WITH THE VISIBLE ONE, verbatim, and then says the
+// rest. That is WCAG 2.5.3 and it is not a formality here: this app ships
+// voice control, and a name that paraphrased the words on the button would
+// leave "the thing it says" unspeakable.
 
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
@@ -28,7 +33,7 @@ export const SessionPill: Component<SessionPillProps> = (props) => (
     type="button"
     class="mp-pill"
     data-testid="shell-session-pill"
-    aria-label={`Parked and silent. Return to ${props.label()}`}
+    aria-label={`${props.label()} · paused. Parked and silent. Return to it`}
     onClick={() => {
       void hapticTap()
       props.onReturn()

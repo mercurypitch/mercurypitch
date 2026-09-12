@@ -19,7 +19,7 @@ import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { chipVisible, closeColumn, COLUMN_IDLE_MS, columnOpen, countInBeat, countingIn, elapsedMs, finishRun, formatElapsed, keepAlertOpen, locked, openColumn, parked, parkRun, popScreen, pushed, pushScreen, railVisible, requestEnd, resetRunShell, roomHeaderVisible, runLabel, runOwner, runState, toggleLock, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, COLUMN_IDLE_MS, columnOpen, countInBeat, countingIn, elapsedMs, finishRun, formatElapsed, keepAlertOpen, locked, moreOpen, openColumn, openMore, parked, parkRun, popScreen, pushed, pushScreen, railVisible, requestEnd, resetRunShell, roomHeaderVisible, runLabel, runOwner, runState, toggleLock, touchColumn, transportVisible, } from './run-shell-store'
 
 /** A room exactly as `SingingMobileStage` registers one, with its own state. */
 function fakeRoom(extra: Partial<NativeRunControls> = {}) {
@@ -492,11 +492,23 @@ describe('the room header, while a screen is pushed', () => {
     // A sheet and the tab column open OVER the bottom of the room and take
     // nothing from the header. Hiding it for those would make the room's name
     // and its gear flicker on every tap of More.
-    mount()
+    //
+    // The run is started first because `openColumn` refuses while the corner
+    // chip is not up, and the chip only exists once the transport has the
+    // band — so without it this case opened nothing and asserted nothing.
+    const room = mount()
+    room.play()
+    expect(chipVisible()).toBe(true)
 
     openColumn()
+    expect(columnOpen()).toBe(true)
     expect(roomHeaderVisible()).toBe(true)
     closeColumn()
+
+    openMore()
+    expect(moreOpen()).toBe(true)
+    expect(roomHeaderVisible()).toBe(true)
+    closeMore()
 
     expect(roomHeaderVisible()).toBe(true)
   })

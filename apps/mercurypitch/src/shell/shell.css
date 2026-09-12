@@ -43,6 +43,15 @@
     Arial,
     sans-serif
   );
+
+  /* iOS text autosizing inflates small text inside a narrow block, and every
+     label in this chrome is exactly that. Drawn at fixed sizes against a fixed
+     64 px bar, there is no reflow for a bigger glyph to take.
+
+     Here for the same reason the family is: the More sheet and the Keep alert
+     portal to <body>, so a rule on `.mp-shell` would reach neither of them. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .mp-shell {
@@ -55,12 +64,6 @@
   --mp-pop: 0.6;
   --mp-glass-shadow:
     0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-
-  /* iOS text autosizing inflates small text inside a narrow block, and every
-     label in this band is exactly that. The chrome is drawn at fixed sizes
-     against a fixed 64 px bar; there is no reflow for a bigger glyph to take. */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
 }
 
 /* Reduced motion: every transition becomes a 120 ms opacity crossfade, from

@@ -38,10 +38,15 @@ export const RoomHeader: Component<RoomHeaderProps> = (props) => {
   const on = (): boolean => props.visible?.() !== false
   let root: HTMLDivElement | undefined
 
+  // `on()` FIRST, before the ref check. An effect subscribes to what it read
+  // on the run it made, so a run that returned early would have read nothing
+  // and would never be woken again — the header would be stuck at whatever it
+  // was when the element was still undefined.
   createEffect(() => {
+    const inert = !on()
     if (root === undefined) return
-    if (on()) root.removeAttribute('inert')
-    else root.setAttribute('inert', '')
+    if (inert) root.setAttribute('inert', '')
+    else root.removeAttribute('inert')
   })
 
   return (
