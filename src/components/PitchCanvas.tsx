@@ -2279,6 +2279,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   createEffect(() => {
+    // Frozen: return before `draw()`, so this effect subscribes to `frozen`
+    // ALONE. It is the real repaint driver — it tracks everything `draw()`
+    // reads, and `livePitch` alone is a fresh object on every detection
+    // frame, which repainted a still trace sixty times a second behind a
+    // paused run and behind the end card. The loop owns the one frame a
+    // resize still owes while this is idle.
+    if (props.frozen?.() === true) return
     draw()
   })
 

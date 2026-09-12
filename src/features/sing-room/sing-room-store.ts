@@ -20,6 +20,7 @@
 // frozen canvas with no control on it and no way out. Either both survive a
 // remount or neither may.
 
+import type { Signal } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import type { SingTake } from '@/stores/sing-takes-store'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
@@ -34,10 +35,40 @@ function fresh(): SingRoomContext {
   })
 }
 
-const [context, setContext] = createSignal<SingRoomContext>(fresh())
+/**
+ * Every signal this module owns, built on first use.
+ *
+ * NOTHING AT THIS MODULE'S TOP LEVEL RUNS. `App.tsx` imports the room in both
+ * bundles and folds it away with `IS_NATIVE_BUILD`, but a top-level call is a
+ * side effect the bundler has to keep — and `fresh()` reads two persisted
+ * preferences, so the web bundle shipped the room's storage keys and read
+ * them at boot for a room it does not contain. Verified by grepping `dist`.
+ */
+interface RoomSignals {
+  context: Signal<SingRoomContext>
+  takes: Signal<number>
+  summary: Signal<TakeSummary | null>
+  previous: Signal<SingTake | null>
+  clock: Signal<TakeClock>
+}
+
+let signals: RoomSignals | undefined
+
+function room(): RoomSignals {
+  signals ??= {
+    context: createSignal<SingRoomContext>(fresh()),
+    takes: createSignal(0),
+    summary: createSignal<TakeSummary | null>(null),
+    previous: createSignal<SingTake | null>(null),
+    clock: createSignal<TakeClock>({ startedAt: 0, endedAt: 0 }),
+  }
+  return signals
+}
 
 /** The room's whole state, as one reactive value. */
-export const singRoomContext = context
+export function singRoomContext(): SingRoomContext {
+  return room().context[0]()
+}
 
 /**
  * Apply an event and return what the context became.
@@ -49,6 +80,7 @@ export const singRoomContext = context
  * the effect, and the app crashed on its own stack.
  */
 export function dispatchSingRoom(event: SingRoomEvent): SingRoomContext {
+  const [context, setContext] = room().context
   const next = singRoomReducer(untrack(context), event)
   setContext(next)
   return next
@@ -62,12 +94,13 @@ export function dispatchSingRoom(event: SingRoomEvent): SingRoomContext {
  * A visit, not the app's whole launch — "2 takes" for a take sung this
  * minute and one sung before lunch is a sentence nobody can use.
  */
-const [takesThisSession, setTakesThisSession] = createSignal(0)
-export { takesThisSession }
+export function takesThisSession(): number {
+  return room().takes[0]()
+}
 
 export function beginTake(): number {
-  const next = takesThisSession() + 1
-  setTakesThisSession(next)
+  const next = untrack(room().takes[0]) + 1
+  room().takes[1](next)
   return next
 }
 
@@ -79,33 +112,34 @@ export interface TakeClock {
   endedAt: number
 }
 
-const [takeSummary, setTakeSummary] = createSignal<TakeSummary | null>(null)
-const [takePrevious, setTakePrevious] = createSignal<SingTake | null>(null)
-const [takeClock, setTakeClock] = createSignal<TakeClock>({
-  startedAt: 0,
-  endedAt: 0,
-})
-
 /** The take the end card is showing, or null when there is no card. */
-export const singTakeSummary = takeSummary
+export function singTakeSummary(): TakeSummary | null {
+  return room().summary[0]()
+}
+
 /** The kept take it compares itself against — captured BEFORE Keep writes. */
-export const singTakePrevious = takePrevious
-export const singTakeClock = takeClock
+export function singTakePrevious(): SingTake | null {
+  return room().previous[0]()
+}
+
+export function singTakeClock(): TakeClock {
+  return room().clock[0]()
+}
 
 export function setSingTakeResult(
   summary: TakeSummary,
   previous: SingTake | null,
   clock: TakeClock,
 ): void {
-  setTakeSummary(summary)
-  setTakePrevious(previous)
-  setTakeClock(clock)
+  room().summary[1](summary)
+  room().previous[1](previous)
+  room().clock[1](clock)
 }
 
 /** Keep or Discard, Back, a backdrop tap — every way the card closes. */
 export function clearSingTakeResult(): void {
-  setTakeSummary(null)
-  setTakePrevious(null)
+  room().summary[1](null)
+  room().previous[1](null)
 }
 
 /**
@@ -116,24 +150,20 @@ export function clearSingTakeResult(): void {
  * without one has to rest.
  */
 export function enterSingRoom(): SingRoomContext {
-  const before = untrack(context)
+  const before = untrack(room().context[0])
+  const summary = untrack(room().summary[0])
   // A fresh visit starts its own count. A return to a run that is still in
   // flight — parked, or an undecided card — is the same visit, and a counter
   // that reset under it would renumber the take the singer is looking at.
-  if (before.state === 'resting' && untrack(takeSummary) === null) {
-    setTakesThisSession(0)
-  }
-  return dispatchSingRoom({
-    type: 'enter',
-    hasSummary: untrack(takeSummary) !== null,
-  })
+  if (before.state === 'resting' && summary === null) room().takes[1](0)
+  return dispatchSingRoom({ type: 'enter', hasSummary: summary !== null })
 }
 
 /** Tests, and nothing else — the room has no "start over" control. */
 export function resetSingRoom(): void {
-  setContext(fresh())
-  setTakesThisSession(0)
-  setTakeSummary(null)
-  setTakePrevious(null)
-  setTakeClock({ startedAt: 0, endedAt: 0 })
+  room().context[1](fresh())
+  room().takes[1](0)
+  room().summary[1](null)
+  room().previous[1](null)
+  room().clock[1]({ startedAt: 0, endedAt: 0 })
 }

@@ -82,6 +82,10 @@ function seed(theme) {
     localStorage.setItem('pitchperfect_survey_seen', 'probe-bundle')
     localStorage.setItem('pitchperfect_theme', theme)
     localStorage.setItem('pitchperfect_theme_source', 'manual')
+    // The dev portable console ships in this bundle and grows from the bottom
+    // edge as it captures lines — over the rail, which is what this walk taps.
+    // A layout probe has no business measuring a debug overlay.
+    localStorage.setItem('mp:portableConsole', '0')
     for (const tab of [
       'home',
       'singing',
@@ -848,9 +852,15 @@ async function sampleTrace(page) {
 }
 
 /** The room's whole walk, from the silent trace to a decided take. */
-async function walkRun(page, ctx) {
+/**
+ * `steps` is an OUT parameter, not a return value.
+ *
+ * A throw halfway through used to take every step this walk had already
+ * proved with it, so a failure at step forty reported forty blank lines and a
+ * message with no place in it. The caller keeps the array.
+ */
+async function walkRun(page, ctx, steps) {
   const { frame } = ctx
-  const steps = []
 
   await page.locator('[data-rail-item="stage"]').click()
   await expectVisible(
@@ -1646,7 +1656,12 @@ async function walkFrame(browser, args, frame) {
     steps = steps.concat(await walkBackRoot(page))
     steps = steps.concat(await walkChrome(page, ctx))
     if (!args.chromeOnly) {
-      steps = steps.concat(await walkRun(page, ctx))
+      const room = []
+      try {
+        await walkRun(page, ctx, room)
+      } finally {
+        steps = steps.concat(room)
+      }
       steps = steps.concat(await walkBack(page))
     }
   } catch (error) {
