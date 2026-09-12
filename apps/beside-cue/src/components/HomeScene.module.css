@@ -1,0 +1,84 @@
+/* 408 x 240 on a 440 px phone; everything inside scales with the width. The
+   two-column tablet layout hands in a taller ratio through the custom
+   property, so the scene never needs to know which layout it is in. */
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--home-scene-ratio, 408 / 240);
+  isolation: isolate;
+}
+
+/* The custard incident behind the hero, as the landing's `.hero::before`. */
+.glow {
+  position: absolute;
+  z-index: -1;
+  top: -1.9rem;
+  left: -2.5rem;
+  width: 18.75rem;
+  height: 18.75rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(242 200 75 / 26%) 0 20%,
+    rgb(242 200 75 / 0%) 72%
+  );
+  pointer-events: none;
+}
+
+.chip {
+  position: absolute;
+  z-index: 2;
+  top: 0.375rem;
+  left: 0;
+  padding: 0.3rem 0.55rem 0.35rem;
+  border-radius: 6px;
+  background: var(--orange-dark);
+  color: var(--paper);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* 10 px above the scene's floor on the 240 px scene, as a share of height. */
+.deck {
+  position: absolute;
+  bottom: 4.17%;
+  left: 0;
+  width: 76%;
+  aspect-ratio: 900 / 606;
+}
+
+.deckArt {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0.8rem 1.2rem rgb(36 25 19 / 26%));
+}
+
+/* Seats the record on the platter. The landing's measured geometry
+   (global.css .hero__plate, from a pixel measurement of turntable-hero.png):
+   the platter centre sits at 41.275% of the image width and 39.815% of its
+   height, rx 27.455%, ry 14.930%. The SVG paints its disc at r 194 of a 400
+   box (0.485), so width = 27.455 / 0.485 = 56.61% and left = 41.275 - 56.61 / 2
+   = 12.97%; `top` plus translateY(-50%) pins the box centre on the platter
+   centre; scaleY is ry / rx = 0.3666. Do not round these: a 5pp error puts the
+   record visibly low, sunk into the plinth. */
+.seat {
+  position: absolute;
+  top: 39.815%;
+  left: 12.97%;
+  width: 56.61%;
+  aspect-ratio: 1;
+  transform: translateY(-50%) scaleY(0.3666);
+  transform-origin: 50% 50%;
+}
+
+/* Corky's body at the hero's 56%, front-right, in front of the deck's edge. */
+.companion {
+  position: absolute;
+  right: 0;
+  bottom: 4.17%;
+  width: 56%;
+}

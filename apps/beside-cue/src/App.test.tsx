@@ -737,7 +737,7 @@ async function saveFirstPlanFromWelcome(): Promise<void> {
   fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
   fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
   await screen.findByRole('heading', {
-    name: /your current pressing/iu,
+    name: /your current plan/iu,
   })
 }
 
@@ -927,7 +927,7 @@ describe('Beside Cue character voice integration', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /close cue/iu }))
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
 
     const scheduled = runtime.calls.scheduled.at(-1)?.[0]
@@ -1310,7 +1310,7 @@ describe('Beside Cue V2 onboarding integration', () => {
       screen.getByRole('button', { name: /finish v2 introduction/iu }),
     )
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
     expect(output.playbacks).toHaveLength(1)
     expect(music.stopCalls).toBe(0)
@@ -1436,7 +1436,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     )
     expect(
       await screen.findByRole('heading', {
-        name: /your current pressing/iu,
+        name: /your current plan/iu,
       }),
     ).toBeInTheDocument()
   })
@@ -1742,15 +1742,15 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
     expect(repository.snapshot()?.cues[0]).toMatchObject({
       cueContextSuggestionId: 'anchor.scrolling.in-bed',
       cueContextText: 'When I get into bed with my phone.',
     })
-    expect(screen.getByLabelText('Your cue')).toHaveTextContent(
-      'When I get into bed with my phone.',
-    )
+    expect(
+      screen.getByText('Your cue', { selector: 'dt' }).nextElementSibling,
+    ).toHaveTextContent('When I get into bed with my phone.')
 
     fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
     expect(screen.getByText('When I get into bed with my phone.')).toBeVisible()
@@ -1780,7 +1780,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
     const savedCue = repository.snapshot()?.cues[0]
     expect(savedCue).toMatchObject({ cueContextText: 'After lunch' })
@@ -1859,7 +1859,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
     const savedCue = repository.snapshot()?.cues[0]
     expect(savedCue).toMatchObject({
@@ -1960,7 +1960,7 @@ describe('Beside Cue app', () => {
     ))
     expect(
       await screen.findByRole('heading', {
-        name: /your current pressing/iu,
+        name: /your current plan/iu,
       }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Your first plan')).not.toBeInTheDocument()
@@ -2011,7 +2011,7 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /your current pressing/iu,
+        name: /your current plan/iu,
       }),
     ).toBeInTheDocument()
     expect(repository.snapshot()?.scheduleRules).toEqual([])
@@ -2022,10 +2022,11 @@ describe('Beside Cue app', () => {
     expect(text).toHaveAttribute('data-selection', 'text')
     expect(art).not.toBeNull()
     expect(art?.contains(text)).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'Side B · My choice' }))
-    expect(
-      screen.getByRole('button', { name: 'Side B · My choice' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+    // The Side B is stationary, selectable text beside the scene; no toggle.
+    expect(screen.getByText('Put the phone in another room')).toHaveAttribute(
+      'data-selection',
+      'text',
+    )
   })
 
   it('sets a real onboarding reminder only after the user asks', async () => {
@@ -2061,11 +2062,7 @@ describe('Beside Cue app', () => {
       screen.getByRole('button', { name: /finish introduction/iu }),
     )
     expect(
-      await screen.findByRole('button', { name: 'Side B · My choice' }),
-    ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Side B · My choice' }))
-    expect(
-      screen.getByText('Put the phone in another room'),
+      await screen.findByText('Put the phone in another room'),
     ).toBeInTheDocument()
   })
 
@@ -2245,7 +2242,7 @@ describe('Beside Cue app', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
     await screen.findByRole('heading', {
-      name: /your current pressing/iu,
+      name: /your current plan/iu,
     })
     const cues = repository.snapshot()?.cues ?? []
     expect(cues.filter((cue) => cue.status === 'active')).toMatchObject([
@@ -2357,7 +2354,7 @@ describe('Beside Cue app', () => {
       screen.getByRole('radio', { name: /walk to the end of the street/iu }),
     )
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
-    await screen.findByRole('heading', { name: /your current pressing/iu })
+    await screen.findByRole('heading', { name: /your current plan/iu })
 
     const snapshot = repository.snapshot()
     const activeCue = snapshot?.cues.find((cue) => cue.status === 'active')
@@ -2432,7 +2429,7 @@ describe('Beside Cue app', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
-    await screen.findByRole('heading', { name: /your current pressing/iu })
+    await screen.findByRole('heading', { name: /your current plan/iu })
     const cues = repository.snapshot()?.cues ?? []
     const activeCue = cues.find((cue) => cue.status === 'active')
     expect(activeCue).toMatchObject({
@@ -2820,7 +2817,7 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /your current pressing/iu,
+        name: /your current plan/iu,
       }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
@@ -2904,7 +2901,7 @@ describe('Beside Cue app', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: /your current pressing/iu,
+        name: /your current plan/iu,
       }),
     ).toBeInTheDocument()
     expect(repository.snapshot()?.occurrences).toMatchObject([

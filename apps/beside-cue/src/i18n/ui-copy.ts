@@ -26,10 +26,6 @@ const english = {
   Reflection: 'Reflection',
   'Your current plan': 'Your current plan',
   Paused: 'Paused',
-  Ready: 'Ready',
-  'Record side': 'Record side',
-  'Side A · The Pull': 'Side A · The Pull',
-  'Side B · My choice': 'Side B · My choice',
   '{count} Pulls': '{count} Pulls',
   'DELUXE · Locked': 'DELUXE · Locked',
   'Unlock {name}': 'Unlock {name}',
@@ -244,6 +240,18 @@ const english = {
   'Keep the plan and history, but stop reminders and Cue me now.':
     'Keep the plan and history, but stop reminders and Cue me now.',
   'Change this plan': 'Change this plan',
+  Change: 'Change',
+  Set: 'Set',
+  'Start a plan': 'Start a plan',
+  'Corky keeps the deck warm': 'Corky keeps the deck warm',
+  'No plan on the deck yet.': 'No plan on the deck yet.',
+  'Pick one Pull, name the moment, choose a small Side B.':
+    'Pick one Pull, name the moment, choose a small Side B.',
+  'Your Side B · turned today': 'Your Side B · turned today',
+  'Same Pull, cue and Side B, prefilled. History and reminder stay.':
+    'Same Pull, cue and Side B, prefilled. History and reminder stay.',
+  'This reminder stays off while your plan is paused.':
+    'This reminder stays off while your plan is paused.',
   'Choose a new Pull, cue, and Side B. Your current plan stays active until the new one is saved.':
     'Choose a new Pull, cue, and Side B. Your current plan stays active until the new one is saved.',
   'Watch Corky’s introduction again': 'Watch Corky’s introduction again',
@@ -301,7 +309,6 @@ const english = {
   'Let it spin for a moment.': 'Let it spin for a moment.',
   'Stop and save plan': 'Stop and save plan',
   'Stop the record': 'Stop the record',
-  'Your current pressing': 'Your current pressing',
   'Show Deluxe': 'Show Deluxe',
   'Hide Deluxe': 'Hide Deluxe',
   'Your Deluxe cast. Choose the Pull you want to notice.':
@@ -359,10 +366,6 @@ const spanish = {
   Reflection: 'Reflexión',
   'Your current plan': 'Tu plan actual',
   Paused: 'En pausa',
-  Ready: 'Listo',
-  'Record side': 'Cara del disco',
-  'Side A · The Pull': 'Cara A · El impulso',
-  'Side B · My choice': 'Cara B · Mi elección',
   '{count} Pulls': '{count} impulsos',
   'DELUXE · Locked': 'DELUXE · Bloqueado',
   'Unlock {name}': 'Desbloquear {name}',
@@ -580,6 +583,18 @@ const spanish = {
   'Keep the plan and history, but stop reminders and Cue me now.':
     'Conserva el plan y el historial, pero detén los recordatorios y «Dame una señal».',
   'Change this plan': 'Cambiar este plan',
+  Change: 'Cambiar',
+  Set: 'Fijar',
+  'Start a plan': 'Empezar un plan',
+  'Corky keeps the deck warm': 'Corky cuida el tocadiscos mientras tanto',
+  'No plan on the deck yet.': 'Aún no hay ningún plan en el tocadiscos.',
+  'Pick one Pull, name the moment, choose a small Side B.':
+    'Elige un impulso, nombra el momento y escoge una cara B pequeña.',
+  'Your Side B · turned today': 'Tu cara B · girada hoy',
+  'Same Pull, cue and Side B, prefilled. History and reminder stay.':
+    'El mismo impulso, la misma señal y la misma cara B, ya rellenados. El historial y el recordatorio se mantienen.',
+  'This reminder stays off while your plan is paused.':
+    'Este recordatorio sigue apagado mientras tu plan está en pausa.',
   'Choose a new Pull, cue, and Side B. Your current plan stays active until the new one is saved.':
     'Elige un nuevo impulso, una señal y una cara B. Tu plan actual seguirá activo hasta que guardes el nuevo.',
   'Watch Corky’s introduction again': 'Volver a ver la introducción de Corky',
@@ -638,7 +653,6 @@ const spanish = {
   'Let it spin for a moment.': 'Déjalo girar un momento.',
   'Stop and save plan': 'Detener y guardar el plan',
   'Stop the record': 'Detener el disco',
-  'Your current pressing': 'Tu disco actual',
   'Show Deluxe': 'Ver opciones Deluxe',
   'Hide Deluxe': 'Ocultar opciones Deluxe',
   'Your Deluxe cast. Choose the Pull you want to notice.':
@@ -691,10 +705,6 @@ const german = {
   Reflection: 'Rückblick',
   'Your current plan': 'Dein aktueller Plan',
   Paused: 'Pausiert',
-  Ready: 'Bereit',
-  'Record side': 'Schallplattenseite',
-  'Side A · The Pull': 'Seite A · Der Impuls',
-  'Side B · My choice': 'Seite B · Meine Wahl',
   '{count} Pulls': '{count} Impulse',
   'DELUXE · Locked': 'DELUXE · Gesperrt',
   'Unlock {name}': '{name} freischalten',
@@ -912,6 +922,18 @@ const german = {
   'Keep the plan and history, but stop reminders and Cue me now.':
     'Plan und Verlauf behalten, aber Erinnerungen und „Jetzt einen Hinweis“ anhalten.',
   'Change this plan': 'Diesen Plan ändern',
+  Change: 'Ändern',
+  Set: 'Festlegen',
+  'Start a plan': 'Einen Plan beginnen',
+  'Corky keeps the deck warm': 'Corky hält den Plattenspieler warm',
+  'No plan on the deck yet.': 'Noch kein Plan auf dem Plattenteller.',
+  'Pick one Pull, name the moment, choose a small Side B.':
+    'Wähle einen Impuls, benenne den Moment und wähle eine kleine Seite B.',
+  'Your Side B · turned today': 'Deine Seite B · heute gedreht',
+  'Same Pull, cue and Side B, prefilled. History and reminder stay.':
+    'Derselbe Impuls, derselbe Hinweis und dieselbe Seite B, schon ausgefüllt. Verlauf und Erinnerung bleiben.',
+  'This reminder stays off while your plan is paused.':
+    'Diese Erinnerung bleibt aus, solange dein Plan pausiert ist.',
   'Choose a new Pull, cue, and Side B. Your current plan stays active until the new one is saved.':
     'Wähle einen neuen Impuls, Hinweis und eine neue Seite B. Dein aktueller Plan bleibt aktiv, bis der neue gespeichert ist.',
   'Watch Corky’s introduction again': 'Corkys Einführung noch einmal ansehen',
@@ -971,7 +993,6 @@ const german = {
   'Let it spin for a moment.': 'Lass sie einen Moment drehen.',
   'Stop and save plan': 'Anhalten und Plan speichern',
   'Stop the record': 'Schallplatte anhalten',
-  'Your current pressing': 'Deine aktuelle Pressung',
   'Show Deluxe': 'Deluxe anzeigen',
   'Hide Deluxe': 'Deluxe ausblenden',
   'Your Deluxe cast. Choose the Pull you want to notice.':

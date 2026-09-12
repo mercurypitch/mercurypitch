@@ -1,0 +1,24 @@
+/* The box is Corky's visible body (828 x 826 inside the 1024 still). The
+   image is oversized by the file's margin and pulled back by it, so whoever
+   positions this box positions the character, not the padding. */
+.companion {
+  position: relative;
+  overflow: visible;
+  aspect-ratio: 828 / 826;
+}
+
+.art {
+  position: absolute;
+  top: -11.985%;
+  left: -11.836%;
+  width: 123.671%;
+  height: auto;
+  filter: drop-shadow(0 0.6rem 0.9rem rgb(36 25 19 / 22%));
+  object-fit: contain;
+}
+
+video.art {
+  /* The clip carries the same framing as the still; the poster keeps the
+     frame while it loads. */
+  background: transparent;
+}

@@ -206,7 +206,7 @@ test('the Punched Clock follows a real mouse turn and releases cleanly @smoke', 
   await page.goto('/?devSeed')
 
   await expect(
-    page.getByRole('heading', { name: 'Your current pressing' }),
+    page.getByRole('heading', { name: 'Your current plan' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Settings' }).click()
   await expect(
@@ -273,7 +273,7 @@ test('a vertical touch on a partly visible record scrolls Settings without chang
   await page.goto('/?devSeed')
 
   await expect(
-    page.getByRole('heading', { name: 'Your current pressing' }),
+    page.getByRole('heading', { name: 'Your current plan' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Settings' }).click()
   const dial = page.getByRole('slider', {
@@ -422,7 +422,7 @@ test('a trusted tangential touch keeps turning through a circular drag @smoke', 
   await page.goto('/?devSeed')
 
   await expect(
-    page.getByRole('heading', { name: 'Your current pressing' }),
+    page.getByRole('heading', { name: 'Your current plan' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Settings' }).click()
   const dial = page.getByRole('slider', {

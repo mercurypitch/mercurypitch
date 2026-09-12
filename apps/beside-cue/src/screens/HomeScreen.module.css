@@ -8,12 +8,6 @@
   padding-top: var(--safe-top);
 }
 
-.intro h1 {
-  margin: 0;
-  font-size: clamp(1.25rem, 5vw, 1.8rem);
-  line-height: 1.2;
-}
-
 .header > :first-child {
   flex: 1;
   display: flex;
@@ -48,4 +42,155 @@
   height: 48px;
   border-radius: 50%;
   background: var(--paper-light);
+}
+
+/* The stage, then the plan and its actions. One column on a phone; from
+   700 px wide (an iPad, a split view) the plan takes the left column and the
+   scene the right, centred between header and nav. */
+.layout {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* The hidden title is pinned to the layout's corner. Left at its static
+   position, the centred two-column grid would put it, and any pointer
+   landing on its clipped text, over the rows in the middle of the column. */
+.title {
+  top: 0;
+  left: 0;
+}
+
+.body {
+  min-width: 0;
+}
+
+.plan {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.kicker {
+  color: var(--turquoise-dark);
+  font-family: var(--font-label);
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* The Side B is the plan; it wraps as far as it needs to, never microtype. */
+.sideB {
+  font-size: 1.5rem;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.details {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.details dt,
+.details dd {
+  display: inline;
+  margin: 0;
+}
+
+.line {
+  color: var(--ink-soft);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cue {
+  font-size: 0.875rem;
+}
+
+.label {
+  margin-right: 0.3rem;
+  color: var(--ink-soft);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.body :global(.cue-now-button) {
+  margin-top: 0.9rem;
+}
+
+.resume :global(.cue-now-button__disc) {
+  background: var(--turquoise);
+}
+
+.start :global(.cue-now-button__disc) {
+  background: var(--custard);
+}
+
+.start :global(.cue-now-button__disc span) {
+  border-color: var(--ink);
+}
+
+.rows {
+  margin-top: 0.75rem;
+}
+
+/* The app's open row, at the compact height the sheet measured. */
+.body .row {
+  min-height: 3.4rem;
+  padding: 0.5rem 0;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.body .row strong {
+  font-size: 0.97rem;
+}
+
+.body .value {
+  display: block;
+  color: var(--turquoise-dark);
+  font-family: var(--font-label);
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.body .valueOff {
+  color: var(--ink-soft);
+}
+
+.quiet {
+  padding-top: 0.5rem;
+}
+
+@media (min-width: 43.75rem) {
+  .layout {
+    --home-scene-ratio: 445 / 300;
+
+    grid-template-columns: minmax(0, 24.2rem) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: center;
+    min-height: calc(100dvh - 15rem);
+  }
+
+  .scene {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .body {
+    grid-column: 1;
+    grid-row: 1;
+  }
 }
