@@ -50,7 +50,7 @@ export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
 export type RailVariant = 'r1' | 'r2'
 
 /** A screen pushed over the tab, with its own Back. */
-export type PushedScreen = 'settings'
+export type PushedScreen = 'settings' | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000
@@ -202,6 +202,23 @@ export const chipVisible = createMemo<boolean>(
   () => variant() === 'r2' && transportVisible(),
 )
 
+/**
+ * Whether the room's header belongs on screen, for a room that has one.
+ *
+ * It does not while a screen is pushed. The header is the ROOM's chrome —
+ * its name, its gear, and a Back that leaves it — and a pushed screen is a
+ * navigation level over the top of that room with a Back of its own. Two
+ * Backs at the same corner is the least of it: the header sits one step
+ * ABOVE the pushed screen in the z order (`--z-rail` against
+ * `--z-rail - 1`), so it took the tap meant for the screen's own Back and
+ * floated its chip and gear over a page they have nothing to do with.
+ *
+ * Not "is there a header" — that is the shell's question, and it answers it
+ * by whether a room registered controls at all. This is only "should the one
+ * we have be showing".
+ */
+export const roomHeaderVisible = createMemo<boolean>(() => pushed() === null)
+
 export function elapsedMs(): number {
   tick()
   const running = startedAt === null ? 0 : Date.now() - startedAt
@@ -259,7 +276,19 @@ export function closeMore(): void {
   setMoreOpen(false)
 }
 
+/**
+ * A build that has no developer screen must not be able to push one.
+ *
+ * The tile that opens it is already behind this constant and so is the screen
+ * itself, so nothing in a store build can reach this — but a `pushed` state
+ * whose screen renders nothing is a Back press that pops something invisible,
+ * which is the same class of bug as the tile that did nothing. Cheaper to
+ * refuse here than to trust every future caller.
+ */
+const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+
 export function pushScreen(screen: PushedScreen): void {
+  if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
   closeColumn()
   closeMore()
   setPushed(screen)

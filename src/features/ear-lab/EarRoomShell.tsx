@@ -21,6 +21,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { calibrationDueAt } from '@/lib/ear/calibration'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { STEADY_LATENCY_SPREAD_MS } from '@/lib/mic-latency'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { earRevealHoldMs, latestCalibration, setEarRevealHoldMs, } from '@/stores/ear-lab-store'
 import { micLatencyMs, micLatencySpreadMs } from '@/stores/mic-latency-store'
 import type { ClickVoice } from './click-synth'
@@ -186,32 +187,58 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
         <div class={styles.roomShade} aria-hidden="true" />
         <div class={styles.roomVignette} aria-hidden="true" />
 
-        <div class={styles.sessionBar} data-testid="ear-session-bar">
-          <div class={styles.sessionCopy}>
-            <h2 class={styles.sessionTitle}>Ear Lab</h2>
-            <p class={styles.sessionMeta}>
-              <span>{roomLabel()}</span>
-              <i aria-hidden="true" />
-              <Show when={sealed()} fallback={<span>Not yet marked</span>}>
-                {(run) => (
-                  <span>
-                    Index <b>{run().index}</b>
-                    <span class={styles.metaExtra}>
-                      <i aria-hidden="true" /> sealed {dateLabel(run().at)}
-                      <i aria-hidden="true" /> due{' '}
-                      {dateLabel(calibrationDueAt(run().at))}
+        {/* THE INFORMATION GOES, THE CONTROLS STAY.
+            What the owner asked to lose is the band of prose at the top: a
+            title, the room's name, the index and two dates, over a room that
+            already shows what it is (device round 1, P5). The three chips
+            beside it are not information — they are the only way to the
+            readiness panel that every tap drill subtracts from, to the rulers,
+            and to the room picker — so they stay, and the bar keeps its own
+            paint only on the web, where the prose is still beside them.
+
+            A heading stays too, read but not drawn: a room with no <h1> and no
+            <h2> is a document whose landmark list is empty.
+
+            The constant folds to a literal, so the branch the native build
+            takes is fixed at build time — though both branches are still in
+            the module, since a `Show` chooses which to RENDER and does not
+            remove either. The Ear Lab room proper is Phase 7. */}
+        <div
+          class={styles.sessionBar}
+          classList={{ [styles.sessionBarBare]: IS_NATIVE_BUILD }}
+          data-testid="ear-session-bar"
+        >
+          <Show
+            when={!IS_NATIVE_BUILD}
+            fallback={<h2 class={styles.srOnly}>Ear Lab</h2>}
+          >
+            <div class={styles.sessionCopy} data-testid="ear-session-copy">
+              <h2 class={styles.sessionTitle}>Ear Lab</h2>
+              <p class={styles.sessionMeta}>
+                <span>{roomLabel()}</span>
+                <i aria-hidden="true" />
+                <Show when={sealed()} fallback={<span>Not yet marked</span>}>
+                  {(run) => (
+                    <span>
+                      Index <b>{run().index}</b>
+                      <span class={styles.metaExtra}>
+                        <i aria-hidden="true" /> sealed {dateLabel(run().at)}
+                        <i aria-hidden="true" /> due{' '}
+                        {dateLabel(calibrationDueAt(run().at))}
+                      </span>
                     </span>
-                  </span>
-                )}
-              </Show>
-            </p>
-          </div>
+                  )}
+                </Show>
+              </p>
+            </div>
+          </Show>
 
           <div class={styles.sessionChips}>
             <button
               type="button"
               class={styles.chip}
               data-tour="ear.latency"
+              data-testid="ear-readiness-chip"
               onClick={() => open('readiness')}
               aria-label={
                 measured()
@@ -244,6 +271,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
               type="button"
               class={styles.chip}
               data-tour="ear.rulers"
+              data-testid="ear-rulers-chip"
               onClick={() => open('rulers')}
               aria-label="Why there is no percent here"
               title="Why there is no percent here"

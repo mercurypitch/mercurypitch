@@ -652,3 +652,17 @@
   color: var(--text-primary);
   border-color: var(--text-muted);
 }
+
+/* Read, not drawn. Under the native shell the head band is gone and the h1
+   inside it with it, so the page keeps one here. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

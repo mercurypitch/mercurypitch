@@ -5,6 +5,12 @@
 // The pill's visibility is the thing worth asserting here. Every run store in
 // this app is a module-level global, so a pill rendered without asking whose
 // run it is lights up in the room the run is already in.
+//
+// Its WORDS are the other thing, and they are asserted against each other
+// rather than only against a string: the pill says "<room> · paused", and its
+// accessible name has to contain that verbatim (WCAG 2.5.3). This app ships
+// voice control, so a name that paraphrases the button is a button nobody can
+// ask for out loud.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Dock } from './Dock'
@@ -17,6 +23,9 @@ const platform = vi.hoisted(() => ({
   hapticWarning: vi.fn(async () => undefined),
 }))
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
+
+/** What a room registers, not what its tab is called (device round 1, P4). */
+const ROOM = 'Retro Analog Studio'
 
 let unmount: (() => void) | null = null
 
@@ -34,7 +43,7 @@ function mount(options: { parked?: boolean; running?: boolean } = {}) {
       transportIn={() => options.running === true}
       accessory={
         options.parked === true ? (
-          <SessionPill label={() => 'Sing'} onReturn={onReturn} />
+          <SessionPill label={() => ROOM} onReturn={onReturn} />
         ) : null
       }
       rail={<div data-testid="rail-slot" />}
@@ -86,12 +95,27 @@ describe('Dock', () => {
       '[data-testid="shell-session-pill"]',
     )
     expect(pill).not.toBeNull()
-    expect(pill?.textContent).toContain('Sing')
+    // The room, and the state, in the kit's grammar for this control.
+    expect(pill?.textContent?.trim()).toBe(`${ROOM} · paused`)
     expect(pill?.getAttribute('aria-label')).toBe(
-      'Parked and silent. Return to Sing',
+      `${ROOM} · paused. Parked and silent. Return to it`,
     )
 
     pill?.click()
     expect(onReturn).toHaveBeenCalledTimes(1)
+  })
+
+  it('names itself with the words it shows', () => {
+    // The invariant rather than the string: whatever the pill comes to say,
+    // its accessible name has to contain the visible text verbatim, or voice
+    // control cannot reach it (WCAG 2.5.3).
+    const { container } = mount({ parked: true })
+
+    const pill = container.querySelector<HTMLButtonElement>(
+      '[data-testid="shell-session-pill"]',
+    )
+    const visible = pill?.textContent?.trim() ?? ''
+    expect(visible).not.toBe('')
+    expect(pill?.getAttribute('aria-label')).toContain(visible)
   })
 })

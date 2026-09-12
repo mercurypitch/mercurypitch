@@ -20,7 +20,7 @@
 // (src/stores/native-shell-store.ts).
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -36,7 +36,7 @@ import { MoreSheet } from './MoreSheet'
 import { PushedScreen } from './PushedScreen'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
@@ -44,6 +44,26 @@ import { Transport } from './Transport'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
 const MINIMISE_AT = 24
+
+/**
+ * The developer screen exists on a test build and on no other.
+ *
+ * Lazy AND behind the constant, which is the same pattern the portable console
+ * uses in `main.tsx`. The ternary is what does the work: the constant folds to
+ * a literal, so a store build keeps only the `() => null` arm and the dynamic
+ * import goes with the branch — no chunk is emitted at all. Behind a `Show`
+ * alone the factory still existed, and Rollup still wrote the chunk; behind a
+ * static import the screen would have shipped whatever the flag said.
+ */
+const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+
+const DeveloperScreen: Component = DEVELOPER_AVAILABLE
+  ? lazy(async () =>
+      import('./DeveloperScreen').then((module) => ({
+        default: module.DeveloperScreen,
+      })),
+    )
+  : () => null
 
 export const NativeShell: Component = () => {
   const [minimised, setMinimised] = createSignal(false)
@@ -186,6 +206,7 @@ export const NativeShell: Component = () => {
             {(controls) => (
               <RoomHeader
                 title={() => controls().roomLabel}
+                visible={roomHeaderVisible}
                 onBack={() => {
                   performBack(shellBackHost())
                 }}
@@ -256,6 +277,12 @@ export const NativeShell: Component = () => {
             </PushedScreen>
           </Show>
 
+          <Show when={DEVELOPER_AVAILABLE && pushed() === 'developer'}>
+            <PushedScreen title="Developer" onBack={popScreen}>
+              <DeveloperScreen />
+            </PushedScreen>
+          </Show>
+
           {/* Inside the root, not beside it: the sheet copies the custom
               properties that resolve on its anchor onto its own portal, and
               the alert has none of its own — so outside, both would animate
@@ -265,6 +292,9 @@ export const NativeShell: Component = () => {
             onClose={closeMore}
             onPushSettings={() => {
               pushScreen('settings')
+            }}
+            onPushDeveloper={() => {
+              pushScreen('developer')
             }}
           />
 

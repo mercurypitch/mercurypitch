@@ -5,9 +5,15 @@
 //
 // What it is for: `pnpm build` proves the bundle compiles, and
 // `assert-bundle.mjs` proves it carries what it should. Neither opens it.
-// This does — at 393 x 852, the phone the shell is drawn for — and walks the
-// chrome a first run touches: the five rail destinations, the More sheet,
-// and Settings pushed and popped.
+// This does — and walks the chrome a first run touches: the five rail
+// destinations, the More sheet, the Developer screen, and Settings pushed and
+// popped.
+//
+// IT WALKS EVERY FRAME IN `FRAMES`, and there are two. 393 x 852 is the size
+// the rail lab is drawn at; 390 x 844 is the iPhone 13 Pro the owner holds.
+// Three points is not a rounding error when four rail items share a row with
+// a fixed circle beside them — device round 1 came back with labels that fit
+// the lab and not the phone, so both are walked and both are measured.
 //
 // It walks in two halves. The CHROME half needs nothing but a document. The
 // RUN half starts a real run against Chromium's fake capture device, because
@@ -20,11 +26,15 @@
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
 
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
 
-const PHONE = { width: 393, height: 852 }
+/** Every frame the walk is repeated at. The lab's, and the owner's phone. */
+const FRAMES = [
+  { width: 393, height: 852 },
+  { width: 390, height: 844 },
+]
 const BOOT_TIMEOUT_MS = 15_000
 const STEP_TIMEOUT_MS = 10_000
 
@@ -90,12 +100,213 @@ function seed(theme) {
 
 const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
 
-async function shoot(page, shots, name) {
-  if (shots === null) return
-  await page.screenshot({ path: resolve(shots, `${name}.png`) })
+/**
+ * What each rail item must and must not have under the shell (P5).
+ *
+ * `gone` is the page's own information band. `kept` is everything the first
+ * cut of that fix took away with it — a page heading, and the Ear Lab's three
+ * chips, which are the only way to the readiness panel every tap drill
+ * subtracts from, to the rulers, and to the room picker. Hiding a band is one
+ * line; hiding a band and its controls is a regression, and only the second
+ * list can tell them apart.
+ *
+ * Every selector is a `data-testid`, never a class: both bands are styled
+ * through CSS modules whose names are hashed per build, so a probe that
+ * matched on them would go green the day the hash changed.
+ */
+const WEB_PAGE_HEADER = {
+  rooms: {
+    gone: ['[data-testid="home-learn"]', '[data-testid="home-whats-new"]'],
+    kept: ['[data-testid="home-heading"]'],
+  },
+  ear: {
+    gone: ['[data-testid="ear-session-copy"]'],
+    kept: [
+      '[data-testid="ear-readiness-chip"]',
+      '[data-testid="ear-rulers-chip"]',
+      '[data-testid="ear-room-chip"]',
+    ],
+    // Presence is not function: the original Console tile was present and
+    // wired to nothing. One kept control is tapped and must open its panel.
+    tap: {
+      selector: '[data-testid="ear-readiness-chip"]',
+      opens: '#ear-rack-title',
+    },
+  },
 }
 
-async function walkChrome(page, { shots, theme }) {
+/** `<frame>-<theme>-<name>` — one flat directory holds every frame and theme. */
+function stem(ctx, name) {
+  return `${ctx.frame.width}x${ctx.frame.height}-${ctx.theme}-${name}`
+}
+
+async function shoot(page, ctx, name) {
+  if (ctx.shots === null) return
+  await page.screenshot({ path: resolve(ctx.shots, `${stem(ctx, name)}.png`) })
+}
+
+// ── The rail, measured ───────────────────────────────────────
+//
+// Device round 1's first item was "the rail looks squished next to the lab
+// page", and nothing in the walk could tell whether that was true. It can
+// now: this reads the computed font, the item, its label, its plate, its icon
+// box and the label's text-size-adjust, and writes them beside the
+// screenshots. What is asserted from them is in `measureRail` below.
+//
+// The plate IS the item's background (`.mp-rail__item[aria-current]`), so the
+// plate box is the item box. It is reported separately because the kit draws
+// its indicator as its own element and a future rail may too — but for that
+// same reason a plate-versus-label comparison proves nothing today, and
+// `measureRail` does not make one.
+const readRail = () => {
+  const round = (n) => Math.round(n * 100) / 100
+  const box = (el) => {
+    if (el === null) return null
+    const r = el.getBoundingClientRect()
+    return {
+      x: round(r.x),
+      y: round(r.y),
+      width: round(r.width),
+      height: round(r.height),
+    }
+  }
+  const aside = document.querySelector('.mp-more-aside')
+  const firstLabel = document.querySelector('.mp-rail__label')
+  return {
+    row: box(document.querySelector('[data-testid="shell-rail"]')),
+    rail: box(document.querySelector('.mp-rail')),
+    aside: box(aside),
+    asideIcon: box(aside === null ? null : aside.querySelector('svg')),
+    // Off the LABEL, not off <html>. The property is inherited, the rule is
+    // on the shell root, and the document keeps its own `auto` — so reading
+    // the root would report "auto" for a label that is pinned at 100% and
+    // call the fix missing.
+    textSizeAdjust:
+      firstLabel === null
+        ? null
+        : getComputedStyle(firstLabel).webkitTextSizeAdjust,
+    items: [...document.querySelectorAll('.mp-rail__item')].map((item) => {
+      const label = item.querySelector('.mp-rail__label')
+      const style = label === null ? null : getComputedStyle(label)
+      return {
+        id: item.getAttribute('data-rail-item'),
+        selected: item.getAttribute('aria-current') === 'page',
+        text: label === null ? '' : label.textContent,
+        item: box(item),
+        plate: box(item),
+        label: box(label),
+        icon: box(item.querySelector('svg')),
+        overflow:
+          label === null ? null : round(label.scrollWidth - label.clientWidth),
+        font:
+          style === null
+            ? null
+            : {
+                family: style.fontFamily,
+                size: style.fontSize,
+                weight: style.fontWeight,
+                lineHeight: style.lineHeight,
+                letterSpacing: style.letterSpacing,
+              },
+      }
+    }),
+  }
+}
+
+/**
+ * The kit's numbers, which are also the lab page's. Asserted, not just dumped.
+ *
+ * The first version of this check dumped everything and asserted almost
+ * nothing, and a review proved it: re-injecting the original bug — a `font:`
+ * shorthand with an undefined token, and a 64 px aside — left it GREEN at both
+ * frames. Two reasons, and both are worth remembering.
+ *
+ * `label.width > plate.width` cannot fire. The plate IS the item's own
+ * background, so the two boxes are the same element, and `.mp-rail__label` is
+ * `max-width: 100%` inside it — the label is incapable of being wider. And
+ * `overflow` stayed 0 because "Progress" at 16px happens to fit a 68 px item
+ * in headless Chrome by three pixels.
+ *
+ * So the check is now on the values that actually broke, plus a headroom
+ * margin instead of a boundary: three pixels of slack is not a rail that fits,
+ * it is a rail that fits this string in this font on this machine.
+ */
+const RAIL_SPEC = {
+  labelSize: '10px',
+  labelWeight: '500',
+  asideWidth: 52,
+  iconSize: 26,
+  textSizeAdjust: '100%',
+  /** Px of item width a label must leave over. Below this it only looks fine. */
+  headroom: 12, // the shipped rail has ~30 px spare; the 16 px bug leaves 5.7-6.4, so 6 was a boundary, not a margin
+}
+
+async function measureRail(page, ctx) {
+  const rail = await page.evaluate(readRail)
+  if (ctx.shots !== null) {
+    writeFileSync(
+      resolve(ctx.shots, `${stem(ctx, 'rail-metrics')}.json`),
+      `${JSON.stringify(rail, null, 2)}\n`,
+    )
+  }
+  if (rail.items.length !== 4) {
+    throw new Error(`the pill holds ${rail.items.length} items, not four`)
+  }
+
+  // The bug was a dropped `font:` shorthand, so the label's computed font is
+  // the thing to read back. Nothing about a box would have caught it.
+  if (rail.textSizeAdjust !== RAIL_SPEC.textSizeAdjust) {
+    throw new Error(
+      `the rail's labels are at text-size-adjust ${rail.textSizeAdjust}, not ${RAIL_SPEC.textSizeAdjust}`,
+    )
+  }
+  if (rail.aside === null) throw new Error('there is no More circle')
+  if (Math.abs(rail.aside.width - RAIL_SPEC.asideWidth) > 0.5) {
+    throw new Error(
+      `the More circle is ${rail.aside.width} px, not the kit's ${RAIL_SPEC.asideWidth}`,
+    )
+  }
+
+  for (const item of rail.items) {
+    if (item.label === null) throw new Error(`${item.id} has no label`)
+    if (item.font.size !== RAIL_SPEC.labelSize) {
+      throw new Error(
+        `"${item.text}" is set at ${item.font.size}, not ${RAIL_SPEC.labelSize}`,
+      )
+    }
+    if (item.font.weight !== RAIL_SPEC.labelWeight) {
+      throw new Error(
+        `"${item.text}" is weight ${item.font.weight}, not ${RAIL_SPEC.labelWeight}`,
+      )
+    }
+    if (item.icon === null) throw new Error(`${item.id} has no symbol`)
+    if (Math.abs(item.icon.width - RAIL_SPEC.iconSize) > 0.5) {
+      throw new Error(
+        `${item.id}'s symbol is ${item.icon.width} px, not ${RAIL_SPEC.iconSize}`,
+      )
+    }
+    if (item.overflow > 0.5) {
+      throw new Error(
+        `"${item.text}" is clipped by ${item.overflow} px at ${ctx.frame.width}`,
+      )
+    }
+    const headroom = item.item.width - item.label.width
+    if (headroom < RAIL_SPEC.headroom) {
+      throw new Error(
+        `"${item.text}" leaves ${Math.round(headroom * 10) / 10} px of its ${item.item.width} px item — under ${RAIL_SPEC.headroom}`,
+      )
+    }
+  }
+
+  const worst = rail.items.reduce((a, b) =>
+    a.item.width - a.label.width < b.item.width - b.label.width ? a : b,
+  )
+  const label = rail.items[0].font
+  return `rail: ${rail.items[0].item.width} px items, ${label.size}/${label.weight} labels, ${rail.aside.width} px More, ${Math.round((worst.item.width - worst.label.width) * 10) / 10} px spare on "${worst.text}"`
+}
+
+async function walkChrome(page, ctx) {
+  const { theme, frame } = ctx
   const steps = []
   const rail = page.locator('[data-testid="shell-rail"]')
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
@@ -112,16 +323,16 @@ async function walkChrome(page, { shots, theme }) {
   const box = await rail.boundingBox()
   if (box === null) throw new Error('the rail has no box')
   const bottom = box.y + box.height
-  if (bottom > PHONE.height || bottom < PHONE.height - 160) {
+  if (bottom > frame.height || bottom < frame.height - 160) {
     throw new Error(
       `the rail should sit on the bottom edge; its bottom is at ${bottom}`,
     )
   }
-  if (box.x < 0 || box.x + box.width > PHONE.width) {
+  if (box.x < 0 || box.x + box.width > frame.width) {
     throw new Error('the rail runs off the side of the screen')
   }
   steps.push(
-    `rail: on the bottom edge (${Math.round(bottom)} of ${PHONE.height})`,
+    `rail: on the bottom edge (${Math.round(bottom)} of ${frame.height})`,
   )
 
   // And that the app's scroller reserves the height, at this width and any
@@ -172,20 +383,89 @@ async function walkChrome(page, { shots, theme }) {
       .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     // The rail is fixed chrome over a tab that may still be settling.
     await page.waitForTimeout(400)
-    await shoot(page, shots, `${theme}-tab-${id}`)
+    await shoot(page, ctx, `tab-${id}`)
     steps.push(`rail: ${id} selected`)
+
+    // The web page header is a band of prose the native design does not have —
+    // and under a room header it is a second title bar. Absent, not merely
+    // scrolled off. But the controls that sat beside it are NOT the band, and
+    // taking them with it is the review finding this half exists for.
+    const rule = WEB_PAGE_HEADER[id]
+    if (rule !== undefined) {
+      for (const selector of rule.gone) {
+        const present = await page.locator(selector).count()
+        if (present !== 0) {
+          throw new Error(`the web page band is still on ${id} (${selector})`)
+        }
+      }
+      for (const selector of rule.kept) {
+        const present = await page.locator(selector).count()
+        if (present === 0) {
+          throw new Error(`${id} lost ${selector} along with its band`)
+        }
+      }
+      if (rule.tap !== undefined) {
+        await page.locator(rule.tap.selector).first().click()
+        await page
+          .locator(rule.tap.opens)
+          .first()
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .catch(() => {
+            throw new Error(
+              `${id}: ${rule.tap.selector} is present but opens nothing (${rule.tap.opens})`,
+            )
+          })
+        await page.keyboard.press('Escape')
+        await page
+          .locator(rule.tap.opens)
+          .first()
+          .waitFor({ state: 'hidden', timeout: 10_000 })
+      }
+      steps.push(
+        `${id}: no page band, ${rule.kept.length} control(s)/heading kept${rule.tap === undefined ? '' : ', one tapped and working'}`,
+      )
+    }
   }
+
+  // The rail, measured rather than photographed (P1). Progress is selected
+  // here — the longest of the four labels, so the plate that has to reach the
+  // end of it is the one under test.
+  steps.push(await measureRail(page, ctx))
 
   await page.locator('[data-rail-item="more"]').click()
   const settingsTile = page.locator('[data-more-item="settings"]')
   await settingsTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   await page.waitForTimeout(300)
-  await shoot(page, shots, `${theme}-more-sheet`)
+  await shoot(page, ctx, 'more-sheet')
   steps.push('more: sheet open')
 
   await page.keyboard.press('Escape')
   await settingsTile.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
   steps.push('more: sheet closed')
+
+  // Developer (P3). The tile used to call `setupDeveloperConsole()`, which
+  // mounts a host for a floating panel that renders nothing while its own
+  // Settings toggle is off — a tile that did nothing, every time, on the
+  // build where a tester has no devtools. It pushes a screen now, and the
+  // screen has the sections the native entry registered in it.
+  await page.locator('[data-rail-item="more"]').click()
+  const developerTile = page.locator('[data-more-item="developer"]')
+  await developerTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await developerTile.click()
+  const developer = page.locator('[data-testid="shell-developer"]')
+  await developer.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  const sections = await page.locator('[data-developer-section]').count()
+  if (sections === 0) {
+    throw new Error('the Developer screen pushed with no sections in it')
+  }
+  await page.waitForTimeout(300)
+  await shoot(page, ctx, 'developer-pushed')
+  steps.push(`developer: pushed, ${sections} section(s)`)
+
+  await page.locator('[data-testid="shell-pushed-back"]').click()
+  await developer.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+  await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  steps.push('developer: back to the rail')
 
   await page.locator('[data-rail-item="more"]').click()
   await settingsTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
@@ -193,7 +473,7 @@ async function walkChrome(page, { shots, theme }) {
   const pushed = page.locator('[data-testid="shell-pushed"]')
   await pushed.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   await page.waitForTimeout(500)
-  await shoot(page, shots, `${theme}-settings-pushed`)
+  await shoot(page, ctx, 'settings-pushed')
   steps.push('settings: pushed')
 
   await page.locator('[data-testid="shell-pushed-back"]').click()
@@ -202,6 +482,167 @@ async function walkChrome(page, { shots, theme }) {
   // a pushed screen is a navigation level and not a modal.
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   steps.push('settings: back to the rail')
+
+  // One reservation, not two (P2). The stage's own bar added its own
+  // safe-area inset on top of the scroller's, which left 8 + 10 + 34 pt of
+  // nothing between the last control and the band on a notched phone.
+  //
+  // WITH A HOME INDICATOR STOOD UP BY HAND. Headless resolves every
+  // `env(safe-area-inset-*)` to 0, so the whole bug is invisible here: the
+  // doubled reservation IS the safe area, and at 0 the broken bar and the
+  // fixed one measure the same. The inset is pushed onto the document for
+  // this one measurement and taken off again, which is also the only place
+  // in the walk that exercises the reserve chain the way a phone does.
+  await page.locator('[data-rail-item="stage"]').click()
+  await page
+    .locator('[data-testid="singing-mobile-stage"]')
+    .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await page.waitForTimeout(400)
+
+  const readSeam = () => {
+    const round = (n) => Math.round(n * 10) / 10
+    const bar = document.querySelector('[data-testid="mobile-transport-bar"]')
+    const band = document.querySelector('.mp-band')
+    if (bar === null || band === null) return null
+    const boxes = [...bar.querySelectorAll('button')].map((node) =>
+      node.getBoundingClientRect(),
+    )
+    if (boxes.length === 0) return null
+    const barBox = bar.getBoundingClientRect()
+    const bandTop = band.getBoundingClientRect().top
+    const style = getComputedStyle(bar)
+    return {
+      // The box seam is the reservation. The two insets are the bar's own
+      // padding as the eye reads it — a row flush with one edge and 10 px off
+      // the other is the doubled reserve showing up as an off-centre row.
+      box: round(bandTop - barBox.bottom),
+      above: round(Math.min(...boxes.map((b) => b.top)) - barBox.top),
+      below: round(barBox.bottom - Math.max(...boxes.map((b) => b.bottom))),
+      controls: round(bandTop - Math.max(...boxes.map((b) => b.bottom))),
+      paddingBottom: style.paddingBottom,
+      safeBottom: getComputedStyle(document.documentElement)
+        .getPropertyValue('--safe-bottom')
+        .trim(),
+    }
+  }
+
+  const NOTCH = 34
+  await page.evaluate((inset) => {
+    document.documentElement.style.setProperty('--safe-bottom', `${inset}px`)
+  }, NOTCH)
+  await page.waitForTimeout(200)
+  const notched = await page.evaluate(readSeam)
+  await shoot(page, ctx, 'stage-bar-seam')
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty('--safe-bottom')
+  })
+  await page.waitForTimeout(200)
+  const flat = await page.evaluate(readSeam)
+
+  for (const [what, seam] of [
+    ['with a home indicator', notched],
+    ['without one', flat],
+  ]) {
+    if (seam === null) throw new Error('no stage bar, or no band, on Sing')
+    if (Math.abs(seam.box - 8) > 1) {
+      throw new Error(
+        `${what}, the stage bar's box sits ${seam.box} px above the band`,
+      )
+    }
+    // The half that only a real inset can show: the bar used to carry the
+    // safe area itself, so its row sat `10 + inset` off its own bottom edge
+    // and `10` off its top.
+    if (Math.abs(seam.below - seam.above) > 1) {
+      throw new Error(
+        `${what}, the stage bar's row sits ${seam.above} px from its top and ${seam.below} px from its bottom`,
+      )
+    }
+  }
+  if (notched.safeBottom !== `${NOTCH}px`) {
+    throw new Error(
+      `the home indicator did not take: --safe-bottom read ${notched.safeBottom}`,
+    )
+  }
+  steps.push(
+    `stage: the bar's box is ${flat.box} px above the band, its row centred at a ${NOTCH} pt inset too`,
+  )
+
+  // The room header steps aside for a pushed screen (P6). It is fixed at
+  // `--z-rail` and a pushed screen sits one step below, so its Back used to
+  // take the tap meant for the screen's own — and this is the only place in
+  // the walk where a room header and a pushed screen are up together, which
+  // is why the step lives here and not beside the other Settings push.
+  const roomHeader = page.locator('[data-testid="shell-room-header"]')
+  await roomHeader.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  const headerBack = await page
+    .locator('[data-testid="shell-room-back"]')
+    .boundingBox()
+  if (headerBack === null) throw new Error('the room header has no Back')
+  const atBack = {
+    x: Math.round(headerBack.x + headerBack.width / 2),
+    y: Math.round(headerBack.y + headerBack.height / 2),
+  }
+
+  await page.locator('[data-rail-item="more"]').click()
+  await settingsTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await settingsTile.click()
+  await pushed.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+
+  // Waited for rather than read once: the header fades over `--mp-out`, and a
+  // box read on the frame the class changed is the state it is leaving.
+  await page.waitForFunction(
+    () => {
+      const node = document.querySelector('[data-testid="shell-room-header"]')
+      if (node === null) return true
+      const style = getComputedStyle(node)
+      return style.visibility === 'hidden' && Number(style.opacity) === 0
+    },
+    undefined,
+    { timeout: STEP_TIMEOUT_MS },
+  )
+
+  // Gone is not the same as out of the way. `elementFromPoint` is the only
+  // question that matters here: whose Back is under the thumb at the corner
+  // the room header used to own?
+  const atCorner = await page.evaluate(({ x, y }) => {
+    const node = document.elementFromPoint(x, y)
+    const header = document.querySelector('[data-testid="shell-room-header"]')
+    return {
+      inHeader: node !== null && header !== null && header.contains(node),
+      inPushed:
+        node !== null && node.closest('[data-testid="shell-pushed"]') !== null,
+      inert: header !== null && header.hasAttribute('inert'),
+    }
+  }, atBack)
+  if (atCorner.inHeader) {
+    throw new Error('the room header still takes the tap over a pushed screen')
+  }
+  if (!atCorner.inPushed) {
+    throw new Error('nothing of the pushed screen is under its own Back')
+  }
+  if (!atCorner.inert) throw new Error('the hidden room header is not inert')
+  await shoot(page, ctx, 'room-header-pushed')
+  steps.push('room header: out, inert, and not under the thumb while pushed')
+
+  // And back on the pop — this click is itself the proof, because it is the
+  // one that used to land on the room header instead.
+  await page.locator('[data-testid="shell-pushed-back"]').click()
+  await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+  await page.waitForFunction(
+    () => {
+      const node = document.querySelector('[data-testid="shell-room-header"]')
+      if (node === null) return false
+      const style = getComputedStyle(node)
+      return (
+        style.visibility === 'visible' &&
+        Number(style.opacity) === 1 &&
+        !node.hasAttribute('inert')
+      )
+    },
+    undefined,
+    { timeout: STEP_TIMEOUT_MS },
+  )
+  steps.push('room header: back on the pop')
 
   return steps
 }
@@ -246,7 +687,8 @@ async function expectShellOwnsBand(page) {
   }
 }
 
-async function walkRun(page, { shots, theme }) {
+async function walkRun(page, ctx) {
+  const { frame } = ctx
   const steps = []
 
   await page.locator('[data-rail-item="stage"]').click()
@@ -287,6 +729,10 @@ async function walkRun(page, { shots, theme }) {
       if (node === null) return false
       return Math.abs(node.getBoundingClientRect().width - 56) <= 1.5
     },
+    // `undefined` in the ARG slot: waitForFunction is (fn, arg, options), so
+    // an options object passed second is serialised as the function's
+    // argument and the deadline silently falls back to the 30 s default.
+    undefined,
     { timeout: RUN_TIMEOUT_MS },
   )
   const chip = await page.locator('[data-testid="shell-chip"]').boundingBox()
@@ -296,9 +742,9 @@ async function walkRun(page, { shots, theme }) {
   if (!near(chip.width, 56) || !near(chip.height, 56)) {
     throw new Error(`the chip is ${chip.width} x ${chip.height}, not 56 x 56`)
   }
-  if (!near(PHONE.width - (chip.x + chip.width), 16)) {
+  if (!near(frame.width - (chip.x + chip.width), 16)) {
     throw new Error(
-      `the chip sits ${PHONE.width - (chip.x + chip.width)} from the right edge`,
+      `the chip sits ${frame.width - (chip.x + chip.width)} from the right edge`,
     )
   }
   if (!near(band.y - (chip.y + chip.height), 8)) {
@@ -307,7 +753,7 @@ async function walkRun(page, { shots, theme }) {
     )
   }
   steps.push('run: the chip is 56, 8 above the band, 16 from the edge')
-  await shoot(page, shots, `${theme}-run-active`)
+  await shoot(page, ctx, 'run-active')
 
   // The column opens upward, takes focus, and a tap on the stage closes it.
   await page.locator('[data-testid="shell-chip"]').click()
@@ -321,10 +767,10 @@ async function walkRun(page, { shots, theme }) {
   if (focused !== 'rooms') {
     throw new Error(`focus went to ${focused ?? 'nothing'}, not the first tab`)
   }
-  await shoot(page, shots, `${theme}-run-column`)
+  await shoot(page, ctx, 'run-column')
   steps.push('run: the column opens with focus in it')
 
-  await page.mouse.click(PHONE.width / 2, PHONE.height / 2)
+  await page.mouse.click(frame.width / 2, frame.height / 2)
   await expectGone(
     page.locator('[data-column-item="rooms"]'),
     'the column after a stage tap',
@@ -344,7 +790,7 @@ async function walkRun(page, { shots, theme }) {
     .locator('[data-testid="shell-rail-layer"]')
     .evaluate((node) => node.classList.contains('is-in'))
   if (railBack) throw new Error('the rail came back on pause')
-  await shoot(page, shots, `${theme}-run-paused`)
+  await shoot(page, ctx, 'run-paused')
   steps.push('run: paused, and the rail stayed away')
 
   // Lock dims Stop and the primary without taking them out of the tree.
@@ -367,7 +813,7 @@ async function walkRun(page, { shots, theme }) {
     throw new Error('a locked Stop left the accessibility tree')
   if (Number(locked.opacity) > 0.6)
     throw new Error('a locked Stop is not dimmed')
-  await shoot(page, shots, `${theme}-run-locked`)
+  await shoot(page, ctx, 'run-locked')
   steps.push('run: locked, dimmed, still announced')
   await page.locator('[aria-label="Lock controls"]').click()
 
@@ -375,14 +821,16 @@ async function walkRun(page, { shots, theme }) {
   // the dock's accessory slot, and the microphone is released on the way.
   await page.locator('[data-testid="shell-chip"]').click()
   await page.locator('[data-column-item="progress"]').click()
-  await page.waitForFunction(() => window.location.hash.includes('progress'), {
-    timeout: RUN_TIMEOUT_MS,
-  })
+  await page.waitForFunction(
+    () => window.location.hash.includes('progress'),
+    undefined,
+    { timeout: RUN_TIMEOUT_MS },
+  )
   await expectVisible(
     page.locator('[data-testid="shell-session-pill"]'),
     'the session pill',
   )
-  await shoot(page, shots, `${theme}-run-parked`)
+  await shoot(page, ctx, 'run-parked')
   steps.push('run: parked, with the pill in the dock')
 
   // On EVERY other tab, not just the first. The room unmounts when the singer
@@ -413,7 +861,7 @@ async function walkRun(page, { shots, theme }) {
       `the mic was not released by parking (reads "${returnedMic?.trim()}")`,
     )
   }
-  await shoot(page, shots, `${theme}-run-returned`)
+  await shoot(page, ctx, 'run-returned')
   steps.push('run: returned paused, the mic released')
 
   // Stop ends it. No room claims an unsaved take, so nothing is asked.
@@ -429,7 +877,7 @@ async function walkRun(page, { shots, theme }) {
     page.locator('[data-tour="singing-options"]'),
     'the stage bar after the run',
   )
-  await shoot(page, shots, `${theme}-run-ended`)
+  await shoot(page, ctx, 'run-ended')
   steps.push('run: ended, no alert, the rail and the stage bar are back')
 
   // And the leave that is NOT a park still ends cleanly: the room comes back
@@ -508,25 +956,11 @@ async function walkBackRoot(page) {
   return ['back: on the launch screen it declines, and the app minimizes']
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2))
-  if (args.shots !== null) mkdirSync(args.shots, { recursive: true })
-
-  const browser = await chromium.launch({
-    headless: !args.headed,
-    args: [
-      // Any window this opens belongs on the agent workspace, never the one
-      // somebody is looking at. Headless opens none; headed must still say so.
-      '--class=agent-browser',
-      // A microphone that answers, and no permission sheet in front of it.
-      '--use-fake-device-for-media-stream',
-      '--use-fake-ui-for-media-stream',
-      '--autoplay-policy=no-user-gesture-required',
-      '--mute-audio',
-    ],
-  })
+/** One frame's whole walk, in its own context so nothing carries over. */
+async function walkFrame(browser, args, frame) {
+  const ctx = { ...args, frame }
   const context = await browser.newContext({
-    viewport: PHONE,
+    viewport: frame,
     deviceScaleFactor: 2,
     isMobile: true,
     hasTouch: true,
@@ -559,15 +993,54 @@ async function main() {
     })
     steps.push('boot: #root.loaded')
     steps = steps.concat(await walkBackRoot(page))
-    steps = steps.concat(await walkChrome(page, args))
+    steps = steps.concat(await walkChrome(page, ctx))
     if (!args.chromeOnly) {
-      steps = steps.concat(await walkRun(page, args))
+      steps = steps.concat(await walkRun(page, ctx))
       steps = steps.concat(await walkBack(page))
     }
   } catch (error) {
     failures.push(`walk: ${error.message}`)
   } finally {
     await context.close()
+  }
+
+  const at = `${frame.width}x${frame.height}`
+  return {
+    steps: steps.map((step) => `[${at}] ${step}`),
+    failures: failures.map((failure) => `[${at}] ${failure}`),
+  }
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  if (args.shots !== null) mkdirSync(args.shots, { recursive: true })
+
+  const browser = await chromium.launch({
+    headless: !args.headed,
+    args: [
+      // Any window this opens belongs on the agent workspace, never the one
+      // somebody is looking at. Headless opens none; headed must still say so.
+      '--class=agent-browser',
+      // A microphone that answers, and no permission sheet in front of it.
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
+      '--autoplay-policy=no-user-gesture-required',
+      '--mute-audio',
+    ],
+  })
+
+  const steps = []
+  const failures = []
+  try {
+    // Every frame is walked even when an earlier one failed: "it broke at 390"
+    // and "it broke at both" are different reports, and the second one is the
+    // one that says the fix is not a width rule.
+    for (const frame of FRAMES) {
+      const result = await walkFrame(browser, args, frame)
+      steps.push(...result.steps)
+      failures.push(...result.failures)
+    }
+  } finally {
     await browser.close()
   }
 
@@ -579,7 +1052,9 @@ async function main() {
     process.exitCode = 1
     return
   }
-  console.log(`\nprobe-bundle: every step passed (${args.theme}).`)
+  console.log(
+    `\nprobe-bundle: every step passed (${args.theme}, ${FRAMES.length} frames).`,
+  )
 }
 
 await main()

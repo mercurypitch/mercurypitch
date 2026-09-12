@@ -37,6 +37,19 @@
   overflow-x: clip;
 }
 
+/* ONE RESERVATION, NOT TWO — the same fault the stage's transport bar had
+   (device round 1, P2). `.main-content` already keeps the whole band clear
+   under the native shell (mobile-kit.css), so a page that adds the band's
+   height again ends with `--tabbar-total` twice and a screenful of nothing
+   under its last orb. The 52 px of its own breathing room stays; only the
+   duplicated band goes.
+
+   `:global` on the attribute only, so the class stays module-scoped, and the
+   attribute is set by the shell and by nothing else. */
+:global(:root[data-native-shell]) .page {
+  padding-bottom: 52px;
+}
+
 /* Landscape mercury-glass backdrop (Voice Glass family). Fixed to the
    viewport so the full 16:9 art fills big screens and content scrolls over
    it; on phones it crops to the dark centre. The asset is co-located, so
