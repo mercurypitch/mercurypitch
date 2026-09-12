@@ -4528,7 +4528,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         </button>
                       )}
                     </For>
-                    <Show when={kitSnapshot().selectedKitId === 'live'}>
+                    <Show when={selectedKit().license.noticePath !== null}>
                       <p class={styles.kitAttribution}>
                         {selectedKit().license.attribution}{' '}
                         <a
@@ -4537,6 +4537,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                           rel="noreferrer"
                         >
                           {selectedKit().license.spdx}
+                        </a>
+                        {' · '}
+                        <a
+                          href={`/drum-night/kits/${selectedKit().license.noticePath}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Credits and sample licence
                         </a>
                       </p>
                     </Show>

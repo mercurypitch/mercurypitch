@@ -75,6 +75,36 @@ describe('GuitarNightDrumSoundControls', () => {
     expect(screen.getByText(/Feel starts on next Play/)).toBeInTheDocument()
   })
 
+  it.each(['muldjord', 'crocell'] as const)(
+    'persists %s and exposes its sample credits and coverage limits',
+    (kitId) => {
+      const onKitChange = vi.fn()
+      const view = render(() => (
+        <GuitarNightDrumSoundControls liveKit onKitChange={onKitChange} />
+      ))
+
+      fireEvent.change(
+        screen.getByRole('combobox', { name: 'Guitar Night drum kit' }),
+        { target: { value: kitId } },
+      )
+
+      expect(onKitChange).toHaveBeenCalledWith(kitId)
+      expect(
+        screen.getByRole('link', {
+          name: 'Credits and sample licence (CC BY 4.0)',
+        }),
+      ).toHaveAttribute('href', `/drum-night/kits/${kitId}/LICENSE.md`)
+      expect(screen.getByText(/Expanded acoustic kit/)).toHaveTextContent(
+        'Mercury fallback',
+      )
+      view.unmount()
+      render(() => <GuitarNightDrumSoundControls />)
+      expect(
+        screen.getByRole('combobox', { name: 'Guitar Night drum kit' }),
+      ).toHaveValue(kitId)
+    },
+  )
+
   it('states sampled-core readiness and bounded routing truth without claiming audibility', () => {
     render(() => (
       <GuitarNightDrumSoundControls
@@ -82,6 +112,7 @@ describe('GuitarNightDrumSoundControls', () => {
         playback={() => ({
           status: 'ready',
           playerCount: 2,
+          sampledPlayerCount: 2,
           fallbackReady: true,
           sampledReady: true,
           sampleStatus: 'ready',
@@ -103,7 +134,41 @@ describe('GuitarNightDrumSoundControls', () => {
 
     expect(screen.getByText(/Sampled core ready \(OPUS\)/)).toBeInTheDocument()
     expect(screen.getByText(/2 fallback, 1 unmapped/)).toBeInTheDocument()
+    expect(screen.getByText(/10 sampled/)).toBeInTheDocument()
     expect(screen.queryByText(/audible/i)).not.toBeInTheDocument()
+  })
+
+  it('does not call a partly covered sampled bank a synth kit', () => {
+    render(() => (
+      <GuitarNightDrumSoundControls
+        liveKit
+        kitId={() => 'muldjord'}
+        playback={() => ({
+          status: 'ready',
+          playerCount: 1,
+          sampledPlayerCount: 1,
+          fallbackReady: true,
+          sampledReady: false,
+          sampleStatus: 'ready',
+          selectedFormat: 'opus',
+          routingCounts: {
+            sampled: 8,
+            synthesized: 0,
+            synthFallback: 3,
+            unmapped: 0,
+            dropped: 0,
+            unreported: 0,
+            choked: 0,
+            idle: 0,
+            unsupported: 0,
+          },
+        })}
+      />
+    ))
+    expect(screen.getByText(/Sampled kit active/)).toHaveTextContent(
+      '8 sampled, 3 fallback',
+    )
+    expect(screen.queryByText(/Synth kit ready/)).not.toBeInTheDocument()
   })
 
   it('keeps degraded auxiliary-sample truth visible when the sampled core is ready', () => {
@@ -114,6 +179,7 @@ describe('GuitarNightDrumSoundControls', () => {
           status: 'ready',
           playerCount: 1,
           fallbackReady: true,
+          sampledPlayerCount: 1,
           sampledReady: true,
           sampleStatus: 'fallback',
           selectedFormat: 'mp3',

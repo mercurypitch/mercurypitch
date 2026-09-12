@@ -250,6 +250,8 @@ export interface GuitarRoomDrumRoutingCounts {
 export interface GuitarRoomDrumPlaybackSnapshot {
   readonly status: 'idle' | 'warming' | 'ready' | 'error'
   readonly playerCount: number
+  /** Actual retained sampled engines, independent of whether all core sounds exist. */
+  readonly sampledPlayerCount: number
   readonly fallbackReady: boolean
   /** True only when every retained sampled player reports its core decoded. */
   readonly sampledReady: boolean
@@ -654,6 +656,11 @@ export function createGuitarRoomBand(
     return Object.freeze({
       status,
       playerCount,
+      sampledPlayerCount: snapshots.filter(
+        (snapshot) =>
+          snapshot.selectedKitId !== 'mercury-synth' &&
+          snapshot.selectedKitId !== 'circuit',
+      ).length,
       fallbackReady:
         playerCount > 0 &&
         snapshots.length === playerCount &&

@@ -119,7 +119,7 @@ function assertAnalysis(resource) {
   }
 }
 
-function calibrateResource(resource, policy) {
+function calibrateResource(resource, policy, recordedGainDb) {
   assertAnalysis(resource)
   const analysis = resource.analysis
   const decodedTransientPeakDbs = decodedValues(analysis, 'transientPeakDb')
@@ -139,7 +139,8 @@ function calibrateResource(resource, policy) {
     : null
   const signalToNoiseDb =
     noiseFloorDb === null ? null : analysis.transientPowerDb - noiseFloorDb
-  const idealGainDb = policy.targetTransientPeakDb - calibrationTransientPeakDb
+  const idealGainDb =
+    recordedGainDb ?? policy.targetTransientPeakDb - calibrationTransientPeakDb
   const headroomGainLimitDb =
     policy.maximumFullScalePeakDb - maximumDecodedFullPeakDb
   const noiseGainLimitDb =
@@ -151,6 +152,16 @@ function calibrateResource(resource, policy) {
     headroomGainLimitDb,
     noiseGainLimitDb,
   )
+  if (
+    recordedGainDb !== undefined &&
+    (!Number.isFinite(recordedGainDb) ||
+      recordedGainDb > maximumSafeGainDb + 0.001 ||
+      recordedGainDb < -policy.maximumPlaybackGainDb)
+  ) {
+    throw new Error(
+      `Unsafe recorded kit gain: ${resource.id}; requested ${recordedGainDb} dB, safe maximum ${maximumSafeGainDb.toFixed(4)} dB`,
+    )
+  }
   const playbackGainDb = Math.max(
     -policy.maximumPlaybackGainDb,
     Math.min(idealGainDb, maximumSafeGainDb),
@@ -193,6 +204,9 @@ function calibrateResource(resource, policy) {
   let readiness
   if (reasons.length > 0) {
     readiness = 'fallback'
+  } else if (recordedGainDb !== undefined) {
+    // Quiet layers are intentional performances, not weak one-shots to normalize.
+    readiness = 'ready'
   } else if (maximumAbsoluteTargetErrorDb <= policy.targetToleranceDb + 0.001) {
     readiness = 'ready'
   } else if (
@@ -235,7 +249,7 @@ function calibrateResource(resource, policy) {
   }
 }
 
-function layerGate(group, policy) {
+function layerGate(group, policy, curve) {
   const layers = [
     ...Object.values(
       Object.groupBy(
@@ -267,6 +281,7 @@ function layerGate(group, policy) {
             resolveDrumVelocityTarget(
               resource.articulation,
               resource.velocityMax,
+              curve,
             ),
           ),
       ),
@@ -279,6 +294,7 @@ function layerGate(group, policy) {
             resolveDrumVelocityTarget(
               resource.articulation,
               resource.velocityMin,
+              curve,
             ),
           ),
       ),
@@ -310,7 +326,7 @@ function statusForResources(resources) {
   return 'ready'
 }
 
-function reportResource(resource) {
+function reportResource(resource, curve) {
   const achievedByVelocity = (baseTransientPeakDb) =>
     Object.fromEntries(
       REPRESENTATIVE_VELOCITIES.map((velocity) => [
@@ -322,7 +338,7 @@ function reportResource(resource) {
               resolveDrumHitGain(
                 resource.articulation,
                 velocity,
-                undefined,
+                curve,
                 resource.power,
               ),
             ),
@@ -434,9 +450,12 @@ function reportResource(resource) {
 export function calibrateDrumKitResources(
   inputResources,
   policy = DRUM_KIT_CALIBRATION_POLICY,
+  recordedKits = {},
 ) {
   const resources = inputResources
-    .map((resource) => calibrateResource(resource, policy))
+    .map((resource) =>
+      calibrateResource(resource, policy, recordedKits[resource.kitId]?.gainDb),
+    )
     .sort((left, right) => left.id.localeCompare(right.id))
   const worstCodecDelta = resources
     .flatMap((resource) =>
@@ -465,7 +484,12 @@ export function calibrateDrumKitResources(
   const articulationReports = []
 
   for (const [groupName, group] of groupResourcesByArticulation(resources)) {
-    const gate = layerGate(group, policy)
+    const recorded = recordedKits[group[0].kitId] !== undefined
+    const gate = layerGate(
+      group,
+      policy,
+      recordedKits[group[0].kitId]?.velcurve,
+    )
     const achievedPowers = group.map(
       (resource) => resource.calibration.achievedPowerDb,
     )
@@ -501,6 +525,7 @@ export function calibrateDrumKitResources(
       )
     })
     const publishPower =
+      recorded === false &&
       selectable === true &&
       gate.passed === true &&
       powerSpreadDb <= policy.maximumPowerSpreadDb + 0.01 &&
@@ -518,22 +543,26 @@ export function calibrateDrumKitResources(
       status: statusForResources(group),
       resourceCount: group.length,
       power:
-        publishPower === true
-          ? 'published'
-          : selectable === false
-            ? 'omitted-fallback'
-            : gate.passed === false
-              ? 'omitted-layer-gate'
-              : powerHeadroomPassed === false
-                ? 'omitted-headroom'
-                : 'omitted-power-spread',
+        recorded === true
+          ? 'omitted-recorded-dynamics'
+          : publishPower === true
+            ? 'published'
+            : selectable === false
+              ? 'omitted-fallback'
+              : gate.passed === false
+                ? 'omitted-layer-gate'
+                : powerHeadroomPassed === false
+                  ? 'omitted-headroom'
+                  : 'omitted-power-spread',
       powerSpreadDb: round(powerSpreadDb),
       maximumRoundRobinSpreadDb: round(gate.maximumRoundRobinSpreadDb),
       maximumLayerBoundaryDb: round(gate.maximumLayerBoundaryDb),
     })
   }
 
-  const reportResources = resources.map(reportResource)
+  const reportResources = resources.map((resource) =>
+    reportResource(resource, recordedKits[resource.kitId]?.velcurve),
+  )
   const statusCounts = Object.fromEntries(
     ['ready', 'reduced', 'fallback'].map((status) => [
       status,

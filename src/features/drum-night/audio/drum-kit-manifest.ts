@@ -1,5 +1,5 @@
 // ============================================================
-// Drum kit manifest — five licensed flavors behind one immutable asset map
+// Drum kit manifest — licensed flavors behind one immutable asset map
 // ============================================================
 //
 // First paint receives only the compact MP3 runtime projection. The canonical
@@ -10,6 +10,7 @@ import type { DrumVoiceId } from '@/lib/drum-voices'
 import type * as CatalogSchema from './drum-kit-catalog-schema'
 import { DRUM_KIT_CATALOG_SCHEMA_VERSION, DRUM_KIT_IDS, } from './drum-kit-catalog-schema'
 import runtimeCatalog from './drum-kit-runtime.generated.json'
+import { unpackDrumKitRuntimeResource } from './drum-kit-runtime-codec.mjs'
 
 export * from './drum-kit-catalog-schema'
 
@@ -36,7 +37,7 @@ interface RuntimeDrumKit {
 }
 
 interface RuntimeDrumKitCatalog {
-  readonly schemaVersion: 1
+  readonly schemaVersion: 2
   readonly catalogSchemaVersion: number
   readonly kits: Readonly<
     Record<SampledDrumKitId | 'mercury-synth', RuntimeDrumKit>
@@ -74,9 +75,11 @@ const RUNTIME_KIT_IDS = Object.freeze([
   'classic-gm',
   'studio',
   'live',
+  'muldjord',
+  'crocell',
 ] as const)
 const RUNTIME_RESOURCE_PATH =
-  /^(classic-gm|studio|live)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
+  /^(classic-gm|studio|live|muldjord|crocell)\/v[1-9]\d*\/[a-f0-9]{16}-[a-z0-9-]+\.mp3$/
 const SHA256 = /^[a-f0-9]{64}$/
 const SAMPLE_STATUSES: ReadonlySet<string> = new Set<DrumKitSampleStatus>([
   'ready',
@@ -105,7 +108,7 @@ function assertRuntimeDrumKitCatalog(
 ): asserts value is RuntimeDrumKitCatalog {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 1 ||
+    value.schemaVersion !== 2 ||
     value.catalogSchemaVersion !== DRUM_KIT_CATALOG_SCHEMA_VERSION ||
     !isRecord(value.kits) ||
     !hasOnlyKeys(
@@ -248,7 +251,22 @@ function assertRuntimeDrumKitCatalog(
   }
 }
 
-const GENERATED_VALUE: unknown = runtimeCatalog
+// Column rows remove duplicated field labels, kit IDs, MIME strings and paths.
+// Expand before the existing fail-closed validation, never instead of it.
+const GENERATED_VALUE: unknown = {
+  ...runtimeCatalog,
+  kits: Object.fromEntries(
+    Object.entries(runtimeCatalog.kits).map(([kitId, kit]) => [
+      kitId,
+      {
+        ...kit,
+        resources: kit.resources.map((row) =>
+          unpackDrumKitRuntimeResource(row, kitId, kit.version),
+        ),
+      },
+    ]),
+  ),
+}
 assertRuntimeDrumKitCatalog(GENERATED_VALUE)
 const GENERATED = GENERATED_VALUE
 
@@ -342,6 +360,26 @@ const LICENSES = Object.freeze({
     licenseTextPath: null,
     shareAlike: true,
   }),
+  muldjord: Object.freeze({
+    name: 'Creative Commons Attribution 4.0 International',
+    spdx: 'CC-BY-4.0',
+    url: 'https://creativecommons.org/licenses/by/4.0/',
+    attribution:
+      'MuldjordKit by Lars Muldjord / DrumGizmo; SFZ mapping and FLAC conversion by kinwie. Selected and mixed by MercuryPitch.',
+    noticePath: 'muldjord/LICENSE.md',
+    licenseTextPath: 'muldjord/CC-BY-4.0.txt',
+    shareAlike: false,
+  }),
+  crocell: Object.freeze({
+    name: 'Creative Commons Attribution 4.0 International',
+    spdx: 'CC-BY-4.0',
+    url: 'https://creativecommons.org/licenses/by/4.0/',
+    attribution:
+      'CrocellKit: Andreas (Crocell), Jacob Olsen (JBOSound), Lars Muldjord / DrumGizmo. Selected and mixed by MercuryPitch.',
+    noticePath: 'crocell/LICENSE.md',
+    licenseTextPath: 'crocell/CC-BY-4.0.txt',
+    shareAlike: false,
+  }),
 }) satisfies Readonly<Record<string, DrumKitLicense>>
 
 export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
@@ -413,6 +451,36 @@ export const DRUM_KIT_MANIFESTS: Readonly<Record<DrumKitId, DrumKitManifest>> =
       publishedEncodedBytes: GENERATED.kits.live.publishedEncodedBytes,
       optionalDownload: true,
       velcurve: immutableVelocityCurves(GENERATED.kits.live.velcurve),
+    }),
+    muldjord: Object.freeze({
+      id: 'muldjord',
+      name: 'Muldjord',
+      character:
+        'Rock and metal · dual kicks, four toms, china, dual rides and bell; pedal hat uses fallback',
+      engine: 'sampled',
+      synthModel: null,
+      version: GENERATED.kits.muldjord.version,
+      sampleStatus: GENERATED.kits.muldjord.sampleStatus,
+      license: LICENSES.muldjord,
+      resources: immutableResources('muldjord'),
+      publishedEncodedBytes: GENERATED.kits.muldjord.publishedEncodedBytes,
+      optionalDownload: true,
+      velcurve: immutableVelocityCurves(GENERATED.kits.muldjord.velcurve),
+    }),
+    crocell: Object.freeze({
+      id: 'crocell',
+      name: 'Crocell',
+      character:
+        'Studio metal · dual kicks, four toms, rim, pedal hat, bell, china and splash',
+      engine: 'sampled',
+      synthModel: null,
+      version: GENERATED.kits.crocell.version,
+      sampleStatus: GENERATED.kits.crocell.sampleStatus,
+      license: LICENSES.crocell,
+      resources: immutableResources('crocell'),
+      publishedEncodedBytes: GENERATED.kits.crocell.publishedEncodedBytes,
+      optionalDownload: true,
+      velcurve: immutableVelocityCurves(GENERATED.kits.crocell.velcurve),
     }),
   })
 

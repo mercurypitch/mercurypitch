@@ -5,10 +5,10 @@ export async function seedAuthoredGuitarScore(
   page: Page,
   songId: string,
   includeSecondaryPart = false,
-  options: { electric?: boolean; bpm?: number } = {},
+  options: { electric?: boolean; bpm?: number; percussion?: boolean } = {},
 ): Promise<void> {
   await page.addInitScript(
-    ({ includeSecondary, seededSongId, electric, bpm }) => {
+    ({ includeSecondary, seededSongId, electric, bpm, percussion }) => {
       const notes = Array.from({ length: 16 }, (_, index) => ({
         midi: index % 2 === 0 ? 64 : 67,
         startBeat: index,
@@ -58,6 +58,25 @@ export async function seedAuthoredGuitarScore(
                     },
                   ]
                 : []),
+              ...(percussion
+                ? [
+                    {
+                      id: 'track-drums',
+                      name: 'Studio Drums',
+                      kind: 'percussion',
+                      noteCount: 0,
+                      notes: [],
+                      percussionHits: [
+                        {
+                          gmKey: 36,
+                          startBeat: 0,
+                          writtenDuration: 0.25,
+                          velocity: 100,
+                        },
+                      ],
+                    },
+                  ]
+                : []),
             ],
             scoreTrackId: 'track-lead',
             backingTrackIds: includeSecondary ? ['track-rhythm'] : [],
@@ -71,6 +90,7 @@ export async function seedAuthoredGuitarScore(
       seededSongId: songId,
       electric: options.electric ?? false,
       bpm: options.bpm ?? 120,
+      percussion: options.percussion ?? false,
     },
   )
 }
