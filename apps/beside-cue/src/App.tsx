@@ -40,6 +40,7 @@ import type { V2OnboardingMutationResult } from './onboarding/V2OnboardingDirect
 import { V2OnboardingDirector } from './onboarding/V2OnboardingDirector'
 import { createProAccess } from './purchases/pro-access'
 import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
+import { createReviewAccess } from './purchases/review-access'
 import type { DailyCueCoordinator, DailyCueReconcileResult, } from './scheduling/daily-cue-coordinator'
 import { createDailyCueCoordinator } from './scheduling/daily-cue-coordinator'
 import type { DailyCueNotificationPayload } from './scheduling/daily-cue-plan'
@@ -307,6 +308,12 @@ export function App(props: AppProps) {
       setup: appServices.purchases,
     })
   })
+  const reviewAccess = createReviewAccess()
+  /**
+   * The one answer to "may this device use the paid tier": a real store
+   * entitlement, or a store reviewer's unlock. Nothing else may ask.
+   */
+  const isPro = createMemo(() => proAccess().isPro() || reviewAccess.active())
 
   let dailyCueCoordinator!: DailyCueCoordinator
   let latestState = initialState
@@ -922,7 +929,7 @@ export function App(props: AppProps) {
       !isEditingPlan ||
       schedulePending() ||
       selectedId === undefined ||
-      canSelectPull(selectedId, proAccess().isPro(), config().pullOptions)
+      canSelectPull(selectedId, isPro(), config().pullOptions)
     ) {
       return
     }
@@ -958,13 +965,7 @@ export function App(props: AppProps) {
   function saveCinematicPlan(
     selection: CinematicOnboardingPlanSelection,
   ): Promise<CinematicOnboardingSaveResult> {
-    if (
-      !canSelectPull(
-        selection.pullId,
-        proAccess().isPro(),
-        config().pullOptions,
-      )
-    ) {
+    if (!canSelectPull(selection.pullId, isPro(), config().pullOptions)) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
@@ -1097,9 +1098,7 @@ export function App(props: AppProps) {
     if (v2OnboardingPlanSavePromise !== undefined) {
       return v2OnboardingPlanSavePromise
     }
-    if (
-      !canSelectPull(plan.pullId, proAccess().isPro(), config().pullOptions)
-    ) {
+    if (!canSelectPull(plan.pullId, isPro(), config().pullOptions)) {
       return Promise.resolve({
         ok: false,
         message: copy.t(
@@ -1206,7 +1205,7 @@ export function App(props: AppProps) {
   }
 
   function choosePull(pullId: string): void {
-    if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
+    if (!canSelectPull(pullId, isPro(), config().pullOptions)) {
       setSetupError(
         notice(
           'This character needs Beside Cue Deluxe. Choose a free Pull or your own words.',
@@ -1240,7 +1239,7 @@ export function App(props: AppProps) {
   }
 
   function playPullPreview(pullId: string): void {
-    if (!canSelectPull(pullId, proAccess().isPro(), config().pullOptions)) {
+    if (!canSelectPull(pullId, isPro(), config().pullOptions)) {
       stopCharacterVoice('replaced')
       return
     }
@@ -1265,13 +1264,7 @@ export function App(props: AppProps) {
   }
 
   function continueFromPull(): void {
-    if (
-      !canSelectPull(
-        selectedPullId(),
-        proAccess().isPro(),
-        config().pullOptions,
-      )
-    ) {
+    if (!canSelectPull(selectedPullId(), isPro(), config().pullOptions)) {
       setSetupError(
         notice('Choose a free Pull, or restore Beside Cue Deluxe in Settings.'),
       )
@@ -1335,13 +1328,7 @@ export function App(props: AppProps) {
 
   function finishSetup(): void {
     if (schedulePending()) return
-    if (
-      !canSelectPull(
-        selectedPullId(),
-        proAccess().isPro(),
-        config().pullOptions,
-      )
-    ) {
+    if (!canSelectPull(selectedPullId(), isPro(), config().pullOptions)) {
       setSetupError(
         notice(
           'Beside Cue Deluxe is no longer active. Choose a free Pull or your own words.',
@@ -2222,7 +2209,7 @@ export function App(props: AppProps) {
         <V2OnboardingDirector
           sessionKind={v2OnboardingSessionKind()}
           pullOptions={config().pullOptions}
-          isPro={proAccess().isPro()}
+          isPro={isPro()}
           contentPack={contentPack()}
           mediaPack={V2_ONBOARDING_MEDIA_PACK}
           audioSession={onboardingAudioSession}
@@ -2245,7 +2232,7 @@ export function App(props: AppProps) {
               : copy.t('Your first plan')
           }
           options={config().pullOptions}
-          isPro={proAccess().isPro()}
+          isPro={isPro()}
           presentations={pullChoicePresentations()}
           selectedId={selectedPullId()}
           previewVoiceState={selectedPullPreviewVoiceState()}
@@ -2392,7 +2379,7 @@ export function App(props: AppProps) {
               name={PRO_DISPLAY_NAME}
               available={proAccess().available()}
               status={proAccess().status()}
-              isPro={proAccess().isPro()}
+              isPro={isPro()}
               entitlement={proAccess().entitlement()}
               busy={proAccess().busy()}
               notice={proAccess().notice()}
@@ -2408,6 +2395,16 @@ export function App(props: AppProps) {
               onCheckAccess={() => void proAccess().checkPromoAccess()}
               onExternalRedemption={() =>
                 proAccess().expectExternalRedemption()
+              }
+              review={
+                reviewAccess.configured
+                  ? {
+                      active: reviewAccess.active(),
+                      state: reviewAccess.state(),
+                      onRedeem: (code) => reviewAccess.redeem(code),
+                      onRevoke: () => reviewAccess.revoke(),
+                    }
+                  : undefined
               }
             />
           }

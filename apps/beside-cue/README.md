@@ -46,11 +46,11 @@ Purchases run through RevenueCat, behind the `PurchasesPort` and `PaywallPort`
 in `@irchiinnuss/mobile-runtime`. No screen imports the billing SDK, so the
 web build has no store code on any path a browser can reach.
 
-Nothing in the app is gated. Beside Cue Deluxe (the RevenueCat entitlement is
-still spelled `BeSideCue Pro`) exists so people who want to support the work
-can, and so a future gate is a `proAccess.isPro()` check rather than an
-integration. The name people see lives in `PRO_DISPLAY_NAME`; the entitlement
-id must keep matching the dashboard.
+Beside Cue Deluxe (the RevenueCat entitlement is still spelled `BeSideCue Pro`)
+unlocks the extra character cast: `canSelectPull` is the gate, and every caller
+reads one memo, `isPro` in `App.tsx`. Everything else -- the six original Pulls,
+your own words, the cue loop -- stays free. The name people see lives in
+`PRO_DISPLAY_NAME`; the entitlement id must keep matching the dashboard.
 
 ### Configuration
 
@@ -86,6 +86,29 @@ Identifiers live in one file, `src/purchases/revenuecat-config.ts`.
    release.
 5. **Customer Center** — enable it to give subscribers cancellation, plan
    changes and refund requests without leaving the app.
+
+### Review access
+
+A store reviewer cannot buy the tier. Apple's can, in the sandbox, but Google's
+may not create accounts, use their own, or take a trial, and an app with no
+login has no account to hand them. So a build may carry the SHA-256 of one
+unlock code, and Settings grows a field that turns Deluxe on for that install:
+
+```sh
+node ../../packages/purchase-kit/scripts/make-review-code.ts beside-cue
+```
+
+The code goes in the vault, and from there into App Store Connect's review notes
+and Play's "App access" field. The digest goes in `VITE_REVIEW_UNLOCK_SHA256`
+(CI reads the `BESIDE_CUE_REVIEW_UNLOCK_SHA256` repository variable). A build
+without a digest hides the field entirely.
+
+The rules are in `@irchiinnuss/purchase-kit`, so every app of ours answers the
+stores the same way; `src/purchases/review-access.ts` is the Beside Cue wiring.
+A grant is local, never written back to RevenueCat, and cannot be mistaken for a
+sale. Revocation is a release: ship a different digest and every grant made
+against the old code stops validating. There is deliberately no expiry -- Google
+requires the credential it is given to keep working -- and no network check.
 
 ### Checking the Deluxe loop in a browser
 
