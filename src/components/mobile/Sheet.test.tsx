@@ -22,8 +22,21 @@ afterEach(cleanup)
  * jsdom has no `PointerEvent`, so one is built from a MouseEvent with the
  * pointer fields defined on it — the same shape `src/tests/drag-gesture`
  * uses, and the same one the handlers below actually read.
+ *
+ * THE TIMESTAMP IS OURS, and it has to be. jsdom stamps every constructed
+ * event with `performance.now()`, and two constructions in this Node land
+ * ~0.0003 ms apart — so a 30px move read as a flick of 10^5 px/ms and the
+ * sheet closed, except on the runs where both landed in the same tick and the
+ * velocity stayed 0. That is a test that decides by coin toss: it failed
+ * about one run in three (device round 2 review, F2). The gesture's own
+ * clock is now part of the case being made.
  */
-function pointer(node: Element, type: string, clientY: number): void {
+function pointer(
+  node: Element,
+  type: string,
+  clientY: number,
+  timeStamp: number,
+): void {
   const event = new MouseEvent(type, {
     bubbles: true,
     cancelable: true,
@@ -32,19 +45,36 @@ function pointer(node: Element, type: string, clientY: number): void {
   Object.defineProperties(event, {
     pointerId: { value: 1 },
     pointerType: { value: 'touch' },
+    timeStamp: { value: timeStamp },
   })
   node.dispatchEvent(event)
 }
 
+/** One frame at 60Hz — the gap a real pointer stream arrives at. */
+const FRAME_MS = 16
+
+/**
+ * A press from `from` to `to`, taking `ms` over the move.
+ *
+ * The default is one frame, which is a FLICK at any distance the tests here
+ * use: 30px in 16ms is 1.9px/ms, well over `DISMISS_VELOCITY`. A drag that is
+ * not a flick has to say how long it took.
+ */
 function press(
   node: Element,
   from: number,
   to: number,
-  options: { cancel?: boolean } = {},
+  options: { cancel?: boolean; ms?: number } = {},
 ): void {
-  pointer(node, 'pointerdown', from)
-  pointer(node, 'pointermove', to)
-  pointer(node, options.cancel === true ? 'pointercancel' : 'pointerup', to)
+  const move = options.ms ?? FRAME_MS
+  pointer(node, 'pointerdown', from, 0)
+  pointer(node, 'pointermove', to, move)
+  pointer(
+    node,
+    options.cancel === true ? 'pointercancel' : 'pointerup',
+    to,
+    move + FRAME_MS,
+  )
 }
 
 function mount(close = vi.fn()) {
@@ -81,15 +111,30 @@ describe('the sheet handle', () => {
   })
 
   it('treats a press that travelled as a drag, not a tap', () => {
+    // 30px over 400ms is 0.075px/ms — a long way under the flick threshold,
+    // and 30px is a long way under the dismiss distance. Neither rule fires,
+    // so the only question left is whether the tap rule does, and it must not.
     const close = mount()
-    press(screen.getByTestId('sheet-handle'), 100, 130)
+    press(screen.getByTestId('sheet-handle'), 100, 130, { ms: 400 })
     expect(close).not.toHaveBeenCalled()
   })
 
+  it('still dismisses the same 30px as a flick', () => {
+    // The other half of the same gesture, on purpose: the distance is
+    // identical and only the clock differs. 30px in one frame is 1.9px/ms,
+    // over DISMISS_VELOCITY, and the flick rule is the one this branch has
+    // always had — the tap rule must not have taken it away.
+    const close = mount()
+    press(screen.getByTestId('sheet-handle'), 100, 130, { ms: FRAME_MS })
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
   it('still dismisses on a long drag, from the grabber or the band', () => {
+    // Slowly, so this is the DISTANCE rule and not the flick one: 200px at
+    // 0.5px/ms is under DISMISS_VELOCITY and well over DISMISS_DISTANCE.
     for (const testId of ['sheet-handle', 'sheet-handle-zone']) {
       const close = mount()
-      press(screen.getByTestId(testId), 100, 300)
+      press(screen.getByTestId(testId), 100, 300, { ms: 400 })
       expect(close, testId).toHaveBeenCalledTimes(1)
       cleanup()
     }
