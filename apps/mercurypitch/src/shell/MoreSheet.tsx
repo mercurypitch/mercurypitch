@@ -4,9 +4,15 @@
 //
 // The kit's medium-detent sheet: the three rooms that are not on the rail,
 // then the account and Settings, with Settings last and tinted
-// (`.itile--settings`). A test build also gets the in-app console, because a
-// TestFlight build has no devtools and a switch only a keyboard can reach is
-// a switch the tester does not have.
+// (`.itile--settings`). A test build also gets Developer, because a TestFlight
+// build has no devtools and a panel only a keyboard can reach is a panel the
+// tester does not have.
+//
+// That tile said "Console" and called `setupDeveloperConsole()`, which mounts
+// a host for a floating panel that renders nothing while its own Settings
+// toggle is off — so on the build it exists for, the tap did nothing, every
+// time (device round 1, P3). It pushes the developer screen now. The floating
+// console keeps its switch in Settings, where it already was.
 //
 // THE ROOMS ARE TABS HERE, NOT DOORS. The web bar sends Karaoke, Piano and
 // Guitar to `/karaoke`, `/piano-night` and `/guitar-night` — standalone HTML
@@ -26,9 +32,10 @@ export interface MoreSheetProps {
   open: () => boolean
   onClose: () => void
   onPushSettings: () => void
+  onPushDeveloper: () => void
 }
 
-const DEV_CONSOLE_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
 
 export const MoreSheet: Component<MoreSheetProps> = (props) => {
   const leaveTo = (run: () => void): void => {
@@ -89,20 +96,18 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
             <AccountIcon />
             Account
           </button>
-          <Show when={DEV_CONSOLE_AVAILABLE}>
+          <Show when={DEVELOPER_AVAILABLE}>
             <button
               type="button"
               class="mp-itile"
-              data-more-item="console"
+              data-more-item="developer"
               onClick={() => {
                 props.onClose()
-                void import('@/components/ConsoleLog').then((module) => {
-                  module.setupDeveloperConsole()
-                })
+                props.onPushDeveloper()
               }}
             >
               <ConsoleIcon />
-              Console
+              Developer
             </button>
           </Show>
           <button

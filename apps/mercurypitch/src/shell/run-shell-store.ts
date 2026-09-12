@@ -50,7 +50,7 @@ export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
 export type RailVariant = 'r1' | 'r2'
 
 /** A screen pushed over the tab, with its own Back. */
-export type PushedScreen = 'settings'
+export type PushedScreen = 'settings' | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000

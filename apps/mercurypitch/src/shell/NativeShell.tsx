@@ -29,6 +29,7 @@ import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/s
 import { practiceScope } from '@/stores/settings-store'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
+import { DeveloperScreen } from './DeveloperScreen'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
 import { KeepAlert } from './KeepAlert'
@@ -256,6 +257,12 @@ export const NativeShell: Component = () => {
             </PushedScreen>
           </Show>
 
+          <Show when={pushed() === 'developer'}>
+            <PushedScreen title="Developer" onBack={popScreen}>
+              <DeveloperScreen />
+            </PushedScreen>
+          </Show>
+
           {/* Inside the root, not beside it: the sheet copies the custom
               properties that resolve on its anchor onto its own portal, and
               the alert has none of its own — so outside, both would animate
@@ -265,6 +272,9 @@ export const NativeShell: Component = () => {
             onClose={closeMore}
             onPushSettings={() => {
               pushScreen('settings')
+            }}
+            onPushDeveloper={() => {
+              pushScreen('developer')
             }}
           />
 
