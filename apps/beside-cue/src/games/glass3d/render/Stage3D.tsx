@@ -15,7 +15,7 @@
 import { applyPreferredInput } from '@irchiinnuss/audio-io'
 import { MicInput } from '@irchiinnuss/audio-io/solid'
 import { midiToFreq, midiToNote } from '@irchiinnuss/pitch-engine'
-import { createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
+import { createSignal, lazy, onCleanup, onMount, Show } from 'solid-js'
 import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
@@ -29,6 +29,8 @@ import { shatterDuration, solveShatter } from '../sim/shatter3d'
 import { CABINET_CONFIG } from '../world3d-config'
 import type { StageView } from './Renderer3D'
 import { createRenderer3D } from './Renderer3D'
+import { createStageFrame } from './stage-frame'
+import { StageCorner } from './StageCorner'
 import { VoiceCoach } from './VoiceCoach'
 
 const MIC_ID = 'glass3d-cabinet'
@@ -77,11 +79,6 @@ export const Stage3D = (props: Stage3DProps) => {
   const [waveRate, setWaveRate] = createSignal(0)
   const [waveDepth, setWaveDepth] = createSignal(0)
   const [heardMidi, setHeardMidi] = createSignal<number | null>(null)
-  /** Displayed frames and f0 frames per second. The chip used to say
-   * only which backend won, which answers the one question nobody was
-   * asking when the thing feels slow. */
-  const [fps, setFps] = createSignal(0)
-  const [pitchHz, setPitchHz] = createSignal(0)
   const [broken, setBroken] = createSignal(false)
   const [grade, setGrade] = createSignal<number | null>(null)
 
@@ -100,16 +97,20 @@ export const Stage3D = (props: Stage3DProps) => {
   const target = midiToNote(TARGET_MIDI)
   const targetName = `${target.name}${target.octave}`
 
-  /** Backend, drawn frames, and f0 frames. All three, because on a phone
-   * the interesting failure is a renderer that is fine and an audio
-   * thread that is starved -- and those are indistinguishable from
-   * "slow". */
-  const chipLine = createMemo(() =>
-    fps() === 0 ? backend() : `${backend()} · ${fps()}fps · ${pitchHz()}Hz`,
-  )
+  /** The chip and calm mode (render/stage-frame.ts). The Cabinet's chip
+   * was the only one with frame and f0 rates; every stage now carries
+   * the same one, with frame time and the load breakdown beside them. */
+  const pace = createStageFrame({
+    calm: () => cfg.calm,
+    backend: () => backend(),
+  })
 
   onMount(() => {
+    // Timed apart from the loads: it is synchronous, and it runs before
+    // any file is asked for.
+    const sceneFrom = performance.now()
     const r = createRenderer3D(canvas, cfg)
+    pace.mark('scene', performance.now() - sceneFrom)
     renderer = r
 
     const fit = (): void => {
@@ -136,17 +137,19 @@ export const Stage3D = (props: Stage3DProps) => {
     let gone = false
 
     void r
-      .init()
+      .init(pace.mark)
       .then(() => {
         if (gone) return
         fit()
         setBackend(r.backend())
+        pace.refresh()
         begin()
       })
       .catch((err: unknown) => {
         // A renderer that never resolves is a black screen with no
         // explanation, which is the worst way to fail on a device.
         setBackend('no GPU')
+        pace.refresh()
         setRenderError(err instanceof Error ? err.message : String(err))
       })
 
@@ -157,6 +160,7 @@ export const Stage3D = (props: Stage3DProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      pace.dispose()
       renderer = null
       delete (window as unknown as Record<string, unknown>).__w3
     })
@@ -196,12 +200,9 @@ export const Stage3D = (props: Stage3DProps) => {
     let lastWaveStrength = 0
     let lastWaveRate = 0
     let lastWaveDepth = 0
-    let lastPitchStamp = -1
-    let pitchFrames = 0
-    let drawnFrames = 0
-    let statsAt = performance.now()
 
     const tick = (now: number): void => {
+      pace.begin(now)
       const frameSeconds = (now - last) / 1000
       last = now
       wallSeconds += frameSeconds
@@ -217,12 +218,12 @@ export const Stage3D = (props: Stage3DProps) => {
         lastWaveStrength = wave.active ? wave.strength : 0
         lastWaveRate = 'rateHz' in wave ? wave.rateHz : 0
         lastWaveDepth = 'depthCents' in wave ? wave.depthCents : 0
-        // One f0 frame can be polled many times per simulation step, so
-        // the stream's real rate is counted by CHANGE, not by reads.
-        if (pitch !== null && pitch.tAudio !== lastPitchStamp) {
-          lastPitchStamp = pitch.tAudio
-          pitchFrames += 1
-        }
+        // One f0 frame is polled by many simulation steps, so its rate is
+        // counted by change of level rather than by reads. It used to be
+        // counted by change of `tAudio`, which is the audio clock at the
+        // moment of the poll rather than a stamp on the frame -- so what
+        // the chip showed was how often that clock moved while voiced.
+        pace.level(driver?.latestLevel() ?? 0)
 
         if (launches === null) {
           const broke = stepResonance(
@@ -269,18 +270,6 @@ export const Stage3D = (props: Stage3DProps) => {
         setWaveDepth(lastWaveDepth)
       }
 
-      // Rates over a whole second: anything shorter is noise, and this
-      // is a number a human reads off a phone in their hand.
-      drawnFrames += 1
-      if (now - statsAt >= 1000) {
-        const span = (now - statsAt) / 1000
-        setFps(Math.round(drawnFrames / span))
-        setPitchHz(Math.round(pitchFrames / span))
-        drawnFrames = 0
-        pitchFrames = 0
-        statsAt = now
-      }
-
       view.resonance = ring.res
       view.ringing = ring.res >= cfg.ring.holdCap && launches === null
       view.launches = launches
@@ -294,7 +283,14 @@ export const Stage3D = (props: Stage3DProps) => {
                 Math.max(shatterDuration(launches, cfg.shatter), 0.001),
             )
 
-      renderer?.render(view)
+      // Calm (P3). Nothing in the Cabinet moves on its own but the
+      // shards, so a voice or a touch is what wakes it.
+      const drawn = pace.draw({
+        voiced: lastMidi !== null,
+        moving: launches !== null && view.shatterProgress < 1,
+      })
+      if (drawn !== null) renderer?.render(view)
+      pace.end()
       frame = requestAnimationFrame(tick)
     }
 
@@ -310,8 +306,9 @@ export const Stage3D = (props: Stage3DProps) => {
         waveRate: lastWaveRate,
         waveDepth: lastWaveDepth,
         heard: lastMidi,
-        fps: fps(),
-        pitchHz: pitchHz(),
+        fps: pace.stats().window?.fps ?? 0,
+        pitchHz: pace.stats().window?.f0Hz ?? 0,
+        perf: pace.stats(),
         broken: launches !== null,
         shards: renderer?.centroids().length ?? 0,
         backend: backend(),
@@ -359,6 +356,7 @@ export const Stage3D = (props: Stage3DProps) => {
     if (micStarting) return
     micStarting = true
     setMicError(null)
+    pace.micAsked()
     tone.start()
     try {
       // The remembered input, if it is still plugged in -- see
@@ -378,6 +376,7 @@ export const Stage3D = (props: Stage3DProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -394,6 +393,7 @@ export const Stage3D = (props: Stage3DProps) => {
     driver?.stop()
     driver = null
     setMicError(null)
+    pace.micAsked()
     // The switch may be the first way in: the game's tone starts with it.
     if (!started()) tone.start()
     try {
@@ -406,6 +406,7 @@ export const Stage3D = (props: Stage3DProps) => {
       }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -419,19 +420,11 @@ export const Stage3D = (props: Stage3DProps) => {
     <div class="stage3d">
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      {/* Top RIGHT. The Leave pill is fixed to the top left and sits on
-          z-index 50, so anything put there is simply not on screen. */}
-      <span class="stage3d__chip">{chipLine()}</span>
-
-      <Show when={DevDials !== null}>
-        <button
-          type="button"
-          class="dev-dials__open"
-          onClick={() => setDials((on) => !on)}
-        >
-          dials
-        </button>
-      </Show>
+      <StageCorner
+        chipOn={pace.chipOn}
+        lines={pace.lines()}
+        onDials={DevDials === null ? undefined : () => setDials((on) => !on)}
+      />
       <Show when={DevDials !== null && dials()}>
         {(() => {
           const Panel = DevDials!

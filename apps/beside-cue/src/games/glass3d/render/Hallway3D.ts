@@ -13,10 +13,14 @@
 import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, BoxGeometry, CircleGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PerspectiveCamera, Quaternion, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import { loadPaneShards } from '../assets'
+import type { LoadMark } from '../runtime/perf'
+import { NO_MARK, timed } from '../runtime/perf'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
+import type { Lens } from './fov'
+import { holdHorizontalFov } from './fov'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
 
@@ -29,11 +33,8 @@ export const PANE = { width: 0.72, height: 1.05, thick: 0.006 }
 
 /** The lens the corridor was composed through, and the shape of screen
  * it was composed on. `resize` keeps the horizontal angle these two
- * imply, whatever shape the screen turns out to be. */
-const DESIGN_FOV_DEG = 40
-const DESIGN_ASPECT = 1.5
-/** Past this the correction stops being a correction. */
-const MAX_FOV_DEG = 62
+ * imply, whatever shape the screen turns out to be (render/fov.ts). */
+const LENS: Lens = { designFovDeg: 40, designAspect: 1.5, maxFovDeg: 62 }
 
 export interface HallwayView {
   /** Where Merc is along the corridor. The stage owns the journey. */
@@ -50,7 +51,8 @@ export interface HallwayView {
 }
 
 export interface Hallway3D {
-  init(): Promise<void>
+  /** `mark` hears each load phase as it finishes, for the chip. */
+  init(mark?: LoadMark): Promise<void>
   render(view: HallwayView, dt: number): void
   centroids(): readonly Vec3[]
   merc(): MercActor | null
@@ -78,7 +80,7 @@ export const createHallway3D = (
   // millimetre sliver with a big dark parallelogram behind it. From the
   // diagonal the face catches the backdrop and reads as glass, and
   // Merc's face turns toward the lens instead of away down the hall.
-  const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 30)
+  const camera = new PerspectiveCamera(LENS.designFovDeg, 1, 0.05, 30)
   camera.position.set(1.5, 1.0, 2.4)
 
   const backdrop = createBackdrop(9)
@@ -214,13 +216,24 @@ export const createHallway3D = (
   }
 
   return {
-    async init(): Promise<void> {
-      await renderer.init()
+    async init(mark = NO_MARK): Promise<void> {
+      await timed(
+        () => renderer.init(),
+        (ms) => mark('gpu', ms),
+      )
       if (disposed) return
 
+      // Timed apart although they load together: which of the two a
+      // slow open is waiting on is the question P7 asks.
       const [actor, shards] = await Promise.all([
-        createMerc(0.55, environment),
-        loadPaneShards(),
+        timed(
+          () => createMerc(0.55, environment),
+          (ms) => mark('merc', ms),
+        ),
+        timed(
+          () => loadPaneShards(),
+          (ms) => mark('glass', ms),
+        ),
       ])
       if (disposed) {
         actor.dispose()
@@ -266,7 +279,10 @@ export const createHallway3D = (
       // and the scene it belongs to. It has to be visible while it
       // happens, for the same reason it was never compiled.
       batch.visible = true
-      await renderer.compileAsync(batch, camera, scene)
+      await timed(
+        () => renderer.compileAsync(batch, camera, scene),
+        (ms) => mark('compile', ms),
+      )
       batch.visible = false
       if (disposed) return
     },
@@ -343,25 +359,11 @@ export const createHallway3D = (
       const aspect = width / Math.max(height, 1)
       camera.aspect = aspect
       // Hold the HORIZONTAL field on a narrow screen, rather than the
-      // vertical one.
-      //
-      // three's `fov` is vertical, so a phone held upright keeps the 40
-      // degrees it was composed with and throws away most of the
-      // horizontal angle -- and horizontal is the axis the corridor runs
-      // along. At a phone's aspect that leaves about 19 degrees of
-      // corridor, which is how Merc ended up half outside the frame on
-      // maff's iPhone (2026-09-03) while looking fine on a laptop.
-      //
-      // So the vertical angle is derived from the horizontal one the
-      // scene was composed with, and only ever widened: a screen wider
-      // than the design aspect keeps exactly the framing it had. The cap
-      // is there because the arithmetic alone would ask for 100 degrees
-      // on a tall phone, and a 100-degree lens is a different film.
-      const halfH = Math.tan((DESIGN_FOV_DEG * Math.PI) / 360) * DESIGN_ASPECT
-      camera.fov = Math.min(
-        MAX_FOV_DEG,
-        Math.max(DESIGN_FOV_DEG, (Math.atan(halfH / aspect) * 360) / Math.PI),
-      )
+      // vertical one: horizontal is the axis the corridor runs along, and
+      // keeping the vertical 40 degrees on a phone is how Merc ended up
+      // half outside the frame on maff's iPhone (2026-09-03). The rule
+      // and its reasons live in render/fov.ts, shared by every world.
+      camera.fov = holdHorizontalFov(aspect, LENS)
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)

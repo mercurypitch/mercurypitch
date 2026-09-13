@@ -10,6 +10,7 @@
     "prebuild": "node scripts/sync-ort-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "preview:lan": "pnpm build && vite preview --mode https --host",
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
     "test": "vitest",
     "test:run": "vitest run",

@@ -21,8 +21,12 @@ import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BoxGeometry, Cir
 import { WebGPURenderer } from 'three/webgpu'
 import type { LineFurniture, LineLevel } from '../levels/lines'
 import { meshLayout, SLAT } from '../levels/lines'
+import type { LoadMark } from '../runtime/perf'
+import { NO_MARK, timed } from '../runtime/perf'
 import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
+import type { Lens } from './fov'
+import { holdHorizontalFov } from './fov'
 import { PANE } from './Hallway3D'
 import type { MercActor } from './merc'
 import { createMerc } from './merc'
@@ -31,9 +35,8 @@ const CUSTARD = 0xf2c84b
 const TURQUOISE = 0x00777d
 const PAPER = 0xfff4e2
 
-const DESIGN_FOV_DEG = 42
-const DESIGN_ASPECT = 1.5
-const MAX_FOV_DEG = 64
+/** The chambers' lens, held the chambers' way (render/fov.ts). */
+const LENS: Lens = { designFovDeg: 42, designAspect: 1.5, maxFovDeg: 64 }
 
 /** How tall a plate stands. There is no ceiling in the void; this is
  * high enough that a thread cannot see over it. */
@@ -71,7 +74,8 @@ export interface LineView {
 }
 
 export interface Line3D {
-  init(): Promise<void>
+  /** `mark` hears each load phase as it finishes, for the chip. */
+  init(mark?: LoadMark): Promise<void>
   /** Put a different room in front of him, keeping everything that is
    * not the room -- the renderer, the environment, Merc, the mic. */
   load(room: LineLevel, furniture: readonly LineFurniture[]): void
@@ -94,7 +98,7 @@ export const createLine3D = (
   renderer.toneMappingExposure = 1.2
 
   const scene = new Scene()
-  const camera = new PerspectiveCamera(DESIGN_FOV_DEG, 1, 0.05, 40)
+  const camera = new PerspectiveCamera(LENS.designFovDeg, 1, 0.05, 40)
   camera.position.set(1.5, 1.0, 2.9)
 
   // Sized as the chamber's is, off the longest room plus the camera
@@ -395,10 +399,16 @@ export const createLine3D = (
   let clock = 0
 
   return {
-    async init(): Promise<void> {
-      await renderer.init()
+    async init(mark = NO_MARK): Promise<void> {
+      await timed(
+        () => renderer.init(),
+        (ms) => mark('gpu', ms),
+      )
       if (disposed) return
-      const actor = await createMerc(0.55, environment)
+      const actor = await timed(
+        () => createMerc(0.55, environment),
+        (ms) => mark('merc', ms),
+      )
       if (disposed) {
         actor.dispose()
         return
@@ -524,10 +534,7 @@ export const createLine3D = (
       // three's fov is VERTICAL; a portrait screen keeps the vertical
       // angle and throws the horizontal away, and the horizontal is the
       // axis the room runs along. Widen to hold it, never narrow.
-      const designHalfH = (DESIGN_FOV_DEG * Math.PI) / 360
-      const halfW = Math.atan(Math.tan(designHalfH) * DESIGN_ASPECT)
-      const wanted = (2 * Math.atan(Math.tan(halfW) / aspect) * 180) / Math.PI
-      camera.fov = Math.min(MAX_FOV_DEG, Math.max(DESIGN_FOV_DEG, wanted))
+      camera.fov = holdHorizontalFov(aspect, LENS)
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)

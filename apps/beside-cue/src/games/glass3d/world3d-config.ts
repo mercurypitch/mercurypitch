@@ -107,6 +107,14 @@ export interface World3DConfig {
      * stall cannot spiral into a longer stall. */
     maxStepsPerFrame: number
   }
+
+  /** Drawing less while nothing happens (P3; see runtime/calm.ts). */
+  calm: {
+    /** Seconds with no touch, key, voice or motion before a stage calms. */
+    afterSeconds: number
+    /** Frames drawn a second while calm. */
+    fps: number
+  }
 }
 
 export const WORLD3D_CONFIG: World3DConfig = {
@@ -202,6 +210,15 @@ export const WORLD3D_CONFIG: World3DConfig = {
   loop: {
     stepSeconds: 1 / 120,
     maxStepsPerFrame: 5,
+  },
+
+  // P3 (slice-5-polish-to-v1.md §2.1), on its default: three seconds of
+  // nothing, then half of a 60 Hz screen. Long enough that a player who
+  // has stopped to breathe between notes never sees the rate change,
+  // short enough that a phone set down on a table stops heating up.
+  calm: {
+    afterSeconds: 3,
+    fps: 30,
   },
 }
 
@@ -319,5 +336,6 @@ export const resolveConfig = (
     shatter: { ...base.shatter, ...override.shatter },
     locomotion: { ...base.locomotion, ...override.locomotion },
     loop: { ...base.loop, ...override.loop },
+    calm: { ...base.calm, ...override.calm },
   }
 }

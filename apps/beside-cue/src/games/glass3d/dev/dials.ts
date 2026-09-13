@@ -357,6 +357,28 @@ export const DIALS: readonly Dial[] = [
     step: 1,
     unit: '',
   },
+
+  // ---- drawing less when nothing happens -----------------------------
+  {
+    group: 'calm',
+    key: 'afterSeconds',
+    label: 'Calm after',
+    does: 'Seconds with no touch, voice or motion before the room draws at half rate.',
+    min: 1,
+    max: 30,
+    step: 0.5,
+    unit: 's',
+  },
+  {
+    group: 'calm',
+    key: 'fps',
+    label: 'Calm frame rate',
+    does: 'Frames a second while calm. At or above the screen rate, calm changes nothing.',
+    min: 10,
+    max: 60,
+    step: 1,
+    unit: ' fps',
+  },
 ]
 
 /** Human names for the groups, in the order the panel shows them. */
@@ -366,6 +388,7 @@ export const GROUP_LABELS: Readonly<Record<DialGroup, string>> = {
   shatter: 'The break',
   locomotion: 'How Merc moves',
   loop: 'The clock',
+  calm: 'When nothing happens',
 }
 
 export const GROUP_ORDER: readonly DialGroup[] = [
@@ -374,6 +397,7 @@ export const GROUP_ORDER: readonly DialGroup[] = [
   'shatter',
   'locomotion',
   'loop',
+  'calm',
 ]
 
 /** Read a dial's current value out of a config object. */

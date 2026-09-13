@@ -42,6 +42,8 @@ import { CHAMBER_CONFIG } from '../world3d-config'
 import type { LineGateView, LineView } from './Line3D'
 import { createLine3D } from './Line3D'
 import { ShapeGauge } from './ShapeGauge'
+import { createStageFrame } from './stage-frame'
+import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 
 const MIC_ID = 'glass3d-line'
@@ -134,6 +136,11 @@ export const LineStage = (props: LineStageProps) => {
   const [lastRun, setLastRun] = createSignal<RoomStats | null>(null)
   const [showGauge, setShowGauge] = createSignal(readToggle(GAUGE_KEY))
   const [dials, setDials] = createSignal(false)
+  /** The chip and calm mode (render/stage-frame.ts). */
+  const pace = createStageFrame({
+    calm: () => cfg.calm,
+    backend: () => backend(),
+  })
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
@@ -153,7 +160,9 @@ export const LineStage = (props: LineStageProps) => {
   }
 
   onMount(() => {
+    const sceneFrom = performance.now()
     const r = createLine3D(canvas, cfg, room())
+    pace.mark('scene', performance.now() - sceneFrom)
     const unbindKeys = bindKeyboard(input, window)
 
     const fit = (): void => {
@@ -390,11 +399,13 @@ export const LineStage = (props: LineStageProps) => {
       let frame = 0
 
       const tick = (now: number): void => {
+        pace.begin(now)
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
+          pace.level(driver?.latestLevel() ?? 0)
           if (phaseNow === 'cleared') {
             if (wallSeconds - clearedAtWall >= CLEARED_SECONDS) {
               const next = lineTrack.roomAfter(live.id)
@@ -517,7 +528,20 @@ export const LineStage = (props: LineStageProps) => {
           v.passed = g.passed
         }
         view.exitOpen = gates.every((g) => g.passed)
-        r.render(view, frameSeconds)
+        // Calm (P3): full rate while he walks, sinks or hands over; the
+        // voice shaping him is a voiced frame, which wakes it anyway.
+        const intent = input.read(now)
+        const drawn = pace.draw({
+          input: intent.move !== 0 || intent.jump,
+          voiced: (driver?.latestPitch() ?? null) !== null,
+          moving:
+            phaseNow === 'falling' ||
+            phaseNow === 'cleared' ||
+            !loco.grounded ||
+            Math.abs(loco.vx) > 0.06,
+        })
+        if (drawn !== null) r.render(view, drawn)
+        pace.end()
         frame = requestAnimationFrame(tick)
       }
 
@@ -550,6 +574,7 @@ export const LineStage = (props: LineStageProps) => {
           gates: gates.map((g) => ({ ...g })),
           drops,
           grades: grades.map((g) => ({ ...g })),
+          perf: pace.stats(),
           move: (m: number) => input.setMove(m),
           drop: () => drop(),
           warpTo: (x: number) => {
@@ -568,15 +593,17 @@ export const LineStage = (props: LineStageProps) => {
     }
 
     void r
-      .init()
+      .init(pace.mark)
       .then(() => {
         fit()
         setBackend(r.backend())
+        pace.refresh()
         begin()
         setReady(true)
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
+        pace.refresh()
         setMicError(err instanceof Error ? err.message : String(err))
       })
 
@@ -587,6 +614,7 @@ export const LineStage = (props: LineStageProps) => {
       stopLoop?.()
       driver?.stop()
       r.dispose()
+      pace.dispose()
       goToRoom = null
       delete (window as unknown as Record<string, unknown>).__w3l
     })
@@ -607,6 +635,7 @@ export const LineStage = (props: LineStageProps) => {
     if (micStarting) return
     micStarting = true
     setMicError(null)
+    pace.micAsked()
     try {
       await applyPreferredInput()
       if (left) return
@@ -618,6 +647,7 @@ export const LineStage = (props: LineStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -633,6 +663,7 @@ export const LineStage = (props: LineStageProps) => {
     driver?.stop()
     driver = null
     setMicError(null)
+    pace.micAsked()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
@@ -641,6 +672,7 @@ export const LineStage = (props: LineStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -659,17 +691,11 @@ export const LineStage = (props: LineStageProps) => {
     <div class="stage3d" classList={{ 'has-controls': started() }}>
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      <span class="stage3d__chip">{backend()}</span>
-
-      <Show when={DevDials !== null}>
-        <button
-          type="button"
-          class="dev-dials__open"
-          onClick={() => setDials((on) => !on)}
-        >
-          dials
-        </button>
-      </Show>
+      <StageCorner
+        chipOn={pace.chipOn}
+        lines={pace.lines()}
+        onDials={DevDials === null ? undefined : () => setDials((on) => !on)}
+      />
       <Show when={DevDials !== null && dials()}>
         {(() => {
           const Panel = DevDials!

@@ -21,10 +21,14 @@ import type { Object3D } from 'three'
 import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, CircleGeometry, Color, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import { loadGlass, loadShards } from '../assets'
+import type { LoadMark } from '../runtime/perf'
+import { NO_MARK, timed } from '../runtime/perf'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
 import { shardAt } from '../sim/shatter3d'
 import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
+import type { Lens } from './fov'
+import { holdHorizontalFov } from './fov'
 
 /** The Cabinet's palette, from the brand tokens (§2 of the art plan). */
 const CUSTARD = 0xf2c84b // the one spotlight
@@ -33,6 +37,10 @@ const PAPER = 0xfff4e2 // the backlight behind the bowl
 
 /** Where the bowl sits, in metres. Lights and the shatter both aim here. */
 const BOWL = { x: 0, y: 0.17, z: 0 }
+
+/** The lens the Cabinet was composed through, on a 3:2 screen, and the
+ * Hallway's cap on how far a narrow screen may widen it (P8). */
+const LENS: Lens = { designFovDeg: 36, designAspect: 1.5, maxFovDeg: 62 }
 
 export interface StageView {
   /** 0 = intact, 1 = fully broken. Drives the shard positions. */
@@ -48,8 +56,9 @@ export interface StageView {
 }
 
 export interface Renderer3D {
-  /** Build the scene and load the assets. Await before the first draw. */
-  init(): Promise<void>
+  /** Build the scene and load the assets. Await before the first draw.
+   * `mark` hears each phase as it finishes, for the chip. */
+  init(mark?: LoadMark): Promise<void>
   render(view: StageView): void
   /** Where each shard sat in the intact glass — solveShatter's input.
    * Empty until `init` resolves. */
@@ -75,7 +84,10 @@ export const createRenderer3D = (
 
   // A fixed cinematic stage (§3, decided): the camera never moves, so the
   // composition is authored once rather than defended against a player.
-  const camera = new PerspectiveCamera(36, 1, 0.05, 20)
+  // It was authored on a laptop, though, and a phone held upright kept the
+  // 36 vertical degrees and lost two thirds of the width -- the bug the
+  // Hallway and the Line had already fixed. `resize` holds the width now.
+  const camera = new PerspectiveCamera(LENS.designFovDeg, 1, 0.05, 20)
   camera.position.set(0.38, 0.28, 0.47)
   camera.lookAt(BOWL.x, 0.15, BOWL.z)
 
@@ -296,11 +308,17 @@ export const createRenderer3D = (
   }
 
   return {
-    async init(): Promise<void> {
-      await renderer.init()
+    async init(mark = NO_MARK): Promise<void> {
+      await timed(
+        () => renderer.init(),
+        (ms) => mark('gpu', ms),
+      )
       if (disposed) return
 
-      const [glass, shards] = await Promise.all([loadGlass(), loadShards()])
+      const [glass, shards] = await timed(
+        () => Promise.all([loadGlass(), loadShards()]),
+        (ms) => mark('glass', ms),
+      )
       if (disposed) return
 
       glass.traverse((o) => {
@@ -339,7 +357,10 @@ export const createRenderer3D = (
       // and so is never compiled, which puts a program link on the first
       // frame of the shatter. Pay for it here instead.
       batch.visible = true
-      await renderer.compileAsync(batch, camera, scene)
+      await timed(
+        () => renderer.compileAsync(batch, camera, scene),
+        (ms) => mark('compile', ms),
+      )
       batch.visible = false
     },
 
@@ -387,6 +408,7 @@ export const createRenderer3D = (
 
     resize(width: number, height: number, pixelRatio: number): void {
       camera.aspect = width / Math.max(height, 1)
+      camera.fov = holdHorizontalFov(camera.aspect, LENS)
       camera.updateProjectionMatrix()
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)
