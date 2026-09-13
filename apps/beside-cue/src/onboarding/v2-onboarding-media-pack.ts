@@ -91,17 +91,16 @@ type ExpansionPullId = (typeof EXPANSION_PULL_IDS)[number]
 export const V2_ONBOARDING_PULL_MOTION_HOLDS: Readonly<
   Partial<Record<ExpansionPullId, V2OnboardingPullMotionHold>>
 > = Object.freeze({
-  // Confirmed 2026-09-07 (pillow-edge-audit): both Pillow clips carry a cutout
-  // defect baked in by keying their magenta-matte sources. A magenta fringe
-  // follows the silhouette, dark fragments trail the moving feet and parts of
-  // the legs are removed. It exists in the lossless composition before
-  // encoding, so no playback setting can hide it. The repair, a tracked
-  // foreground mask or a green-screen re-shoot, is separate work.
-  'the-pillow': Object.freeze({
-    defect:
-      'magenta fringe and missing leg pixels baked into the entrance and recede cutouts',
-    since: '2026-09-07',
-  }),
+  // Empty since 2026-09-12. Pillow was the only entry: both of its clips carried
+  // a magenta fringe and missing leg pixels, baked in by keying a magenta-matte
+  // source whose ratio left four hundredths of room against lavender felt. The
+  // pair was re-shot on green, where the same two materials sit a third of the
+  // ratio range apart, and re-keyed through the green branch of
+  // `scripts/prepare-beside-cue-pull-expansion.py`.
+  //
+  // The mechanism stays: a Pull listed here shows its authored still wherever a
+  // clip would have played, which is how a defect gets held back without
+  // removing the character from the cast.
 })
 
 const EMPTY_SET: V2OnboardingStillResource = Object.freeze({

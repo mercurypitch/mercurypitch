@@ -26,7 +26,17 @@ EXITS = {
     "familiar-ritual": f"v1_eyes_poping_out_b05-familiar-ritual-recede-{SUFFIX}",
     "the-bookmark": f"b05-the-bookmark-actual-recede-{SUFFIX}",
     "the-tape": "b05-the-tape-recede-google-flow-omni-1_1-flash-raw-v0_2.mp4",
+    "the-pillow": "b05-the-pillow-recede-higgsfield-seedance-2_5-green-raw-v0_2.mp4",
 }
+# Pillow alone was re-shot, on 2026-09-12, because its magenta pair is the one
+# the 09-07 edge audit rejected: the ratio key that separates a shaded magenta
+# backing from muted lavender felt had only four hundredths of room, and what it
+# took out was leg. Green gives that same pair of materials a whole third of the
+# ratio range, so the repair is a different backing rather than a cleverer key.
+ENTRANCES = {
+    "the-pillow": "b03-the-pillow-present-higgsfield-seedance-2_5-green-raw-v0_2.mp4",
+}
+GREEN_BACKED = frozenset({"the-pillow"})
 
 
 def digest(path):
@@ -65,6 +75,8 @@ def key(rgb, pull_id, exiting=False):
     # lavender/plum characters. Preserve neutral dark eyes and hollow cores.
     pixels = rgb.astype(np.float32)
     red, green, blue = (pixels[:, :, c] for c in range(3))
+    if pull_id in GREEN_BACKED:
+        return key_green(pixels, red, green, blue)
     excess = np.minimum(red, blue) - green
     ratio = excess / np.maximum(1, np.maximum(red, blue))
     alpha = np.clip((0.30 - ratio) / 0.09, 0, 1)
@@ -73,38 +85,50 @@ def key(rgb, pull_id, exiting=False):
         # Their cream/paper bodies permit a tighter absolute chroma key; the
         # ratio-only key leaves the generated magenta floor shadows visible.
         alpha = np.clip((35 - excess) / 15, 0, 1)
-    if pull_id == 'the-pillow':
-        # Both 96-frame sources were measured: backing's 0.5th percentile
-        # bottoms out at .3445 entering and .3098 exiting. The downloaded
-        # exit has different grading; applying the entrance key retains it.
-        cutoff = 0.303 if exiting else 0.338
-        alpha = np.clip((cutoff + 0.006 - ratio) / 0.032, 0, 1)
-        # Keep the connected fabric silhouette, including dark eyes. Isolated
-        # backing speckles are not character geometry or registration anchors.
-        solid = ndimage.binary_closing(ratio < cutoff, iterations=1)
-        labels, _ = ndimage.label(solid)
-        sizes = np.bincount(labels.ravel())
-        largest = int(sizes[1:].argmax()) + 1 if sizes.size > 1 else 0
-        solid = (labels == largest) if largest and sizes[largest] >= 400 else np.zeros_like(solid)
-        # Eye/fabric pinholes are not transparent. The larger gap BETWEEN
-        # the legs is real negative space and must remain transparent.
-        holes, _ = ndimage.label(ndimage.binary_fill_holes(solid) & ~solid)
-        hole_sizes = np.bincount(holes.ravel())
-        fill_holes = hole_sizes <= 2500
-        fill_holes[0] = False
-        occupied_rows = np.where(solid)[0]
-        body_limit = (occupied_rows.min() + .8 * (occupied_rows.max() - occupied_rows.min())) if occupied_rows.size else 0
-        solid |= fill_holes[holes] & (np.arange(rgb.shape[0])[:, None] < body_limit)
-        alpha = np.where(ndimage.binary_erosion(solid), 1,
-                         np.where(ndimage.binary_dilation(solid), alpha, 0))
-        rim = solid & ~ndimage.binary_erosion(solid, iterations=2)
-        edge_spill = np.maximum(0, excess - 22) * rim
-        pixels[:, :, 0] -= edge_spill
-        pixels[:, :, 2] -= edge_spill
     # Despill only partially covered edges, never opaque character materials.
     spill = np.maximum(0, excess) * (1 - alpha)
     pixels[:, :, 0] -= spill
     pixels[:, :, 2] -= spill
+    pixels[alpha == 0] = 0
+    return Image.fromarray(np.dstack((np.clip(pixels, 0, 255), alpha * 255)).astype(np.uint8))
+
+
+def key_green(pixels, red, green, blue):
+    # The green counterpart of the ratio key above, and a far easier one.
+    # Measured across the 2026-09-12 sources: the field's 0.5th percentile ratio
+    # never fell below .635 while the felt's 99.5th never rose above .492, so the
+    # soft band sits in open space instead of straddling the leg pixels.
+    excess = green - np.maximum(red, blue)
+    ratio = excess / np.maximum(1, green)
+    alpha = np.clip((0.60 - ratio) / 0.10, 0, 1)
+    # Keep the connected fabric silhouette, including the dark eyes, and let the
+    # real gap between the legs stay transparent. Same shape as the magenta
+    # branch, because the same character is being protected.
+    solid = ndimage.binary_closing(ratio < 0.55, iterations=1)
+    labels, _ = ndimage.label(solid)
+    sizes = np.bincount(labels.ravel())
+    largest = int(sizes[1:].argmax()) + 1 if sizes.size > 1 else 0
+    solid = (labels == largest) if largest and sizes[largest] >= 400 else np.zeros_like(solid)
+    holes, _ = ndimage.label(ndimage.binary_fill_holes(solid) & ~solid)
+    hole_sizes = np.bincount(holes.ravel())
+    fill_holes = hole_sizes <= 2500
+    fill_holes[0] = False
+    occupied_rows = np.where(solid)[0]
+    body_limit = (occupied_rows.min() + .8 * (occupied_rows.max() - occupied_rows.min())) if occupied_rows.size else 0
+    solid |= fill_holes[holes] & (np.arange(pixels.shape[0])[:, None] < body_limit)
+    # The matte is choked by a pixel: opaque two pixels in, the ratio ramp on the
+    # ring inside the silhouette, nothing outside it. The outermost ring of a
+    # generated edge is half backing whatever the cutoff, and keeping it is how
+    # the magenta pair got its fringe. A pixel of felt is invisible at the 0.38
+    # scale this composites at; a coloured outline is not.
+    inner = ndimage.binary_erosion(solid, iterations=1)
+    alpha = np.where(ndimage.binary_erosion(inner), 1, np.where(inner, alpha, 0))
+    # Then despill everything that survives: this character is lavender felt,
+    # cream eyes and a dark smile, so green never legitimately leads the other
+    # two channels. Clamping it to their maximum removes the cast without
+    # touching hue anywhere it was not green to begin with.
+    keep = alpha > 0
+    pixels[:, :, 1] = np.where(keep, np.minimum(green, np.maximum(red, blue) + 4), green)
     pixels[alpha == 0] = 0
     return Image.fromarray(np.dstack((np.clip(pixels, 0, 255), alpha * 255)).astype(np.uint8))
 
@@ -181,7 +205,7 @@ def main():
     manifest = {"revision": "pull-expansion-v2-edge-safe", "movieVersion": "v0_2", "plateSha256": digest(plate_path), "pulls": {}}
     sheet = Image.new("RGB", (720, 430 * 4), "#fff5dd")
     for index, pull_id in enumerate(args.pull or IDS):
-        present = args.sources / f"b03-{pull_id}-present-{SUFFIX}"
+        present = args.sources / ENTRANCES.get(pull_id, f"b03-{pull_id}-present-{SUFFIX}")
         recede = args.sources / EXITS.get(pull_id, f"b05-{pull_id}-recede-{SUFFIX}")
         endpoint = None
         present_contacts = []
@@ -228,7 +252,7 @@ def main():
                 # A settled empty-room tail gives the next beat a stable seam.
                 for _ in range(6):
                     yield plate.convert("RGB")
-        record = {"sources": {}, "registration": {"scale": scale, "offset": offset, "edgeMotion": "silhouette-contact-smoothstep", "edgeMarginPx": margins, "transitionFrames": 24}, "matte": "pillow-beat-chroma-silhouette" if pull_id == "the-pillow" else "paper-chroma" if pull_id in ("the-tab", "the-bookmark") else "chroma-ratio", "frames": {}, "edgeAudit": {}}
+        record = {"sources": {}, "registration": {"scale": scale, "offset": offset, "edgeMotion": "silhouette-contact-smoothstep", "edgeMarginPx": margins, "transitionFrames": 24}, "matte": "pillow-green-chroma-silhouette" if pull_id == "the-pillow" else "paper-chroma" if pull_id in ("the-tab", "the-bookmark") else "chroma-ratio", "frames": {}, "edgeAudit": {}}
         for moment, source in [("present", present), ("recede", recede)]:
             record["sources"][moment] = {"file": source.name, "sha256": digest(source)}
             touching_frames = [n for n, contact in enumerate(contacts[moment]) if contact]

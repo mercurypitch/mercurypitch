@@ -76,3 +76,34 @@ Keep the existing stills/tokens when staging the new movies, verify their hashes
 against the generated stills, and refresh the closed-set delivery hashes after
 adding Scroll's two files. Physical iOS playback remains the final acceptance
 check; desktop browser tests do not prove native hardware behavior.
+
+## Pillow, re-shot on green (2026-09-12)
+
+The 2026-09-07 edge audit rejected both Pillow clips: a magenta fringe on the
+silhouette, dark fragments trailing the feet, leg pixels removed. The key was
+not the problem. Measured on those sources, the magenta backing's 0.5th
+percentile chroma ratio sat at .3445 entering and .3098 exiting while the
+lavender felt ran right underneath it, so any cutoff that removed all the
+backing also removed leg.
+
+Green separates the same two materials by a third of the ratio range: the
+field's 0.5th percentile never fell below .635 and the felt's 99.5th never rose
+above .492. `key_green` in `scripts/prepare-beside-cue-pull-expansion.py` keys
+against that gap, chokes the matte by a pixel so the half-backing outer ring
+never ships, and clamps the green channel to the maximum of red and blue inside
+the silhouette. The composited settled still carries zero pixels where green
+leads both other channels.
+
+Sources (in the dotfiles `--sources` folder, listed in `ENTRANCES` and `EXITS`):
+
+- `b03-the-pillow-present-higgsfield-seedance-2_5-green-raw-v0_2.mp4`
+- `b05-the-pillow-recede-higgsfield-seedance-2_5-green-raw-v0_2.mp4`
+
+Both are Seedance 2.5 on Higgsfield, 4 s, 9:16, 720p, silent. The recede was
+generated from the walk-in's last frame as its start image and a flat plate of
+that clip's own median green as its end image, so the two performances meet.
+
+Delivery filenames are unchanged, so nothing in the app had to be re-pointed;
+`SHA256SUMS` and `media-source/.../manifest.json` carry the new bytes and the
+`pillow-green-chroma-silhouette` matte name. Physical iOS playback is still the
+acceptance check.

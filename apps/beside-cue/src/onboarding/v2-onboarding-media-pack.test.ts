@@ -224,15 +224,27 @@ describe('V2 onboarding media pack', () => {
 describe('Pull motion holds', () => {
   const PILLOW_SETTLED = `${EXPANSION_ROOT}/p03-the-pillow-settled-v0_1.webp`
   const TABLE_READY = `${BASE_ROOT}/stills/p02-table-ready-v0_17.webp`
-  const MOVING_PREMIUM_BEATS = PREMIUM_PULL_IDS.filter(
-    (id) => id !== 'the-pillow',
-  ).flatMap((id) => [
+  const MOVING_PREMIUM_BEATS = PREMIUM_PULL_IDS.flatMap((id) => [
     [id, 'present', `${EXPANSION_ROOT}/b03-${id}-present-v0_2.mp4`] as const,
     [id, 'recede', `${EXPANSION_ROOT}/b05-${id}-recede-v0_2.mp4`] as const,
   ])
 
-  it('shows Pillow settled where its defective entrance clip would have played', () => {
-    const request = resolveV2OnboardingMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
+  // The map is empty now that Pillow is repaired, so the mechanism is proved on
+  // a pack of its own. Without this, the next defect would be held back by code
+  // nothing had exercised since 2026-09-12.
+  const heldPack: V2OnboardingMediaPack = {
+    ...V2_ONBOARDING_MEDIA_PACK,
+    pulls: {
+      ...V2_ONBOARDING_MEDIA_PACK.pulls,
+      'the-pillow': {
+        ...V2_ONBOARDING_MEDIA_PACK.pulls['the-pillow'],
+        motionHold: { defect: 'a defect under repair', since: '2026-09-12' },
+      },
+    },
+  }
+
+  it('shows a held Pull settled where its entrance clip would have played', () => {
+    const request = resolveV2OnboardingMediaRequest(heldPack, {
       targetId: 'pull:the-pillow:present',
       pullId: 'the-pillow',
       moment: 'present',
@@ -246,8 +258,8 @@ describe('Pull motion holds', () => {
     })
   })
 
-  it('returns Pillow to the P02 plate where its defective recede clip would have played', () => {
-    const request = resolveV2OnboardingMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
+  it('returns a held Pull to the P02 plate where its recede clip would have played', () => {
+    const request = resolveV2OnboardingMediaRequest(heldPack, {
       targetId: 'pull:the-pillow:recede',
       pullId: 'the-pillow',
       moment: 'recede',
@@ -260,12 +272,10 @@ describe('Pull motion holds', () => {
     })
   })
 
-  it('keeps both Pillow clips registered as the repair source while the hold stands', () => {
+  it('plays both Pillow clips now that the cutout is repaired', () => {
     const pillow = V2_ONBOARDING_MEDIA_PACK.pulls['the-pillow']
 
-    expect(V2_ONBOARDING_PULL_MOTION_HOLDS['the-pillow']?.since).toBe(
-      '2026-09-07',
-    )
+    expect(V2_ONBOARDING_PULL_MOTION_HOLDS['the-pillow']).toBeUndefined()
     expect(pillow).toMatchObject({
       present: {
         kind: 'video',
@@ -276,8 +286,8 @@ describe('Pull motion holds', () => {
         kind: 'video',
         src: `${EXPANSION_ROOT}/b05-the-pillow-recede-v0_2.mp4`,
       },
-      motionHold: V2_ONBOARDING_PULL_MOTION_HOLDS['the-pillow'],
     })
+    expect(pillow?.motionHold).toBeUndefined()
   })
 
   it.each(MOVING_PREMIUM_BEATS)(
@@ -292,11 +302,11 @@ describe('Pull motion holds', () => {
     },
   )
 
-  it('holds Pillow and no other built-in Pull', () => {
+  it('holds no built-in Pull back from its clips', () => {
     const held = BUILT_IN_PULL_IDS.filter(
       (id) => V2_ONBOARDING_MEDIA_PACK.pulls[id]?.motionHold !== undefined,
     )
 
-    expect(held).toEqual(['the-pillow'])
+    expect(held).toEqual([])
   })
 })
