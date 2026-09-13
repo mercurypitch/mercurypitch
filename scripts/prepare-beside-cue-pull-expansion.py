@@ -26,7 +26,7 @@ EXITS = {
     "familiar-ritual": f"v1_eyes_poping_out_b05-familiar-ritual-recede-{SUFFIX}",
     "the-bookmark": f"b05-the-bookmark-actual-recede-{SUFFIX}",
     "the-tape": "b05-the-tape-recede-google-flow-omni-1_1-flash-raw-v0_2.mp4",
-    "the-pillow": "b05-the-pillow-recede-higgsfield-seedance-2_5-green-raw-v0_2.mp4",
+    "the-pillow": "b05-the-pillow-recede-google-flow-omni-green-raw-v0_3.mp4",
 }
 # Pillow alone was re-shot, on 2026-09-12, because its magenta pair is the one
 # the 09-07 edge audit rejected: the ratio key that separates a shaded magenta
@@ -34,7 +34,7 @@ EXITS = {
 # took out was leg. Green gives that same pair of materials a whole third of the
 # ratio range, so the repair is a different backing rather than a cleverer key.
 ENTRANCES = {
-    "the-pillow": "b03-the-pillow-present-higgsfield-seedance-2_5-green-raw-v0_2.mp4",
+    "the-pillow": "b03-the-pillow-present-google-flow-omni-green-raw-v0_3.mp4",
 }
 GREEN_BACKED = frozenset({"the-pillow"})
 
@@ -109,9 +109,16 @@ def key_green(pixels, red, green, blue):
     sizes = np.bincount(labels.ravel())
     largest = int(sizes[1:].argmax()) + 1 if sizes.size > 1 else 0
     solid = (labels == largest) if largest and sizes[largest] >= 400 else np.zeros_like(solid)
-    holes, _ = ndimage.label(ndimage.binary_fill_holes(solid) & ~solid)
+    holes, hole_count = ndimage.label(ndimage.binary_fill_holes(solid) & ~solid)
     hole_sizes = np.bincount(holes.ravel())
     fill_holes = hole_sizes <= 2500
+    # A hole whose pixels are the backing is background seen through the
+    # character -- between long legs, under a raised tassel -- not a pinhole in
+    # the fabric. Filling it would keep that green, and the despill below turns
+    # kept green into a dark teal patch. Eyes and seams are dark, never green.
+    if hole_count:
+        hole_ratio = ndimage.median(ratio, labels=holes, index=np.arange(1, hole_count + 1))
+        fill_holes[1:] &= np.asarray(hole_ratio) < 0.55
     fill_holes[0] = False
     occupied_rows = np.where(solid)[0]
     body_limit = (occupied_rows.min() + .8 * (occupied_rows.max() - occupied_rows.min())) if occupied_rows.size else 0
