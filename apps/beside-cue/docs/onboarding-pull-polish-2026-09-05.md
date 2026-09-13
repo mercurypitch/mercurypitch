@@ -65,9 +65,8 @@ the feet and missing leg pixels, all baked in before encoding, and
 `V2_ONBOARDING_PULL_MOTION_HOLDS` held both beats back on the settled still and
 the P02 plate. The cause was the backing, not the key: separating a shaded
 magenta field from lavender felt left about four hundredths of chroma ratio to
-work with. The pair was re-shot on pure green (Seedance 2.5 through Higgsfield,
-4 s, 9:16, 720p), where the same two materials sit a third of the ratio range
-apart, and re-keyed through `key_green` in
+work with. The pair was re-shot on pure green (Google Flow Omni, 4 s, 9:16, 720p), where
+the same two materials sit a third of the ratio range apart, and re-keyed through `key_green` in
 `scripts/prepare-beside-cue-pull-expansion.py`. The delivery filenames are
 unchanged; `SHA256SUMS` and the media-source manifest carry the new bytes, and
 the hold map is now empty.

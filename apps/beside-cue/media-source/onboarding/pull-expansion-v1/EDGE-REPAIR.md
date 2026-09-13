@@ -96,12 +96,23 @@ leads both other channels.
 
 Sources (in the dotfiles `--sources` folder, listed in `ENTRANCES` and `EXITS`):
 
-- `b03-the-pillow-present-higgsfield-seedance-2_5-green-raw-v0_2.mp4`
-- `b05-the-pillow-recede-higgsfield-seedance-2_5-green-raw-v0_2.mp4`
+- `b03-the-pillow-present-google-flow-omni-green-raw-v0_3.mp4`
+- `b05-the-pillow-recede-google-flow-omni-green-raw-v0_3.mp4`
 
-Both are Seedance 2.5 on Higgsfield, 4 s, 9:16, 720p, silent. The recede was
-generated from the walk-in's last frame as its start image and a flat plate of
-that clip's own median green as its end image, so the two performances meet.
+Both are Google Flow Omni, 4 s, 9:16, the plain 720p download, silent. The
+recede was generated from the walk-in's last frame as its start image and a flat
+plate of that clip's own median green as its end image, so the two performances
+meet. They replace a Seedance 2.5 pair from the day before (`...v0_2`), which
+carried twice the floor shadow under the feet. Flow's free 1080p download is an
+upscale that invents fibre texture and shimmers more during holds; do not key it.
+
+Holes are filled only when they are not backing-coloured: green seen between
+long legs is background, and filling it left a dark teal patch once despilled.
+
+Known and accepted for version 1: the edge ease still moves this character
+while it plants its last step in and its first step out, and a faint pale rim
+can survive on the fastest-moving edge. Both are addressed by registering on the
+entry edge and un-mixing against a clean plate, planned for the next version.
 
 Delivery filenames are unchanged, so nothing in the app had to be re-pointed;
 `SHA256SUMS` and `media-source/.../manifest.json` carry the new bytes and the
