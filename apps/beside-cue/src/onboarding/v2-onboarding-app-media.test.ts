@@ -16,6 +16,10 @@ const V2_5_DELIVERY_ROOT = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../../public/onboarding/corky-v2.5',
 )
+const V2_6_DELIVERY_ROOT = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../public/onboarding/corky-v2.6',
+)
 
 function sha256(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
@@ -31,6 +35,17 @@ function deliveryFiles(
     return [relative(deliveryRoot, path)]
   })
 }
+
+it('pins the selected silent J2 greeting derivative under its own cache identity', () => {
+  const path = 'picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4'
+  const hash =
+    '52be44210bb2dd0261f8d857e218a4a73c95e8f0eff857c9c0aebef06822985f'
+  expect(
+    readFileSync(resolve(V2_6_DELIVERY_ROOT, 'SHA256SUMS'), 'utf8').trim(),
+  ).toBe(`${hash}  ${path}`)
+  expect(deliveryFiles(V2_6_DELIVERY_ROOT).sort()).toEqual(['SHA256SUMS', path])
+  expect(sha256(resolve(V2_6_DELIVERY_ROOT, path))).toBe(hash)
+})
 
 describe('V2.4 onboarding app media', () => {
   it('matches the exact public delivery inventory with no unregistered files', () => {

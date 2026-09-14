@@ -28,6 +28,7 @@ const mediaStageHarness = vi.hoisted(() => ({
         | 'transitionDurationMs'
         | 'onPresentationSettled'
         | 'onVideoEnded'
+        | 'onVideoDialogueCue'
       >
     | undefined,
 }))
@@ -56,6 +57,7 @@ vi.mock('./V2OnboardingMediaStage', () => ({
         transitionDurationMs: props.transitionDurationMs,
         onPresentationSettled: props.onPresentationSettled,
         onVideoEnded: props.onVideoEnded,
+        onVideoDialogueCue: props.onVideoDialogueCue,
       }
     })
     return (
@@ -307,6 +309,13 @@ function settleCurrentMedia(
 
 function endCurrentMedia(token: string): void {
   const { props, targetId } = currentMediaStage()
+  // Model passage through the authored cue before the natural video end.
+  if (
+    props.request?.primary.kind === 'video' &&
+    props.request.primary.dialogueStartSeconds !== undefined
+  ) {
+    props.onVideoDialogueCue?.({ targetId, token })
+  }
   props.onVideoEnded?.({ targetId, token })
 }
 
@@ -634,7 +643,7 @@ describe('V2OnboardingDirector', () => {
     ).toBeVisible()
   })
 
-  it('uses the direct-to-P02 V2.5 greeting and skips the duplicate B02 scene', async () => {
+  it('uses the direct-to-P02 J2 greeting and skips the duplicate B02 scene', async () => {
     const probe = createDirectorProbe()
     render(() => (
       <V2OnboardingDirector
@@ -648,7 +657,9 @@ describe('V2OnboardingDirector', () => {
     expect(currentMediaStage()).toMatchObject({ targetId: 'intro:b01' })
     expect(currentMediaStage().props.request?.primary).toMatchObject({
       kind: 'video',
-      src: expect.stringContaining('b01-corky-greeting-direct-to-p02-v0_1.mp4'),
+      src: expect.stringContaining(
+        'b01-corky-greeting-j2-direct-to-p02-v0_1.mp4',
+      ),
     })
     expect(currentMediaStage().props.request?.reducedStill).toMatchObject({
       kind: 'still',
@@ -672,6 +683,123 @@ describe('V2OnboardingDirector', () => {
     expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
       'data-v2-media-target',
       'plate:p02',
+    )
+  })
+
+  it('waits for the media cue, starts dialogue once and keeps the video-end gate', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    await advance(2_000)
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    settleCurrentMedia('greeting')
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    const { props, targetId } = currentMediaStage()
+    const cue = props.onVideoDialogueCue?.({ targetId, token: 'greeting' })
+    expect(cue).toBeDefined()
+    await cue?.ready
+    props.onVideoDialogueCue?.({ targetId, token: 'greeting' })
+    expect(
+      probe.audio.play.mock.calls.filter(
+        ([id]) => id === V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+      ),
+    ).toHaveLength(1)
+    expect(screen.getByRole('heading', { name: 'Meet Corky.' })).toBeVisible()
+    endCurrentMedia('greeting')
+    await advance(0)
+    expect(
+      screen.getByRole('heading', { name: 'Choose your Pull' }),
+    ).toBeVisible()
+  })
+
+  it('plays the deferred greeting when video recovery settles on a still', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    settleCurrentMedia('greeting-still', 'reduced-still')
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    await advance(1_550)
+    expect(
+      screen.getByRole('heading', { name: 'Choose your Pull' }),
+    ).toBeVisible()
+  })
+
+  it('fails open with dialogue if a greeting video never reports readiness', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    await advance(14_999)
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    await advance(1)
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    expect(
+      screen.getByRole('heading', { name: 'Choose your Pull' }),
+    ).toBeVisible()
+  })
+
+  it('rejects background and retired-generation greeting cue callbacks', async () => {
+    const probe = createDirectorProbe('developer-review')
+    const [foreground, setForeground] = createSignal(true)
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        foreground={foreground()}
+        mediaPack={V2_ONBOARDING_MEDIA_PACK}
+      />
+    ))
+    await advance(1_300)
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
+    const stale = currentMediaStage().props.onVideoDialogueCue
+    const event = { targetId: 'intro:b01', token: 'old-greeting' }
+    setForeground(false)
+    stale?.(event)
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    setForeground(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Next scene' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Previous scene' }))
+    stale?.(event)
+    expect(probe.audio.play).not.toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
+    )
+    currentMediaStage().props.onVideoDialogueCue?.({
+      ...event,
+      token: 'new-greeting',
+    })
+    expect(probe.audio.play).toHaveBeenCalledWith(
+      V2_ONBOARDING_AUDIO_ASSET_IDS.greeting,
     )
   })
 
