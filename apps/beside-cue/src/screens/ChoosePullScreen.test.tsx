@@ -103,7 +103,7 @@ describe('choose Pull screen', () => {
     ).toHaveFocus()
   })
 
-  it('reveals a changed selection without preview-scrolling the initial render or stealing radio focus', async () => {
+  it('updates a changed selection without scrolling to its preview or stealing radio focus', async () => {
     const scrollIntoView = vi.fn()
     const originalScrollIntoView = Object.getOwnPropertyDescriptor(
       Element.prototype,
@@ -134,11 +134,7 @@ describe('choose Pull screen', () => {
       fireEvent.click(nextChoice)
       await Promise.resolve()
 
-      expect(scrollIntoView).toHaveBeenCalledOnce()
-      expect(scrollIntoView).toHaveBeenCalledWith({
-        block: 'center',
-        behavior: 'smooth',
-      })
+      expect(scrollIntoView).not.toHaveBeenCalled()
       expect(nextChoice).toHaveFocus()
 
       const preview = screen.getByRole('region', {

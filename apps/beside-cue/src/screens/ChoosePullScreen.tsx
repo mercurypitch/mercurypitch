@@ -1,5 +1,5 @@
 // Image-first Pull selection keeps choice, preview and confirmation separate.
-import { createEffect, For, onMount, Show } from 'solid-js'
+import { For, onMount, Show } from 'solid-js'
 import { AppHeader } from '@/components/AppHeader'
 import { AssetStage } from '@/components/AssetStage'
 import { PremiumPullChoices } from '@/components/PremiumPullChoices'
@@ -52,14 +52,6 @@ interface PullCardProps {
   onSelect: (id: string) => void
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-}
-
 function PullCard(props: PullCardProps) {
   return (
     <label
@@ -107,10 +99,6 @@ function PullCard(props: PullCardProps) {
 export function ChoosePullScreen(props: ChoosePullScreenProps) {
   const copy = useCopy()
   let headingElement: HTMLHeadingElement | undefined
-  let previewElement: HTMLElement | undefined
-  let observedInitialSelection = false
-  let previousSelectedId: string | undefined
-  let selectionScrollRequest = 0
 
   const customSelected = () => props.selectedId === 'custom'
   const presentationFor = (
@@ -169,30 +157,6 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
     queueMicrotask(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
       headingElement?.focus({ preventScroll: true })
-    })
-  })
-
-  createEffect(() => {
-    const selectedId = props.selectedId
-    const request = ++selectionScrollRequest
-    if (!observedInitialSelection) {
-      observedInitialSelection = true
-      previousSelectedId = selectedId
-      return
-    }
-
-    const selectionChanged = selectedId !== previousSelectedId
-    previousSelectedId = selectedId
-    if (!selectionChanged || selectedId === undefined) return
-
-    // Show mounts reactively from the same selection. Waiting one microtask
-    // makes sure its element exists without delaying the reveal to a new frame.
-    queueMicrotask(() => {
-      if (request !== selectionScrollRequest) return
-      previewElement?.scrollIntoView?.({
-        block: 'center',
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-      })
     })
   })
 
@@ -260,9 +224,6 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
 
       <Show when={props.selectedId !== undefined}>
         <section
-          ref={(element) => {
-            previewElement = element
-          }}
           class={styles.selectionPreview}
           aria-label={copy.t('Selected Pull preview')}
           tabIndex={-1}
