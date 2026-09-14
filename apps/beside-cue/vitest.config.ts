@@ -34,7 +34,25 @@ export default defineConfig({
     __APP_CHANNEL__: JSON.stringify('dev'),
   },
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'app',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['./src/test/setup.ts'],
+        },
+      },
+      {
+        // Real Vite builds use esbuild, which needs Node's byte-array realm.
+        extends: true,
+        test: {
+          name: 'build',
+          environment: 'node',
+          include: ['scripts/**/*.test.ts'],
+        },
+      },
+    ],
   },
 })

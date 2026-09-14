@@ -5,9 +5,7 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "predev": "node scripts/sync-ort-assets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/sync-ort-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "preview:lan": "pnpm build && vite preview --mode https --host",

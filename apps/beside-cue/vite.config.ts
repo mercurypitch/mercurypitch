@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
+import { gameAssetsPlugin } from './scripts/game-assets'
 import { assertPurchaseBuildSafe } from './src/purchases/purchase-build-policy'
 
 // Build provenance, baked in. See src/build-info.ts for why.
@@ -108,6 +109,7 @@ export default defineConfig(({ mode, command }) => {
       (process.env.GITHUB_REF ?? '').startsWith('refs/tags/bc-v'),
     )
   }
+  const gamesEnabled = env.VITE_BESIDE_CUE_GAMES === '1'
   const https = mode === 'https' ? devCert() : undefined
   return {
     base: './',
@@ -115,13 +117,14 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       ...(mode === 'https' && https === undefined ? [basicSsl()] : []),
       solid(),
+      gameAssetsPlugin(gamesEnabled),
     ],
     resolve: {
       alias: [
         // The B-side games are in a build only with VITE_BESIDE_CUE_GAMES=1.
         // Otherwise their one entry resolves to a stub, and no games module
         // is loaded at all (src/games/entry.ts says why that matters).
-        ...(env.VITE_BESIDE_CUE_GAMES === '1'
+        ...(gamesEnabled
           ? []
           : [
               {

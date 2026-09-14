@@ -14,8 +14,11 @@ build: App Review guideline 2.3.1 forbids hidden features turned on later.
 - The build decides. `VITE_BESIDE_CUE_GAMES=1` builds the games in; unset,
   `vite.config.ts` resolves `@/games/entry` (`src/games/entry.ts`, the one
   way in) to a stub, so the Home entry is not rendered and no games module,
-  pitch engine or onnxruntime wasm reaches the bundle. Tests run with the
-  games off.
+  pitch engine or onnxruntime wasm reaches the bundle. Vite also excludes
+  public game, model and runtime files from the output, preserving their sources.
+  App unit tests cover the off entry while game unit tests still run directly.
+  Playwright uses separate servers: the existing suite enables games, and a
+  store smoke test checks their absence.
 - The microphone declarations left the native projects with them, and come
   back together when the games do: `RECORD_AUDIO` _and_
   `MODIFY_AUDIO_SETTINGS` plus the optional `android.hardware.microphone`
@@ -49,9 +52,10 @@ the original scaffold and docs.
 - `src/games/glass/pitch-assets.ts` points the engine at this app's bundled
   runtime, and App.tsx's games loader imports it before the games screen:
   `public/models/swiftf0.onnx` (committed, 389 KB) and `public/ort/`
-  (the onnxruntime-web wasm pair, gitignored; `scripts/sync-ort-assets.mjs`
-  copies it from node_modules on predev/prebuild so games work offline in the
-  Capacitor webview).
+  (the onnxruntime-web wasm pair, gitignored). `scripts/game-assets.ts` copies
+  the runtime from node_modules for games-enabled Vite dev servers and directly
+  into enabled build output, including native CI builds, so games work offline
+  in the Capacitor webview. Package lifecycle hooks are not required.
 - `src/screens/GamesScreen.tsx` — the paper-world list; entering a game flips
   the record: the stage keeps its own dark world, the chrome (Coiny title,
   custard button, paper text) stays Beside Cue.
