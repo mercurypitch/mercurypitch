@@ -100,6 +100,44 @@ describe('session drummer UI lifecycle', () => {
     f.controller.change({ bars: 16 })
     expect(f.controller.changed()).toBe(true)
   })
+  it('automatically queues the latest selection without restarting playback', async () => {
+    const f = fixture()
+    await f.controller.start()
+    const original = f.controller.active()
+    f.controller.change({ bars: 16 })
+    f.controller.change({ fillEvery: 8, kitId: 'crocell' })
+    expect(mocked.engine.update).toHaveBeenLastCalledWith(
+      f.controller.settings(),
+    )
+    expect(f.controller.active()).toBe(original)
+    expect(f.controller.changed()).toBe(true)
+    mocked.options!.onApplied(f.controller.settings())
+    expect(f.controller.changed()).toBe(false)
+    expect(mocked.engine.start).toHaveBeenCalledOnce()
+    f.controller.stop()
+    mocked.engine.update.mockClear()
+    f.controller.change({ bars: 4 })
+    expect(mocked.engine.update).not.toHaveBeenCalled()
+  })
+  it('does not lose choices changed while audio is warming up', async () => {
+    const f = fixture()
+    mocked.engine.start.mockImplementationOnce(
+      async (settings: SessionDrummerSettings) => {
+        f.controller.change({ bars: 16, fillStyle: 'snare' })
+        mocked.options!.onApplied(settings)
+        return true
+      },
+    )
+    await f.controller.start()
+    expect(mocked.engine.update).toHaveBeenLastCalledWith(
+      f.controller.settings(),
+    )
+    expect(f.controller.settings()).toMatchObject({
+      bars: 16,
+      fillStyle: 'snare',
+    })
+    expect(f.controller.changed()).toBe(true)
+  })
   it('closes the picker before calling the host Play/Listening lifecycle', async () => {
     const f = fixture(true)
     f.controller.setOpen(true)

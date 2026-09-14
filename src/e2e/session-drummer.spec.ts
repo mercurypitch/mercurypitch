@@ -104,6 +104,16 @@ test('renders real drum audio without input, then fades to silence on Stop @smok
     )
     .toBeGreaterThan(0.005)
   expect((await readSongAudio(page)).micCalls).toBe(0)
+  const genre = page.getByRole('listbox', { name: 'Genre', exact: true })
+  await genre.press('ArrowDown')
+  const selectedBeat = await page
+    .getByRole('listbox', { name: 'Beat', exact: true })
+    .getByRole('option', { selected: true })
+    .innerText()
+  await expect(page.getByRole('button', { name: /Apply.*bar/ })).toHaveCount(0)
+  await expect(
+    page.getByText(`${selectedBeat} · playing`, { exact: true }),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Close drummer', exact: true }).click()
   await page.screenshot({ path: 'test-results/session-drummer-host.png' })
   await page.getByRole('button', { name: /^Session drummer/ }).click()

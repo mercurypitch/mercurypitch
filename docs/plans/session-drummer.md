@@ -31,8 +31,10 @@ private paths and research archives are not application dependencies.
 - Start and Surprise me are explicit playback gestures. Browsing or returning
   does not start sound, Listening, monitoring or recording. Surprise avoids
   immediately repeating the selected groove and retains kit/level choices.
-- Choice changes stay a draft until Apply next bar (or the next short A/B
-  boundary). Level changes apply immediately through a short gain ramp.
+- While playing, choices automatically replace the pending change at the next
+  bar (or next short A/B boundary). A brief status names the upcoming groove;
+  there is no Apply button. Level changes use an immediate short gain ramp.
+  Choices made during audio warm-up are retained, and Stop cancels pending sound.
 - Preferences use a versioned localStorage key, bounded values and retired-ID
   fallbacks. Playback state is never persisted.
 
@@ -96,12 +98,15 @@ claims are made about third-party research downloads.
 - Engine tests: actual context timestamps, fractional seeks and phrase seams,
   loop-safe changes, no resurrection after Stop, manual timer cancellation,
   borrowed graph ownership and non-truncated disposal ramp.
-- Controller tests: inert browsing, persisted choices, live level state,
+- Controller tests: inert browsing, automatic next-bar queuing, edits during
+  warm-up, persisted choices, live level state,
   Listening-modal handoff, asynchronous host-start race, cancellation,
   clock unsubscription and unavailable-score guard.
 - Real-browser `@smoke`: audible PCM without input, fade to silence, score pause
   and resume, Practice consent handoff, mouse wheel, pointer drag, keyboard,
-  reload persistence and phone layout. Existing recorder/Listening/practice
+  reload persistence and phone layout. Native touch swipes, taps and cancellation
+  run at phone and tablet sizes; computed button chrome and neighboring host
+  controls are checked outside the modal. Existing recorder/Listening/practice
   regression tests and the repository mobile audit complement these checks.
 - Guitar Night currently has no guided route tour; the legacy Guitar workspace
   tour is not changed. The new chip has a stable future tour target.

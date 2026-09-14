@@ -45,6 +45,9 @@ workspace.
   its modal before any consent prompt. Manual audio jamming is labeled as
   independent timing. Non-4/4 scores receive an explanation, not a mismatched
   groove. Kit/level choices reuse the existing player; no new monitoring path.
+  Playing changes queue automatically for the next bar with a short status,
+  never a second Apply action. The shared chip owns its border, colour and
+  44px phone hit target; header subtitles truncate rather than growing the rail.
 
 - Recorder export help distinguishes readable GP7 notation from free-timed
   MIDI before the action. GP7's thirty-second-note rounding affects the exported

@@ -61,21 +61,58 @@
   outline: 2px solid #f4c580;
   outline-offset: 3px;
 }
-.trigger {
+.trigger,
+.quickStop {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  flex: none;
+  min-width: 44px;
   min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid rgba(244, 234, 219, 0.18);
+  border-radius: 999px;
+  color: #d8c7ae;
+  background: rgba(244, 234, 219, 0.055);
+  font: inherit;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+.trigger strong {
+  font-size: inherit;
+  font-weight: 700;
+}
+.trigger:hover,
+.quickStop:hover {
+  color: #f4eadb;
+  border-color: rgba(224, 164, 93, 0.45);
+  background: rgba(224, 164, 93, 0.12);
+}
+.trigger:focus-visible,
+.quickStop:focus-visible {
+  outline: 2px solid #f4c580;
+  outline-offset: 3px;
+}
+.trigger[data-armed='true'] {
+  color: #dffaf5;
+  border-color: rgba(106, 202, 189, 0.42);
+  background: rgba(106, 202, 189, 0.12);
+}
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
+  flex: none;
 }
 .quickStop {
-  display: grid;
-  place-items: center;
   width: 44px;
-  min-height: 44px;
+  padding: 0;
 }
 .quickStop svg {
   width: 16px;
@@ -298,6 +335,20 @@
 }
 .error {
   color: #ffb8a6;
+}
+@media (max-width: 720px) {
+  .trigger {
+    width: 44px;
+    padding: 0;
+  }
+  .trigger strong {
+    display: none;
+  }
+  .lamp {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
 }
 @media (max-width: 600px) {
   .scrim {
