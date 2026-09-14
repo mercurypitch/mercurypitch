@@ -1567,6 +1567,15 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                                 playPullPreview(option)
                               }
                             }}
+                            onKeyDown={(event) => {
+                              if (
+                                event.key === ' ' &&
+                                selectedPullKey() === option.id
+                              ) {
+                                event.preventDefault()
+                                if (!event.repeat) playPullPreview(option)
+                              }
+                            }}
                           />
                           <AssetStage
                             slot={character().token}

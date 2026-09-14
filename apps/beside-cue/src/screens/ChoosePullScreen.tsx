@@ -66,7 +66,13 @@ function PullCard(props: PullCardProps) {
         checked={props.selected}
         aria-label={props.label}
         aria-describedby={`pull-choice-${props.id}-description`}
-        onChange={() => props.onSelect(props.id)}
+        onClick={() => props.onSelect(props.id)}
+        onKeyDown={(event) => {
+          if (event.key === ' ' && props.selected) {
+            event.preventDefault()
+            if (!event.repeat) props.onSelect(props.id)
+          }
+        }}
       />
       <span class={styles.pullCardSurface}>
         <span class={styles.pullArtwork}>

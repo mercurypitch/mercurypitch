@@ -83,8 +83,18 @@ export function PremiumPullChoices(props: PremiumPullChoicesProps) {
                       aria-describedby={`${id}-${option.id}`}
                       checked={allowed() && props.selectedId === option.id}
                       disabled={!allowed()}
-                      onChange={() => {
+                      onClick={() => {
                         if (allowed()) props.onSelect(option.id)
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === ' ' &&
+                          props.selectedId === option.id
+                        ) {
+                          event.preventDefault()
+                          if (!event.repeat && allowed())
+                            props.onSelect(option.id)
+                        }
                       }}
                     />
                     <span class={styles.badge}>

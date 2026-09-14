@@ -1547,6 +1547,34 @@ describe('V2OnboardingDirector', () => {
     ).toBeEnabled()
   })
 
+  it('plays exactly one preview per free-character tap, including repeats', async () => {
+    const probe = createDirectorProbe()
+    render(() => <V2OnboardingDirector {...probe.props} />)
+    await reachPullChoice()
+    probe.audio.play.mockClear()
+
+    const scroll = screen.getByRole('radio', { name: 'Endless scrolling' })
+    fireEvent.click(scroll)
+    fireEvent.click(scroll)
+    fireEvent.click(screen.getByRole('radio', { name: 'Automatic snacking' }))
+    fireEvent.click(scroll)
+
+    expect(probe.audio.play).toHaveBeenCalledTimes(4)
+    expect(probe.audio.play.mock.calls[0]).toEqual(
+      probe.audio.play.mock.calls[1],
+    )
+    expect(probe.audio.play.mock.calls[0]).toEqual(
+      probe.audio.play.mock.calls[3],
+    )
+    expect(probe.audio.play.mock.calls[2]).not.toEqual(
+      probe.audio.play.mock.calls[0],
+    )
+    expect(scroll).toBeChecked()
+    fireEvent.keyDown(scroll, { key: ' ' })
+    fireEvent.keyDown(scroll, { key: ' ', repeat: true })
+    expect(probe.audio.play).toHaveBeenCalledTimes(5)
+  })
+
   it('replays an available Pull voice and stops it when the next Pull has no recording', async () => {
     const line = DEFAULT_CONTENT_PACK.lines.find(
       (candidate) => candidate.id === 'pull.scrolling.meet',
