@@ -63,12 +63,12 @@ describe('V2 onboarding audio manifest', () => {
 
     expect(greetings).toHaveLength(1)
     expect(greetings[0]?.sources[0]).toEqual({
-      src: '/audio/voice/en/corky/en__corky__onboarding-greeting__v1_01.m4a',
+      src: '/audio/voice/en/corky/en__corky__onboarding-greeting__v1_02.m4a',
       mimeType: 'audio/mp4; codecs="mp4a.40.2"',
-      durationMs: 1_869.021,
+      durationMs: 2_660,
       sha256:
-        'd13be42cec087cec140e4ddc5f4d700f54df0de59103210799beb3e535ca03f9',
-      byteLength: 31_003,
+        '96246c3ee6c42efff200b7dd7bbe6e022af610a84e7963ff9b2c0e612f580759',
+      byteLength: 45_326,
       sampleRateHz: 48_000,
       channels: 1,
     })
