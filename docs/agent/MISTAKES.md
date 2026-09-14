@@ -1016,6 +1016,14 @@ selects the destination by its exact accessible name.
 **Rule:** run `pnpm build:e2e` before production-browser checks after source changes or rebase. A matching worktree port proves location, not bundle freshness; do not count stale-build results as current-head verification.
 **See:** `playwright.config.ts`, `docs/agent/TESTING.md`
 
+### Count browser requests outside the resource-timing history
+
+**Symptom:** Merc's warm-up test reported zero downloads even after the model loaded.
+**Cause:** Vite's earlier requests filled Chromium's 250-entry resource-timing buffer.
+**Rule:** observe Playwright requests and successful completions before navigation;
+keep the test's timing buffer small so a history-based counter cannot return unnoticed.
+**See:** `apps/beside-cue/e2e/glass3d-warm.e2e.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
