@@ -7,6 +7,7 @@ import { NightMusicImportButton } from './DeferredNightMusicImport'
 import type { NightMusicAction, NightMusicRoom } from './night-music-import'
 import { NightMusicActionError, performanceTakeImportBlocker, validateNightMusicFiles, } from './night-music-import'
 import { NightMusicImport } from './NightMusicImport'
+import { SONG_REFERENCE_FILE_ACCEPT } from './song-import'
 import type { NightMusicImportController } from './useNightMusicImport'
 import { useNightMusicImport } from './useNightMusicImport'
 
@@ -65,8 +66,25 @@ describe('night music file contract', () => {
   it.each(['guitar', 'drums'] as const)(
     '%s accepts all existing song formats',
     (room) => {
-      for (const file of [midi(), audio(), gp()])
-        expect(validateNightMusicFiles(room, [file]).ok).toBe(true)
+      for (const [name, kind] of [
+        ['song.mp3', 'audio'],
+        ['song.wav', 'audio'],
+        ['song.flac', 'audio'],
+        ['song.mid', 'midi'],
+        ['song.midi', 'midi'],
+        ['song.gp3', 'guitar-pro'],
+        ['song.gp4', 'guitar-pro'],
+        ['song.gp5', 'guitar-pro'],
+        ['song.gpx', 'guitar-pro'],
+        ['song.gp', 'guitar-pro'],
+      ] as const) {
+        const file = new File(['music'], name)
+        expect(validateNightMusicFiles(room, [file])).toEqual({
+          ok: true,
+          file,
+          kind,
+        })
+      }
     },
   )
   it('only offers Piano and Karaoke the formats their players support', () => {
@@ -179,6 +197,22 @@ describe('NightMusicImport', () => {
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.getByTestId('night-music-file')).toHaveValue('')
   })
+  it.each(['guitar', 'drums'] as const)(
+    '%s lists every accepted score extension explicitly after an invalid drop',
+    (room) => {
+      const { controller, run } = harness({ room })
+      controller.receive([new File(['unsupported'], 'score.gp8')])
+      const message = screen.getByRole('alert').textContent ?? ''
+      expect(message).toContain('MP3, WAV, FLAC')
+      expect(message).toContain('MIDI (.mid, .midi)')
+      expect(message).toContain('Guitar Pro (.gp3, .gp4, .gp5, .gpx, .gp)')
+      expect(message.match(/\.[a-z0-9]+/g)?.sort()).toEqual(
+        SONG_REFERENCE_FILE_ACCEPT.split(',').sort(),
+      )
+      expect(controller.file()).toBeNull()
+      expect(run).not.toHaveBeenCalled()
+    },
+  )
   it('does not carry an unsupported-file warning into a fresh empty dialog', () => {
     const { controller } = harness({ room: 'piano' })
     controller.receive([gp()])

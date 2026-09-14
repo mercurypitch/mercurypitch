@@ -89,8 +89,11 @@ adapters keep the existing players, parsers, storage and score clocks.
 
 ## Deliberate boundaries
 
-MP3/WAV/FLAC use the existing audio contract; MIDI and GP use existing extensions
-and parser limits. Piano GP/audio playback, original-only audio playback, new
+MP3/WAV/FLAC use the existing audio contract. MIDI accepts `.mid` and `.midi`;
+Guitar Pro accepts `.gp3`, `.gp4`, `.gp5`, `.gpx` (Guitar Pro 6) and `.gp`
+(Guitar Pro 7/8), with existing parser limits. Recovery copy shall list these
+extensions explicitly rather than implying `.gp6`, `.gp7` or `.gp8` filenames.
+Piano GP/audio playback, original-only audio playback, new
 separation models, batch imports, automatic alignment and cross-room navigation
 are not added here. “Band” means instrument stems, not cutting a song into time
 segments. New buttons do not replace or downgrade the current room players.
