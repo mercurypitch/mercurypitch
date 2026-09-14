@@ -7,8 +7,8 @@ import { createMobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createSignal } from 'solid-js'
 import type { AudioSessionOutput } from './audio'
 import { createWebAudioOutput } from './audio'
+import { createVoiceAudioOutput } from './audio/voice-audio-output'
 import type { VoiceAudioPort } from './content/voice'
-import { createElementAudioPort } from './content/voice'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { createIndexedDbBesideCueRepository } from './infrastructure/indexed-db-repository'
 import type { BesideCuePlatform } from './infrastructure/mobile-runtime'
@@ -79,6 +79,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
   const purchases = resolvePurchasesSetup(platform, import.meta.env)
   const repository = createIndexedDbBesideCueRepository()
   const audioOutput = createWebAudioOutput()
+  const voiceAudio = createVoiceAudioOutput()
 
   // Literal build flags let Rollup remove the mock import from store releases.
   if (
@@ -106,7 +107,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
       },
       onboardingPreferences: createCinematicOnboardingPreferenceStore(),
       audioOutput,
-      voiceAudio: createElementAudioPort(),
+      voiceAudio,
       mockPurchaseRequest,
       now: () => new Date(),
       createId: createLocalId,
@@ -120,7 +121,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
     purchases,
     onboardingPreferences: createCinematicOnboardingPreferenceStore(),
     audioOutput,
-    voiceAudio: createElementAudioPort(),
+    voiceAudio,
     now: () => new Date(),
     createId: createLocalId,
   }
