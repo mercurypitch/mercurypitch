@@ -238,6 +238,13 @@ and 39 snare-rest noise (GM clap); native power ranks also mispredicted pedal mi
 final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **See:** `scripts/expand-drum-kit-recorded-banks.mjs`, `public/drum-night/kits/README.md`
 
+### Measure the ensemble before turning up quiet drums
+
+**Symptom:** imported drums disappeared under pitched backing unless Backing was lowered to about 30%.
+**Cause:** Drum Night discarded pitched velocities and summed peak-normalized synth voices at unity; mixed-file renders put backing 22–24 dB above the acoustic kit and overloaded the output.
+**Rule:** preserve authored note dynamics and calibrate the synth bus against a mixed arrangement. Master makeup cannot fix relative balance, and per-hit sample normalization destroys the kit's soft/hard dynamics. Verify isolated buses and final output with native Web Audio, not only sample readiness or mocked node counts.
+**See:** `src/features/drum-night/play-along/drum-arrangement-player.ts`, `src/lib/score-synth-velocity.ts`
+
 ## Framework
 
 ### Do not destructure props

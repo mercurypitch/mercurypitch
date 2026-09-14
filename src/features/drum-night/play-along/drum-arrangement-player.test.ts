@@ -146,6 +146,7 @@ describe('Drum arrangement backing player', () => {
       trackId: 'bass',
       sourceId: 'bass:0',
       midi: 40,
+      velocity: 40,
       atContextTime: 5.1,
       durationSeconds: 0.5,
       voice: 'bass',
@@ -154,6 +155,7 @@ describe('Drum arrangement backing player', () => {
       trackId: 'bass',
       sourceId: 'bass:1',
       midi: 43,
+      velocity: 80,
       atContextTime: 5.2,
       durationSeconds: 0.5,
       voice: 'bass',
@@ -182,12 +184,28 @@ describe('Drum arrangement backing player', () => {
       'synthesized-with-steal',
     ])
     expect(createVoice).toHaveBeenCalledTimes(4)
-    expect(voices[0]?.gain.gain.calls).toContainEqual(['exponential', 1, 5.106])
+    const quietGain = 0.12 + 0.88 * (40 / 127) ** 1.4
+    const mediumGain = 0.12 + 0.88 * (80 / 127) ** 1.4
+    expect(voices[0]?.gain.gain.calls).toContainEqual([
+      'exponential',
+      quietGain,
+      5.106,
+    ])
+    expect(voices[0]?.gain.gain.calls).toContainEqual(['set', quietGain, 5.6])
+    expect(voices[1]?.gain.gain.calls).toContainEqual(['set', mediumGain, 5.7])
+    expect(voices[2]?.gain.gain.calls).toContainEqual(['set', 1, 5.8])
     expect(voices[0]?.gain.gain.calls).toContainEqual(['target', 0, 5.6, 0.018])
     expect(voices[0]?.gain.gain.calls).toContainEqual(['target', 0, 5, 0.018])
     expect(voices[1]?.gain.gain.calls).toContainEqual(['target', 0, 5, 0.018])
 
     const trackGain = createdGains[1]
+    // A normalized synth ensemble needs fixed headroom against one acoustic kit.
+    // This is separate from both authored velocities and the user's faders.
+    expect(createdGains[0]?.gain.calls).toContainEqual([
+      'set',
+      10 ** (-12 / 20),
+      5,
+    ])
     expect(trackGain?.gain.calls).toContainEqual(['set', sliderToGain(0.5), 5])
     player.setTrackLevel('bass', 0.25)
     expect(trackGain?.gain.calls).toContainEqual([

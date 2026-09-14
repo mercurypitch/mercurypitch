@@ -107,8 +107,14 @@ describe('Drum arrangement scheduler', () => {
     const clock = new FakeClock()
     const song = mixedSong([
       pitchedTrack([
-        { id: 'authored-bass-opening', midi: 40, startBeat: 0, duration: 0.5 },
-        { midi: 43, startBeat: 1, duration: 0.5 },
+        {
+          id: 'authored-bass-opening',
+          midi: 40,
+          startBeat: 0,
+          duration: 0.5,
+          velocity: 38,
+        },
+        { midi: 43, startBeat: 1, duration: 0.5, velocity: 114 },
         { midi: 47, startBeat: 1.5, duration: 0.25 },
       ]),
     ])
@@ -142,6 +148,11 @@ describe('Drum arrangement scheduler', () => {
     expect(player.trigger.mock.calls[0]?.[0].sourceId).toBe(
       'authored-bass-opening',
     )
+    expect(player.trigger.mock.calls.map(([note]) => note.velocity)).toEqual([
+      38,
+      114,
+      undefined,
+    ])
     expect(
       player.trigger.mock.calls.map(([note]) => [
         note.trackId,

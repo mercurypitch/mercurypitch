@@ -5,6 +5,8 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 
+test.use({ launchOptions: { args: ['--mute-audio'] } })
+
 const DRUM_SESSION_MIDI = Buffer.from([
   0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00,
   0x60, 0x4d, 0x54, 0x72, 0x6b, 0x00, 0x00, 0x00, 0x31, 0x00, 0xff, 0x03, 0x0a,
@@ -1818,6 +1820,22 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
 test('keeps a mixed authored MIDI on one Score, mixer, and timeline clock @smoke', async ({
   page,
 }, testInfo) => {
+  const playerLoads: string[] = []
+  page.on('request', (request) => {
+    if (/\/drum-arrangement-player-[^/]+\.js/.test(request.url()))
+      playerLoads.push(request.url())
+  })
+  await page.addInitScript(() => {
+    const observed = window as unknown as { __authoredBassStarts: number }
+    observed.__authoredBassStarts = 0
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      // This fixture's real Karplus-Strong bass lasts 1.8 s; drum noise/clicks do not.
+      if (this.buffer !== null && Math.abs(this.buffer.duration - 1.8) < 0.001)
+        observed.__authoredBassStarts++
+      return start.apply(this, args)
+    }
+  })
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/drum-night?view=score', {
     waitUntil: 'domcontentloaded',
@@ -1912,6 +1930,21 @@ test('keeps a mixed authored MIDI on one Score, mixer, and timeline clock @smoke
       .getByTestId('drum-night-timeline')
       .getByRole('slider', { name: 'Drum part position' }),
   ).toBeVisible()
+  expect(playerLoads).toEqual([])
+  await page.getByRole('button', { name: 'Close rack drawer' }).click()
+  await page
+    .getByRole('button', { name: /^Play mixed-band take clock$/ })
+    .click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __authoredBassStarts: number })
+            .__authoredBassStarts,
+      ),
+    )
+    .toBeGreaterThan(0)
+  expect(playerLoads).toHaveLength(1)
 })
 
 test('keeps a saved two-stem source metadata-only until Play hydrates its audio @smoke', async ({

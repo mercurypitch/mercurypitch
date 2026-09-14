@@ -91,6 +91,7 @@ interface IndexedBackingNote {
   readonly trackId: string
   readonly sourceNoteId: string
   readonly midi: number
+  readonly velocity?: number
   readonly startBeat: number
   readonly durationBeats: number
   readonly voice: DrumArrangementBackingVoice
@@ -147,6 +148,7 @@ function indexArrangement(arrangement: DrumArrangement): {
           trackId: projectedTrack.id,
           sourceNoteId: note.id ?? `${projectedTrack.id}:${currentSequence}`,
           midi: note.midi,
+          ...(note.velocity === undefined ? {} : { velocity: note.velocity }),
           startBeat: note.startBeat,
           durationBeats: note.duration,
           voice,
@@ -565,6 +567,9 @@ export function createDrumArrangementScheduler(
                 trackId: note.trackId,
                 sourceId: note.sourceNoteId,
                 midi: note.midi,
+                ...(note.velocity === undefined
+                  ? {}
+                  : { velocity: note.velocity }),
                 atContextTime,
                 durationSeconds,
                 voice: note.voice,

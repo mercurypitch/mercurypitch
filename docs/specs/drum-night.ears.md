@@ -655,6 +655,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   authored arrangement, separate UVR stems, or a mixed two-stem fallback.
   Controls that have no independent source shall be absent or disabled with a
   reason rather than acting as no-ops.
+- **REQ-DN-PLAYALONG-013 — Authored synth balance:** WHEN pitched MIDI or
+  Guitar Pro notes carry velocity, the backing scheduler and synth envelope
+  shall preserve it using the shared pitched-guide dynamic curve. Legacy notes
+  without velocity shall retain their prior dynamic response. The synthesized
+  backing bus shall provide fixed reference headroom against the acoustic kit,
+  independently of user faders and without normalizing recorded drum strikes,
+  changing live-input gain, or attenuating already-mixed separated stems.
 
 ## Interaction and accessibility — `DN-A11Y-*`
 
