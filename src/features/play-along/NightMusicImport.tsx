@@ -111,17 +111,6 @@ export function NightMusicImport(props: {
                 </button>
               </div>
               <div class={styles.body}>
-                <p id={descriptionId} class={styles.intro}>
-                  Stay in the room. Choose a file and how you want to play it.
-                </p>
-                <Show when={props.controller.currentTitle()}>
-                  {(title) => (
-                    <p class={styles.current}>
-                      On stage <strong>{title()}</strong>
-                      <span>Saved music stays in your library.</span>
-                    </p>
-                  )}
-                </Show>
                 <button
                   class={styles.file}
                   type="button"
@@ -133,18 +122,33 @@ export function NightMusicImport(props: {
                     <strong>
                       {props.controller.file()?.name ?? 'Choose a file'}
                     </strong>
-                    <small>
+                    <small id={descriptionId}>
                       {props.controller.file()
-                        ? `${formatFileSize(props.controller.file()!.size)} · Choose a different file`
+                        ? `${formatFileSize(props.controller.file()!.size)} · Change file`
                         : NIGHT_MUSIC_FORMATS[props.controller.room]}
                     </small>
                   </span>
                 </button>
+                <Show
+                  when={
+                    Boolean(props.controller.currentTitle()) &&
+                    props.controller.currentTitle() !==
+                      props.controller.file()?.name
+                  }
+                >
+                  <p class={styles.current}>
+                    <span>On stage</span>
+                    <strong
+                      title={props.controller.currentTitle() ?? undefined}
+                    >
+                      {props.controller.currentTitle()}
+                    </strong>
+                  </p>
+                </Show>
                 <Show when={props.controller.blockedReason()}>
                   {(reason) => (
                     <p class={styles.notice} role="status">
-                      {reason()} Your selected file will stay here while you
-                      return to the session.
+                      {reason()}
                     </p>
                   )}
                 </Show>
@@ -265,7 +269,6 @@ export function NightMusicImport(props: {
                 </Show>
               </div>
               <div class={styles.footer}>
-                <span>Nothing starts playing automatically.</span>
                 <button type="button" onClick={() => props.controller.close()}>
                   {props.controller.running()
                     ? 'Cancel and return'

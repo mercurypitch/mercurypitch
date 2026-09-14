@@ -26,6 +26,10 @@ adapters keep the existing players, parsers, storage and score clocks.
   operate behind it. Closing shall restore focus when the previous target remains.
 - **NIGHT-IMPORT-6** — The sheet shall have an explicit portal skin, visible
   recovery, touch-sized buttons and no horizontal overflow on phone viewports.
+  The selected file shall be its primary context; an existing staged song may
+  appear in one compact secondary line. Processing and action choices shall not
+  repeat general reassurance or separate every group with a divider. Shared
+  access reasons shall appear once, with recovery still visible before starting.
 
 ## Safety and lifecycle
 
@@ -57,7 +61,11 @@ adapters keep the existing players, parsers, storage and score clocks.
 
 - **NIGHT-IMPORT-14** — Guitar shall offer MIDI/GP rehearsal, or attachment when
   a song is staged. Attachment shall expose existing manual Align controls and
-  shall not invent score-to-recording timing.
+  shall not invent score-to-recording timing. After a validated replacement of
+  the rehearsed song, Guitar shall retire the old room's playback, pinned take,
+  loop and pending callbacks, and open the new score at its beginning without
+  autoplay. Changing tracks within the same song shall retain the room and
+  parked musical position. Failed or cancelled imports shall retain the old room.
 - **NIGHT-IMPORT-15** — Drum shall import MIDI/GP through its canonical bounded
   worker/GM projection, retaining existing track selection and mixer behavior.
 - **NIGHT-IMPORT-16** — Piano shall accept MIDI and reuse its canonical project

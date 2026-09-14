@@ -2362,34 +2362,86 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
             <Match when={view() === 'score-room' && authoredReference()}>
               {(authored) => (
-                <ChunkErrorBoundary label="The rehearsal room">
-                  <Suspense
-                    fallback={
-                      <p
-                        class={styles.songMessage}
-                        role="status"
-                        aria-live="polite"
-                      >
-                        Opening the rehearsal room…
-                      </p>
-                    }
-                  >
-                    <Show
-                      when={authored().scoreMode === 'backing-only'}
+                // A played take pins its score for replay/review. A different
+                // song needs a fresh room lifetime; changing its track does not.
+                <Show when={authored().songId} keyed>
+                  <ChunkErrorBoundary label="The rehearsal room">
+                    <Suspense
                       fallback={
-                        <GuitarNightScoreRoom
+                        <p
+                          class={styles.songMessage}
+                          role="status"
+                          aria-live="polite"
+                        >
+                          Opening the rehearsal room…
+                        </p>
+                      }
+                    >
+                      <Show
+                        when={authored().scoreMode === 'backing-only'}
+                        fallback={
+                          <GuitarNightScoreRoom
+                            importOpen={musicImport.isOpen}
+                            registerMusicGuard={setMusicSessionGuard}
+                            reference={authored}
+                            tuning={referenceController.tuning}
+                            onInstrument={referenceController.setInstrument}
+                            onStringCount={referenceController.setStringCount}
+                            onTuning={referenceController.setTuning}
+                            suspended={learnOpen}
+                            onSongs={returnToSongs}
+                            onSelectTrack={(trackId) =>
+                              void referenceController.selectTrack(trackId)
+                            }
+                            sheetLanes={referenceController.sheetLanes}
+                            sheetTimeSignatures={
+                              referenceController.sheetTimeSignatures
+                            }
+                            sheetVisibleTrackIds={
+                              referenceController.sheetVisibleTrackIds
+                            }
+                            onToggleSheetTrack={
+                              referenceController.toggleSheetTrack
+                            }
+                            secondaryLane={referenceController.secondaryLane}
+                            followedStageTrackId={
+                              referenceController.followedStageTrackId
+                            }
+                            onFollowStageTrack={
+                              referenceController.followTrackOnStage
+                            }
+                            backingMelody={
+                              referenceController.rehearsalBackingMelodyNotes
+                            }
+                            backingPercussion={
+                              referenceController.allBackingPercussionHits
+                            }
+                            defaultHearScore={
+                              referenceController.scoredPartDefaultsAudible
+                            }
+                            audibleBackingTrackIds={
+                              referenceController.audibleBackingTrackIds
+                            }
+                            mutedBackingTrackIds={
+                              referenceController.mutedBackingTrackIds
+                            }
+                            onToggleBackingTrack={
+                              referenceController.toggleBackingTrack
+                            }
+                            soloedBackingTrackId={
+                              referenceController.soloedBackingTrackId
+                            }
+                            onToggleSoloBackingTrack={
+                              referenceController.toggleSoloBackingTrack
+                            }
+                          />
+                        }
+                      >
+                        <GuitarNightPercussionRoom
                           importOpen={musicImport.isOpen}
-                          registerMusicGuard={setMusicSessionGuard}
                           reference={authored}
-                          tuning={referenceController.tuning}
-                          onInstrument={referenceController.setInstrument}
-                          onStringCount={referenceController.setStringCount}
-                          onTuning={referenceController.setTuning}
                           suspended={learnOpen}
                           onSongs={returnToSongs}
-                          onSelectTrack={(trackId) =>
-                            void referenceController.selectTrack(trackId)
-                          }
                           sheetLanes={referenceController.sheetLanes}
                           sheetTimeSignatures={
                             referenceController.sheetTimeSignatures
@@ -2400,21 +2452,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           onToggleSheetTrack={
                             referenceController.toggleSheetTrack
                           }
-                          secondaryLane={referenceController.secondaryLane}
-                          followedStageTrackId={
-                            referenceController.followedStageTrackId
-                          }
-                          onFollowStageTrack={
-                            referenceController.followTrackOnStage
-                          }
-                          backingMelody={
-                            referenceController.rehearsalBackingMelodyNotes
-                          }
                           backingPercussion={
                             referenceController.allBackingPercussionHits
-                          }
-                          defaultHearScore={
-                            referenceController.scoredPartDefaultsAudible
                           }
                           audibleBackingTrackIds={
                             referenceController.audibleBackingTrackIds
@@ -2431,53 +2470,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           onToggleSoloBackingTrack={
                             referenceController.toggleSoloBackingTrack
                           }
+                          secondaryLane={referenceController.secondaryLane}
+                          followedStageTrackId={
+                            referenceController.followedStageTrackId
+                          }
+                          onFollowStageTrack={
+                            referenceController.followTrackOnStage
+                          }
                         />
-                      }
-                    >
-                      <GuitarNightPercussionRoom
-                        importOpen={musicImport.isOpen}
-                        reference={authored}
-                        suspended={learnOpen}
-                        onSongs={returnToSongs}
-                        sheetLanes={referenceController.sheetLanes}
-                        sheetTimeSignatures={
-                          referenceController.sheetTimeSignatures
-                        }
-                        sheetVisibleTrackIds={
-                          referenceController.sheetVisibleTrackIds
-                        }
-                        onToggleSheetTrack={
-                          referenceController.toggleSheetTrack
-                        }
-                        backingPercussion={
-                          referenceController.allBackingPercussionHits
-                        }
-                        audibleBackingTrackIds={
-                          referenceController.audibleBackingTrackIds
-                        }
-                        mutedBackingTrackIds={
-                          referenceController.mutedBackingTrackIds
-                        }
-                        onToggleBackingTrack={
-                          referenceController.toggleBackingTrack
-                        }
-                        soloedBackingTrackId={
-                          referenceController.soloedBackingTrackId
-                        }
-                        onToggleSoloBackingTrack={
-                          referenceController.toggleSoloBackingTrack
-                        }
-                        secondaryLane={referenceController.secondaryLane}
-                        followedStageTrackId={
-                          referenceController.followedStageTrackId
-                        }
-                        onFollowStageTrack={
-                          referenceController.followTrackOnStage
-                        }
-                      />
-                    </Show>
-                  </Suspense>
-                </ChunkErrorBoundary>
+                      </Show>
+                    </Suspense>
+                  </ChunkErrorBoundary>
+                </Show>
               )}
             </Match>
 

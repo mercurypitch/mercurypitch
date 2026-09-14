@@ -1,4 +1,6 @@
 // Native file drags and real-pointer room controls exercise the shared in-session import boundary.
+// This file exceeds 600 lines to keep native replacement/audio fixtures and
+// the room/viewport admission matrix together at this shared browser boundary.
 import { expect, test, type Page } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { dismissOverlays } from './helpers/ui'
@@ -8,6 +10,44 @@ const MIDI = Buffer.from([
   0x6b, 0, 0, 0, 13, 0, 0x90, 64, 100, 0x83, 0x60, 0x80, 64, 32, 0, 0xff, 0x2f,
   0,
 ])
+
+function sustainedMidi(midi: number, beats: number): Buffer {
+  const buffer = Buffer.from(MIDI)
+  const ticks = beats * 480
+  buffer[24] = midi
+  buffer[26] = 0x80 | (ticks >> 7)
+  buffer[27] = ticks & 0x7f
+  buffer[29] = midi
+  return buffer
+}
+
+async function startedScoreBuffers(page: Page): Promise<number[]> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __nightScoreBuffers: number[] })
+        .__nightScoreBuffers,
+  )
+}
+
+async function silenceScoreClick(page: Page): Promise<void> {
+  // Use the visible transport, not the duplicates inside Session controls.
+  const transport = page.getByRole('group', { name: 'Rehearsal transport' })
+  const click = transport.getByRole('button', {
+    name: 'Turn playback click off',
+    exact: true,
+  })
+  if (await click.isVisible()) await click.click()
+  const countIn = transport.getByRole('button', {
+    name: /^Count-in .* before playback\. Change count-in$/,
+  })
+  for (let changes = 0; changes < 4; changes += 1) {
+    if ((await countIn.getAttribute('aria-label'))?.includes('Off')) break
+    await countIn.click()
+  }
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in Off before playback. Change count-in',
+  )
+}
 
 async function nativeFileDrop(page: Page, path: string) {
   const cdp = await page.context().newCDPSession(page)
@@ -127,6 +167,102 @@ test('guitar free form accepts a native MIDI drop only after a rehearsal choice 
   )
 })
 
+for (const previousState of ['playing', 'paused']) {
+  test(`guitar rehearses the dropped score instead of the ${previousState} score's pinned take @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.route('https://**/*', (route) => route.abort())
+    await page.addInitScript(() => {
+      const observedWindow = window as unknown as {
+        __nightScoreBuffers: number[]
+      }
+      observedWindow.__nightScoreBuffers = []
+      const buffers = new WeakMap<AudioBuffer, number>()
+      let nextBuffer = 1
+      const start = AudioBufferSourceNode.prototype.start
+      // Observe the actual Web Audio sources without faking the clock or
+      // synthesis. The pluck cache reuses a buffer for the same note, so
+      // replaying A under B's title still produces A's recorded buffer ID.
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        if (this.buffer !== null) {
+          if (!buffers.has(this.buffer)) buffers.set(this.buffer, nextBuffer++)
+          observedWindow.__nightScoreBuffers.push(buffers.get(this.buffer)!)
+        }
+        return start.apply(this, args)
+      }
+    })
+    await page.goto('/guitar-night')
+    await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+    await page.getByRole('button', { name: 'Free play', exact: true }).click()
+    await page.getByTestId('night-add-music').filter({ visible: true }).click()
+    await page.getByTestId('night-music-file').setInputFiles({
+      name: 'first-score.mid',
+      mimeType: 'audio/midi',
+      buffer: sustainedMidi(64, 32),
+    })
+    const dialog = page.getByTestId('night-music-import')
+    await dialog.getByRole('button', { name: /Rehearse this score/ }).click()
+    const title = page.getByRole('heading', { level: 1, name: 'first-score' })
+    await expect(title).toBeVisible()
+    await expect(page.getByLabel('Score duration', { exact: true })).toHaveText(
+      '0:16',
+    )
+    await silenceScoreClick(page)
+    const play = page.getByRole('button', {
+      name: 'Start the count-in',
+      exact: true,
+    })
+    const position = page.getByRole('slider', {
+      name: 'Score position',
+      exact: true,
+    })
+    await play.click()
+    await expect.poll(() => startedScoreBuffers(page)).toHaveLength(1)
+    await expect
+      .poll(async () => Number(await position.inputValue()))
+      .toBeGreaterThan(0.1)
+    const firstBuffers = await startedScoreBuffers(page)
+    if (previousState === 'paused')
+      await page
+        .getByRole('button', { name: 'Pause score', exact: true })
+        .click()
+
+    const replacement = testInfo.outputPath('replacement-score.mid')
+    await writeFile(replacement, sustainedMidi(76, 16))
+    await nativeFileDrop(page, replacement)
+    // Merely dropping the file stages it; Rehearse owns the session change.
+    await expect(title).toBeVisible()
+    await dialog.getByRole('button', { name: /Rehearse this score/ }).click()
+
+    await expect(dialog).not.toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'replacement-score' }),
+    ).toBeVisible()
+    await expect(title).not.toBeVisible()
+    await expect(
+      page.getByLabel('Elapsed score time', { exact: true }),
+    ).toHaveText('0:00')
+    await expect(page.getByLabel('Score duration', { exact: true })).toHaveText(
+      '0:08',
+    )
+    await expect(position).toHaveValue('0')
+    await expect(play).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'End the take', exact: true }),
+    ).not.toBeVisible()
+    await silenceScoreClick(page)
+    await play.click()
+    await expect
+      .poll(async () => Number(await position.inputValue()))
+      .toBeGreaterThan(0.1)
+    await expect.poll(() => startedScoreBuffers(page)).toHaveLength(2)
+    const replacementBuffers = (await startedScoreBuffers(page)).slice(1)
+    expect(replacementBuffers).not.toEqual(firstBuffers)
+    await page.getByRole('button', { name: 'Pause score', exact: true }).click()
+  })
+}
+
 test('piano reuses its MIDI project import and a real seek drag never opens the file overlay @smoke', async ({
   page,
 }) => {
@@ -236,6 +372,152 @@ test('guitar entry audio picker queues the file instead of starting separation @
   await expect(dialog).not.toBeVisible()
   expect(work).toEqual([])
 })
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1440, height: 1000 },
+]) {
+  test(`guitar populated audio import stays compact and reachable at ${viewport.width}px @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const work: string[] = []
+    await page.route('**/*', (route) => {
+      const request = route.request()
+      if (
+        (request.method() === 'POST' &&
+          /process|split|upload/.test(request.url())) ||
+        /\.onnx(?:\?|$)/.test(request.url())
+      ) {
+        work.push(request.url())
+        return route.abort()
+      }
+      return request.url().startsWith('https:')
+        ? route.abort()
+        : route.continue()
+    })
+    await page.goto('/guitar-night')
+    await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+    await page.getByRole('button', { name: 'Free play', exact: true }).click()
+    await page.getByTestId('night-add-music').filter({ visible: true }).click()
+    const filename =
+      'Live-rehearsal-recording-with-original-full-band-take-and-a-long-export-identifier-20260914T203000Z.wav'
+    await page.getByTestId('night-music-file').setInputFiles({
+      name: filename,
+      mimeType: 'audio/wav',
+      buffer: silentWav(),
+    })
+    const dialog = page.getByRole('dialog', { name: 'Add music', exact: true })
+    const file = dialog.getByRole('button').filter({ hasText: filename })
+    const local = dialog.getByRole('button', { name: /^Local/ })
+    const cloud = dialog.getByRole('button', { name: /^Cloud/ })
+    const vocals = dialog.getByRole('button', { name: /^Prepare vocals/ })
+    const band = dialog.getByRole('button', { name: /^Separate .*band/ })
+    const automatic = dialog.getByRole('checkbox', {
+      name: /Automatically separate/,
+    })
+    await expect(vocals).toBeEnabled()
+    await expect(automatic).not.toBeChecked()
+
+    for (const mode of ['local', 'cloud']) {
+      await (mode === 'local' ? local : cloud).click()
+      await expect(mode === 'local' ? local : cloud).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      if (mode === 'local') await expect(vocals).toBeEnabled()
+      else {
+        await expect(vocals).toBeDisabled()
+        await expect(
+          dialog.getByRole('button', { name: 'Sign in', exact: true }).first(),
+        ).toBeVisible()
+        await expect(dialog).toContainText(/Sign.in.*cloud|cloud.*Sign.in/i)
+      }
+      await expect(band).toBeDisabled()
+      await file.scrollIntoViewIfNeeded()
+      await expect(file).toBeInViewport({ ratio: 1 })
+      await expect
+        .poll(() =>
+          dialog.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth,
+          ),
+        )
+        .toBe(true)
+      const panel = await dialog.boundingBox()
+      expect(panel).not.toBeNull()
+      expect(panel!.x).toBeGreaterThanOrEqual(0)
+      expect(panel!.x + panel!.width).toBeLessThanOrEqual(viewport.width)
+      expect(panel!.height).toBeLessThanOrEqual(
+        viewport.width > 720 ? 760 : viewport.height - 16,
+      )
+      await page.screenshot({
+        path: testInfo.outputPath(`audio-${mode}-${viewport.width}.png`),
+      })
+
+      // The checkbox's native input is visually hidden; its enclosing label
+      // owns the real pointer target. Check every button, including disabled
+      // choices and their recoveries, inside the body's clipped scrollport.
+      for (const control of await dialog
+        .locator('button, label:has(input[type="checkbox"])')
+        .all()) {
+        await control.scrollIntoViewIfNeeded()
+        // Nearest-edge scrolling rounds scrollTop to pixels: at 320px it left
+        // 0.234px clipped despite 105px of available scroll. One real wheel
+        // gesture centers that control; full visibility stays a strict gate.
+        const scroll = await control.evaluate((element) => {
+          let parent = element.parentElement
+          while (
+            parent &&
+            !/(auto|scroll)/.test(getComputedStyle(parent).overflowY)
+          )
+            parent = parent.parentElement
+          if (!parent) return null
+          const clip = parent.getBoundingClientRect()
+          const target = element.getBoundingClientRect()
+          if (target.top >= clip.top && target.bottom <= clip.bottom)
+            return null
+          return {
+            x: clip.left + clip.width / 2,
+            y: clip.top + clip.height / 2,
+            delta:
+              target.top + target.height / 2 - (clip.top + clip.height / 2),
+          }
+        })
+        if (scroll) {
+          await page.mouse.move(scroll.x, scroll.y)
+          await page.mouse.wheel(0, scroll.delta)
+        }
+        await expect(control).toBeInViewport({ ratio: 1 })
+        const bounds = await control.boundingBox()
+        expect(bounds).not.toBeNull()
+        expect(bounds!.width).toBeGreaterThanOrEqual(44)
+        expect(bounds!.height).toBeGreaterThanOrEqual(44)
+        expect(bounds!.x).toBeGreaterThanOrEqual(panel!.x)
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(
+          panel!.x + panel!.width,
+        )
+      }
+      if (viewport.width < 720)
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `audio-${mode}-${viewport.width}-scroll-end.png`,
+          ),
+        })
+    }
+    // Opting in is only a saved preference, never consent to process this file.
+    const autoTarget = automatic.locator('..')
+    await autoTarget.click()
+    await expect(automatic).toBeChecked()
+    await autoTarget.click()
+    await expect(automatic).not.toBeChecked()
+    await local.click()
+    await expect(vocals).toBeEnabled()
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    expect(work).toEqual([])
+  })
+}
 
 for (const room of ['guitar', 'drum', 'karaoke']) {
   test(`${room} queues audio and explains unavailable cloud actions before processing @smoke`, async ({

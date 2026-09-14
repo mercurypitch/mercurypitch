@@ -51,14 +51,24 @@ describe('night audio eligibility', () => {
   it('quotes both cloud stages before either can run', () => {
     expect(
       nightAudioEligibility(newSongFacts(), 'server', 'guitar'),
-    ).toMatchObject({ available: true, cost: 6 })
+    ).toMatchObject({
+      available: true,
+      cost: 6,
+      message:
+        'Estimated 6 credits total for both stages · 10 available. Server confirms final cost.',
+    })
     expect(
       nightAudioEligibility(
         { ...newSongFacts(), balance: 5 },
         'server',
         'guitar',
       ),
-    ).toMatchObject({ available: false, cost: 6, recovery: 'credits' })
+    ).toMatchObject({
+      available: false,
+      cost: 6,
+      recovery: 'credits',
+      message: 'This needs 6 credits; you have 5.',
+    })
     expect(
       nightAudioEligibility(
         { ...newSongFacts(), balance: 2 },
@@ -74,7 +84,12 @@ describe('night audio eligibility', () => {
         'server',
         'guitar',
       ),
-    ).toMatchObject({ available: true, cost: 4 })
+    ).toMatchObject({
+      available: true,
+      cost: 4,
+      message:
+        'Estimated 4 credits · 10 available. Server confirms final cost.',
+    })
   })
   it.each([720, 721, 1080, 1081])(
     'includes the long-song multiplier for %s seconds',

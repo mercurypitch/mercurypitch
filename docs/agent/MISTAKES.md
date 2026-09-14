@@ -266,6 +266,18 @@ existing column and width budgets; dialog-only screenshots missed the regression
 at least 44px, and run the host's responsive specs as well as the new overlay's.
 **See:** `src/e2e/night-music-import.spec.ts` and the Night-room responsive specs.
 
+### Key score-room lifetimes by song, not by track or reference object
+
+**Symptom:** dropping a second tab updated its mixer tracks but the title and
+resumed audio still belonged to the previous song after Play had run.
+**Cause:** the retained room intentionally pinned its take's score for review;
+updating the live reference did not end that previous playback lifetime.
+**Rule:** key the rehearsal subtree by song ID so a validated replacement
+disposes playback, loops and pending callbacks together. Keep same-song track
+changes reactive without remounting, preserving their parked musical position.
+**See:** `GuitarNightScoreReplacement.test.tsx` and the native replacement cases
+in `src/e2e/night-music-import.spec.ts`.
+
 ### Do not destructure props
 
 **Symptom:** a prop updated in the parent, the child never re-rendered.

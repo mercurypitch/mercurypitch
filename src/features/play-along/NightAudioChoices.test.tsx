@@ -123,6 +123,8 @@ describe('Night audio choices', () => {
     fireEvent.click(cloud())
     expect(vocals()).toBeDisabled()
     expect(band()).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Sign in' })).toHaveLength(1)
+    expect(screen.getAllByText(/Cloud requires sign-in/)).toHaveLength(1)
     fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0]!)
     expect(port.resolveAccess).toHaveBeenCalledWith('account')
     expect(controller.file()?.name).toBe('idea.wav')
@@ -189,7 +191,7 @@ describe('Night audio choices', () => {
     setup()
     await waitFor(() => expect(band()).toBeEnabled())
     expect(screen.getAllByText(/No separation or credits needed/)).toHaveLength(
-      2,
+      1,
     )
   })
   it('offers Retry for an unknown balance and updates after recovery without automatically running', async () => {
@@ -227,7 +229,7 @@ describe('Night audio choices', () => {
     )
     setUvrProcessingMode('server')
     const { controller } = setup()
-    await screen.findByText(/Queued for you/)
+    await screen.findByText(/Auto-separation unavailable/)
     port.signedIn = true
     port.bumpAuth()
     await waitFor(() => expect(band()).toBeEnabled())
@@ -245,7 +247,7 @@ describe('Night audio choices', () => {
       'Stop the recorder first.',
     )
     setup({ blockedReason: blocked })
-    await screen.findByText(/Queued for you/)
+    await screen.findByText(/Auto-separation unavailable/)
     setBlocked(null)
     await waitFor(() => expect(vocals()).toBeEnabled())
     expect(port.prepare).not.toHaveBeenCalled()

@@ -40,34 +40,28 @@ export function nightAudioEligibility(
     return {
       available: true,
       cost: 0,
-      message:
-        'Saved parts are ready on this device. No separation or credits needed.',
+      message: 'Saved parts are ready. No separation or credits needed.',
     }
   if (facts.existing && (!facts.instrumental || (!band && !facts.vocals)))
     return blocked(
-      'The saved backing is missing. Prepare this song again from its original file in your library.',
+      'Saved backing is missing. Prepare it again from the original file in your library.',
     )
   if (mode === 'local') {
-    if (band)
-      return blocked(
-        'Full-band separation needs Cloud. Local can prepare vocals + backing for free.',
-        'cloud',
-      )
+    if (band) return blocked('Full-band separation needs Cloud.', 'cloud')
     return {
       available: true,
       cost: 0,
-      message:
-        'Free on this device. The backing keeps the original instruments.',
+      message: 'Original instruments stay together in the backing.',
     }
   }
   if (!facts.signedIn)
     return blocked(
-      'Sign in to use cloud separation. Local vocals + backing is available without an account.',
+      'Cloud requires sign-in. Local vocals + backing is free.',
       'account',
     )
   if (!facts.existing && facts.bytes > SERVER_MAX_UPLOAD_BYTES)
     return blocked(
-      'Cloud accepts files up to 50 MB. Choose Local vocals + backing, or a smaller file.',
+      'Cloud limit: 50 MB. Use Local vocals + backing or a smaller file.',
     )
   if (
     facts.duration === null ||
@@ -75,7 +69,7 @@ export function nightAudioEligibility(
     facts.duration <= 0
   )
     return blocked(
-      'The song length could not be read, so its cloud cost cannot be checked. Retry, or use Local vocals + backing.',
+      'Song length is unavailable. Retry to check the cost, or use Local vocals + backing.',
       'retry',
     )
   const models = [
@@ -93,7 +87,7 @@ export function nightAudioEligibility(
     )
   )
     return blocked(
-      'Cloud pricing or your balance could not be checked. Retry to see the cost before starting.',
+      'Pricing or balance unavailable. Retry to check the cost.',
       'retry',
     )
   const cost =
@@ -102,7 +96,7 @@ export function nightAudioEligibility(
   if (facts.balance < cost)
     return {
       ...blocked(
-        `This needs ${cost} credits; you have ${facts.balance}. Nothing has started.`,
+        `This needs ${cost} credits; you have ${facts.balance}.`,
         CAN_TAKE_PAYMENT ? 'credits' : undefined,
       ),
       cost,
@@ -110,6 +104,6 @@ export function nightAudioEligibility(
   return {
     available: true,
     cost,
-    message: `${cost} credits estimated${models.length > 1 ? ' total for vocals + backing and the full band' : ''} · ${facts.balance} available. The server confirms the final cost.`,
+    message: `Estimated ${cost} credits${models.length > 1 ? ' total for both stages' : ''} · ${facts.balance} available. Server confirms final cost.`,
   }
 }

@@ -42,7 +42,7 @@
   width: min(35rem, 100%);
   max-height: calc(100dvh - 2rem);
   overflow: hidden;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: #171512;
   border: 1px solid #65523b;
   border-radius: 1rem;
@@ -91,6 +91,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
 .room {
   text-transform: capitalize;
@@ -99,7 +100,7 @@
 }
 .heading h2 {
   font-family: var(--font-display, Georgia, serif);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   line-height: 1.15;
   margin: 0.2rem 0 0;
 }
@@ -111,23 +112,23 @@
   border-color: transparent;
   background: transparent;
 }
-.intro {
-  color: var(--import-muted);
-  line-height: 1.5;
-  margin: 0.85rem 0 1.4rem;
-}
 .current {
-  display: grid;
-  gap: 0.3rem;
+  display: flex;
+  gap: 0.5rem;
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--import-muted);
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #433a2e;
+  margin: 0.5rem 0 0;
+}
+.current span {
+  flex: none;
 }
 .current strong {
-  color: var(--import-ink);
-  font-size: 0.95rem;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  font-weight: 400;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .panel .file {
   width: 100%;
@@ -135,8 +136,7 @@
   align-items: center;
   gap: 0.85rem;
   text-align: left;
-  padding: 1rem;
-  margin-top: 0.7rem;
+  padding: 0.75rem;
   border-style: dashed;
   background: transparent;
 }
@@ -147,9 +147,10 @@
 .file span {
   min-width: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.2rem;
 }
 .file strong {
+  font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
 .file small,
@@ -159,17 +160,17 @@
 }
 .actions {
   display: grid;
-  margin-top: 1.2rem;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.actions:empty {
+  display: none;
 }
 .panel .actions button {
   text-align: left;
   display: grid;
   gap: 0.3rem;
-  padding: 1rem 0.25rem;
-  border: 0;
-  border-bottom: 1px solid #433a2e;
-  border-radius: 0;
-  background: transparent;
+  padding: 0.65rem 0.75rem;
 }
 .actions strong {
   color: var(--import-accent);
@@ -204,15 +205,9 @@
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1.5rem;
-}
-.footer span {
-  max-width: 18ch;
-  color: var(--import-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  margin-top: 0.75rem;
 }
 .trigger {
   display: inline-flex;
