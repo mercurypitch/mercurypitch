@@ -297,6 +297,15 @@ in `src/e2e/night-music-import.spec.ts`.
 **Cause:** calling an accessor inside an async callback runs it detached from the owner.
 **Rule:** capture the value first, then start the async work.
 
+### Use native key handlers inside propagation-stopping dialogs
+
+**Symptom:** a wheel accepted clicks but ignored real arrow-key presses in a modal.
+**Cause:** the dialog stopped native propagation before Solid's delegated
+`onKeyDown` listener at the document could receive the event.
+**Rule:** use `on:keydown` for the inner keyboard control, preserving the dialog's
+transport-shortcut isolation; verify with a real keyboard browser test.
+**See:** `src/features/session-drummer/DrummerWheel.tsx`.
+
 ### A CI-only test timeout is a measurement, not a flake
 
 **Symptom:** a test times out on CI and passes locally, so it looks like runner noise.

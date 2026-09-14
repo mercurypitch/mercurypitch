@@ -1324,6 +1324,7 @@ export function useGuitarNightScoreRoomController(
   return {
     /** The loop this take is actually running, null until one is scheduled. */
     runningLoop,
+    subscribeBeatClock: band.subscribeBeatClock,
     /** Setup stays editable for a parked pre-play seek, but not a paused take. */
     setupLocked: takePinsSetup,
     parkForConfiguration,
