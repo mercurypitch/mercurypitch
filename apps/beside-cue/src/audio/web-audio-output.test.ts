@@ -401,6 +401,29 @@ describe('web audio output', () => {
     expect(fake.closeCount()).toBe(1)
   })
 
+  it('preserves an active foreground score through a temporary route interruption', async () => {
+    const fake = createFakeContext()
+    const output = createWebAudioOutput({
+      createContext: () => fake.context,
+      fetchArrayBuffer: async () => new ArrayBuffer(8),
+      supportsMimeType: () => true,
+    })
+    const playback = output.play(
+      request({ kind: 'loop', loopStartMs: 0, loopEndMs: 8_000 }),
+    )
+    await playback.started
+    // No app/page exit occurred. Only already-stopped tails need retiring;
+    // an ongoing score keeps the pre-existing pause/resume behavior.
+    fake.suspend()
+    await output.unlock()
+    expect(fake.sources[0]!.stops).toEqual([])
+    expect(fake.sources[0]!.disconnectCount).toBe(0)
+    expect(fake.sources).toHaveLength(1)
+    playback.stop()
+    fake.suspend()
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
+  })
+
   it('reports decode and invalid loop failures without starting sound', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const failing = createFakeContext({

@@ -194,7 +194,8 @@ export function createWebAudioOutput(
     if (context === undefined || context.state === 'running') return
     // Rendering may be taken away before our release finishes. Audio-clock
     // onended cannot run while suspended, so retire these graphs now.
-    for (const handle of [...handles]) handle.stop()
+    // Active sound keeps its pause/resume behavior during a foreground route
+    // interruption. App/page exits cancel it through prepareToSuspend instead.
     for (const graph of [...releasingGraphs.keys()]) finishRelease(graph, true)
   }
 
