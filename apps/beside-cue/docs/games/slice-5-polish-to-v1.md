@@ -159,9 +159,12 @@ share of the wait.
 
 A development build shows the chip; a production build only with `?perf`
 in the address, so no player sees it -- the Cabinet's old chip, which
-they did see, included. Its f0 rate is now counted by change of the
-detector's level: the Cabinet counted changes of `tAudio`, which is the
-audio clock read at the poll rather than a stamp on the frame.
+they did see, included. Its f0 rate uses a cumulative count of accepted
+detector results from the worker or fallback analyser, including unchanged
+levels and silence. Polling more often cannot inflate it, and a slower
+renderer still counts results delivered between polls. The earlier level-change
+proxy missed both identical levels and silent frames; `tAudio` was also a
+poll-time clock rather than a frame stamp.
 
 **Calm (P3), as a rate.** Three seconds with no touch, key, voiced frame
 or motion, and the stage draws 30 frames a second by the clock: half a
@@ -190,6 +193,10 @@ nothing there. Neither machine is a phone: these numbers say the
 mechanism works, and the gate's are the chip's on the devices (§2.3).
 
 **Where the wait goes**, on the same desktop GPU, in milliseconds:
+
+These historical measurements used the earlier level-change proxy: `f0`
+waited for nonzero RMS. Re-measure that column with the detector counter
+before using it to judge startup latency.
 
 | World    | scene | gpu | merc | glass | compile | draw | first | mic | f0  |
 | -------- | ----- | --- | ---- | ----- | ------- | ---- | ----- | --- | --- |

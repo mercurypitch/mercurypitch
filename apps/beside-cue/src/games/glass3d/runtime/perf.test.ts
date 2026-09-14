@@ -48,18 +48,55 @@ describe('the frame meter', () => {
     expect(second!.fps).toBe(2)
   })
 
-  // One detector frame is polled by every simulation step until the next
-  // arrives, so counting reads would report the step rate, not the
-  // detector's.
-  it('counts f0 frames by change of level, not by reads', () => {
+  it('counts detector deliveries once even when polled repeatedly', () => {
     const meter = createFrameMeter(1000)
+    const driver = {}
     meter.frame(0, 1, true)
-    for (let f = 0; f < 47; f++) {
-      for (let read = 0; read < 3; read++) meter.level(0.01 + f * 0.0001)
+    for (let f = 1; f <= 47; f++) {
+      for (let read = 0; read < 3; read++) meter.detectorFrames(driver, f)
     }
-    meter.level(0) // silence is no frame
     const window = meter.frame(1000, 1, true)
     expect(window!.f0Hz).toBe(47)
+    meter.detectorFrames(driver, 47)
+    expect(meter.frame(2000, 1, true)!.f0Hz).toBe(0)
+  })
+
+  it('retains deliveries between slow render polls and across windows', () => {
+    const meter = createFrameMeter(1000)
+    const driver = {}
+    meter.frame(0, 1, true)
+    meter.detectorFrames(driver, 20)
+    meter.detectorFrames(driver, 47)
+    expect(meter.frame(1000, 1, true)!.f0Hz).toBe(47)
+    meter.detectorFrames(driver, 94)
+    expect(meter.frame(2000, 1, true)!.f0Hz).toBe(47)
+  })
+
+  it('counts a replacement microphone from its own counter', () => {
+    const meter = createFrameMeter(1000)
+    const first = {}
+    const second = {}
+    meter.frame(0, 1, true)
+    meter.detectorFrames(first, 20)
+    meter.detectorFrames(second, 5)
+    meter.detectorFrames(second, 27)
+    expect(meter.frame(1000, 1, true)!.f0Hz).toBe(47)
+    meter.detectorFrames(null, 0)
+    meter.detectorFrames({}, 47)
+    expect(meter.frame(2000, 1, true)!.f0Hz).toBe(47)
+  })
+
+  it('ignores invalid counters and handles a stream restarted by its driver', () => {
+    const meter = createFrameMeter(1000)
+    const driver = {}
+    meter.frame(0, 1, true)
+    meter.detectorFrames(driver, 20)
+    for (const count of [Number.NaN, Number.POSITIVE_INFINITY, -1, 0.5]) {
+      meter.detectorFrames(driver, count)
+    }
+    meter.detectorFrames(driver, 0)
+    meter.detectorFrames(driver, 27)
+    expect(meter.frame(1000, 1, true)!.f0Hz).toBe(47)
   })
 
   it('opens a new window when the clock goes backwards', () => {

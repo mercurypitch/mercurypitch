@@ -71,6 +71,75 @@ afterEach(() => {
 })
 
 describe('createF0Stream', () => {
+  it('counts every accepted worker result, including equal levels and silence', async () => {
+    const { createF0Stream } = await import('./pitch-f0-stream')
+    const { ctx } = fakeContext(true)
+    const stream = createF0Stream(ctx, {} as MediaStream)
+    await flush()
+    const worker = FakeWorker.instances[0]
+    const deliver = (atFrame: number, rms = 0.1): void => {
+      worker.onmessage?.(
+        new MessageEvent('message', {
+          data: {
+            atFrame,
+            rms,
+            f0: rms === 0 ? 0 : 220,
+            conf: rms === 0 ? 0 : 1,
+          },
+        }),
+      )
+    }
+    deliver(0)
+    expect(stream.frameCount()).toBe(0)
+    stream.startTask()
+    // All fifty have identical RMS and can arrive between renderer polls.
+    for (let n = 1; n <= 50; n++) deliver(n * 1024)
+    expect(stream.frameCount()).toBe(50)
+    for (let n = 0; n < 100; n++) {
+      stream.latest()
+      stream.latestSmoothed()
+      stream.latestLevel()
+    }
+    expect(stream.frameCount()).toBe(50)
+    deliver(51 * 1024, 0)
+    expect(stream.frameCount()).toBe(51)
+    expect(stream.takeFrames()).toHaveLength(51)
+    deliver(52 * 1024)
+    expect(stream.frameCount()).toBe(51)
+
+    // Taking another recording does not rewind lifetime telemetry.
+    stream.startTask()
+    deliver(53 * 1024)
+    expect(stream.frameCount()).toBe(52)
+    stream.dispose()
+    deliver(54 * 1024)
+    expect(stream.frameCount()).toBe(52)
+  })
+
+  it('counts fallback analyses only while recording, even for digital silence', async () => {
+    const { createF0Stream } = await import('./pitch-f0-stream')
+    const { ctx, analyser } = fakeContext(false)
+    const stream = createF0Stream(ctx, {} as MediaStream)
+    await flush()
+    const tick = (at: number): void => {
+      vi.mocked(requestAnimationFrame).mock.calls.at(-1)![0](at)
+    }
+    tick(0)
+    expect(stream.frameCount()).toBe(0)
+    stream.startTask()
+    tick(16)
+    tick(32)
+    expect(analyser.getFloatTimeDomainData).toHaveBeenCalledTimes(3)
+    expect(stream.frameCount()).toBe(2)
+    expect(stream.latest()).toMatchObject({ f0: 0, rms: 0 })
+    expect(stream.takeFrames()).toHaveLength(2)
+    tick(48)
+    expect(stream.frameCount()).toBe(2)
+    stream.dispose()
+    tick(64)
+    expect(stream.frameCount()).toBe(2)
+  })
+
   it('takes the worklet path when the engine offers it', async () => {
     const { createF0Stream } = await import('./pitch-f0-stream')
     const { ctx, source } = fakeContext(true)

@@ -564,14 +564,13 @@ export const ChamberStage = (props: ChamberStageProps) => {
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
+        pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
 
         // An octave button was pressed since the last frame.
         if (fundamental() !== tunedRoom) retuneRoom()
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
-          pace.level(driver?.latestLevel() ?? 0)
-
           if (phaseNow === 'cleared') {
             // The beat between rooms. He is still standing in the room
             // he finished, and the next one arrives under him.

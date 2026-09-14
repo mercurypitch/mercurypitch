@@ -51,8 +51,8 @@ export interface StageFrame {
   /** Whether to draw this frame; the renderer's dt if so. */
   draw(activity: Omit<Activity, 'input'> & { input?: boolean }): number | null
   end(): void
-  /** The detector level, as a simulation step just read it. */
-  level(value: number): void
+  /** Cumulative detector results from the stage's current input driver. */
+  detectorFrames(source: object | null, count: number): void
   /** The gate was tapped; a microphone is being asked for. */
   micAsked(): void
   /** The microphone is live. */
@@ -87,7 +87,7 @@ export const createStageFrame = (opts: StageFrameOptions): StageFrame => {
   let lastDrawAt: number | null = null
   let askedAt: number | null = null
   let liveAt: number | null = null
-  let heard = false
+  let detectorSeen = false
 
   const refresh = (): void => {
     if (chipOn) setLines(chipLines(opts.backend(), last, calm.calm, load))
@@ -153,7 +153,7 @@ export const createStageFrame = (opts: StageFrameOptions): StageFrame => {
         mark('draw', done - cpuFrom)
         mark('first', done - mountedAt)
       }
-      if (liveAt !== null && heard && load.f0 === undefined) {
+      if (liveAt !== null && detectorSeen && load.f0 === undefined) {
         mark('f0', done - liveAt)
       }
       const window = meter.frame(frameAt, done - cpuFrom, drewThisFrame)
@@ -163,9 +163,9 @@ export const createStageFrame = (opts: StageFrameOptions): StageFrame => {
       }
     },
 
-    level(value) {
-      meter.level(value)
-      if (value > 0) heard = true
+    detectorFrames(source, count) {
+      meter.detectorFrames(source, count)
+      if (source !== null && count > 0) detectorSeen = true
     },
 
     micAsked() {
@@ -177,7 +177,7 @@ export const createStageFrame = (opts: StageFrameOptions): StageFrame => {
       if (askedAt !== null && load.mic === undefined) mark('mic', now - askedAt)
       if (liveAt === null) {
         liveAt = now
-        heard = false
+        detectorSeen = false
       }
     },
 

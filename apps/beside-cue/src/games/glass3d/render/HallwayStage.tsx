@@ -268,11 +268,10 @@ export const HallwayStage = (props: HallwayStageProps) => {
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
+        pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
-          pace.level(driver?.latestLevel() ?? 0)
-
           // He walks in every phase, including the ones that are about
           // something else. A player who wants to shuffle while they
           // hold a note should be allowed to; the room is not a cutscene

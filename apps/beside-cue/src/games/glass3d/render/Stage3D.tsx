@@ -206,6 +206,7 @@ export const Stage3D = (props: Stage3DProps) => {
       const frameSeconds = (now - last) / 1000
       last = now
       wallSeconds += frameSeconds
+      pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
 
       runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
         const pitch = driver?.latestPitch() ?? null
@@ -218,13 +219,6 @@ export const Stage3D = (props: Stage3DProps) => {
         lastWaveStrength = wave.active ? wave.strength : 0
         lastWaveRate = 'rateHz' in wave ? wave.rateHz : 0
         lastWaveDepth = 'depthCents' in wave ? wave.depthCents : 0
-        // One f0 frame is polled by many simulation steps, so its rate is
-        // counted by change of level rather than by reads. It used to be
-        // counted by change of `tAudio`, which is the audio clock at the
-        // moment of the poll rather than a stamp on the frame -- so what
-        // the chip showed was how often that clock moved while voiced.
-        pace.level(driver?.latestLevel() ?? 0)
-
         if (launches === null) {
           const broke = stepResonance(
             ring,

@@ -403,9 +403,9 @@ export const LineStage = (props: LineStageProps) => {
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
+        pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
-          pace.level(driver?.latestLevel() ?? 0)
           if (phaseNow === 'cleared') {
             if (wallSeconds - clearedAtWall >= CLEARED_SECONDS) {
               const next = lineTrack.roomAfter(live.id)

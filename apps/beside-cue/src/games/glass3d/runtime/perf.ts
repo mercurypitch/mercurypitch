@@ -43,9 +43,9 @@ export interface FrameMeter {
   /** One pass of the frame loop: when it started, how long it took, and
    * whether it drew. Returns the window's summary when one closes. */
   frame(nowMs: number, cpuMs: number, drew: boolean): FrameWindow | null
-  /** The detector level as the stage just read it. A change is a new f0
-   * frame: one frame is read many times over, so reads are not frames. */
-  level(value: number): void
+  /** Cumulative results from the stage's current driver. Counts every
+   * delivery between polls, even if RMS is unchanged or the stage is calm. */
+  detectorFrames(source: object | null, count: number): void
 }
 
 /** Rates over a whole second: anything shorter is noise, and this is a
@@ -57,7 +57,8 @@ export const createFrameMeter = (windowMs = 1000): FrameMeter => {
   let cpuMax = 0
   let busy = 0
   let f0Frames = 0
-  let lastLevel = Number.NaN
+  let lastSource: object | null = null
+  let lastCount = 0
 
   const reset = (at: number): void => {
     startedAt = at
@@ -94,10 +95,15 @@ export const createFrameMeter = (windowMs = 1000): FrameMeter => {
       reset(nowMs)
       return summary
     },
-    level(value) {
-      if (!Number.isFinite(value) || value <= 0) return
-      if (value !== lastLevel) f0Frames += 1
-      lastLevel = value
+    detectorFrames(source, count) {
+      if (!Number.isSafeInteger(count) || count < 0) return
+      if (source !== lastSource || count < lastCount) lastCount = 0
+      // A disconnected microphone does not contribute frames, and a
+      // replacement starts its own counter. Keep this baseline across
+      // reporting windows so the same results are never counted twice.
+      if (source !== null) f0Frames += count - lastCount
+      lastSource = source
+      lastCount = source === null ? 0 : count
     },
   }
 }
