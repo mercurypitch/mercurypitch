@@ -42,6 +42,10 @@ interface GuitarRoomHumanizerModule {
 
 const GENERATED_RHYTHM_TRACK_ID = '__guitar-night-generated-rhythm__'
 const MAX_DRUM_ROUTING_COUNT = 1_000_000
+// Native mixed-score renders still bury recorded drums under the summed guide.
+// Trim after the track amps, never their drive or the live monitor; solo guides
+// and generated rhythm lessons keep their established reference level.
+const MIXED_SCORE_GUIDE_GAIN = 10 ** (-6 / 20)
 /** Humanized hits can move 14 ms early and a flam can lead by another 35 ms. */
 const GUITAR_ROOM_DRUM_MAX_EARLY_SECONDS = 0.06
 
@@ -565,6 +569,7 @@ export function createGuitarRoomBand(
   let drumRoutingCounts = emptyDrumRoutingCounts()
   let runOutput: {
     guide: Record<GuitarGuideInput, GainNode>
+    guideReferenceGain: number
     drums: GainNode
     melodyChannels: Map<string, Partial<Record<GuitarGuideInput, GainNode>>>
     electricAmpStages: Map<string, GuitarElectricAmpStage>
@@ -845,16 +850,18 @@ export function createGuitarRoomBand(
         graph?.setMasterLevel(masterLevel)
       } else if (runOutput !== null) {
         const now = context?.currentTime ?? 0
-        for (const output of [
-          ...Object.values(runOutput.guide),
-          runOutput.drums,
-        ]) {
+        for (const output of Object.values(runOutput.guide)) {
           setGuitarSessionGainTarget(
             output.gain,
-            sliderToGain(masterLevel),
+            sliderToGain(masterLevel) * runOutput.guideReferenceGain,
             now,
           )
         }
+        setGuitarSessionGainTarget(
+          runOutput.drums.gain,
+          sliderToGain(masterLevel),
+          now,
+        )
       }
     },
 
@@ -947,8 +954,10 @@ export function createGuitarRoomBand(
       const drumsOutput = currentGraph.context.createGain()
       const runGain =
         borrowedAudioGraph === undefined ? 1 : sliderToGain(masterLevel)
-      guideOutput.clean.gain.value = runGain
-      guideOutput.electric.gain.value = runGain
+      const guideReferenceGain =
+        (startOptions.percussion?.length ?? 0) > 0 ? MIXED_SCORE_GUIDE_GAIN : 1
+      guideOutput.clean.gain.value = runGain * guideReferenceGain
+      guideOutput.electric.gain.value = runGain * guideReferenceGain
       drumsOutput.gain.value = runGain
       guideOutput.clean.connect(currentGraph.guideInputs.clean)
       // Every electric voice is summed by track below, then its processed
@@ -1013,6 +1022,7 @@ export function createGuitarRoomBand(
       }
       runOutput = {
         guide: guideOutput,
+        guideReferenceGain,
         drums: drumsOutput,
         melodyChannels,
         electricAmpStages,
