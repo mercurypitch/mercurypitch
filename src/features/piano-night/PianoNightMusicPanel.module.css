@@ -131,16 +131,43 @@
   font-size: 11px;
 }
 
-.errorBox button {
+.noticeAction {
+  display: inline-flex;
   width: fit-content;
-  min-height: 32px;
+  max-width: 100%;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
   margin-top: 3px;
-  padding: 0 12px;
-  border: 1px solid rgb(255 255 255 / 15%);
-  border-radius: 999px;
-  color: #f3e8d8;
-  background: transparent;
+  padding: 10px 12px;
+  border: 1px solid rgb(200 162 103 / 42%);
+  border-radius: 8px;
+  color: #f1dfbd;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  background: rgb(200 162 103 / 12%);
   cursor: pointer;
+}
+
+.noticeAction:hover {
+  border-color: var(--music-brass);
+  background: rgb(200 162 103 / 20%);
+}
+
+.noticeAction:focus-visible {
+  outline: 2px solid var(--music-brass);
+  outline-offset: 3px;
+}
+
+.noticeAction svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.issueBox p {
+  margin: 0;
 }
 
 .issueBox ul {
@@ -340,7 +367,9 @@
 
 .rowTopline strong {
   display: -webkit-box;
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: #eee5d8;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 15px;

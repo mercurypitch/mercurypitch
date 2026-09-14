@@ -2257,7 +2257,9 @@ describe('DrumNightApp', () => {
     takeCapture.startPlayback.mockClear()
     const drawer = screen.getByRole('region', { name: 'Shape the groove' })
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Kit' }))
-    fireEvent.click(within(drawer).getByRole('radio', { name: /Classic GM/i }))
+    fireEvent.click(
+      await within(drawer).findByRole('radio', { name: /Classic GM/i }),
+    )
 
     await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalledOnce())
     expect(takeCapture.startPlayback).toHaveBeenCalledOnce()

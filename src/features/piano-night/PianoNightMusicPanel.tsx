@@ -8,7 +8,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { CheckSmall, FileUpload, MusicLibrary, ScoreDocument, Search, } from '@/components/icons'
+import { CheckSmall, FileUpload, MusicLibrary, ScoreDocument, Search, Square, } from '@/components/icons'
 import type { PianoComposition } from '@/features/piano-project/piano-composition-stage'
 import { pianoCompositionToStage } from '@/features/piano-project/piano-composition-stage'
 import type { PianoProject } from '@/features/piano-project/piano-project'
@@ -73,6 +73,7 @@ function catalogRows(catalog: PianoNightMusicCatalog | null): MusicRow[] {
     },
   ]
   if (catalog === null) return rows
+  const importedRows: MusicRow[] = []
 
   for (const composition of catalog.compositions) {
     rows.push({
@@ -84,13 +85,14 @@ function catalogRows(catalog: PianoNightMusicCatalog | null): MusicRow[] {
   for (const entry of catalog.projects) {
     const source = pianoProjectToPianoNightSource(entry.project)
     if (source.id === PIANO_NIGHT_INCLUDED_SOURCE.id) continue
-    rows.push({
+    const destination = source.provenance === 'included' ? rows : importedRows
+    destination.push({
       source,
       group: 'project',
       persistence: entry.persistence,
     })
   }
-  return rows
+  return [...importedRows, ...rows]
 }
 
 function matchesQuery(row: MusicRow, query: string): boolean {
@@ -461,12 +463,14 @@ export function PianoNightMusicPanel(
                 Yourself.
               </p>
               <button
+                class={styles.noticeAction}
                 type="button"
                 onClick={() => {
                   setImportError(null)
                   action().run()
                 }}
               >
+                <Square />
                 Stop practice to change music
               </button>
             </div>
@@ -478,7 +482,11 @@ export function PianoNightMusicPanel(
             <div class={styles.errorBox} role="alert">
               <strong>Device library unavailable</strong>
               <span>{failure().message}</span>
-              <button type="button" onClick={() => void loadCatalog()}>
+              <button
+                class={styles.noticeAction}
+                type="button"
+                onClick={() => void loadCatalog()}
+              >
                 Retry
               </button>
             </div>
@@ -583,7 +591,9 @@ export function PianoNightMusicPanel(
                         </span>
                         <span class={styles.rowCopy}>
                           <span class={styles.rowTopline}>
-                            <strong>{row.source.stage.title}</strong>
+                            <strong title={row.source.stage.title}>
+                              {row.source.stage.title}
+                            </strong>
                             <i>
                               {isCurrent()
                                 ? 'On stage'

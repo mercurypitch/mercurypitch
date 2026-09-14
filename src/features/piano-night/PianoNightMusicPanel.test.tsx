@@ -310,6 +310,80 @@ describe('PianoNightMusicPanel', () => {
     expect(screen.getByText('No saved music on this device yet')).toBeVisible()
   })
 
+  it('lists imported music before included studies and compositions, also when searching', async () => {
+    const project = importedProject('My Night MIDI')
+    const sessionProject: PianoProject = {
+      ...project,
+      id: 'session-midi',
+      name: 'Session Night MIDI',
+      source: {
+        kind: 'legacy-midi',
+        storageKey: 'piano_songs',
+        sourceHash: 'session-midi',
+        ticksPerQuarter: 480,
+      },
+    }
+    const { container } = renderPanel(
+      musicSource({
+        loadCatalog: vi.fn(async () =>
+          readyCatalog({
+            projects: [
+              { project: PIANO_NIGHT_DEMO_PROJECT, persistence: 'saved' },
+              { project, persistence: 'saved' },
+              { project: sessionProject, persistence: 'session-only' },
+            ],
+            compositions: Array.from({ length: 45 }, (_, index) =>
+              composition(index, `Night scale ${index}`),
+            ),
+          }),
+        ),
+      }),
+    )
+    const search = await screen.findByRole('searchbox', {
+      name: 'Search music on this device',
+    })
+    const titles = () =>
+      Array.from(
+        container.querySelectorAll('button[aria-pressed] strong'),
+        (element) => element.textContent,
+      )
+    expect(titles().slice(0, 4)).toEqual([
+      'My Night MIDI',
+      'Session Night MIDI',
+      'Afterglow Study in E-flat',
+      'Night scale 0',
+    ])
+    expect(titles()).toHaveLength(40)
+    fireEvent.input(search, { target: { value: 'night' } })
+    expect(titles().slice(0, 3)).toEqual([
+      'My Night MIDI',
+      'Session Night MIDI',
+      'Night scale 0',
+    ])
+    expect(screen.getByText('47 sources')).toBeVisible()
+  })
+
+  it('stops an unfinished take only through the explicit music recovery action', async () => {
+    const stop = vi.fn()
+    const onSelect = vi.fn(() => true)
+    render(() => (
+      <PianoNightMusicPanel
+        musicSource={musicSource()}
+        currentSourceId={() => PIANO_NIGHT_INCLUDED_SOURCE.id}
+        legacyPianoPath="/piano"
+        onSelect={onSelect}
+        stopForImport={{ run: stop }}
+      />
+    ))
+    await screen.findByText('Ready to stage')
+    expect(stop).not.toHaveBeenCalled()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Stop practice to change music' }),
+    )
+    expect(stop).toHaveBeenCalledOnce()
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
   it('keeps a long source title intact for selection and search', async () => {
     const longTitle =
       'Nocturne for a Very Quiet August Evening with the Windows Left Open'
@@ -324,6 +398,7 @@ describe('PianoNightMusicPanel', () => {
     expect(
       await screen.findByRole('button', { name: new RegExp(longTitle) }),
     ).toHaveTextContent(longTitle)
+    expect(screen.getByText(longTitle)).toHaveAttribute('title', longTitle)
   })
 
   it('searches larger device libraries and bounds the first render', async () => {

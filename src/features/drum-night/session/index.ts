@@ -111,7 +111,6 @@ export {
 export type { DrumSessionStateCopy } from './DrumSessionStateView'
 export { DrumScoreSheet } from './DrumScoreSheet'
 export type { DrumScoreSheetProps } from './DrumScoreSheet'
-export { DrummerSeatView } from './DrummerSeatView'
 export type { DrummerSeatViewProps, DrumSeatLiveHit } from './DrummerSeatView'
 export { DrumSessionCoach } from './DrumSessionCoach'
 export type { DrumSessionCoachProps } from './DrumSessionCoach'
