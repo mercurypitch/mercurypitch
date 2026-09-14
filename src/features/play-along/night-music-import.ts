@@ -6,8 +6,10 @@ import { classifyUnifiedSongImport } from './song-import'
 export type NightMusicRoom = 'guitar' | 'drums' | 'piano' | 'karaoke'
 
 export const NIGHT_MUSIC_FORMATS: Record<NightMusicRoom, string> = {
-  guitar: 'MP3, WAV, FLAC, MIDI or Guitar Pro (.gp, .gpx, .gp3–.gp5)',
-  drums: 'MP3, WAV, FLAC, MIDI or Guitar Pro (.gp, .gpx, .gp3–.gp5)',
+  guitar:
+    'MP3, WAV, FLAC, MIDI (.mid, .midi) or Guitar Pro (.gp3, .gp4, .gp5, .gpx, .gp)',
+  drums:
+    'MP3, WAV, FLAC, MIDI (.mid, .midi) or Guitar Pro (.gp3, .gp4, .gp5, .gpx, .gp)',
   piano: 'MIDI (.mid or .midi)',
   karaoke: 'MP3, WAV or FLAC',
 }

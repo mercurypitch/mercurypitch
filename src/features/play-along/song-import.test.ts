@@ -2,6 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { GP_FILE_EXTENSIONS } from '@/lib/tab/gp-import'
 import { classifyUnifiedSongImport, isGuitarProSongFile, isMidiSongFile, referenceAcceptForDevice, songImportAcceptForDevice, UNIFIED_SONG_IMPORT_ACCEPT, } from './song-import'
 
 function file(name: string, type = ''): File {
@@ -16,6 +17,8 @@ describe('unified song import classification', () => {
     ['arrangement.mid', '', 'midi'],
     ['arrangement.MIDI', '', 'midi'],
     ['score.gp', '', 'guitar-pro'],
+    ['score.GP3', '', 'guitar-pro'],
+    ['score.gp4', '', 'guitar-pro'],
     ['score.GP5', '', 'guitar-pro'],
     ['score.gpx', '', 'guitar-pro'],
   ] as const)('classifies %s as %s', (name, type, kind) => {
@@ -27,6 +30,27 @@ describe('unified song import classification', () => {
     expect(classifyUnifiedSongImport(file('song.m4a'))).toBeNull()
     expect(isMidiSongFile('score.mp3')).toBe(false)
     expect(isGuitarProSongFile('score.gp7')).toBe(false)
+  })
+
+  it.each(['gp6', 'gp7', 'gp8', 'gtp', 'musicxml'])(
+    'does not advertise or accept .%s as a supported score extension',
+    (extension) => {
+      expect(classifyUnifiedSongImport(file(`score.${extension}`))).toBeNull()
+      expect(UNIFIED_SONG_IMPORT_ACCEPT.split(',')).not.toContain(
+        `.${extension}`,
+      )
+    },
+  )
+
+  it('keeps the picker and classifier in sync with the Guitar Pro importer', () => {
+    const extensions = GP_FILE_EXTENSIONS.split(',')
+    expect(extensions.sort()).toEqual(['.gp', '.gp3', '.gp4', '.gp5', '.gpx'])
+    for (const extension of extensions) {
+      expect(UNIFIED_SONG_IMPORT_ACCEPT.split(',')).toContain(extension)
+      expect(
+        classifyUnifiedSongImport(file(`score${extension.toUpperCase()}`)),
+      ).toBe('guitar-pro')
+    }
   })
 
   it('provides the complete lightweight picker contract', () => {
