@@ -21,6 +21,7 @@ import type { Object3D } from 'three'
 import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, BatchedMesh, CircleGeometry, Color, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SpotLight, Vector3, } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 import { loadGlass, loadShards } from '../assets'
+import type { Shake } from '../runtime/impact'
 import type { LoadMark } from '../runtime/perf'
 import { NO_MARK, timed } from '../runtime/perf'
 import type { ShardLaunch, Vec3 } from '../sim/shatter3d'
@@ -29,6 +30,7 @@ import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
 import type { Lens } from './fov'
 import { holdHorizontalFov } from './fov'
+import { shakeCamera } from './shake'
 
 /** The Cabinet's palette, from the brand tokens (§2 of the art plan). */
 const CUSTARD = 0xf2c84b // the one spotlight
@@ -43,9 +45,8 @@ const BOWL = { x: 0, y: 0.17, z: 0 }
 const LENS: Lens = { designFovDeg: 36, designAspect: 1.5, maxFovDeg: 62 }
 
 export interface StageView {
-  /** 0 = intact, 1 = fully broken. Drives the shard positions. */
-  shatterProgress: number
-  /** Seconds since the break began; the shard solver's clock. */
+  /** Seconds of shard flight to show: the break's clock, which the
+   * hitstop holds and the slow motion stretches (runtime/impact.ts). */
   shatterSeconds: number
   /** 0..1 charge, brightens the glass as the note takes hold. */
   resonance: number
@@ -53,6 +54,8 @@ export interface StageView {
    * now. The scene says so, so the HUD is not the only place that does. */
   ringing: boolean
   launches: readonly ShardLaunch[] | null
+  /** The break's turn of the lens this frame (runtime/impact.ts). */
+  shake: Shake
 }
 
 export interface Renderer3D {
@@ -90,6 +93,9 @@ export const createRenderer3D = (
   const camera = new PerspectiveCamera(LENS.designFovDeg, 1, 0.05, 20)
   camera.position.set(0.38, 0.28, 0.47)
   camera.lookAt(BOWL.x, 0.15, BOWL.z)
+  // Where the lens rests. The break's shake turns it from here each
+  // frame, never from wherever the last frame left it.
+  const rest = camera.quaternion.clone()
 
   // The void, as geometry rather than as a clear colour — a transmissive
   // material refracts what is behind it, and a clear colour is not.
@@ -355,7 +361,11 @@ export const createRenderer3D = (
 
       // Same reasoning as Hallway3D: an invisible object is never drawn
       // and so is never compiled, which puts a program link on the first
-      // frame of the shatter. Pay for it here instead.
+      // frame of the shatter. Pay for it here instead. Never culled as a
+      // whole, for Hallway3D's reason too: the batch's bounds go stale
+      // once the shards fly, and a batch that can be culled can be
+      // skipped by this very compile.
+      batch.frustumCulled = false
       batch.visible = true
       await timed(
         () => renderer.compileAsync(batch, camera, scene),
@@ -371,7 +381,11 @@ export const createRenderer3D = (
       clock += lastFrame === null ? 0 : Math.min((now - lastFrame) / 1000, 0.1)
       lastFrame = now
 
-      const breaking = view.launches !== null && view.shatterProgress > 0
+      // From the crack, not from the first frame the shards move: the
+      // hitstop holds the broken glass still (runtime/impact.ts), and a
+      // shard at rest sits where it was in the bowl -- so what is held is
+      // the break, where the intact bowl would have been the wrong thing.
+      const breaking = view.launches !== null
       if (intact !== null) intact.visible = !breaking
       if (shardBatch !== null) shardBatch.visible = breaking
       // The diffuser is only ever seen through the glass. With the glass
@@ -399,6 +413,8 @@ export const createRenderer3D = (
       const pulse = view.ringing ? 0.5 + 0.5 * Math.sin(clock * 9) : 0
       glassMaterial.emissiveIntensity = res * 0.22 + pulse * 0.3
 
+      camera.quaternion.copy(rest)
+      shakeCamera(camera, view.shake)
       renderer.render(scene, camera)
     },
 
