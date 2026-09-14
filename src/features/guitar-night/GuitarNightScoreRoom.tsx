@@ -13,6 +13,9 @@ import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/feature
 import { guitarTrackAudibleAfterMuteToggle } from '@/features/guitar/backing/guitar-track-mix'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
+import { drummerMeterReason } from '@/features/session-drummer/session-drummer-pattern'
+import { SessionDrummer } from '@/features/session-drummer/SessionDrummer'
+import { useSessionDrummer } from '@/features/session-drummer/useSessionDrummer'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
@@ -342,6 +345,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     audiblePercussionTrackIds: () => props.audibleBackingTrackIds?.() ?? [],
     defaultHearScore: () => props.defaultHearScore?.() ?? true,
     ampParameters: amp.parameters,
+  })
+  const drummer = useSessionDrummer({
+    activateGraph: async () =>
+      (await room.activateAudio()) ? room.getAudioGraph() : null,
+    clock: () => room.subscribeBeatClock ?? null,
+    tempo: room.tempoBpm,
+    running: () => ['playing', 'count-in', 'starting'].includes(room.status()),
+    startHost: () => togglePlayback(),
+    unavailableReason: () => drummerMeterReason(props.sheetTimeSignatures?.()),
+    blocked: () =>
+      props.suspended?.() === true || tunerOpen() || isCalibrating(),
   })
   const displayedReference = createMemo(
     () => room.displayReference() ?? props.reference(),
@@ -885,6 +899,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   }
 
   const stopRehearsal = (): void => {
+    drummer.stop()
     const replayWasPending = scoreReplayPending()
     const resumeWasPending = scoreResumePending()
     const resumeOrigin = scoreResumeOrigin
@@ -1371,6 +1386,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       show: () => openScore(false),
     },
     available: () =>
+      !drummer.open() &&
       props.importOpen?.() !== true &&
       props.suspended?.() !== true &&
       !toolTransitionPending() &&
@@ -1445,6 +1461,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       installSpacePlaybackToggle({
         toggle: togglePlayback,
         ownsSpace: () =>
+          !drummer.open() &&
           props.importOpen?.() !== true &&
           props.suspended?.() !== true &&
           !doctorOpen() &&
@@ -1517,6 +1534,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             {Math.round(room.durationBeats())} beats
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <SessionDrummer
+              controller={drummer}
+              disabled={
+                toolTransitionPending() || isCalibrating() || tunerOpen()
+              }
+            />
             <button
               ref={scoreTrigger}
               type="button"

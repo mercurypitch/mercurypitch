@@ -1,0 +1,337 @@
+/* Approved Walnut Studio skin: the artwork is a frame, never a rasterized control. */
+.skin {
+  --ivory: #f4e9d7;
+  --faceplate: #13100d;
+  --amber: #e0a45d;
+  --muted: #b6a992;
+  color: var(--ivory);
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+.scrim {
+  z-index: 10020;
+}
+.panel {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 2rem);
+  gap: 12px;
+  padding: 10px 14px;
+  border: solid transparent;
+  border-width: 34px 26px 36px;
+  border-image: url('/guitar-night/walnut-drummer.webp') 90 83 109 83 fill / 1
+    stretch;
+  background: #100e0b;
+}
+.panel > :first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.panel > :first-child strong {
+  display: block;
+  font:
+    22px Georgia,
+    serif;
+}
+.panel > :first-child p {
+  margin: 0 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.panel > :first-child button {
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+  flex: 0 0 auto;
+  border: 0;
+  color: #ddc9ac;
+  background: transparent;
+  cursor: pointer;
+}
+.panel button,
+.panel select,
+.panel input {
+  font: inherit;
+}
+.panel button:focus-visible,
+.panel select:focus-visible,
+.panel input:focus-visible,
+.wheel:focus-visible {
+  outline: 2px solid #f4c580;
+  outline-offset: 3px;
+}
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+}
+.quickStop {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+}
+.quickStop svg {
+  width: 16px;
+  height: 16px;
+}
+.trigger svg,
+.actions svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b5a483;
+}
+.lamp[data-playing='true'] {
+  background: #75c5b9;
+}
+.wheels {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr 0.85fr 1.1fr;
+  gap: 8px;
+}
+.wheelColumn {
+  min-width: 0;
+}
+.wheelLabel {
+  display: block;
+  margin-bottom: 7px;
+  color: #b6a992;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.wheel {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  border-radius: 6px;
+  background: #0c0b09;
+  box-shadow: inset 0 1px 7px #000;
+}
+.wheel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    #09080666,
+    transparent 38%,
+    transparent 62%,
+    #09080666
+  );
+}
+.wheelTrack {
+  position: relative;
+  transition: transform 160ms ease-out;
+}
+.wheelTrack button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  color: #d1c4af;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+}
+.wheelTrack button[aria-selected='true'] {
+  color: #ffe1af;
+  font-weight: 650;
+}
+.wheelSelection {
+  position: absolute;
+  inset: 44px 0;
+  height: 44px;
+  border-block: 1px solid #d0a26388;
+  background: #e0a45d12;
+  pointer-events: none;
+}
+.description,
+.clockNote,
+.error {
+  margin: 0;
+  color: #b6a992;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.description {
+  min-height: 2.8em;
+  color: #d9cbb5;
+}
+.phrase {
+  display: flex;
+  gap: 4px;
+}
+.phrase span {
+  flex: 1;
+  padding-block: 5px;
+  border-bottom: 2px solid #514437;
+  color: #9f927e;
+  font-size: 10px;
+  text-align: center;
+}
+.phrase [data-fill='true'] {
+  border-color: #d6a366;
+  color: #e2bd89;
+}
+.phrase [data-current='true'] {
+  background: #23403b;
+  color: #a4e7d8;
+  border-color: #7ec7b8;
+}
+.soundRow {
+  display: grid;
+  grid-template-columns: 0.85fr 1.1fr 1.2fr;
+  gap: 10px;
+}
+.soundRow label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #b6a992;
+  font-size: 11px;
+}
+.soundRow select,
+.tempo {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #695139;
+  border-radius: 5px;
+  color: #f4e9d7;
+  background: #1b1712;
+}
+.soundRow select {
+  padding: 4px;
+  font-size: 12px;
+}
+.tempo {
+  display: flex;
+  align-items: center;
+  padding-inline: 5px;
+}
+.tempo input {
+  min-width: 0;
+  width: 100%;
+  height: 42px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+.tempo small {
+  padding-right: 4px;
+  font-size: 9px;
+  color: #b6a992;
+}
+.level {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #d9cbb5;
+  font-size: 12px;
+}
+.level input {
+  flex: 1;
+  min-width: 44px;
+  height: 44px;
+  accent-color: #e0b475;
+}
+.level output {
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #a48357;
+  border-radius: 6px;
+  color: #f4dfbf;
+  background: #282118;
+  cursor: pointer;
+}
+.actions .primary {
+  margin-left: auto;
+  color: #261b0d;
+  background: #edbf7f;
+  border-color: #edbf7f;
+}
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.state {
+  min-height: 1.3em;
+  color: #b6a992;
+  font-size: 11px;
+}
+.error {
+  color: #ffb8a6;
+}
+@media (max-width: 600px) {
+  .scrim {
+    padding: 8px;
+  }
+  .panel {
+    padding: 4px 8px;
+    border-width: 24px 16px 28px;
+    max-height: calc(100dvh - 16px);
+    gap: 10px;
+  }
+  .wheels {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .soundRow {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+  .soundRow label:last-child {
+    grid-column: 1 / -1;
+  }
+  .description {
+    min-height: 0;
+  }
+  .actions button {
+    flex: 1;
+    padding-inline: 8px;
+  }
+  .actions .primary {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wheelTrack {
+    transition: none;
+  }
+}
