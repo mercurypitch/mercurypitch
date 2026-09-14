@@ -42,6 +42,21 @@ describe('resolveReviewUnlockDigest', () => {
       }),
     ).toBeUndefined()
   })
+
+  it('never gives an iOS build a digest, even when one was set', () => {
+    expect(
+      resolveReviewUnlockDigest({
+        VITE_REVIEW_UNLOCK_SHA256: DIGEST,
+        VITE_BESIDE_CUE_NATIVE_PLATFORM: 'ios',
+      }),
+    ).toBeUndefined()
+    expect(
+      resolveReviewUnlockDigest({
+        VITE_REVIEW_UNLOCK_SHA256: DIGEST,
+        VITE_BESIDE_CUE_NATIVE_PLATFORM: 'android',
+      }),
+    ).toBe(DIGEST)
+  })
 })
 
 describe('sha256Hex', () => {

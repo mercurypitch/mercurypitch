@@ -2,9 +2,7 @@
 // Beside Cue entry point — mounts the single product onboarding configuration
 // ============================================================
 
-import { configureInputDevice } from '@irchiinnuss/audio-io'
 import { render } from 'solid-js/web'
-import '@/games/glass/pitch-assets'
 import '@fontsource-variable/gabarito'
 import '@fontsource/coiny/latin-400.css'
 import '@fontsource/saira-condensed/latin-600.css'
@@ -16,10 +14,6 @@ import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import { createDefaultAppServices } from './app-services'
 import { isDevSeedEnabled } from './dev/dev-seed-flag'
 import { isOnboardingReviewEnabled } from './onboarding-review'
-
-// The remembered microphone is this product's, not the package's
-// default: two apps served from one origin must not share the entry.
-configureInputDevice({ storageKey: 'beside-cue:input-device' })
 
 const root = document.querySelector<HTMLDivElement>('#root')
 

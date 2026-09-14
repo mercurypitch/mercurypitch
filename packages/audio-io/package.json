@@ -15,6 +15,11 @@
       "types": "./src/solid/index.ts",
       "import": "./src/solid/index.ts",
       "default": "./src/solid/index.ts"
+    },
+    "./shared-audio-context": {
+      "types": "./src/shared-audio-context.ts",
+      "import": "./src/shared-audio-context.ts",
+      "default": "./src/shared-audio-context.ts"
     }
   },
   "scripts": {

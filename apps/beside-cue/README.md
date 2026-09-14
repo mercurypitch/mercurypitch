@@ -10,7 +10,7 @@ Standalone SolidJS application and Android/iOS Capacitor shells for Beside Cue.
   that schedule cues can separately opt into `/capacitor/local-notifications`.
 - `@irchiinnuss/beside-cue-app`: Beside Cue content, persistence composition, UI, assets, and native project.
 
-MercuryPitch remains at the repository root during the incremental monorepo transition. Break Glass ships inside this app as the B-side games (see [docs/games/mini-games.md](docs/games/mini-games.md)), built on `@irchiinnuss/pitch-engine`; every shipped app still keeps its own Capacitor config, Android/iOS project, application ID, signing, assets, permissions, and store lifecycle.
+MercuryPitch remains at the repository root during the incremental monorepo transition. Break Glass lives inside this app as the B-side games (see [docs/games/mini-games.md](docs/games/mini-games.md)), built on `@irchiinnuss/pitch-engine` and left out of v1 builds unless `VITE_BESIDE_CUE_GAMES=1`; every shipped app still keeps its own Capacitor config, Android/iOS project, application ID, signing, assets, permissions, and store lifecycle.
 
 The app stores one portable daily target time. Web previews deliver it only
 while the tab is open; Android delegates the same recurring wall-clock intent

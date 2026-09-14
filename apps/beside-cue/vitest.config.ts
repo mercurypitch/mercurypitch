@@ -7,9 +7,20 @@ process.env.NODE_ENV = 'test'
 export default defineConfig({
   plugins: [solid({ hot: false })],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    alias: [
+      // Tests run as the v1 store build does, without the B-side games
+      // (src/games/entry.ts).
+      {
+        find: /^@\/games\/entry$/u,
+        replacement: fileURLToPath(
+          new URL('./src/games/entry-off.ts', import.meta.url),
+        ),
+      },
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    ],
     dedupe: ['solid-js'],
   },
   // The app reads its own provenance from globals that vite.config.ts
@@ -23,7 +34,25 @@ export default defineConfig({
     __APP_CHANNEL__: JSON.stringify('dev'),
   },
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'app',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['./src/test/setup.ts'],
+        },
+      },
+      {
+        // Real Vite builds use esbuild, which needs Node's byte-array realm.
+        extends: true,
+        test: {
+          name: 'build',
+          environment: 'node',
+          include: ['scripts/**/*.test.ts'],
+        },
+      },
+    ],
   },
 })

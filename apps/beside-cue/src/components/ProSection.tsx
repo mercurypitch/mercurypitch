@@ -227,7 +227,7 @@ export function ProSection(props: ProSectionProps) {
               </a>
               <p class="settings-group__intro">
                 {copy.t(
-                  'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
+                  'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.',
                 )}
               </p>
               <p class="settings-group__intro">

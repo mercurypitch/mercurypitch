@@ -1,9 +1,10 @@
 import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTimeScheduleRule, } from '@irchiinnuss/beside-cue-core'
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, lazy, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { BuildStamp } from '@/components/BuildStamp'
 import type { RecordSide } from '@/components/HomeRecord'
+import { loadGamesScreen } from '@/games/entry'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
 import { localizeActionStarter } from './action-starters/localized-action-starter'
@@ -52,7 +53,6 @@ import { ChooseCueContextScreen } from './screens/ChooseCueContextScreen'
 import type { PullChoicePresentation, PullPreviewVoiceState, } from './screens/ChoosePullScreen'
 import { ChoosePullScreen } from './screens/ChoosePullScreen'
 import { CueMomentScreen } from './screens/CueMomentScreen'
-import { GamesScreen } from './screens/GamesScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { QuietScreen } from './screens/QuietScreen'
 import type { ReflectionDay } from './screens/ReflectionScreen'
@@ -60,6 +60,11 @@ import { ReflectionScreen } from './screens/ReflectionScreen'
 import type { SettingsFocus } from './screens/SettingsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { WelcomeScreen } from './screens/WelcomeScreen'
+
+// Undefined in a build without the B-side games (src/games/entry.ts), and
+// then neither their screen nor their Home entry exists.
+const GamesScreen =
+  loadGamesScreen === undefined ? undefined : lazy(loadGamesScreen)
 
 type AppScreen =
   | 'loading'
@@ -2003,6 +2008,9 @@ export function App(props: AppProps) {
         setScheduleMessage(undefined)
         setScheduleError(undefined)
         appServices.onboardingPreferences.clear()
+        // Review access is local data too. Left on, a device that has just
+        // forgotten everything would still open Deluxe.
+        reviewAccess.revoke()
         setScreen(
           firstRunScreen(
             nextState,
@@ -2383,13 +2391,15 @@ export function App(props: AppProps) {
           onOpenReminder={openReminderSettings}
           onReplace={() => beginReplace('home')}
           onStartPlan={() => beginSetup('create')}
-          onOpenGames={() => setScreen('games')}
+          {...(GamesScreen === undefined
+            ? {}
+            : { onOpenGames: () => setScreen('games') })}
           muted={v2Muted()}
           onMuteToggle={toggleCharacterVoice}
         />
       ) : null}
 
-      {screen() === 'games' ? (
+      {screen() === 'games' && GamesScreen !== undefined ? (
         <GamesScreen onBack={() => setScreen('home')} />
       ) : null}
 

@@ -365,10 +365,15 @@ jobs:
       - name: Test Beside Cue browser paths
         run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts
 
-      - name: Build Beside Cue
+      - name: Build Beside Cue store app
         # beside-cue:check already typechecks every package, including the app.
-        # Invoke Vite directly so the single app build does not repeat tsc.
+        # Direct Vite builds exercise asset staging without package hooks.
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+
+      - name: Build Beside Cue with games
+        env:
+          VITE_BESIDE_CUE_GAMES: '1'
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build --outDir build/games-enabled
 
       # The Android and iOS native builds live in beside-cue-mobile.yml, which
       # runs the same Gradle gate and additionally publishes an installable APK

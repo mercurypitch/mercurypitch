@@ -22,6 +22,8 @@ const e2ePort =
   configuredPort === undefined || configuredPort === ''
     ? checkoutPort()
     : Number(configuredPort)
+// A separate process and port prevent reuse of the other build mode.
+const storePort = e2ePort + 1000
 
 export default defineConfig({
   testDir: './e2e',
@@ -40,18 +42,44 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/games-off.e2e.ts',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-store',
+      testMatch: '**/games-off.e2e.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://127.0.0.1:${storePort}`,
+      },
     },
     // Opt in locally to the Safari-engine gate; routine CI installs Chromium.
     ...(process.env.BESIDE_CUE_WEBKIT === '1'
-      ? [{ name: 'webkit', use: { ...devices['Desktop Safari'] } }]
+      ? [
+          {
+            name: 'webkit',
+            testIgnore: '**/games-off.e2e.ts',
+            use: { ...devices['Desktop Safari'] },
+          },
+        ]
       : []),
   ],
-  webServer: {
-    command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${e2ePort} --strictPort`,
-    cwd: APP_ROOT,
-    url: `http://127.0.0.1:${e2ePort}`,
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${e2ePort} --strictPort`,
+      cwd: APP_ROOT,
+      env: { VITE_BESIDE_CUE_GAMES: '1' },
+      url: `http://127.0.0.1:${e2ePort}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${storePort} --strictPort`,
+      cwd: APP_ROOT,
+      env: { VITE_BESIDE_CUE_GAMES: '0' },
+      url: `http://127.0.0.1:${storePort}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 })
