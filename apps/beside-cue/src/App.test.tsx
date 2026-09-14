@@ -1348,7 +1348,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
     expect(harness).toHaveAttribute(
       'data-media-revision',
-      'corky-v2.5-pull-expansion-v2-edge-safe',
+      'corky-v2.6-j2-greeting',
     )
     expect(harness).toHaveAttribute(
       'data-scroll-present',

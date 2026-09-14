@@ -27,7 +27,7 @@ import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, 
 import type { V2OnboardingCueContextChoice, V2OnboardingPersistenceEffect, V2OnboardingPhase, V2OnboardingPlanDraft, V2OnboardingPullChoice, V2OnboardingRuntimeEvent, V2OnboardingRuntimeState, V2OnboardingSessionKind, V2OnboardingSideBChoice, } from './v2-onboarding-runtime'
 import { createV2OnboardingRuntimeState, reduceV2OnboardingRuntime, V2_ONBOARDING_PHASE_METADATA, V2_ONBOARDING_PHASES, } from './v2-onboarding-runtime'
 import styles from './V2OnboardingDirector.module.css'
-import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
+import type { V2OnboardingMediaCorrelation, V2OnboardingMediaCue, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
 import { V2OnboardingMediaStage } from './V2OnboardingMediaStage'
 import { V2OnboardingPlatterPreview } from './V2OnboardingPlatterPreview'
 
@@ -317,6 +317,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         readonly targetId: string
         readonly markReady: () => void
         readonly endedTokens: Set<string>
+        readonly startDialogue?: () => V2OnboardingMediaCue | undefined
         settledVideoToken?: string
       }
     | undefined
@@ -768,6 +769,22 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     }
   }
 
+  // Retired DOM callbacks must not cue a later replay of the same scene.
+  const videoDialogueCue = createMemo(() => {
+    const generation = phaseGeneration()
+    return (
+      event: V2OnboardingMediaCorrelation,
+    ): V2OnboardingMediaCue | undefined =>
+      untrack(() => {
+        if (state().generation !== generation || !props.foreground)
+          return undefined
+        const gate = activeMediaGate
+        return gate?.targetId === event.targetId
+          ? gate.startDialogue?.()
+          : undefined
+      })
+  })
+
   function settleMediaPresentation(event: V2OnboardingMediaSettledEvent): void {
     const activeRecordSpin =
       event.targetId === 'record:spin' &&
@@ -806,6 +823,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       if (gate.endedTokens.has(event.token)) gate.markReady()
       return
     }
+    // A recovered still has no media clock; keep its caption and voice usable.
+    gate.startDialogue?.()
     gate.markReady()
   }
 
@@ -843,9 +862,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         return
       }
 
-      const dialogueCue = audioDirector.enterBeat(beat)
       const presentation = snapshot.presentation
-      if (presentation === undefined) return
+      if (presentation === undefined) {
+        audioDirector.enterBeat(beat)
+        return
+      }
 
       // Resolve from the exact reducer snapshot that created this generation.
       // Reading the independently scheduled memo here can briefly return the
@@ -857,6 +878,11 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         requestedMedia?.targetKind === 'automatic' &&
         requestedMedia.primary.kind === 'video'
 
+      const defersDialogue =
+        waitsForMedia &&
+        requestedMedia?.primary.kind === 'video' &&
+        requestedMedia.primary.dialogueStartSeconds !== undefined
+
       const normalDuration = AUTOMATIC_DURATION_MS[snapshot.phase] ?? 650
       const duration =
         snapshot.motionMode === 'reduced'
@@ -865,7 +891,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       let cancelled = false
       let completed = false
       let dwellReady = false
-      let dialogueReady = dialogueCue === undefined
+      let dialogueReady = beat.dialogueAssetId === undefined
+      let dialogueAttempted = false
       let mediaReady = !waitsForMedia
       let safetyClock: PausableDelay | undefined
       let mediaSafetyClock: PausableDelay | undefined
@@ -927,20 +954,47 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       presentationDwellClock = dwellClock
       completeVisiblePresentation = completeWhenReady
 
-      if (dialogueCue !== undefined) {
+      const startDialogue = (): V2OnboardingMediaCue | undefined => {
+        if (cancelled || dialogueAttempted) return undefined
+        dialogueAttempted = true
+        const cue = audioDirector.enterBeat(beat)
+        if (cue === undefined) {
+          markDialogueReady()
+          return undefined
+        }
         safetyClock = createPausableDelay(
           dialogueSafetyTimeoutMs(snapshot),
-          markDialogueReady,
-          initiallyRunning,
+          () => {
+            cue.stop()
+            markDialogueReady()
+          },
+          untrack(() => props.foreground),
         )
         presentationSafetyClock = safetyClock
-        void dialogueCue.finished.then(markDialogueReady, markDialogueReady)
+        void cue.finished.then(markDialogueReady, markDialogueReady)
+        return {
+          ready: cue.started.catch(() => undefined),
+          cancel: () => {
+            cue.stop()
+          },
+        }
+      }
+
+      if (defersDialogue) {
+        // Retire the previous scene now; the new voice belongs to the video's
+        // authored cue, not this phase's entry or a wall-clock timeout.
+        audioDirector.enterBeat({ ...beat, dialogueAssetId: undefined })
+      } else {
+        startDialogue()
       }
 
       if (waitsForMedia && requestedMedia !== undefined) {
         mediaSafetyClock = createPausableDelay(
           MEDIA_SAFETY_TIMEOUT_MS,
-          markMediaReady,
+          () => {
+            if (defersDialogue) startDialogue()
+            markMediaReady()
+          },
           initiallyRunning,
         )
         presentationMediaSafetyClock = mediaSafetyClock
@@ -948,6 +1002,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           targetId: requestedMedia.targetId,
           markReady: markMediaReady,
           endedTokens: new Set<string>(),
+          ...(defersDialogue ? { startDialogue } : {}),
         }
       }
 
@@ -1323,6 +1378,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                       class={`${styles.mediaStage} ${styles.recordMediaStage}`}
                       onPresentationSettled={settleMediaPresentation}
                       onVideoEnded={finishMediaVideo}
+                      onVideoDialogueCue={videoDialogueCue()}
                     />
                   </div>
                 </Show>
@@ -1340,6 +1396,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
                 class={styles.mediaStage}
                 onPresentationSettled={settleMediaPresentation}
                 onVideoEnded={finishMediaVideo}
+                onVideoDialogueCue={videoDialogueCue()}
               />
             </Match>
 

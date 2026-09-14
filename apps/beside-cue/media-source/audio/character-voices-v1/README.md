@@ -16,10 +16,10 @@ still require Pro. Locked previews do not gain autoplay or selection privileges.
 | Thimble, Tab, Bookmark, Match, Kettle, Ticker, Tape | Premium 01 C, individually selected | Three each             |
 | The Pillow                                          | Original female premium 01 C        | Meet, Present, Recede  |
 
-Corky's greeting and the six Pull lines are edited from the approved audition
-takes. His remaining 24 lines were generated separately with the saved selected
-voice, using ElevenLabs `eleven_v3` and the app's unchanged canonical captions.
-The remaining 36 Pull clips are also cut from the approved audition performances.
+Corky's greeting is edited from the approved J2 take; all his other 24 lines
+were generated separately with the same saved selected voice, using ElevenLabs `eleven_v3` and the app's unchanged canonical captions.
+The six original Pull clips and remaining 36 Pull clips are cut from their
+approved audition performances.
 The original designs used `eleven_ttv_v3`. No exploratory audition wording is
 substituted for product captions. Private account IDs and provider credentials
 are not included in the app.
@@ -27,9 +27,10 @@ are not included in the app.
 Pocket Turner and Loop reserve C are selected for future exploration only; neither
 is registered in this app. Male Pillow comparison takes remain unselected.
 
-`delivery-audit.json` preserves the first 31 deliveries; the additive
-`remaining-pulls-delivery-audit.json` records the other 36. Together they match
-runtime registration revision `besidecue-v1-selected-voices-03`. Both reports
+`delivery-audit.json` records the first 31 delivery slots, with Corky's 25
+entries updated for J2 and the earlier screening retained as history; the additive
+`remaining-pulls-delivery-audit.json` records the other 36. The audit's `corkyRecastScreening` section describes the current J2 screening.
+Together the inventories match runtime registration revision `besidecue-v1-selected-voices-03`. Both reports
 describe technical provenance, not legal clearance or exclusive voice ownership.
 
 ## Delivery contract
@@ -47,12 +48,15 @@ describe technical provenance, not legal clearance or exclusive voice ownership.
 - Every runtime file is bound to its exact caption hash, byte hash, byte count,
   duration, channel count and sample rate. The greeting keeps its existing stable
   asset ID and replaces the earlier recording rather than adding a duplicate.
-- Existing continuous score and Foley bytes are unchanged. No new playback
-  trigger is added: recorded lines use the existing dialogue lane and cancellation.
+- Existing continuous score and Foley bytes are unchanged. Recorded lines use
+  the existing dialogue lane and cancellation. The selected silent J2 greeting
+  movie cues its line at media time 0.85 seconds, with picture held briefly until
+  audio starts; all other dialogue keeps its existing trigger.
 
 Private source/selection ledgers and reproduction scripts live under
 `<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-v1-selected/`
-and `2026-09-05-v1-remaining-pulls/` beside it. The remaining-cast preparation uses
+and `2026-09-05-v1-remaining-pulls/` beside it. The current Corky delivery is
+`2026-09-14-corky-flow-j2-delivery/` in the same private archive. The remaining-cast preparation uses
 independent local recognition plus quiet-boundary checks, not provider alignment.
 
 ## Acceptance
@@ -64,9 +68,11 @@ transcription is a word-check aid, not a substitute for the owner's listening
 approval of character performance. Physical iOS playback and in-app mix review
 remain release acceptance requirements.
 
-The new 36 files pass complete decoding and independent final-clip caption-word
+The September 5 remaining-cast delivery of 36 files passed complete decoding and independent final-clip caption-word
 screening (30 plain matches, six disclosed spelling normalizations, no unexplained
 differences). All have zero clipped samples and encoded peaks at or below
 -2.66 dBTP. Fog's longest clip remains its approved unhurried 12.94-second Meet;
 his automatic Present and Recede clips are below ten seconds. The earlier 31
-files, continuous score and Foley bytes are unchanged.
+files were unchanged by that delivery. The September 14 J2 recast subsequently
+replaced 25 English Corky files; continuous score, Foley, remaining-cast and
+Spanish/German Corky bytes remain unchanged. The delivery audit records the current `__v1_02` filenames and provenance.

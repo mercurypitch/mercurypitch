@@ -9,14 +9,15 @@ import type { V2OnboardingMediaPack } from './v2-onboarding-media-pack'
 import { resolveV2OnboardingMediaRequest, resolveV2OnboardingPlateMediaRequest, resolveV2OnboardingRecordMediaRequest, resolveV2OnboardingSceneMediaRequest, V2_ONBOARDING_MEDIA_PACK, V2_ONBOARDING_PULL_MOTION_HOLDS, } from './v2-onboarding-media-pack'
 
 const BASE_ROOT = '/onboarding/corky-v2.4'
+const V2_6_ROOT = '/onboarding/corky-v2.6'
 const V2_5_ROOT = '/onboarding/corky-v2.5'
 const EXPANSION_ROOT = '/onboarding/pull-expansion-v1'
 
 describe('V2 onboarding media pack', () => {
-  it('publishes the V2.5 intro and record performances over one P02 authority', () => {
+  it('publishes the J2 greeting and V2.5 record performances over one P02 authority', () => {
     const pack = V2_ONBOARDING_MEDIA_PACK
 
-    expect(pack.revision).toBe('corky-v2.5-pull-expansion-v2-edge-safe')
+    expect(pack.revision).toBe('corky-v2.6-j2-greeting')
     expect(Object.keys(pack.pulls).sort()).toEqual(
       [...BUILT_IN_PULL_IDS].sort(),
     )
@@ -29,7 +30,8 @@ describe('V2 onboarding media pack', () => {
       'corky-reveal': {
         primary: {
           kind: 'video',
-          src: `${V2_5_ROOT}/picture/b01-corky-greeting-direct-to-p02-v0_1.mp4`,
+          src: `${V2_6_ROOT}/picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4`,
+          dialogueStartSeconds: 0.85,
         },
         reducedStill: {
           src: `${BASE_ROOT}/stills/p02-table-ready-v0_17.webp`,
@@ -80,10 +82,10 @@ describe('V2 onboarding media pack', () => {
   })
 
   it.each([
-    ['corky-reveal', 'b01-corky-greeting-direct-to-p02-v0_1.mp4'],
+    ['corky-reveal', 'b01-corky-greeting-j2-direct-to-p02-v0_1.mp4'],
     ['table-reveal', 'b02-table-reveal-v0_1.mp4'],
   ] as const)('resolves the %s scene as automatic media', (sceneId, suffix) => {
-    const root = sceneId === 'corky-reveal' ? V2_5_ROOT : BASE_ROOT
+    const root = sceneId === 'corky-reveal' ? V2_6_ROOT : BASE_ROOT
     expect(
       resolveV2OnboardingSceneMediaRequest(V2_ONBOARDING_MEDIA_PACK, {
         targetId: `intro:${sceneId}`,
