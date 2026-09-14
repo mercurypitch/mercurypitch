@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/prepare-beside-cue-j2-greeting.mjs",
+  "builderSha256": "db0aada7c6b7201c8860ea080bfa323a1d0ccafae694f807302f6b22809402dc",
+  "ffmpegVersion": "ffmpeg version n9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "authorization": "Owner-selected one-offset J2 preview, 2026-09-14; no new generated media.",
+  "selectedPreviewSha256": "978954ab912ad99a1a2be9725ac9aaf80c16783dab3e36209746bb9904109abe",
+  "source": {
+    "greeting": {
+      "file": "g01-flow-2026-09-14/raw/g01-flow-omni-take-20260914102516-keeper.mp4",
+      "sha256": "b46b92b03c1320c86c6816ff50360e54ba02addebce7d27a25bf6b1ec5ccc3cd"
+    },
+    "transition": {
+      "file": "onboarding-video-edit-v2_4/assets/diagnostics/transitions/b02-table-reveal-diagnostic-v0_1.mkv",
+      "sha256": "678e48b4ff277162e52ba0f766c8c565b1dc32e6670979af165fec8167ff0075"
+    },
+    "table": {
+      "file": "onboarding-video-edit-v2_4/assets/diagnostics/plates/p02-table-ready-candidate-v0_17.png",
+      "sha256": "800a76049ad152224ead6591eaf1d8acdff3a7db9c308f7ec8f92102ce5c57c3"
+    }
+  },
+  "timeline": {
+    "fps": 24,
+    "greetingFrames": 144,
+    "wipeInFrames": 8,
+    "opaqueFrames": 4,
+    "wipeOutFrames": 8,
+    "tableHandleFrames": 6,
+    "dialogueOnsetSeconds": 0.85,
+    "preRollFrames": 0
+  },
+  "dialogue": {
+    "src": "/audio/voice/en/corky/en__corky__onboarding-greeting__v1_02.m4a",
+    "sha256": "96246c3ee6c42efff200b7dd7bbe6e022af610a84e7963ff9b2c0e612f580759",
+    "durationMs": 2660
+  },
+  "delivery": "One silent H.264 High 3.1 stream, 720x1280 yuv420p BT.709, 24fps CFR, CRF16, GOP48, faststart; one encoding thread. All donor frames retained without retiming; exact P02 source before encoding.",
+  "outputRecords": [
+    {
+      "path": "picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4",
+      "sha256": "52be44210bb2dd0261f8d857e218a4a73c95e8f0eff857c9c0aebef06822985f",
+      "bytes": 1430041,
+      "frames": 170,
+      "durationSeconds": 7.083333333333333
+    }
+  ]
+}

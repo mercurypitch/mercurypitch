@@ -141,7 +141,7 @@ const AVOIDANCE_SETTLED: V2OnboardingStillResource = Object.freeze({
 
 /** Founder-approved V2.5 scene pack used by every product build. */
 export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
-  revision: 'corky-v2.5-pull-expansion-v2-edge-safe',
+  revision: 'corky-v2.6-j2-greeting',
   brand: Object.freeze({ kind: 'brand', alt: '' }),
   poster: TABLE_READY,
   plate: TABLE_READY,
@@ -149,7 +149,8 @@ export const V2_ONBOARDING_MEDIA_PACK: V2OnboardingMediaPack = Object.freeze({
     'corky-reveal': Object.freeze({
       primary: Object.freeze({
         kind: 'video',
-        src: `${V2_5_MEDIA_ROOT}/picture/b01-corky-greeting-direct-to-p02-v0_1.mp4`,
+        src: '/onboarding/corky-v2.6/picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4',
+        dialogueStartSeconds: 0.85,
         alt: '',
       }),
       reducedStill: TABLE_READY,

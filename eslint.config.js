@@ -73,6 +73,7 @@ export default defineConfig(
             'src/features/drum-night/audio/drum-kit-runtime-codec.mjs',
             'scripts/prepare-beside-cue-v2-4-media.mjs',
             'scripts/prepare-beside-cue-v2-5-media.mjs',
+            'scripts/prepare-beside-cue-j2-greeting.mjs',
           ],
         },
       },
@@ -323,6 +324,7 @@ export default defineConfig(
       'scripts/pr-prepare.test.mjs',
       'scripts/prepare-beside-cue-v2-4-media.mjs',
       'scripts/prepare-beside-cue-v2-5-media.mjs',
+      'scripts/prepare-beside-cue-j2-greeting.mjs',
     ],
     languageOptions: {
       globals: {
