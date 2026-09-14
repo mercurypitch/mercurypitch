@@ -466,7 +466,11 @@ export const createChamber3D = (
         () => renderer.init(),
         (ms) => mark('gpu', ms),
       )
-      if (disposed) return
+      if (disposed) {
+        // Three cannot free its backend until init has finished.
+        renderer.dispose()
+        return
+      }
 
       const [actor, shards] = await Promise.all([
         timed(
