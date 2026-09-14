@@ -58,7 +58,9 @@ test('a break drops the pixel ratio for its burst and taps the hand in order', a
   // This checks a timely sequence. Software GPU frames can take longer
   // than the production 100 ms haptic deadline, which correctly drops
   // stale taps; wall-clock stalls are covered by impact/haptics tests.
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
+  // Keep the target beyond this test's lifetime: a slow software frame
+  // must not make it a past timestamp between the sample and pause call.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
 
   // Every width the canvas is given from here on, once each.
   const css = await page.evaluate(() => {
