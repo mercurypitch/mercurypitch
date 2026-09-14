@@ -37,6 +37,7 @@ for (const room of ['guitar', 'drum', 'piano', 'karaoke']) {
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
+    { width: 320, height: 568 },
   ]) {
     test(`${room} Add music is usable at ${viewport.width}px and rejects a native invalid drop @smoke`, async ({
       page,
@@ -51,6 +52,16 @@ for (const room of ['guitar', 'drum', 'piano', 'karaoke']) {
         .getByTestId('night-add-music')
         .filter({ visible: true })
         .first()
+      await expect(button).toHaveAccessibleName('Add music')
+      const triggerBox = await button.boundingBox()
+      expect(triggerBox).not.toBeNull()
+      expect(triggerBox!.width).toBeGreaterThanOrEqual(44)
+      expect(triggerBox!.height).toBeGreaterThanOrEqual(44)
+      expect(triggerBox!.x).toBeGreaterThanOrEqual(0)
+      expect(triggerBox!.x + triggerBox!.width).toBeLessThanOrEqual(
+        viewport.width,
+      )
+      await page.screenshot({ path: testInfo.outputPath('session.png') })
       await button.click()
       const dialog = page.getByTestId('night-music-import')
       await expect(dialog).toBeVisible()

@@ -227,11 +227,34 @@ test('with no tab attached the note offers to get one @smoke', async ({
   const attach = note.getByRole('button', { name: 'Attach a tab', exact: true })
   await expect(attach).toBeVisible()
 
-  // It has to actually go somewhere — the lobby owns the file drop.
+  // Attach now stays in the room and uses the shared importer, not the lobby.
   await attach.click()
+  const importer = page.getByRole('dialog', { name: 'Add music', exact: true })
+  await expect(importer).toBeVisible()
+  const room = page.getByTestId('guitar-night-room')
+  await expect(room).toBeVisible()
+  await page.getByTestId('night-music-file').setInputFiles({
+    name: 'attached-melody.mid',
+    mimeType: 'audio/midi',
+    // One E4 quarter note, parsed by the real score importer.
+    buffer: Buffer.from([
+      0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 1, 0xe0, 0x4d, 0x54, 0x72,
+      0x6b, 0, 0, 0, 13, 0, 0x90, 64, 100, 0x83, 0x60, 0x80, 64, 32, 0, 0xff,
+      0x2f, 0,
+    ]),
+  })
+  await importer
+    .getByRole('button', { name: /Attach to the current song/ })
+    .click()
+  await expect(importer).not.toBeVisible()
+  await expect(room).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: 'Score to follow', exact: true }),
+    room.getByRole('heading', { name: /Goodbye to Spring/ }),
   ).toBeVisible()
+  await expect(
+    room.getByRole('button', { name: /^Align .+ by hand$/ }),
+  ).toBeVisible()
+  await expect(page.getByTestId('guitar-night-score-room')).not.toBeVisible()
 })
 
 test('dresses its own scrollbar instead of the platform one @smoke', async ({

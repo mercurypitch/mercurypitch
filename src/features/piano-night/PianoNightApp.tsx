@@ -908,16 +908,17 @@ export function PianoNightApp(): JSX.Element {
           classList={{ [styles.sessionHudCompact]: compactSheets() }}
           aria-label="Piano Night session status"
         >
-          <span class={styles.sessionDocument} aria-hidden="true">
-            <ScoreDocument />
-          </span>
+          <NightMusicImportButton
+            class={styles.sessionDocument}
+            iconOnly
+            onClick={musicImport.open}
+          />
           <div class={styles.sessionPiece}>
             <strong>{controller.stage().title}</strong>
             <span>
               {phrase().range} · {roomLabel()}
             </span>
           </div>
-          <NightMusicImportButton onClick={musicImport.open} />
           <div class={`${styles.sessionMetric} ${styles.timeMetric}`}>
             <strong>{sessionClock()}</strong>
             <span>{controller.transport.phase()}</span>

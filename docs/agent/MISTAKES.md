@@ -256,6 +256,16 @@ rules as nested selectors, so later rules no longer matched the portal.
 computed position/background, not just dialog presence or lack of overflow.
 **See:** `tools/css-legacy-fallbacks.ts`, `src/e2e/night-music-import.spec.ts`.
 
+### Test the host layout when adding a shared room action
+
+**Symptom:** the import dialog worked, but Piano's view choices escaped its HUD,
+Drum's song selector shrank to 10px, and Guitar controls went offscreen at 200% text.
+**Cause:** an extra grid child and a non-compact shared trigger broke the hosts'
+existing column and width budgets; dialog-only screenshots missed the regression.
+**Rule:** reuse a HUD slot or explicitly recompose its grid, keep mobile triggers
+at least 44px, and run the host's responsive specs as well as the new overlay's.
+**See:** `src/e2e/night-music-import.spec.ts` and the Night-room responsive specs.
+
 ### Do not destructure props
 
 **Symptom:** a prop updated in the parent, the child never re-rendered.

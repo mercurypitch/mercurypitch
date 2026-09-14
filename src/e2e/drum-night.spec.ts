@@ -2582,7 +2582,11 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       const undersized = [...document.querySelectorAll('button')]
         .filter((button) => button.closest('[data-voice-control-hud]') === null)
         .filter(visible)
-        .map((button) => button.getBoundingClientRect())
+        .map((button) => ({
+          label: button.getAttribute('aria-label') ?? button.textContent,
+          width: button.getBoundingClientRect().width,
+          height: button.getBoundingClientRect().height,
+        }))
         .filter((rect) => rect.width < 44 || rect.height < 44)
       return {
         horizontalOverflow:
@@ -2607,7 +2611,7 @@ test('recomposes for phone and short landscape without overflow or clipped prima
         consoleLeft: consoleRect?.left ?? Number.NEGATIVE_INFINITY,
         consoleRight: consoleRect?.right ?? Number.POSITIVE_INFINITY,
         roomWidth: roomRect?.width ?? 0,
-        undersized: undersized.length,
+        undersized,
       }
     })
 
@@ -2619,7 +2623,7 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     expect(geometry.playRight, JSON.stringify(viewport)).toBeLessThanOrEqual(
       viewport.width,
     )
-    expect(geometry.undersized, JSON.stringify(viewport)).toBe(0)
+    expect(geometry.undersized, JSON.stringify(viewport)).toEqual([])
     if (
       (viewport.width === 844 && viewport.height === 390) ||
       (viewport.width === 1440 && viewport.height === 900)

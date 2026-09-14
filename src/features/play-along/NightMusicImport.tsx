@@ -104,124 +104,128 @@ export function NightMusicImport(props: {
                   <X />
                 </button>
               </div>
-              <p id={descriptionId} class={styles.intro}>
-                Stay in the room. Choose a file and how you want to play it.
-              </p>
-              <Show when={props.controller.currentTitle()}>
-                {(title) => (
-                  <p class={styles.current}>
-                    On stage <strong>{title()}</strong>
-                    <span>
-                      Replacement changes this session, not your saved music.
-                    </span>
-                  </p>
-                )}
-              </Show>
-              <button
-                class={styles.file}
-                type="button"
-                disabled={props.controller.running()}
-                onClick={choose}
-              >
-                <FileUpload />
-                <span>
-                  <strong>
-                    {props.controller.file()?.name ?? 'Choose a file'}
-                  </strong>
-                  <small>
-                    {props.controller.file()
-                      ? `${formatFileSize(props.controller.file()!.size)} · Choose a different file`
-                      : NIGHT_MUSIC_FORMATS[props.controller.room]}
-                  </small>
-                </span>
-              </button>
-              <Show when={props.controller.blockedReason()}>
-                {(reason) => (
-                  <p class={styles.notice} role="status">
-                    {reason()} Your selected file will stay here while you
-                    return to the session.
-                  </p>
-                )}
-              </Show>
-              <Show when={props.controller.error()}>
-                {(message) => (
-                  <p class={styles.error} role="alert">
-                    {message()}
-                  </p>
-                )}
-              </Show>
-              <Show when={props.controller.recovery()}>
-                {(recovery) => (
-                  <button
-                    type="button"
-                    onClick={() => props.controller.recover()}
-                  >
-                    {recovery().label}
-                  </button>
-                )}
-              </Show>
-              <For each={props.controller.warnings()}>
-                {(message) => (
-                  <p class={styles.notice} role="status">
-                    {message}
-                  </p>
-                )}
-              </For>
-              <Show
-                when={props.controller.running()}
-                fallback={
-                  <div class={styles.actions}>
-                    <For each={props.controller.actions()}>
-                      {(action) => (
-                        <button
-                          type="button"
-                          disabled={Boolean(
-                            action.unavailable !== undefined ||
-                            props.controller.blockedReason() !== null,
-                          )}
-                          onClick={() => void props.controller.run(action)}
-                        >
-                          <strong>{action.label}</strong>
-                          <span>{action.unavailable ?? action.detail}</span>
-                        </button>
-                      )}
-                    </For>
-                  </div>
-                }
-              >
-                <div class={styles.progress} role="status">
-                  <strong>{props.controller.status()}</strong>
-                  <Show
-                    when={props.controller.progress() !== undefined}
-                    fallback={
-                      <progress max="1" aria-label="Music preparation" />
-                    }
-                  >
-                    <progress
-                      max="1"
-                      value={props.controller.progress() ?? 0}
-                      aria-label="Music preparation"
-                    />
-                  </Show>
-                  <button
-                    type="button"
-                    onClick={() => props.controller.cancel()}
-                  >
-                    Cancel preparation
-                  </button>
-                  <small>
-                    Cancellation does not delete a source already saved to your
-                    library.
-                  </small>
-                </div>
-              </Show>
-              <Show
-                when={!props.controller.running() && props.controller.status()}
-              >
-                <p role="status" class={styles.notice}>
-                  {props.controller.status()}
+              <div class={styles.body}>
+                <p id={descriptionId} class={styles.intro}>
+                  Stay in the room. Choose a file and how you want to play it.
                 </p>
-              </Show>
+                <Show when={props.controller.currentTitle()}>
+                  {(title) => (
+                    <p class={styles.current}>
+                      On stage <strong>{title()}</strong>
+                      <span>
+                        Replacement changes this session, not your saved music.
+                      </span>
+                    </p>
+                  )}
+                </Show>
+                <button
+                  class={styles.file}
+                  type="button"
+                  disabled={props.controller.running()}
+                  onClick={choose}
+                >
+                  <FileUpload />
+                  <span>
+                    <strong>
+                      {props.controller.file()?.name ?? 'Choose a file'}
+                    </strong>
+                    <small>
+                      {props.controller.file()
+                        ? `${formatFileSize(props.controller.file()!.size)} · Choose a different file`
+                        : NIGHT_MUSIC_FORMATS[props.controller.room]}
+                    </small>
+                  </span>
+                </button>
+                <Show when={props.controller.blockedReason()}>
+                  {(reason) => (
+                    <p class={styles.notice} role="status">
+                      {reason()} Your selected file will stay here while you
+                      return to the session.
+                    </p>
+                  )}
+                </Show>
+                <Show when={props.controller.error()}>
+                  {(message) => (
+                    <p class={styles.error} role="alert">
+                      {message()}
+                    </p>
+                  )}
+                </Show>
+                <Show when={props.controller.recovery()}>
+                  {(recovery) => (
+                    <button
+                      type="button"
+                      onClick={() => props.controller.recover()}
+                    >
+                      {recovery().label}
+                    </button>
+                  )}
+                </Show>
+                <For each={props.controller.warnings()}>
+                  {(message) => (
+                    <p class={styles.notice} role="status">
+                      {message}
+                    </p>
+                  )}
+                </For>
+                <Show
+                  when={props.controller.running()}
+                  fallback={
+                    <div class={styles.actions}>
+                      <For each={props.controller.actions()}>
+                        {(action) => (
+                          <button
+                            type="button"
+                            disabled={Boolean(
+                              action.unavailable !== undefined ||
+                              props.controller.blockedReason() !== null,
+                            )}
+                            onClick={() => void props.controller.run(action)}
+                          >
+                            <strong>{action.label}</strong>
+                            <span>{action.unavailable ?? action.detail}</span>
+                          </button>
+                        )}
+                      </For>
+                    </div>
+                  }
+                >
+                  <div class={styles.progress} role="status">
+                    <strong>{props.controller.status()}</strong>
+                    <Show
+                      when={props.controller.progress() !== undefined}
+                      fallback={
+                        <progress max="1" aria-label="Music preparation" />
+                      }
+                    >
+                      <progress
+                        max="1"
+                        value={props.controller.progress() ?? 0}
+                        aria-label="Music preparation"
+                      />
+                    </Show>
+                    <button
+                      type="button"
+                      onClick={() => props.controller.cancel()}
+                    >
+                      Cancel preparation
+                    </button>
+                    <small>
+                      Cancellation does not delete a source already saved to
+                      your library.
+                    </small>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    !props.controller.running() && props.controller.status()
+                  }
+                >
+                  <p role="status" class={styles.notice}>
+                    {props.controller.status()}
+                  </p>
+                </Show>
+              </div>
               <div class={styles.footer}>
                 <span>Nothing starts playing automatically.</span>
                 <button type="button" onClick={() => props.controller.close()}>

@@ -37,15 +37,25 @@
   backdrop-filter: blur(8px);
 }
 .panel {
+  display: flex;
+  flex-direction: column;
   width: min(35rem, 100%);
   max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
+  overflow: hidden;
   padding: 1.5rem;
   background: #171512;
   border: 1px solid #65523b;
   border-radius: 1rem;
   box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
   color-scheme: dark;
+}
+.body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Keep focus rings inside the scrollport without narrowing the content. */
+  padding: 4px;
+  margin: -4px;
 }
 .panel button,
 .trigger {
@@ -75,6 +85,7 @@
 }
 .heading {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -189,6 +200,7 @@
 }
 .footer {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -202,10 +214,13 @@
 }
 .trigger {
   display: inline-flex;
+  box-sizing: border-box;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
   min-height: 44px;
+  min-width: 44px;
   padding: 0.4rem 0.75rem;
   border: 1px solid currentColor;
   border-radius: 0.5rem;
@@ -213,6 +228,21 @@
   background: transparent;
   font-size: 0.8rem;
   white-space: nowrap;
+}
+.trigger > svg {
+  flex: none;
+}
+.iconOnly .triggerLabel {
+  display: none;
+}
+@media (max-width: 720px) {
+  .trigger {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .triggerLabel {
+    display: none;
+  }
 }
 .veil {
   z-index: 18001;
