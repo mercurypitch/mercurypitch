@@ -2,13 +2,21 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightPreparationPort, GuitarNightPreparationResult, } from '@/features/guitar-night/preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from '@/features/guitar-night/reference-port'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, GuitarNightSongSummary, } from '@/features/guitar-night/song-port'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { setUvrProcessingMode } from '@/stores/uvr-store'
+
+// Host-flow fixtures have fake audio bytes. Admission stays real; only browser
+// metadata and hashing are stubbed, alongside each test's preparation port.
+vi.mock('@/lib/audio-duration', () => ({ audioDurationSecs: async () => 120 }))
+vi.mock('@/lib/file-hash', () => ({
+  computeFileHash: async (file: File) => file.name,
+}))
 
 function deferred<T>(): {
   promise: Promise<T>
@@ -30,6 +38,12 @@ function chooseAudio(file: File): void {
     value: [file],
   })
   fireEvent.change(input)
+}
+
+async function prepareQueuedAudio(): Promise<void> {
+  const prepare = await screen.findByRole('button', { name: /^Prepare vocals/ })
+  await waitFor(() => expect(prepare).toBeEnabled())
+  fireEvent.click(prepare)
 }
 
 function mixedBackingResult(
@@ -188,6 +202,10 @@ function fakeBackingTransport() {
 }
 
 describe('GuitarNightApp prepared songs', () => {
+  beforeEach(() => {
+    localStorage.removeItem('pitchperfect_night_audio_guitar')
+    setUvrProcessingMode('local')
+  })
   afterEach(() => {
     cleanup()
     vi.restoreAllMocks()
@@ -703,7 +721,8 @@ describe('GuitarNightApp prepared songs', () => {
     ).toBeEnabled()
   })
 
-  it('prepares chosen audio, reports progress, and auto-stages without playback', async () => {
+  it('queues audio until preparation is chosen, reports progress, and stages without playback', async () => {
+    const backingTransport = fakeBackingTransport()
     const preparation = deferred<GuitarNightPreparationResult>()
     const prepare = vi.fn<GuitarNightPreparationPort['prepare']>(
       (_file, options) => {
@@ -734,6 +753,7 @@ describe('GuitarNightApp prepared songs', () => {
       <GuitarNightApp
         loadSongPort={() => Promise.resolve(songPort)}
         loadPreparationPort={() => Promise.resolve({ prepare })}
+        createBackingTransport={() => backingTransport.transport}
       />
     ))
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
@@ -742,15 +762,18 @@ describe('GuitarNightApp prepared songs', () => {
       type: 'audio/wav',
     })
     chooseAudio(file)
+    expect(prepare).not.toHaveBeenCalled()
+    await prepareQueuedAudio()
 
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1))
     const progress = screen.getByRole('progressbar', {
-      name: 'Preparing practice-room.wav',
+      name: 'Music preparation',
     })
-    expect(
-      within(progress.parentElement as HTMLElement).getByRole('status'),
-    ).toHaveTextContent('Separating vocals and accompaniment · 42%')
-    expect(progress).toHaveAttribute('value', '42')
+    expect(progress.closest('[role="status"]')).toHaveTextContent(
+      'Separating vocals and backing on this device',
+    )
+    expect(progress).toHaveAttribute('max', '1')
+    expect(progress).toHaveAttribute('value', '0.42')
 
     prepared = true
     preparation.resolve({
@@ -764,14 +787,14 @@ describe('GuitarNightApp prepared songs', () => {
         expect.any(AbortSignal),
       ),
     )
+    expect(await screen.findByTestId('guitar-night-room')).toBeInTheDocument()
     expect(
-      await screen.findByText(
-        'Guitar is still inside this instrumental mix, so no guitar-mute control is shown.',
-      ),
-    ).toBeInTheDocument()
+      screen.getByRole('heading', { name: 'session-upload.wav' }),
+    ).toBeVisible()
     expect(songPort.initialize).toHaveBeenCalledTimes(2)
     expect(window.location.search).toBe('?session=session-upload')
     expect(play).not.toHaveBeenCalled()
+    expect(backingTransport.transport.play).not.toHaveBeenCalled()
   })
 
   it('routes MIDI through the score library without starting audio preparation', async () => {
@@ -840,6 +863,7 @@ describe('GuitarNightApp prepared songs', () => {
     ))
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
     chooseAudio(new File(['RIFFdata'], 'slow-room.wav', { type: 'audio/wav' }))
+    await prepareQueuedAudio()
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1))
 
     const picker = screen.getByTestId(
@@ -877,12 +901,15 @@ describe('GuitarNightApp prepared songs', () => {
     ))
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
     chooseAudio(new File(['RIFFdata'], 'cancel-me.wav', { type: 'audio/wav' }))
+    await prepareQueuedAudio()
 
     await waitFor(() => expect(preparationSignal).not.toBeNull())
     fireEvent.click(screen.getByRole('button', { name: 'Cancel preparation' }))
 
     expect((preparationSignal as AbortSignal | null)?.aborted).toBe(true)
-    expect(screen.getByText('Preparation cancelled')).toBeInTheDocument()
+    expect(
+      screen.getByText('Cancelled. Your current music has not been replaced.'),
+    ).toBeInTheDocument()
 
     preparation.resolve({ status: 'completed', sessionId: 'late-session' })
     await Promise.resolve()
@@ -921,6 +948,7 @@ describe('GuitarNightApp prepared songs', () => {
     chooseAudio(
       new File(['RIFFdata'], 'opening-room.wav', { type: 'audio/wav' }),
     )
+    await prepareQueuedAudio()
 
     await waitFor(() => expect(openingSignal).not.toBeNull())
     fireEvent.click(screen.getByRole('button', { name: 'Cancel preparation' }))
@@ -928,11 +956,14 @@ describe('GuitarNightApp prepared songs', () => {
 
     opening.resolve(mixedBackingResult('session-opening', release))
     await waitFor(() => expect(release).toHaveBeenCalledTimes(1))
-    expect(screen.getByText('Preparation cancelled')).toBeInTheDocument()
+    expect(
+      screen.getByText('Cancelled. Your current music has not been replaced.'),
+    ).toBeInTheDocument()
     expect(window.location.search).toBe('')
   })
 
   it('retries a recoverable failure with the same file', async () => {
+    const backingTransport = fakeBackingTransport()
     const prepare = vi
       .fn<GuitarNightPreparationPort['prepare']>()
       .mockResolvedValueOnce({
@@ -953,6 +984,7 @@ describe('GuitarNightApp prepared songs', () => {
       <GuitarNightApp
         loadSongPort={() => Promise.resolve(songPort)}
         loadPreparationPort={() => Promise.resolve({ prepare })}
+        createBackingTransport={() => backingTransport.transport}
       />
     ))
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
@@ -960,11 +992,12 @@ describe('GuitarNightApp prepared songs', () => {
       type: 'audio/wav',
     })
     chooseAudio(file)
+    await prepareQueuedAudio()
 
     expect(
       await screen.findByText('The decoder could not read this song.'),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await prepareQueuedAudio()
 
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(2))
     await waitFor(() =>
