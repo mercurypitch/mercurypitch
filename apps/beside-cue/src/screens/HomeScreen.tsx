@@ -5,8 +5,9 @@
 // One stage under the header (HomeScene), then the plan as stationary,
 // selectable HTML: YOUR SIDE B, the Side B itself, INSTEAD OF the Pull and
 // YOUR CUE when the plan has one. Cue me now in flow, two open rows (the
-// daily reminder, Change this plan), the B-side games entry, Pause this plan
-// and the nav. Nothing on this screen counts anything; Reflection owns that.
+// daily reminder, Change this plan), the B-side games entry in a build that
+// carries the games, Pause this plan and the nav. Nothing on this screen
+// counts anything; Reflection owns that.
 //
 // The record turns only for an intentional action. Cue me now starts the
 // spin and hands off after one short authored beat, so the deck is seen to
@@ -55,7 +56,8 @@ interface HomeScreenProps {
   /** The prefilled replace flow. */
   onReplace: () => void
   onStartPlan: () => void
-  onOpenGames: () => void
+  /** Absent in a build without the B-side games; so is their entry. */
+  onOpenGames?: () => void
   muted: boolean
   onMuteToggle: () => void
 }
@@ -315,22 +317,31 @@ export function HomeScreen(props: HomeScreenProps) {
                   </button>
                 </div>
 
-                <button
-                  class="games-entry"
-                  type="button"
-                  onClick={() => props.onOpenGames()}
-                >
-                  <img src="games/merc.webp" alt="" width="34" height="34" />
-                  <span>
-                    <strong>{copy.t('B-side games')}</strong>
-                    <small>
-                      {copy.t('Sing a few quiet minutes with Merc')}
-                    </small>
-                  </span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m9 5 7 7-7 7" />
-                  </svg>
-                </button>
+                <Show when={props.onOpenGames}>
+                  {(openGames) => (
+                    <button
+                      class="games-entry"
+                      type="button"
+                      onClick={() => openGames()()}
+                    >
+                      <img
+                        src="games/merc.webp"
+                        alt=""
+                        width="34"
+                        height="34"
+                      />
+                      <span>
+                        <strong>{copy.t('B-side games')}</strong>
+                        <small>
+                          {copy.t('Sing a few quiet minutes with Merc')}
+                        </small>
+                      </span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m9 5 7 7-7 7" />
+                      </svg>
+                    </button>
+                  )}
+                </Show>
 
                 <div class={`home-screen__quiet-controls ${styles.quiet}`}>
                   <Show

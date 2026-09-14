@@ -45,6 +45,9 @@ const english = {
     'Help, feedback, and contact. Opens in your browser.',
   'How Beside Cue handles your data. Opens in your browser.':
     'How Beside Cue handles your data. Opens in your browser.',
+  'Terms of use': 'Terms of use',
+  'The terms for using Beside Cue. Opens in your browser.':
+    'The terms for using Beside Cue. Opens in your browser.',
   Active: 'Active',
   'Purchases need the Android or iOS app.':
     'Purchases need the Android or iOS app.',
@@ -328,8 +331,8 @@ const english = {
   'Check Deluxe access': 'Check Deluxe access',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
-  'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
-    'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
+  'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.':
+    'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.',
   'Deluxe access is confirmed.': 'Deluxe access is confirmed.',
   'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
     'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',
@@ -398,6 +401,9 @@ const spanish = {
     'Ayuda, comentarios y contacto. Se abre en tu navegador.',
   'How Beside Cue handles your data. Opens in your browser.':
     'Cómo trata Beside Cue tus datos. Se abre en tu navegador.',
+  'Terms of use': 'Términos de uso',
+  'The terms for using Beside Cue. Opens in your browser.':
+    'Las condiciones para usar Beside Cue. Se abre en tu navegador.',
   Active: 'Activo',
   'Purchases need the Android or iOS app.':
     'Las compras requieren la app para Android o iOS.',
@@ -685,8 +691,8 @@ const spanish = {
   'Check Deluxe access': 'Comprobar el acceso Deluxe',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'La tienda confirma los requisitos, la duración de la oferta y cualquier precio de renovación antes de que aceptes. Los códigos de Apple y Google son distintos.',
-  'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
-    'Los códigos de un solo uso se canjean en Google Play. Los códigos de suscripción personalizados se introducen en la hoja de compra. Vuelve después para comprobar el acceso.',
+  'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.':
+    'Los códigos promocionales de Deluxe se canjean en Google Play. Vuelve después para comprobar el acceso.',
   'Deluxe access is confirmed.': 'El acceso Deluxe está confirmado.',
   'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
     'No se confirmó ningún acceso Deluxe activo. Si acabas de canjear un código, espera un momento y vuelve a comprobarlo, o usa Restaurar compras.',
@@ -750,6 +756,9 @@ const german = {
     'Hilfe, Feedback und Kontakt. Wird im Browser geöffnet.',
   'How Beside Cue handles your data. Opens in your browser.':
     'Wie Beside Cue mit deinen Daten umgeht. Wird im Browser geöffnet.',
+  'Terms of use': 'Nutzungsbedingungen',
+  'The terms for using Beside Cue. Opens in your browser.':
+    'Die Bedingungen für die Nutzung von Beside Cue. Wird im Browser geöffnet.',
   Active: 'Aktiv',
   'Purchases need the Android or iOS app.':
     'Käufe benötigen die Android- oder iOS-App.',
@@ -1038,8 +1047,8 @@ const german = {
   'Check Deluxe access': 'Deluxe-Zugang prüfen',
   'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.':
     'Der Store bestätigt Berechtigung, Angebotsdauer und einen möglichen Verlängerungspreis, bevor du zustimmst. Apple- und Google-Codes sind getrennt.',
-  'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.':
-    'Einmalcodes können bei Google Play eingelöst werden. Individuelle Abocodes werden im Kaufdialog eingegeben. Kehre danach hierher zurück, um den Zugang zu prüfen.',
+  'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.':
+    'Aktionscodes für Deluxe werden bei Google Play eingelöst. Kehre danach hierher zurück, um den Zugang zu prüfen.',
   'Deluxe access is confirmed.': 'Der Deluxe-Zugang ist bestätigt.',
   'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.':
     'Es wurde kein aktiver Deluxe-Zugang bestätigt. Wenn du gerade einen Code eingelöst hast, warte kurz und prüfe erneut oder nutze Käufe wiederherstellen.',

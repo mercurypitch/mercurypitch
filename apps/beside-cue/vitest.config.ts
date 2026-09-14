@@ -7,9 +7,20 @@ process.env.NODE_ENV = 'test'
 export default defineConfig({
   plugins: [solid({ hot: false })],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    alias: [
+      // Tests run as the v1 store build does, without the B-side games
+      // (src/games/entry.ts).
+      {
+        find: /^@\/games\/entry$/u,
+        replacement: fileURLToPath(
+          new URL('./src/games/entry-off.ts', import.meta.url),
+        ),
+      },
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    ],
     dedupe: ['solid-js'],
   },
   // The app reads its own provenance from globals that vite.config.ts

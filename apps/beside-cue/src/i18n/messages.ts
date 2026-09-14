@@ -35,7 +35,7 @@ const semanticSources = {
   'purchases.offerTerms':
     'The store confirms eligibility, offer duration and any renewal price before you accept. Apple and Google codes are separate.',
   'purchases.googleHelp':
-    'One-time codes can be redeemed in Google Play. Custom subscription codes are entered in the purchase sheet. Return here afterward to check access.',
+    'Promo codes for Deluxe are redeemed in Google Play. Return here afterward to check access.',
   'purchases.accessConfirmed': 'Deluxe access is confirmed.',
   'purchases.accessNotConfirmed':
     'No active Deluxe access was confirmed. If you just redeemed a code, wait a moment and check again, or use Restore purchases.',

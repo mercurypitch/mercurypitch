@@ -36,6 +36,8 @@ function renderHome(
     cueStatePending: boolean
     recordSide: 'A' | 'B'
     recordSettle: boolean
+    /** False renders Home as a build without the B-side games does. */
+    games: boolean
   }> = {},
 ) {
   const actions = handlers()
@@ -44,8 +46,10 @@ function renderHome(
     cueStatePending: false,
     recordSide: 'A' as const,
     recordSettle: false,
+    games: true,
     ...overrides,
   }
+  const { onOpenGames, ...otherActions } = actions
   const result = render(() => (
     <HomeScreen
       {...(props.plan === undefined ? {} : { plan: props.plan })}
@@ -54,7 +58,8 @@ function renderHome(
       recordSettle={props.recordSettle}
       activeView="cue"
       muted={false}
-      {...actions}
+      {...otherActions}
+      {...(props.games ? { onOpenGames } : {})}
     />
   ))
   return { ...result, actions }
@@ -113,6 +118,16 @@ describe('Home screen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     expect(actions.onOpenSettings).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('Paused')).not.toBeInTheDocument()
+  })
+
+  it('leaves the B-side games entry out of a build without the games', () => {
+    renderHome({ games: false })
+    expect(
+      screen.getByRole('button', { name: /^Cue me now/u }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^B-side games/u }),
+    ).not.toBeInTheDocument()
   })
 
   it('offers to set a reminder when there is none', () => {

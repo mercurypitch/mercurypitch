@@ -14,6 +14,7 @@ import { probeDeviceSupport } from '@/platform/device-support'
 // browser build the same markup opens a new tab without a window.opener.
 const SUPPORT_URL = 'https://about.besidecue.com/support/'
 const PRIVACY_NOTICE_URL = 'https://about.besidecue.com/privacy/'
+const TERMS_URL = 'https://about.besidecue.com/terms/'
 
 /** A group Home can open this screen at; the heading takes focus. */
 export type SettingsFocus = 'daily-reminder'
@@ -304,6 +305,24 @@ export function SettingsScreen(props: SettingsScreenProps) {
               {copy.t(
                 'How Beside Cue handles your data. Opens in your browser.',
               )}
+            </small>
+          </span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 4h6v6M20 4l-9 9M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" />
+          </svg>
+        </a>
+        {/* The terms a Deluxe purchase is made under, reachable from inside
+            the app as the stores expect of an app that sells anything. */}
+        <a
+          class="settings-row"
+          href={TERMS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>
+            <strong>{copy.t('Terms of use')}</strong>
+            <small>
+              {copy.t('The terms for using Beside Cue. Opens in your browser.')}
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">

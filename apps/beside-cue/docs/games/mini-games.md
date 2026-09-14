@@ -4,6 +4,27 @@ Small sung mini-games inside Beside Cue. Free, unscored, and never part of
 the plan-and-cue contract: they are an optional B-side move someone can pick
 as their tiny replacement action.
 
+## Not in v1
+
+Beside Cue v1 goes to the stores without the games (maff, 2026-09-14): they
+cannot be polished enough for a first review. They come back in a later
+release, which is reviewed with them. Never as a remote switch on a shipped
+build: App Review guideline 2.3.1 forbids hidden features turned on later.
+
+- The build decides. `VITE_BESIDE_CUE_GAMES=1` builds the games in; unset,
+  `vite.config.ts` resolves `@/games/entry` (`src/games/entry.ts`, the one
+  way in) to a stub, so the Home entry is not rendered and no games module,
+  pitch engine or onnxruntime wasm reaches the bundle. Tests run with the
+  games off.
+- The microphone declarations left the native projects with them, and come
+  back together when the games do: `RECORD_AUDIO` _and_
+  `MODIFY_AUDIO_SETTINGS` plus the optional `android.hardware.microphone`
+  feature in `AndroidManifest.xml` (the comment there says why both), and
+  `NSMicrophoneUsageDescription` in `ios/App/App/Info.plist`. Flip
+  `src/games/glass/mic-permissions.test.ts` in the same change.
+- The store texts, the privacy notice and the App Store privacy answers then
+  describe on-device microphone use again.
+
 ## Why they live here
 
 Break Glass began as its own Capacitor app (`com.mercurypitch.glass`, branch
@@ -26,16 +47,19 @@ the original scaffold and docs.
   (platformer — keys/touch pads walk, the voice is the jump, apex = the
   sung note's height). See melody-levels.md for the mode contract.
 - `src/games/glass/pitch-assets.ts` points the engine at this app's bundled
-  runtime: `public/models/swiftf0.onnx` (committed, 389 KB) and `public/ort/`
+  runtime, and App.tsx's games loader imports it before the games screen:
+  `public/models/swiftf0.onnx` (committed, 389 KB) and `public/ort/`
   (the onnxruntime-web wasm pair, gitignored; `scripts/sync-ort-assets.mjs`
   copies it from node_modules on predev/prebuild so games work offline in the
   Capacitor webview).
 - `src/screens/GamesScreen.tsx` — the paper-world list; entering a game flips
   the record: the stage keeps its own dark world, the chrome (Coiny title,
   custard button, paper text) stays Beside Cue.
-- Entry: a discreet card on Home (`.games-entry`). The hardware permissions
-  are `RECORD_AUDIO` (Android) and `NSMicrophoneUsageDescription` (iOS); the
-  mic is acquired only while a game is open and released on leave.
+- Entry: a discreet card on Home (`.games-entry`), rendered only in a build
+  with the games. The hardware permissions are `RECORD_AUDIO` (Android) and
+  `NSMicrophoneUsageDescription` (iOS), both removed while the games are out
+  (see Not in v1); the mic is acquired only while a game is open and released
+  on leave.
 
 ## Art pipeline
 

@@ -3,9 +3,10 @@ import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { notificationId } from '@irchiinnuss/mobile-runtime'
 import { createCustomerSnapshot, createMobileRuntimeProbe, } from '@irchiinnuss/mobile-runtime/testing'
+import { serializeReviewGrant } from '@irchiinnuss/purchase-kit'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { createEffect, createSignal, untrack } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
@@ -18,6 +19,7 @@ import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARD
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { V2OnboardingMediaPack } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
+import { REVIEW_UNLOCK_STORAGE_KEY } from './purchases/review-access'
 
 interface DirectorHarnessProps {
   readonly bSideOptions: readonly {
@@ -1289,7 +1291,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     expect(repository.snapshot()?.cues).toHaveLength(1)
   })
 
-  it('carries music into home quietly, persists its mute and stops it before games', async () => {
+  it('carries music into home quietly, persists its mute and stops it when Home is left', async () => {
     const repository = createMemoryRepository()
     const output = createAudioOutputProbe()
     render(() => (
@@ -1324,7 +1326,7 @@ describe('Beside Cue V2 onboarding integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Unmute audio' }))
     await waitFor(() => expect(output.playbacks).toHaveLength(2))
     expect(output.playbacks[1]?.initialGain).toBe(0.16)
-    fireEvent.click(screen.getByRole('button', { name: /b-side games/iu }))
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     expect(output.playbacks[1]?.stopCalls).toBe(1)
   })
 
@@ -2540,6 +2542,73 @@ describe('Beside Cue app', () => {
     await waitFor(() =>
       expect(probe.calls.cancelled.length).toBeGreaterThan(cancellationCount),
     )
+  })
+
+  it('turns review access off with the rest of the local data', async () => {
+    const digest = 'a'.repeat(64)
+    const stored = new Map<string, string>([
+      [
+        REVIEW_UNLOCK_STORAGE_KEY,
+        serializeReviewGrant({
+          digest,
+          grantedAt: new Date('2026-09-12T10:00:00Z'),
+        }),
+      ],
+    ])
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => void stored.set(key, value),
+      removeItem: (key: string) => void stored.delete(key),
+    })
+    vi.stubEnv('VITE_REVIEW_UNLOCK_SHA256', digest)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+    })
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(
+      await screen.findByText(/^Review access is on\./u),
+    ).toBeInTheDocument()
+
+    const resetButton = screen.getByRole('button', {
+      name: /reset all local data/iu,
+    })
+    await waitFor(() => expect(resetButton).toBeEnabled())
+    fireEvent.click(resetButton)
+    fireEvent.click(screen.getByRole('button', { name: /confirm reset/iu }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /keep your better choice beside the moment/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(stored.has(REVIEW_UNLOCK_STORAGE_KEY)).toBe(false)
+  })
+
+  it('keeps the B-side games out of a build without them', async () => {
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(createMemoryRepository())}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    expect(
+      screen.getByRole('button', { name: /cue me now/iu }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^B-side games/u }),
+    ).not.toBeInTheDocument()
   })
 
   it('completes the manual cue loop and records a literal reflection', async () => {

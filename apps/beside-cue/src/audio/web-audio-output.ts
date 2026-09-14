@@ -6,8 +6,12 @@
 // so a cue and a game note are scheduled against the same clock. Each playback
 // gets separate envelope and live-mix gains so release tails cannot be
 // reopened by ducking.
+//
+// Imported by its own entry, not the package root: the root also carries the
+// input-device helpers, which pull in the pitch engine and its 25 MB wasm, and
+// a build without the B-side games must not ship them for a context.
 
-import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io/shared-audio-context'
 import type { AudioSourceVariant } from '../content/audio-manifest'
 import { fetchAssetBytes } from './asset-fetch'
 import type { AudioOutputFinishResult, AudioOutputPlayback, AudioOutputPlayRequest, AudioOutputStartResult, AudioSessionOutput, } from './audio-session'

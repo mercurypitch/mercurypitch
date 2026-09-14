@@ -4,9 +4,11 @@
 //
 // The clock rides the app's shared AudioContext (@irchiinnuss/audio-io)
 // rather than opening its own, so the cinematic and everything the player
-// reaches afterwards are scheduled against a single clock.
+// reaches afterwards are scheduled against a single clock. It comes from the
+// context's own entry, which keeps the pitch engine out of the bundle (see
+// src/audio/web-audio-output.ts).
 
-import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
+import { acquireSharedAudioContext } from '@irchiinnuss/audio-io/shared-audio-context'
 import { fetchAssetBytes } from '@/audio/asset-fetch'
 
 const ENVELOPE_FLOOR = 0.0001

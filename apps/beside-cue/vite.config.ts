@@ -98,12 +98,13 @@ const devCert = (): { key: Buffer; cert: Buffer } | undefined => {
 const DEV_PORT = 5199
 
 export default defineConfig(({ mode, command }) => {
+  const env = {
+    ...loadEnv(mode, fileURLToPath(new URL('.', import.meta.url))),
+    ...process.env,
+  }
   if (command === 'build') {
     assertPurchaseBuildSafe(
-      {
-        ...loadEnv(mode, fileURLToPath(new URL('.', import.meta.url))),
-        ...process.env,
-      },
+      env,
       (process.env.GITHUB_REF ?? '').startsWith('refs/tags/bc-v'),
     )
   }
@@ -116,9 +117,25 @@ export default defineConfig(({ mode, command }) => {
       solid(),
     ],
     resolve: {
-      alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url)),
-      },
+      alias: [
+        // The B-side games are in a build only with VITE_BESIDE_CUE_GAMES=1.
+        // Otherwise their one entry resolves to a stub, and no games module
+        // is loaded at all (src/games/entry.ts says why that matters).
+        ...(env.VITE_BESIDE_CUE_GAMES === '1'
+          ? []
+          : [
+              {
+                find: /^@\/games\/entry$/u,
+                replacement: fileURLToPath(
+                  new URL('./src/games/entry-off.ts', import.meta.url),
+                ),
+              },
+            ]),
+        {
+          find: '@',
+          replacement: fileURLToPath(new URL('./src', import.meta.url)),
+        },
+      ],
       dedupe: ['solid-js'],
     },
     define: {

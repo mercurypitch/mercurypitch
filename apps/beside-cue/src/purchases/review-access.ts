@@ -19,16 +19,24 @@ export const REVIEW_UNLOCK_STORAGE_KEY = 'beside-cue:review-unlock'
 
 export interface ReviewUnlockEnvironment {
   readonly VITE_REVIEW_UNLOCK_SHA256?: string
+  readonly VITE_BESIDE_CUE_NATIVE_PLATFORM?: string
 }
 
 /**
  * The digest the build was compiled with, or undefined when it carries none.
  * Anything that is not 64 hex characters is treated as absent rather than as a
  * configuration error, so a typo in CI cannot brick a release build.
+ *
+ * An iOS build never carries one (maff, 2026-09-14). App Review guideline
+ * 3.1.1 forbids an app's own mechanism for unlocking paid content, license
+ * keys included, and Apple's reviewers buy Deluxe in the sandbox anyway, so
+ * the code is for Google Play review only. CI stops handing the digest to iOS
+ * builds as well; this is the second lock, for a build made with it set.
  */
 export function resolveReviewUnlockDigest(
   env: ReviewUnlockEnvironment,
 ): string | undefined {
+  if (env.VITE_BESIDE_CUE_NATIVE_PLATFORM === 'ios') return undefined
   const value = env.VITE_REVIEW_UNLOCK_SHA256?.trim().toLowerCase()
   return isReviewUnlockDigest(value) ? value : undefined
 }

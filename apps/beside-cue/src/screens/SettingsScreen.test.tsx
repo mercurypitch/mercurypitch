@@ -10,6 +10,7 @@ function noop(): void {}
 
 const SUPPORT_URL = 'https://about.besidecue.com/support/'
 const PRIVACY_NOTICE_URL = 'https://about.besidecue.com/privacy/'
+const TERMS_URL = 'https://about.besidecue.com/terms/'
 
 const base = {
   paused: false,
@@ -27,14 +28,16 @@ const base = {
 }
 
 describe('settings screen', () => {
-  it('links Support and the Privacy notice to the public pages in a new tab', () => {
+  it('links Support, the Privacy notice and the Terms of use to the public pages in a new tab', () => {
     render(() => <SettingsScreen {...base} />)
 
     const support = screen.getByRole('link', { name: /^Support/ })
     const privacy = screen.getByRole('link', { name: /^Privacy notice/ })
+    const terms = screen.getByRole('link', { name: /^Terms of use/ })
     expect(support).toHaveAttribute('href', SUPPORT_URL)
     expect(privacy).toHaveAttribute('href', PRIVACY_NOTICE_URL)
-    for (const link of [support, privacy]) {
+    expect(terms).toHaveAttribute('href', TERMS_URL)
+    for (const link of [support, privacy, terms]) {
       // A new browsing context, and never a window.opener back into the app.
       expect(link).toHaveAttribute('target', '_blank')
       expect(link.getAttribute('rel')).toMatch(/\bnoopener\b/)
@@ -59,6 +62,9 @@ describe('settings screen', () => {
     expect(
       screen.getByRole('link', { name: /^Datenschutzhinweis/ }),
     ).toHaveAttribute('href', PRIVACY_NOTICE_URL)
+    expect(
+      screen.getByRole('link', { name: /^Nutzungsbedingungen/ }),
+    ).toHaveAttribute('href', TERMS_URL)
     expect(
       screen.getByRole('heading', { name: 'Hilfe und Datenschutz' }),
     ).toBeInTheDocument()
