@@ -6,6 +6,7 @@ import type { HumanizeInputEvent } from '@/features/drum-night/groove/groove-hum
 import type { DrumKitTrigger } from '@/features/drum-night/runtime/drum-runtime-types'
 import type { GuitarElectricAmpStage } from '@/lib/guitar/guitar-electric-amp'
 import { DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS } from '@/lib/guitar/guitar-electric-amp'
+import type { SessionBeatEvent } from '@/lib/session-beat-clock'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomBand, GuitarRoomBandBeatPhase, } from './guitar-room-band'
 import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, guitarRoomBandVelocityGain, resolveBandLoop, } from './guitar-room-band'
@@ -109,6 +110,44 @@ afterEach(() => {
 })
 
 describe('resolveBandLoop', () => {
+  it('publishes audio-clock beat windows only after count-in and closes them on Stop', async () => {
+    vi.useFakeTimers()
+    const band = createGuitarRoomBand({
+      contextFactory: () => fakeAudioContext(),
+      activateContext: async () => undefined,
+    })
+    const events: SessionBeatEvent[] = []
+    const unsubscribe = band.subscribeBeatClock!((event) => events.push(event))
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 2,
+      exerciseBeats: 12,
+      startBeat: 5,
+      durationBeats: 12,
+      loop: { start: 5, end: 7 },
+      feel: 'click',
+      exercisePulse: false,
+    })
+    expect(events.filter((event) => event.kind === 'beat')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(2200)
+    const beats = events.filter((event) => event.kind === 'beat')
+    expect(
+      beats.slice(0, 3).map((event) => [event.startBeat, event.iteration]),
+    ).toEqual([
+      [5, 0],
+      [6, 0],
+      [5, 1],
+    ])
+    expect(beats[1].timeAtBeat(6) - beats[0].timeAtBeat(5)).toBeCloseTo(0.5, 6)
+    expect(beats[2].timeAtBeat(5) - beats[0].timeAtBeat(5)).toBeCloseTo(1, 6)
+    band.stop()
+    expect(events.at(-1)).toEqual({ kind: 'stop' })
+    const count = events.length
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(events).toHaveLength(count)
+    unsubscribe()
+    await disposeBand(band)
+  })
   it('keeps a loop the exercise actually contains', () => {
     expect(resolveBandLoop({ start: 4, end: 8 }, 16)).toEqual({
       start: 4,

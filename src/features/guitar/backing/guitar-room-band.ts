@@ -20,6 +20,7 @@ import type { MidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
 import { scoreSynthVelocityGain } from '@/lib/score-synth-velocity'
+import type { SessionBeatEvent, SubscribeSessionBeat, } from '@/lib/session-beat-clock'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomDrumPlayerPort } from './guitar-room-drum-player'
 import { createLazyGuitarRoomDrumPlayer } from './guitar-room-drum-player'
@@ -267,6 +268,8 @@ export interface GuitarRoomDrumPlaybackSnapshot {
 }
 
 export interface GuitarRoomBand {
+  /** Accompaniment borrows exact scheduled windows; subscribing never starts playback. */
+  subscribeBeatClock?: SubscribeSessionBeat
   start(options: GuitarRoomBandStartOptions): Promise<GuitarRoomBandStartResult>
   /** Change one authored drum part's run-scoped gate without restarting time. */
   setPercussionTrackAudible(trackId: string, audible: boolean): void
@@ -578,6 +581,10 @@ export function createGuitarRoomBand(
   const callbackTimers = new Set<number>()
   const pendingReleases = new Set<Promise<void>>()
   let disposed = false
+  const beatListeners = new Set<(event: SessionBeatEvent) => void>()
+  const emitBeat = (event: SessionBeatEvent) => {
+    for (const listener of beatListeners) listener(event)
+  }
   let activeDrumKitId: GuitarNightDrumKitId | null = null
   let requestedDrumKitId: GuitarNightDrumKitId | null = null
 
@@ -787,6 +794,7 @@ export function createGuitarRoomBand(
   }
 
   const stop = (): void => {
+    emitBeat({ kind: 'stop' })
     void releaseRunOutput()
   }
 
@@ -822,6 +830,12 @@ export function createGuitarRoomBand(
   }
 
   return {
+    subscribeBeatClock(listener) {
+      beatListeners.add(listener)
+      return () => {
+        beatListeners.delete(listener)
+      }
+    },
     setPercussionTrackAudible(trackId, audible) {
       if (trackId.length === 0) return
       percussionTrackAudibility.set(trackId, audible)
@@ -1589,6 +1603,14 @@ export function createGuitarRoomBand(
           partialNotesScheduled = true
           soundBucket(startBeat, firstExerciseAt, startBeat)
           queuePercussionBucket(startBeat, firstExerciseAt, startBeat)
+          emitBeat({
+            kind: 'beat',
+            startBeat,
+            endBeat: Math.min(Math.ceil(startBeat), loop?.end ?? durationBeats),
+            iteration: 0,
+            timeAtBeat: (beat) =>
+              firstExerciseAt + beatToSeconds(beat) - beatToSeconds(startBeat),
+          })
         }
 
         while (
@@ -1651,6 +1673,14 @@ export function createGuitarRoomBand(
 
           soundBucket(exerciseIndex, at)
           queuePercussionBucket(exerciseIndex, at)
+          emitBeat({
+            kind: 'beat',
+            startBeat: exerciseIndex,
+            endBeat: Math.min(exerciseIndex + 1, loop?.end ?? durationBeats),
+            iteration: loopIteration,
+            timeAtBeat: (beat) =>
+              at + beatToSeconds(beat) - beatToSeconds(exerciseIndex),
+          })
           startOptions.onExerciseBeatScheduled?.({
             beatIndex: exerciseIndex,
             iteration: loopIteration,
@@ -1694,9 +1724,10 @@ export function createGuitarRoomBand(
           if (interval !== null) window.clearInterval(interval)
           interval = null
           if (completedAt !== null) {
-            scheduleUiCallback(completedAt, () =>
-              startOptions.onComplete?.(completedAt),
-            )
+            scheduleUiCallback(completedAt, () => {
+              emitBeat({ kind: 'stop' })
+              startOptions.onComplete?.(completedAt)
+            })
           }
         }
       }
@@ -1716,6 +1747,8 @@ export function createGuitarRoomBand(
     async dispose() {
       if (disposed) return
       disposed = true
+      emitBeat({ kind: 'stop' })
+      beatListeners.clear()
       void releaseRunOutput()
       await Promise.all([...pendingReleases])
       for (const holder of percussionPlayers.values()) {

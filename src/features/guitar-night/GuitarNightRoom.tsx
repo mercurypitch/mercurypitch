@@ -10,6 +10,9 @@ import type { GuitarBackingTransportController } from '@/features/guitar/backing
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
+import { drummerMeterReason } from '@/features/session-drummer/session-drummer-pattern'
+import { SessionDrummer } from '@/features/session-drummer/SessionDrummer'
+import { useSessionDrummer } from '@/features/session-drummer/useSessionDrummer'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
@@ -354,6 +357,29 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         ? recordingStage.source
         : performance.stage,
   )
+  const drummer = useSessionDrummer({
+    activateGraph: async () =>
+      (await props.transport.activate())
+        ? props.transport.getAudioGraph()
+        : null,
+    clock: () =>
+      props.backing === null && freeForm.modes.mode() === 'practice'
+        ? (freeForm.practice.room.subscribeBeatClock ?? null)
+        : null,
+    tempo: () => freeForm.practice.room.tempoBpm(),
+    running: freeForm.playing,
+    startHost: freeForm.play,
+    unavailableReason: () => {
+      const meter = recorder.previewScore()?.timeSignature
+      return props.backing === null &&
+        freeForm.modes.mode() === 'practice' &&
+        meter
+        ? drummerMeterReason([{ numerator: meter[0], denominator: meter[1] }])
+        : null
+    },
+    blocked: () =>
+      props.suspended?.() === true || tunerOpen() || isCalibrating(),
+  })
   const removeMelody = (id: string) =>
     props.backing === null ? freeForm.remove(id) : recorder.remove(id)
   useGuitarNightTakeKeepPrompt({
@@ -548,6 +574,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     pause: () =>
       props.backing === null ? freeForm.pause() : props.transport.pause(),
     stop: () => {
+      drummer.stop()
       if (props.backing === null) void freeForm.stop()
       else props.transport.stop()
     },
@@ -601,6 +628,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       sessionOpen() ||
       melodiesOpen() ||
       quickMelodiesOpen() ||
+      drummer.open() ||
       doctorOpen() ||
       recorder.reviewOpen() ||
       freeForm.scoreOpen() ||
@@ -804,6 +832,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       installSpacePlaybackToggle({
         toggle: togglePlayback,
         ownsSpace: () =>
+          !drummer.open() &&
           props.importOpen?.() !== true &&
           props.suspended?.() !== true &&
           !doctorOpen() &&
@@ -888,6 +917,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               : `${props.backing.stems.length} tracks · on this device`}
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <SessionDrummer
+              controller={drummer}
+              disabled={
+                isCalibrating() || tunerOpen() || props.suspended?.() === true
+              }
+            />
             <GuitarRecordingGalleryButton
               count={recorder.catalogue().length}
               disabled={
@@ -1337,7 +1372,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               fallback={
                 <GuitarRecorderDeck
                   recorder={freeForm.recorder}
-                  playback={recordingPlayback}
+                  playback={{
+                    ...recordingPlayback,
+                    stop: () => {
+                      drummer.stop()
+                      recordingPlayback.stop()
+                    },
+                  }}
                   liveMode={freeForm.modes.mode() === 'live'}
                   onPlay={freeForm.toggle}
                   allowRecordDuringPlayback
@@ -1352,6 +1393,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               <GuitarFreeFormPracticeDeck
                 practice={freeForm.practice}
                 recording={freeForm.recorder}
+                onStop={drummer.stop}
                 onScore={() => void freeForm.openScore()}
                 disabled={
                   isCalibrating() ||

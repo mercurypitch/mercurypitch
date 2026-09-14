@@ -1146,6 +1146,7 @@
 /* The room identity opens it, so it has to read as a control. */
 .roomIdentityTrigger {
   display: block;
+  min-width: 0;
   padding: 0;
   border: 0;
   color: inherit;
@@ -7674,6 +7675,9 @@
   .roomHeadingRow .eyebrow {
     margin-bottom: 0.14rem;
     font-size: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .trackCount {

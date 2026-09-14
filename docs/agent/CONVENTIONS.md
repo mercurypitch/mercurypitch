@@ -116,6 +116,13 @@ existing user on upgrade.
 Never `<header>` or `<footer>` for page content — global rules target those
 tags. Pages inside `.main-content` need `flex-shrink: 0`.
 
+**Shared controls own their chrome.** A wrapper breaks direct-child selectors
+such as `.roomTools > button`; use a component-owned style or explicit shared
+control class, not an assumed ancestor rule. Verify computed border/background,
+focus and disabled states in the production build, including the closed trigger
+in each host at phone/tablet widths. Run the host's responsive tests as well as
+the new dialog's tests; a visible class name is not a styling check.
+
 ## 5a. Playback surfaces
 
 On any surface whose primary object is a running transport (Guitar Night room,
@@ -161,6 +168,9 @@ where they are.
 Pointer-driven controls (drag, scrub, swipe) need a real-mouse Playwright spec
 that fails before the fix and passes after, tagged `@smoke`. Synthetic events
 pass against broken code.
+Touch-enabled controls also need native touch swipes starting on their real
+child targets, followed by tap and cancel paths. Resizing a mouse viewport does
+not exercise implicit touch capture; see `session-drummer-touch.spec.ts`.
 
 ## 7. Comments and file headers
 

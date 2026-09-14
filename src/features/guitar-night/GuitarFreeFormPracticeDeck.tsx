@@ -23,6 +23,8 @@ export interface GuitarFreeFormPracticeDeckProps {
   /** The room supplies its coordinated Record start/stop proxy. */
   recording: GuitarRecordingController
   disabled?: boolean
+  /** Stop optional accompaniment without coupling this deck to a drummer. */
+  onStop?(): void
   onScore(): void
 }
 
@@ -62,6 +64,7 @@ export function GuitarFreeFormPracticeDeck(
   }
   const stop = async (): Promise<void> => {
     if (unavailable() || stopping()) return
+    props.onStop?.()
     const practice = props.practice
     const reference = practice.room.displayReference()
     setStopping(true)
